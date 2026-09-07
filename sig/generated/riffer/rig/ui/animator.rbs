@@ -7,7 +7,9 @@ class Riffer::Rig::UI::Animator
 
   SPINNER_FRAME_SECONDS: ::Float
 
-  SPINNER_FRAMES: untyped
+  EQ_LEVELS: untyped
+
+  EQ_BARS: ::Integer
 
   def initialize: (?io: untyped, ?theme: untyped) -> untyped
 
@@ -17,6 +19,8 @@ class Riffer::Rig::UI::Animator
   def start_thinking: () -> untyped
 
   def stop_thinking: () -> untyped
+
+  def equalizer: (untyped tick) -> untyped
 
   private
 
