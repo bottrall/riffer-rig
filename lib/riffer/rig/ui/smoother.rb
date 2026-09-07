@@ -6,10 +6,11 @@
 class Riffer::Rig::UI::Smoother
   TICK_SECONDS = 1.0 / 60.0
 
-  # A quarter per frame reveals a typical burst in ~150ms while a huge one
-  # still drains fast enough to never visibly lag the model.
-  DRAIN_RATE = 0.25
-  MIN_CHARS_PER_TICK = 2
+  # A frame removes only a sixtieth of the remaining backlog — an exponential
+  # decay whose tail keeps text flowing for a second or more, so the reveal
+  # never visibly stops between chunks.
+  DRAIN_RATE = 1.0 / 60.0
+  MIN_CHARS_PER_TICK = 1
 
   def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io), clock: Kernel)
     @io = io

@@ -25,21 +25,21 @@ class Riffer::Rig::UI::SmootherTest < Minitest::Test
   end
 
   def test_tick_releases_a_proportional_slice_of_the_backlog
-    @smoother << ('a' * 40)
+    @smoother << ('a' * 120)
     @smoother.tick
 
-    assert_equal 'a' * 10, @io.string
+    assert_equal 'a' * 2, @io.string
   end
 
   def test_tick_releases_the_whole_backlog_when_smaller_than_the_slice
-    @smoother << 'ab'
+    @smoother << 'a'
     @smoother.tick
 
-    assert_equal 'ab', @io.string
+    assert_equal 'a', @io.string
   end
 
   def test_successive_ticks_keep_draining
-    @smoother << ('a' * 8)
+    @smoother << ('a' * 120)
     @smoother.tick
     @smoother.tick
 
