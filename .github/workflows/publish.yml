@@ -6,10 +6,6 @@
 # because releases created with the default GITHUB_TOKEN do not trigger other
 # workflows. The RubyGems trusted publisher is pinned to this file name and the
 # `release` environment; change either and publishing stops.
-#
-# The gem is built and pushed directly (as riffer does) rather than through
-# `rake release`: release-please already tags, and `rake release` refuses to
-# run when setup-ruby has rewritten the tracked .bundle/config.
 
 name: publish
 
