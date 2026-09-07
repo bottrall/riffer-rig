@@ -4,10 +4,11 @@ class Riffer::Rig::REPL
   EXIT_COMMANDS = ['/exit', '/quit'].freeze
   SKILL_COMMAND = %r{\A/skill:([a-z0-9]+(?:-[a-z0-9]+)*)(?:\s+(.*))?\z}m
 
-  def initialize(agent:, renderer:, input: $stdin, output: $stdout, theme: Riffer::Rig::UI::Theme.for(output), animator: Riffer::Rig::UI::Animator.new(io: output, theme:))
+  def initialize(agent:, renderer:, input: $stdin, output: $stdout, theme: Riffer::Rig::UI::Theme.for(output), animator: Riffer::Rig::UI::Animator.new(io: output, theme:), smoother: Riffer::Rig::UI::Smoother.new(io: output, theme:))
     @agent = agent
     @renderer = renderer
     @animator = animator
+    @smoother = smoother
     @theme = theme
     @input = input
     @output = output
@@ -40,14 +41,17 @@ class Riffer::Rig::REPL
 
   def run_turn(prompt)
     @animator.start_thinking
+    @smoother.start
     @agent.stream(prompt).each do |event|
       @animator.stop_thinking
       @renderer.render(event)
     end
+    @smoother.finish
     @output.puts
   rescue StandardError => e
     @output.puts("\nError: #{e.message}")
   ensure
+    @smoother.finish
     @animator.stop_thinking
   end
 

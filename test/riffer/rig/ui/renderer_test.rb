@@ -15,6 +15,63 @@ class Riffer::Rig::UI::RendererTest < Minitest::Test
     assert_equal 'hello', @io.string
   end
 
+  def test_routes_text_deltas_through_the_smoother_when_one_is_present
+    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother)
+
+    renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
+
+    assert_equal ['hello'], recording_smoother.written
+  end
+
+  def test_drains_the_smoother_before_rendering_a_tool_call_done_event
+    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother)
+
+    renderer.render(Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}'))
+
+    assert_predicate recording_smoother, :drained?
+  end
+
+  def test_drains_the_smoother_before_rendering_a_skill_activation_event
+    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother)
+
+    renderer.render(Riffer::StreamEvents::SkillActivation.new('refactor'))
+
+    assert_predicate recording_smoother, :drained?
+  end
+
+  def test_drains_the_smoother_before_rendering_an_interrupt_event
+    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother)
+
+    renderer.render(Riffer::StreamEvents::Interrupt.new(reason: 'user'))
+
+    assert_predicate recording_smoother, :drained?
+  end
+
+  def test_drains_the_smoother_before_rendering_token_usage
+    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother, tally: Riffer::Rig::TokenTally.new)
+
+    renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 1, output_tokens: 1)))
+
+    assert_predicate recording_smoother, :drained?
+  end
+
+  def recording_smoother
+    @recording_smoother ||= Class.new do
+      attr_reader :written
+
+      def initialize = @written = []
+
+      def <<(content)
+        @written << content
+        self
+      end
+
+      def drain = @drained = true
+
+      def drained? = @drained == true
+    end.new
+  end
+
   def test_renders_tool_results_without_ansi_when_theme_disabled
     message = Riffer::Messages::Tool.new('done', tool_call_id: 'c1', name: 'write')
     @renderer.render_tool_result(message)

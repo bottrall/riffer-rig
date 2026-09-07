@@ -3,13 +3,29 @@
 class Riffer::Rig::UI::Renderer
   RESULT_PREVIEW_LIMIT: ::Integer
 
-  def initialize: (?io: untyped, ?theme: untyped, ?tally: untyped) -> untyped
+  def initialize: (?io: untyped, ?theme: untyped, ?tally: untyped, ?smoother: untyped) -> untyped
 
   def render: (untyped event) -> untyped
 
   def render_tool_result: (untyped message) -> untyped
 
   private
+
+  def smoother: () -> untyped
+
+  # Degenerate smoother used when none is wired in: synchronous, flushed
+  # prints, matching the pre-smoothing behavior.
+  class PassThroughSmoother
+    def initialize: (untyped io) -> untyped
+
+    def <<: (untyped content) -> untyped
+
+    def drain: () -> untyped
+
+    def finish: () -> untyped
+  end
+
+  def drain_smoother: () -> untyped
 
   def render_token_usage: (untyped usage) -> untyped
 

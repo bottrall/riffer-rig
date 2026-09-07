@@ -1,0 +1,43 @@
+# Generated from lib/riffer/rig/ui/smoother.rb with RBS::Inline
+
+# Reveals streamed text on a fixed 60fps cadence so bursts of API deltas feel
+# like continuous typing. Deltas accumulate in a backlog; each frame releases
+# a proportional slice, so small bursts glide out over a few frames while big
+# ones catch up quickly. On a non-TTY output the smoother is transparent:
+# writes pass through synchronously and no thread ever runs.
+class Riffer::Rig::UI::Smoother
+  TICK_SECONDS: untyped
+
+  # Each frame releases a quarter of the backlog (at least MIN_CHARS_PER_TICK),
+  # so a typical burst is ~90% revealed in about 150ms while a huge one drains
+  # fast enough to never visibly lag the model.
+  DRAIN_RATE: ::Float
+
+  MIN_CHARS_PER_TICK: ::Integer
+
+  def initialize: (?io: untyped, ?theme: untyped, ?clock: untyped) -> untyped
+
+  # Spawns the tick thread. No-op on a non-TTY output.
+  def start: () -> untyped
+
+  # Queues a delta for paced release, or prints it straight through when
+  # disabled. Returns self so deltas can be chained.
+  def <<: (untyped content) -> untyped
+
+  # Releases one frame's worth of backlog: a quarter of it, at least
+  # MIN_CHARS_PER_TICK characters, never more than remains. The write happens
+  # under the mutex so concurrent tick/drain calls can't reorder output.
+  def tick: () -> untyped
+
+  # Flushes the whole backlog immediately, synchronously. Called before any
+  # non-delta output so printed order always matches stream order.
+  def drain: () -> untyped
+
+  # Stops the tick thread and flushes whatever remains. Safe to call when
+  # never started, and repeatedly.
+  def finish: () -> untyped
+
+  private
+
+  def enabled?: () -> untyped
+end
