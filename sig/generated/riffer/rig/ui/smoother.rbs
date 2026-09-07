@@ -1,9 +1,8 @@
 # Generated from lib/riffer/rig/ui/smoother.rb with RBS::Inline
 
-# Reveals streamed text on a fixed 60fps cadence so bursts of API deltas feel
-# like continuous typing: deltas accumulate in a backlog and each frame
-# releases a proportional slice. On a non-TTY output it is transparent —
-# writes pass through synchronously and no thread ever runs.
+# Paces streamed text onto a 60fps cadence so API bursts read as continuous
+# typing. On a non-TTY output it is transparent: writes pass through
+# synchronously and no thread ever runs.
 class Riffer::Rig::UI::Smoother
   TICK_SECONDS: untyped
 
@@ -15,7 +14,6 @@ class Riffer::Rig::UI::Smoother
 
   def initialize: (?io: untyped, ?theme: untyped, ?clock: untyped) -> untyped
 
-  # Spawns the tick thread. No-op on a non-TTY output.
   def start: () -> untyped
 
   def <<: (untyped content) -> untyped
