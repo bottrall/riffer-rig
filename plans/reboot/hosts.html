@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hosts · riffer-rig reboot</title>
+<link rel="stylesheet" href="plan.css">
+</head>
+<body>
+
+<nav class="plan">
+  <a href="index.html">Index</a>
+  <a href="session.html">Session</a>
+  <a href="extensions.html">Extensions</a>
+  <a href="bundled.html">Bundled</a>
+  <a href="loader.html">Loader</a>
+  <a href="providers.html">Providers</a>
+  <a href="hosts.html" aria-current="page">Hosts</a>
+  <a href="docs.html">Docs</a>
+</nav>
+
+<h1>Hosts</h1>
+<p class="lede">Three thin clients over the same Session: the terminal, the headless printer and the ACP adapter. Each implements the Host duck and renders the one event stream.</p>
+
+<h2 id="scope">Scope</h2>
+<p><code>exe/riffer</code> and the three host namespaces <code>Riffer::Rig::Terminal</code>, <code>Riffer::Rig::Headless</code>, <code>Riffer::Rig::ACP</code>, plus the standalone <code>acp-sdk</code> gem. The existing <code>ui/</code> code (renderer, animator, banner, theme, palette, pixels, riffy) moves under <code>Terminal</code>. Files: <code>exe/riffer</code>, <code>lib/riffer/rig/cli.rb</code> (the dispatcher), <code>lib/riffer/rig/terminal.rb</code> and <code>terminal/</code>, <code>lib/riffer/rig/headless.rb</code>, <code>lib/riffer/rig/acp.rb</code>.</p>
+<p><strong>Depends on:</strong> every unit above; hosts use only the public Session, Host, Loader and Events API. <strong>Depended on by:</strong> nothing.</p>
+
+<h2 id="decisions">Decisions</h2>
+
+<section class="topic" id="discipline">
+<h3>The host tier and its discipline</h3>
+
+<figure>
+<svg viewBox="0 0 760 130" role="img" aria-label="exe/riffer dispatches: no args to Terminal, -p to Headless, acp to ACP; all three go through Loader to a Session">
+  <rect x="20" y="40" width="130" height="46" rx="6" class="box"/><text x="85" y="60" text-anchor="middle" class="lbl mono">exe/riffer</text><text x="85" y="76" text-anchor="middle" class="sub">dispatcher</text>
+  <path d="M150 63 H210 V22 H250" class="edge" marker-end="url(#a)"/><path d="M150 63 H250" class="edge" marker-end="url(#a)"/><path d="M150 63 H210 V104 H250" class="edge" marker-end="url(#a)"/>
+  <rect x="250" y="8" width="170" height="30" rx="6" class="box"/><text x="335" y="27" text-anchor="middle" class="lbl">Terminal</text><text x="180" y="18" class="sub mono">no args</text>
+  <rect x="250" y="48" width="170" height="30" rx="6" class="box"/><text x="335" y="67" text-anchor="middle" class="lbl">Headless</text><text x="170" y="57" class="sub mono">-p</text>
+  <rect x="250" y="88" width="170" height="30" rx="6" class="box"/><text x="335" y="107" text-anchor="middle" class="lbl">ACP</text><text x="175" y="100" class="sub mono">acp</text>
+  <path d="M420 23 H470 V63 M420 103 H470 V63" class="edge"/><path d="M420 63 H510" class="edge" marker-end="url(#a)"/>
+  <rect x="510" y="48" width="110" height="30" rx="6" class="box"/><text x="565" y="67" text-anchor="middle" class="lbl">Loader</text>
+  <path d="M620 63 H650" class="edge" marker-end="url(#a)"/>
+  <rect x="650" y="48" width="90" height="30" rx="6" class="box core"/><text x="695" y="67" text-anchor="middle" class="lbl">Session</text>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs>
+</svg>
+</figure>
+
+<ul>
+  <li><code>exe/riffer</code> is a small dispatcher: no arguments → Terminal; <code>-p</code>/<code>--print</code> → Headless; <code>acp</code> → ACP. <code>acp</code> is the only subcommand; there is no <code>riffer sessions</code>.</li>
+  <li>A host uses only the public Session, Host, Loader and Events API, <strong>enforced by a test</strong> that the <code>Terminal</code>, <code>Headless</code> and <code>ACP</code> namespaces reference no other <code>Riffer::Rig</code> constant. Anything a host needs becomes a Session or Loader feature, so embedders get it too.</li>
+  <li>Every CLI flag is a Session or Loader keyword first; the host only translates argv.</li>
+  <li>Hosts do nothing for reload; they get it through the Loader-built Session.</li>
+</ul>
+</section>
+
+<section class="topic" id="flags">
+<h3>Shared flags</h3>
+<p>These work on the REPL and on <code>riffer -p</code> alike.</p>
+<div class="table-wrap"><table>
+  <tr><th>Flag</th><th>Maps to</th></tr>
+  <tr><td><code>--model provider/name</code></td><td>Loader <code>model:</code>; highest precedence</td></tr>
+  <tr><td><code>--no-extensions</code></td><td>Loader <code>extensions: false</code></td></tr>
+  <tr><td><code>--no-skills</code></td><td>Loader <code>skills: false</code></td></tr>
+  <tr><td><code>--no-agents-md</code></td><td>Loader <code>agents_md: false</code></td></tr>
+  <tr><td><code>--tools a,b,c</code></td><td>Loader <code>tools: [...]</code>, tool identifiers</td></tr>
+  <tr><td><code>--max-steps N</code></td><td>Session <code>max_steps:</code>; hitting it is exit 3 in headless</td></tr>
+  <tr><td><code>-c</code> / <code>--continue</code></td><td>Loader <code>continue</code>: most recently updated session whose cwd matches; exit 2 in headless if none</td></tr>
+  <tr><td><code>-r &lt;id&gt;</code> / <code>--resume &lt;id&gt;</code></td><td>Loader <code>resume(id)</code>; exit 2 in headless if unknown</td></tr>
+  <tr><td><code>-r</code> bare</td><td>Terminal opens the project picker; usage error (exit 2) in headless</td></tr>
+  <tr><td><code>--no-save</code></td><td>Loader <code>store: nil</code></td></tr>
+</table></div>
+</section>
+
+<section class="topic" id="terminal">
+<h3>Terminal</h3>
+<ul>
+  <li>The first host and the reference. The REPL, rendering of the event stream (streamed text, tool calls, reasoning, cost line from <code>turn_end</code>), input, and all the interactive prompts: model onboarding (list providers from the registry, ask for a model, write settings), credential recipes (<code>ask</code> with <code>secret: true</code>, the Bedrock chain-or-token choice), SDK install confirmation with a spinner under <code>progress</code>, project trust <code>confirm</code>, extension <code>notify</code> as an out-of-band line.</li>
+  <li>Implements all four Host methods and reports all four in <code>capabilities</code>.</li>
+  <li>Ctrl-C during a turn calls <code>Session#cancel</code>; a second Ctrl-C at the prompt exits.</li>
+  <li>Runtime commands come from <code>session.commands</code> and are dispatched with <code>run_command</code>; the terminal's own commands are only the lifecycle ones: <code>/exit</code>, <code>/quit</code>, <code>/resume</code>, <code>/new</code>. <code>/help</code>, if present, lists both sets from the same source.</li>
+  <li><code>/resume</code> opens the project picker: type to search, Enter to switch, Ctrl-D then confirm to delete; rows show the first user prompt trimmed to one line, relative time and message count; <code>--all</code> escapes the cwd scope. <code>/new</code> starts a fresh session in place. Both replace the Session the host drives.</li>
+  <li>Everything under <code>ui/</code> today (banner, animator, theme, pixels, riffy) stays as terminal presentation.</li>
+</ul>
+</section>
+
+<section class="topic" id="headless">
+<h3>Headless</h3>
+<ul>
+  <li><code>riffer -p "prompt"</code> runs one prompt and exits. <strong>Stdin:</strong> when piped, its content is appended to the prompt argument as context; with no argument, stdin alone is the prompt; a TTY stdin is never read.</li>
+  <li>Loads exactly what the REPL loads through the Loader, minus whatever the strip flags remove. Never prompts: the null-host behaviour applies to onboarding, credentials, SDK install and trust.</li>
+  <li><strong>Text output (default):</strong> only the assistant's text on stdout, streamed; reasoning not printed; errors and <code>notify</code> lines always on stderr. <code>--verbose</code> adds a one-line-per-tool-call trace to stderr.</li>
+  <li><strong><code>--json</code>:</strong> one JSON object per line for every Session event (riffer StreamEvents plus rig events), flat envelope <code>{"type": "text_delta", ...to_h}</code> with the type as the event class name in snake_case. The first line is <code>session_start</code> carrying the id. No final single-document format. A fatal configuration or runtime error is a last <code>{"type": "error", ...}</code> line.</li>
+  <li><code>-c</code>, <code>-r &lt;id&gt;</code> and <code>--no-save</code> as in the shared table; <code>riffer -p -c "now run the tests"</code> is the multi-turn headless story.</li>
+</ul>
+<div class="table-wrap"><table>
+  <tr><th>Exit</th><th>Meaning</th></tr>
+  <tr><td>0</td><td>turn finished with reason <code>stop</code></td></tr>
+  <tr><td>1</td><td>runtime error (provider, network, exception)</td></tr>
+  <tr><td>2</td><td>usage or configuration: unknown flag, no credentials, missing optional SDK, bare model name, unknown session id, bare <code>-r</code></td></tr>
+  <tr><td>3</td><td>turn ended but did not complete: <code>context_window</code>, <code>length</code>, <code>content_filter</code>, <code>malformed_output</code>, <code>max_steps</code>; reason on stderr and in <code>turn_end</code></td></tr>
+  <tr><td>130</td><td>SIGINT → <code>Session#cancel</code>, riffer heals orphaned tool calls, then exit</td></tr>
+</table></div>
+<ul>
+  <li>Implements <code>notify</code> (stderr, or the <code>notify</code> event line in <code>--json</code>) and <code>progress</code> (stderr); <code>ask</code> and <code>confirm</code> decline; <code>capabilities</code> says so.</li>
+  <li>Deliberately not built: a JSONL stdin RPC mode (ACP is the non-Ruby path), <code>--max-cost</code> (revisit now that the tally is a Session feature; not in the first build).</li>
+</ul>
+</section>
+
+<section class="topic" id="acp">
+<h3>ACP</h3>
+<ul>
+  <li><strong>Built second, after the terminal.</strong> It is the proof that Session is host-neutral and it is how non-Ruby developers get in. Same gem, <code>riffer acp</code> subcommand; editors register the agent as <code>riffer acp</code>.</li>
+  <li><strong>Wire layer: a standalone MIT gem <code>acp-sdk</code></strong>, namespace <code>ACP</code>, <code>require "acp/sdk"</code>, repo <code>bottrall/acp-sdk</code> (created, empty apart from README and licence). Server and client sides, plain Ruby, JSON-RPC over NDJSON stdio, the official <code>schema.json</code> vendored and regenerated, no async dependency. It becomes riffer-rig's one non-riffer dependency; it must be published (claiming the gem name at first push) before riffer-rig can depend on it, and it has its own release train under the same policy.</li>
+  <li><strong>Transport:</strong> stdio only. HTTP/WebSocket waits for the ACP RFD to stabilise and lands in acp-sdk, not riffer-rig.</li>
+  <li><strong>The first server implements:</strong> <code>initialize</code>, <code>session/new</code>, <code>session/prompt</code>, <code>session/cancel</code>, <code>session/update</code>, <code>session/request_permission</code> (the six required, with permission requests answered "allow" since permissions are out of scope), plus client-supplied <code>mcpServers</code> on <code>session/new</code> (stdio shape only, through the <code>rig.mcp</code> seam), <code>available_commands_update</code> from <code>session.commands</code>, and <code>session/load</code> and <code>session/list</code> (added by the persistence decision; <code>agentCapabilities</code> advertises <code>loadSession: true</code>).</li>
+  <li><code>session/new</code> returns the Session UUID as <code>sessionId</code>. <code>session/load</code> reads the entries through the Loader, restores the Session, replays user, assistant and tool entries as <code>session/update</code> chunks, then responds. <code>session/list</code> maps <code>store.list(cwd:)</code> to ACP's session-info shape (id, cwd, title = first prompt, updated_at).</li>
+  <li><strong>The first server skips:</strong> fs and terminal delegation to the client, HTTP transport.</li>
+  <li>The adapter is the only place Session events are mapped to another vocabulary. Mid-turn multiplexing (a <code>session/cancel</code> arriving during <code>session/prompt</code>) is <code>Session#cancel</code> from the reader thread.</li>
+  <li>Implements <code>notify</code> as a <code>session/update</code>; <code>ask</code>, <code>confirm</code>, <code>progress</code> decline in the first server. Trust: a project <code>rig.rb</code> loads over ACP only once a terminal session has trusted it.</li>
+</ul>
+</section>
+
+<h2 id="interfaces">Interfaces</h2>
+<div class="table-wrap"><table>
+  <tr><th>Surface</th><th>Shape</th></tr>
+  <tr><td><code>riffer</code></td><td>REPL; shared flags</td></tr>
+  <tr><td><code>riffer -p [prompt]</code></td><td>headless; shared flags plus <code>--json</code>, <code>--verbose</code>; exit codes 0/1/2/3/130</td></tr>
+  <tr><td><code>riffer acp</code></td><td>ACP server on stdio</td></tr>
+  <tr><td>NDJSON envelope</td><td><code>{"type": "&lt;snake_case event class&gt;", ...event.to_h}</code></td></tr>
+  <tr><td>Terminal commands</td><td><code>/exit</code>, <code>/quit</code>, <code>/resume [--all]</code>, <code>/new</code></td></tr>
+  <tr><td><code>acp-sdk</code></td><td><code>ACP::Server</code>, <code>ACP::Client</code>, generated types from <code>schema.json</code></td></tr>
+</table></div>
+
+<h2 id="enshrines">Enshrines into</h2>
+<div class="table-wrap"><table>
+  <tr><th>Topic</th><th>Code</th><th>Docs</th></tr>
+  <tr><td>Dispatcher, discipline, shared flags</td><td><code>exe/riffer</code>, <code>lib/riffer/rig/cli.rb</code>, the namespace test</td><td>README Usage; <code>docs/HOSTS.md</code></td></tr>
+  <tr><td>Terminal</td><td><code>lib/riffer/rig/terminal.rb</code>, <code>terminal/</code></td><td>README Usage; <code>docs/GETTING_STARTED.md</code>, <code>docs/SESSIONS.md</code> (picker)</td></tr>
+  <tr><td>Headless</td><td><code>lib/riffer/rig/headless.rb</code></td><td><code>docs/HEADLESS.md</code></td></tr>
+  <tr><td>ACP</td><td><code>lib/riffer/rig/acp.rb</code>; the <code>bottrall/acp-sdk</code> repo</td><td><code>docs/ACP.md</code></td></tr>
+</table></div>
+
+<h2 id="provenance">Provenance</h2>
+<p class="provenance"><a href="https://github.com/bottrall/riffer-rig/issues/80">Decide the runtime/CLI separation and the role of ACP</a>, <a href="https://github.com/bottrall/riffer-rig/issues/82">Decide programmatic and headless use</a>, <a href="https://github.com/bottrall/riffer-rig/issues/94">Decide session persistence and history</a> (flags, picker, ACP load and list), <a href="https://github.com/bottrall/riffer-rig/issues/76">Decide the provider strategy and optional SDK dependencies</a> (onboarding and install prompts), <a href="https://github.com/bottrall/riffer-rig/issues/90">Decide per-provider onboarding recipes</a> (headless exit 2), <a href="https://github.com/bottrall/riffer-rig/issues/89">Decide the rename mechanics</a> (acp-sdk repo, gem claimed at first publish), the survey <a href="https://github.com/bottrall/riffer-rig/issues/73">Survey the Agent Client Protocol (ACP)</a>.</p>
+
+</body>
+</html>

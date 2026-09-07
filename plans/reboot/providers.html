@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Providers · riffer-rig reboot</title>
+<link rel="stylesheet" href="plan.css">
+</head>
+<body>
+
+<nav class="plan">
+  <a href="index.html">Index</a>
+  <a href="session.html">Session</a>
+  <a href="extensions.html">Extensions</a>
+  <a href="bundled.html">Bundled</a>
+  <a href="loader.html">Loader</a>
+  <a href="providers.html" aria-current="page">Providers</a>
+  <a href="hosts.html">Hosts</a>
+  <a href="docs.html">Docs</a>
+</nav>
+
+<h1>Providers</h1>
+<p class="lede">Which SDKs ship, how a model is chosen, and how each provider's credentials are asked for, stored and resolved. A provider added to riffer needs one table entry here.</p>
+
+<h2 id="scope">Scope</h2>
+<p>Gemspec dependencies, the missing-SDK flow, model selection precedence, the recipe table, <code>auth.json</code> and the <code>providers</code> settings block, credential resolution, the <code>/auth</code> command, extension providers, provider-native tools. Files: <code>riffer-rig.gemspec</code>, <code>lib/riffer/rig/recipes.rb</code>, <code>lib/riffer/rig/credentials.rb</code> (reshaped), <code>lib/riffer/rig/commands/auth.rb</code>, <code>lib/riffer/rig/sdk.rb</code> (the installer).</p>
+<p><strong>Depends on:</strong> <a href="session.html">Session</a> (per-session credentials, <code>/model</code>), <a href="extensions.html">Extensions</a> (provider seam, Host <code>ask</code>). <strong>Depended on by:</strong> Loader (resolution), Hosts (the prompts).</p>
+
+<h2 id="decisions">Decisions</h2>
+
+<section class="topic" id="dependencies">
+<h3>Dependencies</h3>
+<ul>
+  <li>The gemspec hard-depends on <code>riffer</code> (<code>~> 0.45.0</code>), the <code>openai</code> gem, <code>acp-sdk</code> (once published; see <a href="hosts.html#acp">Hosts: ACP</a>) and the current <code>zeitwerk</code> and <code>base64</code>. One SDK covers OpenAI, OpenRouter and Azure OpenAI; Gemini needs no SDK (riffer uses <code>net/http</code>). Four of riffer's six providers therefore work on a bare <code>gem install riffer-rig</code>.</li>
+  <li><code>anthropic</code> and <code>aws-sdk-bedrockruntime</code> are <strong>optional</strong>, installed on demand. The current hard dependency on <code>anthropic</code> is removed.</li>
+  <li>Provider breadth is an anti-goal: riffer's six providers plus whatever extensions register.</li>
+</ul>
+</section>
+
+<section class="topic" id="sdk-table">
+<h3>SDK table</h3>
+<p>Version constraints belong to riffer: each <code>Riffer::Providers::Base</code> subclass should expose its SDK gem name and requirement. Until riffer does, riffer-rig carries the mapping itself, as part of each recipe entry (<code>sdk:</code>), marked in code as an upstream candidate.</p>
+<div class="table-wrap"><table>
+  <tr><th>Provider identifier</th><th>SDK gem</th><th>Shipped?</th></tr>
+  <tr><td><code>anthropic</code></td><td><code>anthropic</code></td><td>optional</td></tr>
+  <tr><td><code>openai</code>, <code>openrouter</code>, <code>azure_openai</code></td><td><code>openai</code></td><td>hard dependency</td></tr>
+  <tr><td><code>gemini</code></td><td>none</td><td>n/a</td></tr>
+  <tr><td><code>amazon_bedrock</code></td><td><code>aws-sdk-bedrockruntime</code></td><td>optional</td></tr>
+</table></div>
+<p>The requirement string for each optional gem is the version riffer 0.45 is tested against at the time of the build PR; the plan does not freeze a number.</p>
+</section>
+
+<section class="topic" id="missing-sdk">
+<h3>Missing SDK</h3>
+<ul>
+  <li>Outside Bundler: the host offers <code>Install the &lt;gem&gt; gem now? [Y/n]</code> (<code>host.confirm</code>), then <code>Gem.install(gem, requirement)</code> plus <code>Gem.clear_paths</code> in-process under <code>host.progress</code>. Install then <code>require</code> works in the same process without a restart (verified).</li>
+  <li>Under Bundler (<code>bundle exec</code>, a project Gemfile): install cannot reach the load path, so print the exact <code>gem '&lt;name&gt;'</code> line to add and stop.</li>
+  <li>The same handler runs at onboarding and at any later <code>/model</code> switch. In headless mode the null host declines, the missing gem and the install line go to stderr, exit 2.</li>
+</ul>
+</section>
+
+<section class="topic" id="selection">
+<h3>Selecting and switching the model</h3>
+<ul>
+  <li><strong>No baked-in default.</strong> The current <code>DEFAULT_MODEL</code> constant goes. With no model resolved, onboarding lists the providers from <code>Riffer::Providers::Repository</code> (Mock excluded, extension-registered providers included), asks for a model string, and writes the choice to the home <code>settings.json</code>.</li>
+  <li><strong>Precedence, highest first:</strong> <code>--model provider/name</code> flag → <code>RIFFER_MODEL</code> env var → <code>model</code> in settings (project over home) → onboarding.</li>
+  <li>A model string without a provider prefix is rejected with a hint listing the registry's providers. No inference from credentials or name patterns. In headless mode this is exit 2.</li>
+  <li><code>/model provider/name</code> switches for the current Session only (<a href="session.html#model">Session: /model</a>); <code>/model --save</code> persists. It triggers the missing-SDK and credential flows as needed.</li>
+</ul>
+</section>
+
+<section class="topic" id="recipes">
+<h3>Recipe shape and the six built-in recipes</h3>
+<ul>
+  <li>A recipe is <strong>data</strong>: a hash keyed by riffer's registry identifier with a help <code>url</code>, the <code>sdk</code> pair above, an optional <code>chain: true</code>, and a list of <code>fields</code>.</li>
+  <li>Field attributes: <code>name</code> (the member on <code>Riffer.config.&lt;provider&gt;</code> that receives the value; this is the delivery rule, no per-provider setter code), <code>env</code> (one or more env var names), <code>secret</code> (hidden input, stored in <code>auth.json</code>), <code>required</code> (only required fields are ever prompted), and an optional <code>fallback:</code> Proc tried after env and disk, before prompting: the single non-data escape hatch, per field.</li>
+  <li><code>chain: true</code> tells the host to offer the SDK's own credential chain as the default before asking for a secret.</li>
+  <li>The table is core; the prompting is host work through the Host interface.</li>
+</ul>
+<div class="table-wrap"><table>
+  <tr><th>Provider</th><th>Fields</th></tr>
+  <tr><td><code>anthropic</code></td><td>secret <code>api_key</code>, env <code>ANTHROPIC_API_KEY</code></td></tr>
+  <tr><td><code>openai</code></td><td>secret <code>api_key</code>, env <code>OPENAI_API_KEY</code>; optional non-secret <code>base_url</code>, env <code>OPENAI_BASE_URL</code> (settings-only, never prompted)</td></tr>
+  <tr><td><code>gemini</code></td><td>secret <code>api_key</code>, env <code>GEMINI_API_KEY</code></td></tr>
+  <tr><td><code>openrouter</code></td><td>secret <code>api_key</code>, env <code>OPENROUTER_API_KEY</code></td></tr>
+  <tr><td><code>azure_openai</code></td><td>required non-secret <code>endpoint</code>, env <code>AZURE_OPENAI_ENDPOINT</code>; required secret <code>api_key</code>, env <code>AZURE_OPENAI_API_KEY</code></td></tr>
+  <tr><td><code>amazon_bedrock</code></td><td><code>chain: true</code>; required <code>region</code>, env <code>AWS_REGION</code> / <code>AWS_DEFAULT_REGION</code>, fallback <code>Aws.shared_config.region</code>; optional secret <code>api_token</code>, env <code>AWS_BEARER_TOKEN_BEDROCK</code></td></tr>
+</table></div>
+<p>Bedrock onboarding: ask for region only when nothing resolves, then one choice: AWS credential chain (default, stores nothing) or paste a bearer token.</p>
+</section>
+
+<section class="topic" id="resolution">
+<h3>Resolution order</h3>
+
+<figure>
+<svg viewBox="0 0 760 90" role="img" aria-label="Per required field: env var, then stored value, then fallback Proc, then ask the host">
+  <rect x="20" y="20" width="150" height="46" rx="6" class="box"/><text x="95" y="40" text-anchor="middle" class="lbl">env var</text><text x="95" y="57" text-anchor="middle" class="sub">recipe field env</text>
+  <path d="M170 43 H210" class="edge" marker-end="url(#a)"/>
+  <rect x="210" y="20" width="150" height="46" rx="6" class="box"/><text x="285" y="40" text-anchor="middle" class="lbl">stored</text><text x="285" y="57" text-anchor="middle" class="sub mono">auth.json · settings.providers</text>
+  <path d="M360 43 H400" class="edge" marker-end="url(#a)"/>
+  <rect x="400" y="20" width="150" height="46" rx="6" class="box"/><text x="475" y="40" text-anchor="middle" class="lbl">fallback Proc</text><text x="475" y="57" text-anchor="middle" class="sub">e.g. Aws.shared_config</text>
+  <path d="M550 43 H590" class="edge" marker-end="url(#a)"/>
+  <rect x="590" y="20" width="150" height="46" rx="6" class="box"/><text x="665" y="40" text-anchor="middle" class="lbl">ask the host</text><text x="665" y="57" text-anchor="middle" class="sub">secret: true · null host declines</text>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs>
+</svg>
+<figcaption>Env wins over disk, matching the flag &gt; env &gt; settings order for the model. This is the opposite of pi, where auth.json outranks env.</figcaption>
+</figure>
+
+<ul>
+  <li>Per required field, first hit wins. Optional fields are resolved through the same chain minus the ask.</li>
+  <li>Resolved once per Session build, cached on the Session as <code>credentials:</code>, re-resolved on reload. A recipe that writes a file therefore takes effect in the running session without a restart; recipes never instruct the user to restart.</li>
+  <li>No validation. A pasted key is saved as-is; a bad key surfaces on the first request with the provider's own error. Probing would need per-provider code and break the one-entry goal.</li>
+</ul>
+</section>
+
+<section class="topic" id="storage">
+<h3>Storage</h3>
+<ul>
+  <li><code>~/.riffer/auth.json</code> (mode 0600, directory 0700) holds <strong>secret fields only</strong>, one typed entry per provider:
+<pre><code>{"anthropic": {"type": "api_key", "api_key": "sk-ant-…"},
+ "amazon_bedrock": {"type": "api_key", "api_token": "…"}}</code></pre>
+  The <code>type</code> member follows pi and OpenCode and leaves room for an <code>oauth</code> type without reshaping the file. The current flat <code>{"anthropic": "sk-…"}</code> shape is replaced with no migration (the rename was already a clean cut).</li>
+  <li>A secret value may be a literal, a <code>$ENV_VAR</code> reference, or a <code>!shell command</code> whose stdout is the secret. That is how a keychain user plugs in <code>security find-generic-password</code> without rig owning keychain code. Expanded once per process when the Session is built.</li>
+  <li>Non-secret fields (endpoint, region, base_url) go to <code>settings.json</code> under <code>"providers": {"azure_openai": {"endpoint": "…"}}</code>, home scope by default.</li>
+  <li><strong>No OS keychain.</strong> pi and OpenCode are 0600 JSON with typed entries; Codex made keyring opt-in; Claude Code's keychain-with-file-fallback is where its auth bugs live.</li>
+</ul>
+</section>
+
+<section class="topic" id="auth-command">
+<h3><code>/auth</code></h3>
+<ul>
+  <li><code>/auth</code> lists every registry provider with a status: <code>env</code>, <code>stored</code>, <code>chain</code> or <code>missing</code>.</li>
+  <li><code>/auth &lt;provider&gt;</code> re-runs the recipe (key rotation).</li>
+  <li><code>/auth remove &lt;provider&gt;</code> deletes the <code>auth.json</code> entry and the <code>providers</code> block in settings.</li>
+  <li>Runtime-owned, so terminal and ACP share it. Not named <code>/login</code>, which implies OAuth.</li>
+</ul>
+</section>
+
+<section class="topic" id="extension-providers">
+<h3>Extension providers</h3>
+<ul>
+  <li>The provider seam takes an optional <code>recipe:</code>: <code>rig.provider(:jane, recipe: {url: …, fields: […]}) { JaneProvider }</code>. Rig resolves it like a built-in and exposes values through <code>Riffer::Rig.credentials(:jane)</code>; the provider class reads that when building its client. Built-ins get the same lookup plus the <code>Riffer.config</code> assignment.</li>
+  <li>No <code>recipe:</code> → generic fallback: one secret <code>api_key</code> with env <code>&lt;IDENTIFIER&gt;_API_KEY</code>.</li>
+  <li>Extension providers appear in onboarding, <code>/model</code> hints and <code>/auth</code> like built-ins, because all three read the registry.</li>
+</ul>
+</section>
+
+<section class="topic" id="native-tools">
+<h3>Provider-native tools</h3>
+<ul>
+  <li>Web search today, and code execution or file search later, arrive through riffer's provider seam. They are core (nothing an extension could add) and <strong>off by default</strong>.</li>
+  <li>Switched on per tool in settings: <code>"tools": {"native": {"web_search": true}}</code>. The Loader passes the switches to the Session, which enables the provider option only if the current provider supports it; otherwise nothing happens and no error is raised, so a provider change never silently changes what the agent can do.</li>
+  <li>On a provider without native search the user brings a third-party tool.</li>
+</ul>
+</section>
+
+<section class="topic" id="headless">
+<h3>Headless</h3>
+<ul>
+  <li><code>riffer -p</code> never prompts. An unresolved required field prints the provider, each missing field with its env vars, the key URL and a hint to run <code>riffer</code> interactively, then exits 2. With <code>--json</code> it is the final <code>{"type": "error"}</code> line.</li>
+  <li>A missing optional SDK prints the gem and the install line, then exits 2.</li>
+</ul>
+</section>
+
+<h2 id="interfaces">Interfaces</h2>
+<div class="table-wrap"><table>
+  <tr><th>Surface</th><th>Shape</th></tr>
+  <tr><td><code>Riffer::Rig::Recipes[identifier]</code></td><td>the recipe hash; <code>Recipes.for(identifier)</code> returns the generic fallback for an unknown provider</td></tr>
+  <tr><td>Recipe</td><td><code>url</code>, <code>sdk: [gem, requirement] | nil</code>, <code>chain: bool</code>, <code>fields: [{name, env: [...], secret:, required:, fallback:}]</code></td></tr>
+  <tr><td><code>Riffer::Rig::Credentials</code></td><td><code>resolve(identifier, host:)</code> → field values; <code>store(identifier, values)</code>; <code>remove(identifier)</code>; <code>status(identifier)</code> → <code>:env | :stored | :chain | :missing</code></td></tr>
+  <tr><td><code>Riffer::Rig.credentials(identifier)</code></td><td>current Session's resolved values (defined on Session)</td></tr>
+  <tr><td>Files</td><td><code>~/.riffer/auth.json</code>; <code>providers</code> block in <code>settings.json</code></td></tr>
+  <tr><td>Settings keys owned here</td><td><code>model</code>, <code>reasoning</code>, <code>models</code>, <code>providers</code>, <code>tools.native</code></td></tr>
+  <tr><td>Env vars</td><td><code>RIFFER_MODEL</code> plus each recipe's field env vars</td></tr>
+  <tr><td>Commands</td><td><code>/auth</code>, <code>/model</code></td></tr>
+</table></div>
+
+<h2 id="enshrines">Enshrines into</h2>
+<div class="table-wrap"><table>
+  <tr><th>Topic</th><th>Code</th><th>Docs</th></tr>
+  <tr><td>Dependencies, SDK table, missing SDK</td><td><code>riffer-rig.gemspec</code>, <code>lib/riffer/rig/sdk.rb</code>, <code>recipes.rb</code></td><td>README Installation; <code>docs/providers/PROVIDERS.md</code></td></tr>
+  <tr><td>Selection</td><td><code>lib/riffer/rig/loader.rb</code>, <code>commands/model.rb</code></td><td>README Usage and Configuration; <code>docs/CONFIGURATION.md</code></td></tr>
+  <tr><td>Recipes, resolution, storage, <code>/auth</code></td><td><code>lib/riffer/rig/recipes.rb</code>, <code>credentials.rb</code>, <code>commands/auth.rb</code></td><td>README Authentication; <code>docs/providers/PROVIDERS.md</code> and one page per provider</td></tr>
+  <tr><td>Extension providers</td><td><code>lib/riffer/rig/registrar.rb</code></td><td><code>docs/providers/CUSTOM_PROVIDERS.md</code></td></tr>
+  <tr><td>Provider-native tools</td><td><code>lib/riffer/rig/session.rb</code></td><td><code>docs/TOOLS.md</code>, <code>docs/CONFIGURATION.md</code></td></tr>
+</table></div>
+
+<h2 id="provenance">Provenance</h2>
+<p class="provenance"><a href="https://github.com/bottrall/riffer-rig/issues/76">Decide the provider strategy and optional SDK dependencies</a>, <a href="https://github.com/bottrall/riffer-rig/issues/90">Decide per-provider onboarding recipes</a> (with its survey links to pi, OpenCode, Codex and Claude Code auth), <a href="https://github.com/bottrall/riffer-rig/issues/79">Decide the core-versus-extension principle</a> (recipe table and native tools are core), <a href="https://github.com/bottrall/riffer-rig/issues/80">Decide the runtime/CLI separation and the role of ACP</a> (per-session credentials).</p>
+
+</body>
+</html>

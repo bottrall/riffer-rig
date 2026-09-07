@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docs · riffer-rig reboot</title>
+<link rel="stylesheet" href="plan.css">
+</head>
+<body>
+
+<nav class="plan">
+  <a href="index.html">Index</a>
+  <a href="session.html">Session</a>
+  <a href="extensions.html">Extensions</a>
+  <a href="bundled.html">Bundled</a>
+  <a href="loader.html">Loader</a>
+  <a href="providers.html">Providers</a>
+  <a href="hosts.html">Hosts</a>
+  <a href="docs.html" aria-current="page">Docs</a>
+</nav>
+
+<h1>Docs</h1>
+<p class="lede">Where every user-facing line of this plan ends up: riffer's approach, in full.</p>
+
+<h2 id="scope">Scope</h2>
+<p>The README, the <code>docs/</code> guides, a port of riffer's <code>docs-site/</code> generator, the gh-pages deploy and the custom domain. This unit is consumed by every build PR (each moves its user-facing text here) and finished by one docs PR that creates the site. It depends on every other unit being described; it changes no code.</p>
+
+<h2 id="decisions">Decisions</h2>
+
+<section class="topic" id="targets">
+<h3>Enshrining targets</h3>
+<div class="table-wrap"><table>
+  <tr><th>Target</th><th>What goes there</th></tr>
+  <tr><td>Code</td><td>Everything that is behaviour. Where a permanent doc needs the base prompt's text, it permalinks the source.</td></tr>
+  <tr><td><code>README.md</code></td><td>User manual: thesis intro, install, auth, usage, a Documentation section listing one guide per topic, Development, Releasing.</td></tr>
+  <tr><td><code>docs/*.md</code></td><td>Guides in <code>UPPER_CASE.md</code>, one per topic, a <code>providers/</code> subdirectory; user, author and embedder material.</td></tr>
+  <tr><td><code>docs-site/</code></td><td>A port of riffer's static generator with <code>manifest.yml</code> listing every guide in reading order.</td></tr>
+  <tr><td>Site</td><td>GitHub Pages project site pushed to <code>gh-pages</code> from the publish workflow after a release; custom domain <code>riffer.bottrall.dev</code>.</td></tr>
+</table></div>
+</section>
+
+<section class="topic" id="readme">
+<h3>README shape</h3>
+<ol>
+  <li><strong>Title and tagline.</strong> "riffer, in your terminal and in your process." One paragraph from the thesis: a general-purpose agent for Ruby developers who want to own their harness; runs in the terminal and inside any Ruby process; extend it in Ruby; ships the coding toolkit as its default bundle. The current "dead-simple terminal coding agent" line is replaced here, not before.</li>
+  <li><strong>Requirements.</strong> Ruby &gt;= 4.0.</li>
+  <li><strong>Installation.</strong> <code>gem install riffer-rig</code> gives the <code>riffer</code> executable; which providers work out of the box and which SDKs are installed on demand.</li>
+  <li><strong>Usage.</strong> <code>riffer</code>, first-run onboarding, <code>riffer -p</code>, <code>riffer acp</code>, the shared flags, the runtime and terminal commands.</li>
+  <li><strong>Authentication.</strong> Env vars, <code>auth.json</code>, <code>/auth</code>, a pointer to the per-provider pages.</li>
+  <li><strong>Configuration.</strong> The two settings scopes, every core key with one line each, <code>RIFFER_MODEL</code>, AGENTS.md, skills, MCP servers.</li>
+  <li><strong>Extending.</strong> A ten-line <code>rig.rb</code> example and a pointer to the guide.</li>
+  <li><strong>Embedding.</strong> The three-line <code>Loader.session(...).ask(...)</code> example and a pointer to the guide.</li>
+  <li><strong>Documentation.</strong> The guide list below, each linked to <code>https://riffer.bottrall.dev/guides/&lt;slug&gt;/</code> with its one-line description, plus "the guide sources are in docs/" and how to preview the site locally.</li>
+  <li><strong>Development.</strong> The <code>bin/</code> table, unchanged in form, gaining <code>bin/docs</code> and <code>bin/plans</code> rows.</li>
+  <li><strong>Releasing.</strong> As today.</li>
+  <li><strong>Contributing, License, Maintainer.</strong> As today.</li>
+</ol>
+</section>
+
+<section class="topic" id="guides">
+<h3>Guides</h3>
+<p>One file per topic under <code>docs/</code>, <code>UPPER_CASE.md</code>, first line an H1 that becomes the page title. Reading order is the manifest's. This is the full list the plan's Enshrines-into tables point at; a build PR that creates a guide creates the manifest entry with it.</p>
+<div class="table-wrap"><table>
+  <tr><th>Group</th><th>File</th><th>Slug</th><th>Description</th></tr>
+  <tr><td rowspan="2">Start here</td><td><code>OVERVIEW.md</code></td><td><code>overview</code></td><td>What riffer-rig is, the four tiers, the runtime and host layers</td></tr>
+  <tr><td><code>GETTING_STARTED.md</code></td><td><code>getting-started</code></td><td>Install, pick a model, first session</td></tr>
+  <tr><td rowspan="8">Using the terminal</td><td><code>CONFIGURATION.md</code></td><td><code>configuration</code></td><td>Settings scopes and every core key</td></tr>
+  <tr><td><code>INSTRUCTIONS.md</code></td><td><code>instructions</code></td><td>How the system message is built; AGENTS.md</td></tr>
+  <tr><td><code>TOOLS.md</code></td><td><code>tools</code></td><td>The bundled toolkit and provider-native tools</td></tr>
+  <tr><td><code>SKILLS.md</code></td><td><code>skills</code></td><td>Agent Skills directories and activation</td></tr>
+  <tr><td><code>MCP.md</code></td><td><code>mcp</code></td><td>Declaring MCP servers</td></tr>
+  <tr><td><code>SESSIONS.md</code></td><td><code>sessions</code></td><td>Saving, resuming, the picker, the JSONL store</td></tr>
+  <tr><td><code>RELOADING.md</code></td><td><code>reloading</code></td><td>What reloads, when, and the known limits</td></tr>
+  <tr><td><code>HEADLESS.md</code></td><td><code>headless</code></td><td><code>riffer -p</code>, NDJSON, exit codes</td></tr>
+  <tr><td rowspan="4">Extending and embedding</td><td><code>EXTENSIONS.md</code></td><td><code>extensions</code></td><td>rig.rb, the registrar, the eight seams, commands, handlers, gems</td></tr>
+  <tr><td><code>EMBEDDING.md</code></td><td><code>embedding</code></td><td>Session and Loader from Ruby; snapshots; rebuild</td></tr>
+  <tr><td><code>HOSTS.md</code></td><td><code>hosts</code></td><td>The Host interface and writing a host</td></tr>
+  <tr><td><code>ACP.md</code></td><td><code>acp</code></td><td>Registering <code>riffer acp</code> with an editor; what the server supports</td></tr>
+  <tr><td rowspan="8">Providers</td><td><code>providers/PROVIDERS.md</code></td><td><code>providers/overview</code></td><td>Model strings, precedence, credentials, <code>/auth</code></td></tr>
+  <tr><td><code>providers/ANTHROPIC.md</code></td><td><code>providers/anthropic</code></td><td>Key, SDK install</td></tr>
+  <tr><td><code>providers/OPENAI.md</code></td><td><code>providers/openai</code></td><td>Key, base URL</td></tr>
+  <tr><td><code>providers/GEMINI.md</code></td><td><code>providers/gemini</code></td><td>Key</td></tr>
+  <tr><td><code>providers/OPENROUTER.md</code></td><td><code>providers/openrouter</code></td><td>Key</td></tr>
+  <tr><td><code>providers/AZURE_OPENAI.md</code></td><td><code>providers/azure-openai</code></td><td>Endpoint and key</td></tr>
+  <tr><td><code>providers/AMAZON_BEDROCK.md</code></td><td><code>providers/amazon-bedrock</code></td><td>Region, credential chain or bearer token, SDK install</td></tr>
+  <tr><td><code>providers/CUSTOM_PROVIDERS.md</code></td><td><code>providers/custom</code></td><td>The provider seam and <code>recipe:</code></td></tr>
+</table></div>
+</section>
+
+<section class="topic" id="generator">
+<h3>The docs-site generator</h3>
+<ul>
+  <li>Port riffer's <code>docs-site/</code> (in the <code>janeapp/riffer</code> repo) as it stands: <code>build.rb</code>, <code>check.rb</code>, <code>layout.html.erb</code>, <code>index.html.erb</code>, <code>site.css</code>, <code>landing.css</code>, <code>copy.js</code>, <code>favicon.svg</code>, <code>404.html</code>, <code>manifest.yml</code>. Names, wording and the landing copy change to riffer-rig; the build logic does not. The build fails on any mismatch between <code>manifest.yml</code> and <code>docs/**/*.md</code>; <code>check.rb</code> validates every internal link and anchor.</li>
+  <li><code>manifest.yml</code> holds the four groups above in that order, with <code>source</code>, <code>slug</code>, <code>description</code> per page and <code>featured: true</code> on Getting Started.</li>
+  <li>Dev dependencies added to the Gemfile, as riffer has them: <code>kramdown</code>, <code>kramdown-parser-gfm</code>, <code>rouge</code>. Plus <code>rdoc</code> for the API reference at <code>/api/</code>, built by an <code>RDoc::Task</code> over README, CHANGELOG, LICENSE and <code>lib/**/*.rb</code> into <code>_site/api</code>.</li>
+  <li>Rake tasks, defined once: <code>docs:site</code> (build into <code>_site/</code>), <code>docs:check</code> (build then check), <code>docs:serve</code> (build then <code>ruby -run -e httpd _site -p 8000</code>), <code>rdoc</code>, and <code>docs</code> = <code>docs:site</code> + <code>rdoc</code>. <code>bin/docs</code> delegates to <code>rake docs</code> and forwards arguments; the README Development table gains its row. <code>_site/</code> is git-ignored.</li>
+  <li>A <code>CNAME</code> file containing <code>riffer.bottrall.dev</code> is added to the asset list so it lands in <code>_site/</code> on every build.</li>
+</ul>
+</section>
+
+<section class="topic" id="deploy">
+<h3>Deploy</h3>
+<ul>
+  <li>A <code>docs</code> job in <code>.github/workflows/publish.yml</code>, <code>needs: release-please</code> and gated on <code>release_created == 'true'</code> like the publish job (the same trigger riffer uses): checkout, <code>ruby/setup-ruby</code> with <code>bundler-cache</code>, <code>bin/docs</code>, then <code>JamesIves/github-pages-deploy-action</code> pinned by commit SHA with <code>branch: gh-pages</code> and <code>folder: ./_site</code>; permissions <code>contents: write</code>.</li>
+  <li>The site therefore updates only on a release, so it always documents a published version. The version string in the layout comes from <code>Riffer::Rig::VERSION</code>.</li>
+  <li>Repository settings (human, once): Pages source = <code>gh-pages</code> branch, root; custom domain <code>riffer.bottrall.dev</code>; enforce HTTPS. DNS (human, once): a CNAME record for <code>riffer</code> under <code>bottrall.dev</code> pointing at <code>bottrall.github.io</code>. Until the domain resolves, the site is reachable at the default project URL.</li>
+</ul>
+</section>
+
+<section class="topic" id="when">
+<h3>When the docs are written</h3>
+<ul>
+  <li>Each build PR moves its topic's user-facing text into README or the guide its Enshrines-into row names, creating the guide file (and its manifest entry, once the generator exists) if it does not exist yet. A guide may be short for a while; it is never absent.</li>
+  <li>The docs PR itself (the last unit) ports the generator, writes <code>OVERVIEW.md</code> and <code>GETTING_STARTED.md</code>, rewrites the README top matter to the thesis, adds the workflow job and deletes this file. If it lands before every other unit, later build PRs still add to the guides as above.</li>
+  <li>Both the plan PR and every docs PR are titled <code>docs: …</code> and never release.</li>
+</ul>
+</section>
+
+<h2 id="interfaces">Interfaces</h2>
+<div class="table-wrap"><table>
+  <tr><th>Surface</th><th>Shape</th></tr>
+  <tr><td>Guide URL</td><td><code>https://riffer.bottrall.dev/guides/&lt;slug&gt;/</code>; API reference at <code>/api/</code></td></tr>
+  <tr><td>Scripts</td><td><code>bin/docs</code> → <code>rake docs</code>; <code>rake docs:serve</code> at <code>http://localhost:8000</code></td></tr>
+  <tr><td>Files</td><td><code>docs/**/*.md</code>, <code>docs-site/manifest.yml</code>, <code>docs-site/CNAME</code>, <code>_site/</code> (ignored)</td></tr>
+</table></div>
+
+<h2 id="enshrines">Enshrines into</h2>
+<div class="table-wrap"><table>
+  <tr><th>Topic</th><th>Lands in</th></tr>
+  <tr><td>README shape</td><td><code>README.md</code></td></tr>
+  <tr><td>Guides</td><td><code>docs/</code>, <code>docs-site/manifest.yml</code></td></tr>
+  <tr><td>Generator</td><td><code>docs-site/</code>, <code>Rakefile</code>, <code>bin/docs</code>, <code>Gemfile</code></td></tr>
+  <tr><td>Deploy</td><td><code>.github/workflows/publish.yml</code>, repository Pages settings, DNS</td></tr>
+</table></div>
+
+<h2 id="provenance">Provenance</h2>
+<p class="provenance"><a href="https://github.com/bottrall/riffer-rig/issues/99">Decide the spec format and home</a> (enshrining target), <a href="https://github.com/bottrall/riffer-rig/issues/84">Decide versioning, release and publishing</a> (README Releasing, docs PRs never release), <a href="https://github.com/bottrall/riffer-rig/issues/75">Decide the bin/ scripts versus rake tasks strategy</a> (<code>bin/docs</code> over <code>rake docs</code>), <a href="https://github.com/bottrall/riffer-rig/issues/78">Decide the name</a> (tagline and brand). The generator being ported is riffer's <code>docs-site/</code> and its release workflow's docs job.</p>
+
+</body>
+</html>

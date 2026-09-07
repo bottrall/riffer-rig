@@ -19,4 +19,7 @@ group :development, :test do
 
   gem 'guard'
   gem 'guard-shell'
+
+  # `ruby -run -e httpd`, behind bin/plans, needs webrick since Ruby 3.0.
+  gem 'webrick', require: false
 end

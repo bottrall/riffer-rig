@@ -53,6 +53,7 @@ Every project chore is a script in `bin/`. The Rakefile behind them is an implem
 | `bin/rbs` | Regenerate `sig/generated` from the inline annotations in `lib/` |
 | `bin/rbs-watch` | Regenerate `sig/generated` whenever `lib/` changes |
 | `bin/ci` | Run everything CI runs, serially. Use before pushing |
+| `bin/plans` | Serve the building plans in `plans/` at http://localhost:8001 |
 
 ## Releasing
 

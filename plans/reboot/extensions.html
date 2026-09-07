@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extensions · riffer-rig reboot</title>
+<link rel="stylesheet" href="plan.css">
+</head>
+<body>
+
+<nav class="plan">
+  <a href="index.html">Index</a>
+  <a href="session.html">Session</a>
+  <a href="extensions.html" aria-current="page">Extensions</a>
+  <a href="bundled.html">Bundled</a>
+  <a href="loader.html">Loader</a>
+  <a href="providers.html">Providers</a>
+  <a href="hosts.html">Hosts</a>
+  <a href="docs.html">Docs</a>
+</nav>
+
+<h1>Extensions</h1>
+<p class="lede">An extension is a named registrar block. Requiring a file records it; <code>Session.new</code> runs it against a fresh per-Session registrar.</p>
+
+<h2 id="scope">Scope</h2>
+<p><code>Riffer::Rig.extension</code>, the extension object it returns, the per-Session <code>Registrar</code> and its eight seams, the command context, the handler and event vocabulary, the <code>Host</code> interface, error isolation, API versioning and the gem convention. Files: <code>lib/riffer/rig/extension.rb</code>, <code>lib/riffer/rig/registrar.rb</code>, <code>lib/riffer/rig/command.rb</code> (the <code>ctx</code>), <code>lib/riffer/rig/host.rb</code>.</p>
+<p><strong>Depends on:</strong> <a href="session.html">Session</a>. <strong>Depended on by:</strong> Bundled (built on this API), Loader (runs discovery and reload through it), Hosts (implement the Host interface).</p>
+
+<h2 id="decisions">Decisions</h2>
+
+<section class="topic" id="unit">
+<h3>The unit: a named registrar block</h3>
+
+<pre><code>Riffer::Rig.extension("git", requires: "&gt;= 0.3") do |rig|
+  rig.setting :depth, default: 3
+  rig.tool GitLog
+  rig.command("log", description: "Recent commits") { |ctx| ctx.say `git log -n #{ctx.settings[:depth]} --oneline` }
+  rig.command("review", description: "Review the diff") { |ctx| ctx.prompt "Review this diff:\n#{`git diff`}" }
+  rig.prompt(:git_status) { |ctx| "Branch: #{`git branch --show-current`}" }
+  rig.on(:before_tool_call) { |e| next :block, "no force pushes" if e.tool == "bash" &amp;&amp; e.args[:command] =~ /push --force/ }
+  rig.provider(:jane) { JaneProvider }
+  rig.mcp "docs", command: "docs-mcp", args: ["--stdio"]
+end</code></pre>
+
+<figure>
+<svg viewBox="0 0 760 170" role="img" aria-label="Flow: require records the block in a process-level registry keyed by name; Session.new runs each block against its own registrar">
+  <rect x="20" y="30" width="200" height="50" rx="6" class="box"/><text x="120" y="51" text-anchor="middle" class="lbl">require / load</text><text x="120" y="68" text-anchor="middle" class="sub mono">rig.rb, gem, require_relative</text>
+  <path d="M220 55 H280" class="edge" marker-end="url(#a)"/>
+  <rect x="280" y="30" width="200" height="50" rx="6" class="box core"/><text x="380" y="51" text-anchor="middle" class="lbl">process registry</text><text x="380" y="68" text-anchor="middle" class="sub">name → block; re-record replaces</text>
+  <path d="M480 45 H540 V45" class="edge"/><path d="M480 65 H540" class="edge"/>
+  <rect x="540" y="20" width="200" height="34" rx="6" class="box"/><text x="640" y="41" text-anchor="middle" class="lbl">Session A registrar</text>
+  <rect x="540" y="62" width="200" height="34" rx="6" class="box"/><text x="640" y="83" text-anchor="middle" class="lbl">Session B registrar</text>
+  <text x="380" y="125" text-anchor="middle" class="sub">Session.new(extensions: [...]) runs each block, in order, against a fresh registrar</text>
+  <text x="380" y="145" text-anchor="middle" class="sub">Two Sessions never share tools, commands or handlers. Per-Session state lives in the block's locals.</text>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs>
+</svg>
+</figure>
+
+<ul>
+  <li><code>Riffer::Rig.extension(name, requires: nil) { |rig| }</code> records the block in a process-level registry keyed by name and returns the extension object. Re-executing the same file (a reload) replaces the block rather than appending a duplicate.</li>
+  <li><code>Session.new(extensions: [...])</code> runs each block in order against a fresh registrar for that Session. Per-Session state lives in the block's locals; per-process state lives outside the block. Same process, no sandbox.</li>
+  <li>An extension object is what the list holds: name, requirement, block. <code>Riffer::Rig.bundled(:read)</code> returns the bundled ones by the same type, so an embedder composes <code>extensions: [Riffer::Rig.bundled(:read), Riffer::Rig.bundled(:bash), MyExt]</code>.</li>
+</ul>
+</section>
+
+<section class="topic" id="seams">
+<h3>The eight seams</h3>
+<div class="table-wrap"><table>
+  <tr><th>Call</th><th>Does</th><th>Backed by</th></tr>
+  <tr><td><code>rig.tool klass</code></td><td>adds a <code>Riffer::Tool</code> to the Session; its <code>identifier</code> is its name everywhere (<code>--tools</code>, replacement, <code>Turn#tool_calls</code>)</td><td>riffer tools</td></tr>
+  <tr><td><code>rig.command name, description: { |ctx| }</code></td><td>runtime slash command, works in every host</td><td>rig <code>Command</code></td></tr>
+  <tr><td><code>rig.prompt(section) { |ctx| }</code></td><td>named system-prompt section, evaluated per turn</td><td>riffer instructions</td></tr>
+  <tr><td><code>rig.on(event) { |e| }</code></td><td>lifecycle and loop handlers</td><td>riffer <code>on_message</code>, tool runtime, guardrail phases</td></tr>
+  <tr><td><code>rig.provider(prefix, recipe: nil) { klass }</code></td><td>custom provider prefix, <strong>process-wide</strong></td><td><code>Riffer::Providers::Repository.register</code> (idempotent)</td></tr>
+  <tr><td><code>rig.mcp name, command:, args:</code></td><td>declares an MCP server for the Session (stdio shape only)</td><td>riffer <code>use_mcp</code></td></tr>
+  <tr><td><code>rig.skills backend</code></td><td>adds a skills source</td><td><code>Riffer::Skills::Backend</code></td></tr>
+  <tr><td><code>rig.setting key, default:</code></td><td>declares a namespaced settings key</td><td>rig settings</td></tr>
+</table></div>
+<p>Providers are the one process-wide seam by choice: providers are stateless and credentials are already per-Session via the client Proc. Two Sessions cannot map one prefix to different classes; accepted until a real host needs it. Providers are never unregistered on reload; re-registration is idempotent.</p>
+</section>
+
+<section class="topic" id="commands">
+<h3>Commands</h3>
+<ul>
+  <li>The block receives <code>ctx</code> with <code>args</code> (the text after the command name), <code>session</code>, <code>host</code>, <code>settings</code> (this extension's namespace), and helpers: <code>say(text)</code> emits a <code>command_output</code> event; <code>prompt(text)</code> sends a user turn to the model, so prompt templates are commands; <code>ask</code> and <code>confirm</code> forward to the host and return its answer (the null host declines).</li>
+  <li>Synchronous, one at a time, same rule as <code>Session#prompt</code>. A command that raises is caught and reported through <code>notify</code>; the Session stays usable.</li>
+  <li>Core commands (<code>/model</code>, <code>/auth</code>, <code>/reload</code>, skill activation) are built on the same <code>Command</code> type and appear in <code>session.commands</code> alongside extension commands.</li>
+</ul>
+</section>
+
+<section class="topic" id="handlers">
+<h3>Handlers and events</h3>
+<div class="table-wrap"><table>
+  <tr><th>Event</th><th>Kind</th><th>Handler may</th></tr>
+  <tr><td><code>session_start</code>, <code>session_end</code> (<code>reason:</code> carries <code>:new</code>, <code>:restore</code>, <code>:reload</code>, <code>:close</code>)</td><td>lifecycle</td><td>acquire or release process-wide state</td></tr>
+  <tr><td><code>before_prompt</code>, <code>before_tool_call</code>, <code>before_request</code></td><td>vetoable</td><td>return a replacement payload, or <code>:block</code> with a reason (becomes a tool error for a tool call, otherwise a host <code>notify</code>)</td></tr>
+  <tr><td><code>after_tool_call</code>, <code>after_response</code>, <code>turn_end</code></td><td>observe only</td><td>nothing; return value ignored</td></tr>
+  <tr><td><code>stream</code></td><td>passthrough</td><td>see every riffer StreamEvent, unchanged</td></tr>
+</table></div>
+<ul>
+  <li>Event objects are immutable; transforms are return values, never mutations. Handlers run in load order; a vetoable handler's replacement feeds the next handler.</li>
+  <li>A raising handler counts as no veto and is reported through <code>notify</code>; the turn continues.</li>
+  <li><code>before_request</code> fires between tool results and the next LLM call, not only at turn start. It is also where the Loader's reload check runs (<a href="loader.html#reload">Loader: reload</a>).</li>
+</ul>
+</section>
+
+<section class="topic" id="prompt-sections">
+<h3>Prompt sections</h3>
+<ul>
+  <li>Named sections render after the base prompt in load order, before the environment block. A later registration of the same section name replaces the earlier one.</li>
+  <li>Sections are Procs evaluated every turn, so their content is always current without a reload. AGENTS.md and the skills listing are sections owned by their bundled extensions (<code>:agents_md</code>, <code>:skills</code>), so a user can swap either by registering the same name later without disabling the extension.</li>
+  <li>A section's text is appended as-is. A contributor that needs framing (AGENTS.md as "user-authored instructions that outrank the norms above") writes that framing itself; the base prompt names no contributor.</li>
+</ul>
+</section>
+
+<section class="topic" id="settings-seam">
+<h3>Settings seam</h3>
+<ul>
+  <li><code>rig.setting :key, default:</code> declares a key under the extension's namespace: <code>settings.json["git"]["depth"]</code>, read as <code>ctx.settings[:depth]</code>.</li>
+  <li>Project settings override home settings key by key. Core keys stay top level and an extension name cannot collide with a core key; the registrar rejects one that does.</li>
+  <li>Declared settings give a host a table to render; nothing else in core reads them.</li>
+</ul>
+</section>
+
+<section class="topic" id="host-interface">
+<h3>Host interface</h3>
+<div class="table-wrap"><table>
+  <tr><th>Method</th><th>Purpose</th><th>NullHost</th></tr>
+  <tr><td><code>ask(question, options: nil, secret: false)</code></td><td>free text or a choice from <code>options</code>; <code>secret:</code> hides input (credential prompts)</td><td>returns nil</td></tr>
+  <tr><td><code>confirm(question)</code></td><td>yes or no; used for project trust</td><td>returns false</td></tr>
+  <tr><td><code>notify(message, level:)</code></td><td>out-of-band message: extension errors, warnings, info; never enters the model's context</td><td>no-op (the Session still emits the <code>notify</code> event)</td></tr>
+  <tr><td><code>progress(label) { }</code></td><td>wraps slow work (SDK install, MCP start)</td><td>yields</td></tr>
+  <tr><td><code>capabilities</code></td><td>the Set of methods the host truly supports, from <code>:ask</code>, <code>:confirm</code>, <code>:notify</code>, <code>:progress</code></td><td>empty Set</td></tr>
+</table></div>
+<ul>
+  <li>Duck-typed: any object with these methods is a host. Session and extensions check <code>capabilities</code> before asking, so a host that declines a capability is never asked and the caller takes the "declined" path.</li>
+  <li>The terminal implements all four; headless implements only <code>notify</code> (stderr or NDJSON) and <code>progress</code> (stderr); ACP implements <code>notify</code> as a <code>session/update</code> and nothing else in the first server.</li>
+</ul>
+</section>
+
+<section class="topic" id="errors">
+<h3>Error isolation</h3>
+<ul>
+  <li>The Loader wraps each <code>require</code> and the Session wraps each registrar block. A failure records <code>{extension, error}</code> on <code>session.errors</code>, skips that extension, and the host gets one <code>notify</code>. The rest of the extensions load.</li>
+  <li>At run time a raising handler or command is caught and reported the same way and the turn continues; a raising <code>before_*</code> handler counts as no veto.</li>
+  <li>Errors go to the host only, never into the model's context.</li>
+</ul>
+</section>
+
+<section class="topic" id="versioning">
+<h3>API versioning</h3>
+<ul>
+  <li>The registrar surface is public API of riffer-rig under the release policy: 0.x minor bumps, a BREAKING CHANGES section, one minor of deprecation where feasible. No separate API number.</li>
+  <li><code>requires:</code> on an extension is a Gem::Requirement string checked against <code>Riffer::Rig::VERSION</code> when the block is recorded; a mismatch is a load error reported like any other.</li>
+</ul>
+</section>
+
+<section class="topic" id="gems">
+<h3>Gem convention and autoload</h3>
+<ul>
+  <li>Convention, not a rule: gem <code>riffer-rig-&lt;name&gt;</code>, entry file <code>lib/riffer/rig/&lt;name&gt;.rb</code> that calls <code>Riffer::Rig.extension("&lt;name&gt;")</code>. A user adds it with <code>require "riffer/rig/&lt;name&gt;"</code> in a <code>rig.rb</code>.</li>
+  <li>Optional autoload: <code>"extensions": {"autoload": true}</code> in settings (off by default) makes the Loader require <code>riffer/rig/extension</code> from every gem in the bundle via <code>Gem.find_files</code>. A gem opts in by shipping that file.</li>
+  <li>Gem-packaged extensions never hot-reload; develop as a local file required from <code>rig.rb</code>, package when it settles.</li>
+</ul>
+</section>
+
+<section class="topic" id="bundled-rules">
+<h3>Bundled items are extensions</h3>
+<ul>
+  <li><code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, <code>skills</code>, <code>agents_md</code> and <code>mcp</code> are each a named extension in the gem, built only on the seams above, loaded by the Loader before any <code>rig.rb</code>. Their content is in <a href="bundled.html">Bundled</a>.</li>
+  <li>Disable: <code>"extensions": {"disabled": ["mcp"]}</code> in settings, either scope.</li>
+  <li>Replace: register a tool or command under the same identifier from a later extension. Later wins; the override is logged through <code>notify</code> at info level.</li>
+  <li>Embedders reference them as <code>Riffer::Rig.bundled(:read)</code>; <code>Riffer::Rig.bundled</code> with no argument returns all seven in load order.</li>
+</ul>
+</section>
+
+<h2 id="interfaces">Interfaces</h2>
+<div class="table-wrap"><table>
+  <tr><th>Surface</th><th>Shape</th></tr>
+  <tr><td><code>Riffer::Rig.extension(name, requires: nil) { |rig| }</code></td><td>records and returns an <code>Extension</code> (<code>name</code>, <code>requires</code>, <code>block</code>)</td></tr>
+  <tr><td><code>Riffer::Rig.extensions</code></td><td>the process registry, name → Extension, in record order</td></tr>
+  <tr><td><code>Riffer::Rig.bundled(name = nil)</code></td><td>one bundled Extension, or all seven</td></tr>
+  <tr><td><code>Registrar</code></td><td><code>tool</code>, <code>command</code>, <code>prompt</code>, <code>on</code>, <code>provider</code>, <code>mcp</code>, <code>skills</code>, <code>setting</code>; internal readers the Session uses to build its agent</td></tr>
+  <tr><td>Command <code>ctx</code></td><td><code>args</code>, <code>session</code>, <code>host</code>, <code>settings</code>, <code>say</code>, <code>prompt</code>, <code>ask</code>, <code>confirm</code></td></tr>
+  <tr><td>Host duck</td><td><code>ask</code>, <code>confirm</code>, <code>notify</code>, <code>progress</code>, <code>capabilities</code></td></tr>
+  <tr><td>Settings keys</td><td><code>extensions.disabled</code> (array of names), <code>extensions.autoload</code> (boolean); extension keys under the extension name</td></tr>
+</table></div>
+
+<h2 id="enshrines">Enshrines into</h2>
+<div class="table-wrap"><table>
+  <tr><th>Topic</th><th>Code</th><th>Docs</th></tr>
+  <tr><td>Unit, seams, commands, handlers, prompt sections, settings seam, versioning, gems</td><td><code>lib/riffer/rig/extension.rb</code>, <code>registrar.rb</code>, <code>command.rb</code></td><td><code>docs/EXTENSIONS.md</code></td></tr>
+  <tr><td>Host interface</td><td><code>lib/riffer/rig/host.rb</code></td><td><code>docs/HOSTS.md</code></td></tr>
+  <tr><td>Error isolation</td><td><code>lib/riffer/rig/session.rb</code>, <code>loader.rb</code></td><td><code>docs/EXTENSIONS.md</code></td></tr>
+  <tr><td>Bundled rules (disable, replace)</td><td><code>lib/riffer/rig/bundled.rb</code></td><td><code>docs/TOOLS.md</code>, <code>docs/CONFIGURATION.md</code></td></tr>
+</table></div>
+
+<h2 id="provenance">Provenance</h2>
+<p class="provenance"><a href="https://github.com/bottrall/riffer-rig/issues/81">Decide the extension system design</a>; <a href="https://github.com/bottrall/riffer-rig/issues/80">Decide the runtime/CLI separation and the role of ACP</a> (Host duck, commands as runtime objects); <a href="https://github.com/bottrall/riffer-rig/issues/90">Decide per-provider onboarding recipes</a> (<code>secret:</code> on <code>ask</code>, <code>recipe:</code> on the provider seam); <a href="https://github.com/bottrall/riffer-rig/issues/88">Decide the default system prompt: identity, norms and home</a> (section ordering); <a href="https://github.com/bottrall/riffer-rig/issues/79">Decide the core-versus-extension principle</a>; the survey <a href="https://github.com/bottrall/riffer-rig/issues/72">Survey extension mechanisms and hot reload in existing agent CLIs</a>.</p>
+
+</body>
+</html>

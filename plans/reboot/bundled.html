@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bundled · riffer-rig reboot</title>
+<link rel="stylesheet" href="plan.css">
+</head>
+<body>
+
+<nav class="plan">
+  <a href="index.html">Index</a>
+  <a href="session.html">Session</a>
+  <a href="extensions.html">Extensions</a>
+  <a href="bundled.html" aria-current="page">Bundled</a>
+  <a href="loader.html">Loader</a>
+  <a href="providers.html">Providers</a>
+  <a href="hosts.html">Hosts</a>
+  <a href="docs.html">Docs</a>
+</nav>
+
+<h1>Bundled</h1>
+<p class="lede">The coding toolkit and the three shared conventions, each an ordinary extension the user can disable or replace.</p>
+
+<h2 id="scope">Scope</h2>
+<p>Seven named extensions shipped in the gem: <code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, <code>agents_md</code>, <code>skills</code>, <code>mcp</code>. Each is built only on the registrar seams; nothing here reaches into the Session. Files: <code>lib/riffer/rig/bundled.rb</code> (the list and <code>Riffer::Rig.bundled</code>), <code>lib/riffer/rig/bundled/&lt;name&gt;.rb</code> (one file per extension), <code>lib/riffer/rig/tools/{read,write,edit,bash}.rb</code> (the tool classes, kept where they are).</p>
+<p><strong>Depends on:</strong> <a href="extensions.html">Extensions</a>. <strong>Depended on by:</strong> Loader (loads them first), Hosts (the default bundle every shipped host gets).</p>
+
+<h2 id="decisions">Decisions</h2>
+
+<section class="topic" id="why">
+<h3>What is bundled and why</h3>
+<ul>
+  <li>Step 3 of the core-versus-extension rule: the coding toolkit, plus any convention at least two of pi, OpenCode, Claude Code and Codex already share. Today that is AGENTS.md, Agent Skills and an MCP client. Anything else (hooks, git context, models.dev catalog, web search on a provider without it) is third-party.</li>
+  <li>Bundled items are the default because a shell and file access are the most efficient way to get almost any task done; the prompt still claims no coding identity. A host can pass a different set.</li>
+  <li>The Loader loads all seven before any <code>rig.rb</code>, so user extensions can replace them. The order is <code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, <code>agents_md</code>, <code>skills</code>, <code>mcp</code>.</li>
+  <li>Provider-native tools (web search, and later code execution or file search) are <em>not</em> bundled; they are core, off by default, and switched on in settings (<a href="providers.html#native-tools">Providers: provider-native tools</a>).</li>
+</ul>
+</section>
+
+<section class="topic" id="toolkit">
+<h3>read, write, edit, bash</h3>
+<p>The four tools keep their current behaviour, parameters and identifiers. Each is registered by its own bundled extension (<code>Riffer::Rig.extension("read") { |rig| rig.tool Riffer::Rig::Tools::Read }</code>) so it can be disabled or replaced one at a time. Each description gains one sentence of usage guidance, which is where the coding guidance from the old system prompt now lives:</p>
+<div class="table-wrap"><table>
+  <tr><th>Tool</th><th>Behaviour kept</th><th>Guidance sentence added to the description</th></tr>
+  <tr><td><code>read</code></td><td>returns a file with line numbers; <code>offset</code>/<code>limit</code> slice large files; missing file is a tool error</td><td>"Read a file before editing it, and read rather than guess what a file contains."</td></tr>
+  <tr><td><code>write</code></td><td>creates or overwrites a file, making parent directories</td><td>"Use this for new files or full rewrites; prefer edit for changes to an existing file."</td></tr>
+  <tr><td><code>edit</code></td><td>replaces an exact string, unique by default, <code>replace_all</code> to replace every occurrence; ambiguous or missing match is a tool error</td><td>"Prefer this over write for existing files; pass enough surrounding text to make old_string unique."</td></tr>
+  <tr><td><code>bash</code></td><td>runs a command in the cwd in its own process group, combined stdout/stderr, exit status, per-call timeout, output truncated at 30,000 bytes</td><td>"Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers."</td></tr>
+</table></div>
+<ul>
+  <li>Tools never raise (riffer 0.43 contract); failures are tool errors the model sees.</li>
+  <li><code>bash</code> reads the Session's cancel flag and kills its process group when set, instead of waiting for the message boundary.</li>
+  <li>Tools resolve relative paths against the Session's <code>cwd</code>, not <code>Dir.pwd</code>, so two Sessions in one process can work in different directories.</li>
+  <li>A tool's name on <code>--tools</code> and <code>tools:</code> is its riffer <code>identifier</code>: <code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, and whatever identifier an extension tool declares.</li>
+</ul>
+</section>
+
+<section class="topic" id="agents-md">
+<h3>AGENTS.md (<code>agents_md</code>)</h3>
+<ul>
+  <li>Registers one prompt section, <code>:agents_md</code>. Every turn it reads <code>~/.riffer/AGENTS.md</code> and <code>&lt;cwd&gt;/AGENTS.md</code> (whichever exist) and renders them framed as user-authored instructions that outrank the base norms, one block per file with its path, in that order. The current implementation's <code>&lt;project_instructions path="…"&gt;</code> wrapping is the seed; the framing sentence is new.</li>
+  <li>Because the section is a Proc evaluated per turn, an edited AGENTS.md takes effect on the next request with no reload.</li>
+  <li>Relative paths mentioned inside an AGENTS.md are the model's business; the extension does not resolve them.</li>
+  <li>Off via <code>"extensions": {"disabled": ["agents_md"]}</code> or the strip keyword <code>agents_md: false</code> (<code>--no-agents-md</code>).</li>
+</ul>
+</section>
+
+<section class="topic" id="skills">
+<h3>Agent Skills (<code>skills</code>)</h3>
+<ul>
+  <li>Registers a <code>Riffer::Skills::FilesystemBackend</code> over <code>~/.riffer/skills</code> and <code>&lt;cwd&gt;/.skills</code> through the skills seam, and one runtime command per discovered skill for activation. The command form today is <code>/skill:&lt;name&gt; [args]</code>; the reboot keeps it, and it is a runtime command so it works over ACP and headless too.</li>
+  <li>Activation reads the skill body through riffer's <code>Skills::Context#read</code>, sends it to the model as a user turn (<code>ctx.prompt</code>) wrapped as a skill, and emits <code>skill_activated</code>; the Loader's store records the name so a resumed Session re-activates by name.</li>
+  <li>The catalog the model sees is riffer's own second system message and is not touched. The <code>:skills</code> prompt section is reserved for anything rig adds about skills and is empty in v1, so a user can register their own <code>:skills</code> section without disabling the extension.</li>
+  <li>Off via <code>"extensions": {"disabled": ["skills"]}</code> or <code>skills: false</code> (<code>--no-skills</code>).</li>
+</ul>
+</section>
+
+<section class="topic" id="mcp">
+<h3>MCP client (<code>mcp</code>)</h3>
+<ul>
+  <li>Registers, through the <code>rig.mcp</code> seam, every server declared under the core settings key <code>"mcp": {"servers": {"&lt;name&gt;": {"command": "…", "args": […]}}}</code>, home then project, project overriding by name. Stdio servers only; that is the shape the seam takes and the shape the ACP <code>mcpServers</code> parameter maps to.</li>
+  <li>Extensions declare servers of their own with the same seam; this extension is only the settings-driven convention.</li>
+  <li>Server tools appear to the model with riffer's MCP tool naming; they are not on the four-tool identifier list and are not filtered by <code>--tools</code> unless named.</li>
+  <li>On reload, a server whose name, command and args are unchanged keeps its connection; others restart. <code>Session#close</code> stops them all.</li>
+  <li>Off via <code>"extensions": {"disabled": ["mcp"]}</code>.</li>
+</ul>
+</section>
+
+<section class="topic" id="disable-replace">
+<h3>Disable and replace</h3>
+<ul>
+  <li><strong>Disable</strong> with <code>"extensions": {"disabled": [...]}</code> in either settings scope; the lists merge. A disabled bundled extension is simply not passed to <code>Session.new</code>.</li>
+  <li><strong>Replace</strong> by registering under the same identifier from a later extension: a tool with <code>identifier 'bash'</code>, a command named <code>model</code>, a prompt section <code>:agents_md</code>. Later wins; the override is logged at info level through <code>notify</code>. Nothing is deregistered, so the original is still reachable as <code>Riffer::Rig.bundled(:bash)</code>.</li>
+  <li>The strip keywords (<code>extensions: false</code>, <code>skills: false</code>, <code>agents_md: false</code>, <code>tools: [...]</code>) are Loader concerns and are listed under <a href="loader.html#interfaces">Loader: interfaces</a>. <code>extensions: false</code> strips <code>rig.rb</code> extensions only; the bundle stays.</li>
+</ul>
+</section>
+
+<h2 id="interfaces">Interfaces</h2>
+<div class="table-wrap"><table>
+  <tr><th>Surface</th><th>Shape</th></tr>
+  <tr><td><code>Riffer::Rig.bundled(:read | :write | :edit | :bash | :agents_md | :skills | :mcp)</code></td><td>the Extension object</td></tr>
+  <tr><td>Tool identifiers</td><td><code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code></td></tr>
+  <tr><td>Prompt sections</td><td><code>:agents_md</code>, <code>:skills</code></td></tr>
+  <tr><td>Commands</td><td><code>/skill:&lt;name&gt;</code> per discovered skill</td></tr>
+  <tr><td>Settings keys</td><td><code>mcp.servers</code>; <code>extensions.disabled</code> (owned by Extensions)</td></tr>
+  <tr><td>Files read</td><td><code>~/.riffer/AGENTS.md</code>, <code>&lt;cwd&gt;/AGENTS.md</code>, <code>~/.riffer/skills/</code>, <code>&lt;cwd&gt;/.skills/</code></td></tr>
+</table></div>
+
+<h2 id="enshrines">Enshrines into</h2>
+<div class="table-wrap"><table>
+  <tr><th>Topic</th><th>Code</th><th>Docs</th></tr>
+  <tr><td>Toolkit</td><td><code>lib/riffer/rig/tools/*.rb</code>, <code>lib/riffer/rig/bundled/{read,write,edit,bash}.rb</code></td><td><code>docs/TOOLS.md</code></td></tr>
+  <tr><td>AGENTS.md</td><td><code>lib/riffer/rig/bundled/agents_md.rb</code></td><td><code>docs/INSTRUCTIONS.md</code>; README Configuration</td></tr>
+  <tr><td>Skills</td><td><code>lib/riffer/rig/bundled/skills.rb</code></td><td><code>docs/SKILLS.md</code></td></tr>
+  <tr><td>MCP</td><td><code>lib/riffer/rig/bundled/mcp.rb</code></td><td><code>docs/MCP.md</code></td></tr>
+  <tr><td>Disable and replace</td><td><code>lib/riffer/rig/bundled.rb</code></td><td><code>docs/CONFIGURATION.md</code>, <code>docs/EXTENSIONS.md</code></td></tr>
+</table></div>
+
+<h2 id="provenance">Provenance</h2>
+<p class="provenance"><a href="https://github.com/bottrall/riffer-rig/issues/79">Decide the core-versus-extension principle</a> (the bundled tier), <a href="https://github.com/bottrall/riffer-rig/issues/81">Decide the extension system design</a> (bundled items as extensions, disable and replace), <a href="https://github.com/bottrall/riffer-rig/issues/88">Decide the default system prompt: identity, norms and home</a> (guidance into tool descriptions, AGENTS.md framing), <a href="https://github.com/bottrall/riffer-rig/issues/83">Decide hot reloading scope and mechanism</a> (per-turn sections, MCP connection rule), <a href="https://github.com/bottrall/riffer-rig/issues/82">Decide programmatic and headless use</a> (tool names on <code>--tools</code>), <a href="https://github.com/bottrall/riffer-rig/issues/94">Decide session persistence and history</a> (skill activation recorded), <a href="https://github.com/bottrall/riffer-rig/issues/80">Decide the runtime/CLI separation and the role of ACP</a> (bash reads the cancel flag).</p>
+
+</body>
+</html>
