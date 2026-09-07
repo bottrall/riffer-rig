@@ -52,6 +52,11 @@ namespace :steep do
   end
 end
 
+desc 'Serve the building plans in plans/ at http://localhost:8001'
+task :plans do
+  ruby '-run -e httpd plans -p 8001'
+end
+
 desc 'Check RBS signatures are current, then type-check'
 task typecheck: %w[rbs:check steep:check]
 

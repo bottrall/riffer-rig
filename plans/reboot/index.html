@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>riffer-rig reboot: building plan</title>
+<link rel="stylesheet" href="plan.css">
+</head>
+<body>
+
+<nav class="plan">
+  <a href="index.html" aria-current="page">Index</a>
+  <a href="session.html">Session</a>
+  <a href="extensions.html">Extensions</a>
+  <a href="bundled.html">Bundled</a>
+  <a href="loader.html">Loader</a>
+  <a href="providers.html">Providers</a>
+  <a href="hosts.html">Hosts</a>
+  <a href="docs.html">Docs</a>
+</nav>
+
+<h1>riffer-rig reboot: building plan</h1>
+<p class="lede">Everything decided for the post-hiatus reboot, regrouped so that whoever builds a unit reads one file. Temporary: each build PR deletes what it enshrines, and this directory is gone when the reboot is built and documented.</p>
+
+<h2 id="thesis">Thesis</h2>
+
+<p><strong>A general-purpose agent for Ruby developers who want to own their harness.</strong> It runs as a terminal agent and, because the runtime is separate from the terminal, it also runs inside any Ruby process: a Rails app, a script, a job. You extend it in Ruby: tools, commands, providers and hooks are ordinary Ruby classes on riffer's primitives, and the same objects work whether the host is the terminal or your app. It ships with a coding toolkit (read, write, edit, bash) as the default bundle because a shell and file access are the most efficient way to get almost any task done, but the prompt gives it no coding identity. Built and maintained by riffer's lead maintainer as a personal MIT project, so the framework grows whatever the agent needs. It does not compete on provider breadth, on polish with Claude Code, as a hosted product, or for non-Ruby developers.</p>
+
+<h3>Primary audience</h3>
+<p>Ruby developers who want to own their harness. They would rather extend a small agent in the language they already write than accept Claude Code's or Codex's workflows. Every unit below asks: does this serve them?</p>
+
+<h3>The two claims over pi, OpenCode, Claude Code and Codex</h3>
+<ol>
+  <li><strong>Runs in your Ruby process.</strong> None of the four can be embedded from Ruby; all give Ruby a subprocess with JSONL, HTTP or RPC.</li>
+  <li><strong>Extend it in Ruby.</strong> pi offers in-process code extensions in TypeScript; nobody offers them in Ruby.</li>
+</ol>
+<p>Riffer's toolkit (evals, guardrails, tracing, MCP client) and provider choice are true but are not the pitch.</p>
+
+<h3>Two pillars, one boundary</h3>
+<p>Extension-in-Ruby and in-process embedding are co-equal. They do not conflict as long as the runtime/terminal boundary holds. Three seams keep that boundary honest, and each has a home in this plan:</p>
+<ul>
+  <li>extensions that touch the UI go through a host interface the terminal implements and an embedding host implements differently or ignores (<a href="extensions.html#host-interface">Extensions: Host interface</a>);</li>
+  <li>extension discovery (scanning config and project directories) lives in the Loader; the runtime only accepts registered objects (<a href="loader.html#discovery">Loader: discovery</a>);</li>
+  <li>global state (riffer registries, config singletons) allows several isolated agents in one process (<a href="session.html#credentials">Session: per-session credentials</a>).</li>
+</ul>
+<p>Discipline: the runtime assumes no TTY, and no further embedding accommodation is made until a real host exists. No embedding host is planned yet; the first one will be whatever real Ruby app needs it.</p>
+
+<h3>Scope</h3>
+<div class="table-wrap"><table>
+  <tr><th>Decision</th><th>Answer</th></tr>
+  <tr><td>Kind of agent</td><td>General purpose, not a "coding agent"</td></tr>
+  <tr><td>Default tools</td><td>Coding toolkit (read, write, edit, bash); a host can pass a different set</td></tr>
+  <tr><td>Prompt identity</td><td>No coding identity; operating norms stated as task-neutral rules</td></tr>
+  <tr><td>Ownership</td><td>Personal project of riffer's lead maintainer, MIT</td></tr>
+  <tr><td>Branding</td><td>Stays in the riffer family (see Names)</td></tr>
+</table></div>
+
+<h3>Anti-goals</h3>
+<ul>
+  <li>Not competing on provider breadth.</li>
+  <li>Not competing on polish with Claude Code: no desktop app, IDE plugin or subscription login.</li>
+  <li>Not a hosted product or business.</li>
+  <li>Not serving non-Ruby developers; they get ACP or a subprocess.</li>
+  <li>No permission model for tool execution: the tool trusts the model.</li>
+</ul>
+
+<h2 id="tiers">The core-versus-extension rule</h2>
+
+<p>Everything in the project is one of four things. Ask in order; the first "yes" wins.</p>
+<ol>
+  <li><strong>Core</strong>: is it something an extension cannot do, <em>or</em> something every host needs in exactly the same form? Then it is core.</li>
+  <li><strong>Host</strong>: is it about how one front-end drives the runtime? Then it belongs to that host. The terminal is one host; the headless printer, the ACP adapter and a Rails app are others.</li>
+  <li><strong>Bundled</strong>: is it the coding toolkit (read, write, edit, bash), or a convention at least two of pi, OpenCode, Claude Code and Codex already share (same files read or same wire format)? Then it ships in the gem, is built only on the extension API, and the user can disable or replace it.</li>
+  <li><strong>Third-party</strong>: everything else: ordinary Ruby extensions people write and publish themselves.</li>
+</ol>
+
+<div class="table-wrap"><table>
+  <tr><th>Tier</th><th>Contents</th></tr>
+  <tr><td>Core</td><td>agent loop (riffer); registration seams for tools, commands, providers, prompt contributions and events; extension loader; host interface; settings mechanism and precedence; credentials store and recipe table; session save/resume; token tally and pricing; provider-native tools (off by default)</td></tr>
+  <tr><td>Host</td><td>terminal REPL and UI; headless printer; ACP adapter; extension-directory discovery; provider onboarding prompts</td></tr>
+  <tr><td>Bundled</td><td>read/write/edit/bash; Agent Skills; AGENTS.md; MCP client</td></tr>
+  <tr><td>Third-party</td><td>hooks, models.dev catalog, MCP server, git context, SQLite session store, any tool beyond the four</td></tr>
+</table></div>
+
+<ul>
+  <li><strong>Provider-native tools are core and off by default.</strong> Web search today, code execution or file search later, arrive through riffer's provider seam and are switched on in settings so a provider change never silently changes what the agent can do.</li>
+  <li><strong>Standards never touch core.</strong> A new convention only asks "is the extension API rich enough to express this?" If not, that is a seam to add. The Agent Client Protocol is not a bundled item; it is a second host.</li>
+  <li><strong>Core lives in riffer-rig first.</strong> Extract to riffer only when a second riffer agent needs the same thing. During the reboot riffer is not changed at all; in-gem workarounds are marked in code as upstream candidates.</li>
+</ul>
+
+<h2 id="names">Names</h2>
+
+<p>The name is <strong>riffer-rig</strong>. A player's rig is the whole setup they own and tweak: instrument, pedals, amp. It is the music word for "harness", so it restates the thesis without a jargon word, and it says nothing about coding or terminals, so it survives the runtime/CLI split. The rename has been applied; these are the names every unit uses.</p>
+
+<div class="table-wrap"><table>
+  <tr><th>Thing</th><th>Name</th></tr>
+  <tr><td>Brand</td><td>riffer family. The pitch is "riffer, in your terminal and in your process".</td></tr>
+  <tr><td>Gem</td><td><code>riffer-rig</code></td></tr>
+  <tr><td>Executable</td><td><code>riffer</code> (bare REPL), <code>riffer -p</code> (headless), <code>riffer acp</code> (the only subcommand)</td></tr>
+  <tr><td>Namespace</td><td><code>Riffer::Rig</code>, loaded by <code>Zeitwerk::Loader.for_gem_extension(Riffer)</code> from <code>lib/riffer/rig/</code></td></tr>
+  <tr><td>Config dir</td><td><code>~/.riffer/</code>: <code>settings.json</code>, <code>auth.json</code>, <code>trust.json</code>, <code>rig.rb</code>, <code>AGENTS.md</code>, <code>skills/</code>, <code>sessions/</code></td></tr>
+  <tr><td>Project dir</td><td><code>.riffer/</code>: <code>settings.json</code>, <code>rig.rb</code>; plus <code>AGENTS.md</code> and <code>.skills/</code> at the project root</td></tr>
+  <tr><td>Env vars</td><td><code>RIFFER_*</code>, e.g. <code>RIFFER_MODEL</code></td></tr>
+  <tr><td>Repo</td><td><code>bottrall/riffer-rig</code>; the ACP wire layer is <code>bottrall/acp-sdk</code>, gem <code>acp-sdk</code>, namespace <code>ACP</code></td></tr>
+  <tr><td>Default agent name</td><td><code>"riffer"</code>, the value the base prompt interpolates; hosts and embedders may rename it</td></tr>
+</table></div>
+
+<h2 id="applied">Already in place</h2>
+
+<p>Three decisions were applied before this plan was written and get no unit file. They constrain every build PR:</p>
+<ul>
+  <li><strong>Release policy.</strong> SemVer in 0.x; release-please over conventional-commit PR titles (linted in CI); <code>feat</code> and <code>feat!</code> bump minor, <code>fix</code> bumps patch, <code>chore</code>/<code>docs</code>/<code>ci</code>/<code>refactor</code>/<code>test</code> never release; RubyGems Trusted Publishing from <code>publish.yml</code>; riffer pinned <code>~> 0.45.0</code>; Ruby &gt;= 4.0. Every break is a <code>feat!</code> with a BREAKING CHANGES entry and, where feasible, one minor of deprecation. See README "Releasing".</li>
+  <li><strong>Rename.</strong> The tree is already <code>lib/riffer/rig/</code>; <code>riffer-rig 0.1.0</code> (the pre-reboot CLI) is on RubyGems. Nothing was ever published as riffer-code and nothing migrates from it.</li>
+  <li><strong>bin/ over rake.</strong> Every chore is a rake task defined once; <code>bin/</code> scripts only delegate. New chores (docs, plans) follow the same layering.</li>
+</ul>
+
+<h2 id="units">Build units</h2>
+
+<figure>
+<svg viewBox="0 0 760 300" role="img" aria-label="Layer diagram: hosts on top, Loader beneath, Session and extensions in the runtime, riffer at the bottom">
+  <text x="20" y="22" class="sub head">HOSTS · render events, own the TTY or the wire</text>
+  <rect x="20" y="30" width="165" height="46" rx="6" class="box"/><text x="102" y="50" text-anchor="middle" class="lbl">Terminal</text><text x="102" y="66" text-anchor="middle" class="sub mono">riffer</text>
+  <rect x="205" y="30" width="165" height="46" rx="6" class="box"/><text x="287" y="50" text-anchor="middle" class="lbl">Headless</text><text x="287" y="66" text-anchor="middle" class="sub mono">riffer -p</text>
+  <rect x="390" y="30" width="165" height="46" rx="6" class="box"/><text x="472" y="50" text-anchor="middle" class="lbl">ACP</text><text x="472" y="66" text-anchor="middle" class="sub mono">riffer acp · acp-sdk</text>
+  <rect x="575" y="30" width="165" height="46" rx="6" class="box"/><text x="657" y="50" text-anchor="middle" class="lbl">Your app</text><text x="657" y="66" text-anchor="middle" class="sub">Rails, script, job</text>
+
+  <text x="20" y="112" class="sub head">LOADER · filesystem conventions, builds a Session for a cwd</text>
+  <rect x="20" y="120" width="535" height="46" rx="6" class="box"/><text x="287" y="140" text-anchor="middle" class="lbl">Loader</text><text x="287" y="156" text-anchor="middle" class="sub">rig.rb · settings.json · auth.json · trust · AGENTS.md · skills · reload · session store</text>
+  <path d="M102 76 V120 M287 76 V120 M472 76 V120" class="edge"/>
+  <path d="M657 76 V210" class="edge" stroke-dasharray="4 4"/>
+
+  <text x="20" y="202" class="sub head">RUNTIME · no TTY, no disk scanning, accepts registered objects only</text>
+  <rect x="20" y="210" width="350" height="46" rx="6" class="box core"/><text x="195" y="230" text-anchor="middle" class="lbl">Session</text><text x="195" y="246" text-anchor="middle" class="sub">prompt · events · cancel · commands · snapshot · rebuild</text>
+  <rect x="390" y="210" width="350" height="46" rx="6" class="box core"/><text x="565" y="230" text-anchor="middle" class="lbl">Extensions</text><text x="565" y="246" text-anchor="middle" class="sub">registrar · eight seams · Host duck · bundled: read write edit bash skills agents_md mcp</text>
+  <path d="M287 166 V210" class="edge"/>
+  <path d="M370 233 H390" class="edge"/>
+
+  <rect x="20" y="276" width="720" height="18" rx="4" class="box"/><text x="380" y="289" text-anchor="middle" class="sub">riffer 0.45: agent loop, tools, skills, providers, MCP client, StreamEvents (unchanged)</text>
+</svg>
+<figcaption>Hosts drive a Session. The Loader builds one from the filesystem for the three shipped hosts; an embedding app may skip it and register objects directly.</figcaption>
+</figure>
+
+<p>Units in dependency order. Each file's Scope names what it depends on. This is a <strong>reading order, not a PR sequence</strong>; sequencing the build is the builder's call.</p>
+
+<div class="table-wrap"><table>
+  <tr><th>Unit</th><th>Scope</th></tr>
+  <tr><td><a href="session.html">Session</a></td><td>The runtime: <code>Riffer::Rig::Session</code>. Loop, system message assembly and the base prompt, events, cancel, commands, per-session credentials, tally, <code>/model</code>, snapshot, <code>rebuild</code>.</td></tr>
+  <tr><td><a href="extensions.html">Extensions</a></td><td>The registrar block, the eight seams, commands, handlers, prompt sections, the Host interface, error isolation, <code>requires:</code>, the gem convention.</td></tr>
+  <tr><td><a href="bundled.html">Bundled</a></td><td>read/write/edit/bash with their guidance sentences, AGENTS.md, Agent Skills, the MCP client; how a bundled item is disabled or replaced.</td></tr>
+  <tr><td><a href="loader.html">Loader</a></td><td><code>rig.rb</code> discovery and trust, settings precedence, credential resolution, reload trigger and <code>/reload</code>, the session store and resume.</td></tr>
+  <tr><td><a href="providers.html">Providers</a></td><td>SDK bundling, model precedence, the recipe table, <code>auth.json</code>, <code>/auth</code>, provider-native tools.</td></tr>
+  <tr><td><a href="hosts.html">Hosts</a></td><td>The dispatcher, Terminal commands and prompts, headless flags, exit codes and NDJSON, the ACP adapter and the <code>acp-sdk</code> gem.</td></tr>
+  <tr><td><a href="docs.html">Docs</a></td><td>README shape, <code>docs/</code> guides, the docs-site generator, gh-pages deploy, the custom domain.</td></tr>
+</table></div>
+
+<h2 id="consuming">How this plan is consumed</h2>
+
+<ul>
+  <li><strong>The text is frozen.</strong> Wording never changes after the plan PR merges. Discussion happens on the tickets each file cites under Provenance, or in build PRs.</li>
+  <li><strong>PRs delete what they enshrine.</strong> A build PR that lands a topic deletes that <code>&lt;section class="topic"&gt;</code> in the same PR and moves anything user-facing into README or a <code>docs/</code> guide (<a href="docs.html">Docs</a> says which). A unit file goes when no sections remain; <code>plans/reboot/</code> goes when no files remain; this index goes last. The plan only ever shrinks.</li>
+  <li><strong>A wrong section is deleted anyway.</strong> If a PR discovers the plan is wrong, it records the deviation in the PR description and deletes the section. The code is then the truth.</li>
+  <li><strong>Diagrams are prose.</strong> An inline SVG is deleted with its section.</li>
+  <li><strong>Nothing here is a permanent record.</strong> The tickets are. This directory is served locally by <code>bin/plans</code> at <code>http://localhost:8001/reboot/</code> and also works from <code>file://</code>.</li>
+</ul>
+
+<h2 id="provenance">Provenance</h2>
+<p class="provenance">The map: <a href="https://github.com/bottrall/riffer-rig/issues/70">Wayfinder: thesis and architecture spec for the post-hiatus reboot</a>. This page restates <a href="https://github.com/bottrall/riffer-rig/issues/77">Decide the differentiator: thesis and primary audience</a>, <a href="https://github.com/bottrall/riffer-rig/issues/79">Decide the core-versus-extension principle</a>, <a href="https://github.com/bottrall/riffer-rig/issues/78">Decide the name</a>, <a href="https://github.com/bottrall/riffer-rig/issues/89">Decide the rename mechanics</a>, <a href="https://github.com/bottrall/riffer-rig/issues/84">Decide versioning, release and publishing</a>, <a href="https://github.com/bottrall/riffer-rig/issues/75">Decide the bin/ scripts versus rake tasks strategy</a> and <a href="https://github.com/bottrall/riffer-rig/issues/99">Decide the spec format and home</a>. The surveys behind them: <a href="https://github.com/bottrall/riffer-rig/issues/71">agent-CLI landscape</a>, <a href="https://github.com/bottrall/riffer-rig/issues/72">extension mechanisms and hot reload</a>, <a href="https://github.com/bottrall/riffer-rig/issues/73">ACP</a>.</p>
+
+</body>
+</html>

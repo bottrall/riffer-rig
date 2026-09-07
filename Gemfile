@@ -19,4 +19,6 @@ group :development, :test do
 
   gem 'guard'
   gem 'guard-shell'
+
+  gem 'webrick', require: false
 end

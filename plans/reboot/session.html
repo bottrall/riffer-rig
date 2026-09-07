@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session · riffer-rig reboot</title>
+<link rel="stylesheet" href="plan.css">
+</head>
+<body>
+
+<nav class="plan">
+  <a href="index.html">Index</a>
+  <a href="session.html" aria-current="page">Session</a>
+  <a href="extensions.html">Extensions</a>
+  <a href="bundled.html">Bundled</a>
+  <a href="loader.html">Loader</a>
+  <a href="providers.html">Providers</a>
+  <a href="hosts.html">Hosts</a>
+  <a href="docs.html">Docs</a>
+</nav>
+
+<h1>Session</h1>
+<p class="lede">The runtime. A plain Ruby object every host drives the same way.</p>
+
+<h2 id="scope">Scope</h2>
+<p><code>Riffer::Rig::Session</code> and the value objects around it: <code>Turn</code>, the rig-level events, <code>Command</code>, the null host. It wraps one <code>Riffer::Agent</code> built from a per-instance <code>Riffer::Agent::Config</code>. It assumes no TTY, scans no disk and accepts registered objects only. Files: <code>lib/riffer/rig/session.rb</code>, <code>lib/riffer/rig/events.rb</code>, <code>lib/riffer/rig/command.rb</code>, <code>lib/riffer/rig/host.rb</code> (the duck's documentation and <code>NullHost</code>), <code>lib/riffer/rig/turn.rb</code>.</p>
+<p><strong>Depends on:</strong> riffer only. <strong>Depended on by:</strong> every other unit. The registrar it runs extension blocks against is specified in <a href="extensions.html">Extensions</a>; this file covers what the Session does with the result.</p>
+
+<h2 id="decisions">Decisions</h2>
+
+<section class="topic" id="contract">
+<h3>The Session object and its contract</h3>
+<ul>
+  <li><code>Session.new(...)</code> builds a per-instance <code>Riffer::Agent::Config</code>; there is no class-level agent DSL. Two Sessions in one process share nothing but the process-wide extension registry and riffer's provider repository.</li>
+  <li>One prompt at a time per Session. A second <code>prompt</code> while one is running raises. Parallelism means more Sessions, in more threads.</li>
+  <li>The Session never renders, never prints, never reads the filesystem. Anything a host needs becomes a Session feature so embedders get it too.</li>
+  <li>The constructor takes everything as keywords: <code>model:</code>, <code>credentials:</code>, <code>extensions:</code>, <code>tools:</code>, <code>settings:</code>, <code>pricing:</code>, <code>host:</code>, <code>cwd:</code>, <code>name:</code>, <code>instructions:</code>, <code>max_steps:</code>, <code>snapshot:</code>. All optional except <code>model:</code>; the Interfaces table gives each one's meaning.</li>
+  <li>The current implementation's <code>CodingAgent</code> class-level DSL, its <code>Settings.model</code> lookup at class-definition time and its AGENTS.md reading inside <code>instructions</code> all go. Model, tools, skills backend and instructions are supplied per instance.</li>
+</ul>
+</section>
+
+<section class="topic" id="prompting">
+<h3>Prompting and the loop</h3>
+<ul>
+  <li><code>prompt(text)</code> runs one turn on the calling thread. With a block it yields every event as it happens; without one it returns an Enumerator. It returns when the turn ends.</li>
+  <li><code>ask(text)</code> drains <code>prompt</code> and returns a <code>Turn</code>: <code>text</code>, <code>stop_reason</code>, <code>tool_calls</code>, <code>usage</code>, <code>cost</code>. The headless host and embedders build on it; the terminal builds on the stream.</li>
+  <li><code>max_steps:</code> maps to riffer's <code>config.max_steps</code>. No default limit in the REPL; hitting it ends the turn with stop reason <code>max_steps</code>.</li>
+  <li>Stop reasons are riffer's finish reasons plus <code>max_steps</code> and <code>cancelled</code>: <code>stop</code>, <code>length</code>, <code>context_window</code>, <code>content_filter</code>, <code>malformed_output</code>, <code>max_steps</code>, <code>cancelled</code>, <code>error</code>. Hosts map them to exit codes or UI; the Session only reports them in <code>turn_end</code>.</li>
+  <li>The loop itself is riffer's. riffer-rig adds nothing to it beyond the callbacks the events, cancel and reload sections describe.</li>
+</ul>
+</section>
+
+<section class="topic" id="system-message">
+<h3>System message assembly and the base prompt</h3>
+
+<figure>
+<svg viewBox="0 0 760 210" role="img" aria-label="System message stack: base prompt, prompt sections in load order, environment block, then riffer's skills catalog as a second message">
+  <rect x="20" y="20" width="440" height="34" rx="5" class="box core"/><text x="32" y="41" class="lbl">Base prompt</text><text x="200" y="41" class="sub">identity + three norms · owned by Session · replaced by instructions:</text>
+  <rect x="20" y="60" width="440" height="34" rx="5" class="box"/><text x="32" y="81" class="lbl">Prompt sections</text><text x="200" y="81" class="sub">named, load order, later wins · e.g. agents_md, skills, git_status</text>
+  <rect x="20" y="100" width="440" height="34" rx="5" class="box core"/><text x="32" y="121" class="lbl">Environment block</text><text x="200" y="121" class="sub">current date, working directory · always appended</text>
+  <path d="M470 20 V134" class="edge"/><text x="480" y="80" class="sub">one system message</text>
+  <rect x="20" y="156" width="440" height="34" rx="5" class="box"/><text x="32" y="177" class="lbl">Skills catalog</text><text x="200" y="177" class="sub">riffer's own second system message, when skills exist · untouched</text>
+</svg>
+<figcaption>Only the base prompt and the environment block are core. Everything between them arrives through the prompt seam and is re-rendered every turn.</figcaption>
+</figure>
+
+<p>The base prompt is a short, task-neutral text owned by the Session. It names the agent, says it is general purpose and works through whatever tools it has, and states three norms. It lists no tools and names no conventions (not AGENTS.md, not skills, not slash commands; each introduces itself when present, so a Session with the bundle off says nothing untrue). It is a heredoc in the Session's agent definition, produced by a small pure function of the name. Wording is illustrative; the decision fixes the identity shape and the three norms, not the sentences:</p>
+
+<pre><code>You are {name}, a general-purpose agent. You work by using the tools you have
+been given; each tool describes what it does and when to use it.
+
+- Verify with your tools before answering. When a tool can settle a question,
+  look rather than guess.
+- Do what was asked, and all of what was asked. Do not widen the scope, tidy
+  nearby things, or add extras that were not requested.
+- Be concise. Lead with the outcome; do not restate the question.</code></pre>
+
+<div class="table-wrap"><table>
+  <tr><th>Question</th><th>Decision</th><th>Why</th></tr>
+  <tr><td>Identity</td><td>"You are {name}, a general-purpose agent." No job title, no coding or developer framing.</td><td>The thesis dropped the coding identity. A product name lets the user ask "what are you?" and lets a host rename it.</td></tr>
+  <tr><td>Tools</td><td>Never listed. "Use the tools you have been given."</td><td>The provider sends every tool schema already; a hand list drifts when a host passes a different set.</td></tr>
+  <tr><td>Norms</td><td>Verify with tools; do what was asked, no more, no less; be concise and lead with the outcome.</td><td>The only rules that hold for any task and toolkit. "Confirm before destructive actions" was left out: the tool trusts the model.</td></tr>
+  <tr><td>Coding guidance</td><td>Moves into the four tool descriptions (<a href="bundled.html#toolkit">Bundled</a>).</td><td>Guidance travels with the tool and vanishes when the tool does.</td></tr>
+  <tr><td>Override</td><td><code>name:</code> (default <code>"riffer"</code>) swaps the name inside the default base; <code>instructions:</code> replaces the base entirely. Sections and the environment block are appended in both cases.</td><td>A Rails app that only wants a different name should not have to reproduce the norms or remember the environment block.</td></tr>
+  <tr><td>Context</td><td>AGENTS.md arrives as a prompt section from its bundled extension, framed as user-authored instructions that outrank the base norms. The Session appends date and cwd itself.</td><td>Keeps "runtime does no disk scanning" and keeps AGENTS.md disableable.</td></tr>
+  <tr><td>Reload</td><td>Sections re-render from the fresh registrar; the base prompt is gem code and is not re-read.</td><td>User-editable prompt text belongs in a section, not in the gem.</td></tr>
+</table></div>
+</section>
+
+<section class="topic" id="events">
+<h3>Events</h3>
+<p>The stream a host consumes is riffer's <code>StreamEvents</code> unchanged, plus a few rig-level events. Every host renders this one stream; the ACP adapter is the only place it is mapped to another vocabulary, and the headless host prints it as NDJSON verbatim.</p>
+<div class="table-wrap"><table>
+  <tr><th>Rig event</th><th>Carries</th><th>When</th></tr>
+  <tr><td><code>session_start</code></td><td><code>id</code>, <code>reason</code> (<code>:new</code>, <code>:restore</code>, <code>:reload</code>)</td><td>construction, restore from snapshot, after <code>rebuild</code></td></tr>
+  <tr><td><code>session_end</code></td><td><code>reason</code> (<code>:reload</code>, <code>:close</code>)</td><td>before <code>rebuild</code> replaces the registrar; on <code>close</code></td></tr>
+  <tr><td><code>command_output</code></td><td><code>command</code>, <code>text</code></td><td>a command called <code>ctx.say</code></td></tr>
+  <tr><td><code>skill_activated</code></td><td><code>name</code></td><td>a skill was activated by command</td></tr>
+  <tr><td><code>notify</code></td><td><code>message</code>, <code>level</code></td><td>mirrors every <code>host.notify</code> so a stream consumer sees extension errors too</td></tr>
+  <tr><td><code>turn_end</code></td><td><code>stop_reason</code>, <code>usage</code>, <code>cost</code></td><td>the last event of every <code>prompt</code></td></tr>
+</table></div>
+<p>Event objects are immutable value objects (<code>Data</code>). Each has <code>to_h</code>; the event type name is the class name in snake_case, which is what the NDJSON <code>"type"</code> field carries. Extension handlers that observe the loop (<code>after_tool_call</code>, <code>after_response</code>, <code>turn_end</code>, <code>stream</code>) receive these same objects; the vetoable <code>before_*</code> hooks are described under <a href="extensions.html#handlers">Extensions: handlers</a>.</p>
+</section>
+
+<section class="topic" id="cancel">
+<h3>Cancel</h3>
+<ul>
+  <li><code>cancel</code> is thread-safe and callable mid-turn from any thread. It sets a flag and installs, via riffer's <code>on_message</code> callback, a throw of <code>:riffer_interrupt</code> with reason <code>:cancelled</code> at the next message boundary. riffer then heals orphaned tool calls and emits its Interrupt event; the turn ends with stop reason <code>cancelled</code>.</li>
+  <li>The bundled Bash tool reads the flag to kill its running subprocess early instead of waiting for the message boundary.</li>
+  <li>Implemented inside riffer-rig with no riffer change; marked in code as an upstream candidate (a cancel token on riffer's run loop).</li>
+</ul>
+</section>
+
+<section class="topic" id="commands">
+<h3>Commands</h3>
+<ul>
+  <li>The runtime owns slash commands as registered objects. <code>commands</code> lists them (name, description); <code>run_command(name, args)</code> runs one, synchronously, one at a time, under the same rule as <code>prompt</code>.</li>
+  <li>Runtime commands in the reboot: <code>/model</code> (this file), <code>/auth</code> (<a href="providers.html#auth-command">Providers</a>), <code>/reload</code> (installed by the Loader), skill activation (<a href="bundled.html#skills">Bundled</a>), and every command an extension registers. They work identically in the terminal, in headless mode and over ACP, which advertises them as <code>available_commands</code>.</li>
+  <li>Host-lifecycle commands stay in the host: <code>/exit</code>, <code>/quit</code>, <code>/resume</code>, <code>/new</code> replace or end the Session the terminal drives, so they live in Terminal.</li>
+  <li>A command block receives a <code>ctx</code> (<a href="extensions.html#commands">Extensions: commands</a>) whose <code>say</code> emits <code>command_output</code> and whose <code>prompt</code> sends a user turn to the model.</li>
+</ul>
+</section>
+
+<section class="topic" id="credentials">
+<h3>Per-session credentials</h3>
+<ul>
+  <li><code>credentials:</code> is a hash keyed by provider identifier holding the resolved values for that Session (see <a href="providers.html#resolution">Providers: resolution</a>). The Session never resolves them itself.</li>
+  <li><code>Session#prompt</code> marks the Session as current for the calling thread (a thread-local). At boot riffer-rig installs one Proc per provider into <code>Riffer.config.&lt;provider&gt;.client</code>; riffer resolves that Proc on every LLM call, and it returns a client built from the current Session's credentials. Two Sessions with different keys run in parallel threads.</li>
+  <li><code>Riffer::Rig.credentials(:identifier)</code> reads the current Session's values; extension providers call it when building their client.</li>
+  <li><code>Riffer.configure</code> remains a fallback a host may use at its edge; the shipped hosts do not.</li>
+  <li>Contained in riffer-rig, marked as an upstream candidate (a per-agent provider option in riffer).</li>
+</ul>
+</section>
+
+<section class="topic" id="model">
+<h3><code>/model</code></h3>
+<ul>
+  <li><code>/model provider/name</code> switches the model for the current Session only, keeping conversation history. riffer's model setting accepts a Proc, so no agent rebuild is needed; the Session stores the override and the Proc reads it.</li>
+  <li>A model string without a provider prefix is rejected with a hint listing the registry's providers. No inference from credentials or name patterns.</li>
+  <li>Switching to a provider whose SDK is missing or whose credentials are unresolved triggers the host-side flows in <a href="providers.html#missing-sdk">Providers</a> through the Host interface; the null host declines and the command reports the failure.</li>
+  <li>Persisting is a separate explicit act: <code>/model --save</code> writes the choice to the home <code>settings.json</code>. The settings file only changes when asked.</li>
+  <li>The override survives <code>rebuild</code> and is part of the snapshot.</li>
+</ul>
+</section>
+
+<section class="topic" id="tally">
+<h3>Token tally and pricing</h3>
+<ul>
+  <li>The Session keeps a running tally of token usage across turns and prices it with the <code>pricing:</code> table it was given (the <code>models</code> block of settings, USD per million tokens; missing pricing means cost is nil, never zero). <code>Turn#usage</code> and <code>Turn#cost</code> and the <code>turn_end</code> event expose the per-turn numbers; <code>tally</code> exposes the totals.</li>
+  <li>The tally is kept across <code>rebuild</code>. It is not stored in the snapshot: assistant messages carry <code>token_usage</code>, so a restored Session re-sums it, and pricing comes from today's settings, never the file.</li>
+  <li>The existing <code>TokenTally</code> module is the seed; it moves behind the Session.</li>
+</ul>
+</section>
+
+<section class="topic" id="snapshot">
+<h3>Snapshot</h3>
+<ul>
+  <li><code>to_h</code> returns a plain hash; <code>Session.new(snapshot: hash, ...)</code> takes one back. The Session never touches disk; the Loader's store (<a href="loader.html#store">Loader: session store</a>) does.</li>
+  <li>Contents: <code>id</code> (UUIDv7 minted at creation; the same id is the picker row, the <code>-r &lt;id&gt;</code> argument and the ACP <code>sessionId</code>), <code>messages</code> (riffer <code>Messages::Base#to_h</code>, restored with <code>Messages::Base.from_hash</code> and seeded via <code>Riffer::Agent.new(session:)</code>), <code>model</code> (the <code>/model</code> override, if any), <code>skills</code> (activated skill names from riffer's <code>Skills::Context</code>).</li>
+  <li>Not stored: the tally, and any registration (tools, commands, handlers, prompt sections, MCP servers). Registrations are rebuilt from the <code>extensions:</code> given at restore time, using the same internal registrar builder as <code>rebuild</code>; there is no second restore path.</li>
+  <li><strong>History is data, the present wins.</strong> Nothing blocks a restore: a <code>tool_call</code> for a tool that no longer exists is just text to the model now; orphaned tool calls at the tail (crash or kill mid-turn) are healed on load with a synthetic "interrupted" tool result, the same thing riffer does on cancel; skill activations re-apply by name and a missing skill is dropped silently; the saved model applies only if that provider has credentials in <code>credentials:</code>, otherwise the given <code>model:</code> is used and the host gets one <code>notify</code>.</li>
+  <li>A restored Session emits <code>session_start(reason: :restore)</code>.</li>
+</ul>
+</section>
+
+<section class="topic" id="rebuild">
+<h3><code>rebuild</code></h3>
+<ul>
+  <li><code>rebuild(extensions:, settings:)</code> is the primitive behind hot reloading: emit <code>session_end(reason: :reload)</code>, build a fresh registrar from the given extension list aside, swap it in atomically, emit <code>session_start(reason: :reload)</code>. If building the new registrar raises, nothing on the Session changes and the error propagates to the caller (the Loader turns it into one <code>notify</code>).</li>
+  <li>Kept across a rebuild: message history, tally, the <code>/model</code> override (the re-read settings model does not clobber it), the Session's identity and its host reference. Rebuilt from scratch: tools, commands, prompt sections, handlers, skills sources, declared settings. MCP servers restart, except a server whose name, command and args are unchanged keeps its live connection. Extension process-wide state is released in <code>session_end</code> and re-acquired in <code>session_start</code>. Providers are process-wide and are never unregistered; re-registration is idempotent.</li>
+  <li>Callable only between steps. From inside a handler or command it raises.</li>
+  <li>Embedders without a Loader call <code>rebuild</code> themselves, for example after their app's own code reload. They get no file watching and no <code>/reload</code>, correctly, since the runtime knows no filesystem conventions.</li>
+</ul>
+</section>
+
+<h2 id="interfaces">Interfaces</h2>
+
+<h4>Constructor keywords</h4>
+<div class="table-wrap"><table>
+  <tr><th>Keyword</th><th>Meaning</th><th>Default</th></tr>
+  <tr><td><code>model:</code></td><td><code>"provider/name"</code>; bare names rejected</td><td>required</td></tr>
+  <tr><td><code>credentials:</code></td><td>hash keyed by provider identifier of resolved field values</td><td><code>{}</code></td></tr>
+  <tr><td><code>extensions:</code></td><td>ordered list of extension objects (from <code>Riffer::Rig.extension</code> or <code>Riffer::Rig.bundled</code>) whose blocks run against this Session's registrar</td><td><code>[]</code></td></tr>
+  <tr><td><code>tools:</code></td><td>allowlist of tool identifiers; nil means every registered tool</td><td><code>nil</code></td></tr>
+  <tr><td><code>settings:</code></td><td>merged settings hash (core keys top level, extension keys under their names)</td><td><code>{}</code></td></tr>
+  <tr><td><code>pricing:</code></td><td>model → <code>{input, output, cache_write, cache_read}</code> USD per million tokens</td><td><code>{}</code></td></tr>
+  <tr><td><code>host:</code></td><td>an object implementing the Host duck</td><td><code>NullHost.new</code></td></tr>
+  <tr><td><code>cwd:</code></td><td>working directory for the environment block and for tools</td><td><code>Dir.pwd</code></td></tr>
+  <tr><td><code>name:</code></td><td>the name interpolated into the base prompt</td><td><code>"riffer"</code></td></tr>
+  <tr><td><code>instructions:</code></td><td>replaces the base prompt wholesale</td><td><code>nil</code> (use the base)</td></tr>
+  <tr><td><code>max_steps:</code></td><td>riffer <code>config.max_steps</code></td><td><code>nil</code></td></tr>
+  <tr><td><code>snapshot:</code></td><td>a hash from <code>to_h</code> to restore</td><td><code>nil</code></td></tr>
+</table></div>
+
+<h4>Methods</h4>
+<div class="table-wrap"><table>
+  <tr><th>Method</th><th>Returns</th></tr>
+  <tr><td><code>prompt(text) { |event| }</code> / <code>prompt(text)</code></td><td>nil with a block; an Enumerator of events without</td></tr>
+  <tr><td><code>ask(text)</code></td><td><code>Turn</code></td></tr>
+  <tr><td><code>cancel</code></td><td>nil; thread-safe</td></tr>
+  <tr><td><code>commands</code></td><td>array of <code>Command</code> (<code>name</code>, <code>description</code>)</td></tr>
+  <tr><td><code>run_command(name, args)</code></td><td>nil; output arrives as events</td></tr>
+  <tr><td><code>model</code> / <code>model=(string)</code></td><td>the effective model; assignment is the session-only override</td></tr>
+  <tr><td><code>tally</code></td><td>totals: usage and cost</td></tr>
+  <tr><td><code>to_h</code></td><td>the snapshot hash</td></tr>
+  <tr><td><code>rebuild(extensions:, settings:)</code></td><td>nil; raises inside a handler</td></tr>
+  <tr><td><code>id</code>, <code>cwd</code>, <code>host</code>, <code>settings</code>, <code>errors</code></td><td>readers; <code>errors</code> is the list of <code>{extension, error}</code> recorded while loading</td></tr>
+  <tr><td><code>on_message { |message| }</code></td><td>registers an observer riffer calls per message; the Loader's store appends through it</td></tr>
+  <tr><td><code>close</code></td><td>emits <code>session_end(reason: :close)</code>, stops MCP servers</td></tr>
+  <tr><td><code>Riffer::Rig.credentials(id)</code></td><td>the current thread's Session's credentials for one provider</td></tr>
+</table></div>
+
+<h2 id="enshrines">Enshrines into</h2>
+<div class="table-wrap"><table>
+  <tr><th>Topic</th><th>Code</th><th>Docs</th></tr>
+  <tr><td>Contract, prompting, events, cancel, commands, tally, snapshot, rebuild</td><td><code>lib/riffer/rig/session.rb</code>, <code>events.rb</code>, <code>command.rb</code>, <code>turn.rb</code></td><td><code>docs/EMBEDDING.md</code>; the NDJSON shape also in <code>docs/HEADLESS.md</code></td></tr>
+  <tr><td>System message and base prompt</td><td>heredoc in <code>session.rb</code>; permanent docs permalink the source rather than restating it</td><td><code>docs/INSTRUCTIONS.md</code></td></tr>
+  <tr><td>Per-session credentials</td><td><code>lib/riffer/rig/session.rb</code>, client Procs installed in <code>lib/riffer/rig.rb</code>; marked upstream candidate</td><td><code>docs/EMBEDDING.md</code></td></tr>
+  <tr><td><code>/model</code></td><td>a core <code>Command</code> in <code>lib/riffer/rig/commands/model.rb</code></td><td>README Usage; <code>docs/CONFIGURATION.md</code></td></tr>
+  <tr><td>Host duck and <code>NullHost</code></td><td><code>lib/riffer/rig/host.rb</code></td><td><code>docs/HOSTS.md</code></td></tr>
+</table></div>
+
+<h2 id="provenance">Provenance</h2>
+<p class="provenance"><a href="https://github.com/bottrall/riffer-rig/issues/80">Decide the runtime/CLI separation and the role of ACP</a> (contract, cancel, commands, credentials), <a href="https://github.com/bottrall/riffer-rig/issues/88">Decide the default system prompt: identity, norms and home</a>, <a href="https://github.com/bottrall/riffer-rig/issues/82">Decide programmatic and headless use</a> (<code>ask</code>, <code>Turn</code>, <code>max_steps</code>), <a href="https://github.com/bottrall/riffer-rig/issues/83">Decide hot reloading scope and mechanism</a> (<code>rebuild</code>), <a href="https://github.com/bottrall/riffer-rig/issues/94">Decide session persistence and history</a> (snapshot), <a href="https://github.com/bottrall/riffer-rig/issues/76">Decide the provider strategy and optional SDK dependencies</a> (<code>/model</code>), <a href="https://github.com/bottrall/riffer-rig/issues/79">Decide the core-versus-extension principle</a> (tally is core).</p>
+
+</body>
+</html>

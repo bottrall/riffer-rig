@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loader · riffer-rig reboot</title>
+<link rel="stylesheet" href="plan.css">
+</head>
+<body>
+
+<nav class="plan">
+  <a href="index.html">Index</a>
+  <a href="session.html">Session</a>
+  <a href="extensions.html">Extensions</a>
+  <a href="bundled.html">Bundled</a>
+  <a href="loader.html" aria-current="page">Loader</a>
+  <a href="providers.html">Providers</a>
+  <a href="hosts.html">Hosts</a>
+  <a href="docs.html">Docs</a>
+</nav>
+
+<h1>Loader</h1>
+<p class="lede">Every filesystem convention in one place. Builds a Session for a working directory; the runtime never learns where anything lives.</p>
+
+<h2 id="scope">Scope</h2>
+<p><code>Riffer::Rig::Loader</code>: discovery of <code>rig.rb</code> files and their trust, settings and credential resolution, the reload check and <code>/reload</code>, the session store and resume, and the one-call constructor <code>Loader.session</code>. Used by the terminal, the headless host and the ACP server; a Rails host skips it and registers objects directly. Files: <code>lib/riffer/rig/loader.rb</code>, <code>lib/riffer/rig/settings.rb</code> (reshaped), <code>lib/riffer/rig/trust.rb</code>, <code>lib/riffer/rig/store/jsonl.rb</code>, <code>lib/riffer/rig/commands/reload.rb</code>.</p>
+<p><strong>Depends on:</strong> <a href="session.html">Session</a>, <a href="extensions.html">Extensions</a>, <a href="bundled.html">Bundled</a>, and the credential resolution rules in <a href="providers.html">Providers</a>. <strong>Depended on by:</strong> the three shipped hosts.</p>
+
+<h2 id="decisions">Decisions</h2>
+
+<section class="topic" id="build">
+<h3>Building a Session</h3>
+<p><code>Loader.session(cwd:, host:, **keywords)</code> performs these steps in order and returns a Session. <code>Loader.new(cwd:, host:, store:)</code> exposes the same steps to a host that needs the Loader object afterwards (for reload and resume).</p>
+<ol>
+  <li>Read <code>~/.riffer/settings.json</code> then <code>&lt;cwd&gt;/.riffer/settings.json</code>; merge key by key, project winning. Apply the flag and env overrides the host passed (<code>model:</code> from <code>--model</code> or <code>RIFFER_MODEL</code>).</li>
+  <li>Resolve credentials for the selected model's provider (<a href="providers.html#resolution">Providers: resolution</a>), asking the host when allowed.</li>
+  <li>Take the bundled extensions minus <code>extensions.disabled</code> and the strip keywords.</li>
+  <li>Load <code>~/.riffer/rig.rb</code>, then <code>&lt;cwd&gt;/.riffer/rig.rb</code> if trusted, recording tracked files. Append every extension recorded during those loads, in record order.</li>
+  <li>Construct the Session with <code>model:</code>, <code>credentials:</code>, <code>extensions:</code>, <code>tools:</code>, <code>settings:</code>, <code>pricing:</code>, <code>host:</code>, <code>cwd:</code>, <code>max_steps:</code>, and <code>snapshot:</code> when resuming.</li>
+  <li>Install the Loader-owned pieces on the Session: the <code>/reload</code> command, the <code>before_request</code> reload check (unless <code>reload</code> is <code>manual</code>), and the store observer on <code>on_message</code>.</li>
+</ol>
+<p>If <code>model:</code> is still unresolved after step 1 (no flag, no env, no setting) the Loader asks the host to run onboarding (<a href="hosts.html#terminal">Hosts: terminal</a>); the null host declines and the Loader raises the configuration error the headless host maps to exit 2.</p>
+</section>
+
+<section class="topic" id="discovery">
+<h3>Discovery</h3>
+<ul>
+  <li>Two files, in this order: <code>~/.riffer/rig.rb</code>, then <code>&lt;cwd&gt;/.riffer/rig.rb</code>. Plain Ruby, evaluated with <code>load</code>. They <code>require</code> gems, <code>require_relative</code> local files, or call <code>Riffer::Rig.extension</code> inline. Ruby's require order is the load order.</li>
+  <li>No directory scanning, no manifest, no settings list of extensions. What is required is what loads.</li>
+  <li>With <code>"extensions": {"autoload": true}</code> (default false) the Loader additionally requires <code>riffer/rig/extension</code> from every gem in the bundle via <code>Gem.find_files</code>, before the two files.</li>
+  <li>The strip keyword <code>extensions: false</code> (<code>--no-extensions</code>) skips both files and autoload; the bundle still loads.</li>
+</ul>
+</section>
+
+<section class="topic" id="trust">
+<h3>Trust</h3>
+<ul>
+  <li>The home file is always trusted. The first time a project <code>.riffer/rig.rb</code> is seen for a cwd, the Loader calls <code>host.confirm</code> with the path; the answer is stored by absolute path in <code>~/.riffer/trust.json</code> (<code>{"&lt;path&gt;": true | false}</code>) and not asked again.</li>
+  <li>The null host declines, so headless and ACP sessions load home config only until a terminal session trusts the project. A declined project file is skipped silently and never re-asked until its entry is removed from <code>trust.json</code>.</li>
+  <li>A project <code>rig.rb</code> that appears mid-session (see reload) goes through the same confirm.</li>
+</ul>
+</section>
+
+<section class="topic" id="settings">
+<h3>Settings</h3>
+<ul>
+  <li>Two scopes, same file name: <code>~/.riffer/settings.json</code> and <code>&lt;cwd&gt;/.riffer/settings.json</code>. Project overrides home key by key; nested extension namespaces merge the same way.</li>
+  <li>Core keys, all top level and all optional: <code>model</code>, <code>reasoning</code>, <code>models</code> (pricing table), <code>reload</code>, <code>extensions</code> (<code>disabled</code>, <code>autoload</code>), <code>sessions</code> (<code>save</code>), <code>providers</code> (non-secret provider fields), <code>mcp</code> (<code>servers</code>), <code>tools</code> (<code>native</code>, the provider-native tool switches). Extension names cannot collide with these.</li>
+  <li>The current <code>Settings</code> module's model-options logic (cache control, reasoning levels per provider) is kept and moves behind the Loader, which passes the result to the Session as riffer <code>model_options</code>.</li>
+  <li>Settings are re-read on reload; a settings change is itself a reload trigger.</li>
+</ul>
+</section>
+
+<section class="topic" id="credentials">
+<h3>Credentials</h3>
+<ul>
+  <li>The Loader resolves every required field of the selected provider's recipe (env → <code>auth.json</code> → fallback Proc → <code>host.ask(secret: true)</code>), writes what the host answered to <code>auth.json</code> or the <code>providers</code> settings block, and passes the resolved values to the Session as <code>credentials:</code>. The rules and file formats are in <a href="providers.html">Providers</a>.</li>
+  <li>Resolution happens once per build and again on reload; <code>$VAR</code> and <code>!cmd</code> references in <code>auth.json</code> are expanded at that moment and cached on the Session.</li>
+  <li>Switching provider with <code>/model</code> resolves the new provider's fields the same way through the Loader-installed command context.</li>
+</ul>
+</section>
+
+<section class="topic" id="reload">
+<h3>Reload</h3>
+
+<figure>
+<svg viewBox="0 0 760 250" role="img" aria-label="Reload sequence: before_request stat check, scrub loaded features, load rig.rb files again, re-read settings and credentials, session.rebuild swaps a registrar built aside">
+  <rect x="20" y="20" width="150" height="44" rx="6" class="box"/><text x="95" y="39" text-anchor="middle" class="lbl">before_request</text><text x="95" y="55" text-anchor="middle" class="sub">or /reload</text>
+  <path d="M170 42 H210" class="edge" marker-end="url(#a)"/>
+  <rect x="210" y="20" width="150" height="44" rx="6" class="box"/><text x="285" y="39" text-anchor="middle" class="lbl">stat tracked files</text><text x="285" y="55" text-anchor="middle" class="sub">any mtime change?</text>
+  <path d="M360 42 H400" class="edge" marker-end="url(#a)"/>
+  <rect x="400" y="20" width="150" height="44" rx="6" class="box"/><text x="475" y="39" text-anchor="middle" class="lbl">scrub + load</text><text x="475" y="55" text-anchor="middle" class="sub mono">$LOADED_FEATURES, rig.rb ×2</text>
+  <path d="M550 42 H590" class="edge" marker-end="url(#a)"/>
+  <rect x="590" y="20" width="150" height="44" rx="6" class="box"/><text x="665" y="39" text-anchor="middle" class="lbl">re-read</text><text x="665" y="55" text-anchor="middle" class="sub">settings, auth, trust</text>
+  <path d="M665 64 V100" class="edge" marker-end="url(#a)"/>
+  <rect x="400" y="100" width="340" height="44" rx="6" class="box core"/><text x="570" y="119" text-anchor="middle" class="lbl">session.rebuild(extensions:, settings:)</text><text x="570" y="135" text-anchor="middle" class="sub">new registrar built aside, then swapped atomically</text>
+  <path d="M400 122 H250" class="edge" marker-end="url(#a)"/>
+  <rect x="20" y="100" width="230" height="44" rx="6" class="box"/><text x="135" y="119" text-anchor="middle" class="lbl">kept</text><text x="135" y="135" text-anchor="middle" class="sub">history · tally · /model · identity</text>
+  <path d="M475 144 V180" class="edge veto" marker-end="url(#a)"/>
+  <rect x="330" y="180" width="290" height="44" rx="6" class="box"/><text x="475" y="199" text-anchor="middle" class="lbl">rig.rb raised?</text><text x="475" y="215" text-anchor="middle" class="sub">abandon: live registrar stays, one notify, snapshot advances</text>
+  <text x="95" y="210" class="sub">No watcher thread. The check runs on the</text><text x="95" y="226" class="sub">prompting thread at a quiet boundary.</text>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs>
+</svg>
+<figcaption>A reload is a full rebuild of the registrar from re-executed files, never a partial module swap.</figcaption>
+</figure>
+
+<h4>Scope</h4>
+<ul>
+  <li>Reloaded: both <code>rig.rb</code> files, every local file they <code>require</code> or <code>require_relative</code> (under <code>~/.riffer</code> or the project), <code>settings.json</code> in both scopes, <code>auth.json</code>, and trust status (a newly appearing project <code>rig.rb</code> goes through <code>host.confirm</code>).</li>
+  <li>Not reloaded: extension gems (<code>riffer-rig-*</code>), riffer-rig's own code (its Zeitwerk loader stays non-reloadable), riffer. Skills and AGENTS.md need no reload: their sections are evaluated per turn.</li>
+</ul>
+
+<h4>Triggers</h4>
+<ul>
+  <li><strong>Automatic:</strong> at every <code>before_request</code> boundary (between tool results and the next LLM call, not only at turn start) the Loader stats the tracked file set; any mtime change, or a tracked <code>rig.rb</code> appearing or disappearing, reloads. An agent that edits its own extension mid-turn sees the new tool on its very next request. A one-turn <code>riffer -p</code> benefits the same way.</li>
+  <li><strong>Manual:</strong> <code>/reload</code>, a runtime command installed by the Loader; always reloads and re-discovers the file set.</li>
+  <li>No watcher thread, no <code>listen</code> dependency; the check runs on the prompting thread at a boundary where no handler is mid-flight, so no lock.</li>
+  <li>Core setting <code>"reload": "auto" | "manual"</code>, default <code>auto</code>, project overrides home, also the Loader keyword <code>reload:</code>. Manual keeps <code>/reload</code> and <code>Session#rebuild</code> and drops the automatic check.</li>
+</ul>
+
+<h4>Mechanism</h4>
+<ol>
+  <li>On first load the Loader diffs <code>$LOADED_FEATURES</code> around <code>load</code>ing each <code>rig.rb</code>; new entries under <code>~/.riffer</code> or the project are the tracked files, gem paths dropped. The <code>rig.rb</code> files themselves are tracked too, so a newly added <code>require</code> is picked up from that reload on.</li>
+  <li>On reload it deletes those entries from <code>$LOADED_FEATURES</code> and <code>load</code>s each <code>rig.rb</code> again, so plain <code>require</code>/<code>require_relative</code> re-execute with no author-side convention.</li>
+  <li>Classes are reopened in place, not removed: edited and added methods take effect; deleted methods and renamed constants linger until restart (the one documented limit).</li>
+  <li><code>Riffer::Rig.extension("name")</code> records into the process registry keyed by name, so re-execution replaces the block rather than appending a duplicate.</li>
+  <li>Settings, credentials and trust are re-read, then <code>session.rebuild(extensions:, settings:)</code>.</li>
+</ol>
+<p>Why not hot module replacement: Ruby's <code>require</code> keeps no dependency graph between files and extension blocks, and "later wins" ordering must be replayed anyway, so partial replacement would preserve only block locals at the cost of a second code path. Rejected: per-scope re-execution and TracePoint-based per-extension replacement.</p>
+
+<h4>Failure</h4>
+<ul>
+  <li>The new registrar is built aside; nothing on the Session changes until it is complete. If a <code>rig.rb</code> itself raises, the reload is abandoned, the live registrar stays, the host gets one <code>notify</code>, and the mtime snapshot still advances so the check does not retry every request.</li>
+  <li>A single extension block failing follows the standard rule: skipped and reported, the rest swap in.</li>
+  <li>Errors go to the host only, never into the model's context.</li>
+</ul>
+
+<h4>Known limits</h4>
+<ul>
+  <li>Reopened classes keep deleted methods and stale constants until restart.</li>
+  <li>Gem-packaged extensions do not reload.</li>
+  <li>Two Sessions in one process share the process-level extension registry and providers; a reload in one does not rebuild the other.</li>
+</ul>
+</section>
+
+<section class="topic" id="store">
+<h3>Session store and resume</h3>
+<ul>
+  <li>The Loader takes a <code>store:</code> collaborator, mints the Session id, appends entries as they land, restores snapshots, and prunes nothing. Hosts never see the store; they only choose which session to drive. Embedders without a Loader get no store.</li>
+  <li><strong>Store duck:</strong> <code>append(id, entry)</code> (one entry hash, in order), <code>read(id)</code> (entries in order), <code>list(cwd: nil)</code> (header entries, optionally filtered by cwd), <code>delete(id)</code>. A Rails host implements it over its own tables or skips the Loader and serialises the snapshot directly.</li>
+  <li><strong>Entries:</strong> <code>header</code> (<code>schema_version</code>, <code>id</code>, <code>cwd</code>, <code>created_at</code>, <code>model</code>, <code>riffer_rig_version</code>, <code>riffer_version</code>, <code>title</code> = the first user prompt truncated to one line), <code>message</code> (a riffer message <code>to_h</code>, appended via <code>session.on_message</code>), <code>model</code> (each <code>/model</code> change), <code>skill</code> (each activation). Restore folds entries into a snapshot: last <code>model</code> wins, <code>skill</code> accumulates, <code>message</code> is the history. New entry types can be added without a schema bump.</li>
+  <li><strong>Default store: JSONL</strong> at <code>~/.riffer/sessions/&lt;cwd-slug&gt;/&lt;uuid&gt;.jsonl</code>, one entry per line, appended with <code>File.write(mode: "a")</code>. Zero dependencies, <code>cat</code>- and <code>jq</code>-able; a crash loses at most one line. The slug directory makes per-project listing a directory read, but the header's <code>cwd</code> is the truth, not the path. SQLite is not in core; it belongs in an extension gem such as <code>riffer-rig-sqlite</code>.</li>
+  <li><strong>Restore</strong> reads the entries, folds them, and builds the Session with <code>snapshot:</code> plus today's extensions from <code>rig.rb</code>; the Session's restore rules (heal orphaned tail tool calls, saved model only with credentials, missing skills dropped) apply. Nothing blocks a resume.</li>
+  <li><strong>Selection</strong> the Loader offers hosts: <code>continue(cwd:)</code> (most recently updated session whose header cwd matches, or nil), <code>resume(id)</code> (or nil if unknown), <code>list(cwd:, all: false)</code> for a picker, <code>delete(id)</code>.</li>
+  <li><strong>Policies:</strong> every Loader-built session is saved, including <code>-p</code> one-shots; opt out per run with <code>store: nil</code> (<code>--no-save</code>) or globally with <code>"sessions": {"save": false}</code>; keep forever, delete only from the picker; titles are the first prompt, no model call; scoped per cwd by default.</li>
+  <li>Deliberately not built: branching or a session tree, automatic pruning, generated or user-set titles, cross-project search, a <code>riffer sessions</code> subcommand.</li>
+</ul>
+</section>
+
+<h2 id="interfaces">Interfaces</h2>
+<div class="table-wrap"><table>
+  <tr><th>Surface</th><th>Shape</th></tr>
+  <tr><td><code>Loader.session(cwd:, host:, **keywords)</code></td><td>builds and returns a Session in one call</td></tr>
+  <tr><td><code>Loader.new(cwd:, host:, store: Store::JSONL.new)</code></td><td>the object; <code>session(**keywords)</code>, <code>reload(session, force: false)</code>, <code>continue</code>, <code>resume(id)</code>, <code>list(all:)</code>, <code>delete(id)</code></td></tr>
+  <tr><td>Strip and override keywords</td><td><code>model:</code>, <code>extensions: false</code>, <code>skills: false</code>, <code>agents_md: false</code>, <code>tools: [...]</code>, <code>max_steps:</code>, <code>reload: :auto | :manual</code>, <code>snapshot:</code>; each maps to a Session keyword or a Loader step</td></tr>
+  <tr><td>Files</td><td><code>~/.riffer/{settings.json,auth.json,trust.json,rig.rb,sessions/}</code>, <code>&lt;cwd&gt;/.riffer/{settings.json,rig.rb}</code></td></tr>
+  <tr><td>Settings keys owned here</td><td><code>reload</code>, <code>sessions.save</code>, <code>extensions.autoload</code></td></tr>
+  <tr><td>Commands installed</td><td><code>/reload</code></td></tr>
+  <tr><td>Store duck</td><td><code>append</code>, <code>read</code>, <code>list</code>, <code>delete</code></td></tr>
+</table></div>
+
+<h2 id="enshrines">Enshrines into</h2>
+<div class="table-wrap"><table>
+  <tr><th>Topic</th><th>Code</th><th>Docs</th></tr>
+  <tr><td>Building a Session, discovery, trust</td><td><code>lib/riffer/rig/loader.rb</code>, <code>trust.rb</code></td><td><code>docs/EXTENSIONS.md</code> (rig.rb), <code>docs/EMBEDDING.md</code> (Loader.session)</td></tr>
+  <tr><td>Settings</td><td><code>lib/riffer/rig/settings.rb</code></td><td><code>docs/CONFIGURATION.md</code>; README Configuration</td></tr>
+  <tr><td>Credentials</td><td><code>lib/riffer/rig/loader.rb</code> calling <code>credentials.rb</code></td><td><code>docs/providers/PROVIDERS.md</code></td></tr>
+  <tr><td>Reload</td><td><code>lib/riffer/rig/loader.rb</code>, <code>commands/reload.rb</code></td><td><code>docs/RELOADING.md</code></td></tr>
+  <tr><td>Store and resume</td><td><code>lib/riffer/rig/store/jsonl.rb</code>, <code>loader.rb</code></td><td><code>docs/SESSIONS.md</code></td></tr>
+</table></div>
+
+<h2 id="provenance">Provenance</h2>
+<p class="provenance"><a href="https://github.com/bottrall/riffer-rig/issues/81">Decide the extension system design</a> (discovery, trust, settings), <a href="https://github.com/bottrall/riffer-rig/issues/83">Decide hot reloading scope and mechanism</a>, <a href="https://github.com/bottrall/riffer-rig/issues/94">Decide session persistence and history</a>, <a href="https://github.com/bottrall/riffer-rig/issues/82">Decide programmatic and headless use</a> (strip keywords, <code>Loader.session</code>), <a href="https://github.com/bottrall/riffer-rig/issues/80">Decide the runtime/CLI separation and the role of ACP</a> (the Loader layer), <a href="https://github.com/bottrall/riffer-rig/issues/90">Decide per-provider onboarding recipes</a> (credential resolution).</p>
+
+</body>
+</html>

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Serve the building plans in plans/ at http://localhost:8001. The current
+# plan is http://localhost:8001/reboot/. Every page also works from file://.
+set -e
+exec bundle exec rake plans

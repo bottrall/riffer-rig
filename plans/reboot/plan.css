@@ -1,0 +1,114 @@
+/* Shared stylesheet for the building plans under plans/. No JavaScript, no
+   external resources: every page renders from file:// and offline. */
+
+:root {
+  --bg: #fbfaf7;
+  --fg: #1f1d1a;
+  --muted: #6b665e;
+  --line: #ddd8cf;
+  --accent: #b4432b;
+  --code-bg: #f1eee8;
+  --note-bg: #fbf3e3;
+  --note-line: #e5c98a;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161513;
+    --fg: #ebe7df;
+    --muted: #a39d92;
+    --line: #34302b;
+    --accent: #e8785e;
+    --code-bg: #22201c;
+    --note-bg: #2a2416;
+    --note-line: #6a5626;
+  }
+}
+
+html { background: var(--bg); color: var(--fg); }
+
+body {
+  margin: 0 auto;
+  padding: 2rem 1.25rem 5rem;
+  max-width: 54rem;
+  font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+nav.plan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  padding-bottom: 0.75rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+
+nav.plan a { color: var(--muted); text-decoration: none; }
+nav.plan a:hover, nav.plan a[aria-current] { color: var(--accent); }
+nav.plan a[aria-current] { font-weight: 600; }
+
+h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 0.25rem; }
+h1 + p.lede { color: var(--muted); font-size: 1.05rem; margin-top: 0; }
+h2 { font-size: 1.45rem; margin: 2.75rem 0 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--line); }
+h3 { font-size: 1.1rem; margin: 1.75rem 0 0.5rem; }
+h4 { font-size: 1rem; margin: 1.25rem 0 0.25rem; }
+
+a { color: var(--accent); }
+p, ul, ol { margin: 0.6rem 0; }
+li { margin: 0.25rem 0; }
+strong { font-weight: 650; }
+
+/* Each Decisions topic is one <section> so a build PR can delete it whole. */
+section.topic {
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--line);
+}
+section.topic > h3 { margin-top: 0; }
+
+code, pre {
+  font-family: ui-monospace, "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+  font-size: 0.88em;
+}
+code { background: var(--code-bg); padding: 0.1em 0.3em; border-radius: 3px; }
+pre {
+  background: var(--code-bg);
+  padding: 0.85rem 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  line-height: 1.45;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+
+.table-wrap { overflow-x: auto; margin: 0.75rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line); }
+th { font-weight: 650; color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; }
+td code { white-space: nowrap; }
+
+.note {
+  background: var(--note-bg);
+  border: 1px solid var(--note-line);
+  border-radius: 6px;
+  padding: 0.6rem 0.9rem;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+figure { margin: 1.25rem 0; }
+figure svg { display: block; max-width: 100%; height: auto; }
+figcaption { color: var(--muted); font-size: 0.85rem; margin-top: 0.4rem; }
+
+/* Diagram primitives: colours follow the theme through CSS variables. */
+svg .box { fill: var(--code-bg); stroke: var(--line); stroke-width: 1.2; }
+svg .box.core { stroke: var(--accent); }
+svg .lbl { fill: var(--fg); font: 600 13px ui-sans-serif, system-ui, sans-serif; }
+svg .sub { fill: var(--muted); font: 11.5px ui-sans-serif, system-ui, sans-serif; }
+svg .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+svg .edge { stroke: var(--muted); stroke-width: 1.2; fill: none; }
+svg .edge.veto { stroke: var(--accent); }
+svg .head { fill: var(--muted); }
+
+.provenance { color: var(--muted); font-size: 0.9rem; }
