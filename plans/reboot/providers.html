@@ -139,7 +139,7 @@
 <section class="topic" id="extension-providers">
 <h3>Extension providers</h3>
 <ul>
-  <li>The provider seam takes an optional <code>recipe:</code>: <code>rig.provider(:jane, recipe: {url: …, fields: […]}) { JaneProvider }</code>. Rig resolves it like a built-in and exposes values through <code>Riffer::Rig.credentials(:jane)</code>; the provider class reads that when building its client. Built-ins get the same lookup plus the <code>Riffer.config</code> assignment.</li>
+  <li>The provider seam takes an optional <code>recipe:</code>: <code>rig.provider(:acme, recipe: {url: …, fields: […]}) { AcmeProvider }</code>. Rig resolves it like a built-in and exposes values through <code>Riffer::Rig.credentials(:acme)</code>; the provider class reads that when building its client. Built-ins get the same lookup plus the <code>Riffer.config</code> assignment.</li>
   <li>No <code>recipe:</code> → generic fallback: one secret <code>api_key</code> with env <code>&lt;IDENTIFIER&gt;_API_KEY</code>.</li>
   <li>Extension providers appear in onboarding, <code>/model</code> hints and <code>/auth</code> like built-ins, because all three read the registry.</li>
 </ul>

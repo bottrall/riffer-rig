@@ -38,7 +38,7 @@
   rig.command("review", description: "Review the diff") { |ctx| ctx.prompt "Review this diff:\n#{`git diff`}" }
   rig.prompt(:git_status) { |ctx| "Branch: #{`git branch --show-current`}" }
   rig.on(:before_tool_call) { |e| next :block, "no force pushes" if e.tool == "bash" &amp;&amp; e.args[:command] =~ /push --force/ }
-  rig.provider(:jane) { JaneProvider }
+  rig.provider(:acme) { AcmeProvider }
   rig.mcp "docs", command: "docs-mcp", args: ["--stdio"]
 end</code></pre>
 
