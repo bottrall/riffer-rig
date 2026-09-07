@@ -29,3 +29,7 @@ All wrappers delegate to the Rakefile under the hood.
 | `bin/plans`     | Serve the building plans in `plans/` at http://localhost:8001                                 |
 
 `bin/rake <task>` is the escape hatch for any rake task without a named wrapper.
+
+## Commenting
+
+Follows `~/riffer/.claude/rules/comments.md` (scoped to `**/*.rb`, `**/*.rake`, `**/Gemfile`): a comment explains a **why** the code cannot — never a **how**, never a restatement of the code. Internal code is self-documenting; a comment survives only for a non-local constraint, an external-system quirk, or a deliberate non-obvious tradeoff. A published library's public surface gets one verb-first sentence per exported symbol, with an optional second sentence reserved strictly for a why. Types live in rbs-inline `#:` annotations, never in comments. `TODO`/`FIXME`/`HACK` are tracked work; `NOTE`/`REVIEW` meet the same why-bar. No history — comments state present-tense constraints, not how the code got here.

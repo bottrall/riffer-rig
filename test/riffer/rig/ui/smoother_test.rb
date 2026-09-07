@@ -100,8 +100,7 @@ class Riffer::Rig::UI::SmootherTest < Minitest::Test
   end
 
   class FakeClock
-    # The real clock sleeps between ticks; the fake returns instantly so the
-    # tick thread drains as fast as the test allows.
+    # Returns instantly, so the tick thread drains as fast as the test allows.
     def sleep(_seconds) = nil
   end
 end

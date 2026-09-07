@@ -44,8 +44,8 @@ class Riffer::Rig::UI::Renderer
     @smoother || PassThroughSmoother.new(@io)
   end
 
-  # Degenerate smoother used when none is wired in: synchronous, flushed
-  # prints, matching the pre-smoothing behavior.
+  # Stand-in when no smoother is injected, so a bare Renderer still prints
+  # synchronously.
   class PassThroughSmoother
     def initialize(io) = @io = io
 
