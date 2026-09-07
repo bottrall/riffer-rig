@@ -19,6 +19,3 @@ module Riffer::Rig::UI::Banner
   extend ::Riffer::Rig::UI::Banner
 end
 
-module Riffer::Rig::UI::Pixels
-  extend ::Riffer::Rig::UI::Pixels
-end
