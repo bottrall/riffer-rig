@@ -6,6 +6,10 @@
 # because releases created with the default GITHUB_TOKEN do not trigger other
 # workflows. The RubyGems trusted publisher is pinned to this file name and the
 # `release` environment; change either and publishing stops.
+#
+# The gem is built and pushed directly (as riffer does) rather than through
+# `rake release`: release-please already tags, and `rake release` refuses to
+# run when setup-ruby has rewritten the tracked .bundle/config.
 
 name: publish
 
@@ -35,7 +39,6 @@ jobs:
     environment: release
     permissions:
       id-token: write
-      contents: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -43,4 +46,6 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-      - uses: rubygems/release-gem@v1
+      - uses: rubygems/configure-rubygems-credentials@v2.1.0
+      - run: bin/build
+      - run: gem push pkg/riffer-rig-*.gem
