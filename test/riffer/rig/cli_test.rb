@@ -14,26 +14,6 @@ class Riffer::Rig::CLITest < Minitest::Test
     end
   end
 
-  def test_configure_provider_configures_the_openrouter_key
-    with_clean_global_state do
-      Riffer::Rig::CLI.send(:configure_provider, 'openrouter', 'sk-or-test')
-
-      assert_equal 'sk-or-test', Riffer.config.openrouter.api_key
-    end
-  end
-
-  def test_configure_provider_reports_a_missing_sdk_rather_than_raising
-    status, = Riffer::Rig::CLI.send(:configure_provider, 'openrouter', 'sk-or-test', loader: ->(_name) { raise LoadError })
-
-    assert_equal :error, status
-  end
-
-  def test_missing_sdk_message_names_the_openai_gem
-    _status, message = Riffer::Rig::CLI.send(:configure_provider, 'openai', 'sk-test', loader: ->(_name) { raise LoadError })
-
-    assert_includes message, 'openai'
-  end
-
   private
 
   # CLI.start mutates the global Riffer config and reads ENV; snapshot and

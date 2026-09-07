@@ -4,6 +4,7 @@ PATH
     riffer-rig (0.1.0)
       anthropic (~> 1.69)
       base64 (~> 0.2)
+      openai (~> 0.80)
       riffer (~> 0.45.0)
       zeitwerk (~> 2.8)
 
@@ -157,7 +158,6 @@ DEPENDENCIES
   guard
   guard-shell
   minitest (~> 6.0)
-  openai (~> 0.80)
   rake (~> 13.0)
   rbs (~> 4.2)
   rbs-inline (~> 0.14)

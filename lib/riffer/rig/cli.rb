@@ -5,11 +5,6 @@ require 'io/console'
 module Riffer::Rig::CLI
   extend self
 
-  # riffer's OpenAI and OpenRouter providers both talk through the openai gem.
-  # It stays an optional dependency — no SDK is a hard dependency of the
-  # gemspec — so it is loaded on demand for the providers that need it.
-  OPENAI_SDK_PROVIDERS = %w[openai openrouter].freeze
-
   PROVIDER_URLS = {
     'anthropic' => 'https://console.anthropic.com/settings/keys',
     'openai' => 'https://platform.openai.com/api-keys',
@@ -27,11 +22,7 @@ module Riffer::Rig::CLI
               onboard(provider, theme, output:, input:)
     return 1 if api_key.nil?
 
-    status, message = configure_provider(provider, api_key)
-    if status == :error
-      output.puts(theme.red(message))
-      return 1
-    end
+    configure_provider(provider, api_key)
 
     agent    = Riffer::Rig::CodingAgent.new
     animator = Riffer::Rig::UI::Animator.new(io: output, theme:)
@@ -46,30 +37,13 @@ module Riffer::Rig::CLI
 
   private
 
-  # Returns <tt>[:ok]</tt>, or <tt>[:error, message]</tt> when the provider's
-  # SDK is not installed.
-  def configure_provider(provider, api_key, loader: method(:require))
-    if OPENAI_SDK_PROVIDERS.include?(provider)
-      status = require_sdk('openai', loader:)
-      return status unless status == [:ok]
-    end
-
+  def configure_provider(provider, api_key)
     case provider
     when 'anthropic'  then Riffer.configure { |c| c.anthropic.api_key  = api_key }
     when 'openai'     then Riffer.configure { |c| c.openai.api_key     = api_key }
     when 'gemini'     then Riffer.configure { |c| c.gemini.api_key     = api_key }
     when 'openrouter' then Riffer.configure { |c| c.openrouter.api_key = api_key }
     end
-
-    [:ok]
-  end
-
-  def require_sdk(name, loader:)
-    loader.call(name)
-    [:ok]
-  rescue LoadError
-    hint = defined?(Bundler) ? "add `gem '#{name}'` to your Gemfile" : "run `gem install #{name}`"
-    [:error, "This model needs the #{name} gem, which is not installed — #{hint} and try again."]
   end
 
   def onboard(provider, theme, output:, input:)

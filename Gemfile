@@ -5,10 +5,6 @@ source 'https://rubygems.org'
 gemspec
 
 group :development, :test do
-  # The OpenAI and OpenRouter providers load this SDK on demand; it is not a
-  # gemspec dependency, so the checkout declares it here to run those models.
-  gem 'openai', '~> 0.80'
-
   gem 'minitest', '~> 6.0'
   gem 'rake', '~> 13.0'
 
