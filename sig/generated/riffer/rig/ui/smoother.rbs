@@ -6,9 +6,10 @@
 class Riffer::Rig::UI::Smoother
   TICK_SECONDS: untyped
 
-  # A quarter per frame reveals a typical burst in ~150ms while a huge one
-  # still drains fast enough to never visibly lag the model.
-  DRAIN_RATE: ::Float
+  # A frame removes only a sixtieth of the remaining backlog — an exponential
+  # decay whose tail keeps text flowing for a second or more, so the reveal
+  # never visibly stops between chunks.
+  DRAIN_RATE: untyped
 
   MIN_CHARS_PER_TICK: ::Integer
 
