@@ -26,4 +26,23 @@ class Riffer::Rig::UI::AnimatorTest < Minitest::Test
 
     assert_equal '', @io.string
   end
+
+  def test_thinking_frames_render_the_equalizer_when_enabled
+    io = StringIO.new
+    io.define_singleton_method(:tty?) { true }
+    animator = Riffer::Rig::UI::Animator.new(io: io, theme: Riffer::Rig::UI::Theme.new(enabled: true))
+    animator.start_thinking
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
+    Process.clock_gettime(Process::CLOCK_MONOTONIC) until io.string.include?('riffing') || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+    animator.stop_thinking
+
+    assert_includes io.string, 'riffing'
+  end
+
+  def test_equalizer_has_no_escapes_when_theme_disabled
+    animator = Riffer::Rig::UI::Animator.new(io: StringIO.new, theme: Riffer::Rig::UI::Theme.new(enabled: false))
+    frame = animator.equalizer(3)
+
+    refute_includes frame, "\e["
+  end
 end

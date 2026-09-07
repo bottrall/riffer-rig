@@ -7,6 +7,10 @@ class Riffer::Rig::UI::Animator
 
   SPINNER_FRAME_SECONDS: ::Float
 
+  EQ_LEVELS: untyped
+
+  EQ_BARS: ::Integer
+
   def initialize: (?io: untyped, ?theme: untyped) -> untyped
 
   # When not on a TTY, prints the final frame once instead of animating.
@@ -15,6 +19,8 @@ class Riffer::Rig::UI::Animator
   def start_thinking: () -> untyped
 
   def stop_thinking: () -> untyped
+
+  def equalizer: (untyped tick) -> untyped
 
   private
 

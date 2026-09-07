@@ -81,11 +81,7 @@ module Riffer::Rig::CLI
     loaded  = [Riffer::Rig::CodingAgent::GLOBAL_AGENTS_FILE, File.join(Dir.pwd, 'AGENTS.md')].select { |path| File.file?(path) }
     context = loaded.empty? ? 'none' : loaded.join(', ')
 
-    glints = Riffer::Rig::UI::Riffy::GLINT_COLS + [nil]
-    frames = glints.map do |glint_col|
-      Riffer::Rig::UI::Banner.lines(theme, model: model, cwd: Dir.pwd, context: context, skills: count_skills, version: Riffer::Rig::VERSION, glint_col: glint_col)
-    end
-    animator.reveal(frames)
+    animator.reveal([Riffer::Rig::UI::Banner.lines(theme, model: model, cwd: Dir.pwd, context: context, skills: count_skills, version: Riffer::Rig::VERSION)])
   end
 
   def count_skills

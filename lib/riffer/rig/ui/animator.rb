@@ -5,6 +5,8 @@
 class Riffer::Rig::UI::Animator
   REVEAL_FRAME_SECONDS = 0.05
   SPINNER_FRAME_SECONDS = 0.12
+  EQ_LEVELS = '▁▂▃▄▅▆▇█'.chars.freeze
+  EQ_BARS = 7
 
   def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io))
     @io = io
@@ -35,7 +37,7 @@ class Riffer::Rig::UI::Animator
     @thread = Thread.new do
       tick = 0
       until @stop
-        @io.print("\r  #{Riffer::Rig::UI::Riffy.equalizer(@theme, tick)}\e[K")
+        @io.print("\r  #{equalizer(tick)}\e[K")
         @io.flush
         sleep(SPINNER_FRAME_SECONDS)
         tick += 1
@@ -51,6 +53,15 @@ class Riffer::Rig::UI::Animator
     @thread = nil
     @io.print("\r\e[K")
     @io.flush
+  end
+
+  def equalizer(tick)
+    bars = Array.new(EQ_BARS) do |i|
+      height = (Math.sin((tick + i) * 0.6).abs * (EQ_LEVELS.length - 1)).round
+      bar = EQ_LEVELS[height]
+      i.even? ? @theme.cyan(bar) : @theme.magenta(bar)
+    end
+    "#{bars.join} #{@theme.grey('riffing…')}"
   end
 
   private

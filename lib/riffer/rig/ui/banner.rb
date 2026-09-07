@@ -23,27 +23,19 @@ module Riffer::Rig::UI::Banner
 
   INFO_LABEL_WIDTH = 8
   INDENT = '  '
-  BEAR_GAP = '  '
 
-  def call(theme, model:, cwd:, context:, skills:, version:, glint_col: nil)
-    lines(theme, model: model, cwd: cwd, context: context, skills: skills, version: version, glint_col: glint_col).join("\n")
+  def call(theme, model:, cwd:, context:, skills:, version:)
+    lines(theme, model: model, cwd: cwd, context: context, skills: skills, version: version).join("\n")
   end
 
-  def lines(theme, model:, cwd:, context:, skills:, version:, glint_col: nil)
-    [''] + art(theme, glint_col: glint_col) + [''] +
+  def lines(theme, model:, cwd:, context:, skills:, version:)
+    [''] + art(theme) + [''] +
       info(theme, model: model, cwd: cwd, context: context, skills: skills, version: version) + ['']
   end
 
-  def art(theme, glint_col: nil)
-    bear = Riffer::Rig::UI::Riffy.render(theme, glint_col: glint_col)
-    right = WORDMARK.each_index.map { |i| theme.paint(WORDMARK[i], ROW_COLOURS[i]) }
-    right += ['', "#{theme.grey('· code ·')}   #{theme.cyan("♪ let's riff ♪")}"]
-
-    pad = (bear.length - right.length) / 2
-    bear.each_index.map do |i|
-      side = right[i - pad] if (pad...(pad + right.length)).cover?(i)
-      "#{INDENT}#{bear[i]}#{BEAR_GAP}#{side}".rstrip
-    end
+  def art(theme)
+    art = WORDMARK.each_index.map { |i| "#{INDENT}#{theme.paint(WORDMARK[i], ROW_COLOURS[i])}" }
+    art + ["#{INDENT}#{theme.grey('· code ·')}   #{theme.cyan("♪ let's riff ♪")}"]
   end
 
   def info(theme, model:, cwd:, context:, skills:, version:)

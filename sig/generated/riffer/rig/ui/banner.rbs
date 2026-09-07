@@ -9,13 +9,11 @@ module Riffer::Rig::UI::Banner
 
   INDENT: ::String
 
-  BEAR_GAP: ::String
+  def call: (untyped theme, model: untyped, cwd: untyped, context: untyped, skills: untyped, version: untyped) -> untyped
 
-  def call: (untyped theme, model: untyped, cwd: untyped, context: untyped, skills: untyped, version: untyped, ?glint_col: untyped) -> untyped
+  def lines: (untyped theme, model: untyped, cwd: untyped, context: untyped, skills: untyped, version: untyped) -> untyped
 
-  def lines: (untyped theme, model: untyped, cwd: untyped, context: untyped, skills: untyped, version: untyped, ?glint_col: untyped) -> untyped
-
-  def art: (untyped theme, ?glint_col: untyped) -> untyped
+  def art: (untyped theme) -> untyped
 
   def info: (untyped theme, model: untyped, cwd: untyped, context: untyped, skills: untyped, version: untyped) -> untyped
 end
