@@ -1,13 +1,22 @@
 # Generated from lib/riffer/rig/cli.rb with RBS::Inline
 
 module Riffer::Rig::CLI
+  # riffer's OpenAI and OpenRouter providers both talk through the openai gem.
+  # It stays an optional dependency — no SDK is a hard dependency of the
+  # gemspec — so it is loaded on demand for the providers that need it.
+  OPENAI_SDK_PROVIDERS: untyped
+
   PROVIDER_URLS: untyped
 
   def start: (?output: untyped, ?input: untyped) -> untyped
 
   private
 
-  def configure_provider: (untyped provider, untyped api_key) -> untyped
+  # Returns <tt>[:ok]</tt>, or <tt>[:error, message]</tt> when the provider's
+  # SDK is not installed.
+  def configure_provider: (untyped provider, untyped api_key, ?loader: untyped) -> untyped
+
+  def require_sdk: (untyped name, loader: untyped) -> untyped
 
   def onboard: (untyped provider, untyped theme, output: untyped, input: untyped) -> untyped
 
