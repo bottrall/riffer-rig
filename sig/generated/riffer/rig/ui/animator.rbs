@@ -7,6 +7,8 @@ class Riffer::Rig::UI::Animator
 
   SPINNER_FRAME_SECONDS: ::Float
 
+  SPINNER_FRAMES: untyped
+
   def initialize: (?io: untyped, ?theme: untyped) -> untyped
 
   # When not on a TTY, prints the final frame once instead of animating.

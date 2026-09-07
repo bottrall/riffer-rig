@@ -5,6 +5,7 @@
 class Riffer::Rig::UI::Animator
   REVEAL_FRAME_SECONDS = 0.05
   SPINNER_FRAME_SECONDS = 0.12
+  SPINNER_FRAMES = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'.chars.freeze
 
   def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io))
     @io = io
@@ -35,7 +36,8 @@ class Riffer::Rig::UI::Animator
     @thread = Thread.new do
       tick = 0
       until @stop
-        @io.print("\r  #{Riffer::Rig::UI::Riffy.equalizer(@theme, tick)}\e[K")
+        frame = SPINNER_FRAMES[tick % SPINNER_FRAMES.length]
+        @io.print("\r  #{frame} #{@theme.cyan('thinking…')}\e[K")
         @io.flush
         sleep(SPINNER_FRAME_SECONDS)
         tick += 1

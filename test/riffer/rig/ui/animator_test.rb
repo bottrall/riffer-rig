@@ -26,4 +26,16 @@ class Riffer::Rig::UI::AnimatorTest < Minitest::Test
 
     assert_equal '', @io.string
   end
+
+  def test_spinner_prints_a_thinking_frame_when_enabled
+    io = StringIO.new
+    io.define_singleton_method(:tty?) { true }
+    animator = Riffer::Rig::UI::Animator.new(io: io, theme: Riffer::Rig::UI::Theme.new(enabled: true))
+    animator.start_thinking
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
+    Process.clock_gettime(Process::CLOCK_MONOTONIC) until io.string.include?('thinking…') || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+    animator.stop_thinking
+
+    assert_includes io.string, 'thinking…'
+  end
 end
