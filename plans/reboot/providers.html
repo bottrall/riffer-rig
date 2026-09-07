@@ -31,8 +31,9 @@
 <section class="topic" id="dependencies">
 <h3>Dependencies</h3>
 <ul>
-  <li>The gemspec hard-depends on <code>riffer</code> (<code>~> 0.45.0</code>), the <code>openai</code> gem, <code>acp-sdk</code> (once published; see <a href="hosts.html#acp">Hosts: ACP</a>) and the current <code>zeitwerk</code> and <code>base64</code>. One SDK covers OpenAI, OpenRouter and Azure OpenAI; Gemini needs no SDK (riffer uses <code>net/http</code>). Four of riffer's six providers therefore work on a bare <code>gem install riffer-rig</code>.</li>
-  <li><code>anthropic</code> and <code>aws-sdk-bedrockruntime</code> are <strong>optional</strong>, installed on demand. The current hard dependency on <code>anthropic</code> is removed.</li>
+  <li>The gemspec hard-depends on <code>riffer</code> (<code>~> 0.45.0</code>), <code>acp-sdk</code> (once published; see <a href="hosts.html#acp">Hosts: ACP</a>) and the current <code>zeitwerk</code> and <code>base64</code>. <strong>No provider SDK is a hard dependency.</strong> The current hard dependency on <code>anthropic</code> is removed and none replaces it.</li>
+  <li><code>anthropic</code>, <code>openai</code> (which covers OpenAI, OpenRouter and Azure OpenAI) and <code>aws-sdk-bedrockruntime</code> are all <strong>optional</strong>, installed on demand through one flow. Gemini needs no SDK (riffer uses <code>net/http</code>), so it is the one provider that works on a bare <code>gem install riffer-rig</code> with no further step; every other provider's first run goes through the missing-SDK confirm below.</li>
+  <li>One rule, no special case: the missing-SDK flow has to exist for any optional gem, so a third costs nothing, and riffer-rig's gemspec carrying no SDK is exactly the state the upstream candidate (riffer declaring each provider's SDK) arrives at. The earlier decision made <code>openai</code> a hard dependency for coverage ratio alone; the maintainer reversed that on 2026-09-07.</li>
   <li>Provider breadth is an anti-goal: riffer's six providers plus whatever extensions register.</li>
 </ul>
 </section>
@@ -43,7 +44,7 @@
 <div class="table-wrap"><table>
   <tr><th>Provider identifier</th><th>SDK gem</th><th>Shipped?</th></tr>
   <tr><td><code>anthropic</code></td><td><code>anthropic</code></td><td>optional</td></tr>
-  <tr><td><code>openai</code>, <code>openrouter</code>, <code>azure_openai</code></td><td><code>openai</code></td><td>hard dependency</td></tr>
+  <tr><td><code>openai</code>, <code>openrouter</code>, <code>azure_openai</code></td><td><code>openai</code></td><td>optional</td></tr>
   <tr><td><code>gemini</code></td><td>none</td><td>n/a</td></tr>
   <tr><td><code>amazon_bedrock</code></td><td><code>aws-sdk-bedrockruntime</code></td><td>optional</td></tr>
 </table></div>
