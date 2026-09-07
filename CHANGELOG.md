@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/bottrall/riffer-rig/compare/v0.1.1...v0.1.2) (2026-09-07)
+
+
+### Bug Fixes
+
+* **ci:** build and push the gem directly instead of rake release ([#148](https://github.com/bottrall/riffer-rig/issues/148)) ([7410915](https://github.com/bottrall/riffer-rig/commit/74109151a8275561dc1fac3bd6ec5b997a08e004))
+
 ## [0.1.1](https://github.com/bottrall/riffer-rig/compare/v0.1.0...v0.1.1) (2026-09-07)
 
 
