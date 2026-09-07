@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Build the gem into pkg/. CI runs this before `gem push`.
+set -e
+exec bundle exec rake build "$@"
