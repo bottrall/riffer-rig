@@ -170,7 +170,7 @@ class Riffer::Rig::REPLTest < Minitest::Test
 
     repl.run
 
-    assert_equal [%i[start neutral], %i[start reasoning], %i[start neutral], :stop], animator.calls
+    assert_equal [%i[start neutral], %i[start reasoning], %i[start neutral], :stop, :stop], animator.calls
   end
 
   def test_renderable_events_stop_the_indicator
@@ -180,7 +180,7 @@ class Riffer::Rig::REPLTest < Minitest::Test
 
     repl.run
 
-    assert_equal [%i[start neutral], :stop, :stop], animator.calls
+    assert_equal [%i[start neutral], :stop, :stop, :stop], animator.calls
   end
 
   def test_indicator_restarts_after_a_tool_call_completes
@@ -195,7 +195,7 @@ class Riffer::Rig::REPLTest < Minitest::Test
 
     repl.run
 
-    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop, %i[start neutral], :stop], animator.calls
+    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop, %i[start neutral], :stop, :stop], animator.calls
   end
 
   def test_indicator_restarts_after_a_skill_activates
@@ -205,7 +205,7 @@ class Riffer::Rig::REPLTest < Minitest::Test
 
     repl.run
 
-    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop], animator.calls
+    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop, :stop], animator.calls
   end
 
   def test_indicator_survives_tool_call_deltas_and_finish_reason
@@ -218,7 +218,7 @@ class Riffer::Rig::REPLTest < Minitest::Test
 
     repl.run
 
-    assert_equal [%i[start neutral], :stop], animator.calls
+    assert_equal [%i[start neutral], :stop, :stop], animator.calls
   end
 
   def test_reasoning_resuming_mid_turn_restarts_the_indicator
@@ -228,7 +228,24 @@ class Riffer::Rig::REPLTest < Minitest::Test
 
     repl.run
 
-    assert_equal [%i[start neutral], :stop, %i[start reasoning], :stop], animator.calls
+    assert_equal [%i[start neutral], :stop, %i[start reasoning], :stop, :stop], animator.calls
+  end
+
+  def test_indicator_is_stopped_before_the_end_of_turn_newline
+    animator = spy_animator
+    order = animator.calls
+    output = StringIO.new
+    output.define_singleton_method(:puts) { |str = ''| order << [:write, str] }
+    agent = stub_agent([Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}')])
+    repl = build_repl(agent, output, "hi\n", animator: animator)
+
+    repl.run
+
+    last_start = order.rindex { |call| call.is_a?(Array) && call.first == :start }
+    following_stop = order[(last_start + 1)..].index(:stop) + last_start + 1
+    epilogue = order.rindex { |call| call.is_a?(Array) && call.first == :write && call.last.empty? }
+
+    assert_operator following_stop, :<, epilogue
   end
 
   def test_tool_result_printing_stops_and_restarts_the_indicator

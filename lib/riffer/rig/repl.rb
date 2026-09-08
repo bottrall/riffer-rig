@@ -65,6 +65,7 @@ class Riffer::Rig::REPL
       end
       @renderer.render(event)
     end
+    @animator.stop
     @smoother.finish
     @output.puts
   rescue StandardError => e
