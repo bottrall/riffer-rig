@@ -1,0 +1,21 @@
+# Generated from lib/riffer/rig/ui/cursor.rb with RBS::Inline
+
+# Hides the terminal cursor while a turn is in flight: a hidden cursor can't
+# flicker against the animator's erase-and-redraw churn.
+class Riffer::Rig::UI::Cursor
+  HIDE: ::String
+
+  SHOW: ::String
+
+  def initialize: (?io: untyped, ?theme: untyped) -> untyped
+
+  def hide: () -> untyped
+
+  def show: () -> untyped
+
+  private
+
+  def write: (untyped sequence) -> untyped
+
+  def enabled?: () -> untyped
+end
