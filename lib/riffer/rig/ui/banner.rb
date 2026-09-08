@@ -35,7 +35,7 @@ module Riffer::Rig::UI::Banner
 
   def art(theme)
     art = WORDMARK.each_index.map { |i| "#{INDENT}#{theme.paint(WORDMARK[i], ROW_COLOURS[i])}" }
-    art + ["#{INDENT}#{theme.grey('· code ·')}   #{theme.cyan("♪ let's riff ♪")}"]
+    art + ["#{INDENT}#{theme.cyan("♪ let's riff ♪")}"]
   end
 
   def info(theme, model:, cwd:, context:, skills:, version:)
