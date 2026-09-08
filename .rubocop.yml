@@ -43,8 +43,11 @@ Metrics/BlockNesting:
 Minitest/MultipleAssertions:
   Max: 1
 
-Naming/PredicateMethod: # the Host duck is fixed by the plan: confirm answers yes/no
-  Enabled: false
+Naming/PredicateMethod:
+  Exclude:
+    # Host#confirm is a blocking prompt, not a predicate; its name is fixed by
+    # the Host duck's public contract.
+    - "lib/riffer/rig/host.rb"
 
 Style/ClassAndModuleChildren:
   EnforcedStyle: compact
