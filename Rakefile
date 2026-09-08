@@ -20,6 +20,21 @@ RuboCop::RakeTask.new do |t|
   t.options = ENV.fetch('RUBOCOP_OPTS', '').split
 end
 
+desc 'Fail if any plan links to a page or anchor that no longer exists'
+task :plans_check do
+  pages = Dir['plans/**/*.html'].to_h { |path| [File.basename(path), File.read(path)] }
+  dangling = pages.flat_map do |basename, source|
+    source.scan(/href="([a-z_-]+\.html)(?:#([a-z_-]+))?"/).filter_map do |target, anchor|
+      next "#{basename} -> #{target} (missing page)" unless pages.key?(target)
+      next if anchor.nil? || pages[target].include?("id=\"#{anchor}\"")
+
+      "#{basename} -> #{target}##{anchor} (missing anchor)"
+    end
+  end
+
+  abort dangling.join("\n") unless dangling.empty?
+end
+
 namespace :rbs do
   desc 'Fail if rbs_collection.lock.yaml is out of date with rbs_collection.yaml or Gemfile.lock'
   task :collection_check do
@@ -81,6 +96,6 @@ desc 'Check RBS signatures are current, then type-check'
 task typecheck: %w[rbs:check rbs:collection_check rbs:lint_manual steep:check]
 
 desc 'Run everything CI runs'
-task ci: %i[test rubocop typecheck]
+task ci: %i[test rubocop plans_check typecheck]
 
 task default: :ci

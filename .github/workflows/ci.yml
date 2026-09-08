@@ -13,6 +13,7 @@ jobs:
         with:
           bundler-cache: true
       - run: bin/lint
+      - run: rake plans_check
 
   test:
     runs-on: ubuntu-latest
