@@ -46,3 +46,5 @@ Style/MutableConstant: # freeze shared constants / value objects
 # that contract even when a given tool doesn't use it.
 Lint/UnusedMethodArgument:
   AllowUnusedKeywordArguments: true
+Naming/PredicateMethod: # the Host duck is fixed by the plan: confirm answers yes/no
+  Enabled: false

@@ -1,0 +1,60 @@
+# Generated from lib/riffer/rig/session.rb with RBS::Inline
+
+# The runtime: one Session builds its own Riffer::Agent from a per-instance
+# Riffer::Agent::Config and streams a prompt.
+#
+#   session = Riffer::Rig::Session.new(model: 'mock/x')
+#   session.prompt('hello') { |event| ... }   # yields riffer StreamEvents
+#   session.prompt('hello').each { |event| }  # an Enumerator without a block
+#
+# Two Sessions in one process share nothing but the process-wide extension
+# registry and riffer's provider repository. One prompt runs at a time; a
+# second while one is running raises Riffer::Rig::Session::BusyError. The
+# Session never renders, never prints, never reads the filesystem.
+class Riffer::Rig::Session
+  # Raised when a second prompt or registrar build runs while one is already
+  # running on this Session.
+  class BusyError < StandardError
+  end
+
+  BASE_PROMPT_TEMPLATE: ::String
+
+  DEFAULT_NAME: ::String
+
+  attr_reader agent: untyped
+
+  attr_reader cwd: untyped
+
+  attr_reader host: untyped
+
+  attr_reader settings: untyped
+
+  @busy: bool
+
+  # : (
+  #    String,
+  #    ?extensions: Array[Riffer::Rig::Extension],
+  #    ?tools: Array[String]?,
+  #    ?settings: Hash[Symbol, untyped],
+  #    ?host: untyped,
+  #    ?cwd: String?,
+  #    ?name: String,
+  #    ?instructions: String?
+  #  ) -> void
+  def initialize: (untyped model, ?extensions: untyped, ?tools: untyped, ?settings: untyped, ?host: untyped, ?cwd: untyped, ?name: untyped, ?instructions: untyped) -> untyped
+
+  # : (String) { (untyped) -> void } -> nil
+  # : (String) -> Enumerator[untyped, void]
+  def prompt: (untyped text) ?{ (?) -> untyped } -> untyped
+
+  private
+
+  # : (Array[Riffer::Rig::Extension], Array[String]?) -> Riffer::Rig::Registrar
+  def build_registrar: (untyped extensions) -> untyped
+
+  # : (Array[singleton(Riffer::Tool)], Array[String]?) -> Array[singleton(Riffer::Tool)]
+  def select_tools: (untyped registered, untyped allowlist) -> untyped
+
+  # : (String) -> String
+  def system_prompt: (untyped base_prompt) -> untyped
+end
