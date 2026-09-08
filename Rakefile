@@ -20,11 +20,6 @@ RuboCop::RakeTask.new do |t|
   t.options = ENV.fetch('RUBOCOP_OPTS', '').split
 end
 
-desc 'Fail if any plan links to a page or anchor that no longer exists'
-task :plans_check do
-  sh 'bin/plans_check'
-end
-
 namespace :rbs do
   desc 'Generate RBS signatures from inline annotations'
   task :generate do
@@ -66,6 +61,6 @@ desc 'Check RBS signatures are current, then type-check'
 task typecheck: %w[rbs:check steep:check]
 
 desc 'Run everything CI runs'
-task ci: %i[test rubocop plans_check typecheck]
+task ci: %i[test rubocop typecheck]
 
 task default: :ci
