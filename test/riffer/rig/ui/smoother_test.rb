@@ -17,9 +17,16 @@ class Riffer::Rig::UI::SmootherTest < Minitest::Test
     assert_equal '', @io.string
   end
 
-  def test_tick_releases_at_least_the_minimum_chars
+  def test_tick_accrues_a_sub_character_floor_across_ticks
     @smoother << 'a'
     @smoother.tick
+
+    assert_equal '', @io.string
+  end
+
+  def test_accrued_floor_emits_once_it_reaches_a_character
+    @smoother << 'a'
+    6.times { @smoother.tick }
 
     assert_equal 'a', @io.string
   end
@@ -31,19 +38,12 @@ class Riffer::Rig::UI::SmootherTest < Minitest::Test
     assert_equal 'a' * 2, @io.string
   end
 
-  def test_tick_releases_the_whole_backlog_when_smaller_than_the_slice
-    @smoother << 'a'
-    @smoother.tick
-
-    assert_equal 'a', @io.string
-  end
-
   def test_successive_ticks_keep_draining
     @smoother << ('a' * 120)
     @smoother.tick
     @smoother.tick
 
-    assert_equal 'a' * 4, @io.string
+    assert_equal 'a' * 3, @io.string
   end
 
   def test_drain_flushes_the_entire_backlog

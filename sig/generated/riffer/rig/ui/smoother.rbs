@@ -8,10 +8,13 @@ class Riffer::Rig::UI::Smoother
 
   # A frame removes only a sixtieth of the remaining backlog — an exponential
   # decay whose tail keeps text flowing for a second or more, so the reveal
-  # never visibly stops between chunks.
+  # never visibly stops between chunks. The carry accrues sub-character
+  # releases so the effective rate can settle at the provider's throughput;
+  # the floor is fractional (10 chars/s) so it can't over-drain a backlog
+  # that's trickling in slower than 60 chars/s.
   BACKLOG_FRACTION_PER_TICK: untyped
 
-  MIN_CHARS_PER_TICK: ::Integer
+  MIN_CHARS_PER_TICK: untyped
 
   def initialize: (?io: untyped, ?theme: untyped, ?clock: untyped) -> untyped
 

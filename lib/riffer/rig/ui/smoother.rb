@@ -8,15 +8,19 @@ class Riffer::Rig::UI::Smoother
 
   # A frame removes only a sixtieth of the remaining backlog — an exponential
   # decay whose tail keeps text flowing for a second or more, so the reveal
-  # never visibly stops between chunks.
-  BACKLOG_FRACTION_PER_TICK = 1.0 / 60.0
-  MIN_CHARS_PER_TICK = 1
+  # never visibly stops between chunks. The carry accrues sub-character
+  # releases so the effective rate can settle at the provider's throughput;
+  # the floor is fractional (10 chars/s) so it can't over-drain a backlog
+  # that's trickling in slower than 60 chars/s.
+  BACKLOG_FRACTION_PER_TICK = Rational(1, 60)
+  MIN_CHARS_PER_TICK = Rational(1, 6)
 
   def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io), clock: Kernel)
     @io = io
     @theme = theme
     @clock = clock
     @backlog = +''
+    @carry = Rational(0)
     @mutex = Mutex.new
     @thread = nil
     @stop = false
@@ -50,7 +54,11 @@ class Riffer::Rig::UI::Smoother
     @mutex.synchronize do
       return if @backlog.empty?
 
-      count = [(@backlog.length * BACKLOG_FRACTION_PER_TICK).ceil, MIN_CHARS_PER_TICK].max
+      @carry += [@backlog.length * BACKLOG_FRACTION_PER_TICK, MIN_CHARS_PER_TICK].max
+      count = @carry.floor
+      return if count.zero?
+
+      @carry -= count
       @io.print(@backlog.slice!(0, count))
       @io.flush
     end
