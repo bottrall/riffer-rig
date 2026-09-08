@@ -39,6 +39,7 @@
 <h3>Two pillars, one boundary</h3>
 <p>Extension-in-Ruby and in-process embedding are co-equal. They do not conflict as long as the runtime/terminal boundary holds. Three seams keep that boundary honest, and each has a home in this plan:</p>
 <ul>
+  <li>extensions that touch the UI go through a host interface the terminal implements and an embedding host implements differently or ignores (<a href="extensions.html#host-interface">Extensions: Host interface</a>);</li>
   <li>extension discovery (scanning config and project directories) lives in the Loader; the runtime only accepts registered objects (<a href="loader.html#discovery">Loader: discovery</a>);</li>
   <li>global state (riffer registries, config singletons) allows several isolated agents in one process (<a href="session.html#credentials">Session: per-session credentials</a>).</li>
 </ul>
