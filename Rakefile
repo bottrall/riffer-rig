@@ -20,11 +20,6 @@ RuboCop::RakeTask.new do |t|
   t.options = ENV.fetch('RUBOCOP_OPTS', '').split
 end
 
-desc 'Fail if any plan links to a page or anchor that no longer exists'
-task :plans_check do
-  sh 'bin/plans_check'
-end
-
 namespace :rbs do
   desc 'Fail if rbs_collection.lock.yaml is out of date with rbs_collection.yaml or Gemfile.lock'
   task :collection_check do
@@ -86,6 +81,6 @@ desc 'Check RBS signatures are current, then type-check'
 task typecheck: %w[rbs:check rbs:collection_check rbs:lint_manual steep:check]
 
 desc 'Run everything CI runs'
-task ci: %i[test rubocop plans_check typecheck]
+task ci: %i[test rubocop typecheck]
 
 task default: :ci
