@@ -9,7 +9,7 @@ class Riffer::Rig::UI::Smoother
   # A frame removes only a sixtieth of the remaining backlog — an exponential
   # decay whose tail keeps text flowing for a second or more, so the reveal
   # never visibly stops between chunks.
-  DRAIN_RATE = 1.0 / 60.0
+  BACKLOG_FRACTION_PER_TICK = 1.0 / 60.0
   MIN_CHARS_PER_TICK = 1
 
   def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io), clock: Kernel)
@@ -50,7 +50,7 @@ class Riffer::Rig::UI::Smoother
     @mutex.synchronize do
       return if @backlog.empty?
 
-      count = [(@backlog.length * DRAIN_RATE).ceil, MIN_CHARS_PER_TICK].max
+      count = [(@backlog.length * BACKLOG_FRACTION_PER_TICK).ceil, MIN_CHARS_PER_TICK].max
       @io.print(@backlog.slice!(0, count))
       @io.flush
     end
