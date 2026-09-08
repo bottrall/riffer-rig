@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    riffer-rig (0.1.2)
+    riffer-rig (0.2.0)
       anthropic (~> 1.69)
       base64 (~> 0.2)
       openai (~> 0.80)
