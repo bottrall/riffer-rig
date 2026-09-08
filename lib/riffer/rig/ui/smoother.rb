@@ -15,10 +15,26 @@ class Riffer::Rig::UI::Smoother
   BACKLOG_FRACTION_PER_TICK = Rational(1, 60)
   MIN_CHARS_PER_TICK = Rational(1, 6)
 
-  def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io), clock: Kernel)
+  # A sink receives paced slices of the backlog. It defaults to raw printing
+  # so a bare Smoother still writes plain text synchronously.
+  class PrintSink
+    def initialize(io)
+      @io = io
+    end
+
+    def <<(slice)
+      @io.print(slice)
+      @io.flush
+    end
+
+    def finish = nil
+  end
+
+  def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io), clock: Kernel, sink: PrintSink.new(io))
     @io = io
     @theme = theme
     @clock = clock
+    @sink = sink
     @backlog = +''
     @carry = Rational(0)
     @mutex = Mutex.new
@@ -40,12 +56,7 @@ class Riffer::Rig::UI::Smoother
   end
 
   def <<(content)
-    if enabled?
-      @mutex.synchronize { @backlog << content }
-    else
-      @io.print(content)
-      @io.flush
-    end
+    @mutex.synchronize { @backlog << content }
     self
   end
 
@@ -59,18 +70,18 @@ class Riffer::Rig::UI::Smoother
       return if count.zero?
 
       @carry -= count
-      @io.print(@backlog.slice!(0, count))
-      @io.flush
+      @sink << @backlog.slice!(0, count)
     end
   end
 
-  # Called before non-delta output so printed order matches stream order.
+  # Called before non-delta output so printed order matches stream order. On a
+  # TTY the backlog was already paced out in slices; off-TTY it delivers the
+  # full backlog at once so the sink renders whole markdown blocks.
   def drain
     @mutex.synchronize do
       return if @backlog.empty?
 
-      @io.print(@backlog.slice!(0, @backlog.length))
-      @io.flush
+      @sink << @backlog.slice!(0, @backlog.length)
     end
   end
 
@@ -82,6 +93,7 @@ class Riffer::Rig::UI::Smoother
       @thread = nil
     end
     drain
+    @sink.finish
   end
 
   private

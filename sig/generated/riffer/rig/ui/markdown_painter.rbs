@@ -1,0 +1,27 @@
+# Generated from lib/riffer/rig/ui/markdown_painter.rb with RBS::Inline
+
+class Riffer::Rig::UI::MarkdownPainter
+  MIN_WIDTH: ::Integer
+
+  MAX_WIDTH: ::Integer
+
+  def initialize: (io: untyped, theme: untyped, ?highlighter: untyped) -> untyped
+
+  # On a TTY the smoother delivers paced slices, each triggering a repaint;
+  # the reveal cadence (and with it the typing feel) stays in its pacing.
+  # Off-TTY it delivers whole blocks, each rendered once as plain text.
+  def <<: (untyped content) -> untyped
+
+  # Rows painted here are final; ownership passes to the terminal scrollback.
+  def finish: () -> untyped
+
+  private
+
+  def repaint: () -> untyped
+
+  def erase_rows: () -> untyped
+
+  def width: () -> untyped
+
+  def tty?: () -> untyped
+end

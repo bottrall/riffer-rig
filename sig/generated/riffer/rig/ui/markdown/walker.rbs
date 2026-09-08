@@ -1,0 +1,47 @@
+# Generated from lib/riffer/rig/ui/markdown/walker.rb with RBS::Inline
+
+module Riffer::Rig::UI::Markdown::Walker
+  # Pure pipeline stage: markdown source + terminal width → styled, hard-wrapped
+  # lines. Unstable markdown syntax (half-typed tokens, open fences) streams as
+  # raw text and joins the parse once stable. Falls back to plain text without
+  # escapes when the Theme is disabled.
+  INDENT_STEP: ::String
+
+  BULLET: ::String
+
+  ESCAPE_RE: ::Regexp
+
+  ANSI_RE: ::Regexp
+
+  SMART_QUOTES: untyped
+
+  def render: (untyped source, width: untyped, theme: untyped, highlighter: untyped) -> untyped
+
+  def visual_width: (untyped line) -> untyped
+
+  # Styled before wrapping so a visual width never splits from its escape
+  # sequences; the scan treats escape sequences as zero-width.
+  def wrap_styled: (untyped line, untyped width) -> untyped
+
+  def render_block: (untyped block, untyped lines, width: untyped, theme: untyped, highlighter: untyped, ?indent: untyped) -> untyped
+
+  def render_quote: (untyped block, untyped lines, width: untyped, theme: untyped, highlighter: untyped, indent: untyped) -> untyped
+
+  def render_codeblock: (untyped block, untyped lines, width: untyped, theme: untyped, highlighter: untyped, indent: untyped) -> untyped
+
+  def render_list: (untyped list, untyped lines, width: untyped, theme: untyped, highlighter: untyped, indent: untyped) -> untyped
+
+  def render_list_item: (untyped item, width: untyped, theme: untyped, highlighter: untyped, first: untyped, continuation: untyped) -> untyped
+
+  def render_table: (untyped table, untyped lines, width: untyped, theme: untyped, highlighter: untyped) -> untyped
+
+  def render_inline: (untyped children, theme: untyped, highlighter: untyped) -> untyped
+
+  def inline_text: (untyped element, theme: untyped, highlighter: untyped) -> untyped
+
+  def header_text: (untyped block, untyped theme) -> untyped
+
+  def pad: (untyped cell, untyped width, untyped alignment) -> untyped
+
+  def flush: (untyped lines, untyped text, width: untyped, indent: untyped) -> untyped
+end

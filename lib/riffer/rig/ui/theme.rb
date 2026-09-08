@@ -17,6 +17,12 @@ class Riffer::Rig::UI::Theme
     "\e[38;2;#{rgb[0]};#{rgb[1]};#{rgb[2]}m#{text}\e[0m"
   end
 
+  def italic(text)
+    return text.to_s unless enabled
+
+    "\e[3m#{text}\e[0m"
+  end
+
   def pink(text) = paint(text, Riffer::Rig::UI::Palette::PINK)
 
   def magenta(text) = paint(text, Riffer::Rig::UI::Palette::MAGENTA)

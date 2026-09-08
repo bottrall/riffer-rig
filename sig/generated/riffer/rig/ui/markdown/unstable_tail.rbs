@@ -1,0 +1,17 @@
+# Generated from lib/riffer/rig/ui/markdown/unstable_tail.rb with RBS::Inline
+
+module Riffer::Rig::UI::Markdown::UnstableTail
+  # Splits accumulated markdown source into a stable prefix and a raw tail.
+  FENCE_OPEN: ::Regexp
+
+  PAIRED_MARKERS: untyped
+
+  # The tail is raw in the frame so half-typed syntax never renders as
+  # formatting and snaps back: an open fence would close itself, a lone `*`
+  # would italicize. It joins the parse once stable.
+  def split: (untyped source) -> untyped
+
+  def open_fence_source: (untyped source) -> untyped
+
+  def trailing_open_emphasis: (untyped source) -> untyped
+end

@@ -4,7 +4,7 @@ class Riffer::Rig::REPL
   EXIT_COMMANDS = ['/exit', '/quit'].freeze
   SKILL_COMMAND = %r{\A/skill:([a-z0-9]+(?:-[a-z0-9]+)*)(?:\s+(.*))?\z}m
 
-  def initialize(agent:, renderer:, input: $stdin, output: $stdout, theme: Riffer::Rig::UI::Theme.for(output), animator: Riffer::Rig::UI::Animator.new(io: output, theme:), smoother: Riffer::Rig::UI::Smoother.new(io: output, theme:), cursor: Riffer::Rig::UI::Cursor.new(io: output, theme:))
+  def initialize(agent:, renderer:, input: $stdin, output: $stdout, theme: Riffer::Rig::UI::Theme.for(output), animator: Riffer::Rig::UI::Animator.new(io: output, theme:), smoother: Riffer::Rig::UI::Smoother.new(io: output, theme:, sink: Riffer::Rig::UI::MarkdownPainter.new(io: output, theme:)), cursor: Riffer::Rig::UI::Cursor.new(io: output, theme:))
     @agent = agent
     @renderer = renderer
     @animator = animator

@@ -1,0 +1,15 @@
+# Generated from lib/riffer/rig/ui/markdown/highlighter.rb with RBS::Inline
+
+# Maps rouge token types to Palette colors for code inside fenced blocks.
+# Falls back to unstyled body text for an unknown or missing language.
+class Riffer::Rig::UI::Markdown::Highlighter
+  COLOR_FOR_TOKEN: untyped
+
+  def initialize: (untyped theme) -> untyped
+
+  def highlight: (untyped source, untyped language) -> untyped
+
+  private
+
+  def color_for: (untyped token) -> untyped
+end

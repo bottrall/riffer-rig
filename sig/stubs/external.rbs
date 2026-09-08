@@ -1,0 +1,22 @@
+# Kramdown and rouge ship no RBS; only the entry points we touch need
+# declarations so Steep doesn't report UnknownConstant.
+#
+# `Rouge::Lexer.find_fancy` returns a lexer *class* at runtime, but its stub
+# return type is the instance type; `lex` is therefore declared as an instance
+# method so calls on the result resolve.
+
+module Kramdown
+  class Document
+    def initialize: (String source, ?Hash[untyped, untyped] options) -> void
+
+    def root: -> untyped
+  end
+end
+
+module Rouge
+  class Lexer
+    def self.find_fancy: (::interned name) -> ::Rouge::Lexer?
+
+    def lex: (String source, ?continue: bool) -> untyped
+  end
+end

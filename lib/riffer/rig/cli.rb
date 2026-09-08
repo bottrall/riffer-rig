@@ -30,7 +30,7 @@ module Riffer::Rig::CLI
     reveal_banner(theme, animator, model)
 
     tally    = Riffer::Rig::TokenTally.new(pricing: Riffer::Rig::Settings.pricing_for(model))
-    smoother = Riffer::Rig::UI::Smoother.new(io: output, theme:)
+    smoother = Riffer::Rig::UI::Smoother.new(io: output, theme:, sink: Riffer::Rig::UI::MarkdownPainter.new(io: output, theme:))
     renderer = Riffer::Rig::UI::Renderer.new(io: output, theme:, tally:, smoother:)
     Riffer::Rig::REPL.new(agent:, renderer:, animator:, theme:, smoother:, input:, output:).run
     0
