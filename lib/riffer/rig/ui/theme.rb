@@ -32,6 +32,14 @@ class Riffer::Rig::UI::Theme
 
   # @rbs text: String
   # @rbs return: String
+  def italic(text)
+    return text unless enabled
+
+    "\e[3m#{text}\e[0m"
+  end
+
+  # @rbs text: String
+  # @rbs return: String
   def pink(text) = paint(text, Riffer::Rig::UI::Palette::PINK)
 
   # @rbs text: String

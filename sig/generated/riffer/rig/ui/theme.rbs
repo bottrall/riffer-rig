@@ -24,6 +24,10 @@ class Riffer::Rig::UI::Theme
 
   # @rbs text: String
   # @rbs return: String
+  def italic: (String text) -> String
+
+  # @rbs text: String
+  # @rbs return: String
   def pink: (String text) -> String
 
   # @rbs text: String

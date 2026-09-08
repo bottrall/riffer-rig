@@ -24,7 +24,10 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'anthropic', '~> 1.69'
   spec.add_dependency 'base64', '~> 0.2'
+  spec.add_dependency 'kramdown', '~> 2.5'
+  spec.add_dependency 'kramdown-parser-gfm', '~> 1.1'
   spec.add_dependency 'openai', '~> 0.80'
   spec.add_dependency 'riffer', '~> 0.45.0'
+  spec.add_dependency 'rouge', '~> 4.7'
   spec.add_dependency 'zeitwerk', '~> 2.8'
 end

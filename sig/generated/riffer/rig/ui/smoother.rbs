@@ -16,6 +16,23 @@ class Riffer::Rig::UI::Smoother
 
   MIN_CHARS_PER_TICK: Rational
 
+  # A sink receives paced slices of the backlog. It defaults to raw printing
+  # so a bare Smoother still writes plain text synchronously.
+  class PrintSink
+    @io: IO
+
+    # @rbs io: IO
+    # @rbs return: void
+    def initialize: (IO io) -> void
+
+    # @rbs slice: String
+    # @rbs return: void
+    def <<: (String slice) -> void
+
+    # @rbs return: void
+    def finish: () -> void
+  end
+
   @newline_pending: bool
 
   @stop: bool
@@ -28,6 +45,8 @@ class Riffer::Rig::UI::Smoother
 
   @backlog: String
 
+  @sink: _Sink
+
   @clock: singleton(Kernel)
 
   @theme: Riffer::Rig::UI::Theme
@@ -37,8 +56,9 @@ class Riffer::Rig::UI::Smoother
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs clock: singleton(Kernel)
+  # @rbs sink: _Sink
   # @rbs return: void
-  def initialize: (?io: IO, ?theme: Riffer::Rig::UI::Theme, ?clock: singleton(Kernel)) -> void
+  def initialize: (?io: IO, ?theme: Riffer::Rig::UI::Theme, ?clock: singleton(Kernel), ?sink: _Sink) -> void
 
   # @rbs return: void
   def start: () -> void
@@ -53,7 +73,8 @@ class Riffer::Rig::UI::Smoother
   def tick: () -> void
 
   # Called before non-prose output so printed order matches stream order. The
-  # backlog is flushed, then any partial prose block the model left without a
+  # backlog is flushed (off-TTY as one whole block, so the sink renders the
+  # final markdown), then any partial prose block the model left without a
   # trailing newline gets one, so block spacing never depends on the model's
   # last character.
   #

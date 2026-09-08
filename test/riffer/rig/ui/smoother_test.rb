@@ -16,6 +16,26 @@ describe Riffer::Rig::UI::Smoother do
     @smoother = Riffer::Rig::UI::Smoother.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: true), clock: @clock)
   end
 
+  def echo_sink
+    @echo_sink ||= Class.new do
+      attr_reader :slices, :finished
+
+      def initialize
+        @slices = []
+        @finished = false
+      end
+
+      def <<(slice)
+        @slices << slice
+        self
+      end
+
+      def finish
+        @finished = true
+      end
+    end.new
+  end
+
   it 'tick is a no op with an empty backlog' do
     @smoother.tick
 
@@ -34,6 +54,47 @@ describe Riffer::Rig::UI::Smoother do
     6.times { @smoother.tick }
 
     assert_equal 'a', @io.string
+  end
+
+  it 'tick hands a paced slice to the sink' do
+    sink = echo_sink
+    smoother = Riffer::Rig::UI::Smoother.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: true),
+      clock: @clock,
+      sink: sink
+    )
+    smoother << ('a' * 120)
+    smoother.tick
+
+    assert_equal 'a' * 2, sink.slices.join
+  end
+
+  it 'off tty writes go through the sink not raw to the io' do
+    sink = echo_sink
+    smoother = Riffer::Rig::UI::Smoother.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: false),
+      clock: @clock,
+      sink: sink
+    )
+    smoother << 'direct'
+    smoother.finish
+
+    assert_equal [['direct', "\n"], ''], [sink.slices.map(&:to_s), @io.string] # rubocop:disable Style/WordArray
+  end
+
+  it 'finish notifies the sink' do
+    sink = echo_sink
+    smoother = Riffer::Rig::UI::Smoother.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: true),
+      clock: @clock,
+      sink: sink
+    )
+    smoother.finish
+
+    assert sink.finished
   end
 
   it 'tick releases a proportional slice of the backlog' do

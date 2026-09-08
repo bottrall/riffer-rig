@@ -1,0 +1,119 @@
+# Generated from lib/riffer/rig/ui/markdown/walker.rb with RBS::Inline
+
+module Riffer::Rig::UI::Markdown::Walker
+  # Pure pipeline stage: markdown source + terminal width → styled, hard-wrapped
+  # lines. Unstable markdown syntax (half-typed tokens, open fences) streams as
+  # raw text and joins the parse once stable. Falls back to plain text without
+  # escapes when the Theme is disabled.
+  INDENT_STEP: String
+
+  BULLET: String
+
+  ESCAPE_RE: Regexp
+
+  ANSI_RE: Regexp
+
+  SMART_QUOTES: Hash[Symbol, String]
+
+  # @rbs source: String
+  # @rbs width: Integer
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs highlighter: _Highlighter
+  # @rbs return: Array[String]
+  def render: (String source, width: Integer, theme: Riffer::Rig::UI::Theme, highlighter: _Highlighter) -> Array[String]
+
+  # @rbs line: String
+  # @rbs return: Integer
+  def visual_width: (String line) -> Integer
+
+  # Styled before wrapping so a visual width never splits from its escape
+  # sequences; the scan treats escape sequences as zero-width.
+  #
+  # @rbs line: String
+  # @rbs width: Integer
+  # @rbs return: Array[String]
+  def wrap_styled: (String line, Integer width) -> Array[String]
+
+  # @rbs block: _KramdownElement
+  # @rbs lines: Array[String]
+  # @rbs width: Integer
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs highlighter: _Highlighter
+  # @rbs ?indent: String
+  # @rbs return: void
+  def render_block: (_KramdownElement block, Array[String] lines, width: Integer, theme: Riffer::Rig::UI::Theme, highlighter: _Highlighter, ?indent: untyped) -> void
+
+  # @rbs block: _KramdownElement
+  # @rbs lines: Array[String]
+  # @rbs width: Integer
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs highlighter: _Highlighter
+  # @rbs indent: String
+  # @rbs return: void
+  def render_quote: (_KramdownElement block, Array[String] lines, width: Integer, theme: Riffer::Rig::UI::Theme, highlighter: _Highlighter, indent: String) -> void
+
+  # @rbs block: _KramdownElement
+  # @rbs lines: Array[String]
+  # @rbs width: Integer
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs highlighter: _Highlighter
+  # @rbs indent: String
+  # @rbs return: void
+  def render_codeblock: (_KramdownElement block, Array[String] lines, width: Integer, theme: Riffer::Rig::UI::Theme, highlighter: _Highlighter, indent: String) -> void
+
+  # @rbs list: _KramdownElement
+  # @rbs lines: Array[String]
+  # @rbs width: Integer
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs highlighter: _Highlighter
+  # @rbs indent: String
+  # @rbs return: void
+  def render_list: (_KramdownElement list, Array[String] lines, width: Integer, theme: Riffer::Rig::UI::Theme, highlighter: _Highlighter, indent: String) -> void
+
+  # @rbs item: _KramdownElement
+  # @rbs width: Integer
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs highlighter: _Highlighter
+  # @rbs first: String
+  # @rbs continuation: String
+  # @rbs return: Array[String]
+  def render_list_item: (_KramdownElement item, width: Integer, theme: Riffer::Rig::UI::Theme, highlighter: _Highlighter, first: String, continuation: String) -> Array[String]
+
+  # @rbs table: _KramdownElement
+  # @rbs lines: Array[String]
+  # @rbs width: Integer
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs highlighter: _Highlighter
+  # @rbs return: void
+  def render_table: (_KramdownElement table, Array[String] lines, width: Integer, theme: Riffer::Rig::UI::Theme, highlighter: _Highlighter) -> void
+
+  # @rbs children: Array[_KramdownElement]
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs highlighter: _Highlighter
+  # @rbs return: String
+  def render_inline: (Array[_KramdownElement] children, theme: Riffer::Rig::UI::Theme, highlighter: _Highlighter) -> String
+
+  # @rbs element: _KramdownElement
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs highlighter: _Highlighter
+  # @rbs return: String
+  def inline_text: (_KramdownElement element, theme: Riffer::Rig::UI::Theme, highlighter: _Highlighter) -> String
+
+  # @rbs block: _KramdownElement
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs return: String
+  def header_text: (_KramdownElement block, Riffer::Rig::UI::Theme theme) -> String
+
+  # @rbs cell: String
+  # @rbs width: Integer
+  # @rbs alignment: Symbol?
+  # @rbs return: String
+  def pad: (String cell, Integer width, Symbol? alignment) -> String
+
+  # @rbs lines: Array[String]
+  # @rbs text: String
+  # @rbs width: Integer
+  # @rbs indent: String
+  # @rbs return: void
+  def flush: (Array[String] lines, String text, width: Integer, indent: String) -> void
+end

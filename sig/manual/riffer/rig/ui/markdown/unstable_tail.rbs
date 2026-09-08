@@ -1,0 +1,8 @@
+# rbs-inline does not emit `extend self` for modules that use it, so their
+# instance methods aren't visible as singleton methods (e.g.
+# `Riffer::Rig::UI::Markdown::UnstableTail.split`). Reopening the module here
+# to `extend` itself restores that, matching the runtime behaviour.
+
+module Riffer::Rig::UI::Markdown::UnstableTail
+  extend ::Riffer::Rig::UI::Markdown::UnstableTail
+end

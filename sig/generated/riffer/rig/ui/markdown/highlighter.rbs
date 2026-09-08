@@ -1,0 +1,24 @@
+# Generated from lib/riffer/rig/ui/markdown/highlighter.rb with RBS::Inline
+
+# Maps rouge token types to Palette colors for code inside fenced blocks.
+# Falls back to unstyled body text for an unknown or missing language.
+class Riffer::Rig::UI::Markdown::Highlighter
+  COLOR_FOR_TOKEN: Hash[String, Symbol]
+
+  @theme: Riffer::Rig::UI::Theme
+
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs return: void
+  def initialize: (Riffer::Rig::UI::Theme theme) -> void
+
+  # @rbs source: String
+  # @rbs language: untyped
+  # @rbs return: String
+  def highlight: (String source, untyped language) -> String
+
+  private
+
+  # @rbs token: singleton(::Rouge::Token)
+  # @rbs return: Symbol
+  def color_for: (singleton(::Rouge::Token) token) -> Symbol
+end

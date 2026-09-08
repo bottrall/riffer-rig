@@ -1,0 +1,19 @@
+# Zeitwerk autovivifies this namespace module in Ruby; RBS needs it declared
+# explicitly so the compact `Riffer::Rig::UI::Markdown::*` signatures resolve.
+
+module Riffer::Rig::UI::Markdown
+end
+
+# Kramdown's element duck-type: everything the walker reads off a parsed node.
+
+interface _KramdownElement
+  def type: () -> Symbol
+
+  def children: () -> Array[_KramdownElement]
+
+  def value: () -> untyped
+
+  def options: () -> Hash[Symbol, untyped]
+
+  def attr: () -> Hash[String, String]
+end

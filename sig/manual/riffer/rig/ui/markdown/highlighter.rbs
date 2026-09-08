@@ -1,0 +1,7 @@
+# Anything a Walker can render fenced-code body text with. The interesting
+# implementation is Highlighter; a disabled Theme stands in for it when headers
+# are measured unstyled. `language` is nilable because kramdown's fence lang is.
+
+interface _Highlighter
+  def highlight: (String source, untyped language) -> String
+end

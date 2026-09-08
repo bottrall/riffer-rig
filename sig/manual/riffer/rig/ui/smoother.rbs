@@ -1,0 +1,9 @@
+# Anything a Smoother can pace text through: paced slices during streaming,
+# whole blocks at drain, and a final notification. MarkdownPainter is the
+# interesting implementation; PrintSink is the raw-text default.
+
+interface _Sink
+  def <<: (String slice) -> void
+
+  def finish: () -> void
+end

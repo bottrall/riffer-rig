@@ -17,9 +17,32 @@ class Riffer::Rig::UI::Smoother
 
   MIN_CHARS_PER_TICK = Rational(1, 6) #: Rational
 
+  # A sink receives paced slices of the backlog. It defaults to raw printing
+  # so a bare Smoother still writes plain text synchronously.
+  class PrintSink
+    # @rbs @io: IO
+
+    # @rbs io: IO
+    # @rbs return: void
+    def initialize(io)
+      @io = io
+    end
+
+    # @rbs slice: String
+    # @rbs return: void
+    def <<(slice)
+      @io.print(slice)
+      @io.flush
+    end
+
+    # @rbs return: void
+    def finish = nil
+  end
+
   # @rbs @io: IO
   # @rbs @theme: Riffer::Rig::UI::Theme
   # @rbs @clock: singleton(Kernel)
+  # @rbs @sink: _Sink
   # @rbs @backlog: String
   # @rbs @carry: Rational
   # @rbs @mutex: Mutex
@@ -30,11 +53,13 @@ class Riffer::Rig::UI::Smoother
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs clock: singleton(Kernel)
+  # @rbs sink: _Sink
   # @rbs return: void
-  def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io), clock: Kernel)
+  def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io), clock: Kernel, sink: PrintSink.new(io))
     @io = io
     @theme = theme
     @clock = clock
+    @sink = sink
     @backlog = +''
     @carry = Rational(0)
     @mutex = Mutex.new
@@ -64,8 +89,7 @@ class Riffer::Rig::UI::Smoother
       if enabled?
         @backlog << content
       else
-        @io.print(content)
-        @io.flush
+        @sink << content
       end
       @newline_pending = !content.end_with?("\n")
     end
@@ -86,13 +110,13 @@ class Riffer::Rig::UI::Smoother
       @carry -= count
       chunk = @backlog.slice!(0, count) || ''
       @newline_pending = !chunk.end_with?("\n")
-      @io.print(chunk)
-      @io.flush
+      @sink << chunk
     end
   end
 
   # Called before non-prose output so printed order matches stream order. The
-  # backlog is flushed, then any partial prose block the model left without a
+  # backlog is flushed (off-TTY as one whole block, so the sink renders the
+  # final markdown), then any partial prose block the model left without a
   # trailing newline gets one, so block spacing never depends on the model's
   # last character.
   #
@@ -102,13 +126,12 @@ class Riffer::Rig::UI::Smoother
       unless @backlog.empty?
         backlog = @backlog.slice!(0, @backlog.length) || ''
         @newline_pending = !backlog.end_with?("\n")
-        @io.print(backlog)
+        @sink << backlog
       end
       return unless @newline_pending
 
       @newline_pending = false
-      @io.print("\n")
-      @io.flush
+      @sink << "\n"
     end
   end
 
@@ -123,6 +146,7 @@ class Riffer::Rig::UI::Smoother
       @thread = nil
     end
     drain
+    @sink.finish
   end
 
   private

@@ -30,7 +30,11 @@ class Riffer::Rig::REPL
     output: $stdout,
     theme: Riffer::Rig::UI::Theme.for(output),
     animator: Riffer::Rig::UI::Animator.new(io: output, theme:),
-    smoother: Riffer::Rig::UI::Smoother.new(io: output, theme:),
+    smoother: Riffer::Rig::UI::Smoother.new(
+      io: output,
+      theme:,
+      sink: Riffer::Rig::UI::MarkdownPainter.new(io: output, theme:)
+    ),
     cursor: Riffer::Rig::UI::Cursor.new(io: output, theme:)
   )
     @agent = agent
