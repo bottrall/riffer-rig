@@ -4,11 +4,12 @@ class Riffer::Rig::REPL
   EXIT_COMMANDS = ['/exit', '/quit'].freeze
   SKILL_COMMAND = %r{\A/skill:([a-z0-9]+(?:-[a-z0-9]+)*)(?:\s+(.*))?\z}m
 
-  def initialize(agent:, renderer:, input: $stdin, output: $stdout, theme: Riffer::Rig::UI::Theme.for(output), animator: Riffer::Rig::UI::Animator.new(io: output, theme:), smoother: Riffer::Rig::UI::Smoother.new(io: output, theme:))
+  def initialize(agent:, renderer:, input: $stdin, output: $stdout, theme: Riffer::Rig::UI::Theme.for(output), animator: Riffer::Rig::UI::Animator.new(io: output, theme:), smoother: Riffer::Rig::UI::Smoother.new(io: output, theme:), cursor: Riffer::Rig::UI::Cursor.new(io: output, theme:))
     @agent = agent
     @renderer = renderer
     @animator = animator
     @smoother = smoother
+    @cursor = cursor
     @theme = theme
     @input = input
     @output = output
@@ -40,6 +41,7 @@ class Riffer::Rig::REPL
   private
 
   def run_turn(prompt)
+    @cursor.hide
     @animator.start
     @smoother.start
     @agent.stream(prompt).each do |event|
@@ -73,6 +75,7 @@ class Riffer::Rig::REPL
   ensure
     @smoother.finish
     @animator.stop
+    @cursor.show
   end
 
   def run_skill_command(name, args)

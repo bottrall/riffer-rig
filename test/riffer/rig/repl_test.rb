@@ -264,6 +264,32 @@ class Riffer::Rig::REPLTest < Minitest::Test
     assert_equal [:stop, [:render, tool_message], %i[start neutral]], order
   end
 
+  def test_cursor_is_shown_after_all_turn_output
+    cursor = spy_cursor
+    output = StringIO.new
+    order = cursor.calls
+    output.define_singleton_method(:puts) { |str = ''| order << [:write, str] }
+    repl = build_repl(stub_agent([]), output, "hi\n", cursor: cursor)
+
+    repl.run
+
+    epilogue = order.rindex { |call| call.is_a?(Array) && call.first == :write && call.last.empty? }
+
+    assert_operator order.rindex(:show), :>, epilogue
+  end
+
+  def test_cursor_is_shown_when_the_turn_raises
+    cursor = spy_cursor
+    agent = stub_agent([Riffer::StreamEvents::TextDelta.new('hello')])
+    agent.define_singleton_method(:stream) { |_prompt| raise 'boom' }
+
+    repl = build_repl(agent, StringIO.new, "hi\n", cursor: cursor)
+
+    repl.run
+
+    assert_equal %i[hide show], cursor.calls
+  end
+
   private
 
   def build_token_usage
@@ -284,6 +310,14 @@ class Riffer::Rig::REPLTest < Minitest::Test
     animator
   end
 
+  def spy_cursor
+    cursor = Object.new
+    def cursor.calls = @calls ||= []
+    def cursor.hide = calls << :hide
+    def cursor.show = calls << :show
+    cursor
+  end
+
   def stub_agent(events)
     agent = Object.new
     stream_result = events.each
@@ -297,10 +331,10 @@ class Riffer::Rig::REPLTest < Minitest::Test
     agent
   end
 
-  def build_repl(agent, output, input_str, animator: Riffer::Rig::UI::Animator.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)))
+  def build_repl(agent, output, input_str, animator: Riffer::Rig::UI::Animator.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)), cursor: Riffer::Rig::UI::Cursor.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)))
     theme = Riffer::Rig::UI::Theme.new(enabled: false)
     renderer = Riffer::Rig::UI::Renderer.new(io: output, theme: theme)
-    Riffer::Rig::REPL.new(agent: agent, renderer: renderer, input: StringIO.new(input_str), output: output, theme: theme, animator: animator)
+    Riffer::Rig::REPL.new(agent: agent, renderer: renderer, input: StringIO.new(input_str), output: output, theme: theme, animator: animator, cursor: cursor)
   end
 
   def with_skill(name, &)

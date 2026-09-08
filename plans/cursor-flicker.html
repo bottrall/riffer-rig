@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plan: fix cursor flicker during the spinner</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #1a1a2e; }
+  h1 { font-size: 1.5rem; border-bottom: 2px solid #e94560; padding-bottom: .4rem; }
+  h2 { font-size: 1.1rem; margin-top: 2rem; }
+  code { background: #f0f0f5; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+  .box { border: 1px solid #ddd; border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0; background: #fafafa; }
+  .why { background: #fff8e6; border-color: #f0d98c; }
+  .timeline { font-family: ui-monospace, monospace; font-size: .85rem; background: #16161e; color: #d5d5e2; border-radius: 8px; padding: 1rem 1.25rem; overflow-x: auto; }
+  .timeline .esc { color: #7ee787; }
+  .timeline .dim { color: #6b6b7e; }
+  ul { padding-left: 1.25rem; }
+  li { margin: .25rem 0; }
+</style>
+</head>
+<body>
+
+<h1>Plan: fix cursor flicker during the spinner</h1>
+
+<h2>The problem</h2>
+<p>While the "riffing…" equalizer is animating, the terminal cursor flips between a solid block and a hollow outline — occasionally, not constantly.</p>
+
+<h2>Why it happens</h2>
+<p>The animator redraws the spinner line many times a second using an erase-and-redraw sequence (<code>\r … \e[K</code>). Some terminals render the cursor as hollow for a frame when it sits mid-line on a freshly-erased row — the emulator's cursor draw races its own cell repaint. Nothing in rig emits cursor sequences today; the flicker is an artifact of that churn.</p>
+
+<h2>The fix — agreed decisions</h2>
+<div class="box why">
+  <p><strong>Hide the cursor for the whole turn</strong> (your call, option 2), via a <strong>dedicated <code>Riffer::Rig::UI::Cursor</code> module</strong> (your call, option 1), wrapping <strong>only <code>run_turn</code></strong> (your call, option 1 on scope).</p>
+</div>
+<ul>
+  <li>New module <code>lib/riffer/rig/ui/cursor.rb</code> with <code>hide</code> and <code>show</code> methods.</li>
+  <li>It writes <code>\e[?25l</code> (hide) and <code>\e[?25h</code> (show) to the injected output.</li>
+  <li>Gated the same way as the animator and smoother: only when the theme is enabled <em>and</em> the output is a TTY. Piped runs stay escape-free.</li>
+  <li><code>REPL</code> gains it as an injected collaborator (defaulted from the output/theme, like the animator and smoother are today).</li>
+  <li>Animator and smoother are left untouched.</li>
+</ul>
+
+<h2>Where it lives in the REPL</h2>
+<div class="timeline">
+<span class="esc">cursor.hide</span><br>
+<span class="dim">│</span> animator.start<br>
+<span class="dim">│</span> smoother.start<br>
+<span class="dim">│</span> … stream events, renders, tool results …<br>
+<span class="dim">│</span> animator.stop / smoother.finish<br>
+<span class="dim">│</span> final newline<br>
+<span class="esc">ensure → smoother.finish, animator.stop, cursor.show</span> <span class="dim">(show goes last, after all writes)</span>
+</div>
+<ul>
+  <li><code>hide</code> at the top of <code>run_turn</code>; <code>show</code> as the last statement of its <code>ensure</code> block — so the cursor comes back even on errors, and never before the smoother's final drain.</li>
+  <li>This covers skill-command turns too (<code>run_skill_command</code> delegates to <code>run_turn</code>).</li>
+  <li>The <code>›</code> prompt and the farewell message sit outside the turn, so the cursor is visible while you type.</li>
+</ul>
+
+<h2>Tests</h2>
+<ul>
+  <li><code>test/riffer/rig/ui/cursor_test.rb</code>: non-TTY output gets no escapes; TTY output gets hide on <code>hide</code>, show on <code>show</code>.</li>
+  <li>Extend the REPL test with a fake cursor collaborator: a turn hides once and shows once, including on the error path.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+  <li><code>bin/ci</code> (lint + tests + typecheck) passes before pushing.</li>
+  <li><code>bin/rbs</code> run after the <code>lib/</code> change, generated sigs committed.</li>
+  <li>You eyeball it live in your terminal: no more solid↔hollow flip while "riffing…" animates.</li>
+</ul>
+
+<h2>Tradeoff to accept</h2>
+<div class="box">
+  <p>The cursor is invisible for the entire turn — the same behavior as gh, npm, and other polished CLIs while they're busy. It reappears the moment the turn ends (or errors out).</p>
+</div>
+
+</body>
+</html>
