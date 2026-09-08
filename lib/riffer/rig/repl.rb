@@ -12,7 +12,7 @@ class Riffer::Rig::REPL
     @theme = theme
     @input = input
     @output = output
-    @agent.session.on_message { |message| @renderer.render_tool_result(message) }
+    @agent.session.on_message { |message| render_tool_result(message) }
   end
 
   def run
@@ -48,7 +48,11 @@ class Riffer::Rig::REPL
         @animator.start(:reasoning)
       when Riffer::StreamEvents::ReasoningDone
         @animator.start
-      when Riffer::StreamEvents::ToolCallDone, Riffer::StreamEvents::SkillActivation
+      when Riffer::StreamEvents::ToolCallDelta, Riffer::StreamEvents::FinishReasonDone
+        # Round bookkeeping: nothing renders, so the indicator just carries on
+        # (or stays parked while the smoother finishes typing earlier text).
+        next
+      when Riffer::StreamEvents::ToolCallDone, Riffer::StreamEvents::SkillActivation, Riffer::StreamEvents::TokenUsageDone
         # The spinner shares its line with what's about to print, and tool
         # execution plus the next model invocation emit no events — stop it for
         # the render, then bring it straight back to cover the silent stretch.
@@ -101,5 +105,16 @@ class Riffer::Rig::REPL
 
   def skill_block(name, body)
     "<skill name=\"#{name}\">\n#{body}\n</skill>"
+  end
+
+  # Tool results can land mid-animation (tool execution emits no stream events,
+  # so the indicator is up); stop it around the line so its next frame doesn't
+  # erase what we printed.
+  def render_tool_result(message)
+    return unless message.is_a?(Riffer::Messages::Tool)
+
+    @animator.stop
+    @renderer.render_tool_result(message)
+    @animator.start
   end
 end

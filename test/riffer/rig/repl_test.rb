@@ -185,12 +185,17 @@ class Riffer::Rig::REPLTest < Minitest::Test
 
   def test_indicator_restarts_after_a_tool_call_completes
     animator = spy_animator
-    agent = stub_agent([Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}')])
+    agent = stub_agent([
+                         Riffer::StreamEvents::ToolCallDelta.new(item_id: 'i1', arguments_delta: '{"f'),
+                         Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}'),
+                         Riffer::StreamEvents::FinishReasonDone.new(finish_reason: :tool_calls),
+                         Riffer::StreamEvents::TokenUsageDone.new(token_usage: build_token_usage)
+                       ])
     repl = build_repl(agent, StringIO.new, "hi\n", animator: animator)
 
     repl.run
 
-    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop], animator.calls
+    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop, %i[start neutral], :stop], animator.calls
   end
 
   def test_indicator_restarts_after_a_skill_activates
@@ -203,6 +208,19 @@ class Riffer::Rig::REPLTest < Minitest::Test
     assert_equal [%i[start neutral], :stop, %i[start neutral], :stop], animator.calls
   end
 
+  def test_indicator_survives_tool_call_deltas_and_finish_reason
+    animator = spy_animator
+    agent = stub_agent([
+                         Riffer::StreamEvents::ToolCallDelta.new(item_id: 'i1', arguments_delta: '{"f'),
+                         Riffer::StreamEvents::FinishReasonDone.new(finish_reason: :tool_calls)
+                       ])
+    repl = build_repl(agent, StringIO.new, "hi\n", animator: animator)
+
+    repl.run
+
+    assert_equal [%i[start neutral], :stop], animator.calls
+  end
+
   def test_reasoning_resuming_mid_turn_restarts_the_indicator
     animator = spy_animator
     agent = stub_agent([Riffer::StreamEvents::TextDelta.new('hello'), Riffer::StreamEvents::ReasoningDelta.new('hmm')])
@@ -213,7 +231,27 @@ class Riffer::Rig::REPLTest < Minitest::Test
     assert_equal [%i[start neutral], :stop, %i[start reasoning], :stop], animator.calls
   end
 
+  def test_tool_result_printing_stops_and_restarts_the_indicator
+    animator = spy_animator
+    tool_message = Riffer::Messages::Tool.new('ok', tool_call_id: 'c1', name: 'read')
+    order = []
+    animator.define_singleton_method(:stop) { order << :stop }
+    animator.define_singleton_method(:start) { |mode = :neutral| order << [:start, mode] }
+    renderer = Object.new
+    renderer.define_singleton_method(:render_tool_result) { |m| order << [:render, m] }
+
+    repl = build_repl(stub_agent([]), StringIO.new, '', animator: animator)
+    repl.instance_variable_set(:@renderer, renderer)
+    repl.send(:render_tool_result, tool_message)
+
+    assert_equal [:stop, [:render, tool_message], %i[start neutral]], order
+  end
+
   private
+
+  def build_token_usage
+    Riffer::Providers::TokenUsage.new(input_tokens: 1, output_tokens: 1)
+  end
 
   def mock_agent
     config = Riffer::Rig::CodingAgent.config.dup
