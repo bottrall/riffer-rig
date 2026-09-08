@@ -43,6 +43,9 @@ Metrics/BlockNesting:
 Minitest/MultipleAssertions:
   Max: 1
 
+Naming/PredicateMethod: # the Host duck is fixed by the plan: confirm answers yes/no
+  Enabled: false
+
 Style/ClassAndModuleChildren:
   EnforcedStyle: compact
   Exclude:

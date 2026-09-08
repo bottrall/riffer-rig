@@ -28,17 +28,6 @@
 
 <h2 id="decisions">Decisions</h2>
 
-<section class="topic" id="contract">
-<h3>The Session object and its contract</h3>
-<ul>
-  <li><code>Session.new(...)</code> builds a per-instance <code>Riffer::Agent::Config</code>; there is no class-level agent DSL. Two Sessions in one process share nothing but the process-wide extension registry and riffer's provider repository.</li>
-  <li>One prompt at a time per Session. A second <code>prompt</code> while one is running raises. Parallelism means more Sessions, in more threads.</li>
-  <li>The Session never renders, never prints, never reads the filesystem. Anything a host needs becomes a Session feature so embedders get it too.</li>
-  <li>The constructor takes everything as keywords: <code>model:</code>, <code>credentials:</code>, <code>extensions:</code>, <code>tools:</code>, <code>settings:</code>, <code>pricing:</code>, <code>host:</code>, <code>cwd:</code>, <code>name:</code>, <code>instructions:</code>, <code>max_steps:</code>, <code>snapshot:</code>. All optional except <code>model:</code>; the Interfaces table gives each one's meaning.</li>
-  <li>The current implementation's <code>CodingAgent</code> class-level DSL, its <code>Settings.model</code> lookup at class-definition time and its AGENTS.md reading inside <code>instructions</code> all go. Model, tools, skills backend and instructions are supplied per instance.</li>
-</ul>
-</section>
-
 <section class="topic" id="prompting">
 <h3>Prompting and the loop</h3>
 <ul>
@@ -48,43 +37,6 @@
   <li>Stop reasons are riffer's finish reasons plus <code>max_steps</code> and <code>cancelled</code>: <code>stop</code>, <code>length</code>, <code>context_window</code>, <code>content_filter</code>, <code>malformed_output</code>, <code>max_steps</code>, <code>cancelled</code>, <code>error</code>. Hosts map them to exit codes or UI; the Session only reports them in <code>turn_end</code>.</li>
   <li>The loop itself is riffer's. riffer-rig adds nothing to it beyond the callbacks the events, cancel and reload sections describe.</li>
 </ul>
-</section>
-
-<section class="topic" id="system-message">
-<h3>System message assembly and the base prompt</h3>
-
-<figure>
-<svg viewBox="0 0 760 210" role="img" aria-label="System message stack: base prompt, prompt sections in load order, environment block, then riffer's skills catalog as a second message">
-  <rect x="20" y="20" width="440" height="34" rx="5" class="box core"/><text x="32" y="41" class="lbl">Base prompt</text><text x="200" y="41" class="sub">identity + three norms · owned by Session · replaced by instructions:</text>
-  <rect x="20" y="60" width="440" height="34" rx="5" class="box"/><text x="32" y="81" class="lbl">Prompt sections</text><text x="200" y="81" class="sub">named, load order, later wins · e.g. agents_md, skills, git_status</text>
-  <rect x="20" y="100" width="440" height="34" rx="5" class="box core"/><text x="32" y="121" class="lbl">Environment block</text><text x="200" y="121" class="sub">current date, working directory · always appended</text>
-  <path d="M470 20 V134" class="edge"/><text x="480" y="80" class="sub">one system message</text>
-  <rect x="20" y="156" width="440" height="34" rx="5" class="box"/><text x="32" y="177" class="lbl">Skills catalog</text><text x="200" y="177" class="sub">riffer's own second system message, when skills exist · untouched</text>
-</svg>
-<figcaption>Only the base prompt and the environment block are core. Everything between them arrives through the prompt seam and is re-rendered every turn.</figcaption>
-</figure>
-
-<p>The base prompt is a short, task-neutral text owned by the Session. It names the agent, says it is general purpose and works through whatever tools it has, and states three norms. It lists no tools and names no conventions (not AGENTS.md, not skills, not slash commands; each introduces itself when present, so a Session with the bundle off says nothing untrue). It is a heredoc in the Session's agent definition, produced by a small pure function of the name. Wording is illustrative; the decision fixes the identity shape and the three norms, not the sentences:</p>
-
-<pre><code>You are {name}, a general-purpose agent. You work by using the tools you have
-been given; each tool describes what it does and when to use it.
-
-- Verify with your tools before answering. When a tool can settle a question,
-  look rather than guess.
-- Do what was asked, and all of what was asked. Do not widen the scope, tidy
-  nearby things, or add extras that were not requested.
-- Be concise. Lead with the outcome; do not restate the question.</code></pre>
-
-<div class="table-wrap"><table>
-  <tr><th>Question</th><th>Decision</th><th>Why</th></tr>
-  <tr><td>Identity</td><td>"You are {name}, a general-purpose agent." No job title, no coding or developer framing.</td><td>The thesis dropped the coding identity. A product name lets the user ask "what are you?" and lets a host rename it.</td></tr>
-  <tr><td>Tools</td><td>Never listed. "Use the tools you have been given."</td><td>The provider sends every tool schema already; a hand list drifts when a host passes a different set.</td></tr>
-  <tr><td>Norms</td><td>Verify with tools; do what was asked, no more, no less; be concise and lead with the outcome.</td><td>The only rules that hold for any task and toolkit. "Confirm before destructive actions" was left out: the tool trusts the model.</td></tr>
-  <tr><td>Coding guidance</td><td>Moves into the four tool descriptions (<a href="bundled.html#toolkit">Bundled</a>).</td><td>Guidance travels with the tool and vanishes when the tool does.</td></tr>
-  <tr><td>Override</td><td><code>name:</code> (default <code>"riffer"</code>) swaps the name inside the default base; <code>instructions:</code> replaces the base entirely. Sections and the environment block are appended in both cases.</td><td>A Rails app that only wants a different name should not have to reproduce the norms or remember the environment block.</td></tr>
-  <tr><td>Context</td><td>AGENTS.md arrives as a prompt section from its bundled extension, framed as user-authored instructions that outrank the base norms. The Session appends date and cwd itself.</td><td>Keeps "runtime does no disk scanning" and keeps AGENTS.md disableable.</td></tr>
-  <tr><td>Reload</td><td>Sections re-render from the fresh registrar; the base prompt is gem code and is not re-read.</td><td>User-editable prompt text belongs in a section, not in the gem.</td></tr>
-</table></div>
 </section>
 
 <section class="topic" id="events">
@@ -178,16 +130,9 @@ been given; each tool describes what it does and when to use it.
 <h4>Constructor keywords</h4>
 <div class="table-wrap"><table>
   <tr><th>Keyword</th><th>Meaning</th><th>Default</th></tr>
-  <tr><td><code>model:</code></td><td><code>"provider/name"</code>; bare names rejected</td><td>required</td></tr>
   <tr><td><code>credentials:</code></td><td>hash keyed by provider identifier of resolved field values</td><td><code>{}</code></td></tr>
-  <tr><td><code>extensions:</code></td><td>ordered list of extension objects (from <code>Riffer::Rig.extension</code> or <code>Riffer::Rig.bundled</code>) whose blocks run against this Session's registrar</td><td><code>[]</code></td></tr>
-  <tr><td><code>tools:</code></td><td>allowlist of tool identifiers; nil means every registered tool</td><td><code>nil</code></td></tr>
   <tr><td><code>settings:</code></td><td>merged settings hash (core keys top level, extension keys under their names)</td><td><code>{}</code></td></tr>
   <tr><td><code>pricing:</code></td><td>model → <code>{input, output, cache_write, cache_read}</code> USD per million tokens</td><td><code>{}</code></td></tr>
-  <tr><td><code>host:</code></td><td>an object implementing the Host duck</td><td><code>NullHost.new</code></td></tr>
-  <tr><td><code>cwd:</code></td><td>working directory for the environment block and for tools</td><td><code>Dir.pwd</code></td></tr>
-  <tr><td><code>name:</code></td><td>the name interpolated into the base prompt</td><td><code>"riffer"</code></td></tr>
-  <tr><td><code>instructions:</code></td><td>replaces the base prompt wholesale</td><td><code>nil</code> (use the base)</td></tr>
   <tr><td><code>max_steps:</code></td><td>riffer <code>config.max_steps</code></td><td><code>nil</code></td></tr>
   <tr><td><code>snapshot:</code></td><td>a hash from <code>to_h</code> to restore</td><td><code>nil</code></td></tr>
 </table></div>
@@ -204,7 +149,7 @@ been given; each tool describes what it does and when to use it.
   <tr><td><code>tally</code></td><td>totals: usage and cost</td></tr>
   <tr><td><code>to_h</code></td><td>the snapshot hash</td></tr>
   <tr><td><code>rebuild(extensions:, settings:)</code></td><td>nil; raises inside a handler</td></tr>
-  <tr><td><code>id</code>, <code>cwd</code>, <code>host</code>, <code>settings</code>, <code>errors</code></td><td>readers; <code>errors</code> is the list of <code>{extension, error}</code> recorded while loading</td></tr>
+  <tr><td><code>id</code>, <code>errors</code></td><td>readers; <code>errors</code> is the list of <code>{extension, error}</code> recorded while loading</td></tr>
   <tr><td><code>on_message { |message| }</code></td><td>registers an observer riffer calls per message; the Loader's store appends through it</td></tr>
   <tr><td><code>close</code></td><td>emits <code>session_end(reason: :close)</code>, stops MCP servers</td></tr>
   <tr><td><code>Riffer::Rig.credentials(id)</code></td><td>the current thread's Session's credentials for one provider</td></tr>
