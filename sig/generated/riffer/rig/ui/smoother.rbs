@@ -1,0 +1,37 @@
+# Generated from lib/riffer/rig/ui/smoother.rb with RBS::Inline
+
+# Paces streamed text onto a 60fps cadence so API bursts read as continuous
+# typing. On a non-TTY output it is transparent: writes pass through
+# synchronously and no thread ever runs.
+class Riffer::Rig::UI::Smoother
+  TICK_SECONDS: untyped
+
+  # A frame removes only a sixtieth of the remaining backlog — an exponential
+  # decay whose tail keeps text flowing for a second or more, so the reveal
+  # never visibly stops between chunks. The carry accrues sub-character
+  # releases so the effective rate can settle at the provider's throughput;
+  # the floor is fractional (10 chars/s) so it can't over-drain a backlog
+  # that's trickling in slower than 60 chars/s.
+  BACKLOG_FRACTION_PER_TICK: untyped
+
+  MIN_CHARS_PER_TICK: untyped
+
+  def initialize: (?io: untyped, ?theme: untyped, ?clock: untyped) -> untyped
+
+  def start: () -> untyped
+
+  def <<: (untyped content) -> untyped
+
+  # The write sits inside the mutex so a concurrent tick can't reorder a drain.
+  def tick: () -> untyped
+
+  # Called before non-delta output so printed order matches stream order.
+  def drain: () -> untyped
+
+  # Idempotent: the REPL's ensure path runs it even after a happy-path finish.
+  def finish: () -> untyped
+
+  private
+
+  def enabled?: () -> untyped
+end

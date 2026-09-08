@@ -5,23 +5,28 @@ require 'json'
 class Riffer::Rig::UI::Renderer
   RESULT_PREVIEW_LIMIT = 200
 
-  def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io), tally: nil)
+  def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io), tally: nil, smoother: nil)
     @io = io
     @theme = theme
     @tally = tally
+    @smoother = smoother
   end
 
   def render(event)
     case event
     when Riffer::StreamEvents::TextDelta
-      @io.print(event.content)
+      smoother << event.content
     when Riffer::StreamEvents::ToolCallDone
+      drain_smoother
       @io.puts("\n#{@theme.cyan("⚙ #{event.name}(#{format_arguments(event.arguments)})")}")
     when Riffer::StreamEvents::SkillActivation
+      drain_smoother
       @io.puts("\n#{@theme.magenta("✦ skill: #{event.name}")}")
     when Riffer::StreamEvents::Interrupt
+      drain_smoother
       @io.puts(@theme.dim("[interrupted: #{event.reason}]"))
     when Riffer::StreamEvents::TokenUsageDone
+      drain_smoother
       render_token_usage(event.token_usage)
     end
   end
@@ -34,6 +39,30 @@ class Riffer::Rig::UI::Renderer
   end
 
   private
+
+  def smoother
+    @smoother || PassThroughSmoother.new(@io)
+  end
+
+  # Stand-in when no smoother is injected, so a bare Renderer still prints
+  # synchronously.
+  class PassThroughSmoother
+    def initialize(io) = @io = io
+
+    def <<(content)
+      @io.print(content)
+      @io.flush
+      self
+    end
+
+    def drain = nil
+
+    def finish = nil
+  end
+
+  def drain_smoother
+    smoother.drain
+  end
 
   def render_token_usage(usage)
     return unless @tally

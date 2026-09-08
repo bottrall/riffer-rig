@@ -5,7 +5,7 @@ class Riffer::Rig::REPL
 
   SKILL_COMMAND: ::Regexp
 
-  def initialize: (agent: untyped, renderer: untyped, ?input: untyped, ?output: untyped, ?theme: untyped, ?animator: untyped) -> untyped
+  def initialize: (agent: untyped, renderer: untyped, ?input: untyped, ?output: untyped, ?theme: untyped, ?animator: untyped, ?smoother: untyped) -> untyped
 
   def run: () -> untyped
 
