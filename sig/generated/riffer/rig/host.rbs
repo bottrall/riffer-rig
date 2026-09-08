@@ -14,23 +14,21 @@
 #
 # Callers check #capabilities before asking, so a host that declines a
 # capability is never asked and the caller takes the declined path.
-module Riffer::Rig
-  # The do-nothing host: the default +host:+ for a Session. Every capability is
-  # declined, so callers take the declined path without any UI attempt.
-  class Host
-    # : () -> Set[Symbol]
-    def capabilities: () -> Set[Symbol]
+# The do-nothing host: the default +host:+ for a Session. Every capability is
+# declined, so callers take the declined path without any UI attempt.
+class Riffer::Rig::Host
+  # : () -> Set[Symbol]
+  def capabilities: () -> untyped
 
-    # : (?String, ?options: Array[String]?, ?secret: bool) -> String?
-    def ask: (?String, ?options: Array[String]?, ?secret: bool) -> String?
+  # : (?String, ?options: Array[String]?, ?secret: bool) -> String?
+  def ask: (?untyped _question, ?options: untyped, ?secret: untyped) -> untyped
 
-    # : (?String) -> bool
-    def confirm: (?String) -> bool
+  # : (?String) -> bool
+  def confirm: (?untyped _question) -> untyped
 
-    # : (?String, ?level: Symbol) -> void
-    def notify: (?String, ?level: Symbol) -> void
+  # : (?String, ?level: Symbol) -> void
+  def notify: (?untyped _message, ?level: untyped) -> untyped
 
-    # : (?String) { () -> void } -> void
-    def progress: (?String) { () -> void } -> void
-  end
+  # : (?String) { () -> void } -> void
+  def progress: (?untyped _label) ?{ (?) -> untyped } -> untyped
 end
