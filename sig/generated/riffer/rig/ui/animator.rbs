@@ -11,6 +11,12 @@ class Riffer::Rig::UI::Animator
 
   EQ_BARS: ::Integer
 
+  NEUTRAL_LABEL: ::String
+
+  REASONING_PHRASES: untyped
+
+  REASONING_TICK_RANGE: untyped
+
   def initialize: (?io: untyped, ?theme: untyped) -> untyped
 
   # When not on a TTY, prints the final frame once instead of animating.
@@ -18,11 +24,24 @@ class Riffer::Rig::UI::Animator
 
   def start_thinking: () -> untyped
 
+  def start_reasoning: () -> untyped
+
   def stop_thinking: () -> untyped
 
-  def equalizer: (untyped tick) -> untyped
+  def equalizer: (untyped tick, ?untyped label) -> untyped
 
   private
+
+  # A running indicator is kept and only its mode flips, so switching between
+  # neutral and reasoning never tears down the animation thread.
+  def start: (untyped mode) -> untyped
+
+  def animate: () -> untyped
+
+  # Re-rolls both phrase and duration whenever the reasoning tick expires.
+  def roll_phrase: (untyped roll_at) -> untyped
+
+  def label: () -> untyped
 
   def enabled?: () -> untyped
 end

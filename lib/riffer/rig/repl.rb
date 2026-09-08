@@ -43,7 +43,14 @@ class Riffer::Rig::REPL
     @animator.start_thinking
     @smoother.start
     @agent.stream(prompt).each do |event|
-      @animator.stop_thinking
+      case event
+      when Riffer::StreamEvents::ReasoningDelta
+        @animator.start_reasoning
+      when Riffer::StreamEvents::ReasoningDone
+        @animator.start_thinking
+      else
+        @animator.stop_thinking
+      end
       @renderer.render(event)
     end
     @smoother.finish

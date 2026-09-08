@@ -163,6 +163,36 @@ class Riffer::Rig::REPLTest < Minitest::Test
     refute_includes output.string, 'skill:'
   end
 
+  def test_reasoning_events_keep_the_indicator_running
+    animator = spy_animator
+    agent = stub_agent([Riffer::StreamEvents::ReasoningDelta.new('hmm'), Riffer::StreamEvents::ReasoningDone.new('hmm')])
+    repl = build_repl(agent, StringIO.new, "hi\n", animator: animator)
+
+    repl.run
+
+    assert_equal %i[start_thinking start_reasoning start_thinking stop_thinking], animator.calls
+  end
+
+  def test_renderable_events_stop_the_indicator
+    animator = spy_animator
+    agent = stub_agent([Riffer::StreamEvents::TextDelta.new('hello')])
+    repl = build_repl(agent, StringIO.new, "hi\n", animator: animator)
+
+    repl.run
+
+    assert_equal %i[start_thinking stop_thinking stop_thinking], animator.calls
+  end
+
+  def test_reasoning_resuming_mid_turn_restarts_the_indicator
+    animator = spy_animator
+    agent = stub_agent([Riffer::StreamEvents::TextDelta.new('hello'), Riffer::StreamEvents::ReasoningDelta.new('hmm')])
+    repl = build_repl(agent, StringIO.new, "hi\n", animator: animator)
+
+    repl.run
+
+    assert_equal %i[start_thinking stop_thinking start_reasoning stop_thinking], animator.calls
+  end
+
   private
 
   def mock_agent
@@ -171,10 +201,32 @@ class Riffer::Rig::REPLTest < Minitest::Test
     Riffer::Rig::CodingAgent.new(config: config)
   end
 
-  def build_repl(agent, output, input_str)
+  def spy_animator
+    animator = Object.new
+    def animator.calls = @calls ||= []
+    def animator.start_thinking = calls << :start_thinking
+    def animator.start_reasoning = calls << :start_reasoning
+    def animator.stop_thinking = calls << :stop_thinking
+    animator
+  end
+
+  def stub_agent(events)
+    agent = Object.new
+    stream_result = events.each
+    agent.define_singleton_method(:stream) { |_prompt| stream_result }
+    session = Object.new
+    session.define_singleton_method(:on_message) { |*_args| nil }
+    agent.define_singleton_method(:session) { session }
+    context = Object.new
+    context.define_singleton_method(:skills) { nil }
+    agent.define_singleton_method(:context) { context }
+    agent
+  end
+
+  def build_repl(agent, output, input_str, animator: Riffer::Rig::UI::Animator.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)))
     theme = Riffer::Rig::UI::Theme.new(enabled: false)
     renderer = Riffer::Rig::UI::Renderer.new(io: output, theme: theme)
-    Riffer::Rig::REPL.new(agent: agent, renderer: renderer, input: StringIO.new(input_str), output: output, theme: theme)
+    Riffer::Rig::REPL.new(agent: agent, renderer: renderer, input: StringIO.new(input_str), output: output, theme: theme, animator: animator)
   end
 
   def with_skill(name, &)
