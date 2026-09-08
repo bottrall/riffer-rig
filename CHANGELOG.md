@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/bottrall/riffer-rig/compare/v0.2.0...v0.2.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* **ui:** hide the cursor while a turn is in flight ([#161](https://github.com/bottrall/riffer-rig/issues/161)) ([0d18fe0](https://github.com/bottrall/riffer-rig/commit/0d18fe06c51bb75a8f3002d22d64bda23671bad6))
+* **ui:** stop the equalizer before the end-of-turn newline ([#158](https://github.com/bottrall/riffer-rig/issues/158)) ([00edaa3](https://github.com/bottrall/riffer-rig/commit/00edaa3bbf35a7d797ca3596820d11bd8c62789a))
+
 ## [0.2.0](https://github.com/bottrall/riffer-rig/compare/v0.1.2...v0.2.0) (2026-09-08)
 
 
