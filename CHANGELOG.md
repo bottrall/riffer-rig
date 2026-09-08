@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.0](https://github.com/bottrall/riffer-rig/compare/v0.1.2...v0.2.0) (2026-09-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove the Riffy mascot entirely ([#151](https://github.com/bottrall/riffer-rig/issues/151))
+
+### Features
+
+* remove the Riffy mascot entirely ([#151](https://github.com/bottrall/riffer-rig/issues/151)) ([af17f99](https://github.com/bottrall/riffer-rig/commit/af17f9907e8d43a01f966e1a0979f868a8d50466))
+* **ui:** keep the thinking indicator alive during reasoning ([#156](https://github.com/bottrall/riffer-rig/issues/156)) ([4ff67cc](https://github.com/bottrall/riffer-rig/commit/4ff67cc6a2e133324b98dbdf40f63c500ee00a4c))
+* **ui:** smooth streamed text output at 60fps ([#153](https://github.com/bottrall/riffer-rig/issues/153)) ([42dc781](https://github.com/bottrall/riffer-rig/commit/42dc781b3fc4a942e0eaca755b9e0b4180659506))
+
+
+### Bug Fixes
+
+* **ui:** drop 'code' subtitle from banner ([#157](https://github.com/bottrall/riffer-rig/issues/157)) ([dfd2e73](https://github.com/bottrall/riffer-rig/commit/dfd2e73d6b71f10adbf1dfa2ae659aad85ed547e))
+
 ## [0.1.2](https://github.com/bottrall/riffer-rig/compare/v0.1.1...v0.1.2) (2026-09-07)
 
 
