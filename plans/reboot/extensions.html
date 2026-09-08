@@ -28,46 +28,10 @@
 
 <h2 id="decisions">Decisions</h2>
 
-<section class="topic" id="unit">
-<h3>The unit: a named registrar block</h3>
-
-<pre><code>Riffer::Rig.extension("git", requires: "&gt;= 0.3") do |rig|
-  rig.setting :depth, default: 3
-  rig.tool GitLog
-  rig.command("log", description: "Recent commits") { |ctx| ctx.say `git log -n #{ctx.settings[:depth]} --oneline` }
-  rig.command("review", description: "Review the diff") { |ctx| ctx.prompt "Review this diff:\n#{`git diff`}" }
-  rig.prompt(:git_status) { |ctx| "Branch: #{`git branch --show-current`}" }
-  rig.on(:before_tool_call) { |e| next :block, "no force pushes" if e.tool == "bash" &amp;&amp; e.args[:command] =~ /push --force/ }
-  rig.provider(:acme) { AcmeProvider }
-  rig.mcp "docs", command: "docs-mcp", args: ["--stdio"]
-end</code></pre>
-
-<figure>
-<svg viewBox="0 0 760 170" role="img" aria-label="Flow: require records the block in a process-level registry keyed by name; Session.new runs each block against its own registrar">
-  <rect x="20" y="30" width="200" height="50" rx="6" class="box"/><text x="120" y="51" text-anchor="middle" class="lbl">require / load</text><text x="120" y="68" text-anchor="middle" class="sub mono">rig.rb, gem, require_relative</text>
-  <path d="M220 55 H280" class="edge" marker-end="url(#a)"/>
-  <rect x="280" y="30" width="200" height="50" rx="6" class="box core"/><text x="380" y="51" text-anchor="middle" class="lbl">process registry</text><text x="380" y="68" text-anchor="middle" class="sub">name → block; re-record replaces</text>
-  <path d="M480 45 H540 V45" class="edge"/><path d="M480 65 H540" class="edge"/>
-  <rect x="540" y="20" width="200" height="34" rx="6" class="box"/><text x="640" y="41" text-anchor="middle" class="lbl">Session A registrar</text>
-  <rect x="540" y="62" width="200" height="34" rx="6" class="box"/><text x="640" y="83" text-anchor="middle" class="lbl">Session B registrar</text>
-  <text x="380" y="125" text-anchor="middle" class="sub">Session.new(extensions: [...]) runs each block, in order, against a fresh registrar</text>
-  <text x="380" y="145" text-anchor="middle" class="sub">Two Sessions never share tools, commands or handlers. Per-Session state lives in the block's locals.</text>
-  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="head"/></marker></defs>
-</svg>
-</figure>
-
-<ul>
-  <li><code>Riffer::Rig.extension(name, requires: nil) { |rig| }</code> records the block in a process-level registry keyed by name and returns the extension object. Re-executing the same file (a reload) replaces the block rather than appending a duplicate.</li>
-  <li><code>Session.new(extensions: [...])</code> runs each block in order against a fresh registrar for that Session. Per-Session state lives in the block's locals; per-process state lives outside the block. Same process, no sandbox.</li>
-  <li>An extension object is what the list holds: name, requirement, block. <code>Riffer::Rig.bundled(:read)</code> returns the bundled ones by the same type, so an embedder composes <code>extensions: [Riffer::Rig.bundled(:read), Riffer::Rig.bundled(:bash), MyExt]</code>.</li>
-</ul>
-</section>
-
 <section class="topic" id="seams">
 <h3>The eight seams</h3>
 <div class="table-wrap"><table>
   <tr><th>Call</th><th>Does</th><th>Backed by</th></tr>
-  <tr><td><code>rig.tool klass</code></td><td>adds a <code>Riffer::Tool</code> to the Session; its <code>identifier</code> is its name everywhere (<code>--tools</code>, replacement, <code>Turn#tool_calls</code>)</td><td>riffer tools</td></tr>
   <tr><td><code>rig.command name, description: { |ctx| }</code></td><td>runtime slash command, works in every host</td><td>rig <code>Command</code></td></tr>
   <tr><td><code>rig.prompt(section) { |ctx| }</code></td><td>named system-prompt section, evaluated per turn</td><td>riffer instructions</td></tr>
   <tr><td><code>rig.on(event) { |e| }</code></td><td>lifecycle and loop handlers</td><td>riffer <code>on_message</code>, tool runtime, guardrail phases</td></tr>
@@ -122,22 +86,6 @@ end</code></pre>
 </ul>
 </section>
 
-<section class="topic" id="host-interface">
-<h3>Host interface</h3>
-<div class="table-wrap"><table>
-  <tr><th>Method</th><th>Purpose</th><th>NullHost</th></tr>
-  <tr><td><code>ask(question, options: nil, secret: false)</code></td><td>free text or a choice from <code>options</code>; <code>secret:</code> hides input (credential prompts)</td><td>returns nil</td></tr>
-  <tr><td><code>confirm(question)</code></td><td>yes or no; used for project trust</td><td>returns false</td></tr>
-  <tr><td><code>notify(message, level:)</code></td><td>out-of-band message: extension errors, warnings, info; never enters the model's context</td><td>no-op (the Session still emits the <code>notify</code> event)</td></tr>
-  <tr><td><code>progress(label) { }</code></td><td>wraps slow work (SDK install, MCP start)</td><td>yields</td></tr>
-  <tr><td><code>capabilities</code></td><td>the Set of methods the host truly supports, from <code>:ask</code>, <code>:confirm</code>, <code>:notify</code>, <code>:progress</code></td><td>empty Set</td></tr>
-</table></div>
-<ul>
-  <li>Duck-typed: any object with these methods is a host. Session and extensions check <code>capabilities</code> before asking, so a host that declines a capability is never asked and the caller takes the "declined" path.</li>
-  <li>The terminal implements all four; headless implements only <code>notify</code> (stderr or NDJSON) and <code>progress</code> (stderr); ACP implements <code>notify</code> as a <code>session/update</code> and nothing else in the first server.</li>
-</ul>
-</section>
-
 <section class="topic" id="errors">
 <h3>Error isolation</h3>
 <ul>
@@ -177,12 +125,9 @@ end</code></pre>
 <h2 id="interfaces">Interfaces</h2>
 <div class="table-wrap"><table>
   <tr><th>Surface</th><th>Shape</th></tr>
-  <tr><td><code>Riffer::Rig.extension(name, requires: nil) { |rig| }</code></td><td>records and returns an <code>Extension</code> (<code>name</code>, <code>requires</code>, <code>block</code>)</td></tr>
-  <tr><td><code>Riffer::Rig.extensions</code></td><td>the process registry, name → Extension, in record order</td></tr>
   <tr><td><code>Riffer::Rig.bundled(name = nil)</code></td><td>one bundled Extension, or all seven</td></tr>
   <tr><td><code>Registrar</code></td><td><code>tool</code>, <code>command</code>, <code>prompt</code>, <code>on</code>, <code>provider</code>, <code>mcp</code>, <code>skills</code>, <code>setting</code>; internal readers the Session uses to build its agent</td></tr>
   <tr><td>Command <code>ctx</code></td><td><code>args</code>, <code>session</code>, <code>host</code>, <code>settings</code>, <code>say</code>, <code>prompt</code>, <code>ask</code>, <code>confirm</code></td></tr>
-  <tr><td>Host duck</td><td><code>ask</code>, <code>confirm</code>, <code>notify</code>, <code>progress</code>, <code>capabilities</code></td></tr>
   <tr><td>Settings keys</td><td><code>extensions.disabled</code> (array of names), <code>extensions.autoload</code> (boolean); extension keys under the extension name</td></tr>
 </table></div>
 
