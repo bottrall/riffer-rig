@@ -68,6 +68,19 @@ section.topic {
 }
 section.topic > h3 { margin-top: 0; }
 
+/* A topic enshrined in code+docs: kept for context until the reboot plan is
+   retired whole. */
+section.topic.enshrined {
+  border-left-color: var(--accent);
+  opacity: 0.62;
+}
+section.topic.enshrined > h3::after {
+  content: " — enshrined";
+  font-size: 0.75em;
+  color: var(--accent);
+  font-weight: 500;
+}
+
 code, pre {
   font-family: ui-monospace, "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
   font-size: 0.88em;
