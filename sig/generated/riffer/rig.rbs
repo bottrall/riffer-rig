@@ -1,2 +1,16 @@
 # Generated from lib/riffer/rig.rb with RBS::Inline
 
+module Riffer::Rig
+  # Records an extension block in the process registry and returns the
+  # extension object. Re-recording a name replaces the block.
+  #
+  #   Riffer::Rig.extension('git') do |rig|
+  #     rig.tool GitLog
+  #   end
+  #
+  # : (String, ?requires: String?, &(untyped) -> void) -> Riffer::Rig::Extension
+  def self.extension: (untyped name, ?requires: untyped) ?{ (?) -> untyped } -> untyped
+
+  # : () -> Hash[String, Riffer::Rig::Extension]
+  def self.extensions: () -> untyped
+end

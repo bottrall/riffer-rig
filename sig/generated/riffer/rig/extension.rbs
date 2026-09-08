@@ -1,0 +1,22 @@
+# Generated from lib/riffer/rig/extension.rb with RBS::Inline
+
+# An extension recorded by <tt>Riffer::Rig.extension</tt>: a name, an optional
+# Gem::Requirement on riffer-rig, and the block that runs against a Session's
+# registrar. The process registry holds these objects; Session.new runs their
+# blocks.
+class Riffer::Rig::Extension
+  attr_reader name: untyped
+
+  attr_reader requires: untyped
+
+  @block: ^(untyped) -> void
+
+  # : (String, ?requires: String?, &(untyped) -> void) -> void
+  def initialize: (untyped name, ?requires: untyped) ?{ (?) -> untyped } -> untyped
+
+  # : () -> Hash[Symbol, untyped]
+  def to_h: () -> untyped
+
+  # : (Riffer::Rig::Registrar) -> void
+  def run: (untyped registrar) -> untyped
+end
