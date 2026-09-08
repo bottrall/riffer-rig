@@ -22,17 +22,7 @@ end
 
 desc 'Fail if any plan links to a page or anchor that no longer exists'
 task :plans_check do
-  pages = Dir['plans/**/*.html'].to_h { |path| [File.basename(path), File.read(path)] }
-  dangling = pages.flat_map do |basename, source|
-    source.scan(/href="([a-z_-]+\.html)(?:#([a-z_-]+))?"/).filter_map do |target, anchor|
-      next "#{basename} -> #{target} (missing page)" unless pages.key?(target)
-      next if anchor.nil? || pages[target].include?("id=\"#{anchor}\"")
-
-      "#{basename} -> #{target}##{anchor} (missing anchor)"
-    end
-  end
-
-  abort dangling.join("\n") unless dangling.empty?
+  sh 'bin/plans_check'
 end
 
 namespace :rbs do

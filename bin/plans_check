@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Fails on any cross-page plan link to a page or anchor that no longer exists.
+# Plan pages lose enshrined sections as tickets land; links to deleted ids rot
+# silently, so this runs in bin/ci (rake plans_check) and CI's lint job
+# (directly, where the rake gem group is not installed).
+
+pages = Dir['plans/**/*.html'].to_h { |path| [File.basename(path), File.read(path)] }
+dangling = pages.flat_map do |basename, source|
+  source.scan(/href="([a-z_-]+\.html)(?:#([a-z_-]+))?"/).filter_map do |target, anchor|
+    next "#{basename} -> #{target} (missing page)" unless pages.key?(target)
+    next if anchor.nil? || pages[target].include?("id=\"#{anchor}\"")
+
+    "#{basename} -> #{target}##{anchor} (missing anchor)"
+  end
+end
+
+abort dangling.join("\n") unless dangling.empty?
