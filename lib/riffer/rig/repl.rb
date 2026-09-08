@@ -12,7 +12,7 @@ class Riffer::Rig::REPL
     @theme = theme
     @input = input
     @output = output
-    @agent.session.on_message { |message| @renderer.render_tool_result(message) }
+    @agent.session.on_message { |message| render_tool_result(message) }
   end
 
   def run
@@ -40,10 +40,29 @@ class Riffer::Rig::REPL
   private
 
   def run_turn(prompt)
-    @animator.start_thinking
+    @animator.start
     @smoother.start
     @agent.stream(prompt).each do |event|
-      @animator.stop_thinking
+      case event
+      when Riffer::StreamEvents::ReasoningDelta
+        @animator.start(:reasoning)
+      when Riffer::StreamEvents::ReasoningDone
+        @animator.start
+      when Riffer::StreamEvents::ToolCallDelta, Riffer::StreamEvents::FinishReasonDone
+        # Round bookkeeping: nothing renders, so the indicator just carries on
+        # (or stays parked while the smoother finishes typing earlier text).
+        next
+      when Riffer::StreamEvents::ToolCallDone, Riffer::StreamEvents::SkillActivation, Riffer::StreamEvents::TokenUsageDone
+        # The spinner shares its line with what's about to print, and tool
+        # execution plus the next model invocation emit no events — stop it for
+        # the render, then bring it straight back to cover the silent stretch.
+        @animator.stop
+        @renderer.render(event)
+        @animator.start
+        next
+      else
+        @animator.stop
+      end
       @renderer.render(event)
     end
     @smoother.finish
@@ -52,7 +71,7 @@ class Riffer::Rig::REPL
     @output.puts("\nError: #{e.message}")
   ensure
     @smoother.finish
-    @animator.stop_thinking
+    @animator.stop
   end
 
   def run_skill_command(name, args)
@@ -86,5 +105,16 @@ class Riffer::Rig::REPL
 
   def skill_block(name, body)
     "<skill name=\"#{name}\">\n#{body}\n</skill>"
+  end
+
+  # Tool results can land mid-animation (tool execution emits no stream events,
+  # so the indicator is up); stop it around the line so its next frame doesn't
+  # erase what we printed.
+  def render_tool_result(message)
+    return unless message.is_a?(Riffer::Messages::Tool)
+
+    @animator.stop
+    @renderer.render_tool_result(message)
+    @animator.start
   end
 end

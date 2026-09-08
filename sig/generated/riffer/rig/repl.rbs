@@ -18,4 +18,9 @@ class Riffer::Rig::REPL
   def activate_skill: (untyped name) -> untyped
 
   def skill_block: (untyped name, untyped body) -> untyped
+
+  # Tool results can land mid-animation (tool execution emits no stream events,
+  # so the indicator is up); stop it around the line so its next frame doesn't
+  # erase what we printed.
+  def render_tool_result: (untyped message) -> untyped
 end

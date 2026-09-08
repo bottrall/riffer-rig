@@ -163,7 +163,95 @@ class Riffer::Rig::REPLTest < Minitest::Test
     refute_includes output.string, 'skill:'
   end
 
+  def test_reasoning_events_keep_the_indicator_running
+    animator = spy_animator
+    agent = stub_agent([Riffer::StreamEvents::ReasoningDelta.new('hmm'), Riffer::StreamEvents::ReasoningDone.new('hmm')])
+    repl = build_repl(agent, StringIO.new, "hi\n", animator: animator)
+
+    repl.run
+
+    assert_equal [%i[start neutral], %i[start reasoning], %i[start neutral], :stop], animator.calls
+  end
+
+  def test_renderable_events_stop_the_indicator
+    animator = spy_animator
+    agent = stub_agent([Riffer::StreamEvents::TextDelta.new('hello')])
+    repl = build_repl(agent, StringIO.new, "hi\n", animator: animator)
+
+    repl.run
+
+    assert_equal [%i[start neutral], :stop, :stop], animator.calls
+  end
+
+  def test_indicator_restarts_after_a_tool_call_completes
+    animator = spy_animator
+    agent = stub_agent([
+                         Riffer::StreamEvents::ToolCallDelta.new(item_id: 'i1', arguments_delta: '{"f'),
+                         Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}'),
+                         Riffer::StreamEvents::FinishReasonDone.new(finish_reason: :tool_calls),
+                         Riffer::StreamEvents::TokenUsageDone.new(token_usage: build_token_usage)
+                       ])
+    repl = build_repl(agent, StringIO.new, "hi\n", animator: animator)
+
+    repl.run
+
+    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop, %i[start neutral], :stop], animator.calls
+  end
+
+  def test_indicator_restarts_after_a_skill_activates
+    animator = spy_animator
+    agent = stub_agent([Riffer::StreamEvents::SkillActivation.new('read')])
+    repl = build_repl(agent, StringIO.new, "hi\n", animator: animator)
+
+    repl.run
+
+    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop], animator.calls
+  end
+
+  def test_indicator_survives_tool_call_deltas_and_finish_reason
+    animator = spy_animator
+    agent = stub_agent([
+                         Riffer::StreamEvents::ToolCallDelta.new(item_id: 'i1', arguments_delta: '{"f'),
+                         Riffer::StreamEvents::FinishReasonDone.new(finish_reason: :tool_calls)
+                       ])
+    repl = build_repl(agent, StringIO.new, "hi\n", animator: animator)
+
+    repl.run
+
+    assert_equal [%i[start neutral], :stop], animator.calls
+  end
+
+  def test_reasoning_resuming_mid_turn_restarts_the_indicator
+    animator = spy_animator
+    agent = stub_agent([Riffer::StreamEvents::TextDelta.new('hello'), Riffer::StreamEvents::ReasoningDelta.new('hmm')])
+    repl = build_repl(agent, StringIO.new, "hi\n", animator: animator)
+
+    repl.run
+
+    assert_equal [%i[start neutral], :stop, %i[start reasoning], :stop], animator.calls
+  end
+
+  def test_tool_result_printing_stops_and_restarts_the_indicator
+    animator = spy_animator
+    tool_message = Riffer::Messages::Tool.new('ok', tool_call_id: 'c1', name: 'read')
+    order = []
+    animator.define_singleton_method(:stop) { order << :stop }
+    animator.define_singleton_method(:start) { |mode = :neutral| order << [:start, mode] }
+    renderer = Object.new
+    renderer.define_singleton_method(:render_tool_result) { |m| order << [:render, m] }
+
+    repl = build_repl(stub_agent([]), StringIO.new, '', animator: animator)
+    repl.instance_variable_set(:@renderer, renderer)
+    repl.send(:render_tool_result, tool_message)
+
+    assert_equal [:stop, [:render, tool_message], %i[start neutral]], order
+  end
+
   private
+
+  def build_token_usage
+    Riffer::Providers::TokenUsage.new(input_tokens: 1, output_tokens: 1)
+  end
 
   def mock_agent
     config = Riffer::Rig::CodingAgent.config.dup
@@ -171,10 +259,31 @@ class Riffer::Rig::REPLTest < Minitest::Test
     Riffer::Rig::CodingAgent.new(config: config)
   end
 
-  def build_repl(agent, output, input_str)
+  def spy_animator
+    animator = Object.new
+    def animator.calls = @calls ||= []
+    def animator.start(mode = :neutral) = calls << [:start, mode]
+    def animator.stop = calls << :stop
+    animator
+  end
+
+  def stub_agent(events)
+    agent = Object.new
+    stream_result = events.each
+    agent.define_singleton_method(:stream) { |_prompt| stream_result }
+    session = Object.new
+    session.define_singleton_method(:on_message) { |*_args| nil }
+    agent.define_singleton_method(:session) { session }
+    context = Object.new
+    context.define_singleton_method(:skills) { nil }
+    agent.define_singleton_method(:context) { context }
+    agent
+  end
+
+  def build_repl(agent, output, input_str, animator: Riffer::Rig::UI::Animator.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)))
     theme = Riffer::Rig::UI::Theme.new(enabled: false)
     renderer = Riffer::Rig::UI::Renderer.new(io: output, theme: theme)
-    Riffer::Rig::REPL.new(agent: agent, renderer: renderer, input: StringIO.new(input_str), output: output, theme: theme)
+    Riffer::Rig::REPL.new(agent: agent, renderer: renderer, input: StringIO.new(input_str), output: output, theme: theme, animator: animator)
   end
 
   def with_skill(name, &)
