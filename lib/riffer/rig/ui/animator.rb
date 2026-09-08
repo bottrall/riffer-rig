@@ -41,15 +41,20 @@ class Riffer::Rig::UI::Animator
     end
   end
 
-  def start_thinking
-    start(:neutral)
+  def start(mode = :neutral)
+    return unless enabled?
+
+    if @thread
+      @mode = mode
+      return
+    end
+
+    @mode = mode
+    @stop = false
+    @thread = Thread.new { animate }
   end
 
-  def start_reasoning
-    start(:reasoning)
-  end
-
-  def stop_thinking
+  def stop
     return unless @thread
 
     @stop = true
@@ -69,21 +74,6 @@ class Riffer::Rig::UI::Animator
   end
 
   private
-
-  # A running indicator is kept and only its mode flips, so switching between
-  # neutral and reasoning never tears down the animation thread.
-  def start(mode)
-    return unless enabled?
-
-    if @thread
-      @mode = mode
-      return
-    end
-
-    @mode = mode
-    @stop = false
-    @thread = Thread.new { animate }
-  end
 
   def animate
     tick = 0

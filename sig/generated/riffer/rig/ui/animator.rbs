@@ -22,19 +22,13 @@ class Riffer::Rig::UI::Animator
   # When not on a TTY, prints the final frame once instead of animating.
   def reveal: (untyped frames) -> untyped
 
-  def start_thinking: () -> untyped
+  def start: (?untyped mode) -> untyped
 
-  def start_reasoning: () -> untyped
-
-  def stop_thinking: () -> untyped
+  def stop: () -> untyped
 
   def equalizer: (untyped tick, ?untyped label) -> untyped
 
   private
-
-  # A running indicator is kept and only its mode flips, so switching between
-  # neutral and reasoning never tears down the animation thread.
-  def start: (untyped mode) -> untyped
 
   def animate: () -> untyped
 

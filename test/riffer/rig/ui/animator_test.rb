@@ -15,20 +15,20 @@ class Riffer::Rig::UI::AnimatorTest < Minitest::Test
     assert_equal "final\n", @io.string
   end
 
-  def test_stop_thinking_without_start_does_not_raise
-    @animator.stop_thinking
+  def test_stop_without_start_does_not_raise
+    @animator.stop
 
     assert_equal '', @io.string
   end
 
-  def test_start_thinking_is_a_no_op_when_not_a_tty
-    @animator.start_thinking
+  def test_start_is_a_no_op_when_not_a_tty
+    @animator.start
 
     assert_equal '', @io.string
   end
 
   def test_start_reasoning_is_a_no_op_when_not_a_tty
-    @animator.start_reasoning
+    @animator.start(:reasoning)
 
     assert_equal '', @io.string
   end
@@ -37,10 +37,10 @@ class Riffer::Rig::UI::AnimatorTest < Minitest::Test
     io = StringIO.new
     io.define_singleton_method(:tty?) { true }
     animator = Riffer::Rig::UI::Animator.new(io: io, theme: Riffer::Rig::UI::Theme.new(enabled: true))
-    animator.start_thinking
+    animator.start
     deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
     Process.clock_gettime(Process::CLOCK_MONOTONIC) until io.string.include?('riffing') || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
-    animator.stop_thinking
+    animator.stop
 
     assert_includes io.string, 'riffing'
   end
@@ -70,10 +70,10 @@ class Riffer::Rig::UI::AnimatorTest < Minitest::Test
     io = StringIO.new
     io.define_singleton_method(:tty?) { true }
     animator = Riffer::Rig::UI::Animator.new(io: io, theme: Riffer::Rig::UI::Theme.new(enabled: true))
-    animator.start_reasoning
+    animator.start(:reasoning)
     deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
     Process.clock_gettime(Process::CLOCK_MONOTONIC) until Riffer::Rig::UI::Animator::REASONING_PHRASES.any? { |phrase| io.string.include?(phrase) } || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
-    animator.stop_thinking
+    animator.stop
 
     assert(Riffer::Rig::UI::Animator::REASONING_PHRASES.any? { |phrase| io.string.include?(phrase) })
   end
@@ -82,10 +82,10 @@ class Riffer::Rig::UI::AnimatorTest < Minitest::Test
     io = StringIO.new
     io.define_singleton_method(:tty?) { true }
     animator = Riffer::Rig::UI::Animator.new(io: io, theme: Riffer::Rig::UI::Theme.new(enabled: true))
-    animator.start_thinking
-    animator.start_reasoning
-    animator.start_thinking
-    animator.stop_thinking
+    animator.start
+    animator.start(:reasoning)
+    animator.start
+    animator.stop
 
     assert_nil animator.instance_variable_get(:@thread)
   end

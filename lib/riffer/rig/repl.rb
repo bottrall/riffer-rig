@@ -40,16 +40,24 @@ class Riffer::Rig::REPL
   private
 
   def run_turn(prompt)
-    @animator.start_thinking
+    @animator.start
     @smoother.start
     @agent.stream(prompt).each do |event|
       case event
       when Riffer::StreamEvents::ReasoningDelta
-        @animator.start_reasoning
+        @animator.start(:reasoning)
       when Riffer::StreamEvents::ReasoningDone
-        @animator.start_thinking
+        @animator.start
+      when Riffer::StreamEvents::ToolCallDone, Riffer::StreamEvents::SkillActivation
+        # The spinner shares its line with what's about to print, and tool
+        # execution plus the next model invocation emit no events — stop it for
+        # the render, then bring it straight back to cover the silent stretch.
+        @animator.stop
+        @renderer.render(event)
+        @animator.start
+        next
       else
-        @animator.stop_thinking
+        @animator.stop
       end
       @renderer.render(event)
     end
@@ -59,7 +67,7 @@ class Riffer::Rig::REPL
     @output.puts("\nError: #{e.message}")
   ensure
     @smoother.finish
-    @animator.stop_thinking
+    @animator.stop
   end
 
   def run_skill_command(name, args)

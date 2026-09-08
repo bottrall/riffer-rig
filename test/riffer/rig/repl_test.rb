@@ -170,7 +170,7 @@ class Riffer::Rig::REPLTest < Minitest::Test
 
     repl.run
 
-    assert_equal %i[start_thinking start_reasoning start_thinking stop_thinking], animator.calls
+    assert_equal [%i[start neutral], %i[start reasoning], %i[start neutral], :stop], animator.calls
   end
 
   def test_renderable_events_stop_the_indicator
@@ -180,7 +180,27 @@ class Riffer::Rig::REPLTest < Minitest::Test
 
     repl.run
 
-    assert_equal %i[start_thinking stop_thinking stop_thinking], animator.calls
+    assert_equal [%i[start neutral], :stop, :stop], animator.calls
+  end
+
+  def test_indicator_restarts_after_a_tool_call_completes
+    animator = spy_animator
+    agent = stub_agent([Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}')])
+    repl = build_repl(agent, StringIO.new, "hi\n", animator: animator)
+
+    repl.run
+
+    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop], animator.calls
+  end
+
+  def test_indicator_restarts_after_a_skill_activates
+    animator = spy_animator
+    agent = stub_agent([Riffer::StreamEvents::SkillActivation.new('read')])
+    repl = build_repl(agent, StringIO.new, "hi\n", animator: animator)
+
+    repl.run
+
+    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop], animator.calls
   end
 
   def test_reasoning_resuming_mid_turn_restarts_the_indicator
@@ -190,7 +210,7 @@ class Riffer::Rig::REPLTest < Minitest::Test
 
     repl.run
 
-    assert_equal %i[start_thinking stop_thinking start_reasoning stop_thinking], animator.calls
+    assert_equal [%i[start neutral], :stop, %i[start reasoning], :stop], animator.calls
   end
 
   private
@@ -204,9 +224,8 @@ class Riffer::Rig::REPLTest < Minitest::Test
   def spy_animator
     animator = Object.new
     def animator.calls = @calls ||= []
-    def animator.start_thinking = calls << :start_thinking
-    def animator.start_reasoning = calls << :start_reasoning
-    def animator.stop_thinking = calls << :stop_thinking
+    def animator.start(mode = :neutral) = calls << [:start, mode]
+    def animator.stop = calls << :stop
     animator
   end
 
