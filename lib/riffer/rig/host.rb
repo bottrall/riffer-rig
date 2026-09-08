@@ -39,7 +39,7 @@ class Riffer::Rig::Host
   end
 
   # : (?String) { () -> void } -> void
-  def progress(_label = nil)
-    yield
+  def progress(_label = nil, &block)
+    block&.call
   end
 end
