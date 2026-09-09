@@ -6,6 +6,7 @@ class Riffer::Rig::UI::Theme
   @enabled: bool
 
   # @rbs return: bool
+  # @dynamic enabled
   attr_reader enabled: bool
 
   # @rbs enabled: bool

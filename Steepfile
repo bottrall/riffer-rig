@@ -15,5 +15,5 @@ target :lib do
   library 'open3'
   library 'riffer'
 
-  configure_code_diagnostics(D::Ruby.strict)
+  configure_code_diagnostics(D::Ruby.all_error)
 end

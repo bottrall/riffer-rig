@@ -2,12 +2,16 @@
 
 # USD per million tokens, parsed from a model's entry in the settings file.
 class Riffer::Rig::Settings::Pricing
+  # @dynamic input, output, cache_write, cache_read
   attr_reader input: Float
 
+  # @dynamic input, output, cache_write, cache_read
   attr_reader output: Float
 
+  # @dynamic input, output, cache_write, cache_read
   attr_reader cache_write: Float
 
+  # @dynamic input, output, cache_write, cache_read
   attr_reader cache_read: Float
 
   # @rbs input: Float

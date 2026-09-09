@@ -45,9 +45,10 @@ All wrappers delegate to the Rakefile under the hood.
 
 # Typing policy
 
-Steep runs `D::Ruby.strict`: no method body may fall back to `untyped` for lack of an annotation. The bar applies to every change, not just new code.
+Steep runs `D::Ruby.all_error`: every diagnostic Steep can emit is an error, including the hints and informations that editors surface via the language server — there are no advisory severities. No method body may fall back to `untyped` for lack of an annotation. The bar applies to every change, not just new code.
 
 - **Syntax**: per-param `@rbs` lines only — `# @rbs name: Type` for each parameter (omit the `?` when the Ruby param has a default; rbs-inline emits the optionality), then `# @rbs return: Type`. Never `#:`. Use `# @rbs @ivar: Type` for instance variables, `# @rbs!` for standalone `@rbs! name: Type` embeds, and a trailing `#: Type` assertion on the same line for constants and `attr_reader`s (rbs-inline 0.14 only honours those there — an annotation on a preceding line is silently ignored).
 - **Coverage**: every method in `lib/` is annotated, plus every constant/ivar rbs-inline can't infer (`MY_STRING = "a string"` needs nothing).
 - **Structured data**: hashes parsed from JSON are converted to hand-written frozen POROs at the read boundary (`Settings::Pricing` is the template). `Data.define` is off the table — rbs-inline can't type its members, so they generate as `untyped`.
-- **Noise policy**: when strict surfaces a diagnostic, fix the annotation or the code. Diagnostics are never disabled in the Steepfile; the only escape is a targeted inline suppression with a `why` comment.
+- **Accessors**: an `attr_reader`/`attr_writer` on a class with declared members needs a `# @dynamic name1, name2` line directly above it — Steep only counts `def` nodes as implementations, so without it every accessor reports `MethodDefinitionMissing`.
+- **Noise policy**: when Steep surfaces a diagnostic, fix the annotation or the code. Diagnostics are never disabled in the Steepfile; the only escape is a targeted inline suppression with a `why` comment. Inaccurate stdlib signatures are corrected in `sig/stubs/` rather than suppressed (see `sig/stubs/thread.rbs`).

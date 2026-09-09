@@ -1,0 +1,6 @@
+# Core RBS types `Thread#join` as returning `Thread`, but a timeout argument
+# makes it return `nil` — the false `Thread#join -> Thread` typing makes the
+# timeout branch in `Tools::Bash#run` look unreachable to Steep.
+class Thread
+  def join: (*untyped limit) -> Thread?
+end

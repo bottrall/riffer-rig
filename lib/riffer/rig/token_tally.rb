@@ -19,6 +19,7 @@ class Riffer::Rig::TokenTally
   # @rbs @cache_read_tokens: Integer
   # @rbs @pricing: Riffer::Rig::Settings::Pricing?
 
+  # @dynamic input_tokens, output_tokens, cache_write_tokens, cache_read_tokens
   attr_reader :input_tokens, :output_tokens, :cache_write_tokens, :cache_read_tokens
 
   # @rbs ?pricing: Riffer::Rig::Settings::Pricing?

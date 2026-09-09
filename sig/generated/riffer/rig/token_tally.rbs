@@ -22,12 +22,16 @@ class Riffer::Rig::TokenTally
 
   @pricing: Riffer::Rig::Settings::Pricing?
 
+  # @dynamic input_tokens, output_tokens, cache_write_tokens, cache_read_tokens
   attr_reader input_tokens: untyped
 
+  # @dynamic input_tokens, output_tokens, cache_write_tokens, cache_read_tokens
   attr_reader output_tokens: untyped
 
+  # @dynamic input_tokens, output_tokens, cache_write_tokens, cache_read_tokens
   attr_reader cache_write_tokens: untyped
 
+  # @dynamic input_tokens, output_tokens, cache_write_tokens, cache_read_tokens
   attr_reader cache_read_tokens: untyped
 
   # @rbs ?pricing: Riffer::Rig::Settings::Pricing?
