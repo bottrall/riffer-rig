@@ -19,3 +19,12 @@ module Riffer::Rig::UI::Banner
   extend ::Riffer::Rig::UI::Banner
 end
 
+# Namespace modules autovivified by Zeitwerk in Ruby; RBS needs them declared
+# explicitly so the compact `Riffer::Rig::UI::*` / `Riffer::Rig::Tools::*`
+# signatures resolve.
+
+module Riffer::Rig::UI
+end
+
+module Riffer::Rig::Tools
+end

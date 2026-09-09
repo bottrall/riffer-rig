@@ -36,6 +36,17 @@ namespace :rbs do
     end
   end
 
+  desc 'Fail if a .rbs file in sig/manual or sig/_private shadows a deleted module'
+  task :lint_manual do
+    stale = Dir['sig/manual/**/*.rbs', 'sig/_private/riffer/**/*.rbs'].filter_map do |file|
+      module_name = File.readlines(file).lazy
+                        .filter_map { |line| line[/^module ([A-Z][\w:]*)/, 1] }
+                        .first
+      file if module_name && !File.exist?("lib/#{module_name.split('::').map(&:downcase).join('/')}.rb")
+    end
+    abort "sig files shadow deleted modules: #{stale.join(', ')}" unless stale.empty?
+  end
+
   desc 'Watch lib/ for changes and regenerate RBS files'
   task :watch do
     require 'guard'
@@ -58,7 +69,7 @@ task :plans do
 end
 
 desc 'Check RBS signatures are current, then type-check'
-task typecheck: %w[rbs:check steep:check]
+task typecheck: %w[rbs:check rbs:lint_manual steep:check]
 
 desc 'Run everything CI runs'
 task ci: %i[test rubocop typecheck]
