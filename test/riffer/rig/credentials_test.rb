@@ -2,8 +2,8 @@
 
 require 'test_helper'
 
-class Riffer::Rig::CredentialsTest < Minitest::Test
-  def test_round_trips_a_saved_key
+describe Riffer::Rig::Credentials do
+  it 'round trips a saved key' do
     without_env do
       in_tmp_path do |path|
         Riffer::Rig::Credentials.save_api_key('anthropic', 'sk-ant-stored', path: path)
@@ -13,7 +13,7 @@ class Riffer::Rig::CredentialsTest < Minitest::Test
     end
   end
 
-  def test_environment_variable_takes_precedence_over_stored_key
+  it 'environment variable takes precedence over stored key' do
     in_tmp_path do |path|
       Riffer::Rig::Credentials.save_api_key('anthropic', 'sk-ant-stored', path: path)
       ENV['ANTHROPIC_API_KEY'] = 'sk-ant-env'
@@ -24,7 +24,7 @@ class Riffer::Rig::CredentialsTest < Minitest::Test
     end
   end
 
-  def test_returns_nil_when_no_key_is_available
+  it 'returns nil when no key is available' do
     without_env do
       in_tmp_path do |path|
         assert_nil Riffer::Rig::Credentials.api_key_for('anthropic', path: path)
@@ -32,7 +32,7 @@ class Riffer::Rig::CredentialsTest < Minitest::Test
     end
   end
 
-  def test_saved_file_is_owner_only_readable
+  it 'saved file is owner only readable' do
     in_tmp_path do |path|
       Riffer::Rig::Credentials.save_api_key('anthropic', 'sk-ant-stored', path: path)
 
@@ -40,7 +40,7 @@ class Riffer::Rig::CredentialsTest < Minitest::Test
     end
   end
 
-  def test_stores_and_retrieves_openai_key_from_env
+  it 'stores and retrieves openai key from env' do
     in_tmp_path do |path|
       ENV['OPENAI_API_KEY'] = 'sk-openai-env'
 
@@ -50,7 +50,7 @@ class Riffer::Rig::CredentialsTest < Minitest::Test
     end
   end
 
-  def test_stores_and_retrieves_openai_key_from_file
+  it 'stores and retrieves openai key from file' do
     in_tmp_path do |path|
       ENV.delete('OPENAI_API_KEY')
       Riffer::Rig::Credentials.save_api_key('openai', 'sk-openai-stored', path: path)
@@ -59,7 +59,7 @@ class Riffer::Rig::CredentialsTest < Minitest::Test
     end
   end
 
-  def test_stores_and_retrieves_gemini_key_from_file
+  it 'stores and retrieves gemini key from file' do
     in_tmp_path do |path|
       ENV.delete('GEMINI_API_KEY')
       Riffer::Rig::Credentials.save_api_key('gemini', 'gemini-stored', path: path)
@@ -68,7 +68,7 @@ class Riffer::Rig::CredentialsTest < Minitest::Test
     end
   end
 
-  def test_stores_and_retrieves_openrouter_key_from_file
+  it 'stores and retrieves openrouter key from file' do
     in_tmp_path do |path|
       ENV.delete('OPENROUTER_API_KEY')
       Riffer::Rig::Credentials.save_api_key('openrouter', 'sk-or-stored', path: path)
@@ -77,7 +77,7 @@ class Riffer::Rig::CredentialsTest < Minitest::Test
     end
   end
 
-  def test_anthropic_key_survives_after_adding_openai_key
+  it 'anthropic key survives after adding openai key' do
     in_tmp_path do |path|
       ENV.delete('ANTHROPIC_API_KEY')
       ENV.delete('OPENAI_API_KEY')
@@ -89,7 +89,7 @@ class Riffer::Rig::CredentialsTest < Minitest::Test
     end
   end
 
-  def test_openai_key_survives_after_adding_anthropic_key
+  it 'openai key survives after adding anthropic key' do
     in_tmp_path do |path|
       ENV.delete('ANTHROPIC_API_KEY')
       ENV.delete('OPENAI_API_KEY')

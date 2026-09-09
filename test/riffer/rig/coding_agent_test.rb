@@ -2,8 +2,8 @@
 
 require 'test_helper'
 
-class Riffer::Rig::CodingAgentTest < Minitest::Test
-  def test_wraps_present_project_agents_file_in_the_system_prompt
+describe Riffer::Rig::CodingAgent do
+  it 'wraps present project agents file in the system prompt' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         File.write('AGENTS.md', 'ALWAYS_SQUAWK')
@@ -14,7 +14,7 @@ class Riffer::Rig::CodingAgentTest < Minitest::Test
     end
   end
 
-  def test_includes_project_agents_file_content
+  it 'includes project agents file content' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         File.write('AGENTS.md', 'ALWAYS_SQUAWK')
@@ -25,7 +25,7 @@ class Riffer::Rig::CodingAgentTest < Minitest::Test
     end
   end
 
-  def test_skips_a_missing_project_agents_file
+  it 'skips a missing project agents file' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         agent = Riffer::Rig::CodingAgent.new
@@ -35,13 +35,13 @@ class Riffer::Rig::CodingAgentTest < Minitest::Test
     end
   end
 
-  def test_runs_a_turn_against_the_mock_provider
+  it 'runs a turn against the mock provider' do
     response = mock_agent.generate('hello')
 
     assert_equal 'Mock response', response.content
   end
 
-  def test_excludes_skill_activate_tool_when_no_skills_are_present
+  it 'excludes skill activate tool when no skills are present' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         agent = isolated_agent(global_dir: dir, project_dir: dir)
@@ -51,7 +51,7 @@ class Riffer::Rig::CodingAgentTest < Minitest::Test
     end
   end
 
-  def test_includes_skill_activate_tool_when_skills_are_present
+  it 'includes skill activate tool when skills are present' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         skill_dir = File.join(dir, '.skills', 'test-skill')
@@ -72,7 +72,7 @@ class Riffer::Rig::CodingAgentTest < Minitest::Test
     end
   end
 
-  def test_loads_skills_from_project_skills_dir
+  it 'loads skills from project skills dir' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         skill_dir = File.join(dir, '.skills', 'refactor')
@@ -96,7 +96,7 @@ class Riffer::Rig::CodingAgentTest < Minitest::Test
     end
   end
 
-  def test_uses_xml_adapter_for_claude_models
+  it 'uses xml adapter for claude models' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         skill_dir = File.join(dir, '.skills', 'refactor')

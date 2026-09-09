@@ -2,12 +2,12 @@
 
 require 'test_helper'
 
-class Riffer::Rig::Tools::WriteTest < Minitest::Test
+describe Riffer::Rig::Tools::Write do
   def setup
     @tool = Riffer::Rig::Tools::Write.new
   end
 
-  def test_writes_content_to_a_file
+  it 'writes content to a file' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         @tool.call(context: nil, path: 'out.txt', content: 'hello')
@@ -17,7 +17,7 @@ class Riffer::Rig::Tools::WriteTest < Minitest::Test
     end
   end
 
-  def test_creates_missing_parent_directories
+  it 'creates missing parent directories' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         @tool.call(context: nil, path: 'nested/deep/out.txt', content: 'hi')
@@ -27,7 +27,7 @@ class Riffer::Rig::Tools::WriteTest < Minitest::Test
     end
   end
 
-  def test_returns_a_success_response
+  it 'returns a success response' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         response = @tool.call(context: nil, path: 'out.txt', content: 'hello')

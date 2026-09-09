@@ -2,12 +2,12 @@
 
 require 'test_helper'
 
-class Riffer::Rig::Tools::ReadTest < Minitest::Test
+describe Riffer::Rig::Tools::Read do
   def setup
     @tool = Riffer::Rig::Tools::Read.new
   end
 
-  def test_reads_file_contents_with_line_numbers
+  it 'reads file contents with line numbers' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         File.write('greeting.txt', "hello\nworld")
@@ -18,7 +18,7 @@ class Riffer::Rig::Tools::ReadTest < Minitest::Test
     end
   end
 
-  def test_offset_and_limit_select_a_slice
+  it 'offset and limit select a slice' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         File.write('lines.txt', (1..10).map { |n| "line#{n}" }.join("\n"))
@@ -29,7 +29,7 @@ class Riffer::Rig::Tools::ReadTest < Minitest::Test
     end
   end
 
-  def test_missing_file_returns_error
+  it 'missing file returns error' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         response = @tool.call(context: nil, path: 'nope.txt')
@@ -39,7 +39,7 @@ class Riffer::Rig::Tools::ReadTest < Minitest::Test
     end
   end
 
-  def test_offset_below_one_returns_error
+  it 'offset below one returns error' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         File.write('lines.txt', "a\nb\nc")

@@ -3,25 +3,25 @@
 require 'test_helper'
 require 'stringio'
 
-class Riffer::Rig::UI::CursorTest < Minitest::Test
+describe Riffer::Rig::UI::Cursor do
   def setup
     @io = StringIO.new
     @cursor = Riffer::Rig::UI::Cursor.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false))
   end
 
-  def test_hide_is_a_no_op_when_not_a_tty
+  it 'hide is a no op when not a tty' do
     @cursor.hide
 
     assert_equal '', @io.string
   end
 
-  def test_show_is_a_no_op_when_not_a_tty
+  it 'show is a no op when not a tty' do
     @cursor.show
 
     assert_equal '', @io.string
   end
 
-  def test_hide_prints_the_hide_sequence_when_enabled
+  it 'hide prints the hide sequence when enabled' do
     @cursor = Riffer::Rig::UI::Cursor.new(io: tty_io, theme: Riffer::Rig::UI::Theme.new(enabled: true))
 
     @cursor.hide
@@ -29,7 +29,7 @@ class Riffer::Rig::UI::CursorTest < Minitest::Test
     assert_equal "\e[?25l", @io.string
   end
 
-  def test_show_prints_the_show_sequence_when_enabled
+  it 'show prints the show sequence when enabled' do
     @cursor = Riffer::Rig::UI::Cursor.new(io: tty_io, theme: Riffer::Rig::UI::Theme.new(enabled: true))
 
     @cursor.show

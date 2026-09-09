@@ -2,12 +2,12 @@
 
 require 'test_helper'
 
-class Riffer::Rig::Tools::EditTest < Minitest::Test
+describe Riffer::Rig::Tools::Edit do
   def setup
     @tool = Riffer::Rig::Tools::Edit.new
   end
 
-  def test_replaces_a_unique_string
+  it 'replaces a unique string' do
     with_file('foo bar baz') do
       @tool.call(context: nil, path: 'f.txt', old_string: 'bar', new_string: 'QUX')
 
@@ -15,7 +15,7 @@ class Riffer::Rig::Tools::EditTest < Minitest::Test
     end
   end
 
-  def test_missing_old_string_returns_error
+  it 'missing old string returns error' do
     with_file('foo bar') do
       response = @tool.call(context: nil, path: 'f.txt', old_string: 'nope', new_string: 'x')
 
@@ -23,7 +23,7 @@ class Riffer::Rig::Tools::EditTest < Minitest::Test
     end
   end
 
-  def test_non_unique_match_without_replace_all_returns_error
+  it 'non unique match without replace all returns error' do
     with_file('x x x') do
       response = @tool.call(context: nil, path: 'f.txt', old_string: 'x', new_string: 'y')
 
@@ -31,7 +31,7 @@ class Riffer::Rig::Tools::EditTest < Minitest::Test
     end
   end
 
-  def test_replace_all_replaces_every_occurrence
+  it 'replace all replaces every occurrence' do
     with_file('x x x') do
       @tool.call(context: nil, path: 'f.txt', old_string: 'x', new_string: 'y', replace_all: true)
 
@@ -39,7 +39,7 @@ class Riffer::Rig::Tools::EditTest < Minitest::Test
     end
   end
 
-  def test_backslash_sequences_in_replacement_are_inserted_literally
+  it 'backslash sequences in replacement are inserted literally' do
     with_file('foo bar baz') do
       @tool.call(context: nil, path: 'f.txt', old_string: 'bar', new_string: '\0\1')
 

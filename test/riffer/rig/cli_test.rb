@@ -3,8 +3,8 @@
 require 'test_helper'
 require 'stringio'
 
-class Riffer::Rig::CLITest < Minitest::Test
-  def test_start_runs_a_session_and_returns_zero
+describe Riffer::Rig::CLI do
+  it 'start runs a session and returns zero' do
     with_clean_global_state do
       ENV['ANTHROPIC_API_KEY'] = 'sk-ant-test'
 
