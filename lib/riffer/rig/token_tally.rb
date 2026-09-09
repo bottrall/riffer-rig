@@ -17,8 +17,8 @@ class Riffer::Rig::TokenTally
   # @rbs @output_tokens: Integer
   # @rbs @cache_write_tokens: Integer
   # @rbs @cache_read_tokens: Integer
+  # @rbs @pricing: Riffer::Rig::Settings::Pricing?
 
-  # @rbs! @pricing: Riffer::Rig::Settings::Pricing?
   attr_reader :input_tokens, :output_tokens, :cache_write_tokens, :cache_read_tokens
 
   # @rbs ?pricing: Riffer::Rig::Settings::Pricing?
@@ -60,13 +60,14 @@ class Riffer::Rig::TokenTally
   #
   # @rbs return: Float?
   def estimated_cost
-    return nil unless @pricing
+    pricing = @pricing
+    return nil unless pricing
 
     (
-      (@input_tokens       * @pricing.input) +
-      (@output_tokens      * @pricing.output)       +
-      (@cache_write_tokens * @pricing.cache_write)  +
-      (@cache_read_tokens  * @pricing.cache_read)
+      (@input_tokens       * pricing.input) +
+      (@output_tokens      * pricing.output)       +
+      (@cache_write_tokens * pricing.cache_write)  +
+      (@cache_read_tokens  * pricing.cache_read)
     ) / 1_000_000.0
   end
 end

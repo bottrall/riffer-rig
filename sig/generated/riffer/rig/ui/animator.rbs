@@ -17,6 +17,8 @@ class Riffer::Rig::UI::Animator
 
   REASONING_TICK_RANGE: Range[Integer]
 
+  @stop: bool
+
   @phrase: String?
 
   @mode: Symbol

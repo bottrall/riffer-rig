@@ -28,6 +28,7 @@ class Riffer::Rig::UI::Animator
   # @rbs @thread: Thread?
   # @rbs @mode: Symbol
   # @rbs @phrase: String?
+  # @rbs @stop: bool
 
   # @rbs io: untyped
   # @rbs ?theme: Riffer::Rig::UI::Theme

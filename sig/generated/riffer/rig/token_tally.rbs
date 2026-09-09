@@ -20,16 +20,14 @@ class Riffer::Rig::TokenTally
 
   @cache_read_tokens: Integer
 
-  # @rbs! @pricing: Riffer::Rig::Settings::Pricing?
+  @pricing: Riffer::Rig::Settings::Pricing?
+
   attr_reader input_tokens: untyped
 
-  # @rbs! @pricing: Riffer::Rig::Settings::Pricing?
   attr_reader output_tokens: untyped
 
-  # @rbs! @pricing: Riffer::Rig::Settings::Pricing?
   attr_reader cache_write_tokens: untyped
 
-  # @rbs! @pricing: Riffer::Rig::Settings::Pricing?
   attr_reader cache_read_tokens: untyped
 
   # @rbs ?pricing: Riffer::Rig::Settings::Pricing?
