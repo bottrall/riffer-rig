@@ -3,19 +3,19 @@
 require 'test_helper'
 require 'stringio'
 
-class Riffer::Rig::UI::RendererTest < Minitest::Test
+describe Riffer::Rig::UI::Renderer do
   def setup
     @io = StringIO.new
     @renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false))
   end
 
-  def test_writes_text_delta_content_to_the_io
+  it 'writes text delta content to the io' do
     @renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
 
     assert_equal 'hello', @io.string
   end
 
-  def test_routes_text_deltas_through_the_smoother_when_one_is_present
+  it 'routes text deltas through the smoother when one is present' do
     renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother)
 
     renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
@@ -23,7 +23,7 @@ class Riffer::Rig::UI::RendererTest < Minitest::Test
     assert_equal ['hello'], recording_smoother.written
   end
 
-  def test_drains_the_smoother_before_rendering_a_tool_call_done_event
+  it 'drains the smoother before rendering a tool call done event' do
     renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother)
 
     renderer.render(Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}'))
@@ -31,7 +31,7 @@ class Riffer::Rig::UI::RendererTest < Minitest::Test
     assert_predicate recording_smoother, :drained?
   end
 
-  def test_drains_the_smoother_before_rendering_a_skill_activation_event
+  it 'drains the smoother before rendering a skill activation event' do
     renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother)
 
     renderer.render(Riffer::StreamEvents::SkillActivation.new('refactor'))
@@ -39,7 +39,7 @@ class Riffer::Rig::UI::RendererTest < Minitest::Test
     assert_predicate recording_smoother, :drained?
   end
 
-  def test_drains_the_smoother_before_rendering_an_interrupt_event
+  it 'drains the smoother before rendering an interrupt event' do
     renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother)
 
     renderer.render(Riffer::StreamEvents::Interrupt.new(reason: 'user'))
@@ -47,7 +47,7 @@ class Riffer::Rig::UI::RendererTest < Minitest::Test
     assert_predicate recording_smoother, :drained?
   end
 
-  def test_drains_the_smoother_before_rendering_token_usage
+  it 'drains the smoother before rendering token usage' do
     renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother, tally: Riffer::Rig::TokenTally.new)
 
     renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 1, output_tokens: 1)))
@@ -72,26 +72,26 @@ class Riffer::Rig::UI::RendererTest < Minitest::Test
     end.new
   end
 
-  def test_renders_tool_results_without_ansi_when_theme_disabled
+  it 'renders tool results without ansi when theme disabled' do
     message = Riffer::Messages::Tool.new('done', tool_call_id: 'c1', name: 'write')
     @renderer.render_tool_result(message)
 
     refute_includes @io.string, "\e["
   end
 
-  def test_renders_skill_activation_with_skill_name
+  it 'renders skill activation with skill name' do
     @renderer.render(Riffer::StreamEvents::SkillActivation.new('refactor'))
 
     assert_includes @io.string, 'skill: refactor'
   end
 
-  def test_renders_skill_activation_on_its_own_line
+  it 'renders skill activation on its own line' do
     @renderer.render(Riffer::StreamEvents::SkillActivation.new('code-review'))
 
     assert_includes @io.string, "\n"
   end
 
-  def test_ignores_token_usage_done_when_no_tally_provided
+  it 'ignores token usage done when no tally provided' do
     usage = Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50)
     event = Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage)
 
@@ -100,7 +100,7 @@ class Riffer::Rig::UI::RendererTest < Minitest::Test
     assert_empty @io.string
   end
 
-  def test_renders_input_token_count_when_tally_is_present
+  it 'renders input token count when tally is present' do
     tally = Riffer::Rig::TokenTally.new
     renderer = Riffer::Rig::UI::Renderer.new(
       io: @io,
@@ -115,7 +115,7 @@ class Riffer::Rig::UI::RendererTest < Minitest::Test
     assert_includes @io.string, '↑100'
   end
 
-  def test_renders_output_token_count_when_tally_is_present
+  it 'renders output token count when tally is present' do
     tally = Riffer::Rig::TokenTally.new
     renderer = Riffer::Rig::UI::Renderer.new(
       io: @io,
@@ -130,7 +130,7 @@ class Riffer::Rig::UI::RendererTest < Minitest::Test
     assert_includes @io.string, '↓50'
   end
 
-  def test_renders_cache_write_token_count_when_present
+  it 'renders cache write token count when present' do
     tally = Riffer::Rig::TokenTally.new
     renderer = Riffer::Rig::UI::Renderer.new(
       io: @io,
@@ -150,7 +150,7 @@ class Riffer::Rig::UI::RendererTest < Minitest::Test
     assert_includes @io.string, 'cache_write:400'
   end
 
-  def test_renders_cache_read_token_count_when_present
+  it 'renders cache read token count when present' do
     tally = Riffer::Rig::TokenTally.new
     renderer = Riffer::Rig::UI::Renderer.new(
       io: @io,
@@ -170,7 +170,7 @@ class Riffer::Rig::UI::RendererTest < Minitest::Test
     assert_includes @io.string, 'cache_read:200'
   end
 
-  def test_renders_session_token_total_across_turns
+  it 'renders session token total across turns' do
     tally = Riffer::Rig::TokenTally.new
     renderer = Riffer::Rig::UI::Renderer.new(
       io: @io,
@@ -188,7 +188,7 @@ class Riffer::Rig::UI::RendererTest < Minitest::Test
     assert_includes @io.string, 'session 450 tok'
   end
 
-  def test_renders_estimated_cost_for_known_model
+  it 'renders estimated cost for known model' do
     pricing = { input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3 }
     tally = Riffer::Rig::TokenTally.new(pricing: pricing)
     renderer = Riffer::Rig::UI::Renderer.new(
@@ -202,7 +202,7 @@ class Riffer::Rig::UI::RendererTest < Minitest::Test
     assert_includes @io.string, '~$'
   end
 
-  def test_omits_estimated_cost_when_no_pricing_provided
+  it 'omits estimated cost when no pricing provided' do
     tally = Riffer::Rig::TokenTally.new
     renderer = Riffer::Rig::UI::Renderer.new(
       io: @io,

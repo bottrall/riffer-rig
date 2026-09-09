@@ -2,18 +2,18 @@
 
 require 'test_helper'
 
-class Riffer::Rig::Tools::BashTest < Minitest::Test
+describe Riffer::Rig::Tools::Bash do
   def setup
     @tool = Riffer::Rig::Tools::Bash.new
   end
 
-  def test_captures_command_output
+  it 'captures command output' do
     response = @tool.call(context: nil, command: 'echo hello')
 
     assert_equal 'hello', response.content
   end
 
-  def test_runs_in_the_working_directory
+  it 'runs in the working directory' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         File.write('marker.txt', '')
@@ -24,13 +24,13 @@ class Riffer::Rig::Tools::BashTest < Minitest::Test
     end
   end
 
-  def test_non_zero_exit_returns_error
+  it 'non zero exit returns error' do
     response = @tool.call(context: nil, command: 'exit 3')
 
     assert_predicate response, :error?
   end
 
-  def test_times_out_long_running_commands
+  it 'times out long running commands' do
     response = @tool.call(context: nil, command: 'sleep 5', timeout_ms: 200)
 
     assert_includes response.content, 'timed out'

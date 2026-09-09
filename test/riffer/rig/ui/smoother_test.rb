@@ -3,7 +3,12 @@
 require 'test_helper'
 require 'stringio'
 
-class Riffer::Rig::UI::SmootherTest < Minitest::Test
+class FakeClock
+  # Returns instantly, so the tick thread drains as fast as the test allows.
+  def sleep(_seconds) = nil
+end
+
+describe Riffer::Rig::UI::Smoother do
   def setup
     @io = StringIO.new
     @io.define_singleton_method(:tty?) { true }
@@ -11,34 +16,34 @@ class Riffer::Rig::UI::SmootherTest < Minitest::Test
     @smoother = Riffer::Rig::UI::Smoother.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: true), clock: @clock)
   end
 
-  def test_tick_is_a_no_op_with_an_empty_backlog
+  it 'tick is a no op with an empty backlog' do
     @smoother.tick
 
     assert_equal '', @io.string
   end
 
-  def test_tick_accrues_a_sub_character_floor_across_ticks
+  it 'tick accrues a sub character floor across ticks' do
     @smoother << 'a'
     @smoother.tick
 
     assert_equal '', @io.string
   end
 
-  def test_accrued_floor_emits_once_it_reaches_a_character
+  it 'accrued floor emits once it reaches a character' do
     @smoother << 'a'
     6.times { @smoother.tick }
 
     assert_equal 'a', @io.string
   end
 
-  def test_tick_releases_a_proportional_slice_of_the_backlog
+  it 'tick releases a proportional slice of the backlog' do
     @smoother << ('a' * 120)
     @smoother.tick
 
     assert_equal 'a' * 2, @io.string
   end
 
-  def test_successive_ticks_keep_draining
+  it 'successive ticks keep draining' do
     @smoother << ('a' * 120)
     @smoother.tick
     @smoother.tick
@@ -46,20 +51,20 @@ class Riffer::Rig::UI::SmootherTest < Minitest::Test
     assert_equal 'a' * 3, @io.string
   end
 
-  def test_drain_flushes_the_entire_backlog
+  it 'drain flushes the entire backlog' do
     @smoother << ('a' * 40)
     @smoother.drain
 
     assert_equal 'a' * 40, @io.string
   end
 
-  def test_drain_is_a_no_op_with_an_empty_backlog
+  it 'drain is a no op with an empty backlog' do
     @smoother.drain
 
     assert_equal '', @io.string
   end
 
-  def test_writes_pass_through_synchronously_when_not_a_tty
+  it 'writes pass through synchronously when not a tty' do
     pipe = StringIO.new
     smoother = Riffer::Rig::UI::Smoother.new(io: pipe, theme: Riffer::Rig::UI::Theme.new(enabled: false), clock: @clock)
 
@@ -68,7 +73,7 @@ class Riffer::Rig::UI::SmootherTest < Minitest::Test
     assert_equal 'direct', pipe.string
   end
 
-  def test_start_spawns_a_thread_that_ticks_until_stopped
+  it 'start spawns a thread that ticks until stopped' do
     @smoother << 'abcdef'
     @smoother.start
     @smoother.finish
@@ -76,7 +81,7 @@ class Riffer::Rig::UI::SmootherTest < Minitest::Test
     assert_equal 'abcdef', @io.string
   end
 
-  def test_finish_flushes_remaining_backlog_after_stopping_the_thread
+  it 'finish flushes remaining backlog after stopping the thread' do
     @smoother << 'abcdef'
     @smoother.start
     @smoother.finish
@@ -84,23 +89,18 @@ class Riffer::Rig::UI::SmootherTest < Minitest::Test
     assert_equal 'abcdef', @io.string
   end
 
-  def test_finish_without_start_does_not_raise
+  it 'finish without start does not raise' do
     @smoother.finish
 
     assert_equal '', @io.string
   end
 
-  def test_finish_is_safe_to_call_twice
+  it 'finish is safe to call twice' do
     @smoother << 'ab'
     @smoother.start
     @smoother.finish
     @smoother.finish
 
     assert_equal 'ab', @io.string
-  end
-
-  class FakeClock
-    # Returns instantly, so the tick thread drains as fast as the test allows.
-    def sleep(_seconds) = nil
   end
 end

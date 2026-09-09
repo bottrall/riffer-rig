@@ -2,42 +2,42 @@
 
 require 'test_helper'
 
-class Riffer::Rig::UI::BannerTest < Minitest::Test
+describe Riffer::Rig::UI::Banner do
   def setup
     @theme = Riffer::Rig::UI::Theme.new(enabled: false)
   end
 
-  def test_includes_the_provided_info_values
+  it 'includes the provided info values' do
     banner = Riffer::Rig::UI::Banner.call(@theme, model: 'anthropic/claude-x', cwd: '/tmp/proj', context: 'AGENTS.md', skills: '2', version: '9.9.9')
 
     assert_includes banner, '/tmp/proj'
   end
 
-  def test_includes_the_model
+  it 'includes the model' do
     banner = Riffer::Rig::UI::Banner.call(@theme, model: 'anthropic/claude-x', cwd: '/tmp/proj', context: 'none', skills: 'none', version: '9.9.9')
 
     assert_includes banner, 'anthropic/claude-x'
   end
 
-  def test_includes_the_skills_label
+  it 'includes the skills label' do
     banner = Riffer::Rig::UI::Banner.call(@theme, model: 'm', cwd: 'c', context: 'none', skills: '3', version: '1')
 
     assert_includes banner, 'skills'
   end
 
-  def test_includes_the_skills_count
+  it 'includes the skills count' do
     banner = Riffer::Rig::UI::Banner.call(@theme, model: 'm', cwd: 'c', context: 'none', skills: '3', version: '1')
 
     assert_includes banner, '3'
   end
 
-  def test_shows_none_when_no_skills
+  it 'shows none when no skills' do
     banner = Riffer::Rig::UI::Banner.call(@theme, model: 'm', cwd: 'c', context: 'none', skills: 'none', version: '1')
 
     assert_includes banner, 'none'
   end
 
-  def test_emits_no_ansi_escapes_when_theme_disabled
+  it 'emits no ansi escapes when theme disabled' do
     banner = Riffer::Rig::UI::Banner.call(@theme, model: 'm', cwd: 'c', context: 'none', skills: 'none', version: '1')
 
     refute_includes banner, "\e["

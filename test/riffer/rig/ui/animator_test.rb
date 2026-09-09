@@ -3,37 +3,37 @@
 require 'test_helper'
 require 'stringio'
 
-class Riffer::Rig::UI::AnimatorTest < Minitest::Test
+describe Riffer::Rig::UI::Animator do
   def setup
     @io = StringIO.new
     @animator = Riffer::Rig::UI::Animator.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false))
   end
 
-  def test_reveal_prints_the_final_frame_when_not_a_tty
+  it 'reveal prints the final frame when not a tty' do
     @animator.reveal([['frame one'], ['final']])
 
     assert_equal "final\n", @io.string
   end
 
-  def test_stop_without_start_does_not_raise
+  it 'stop without start does not raise' do
     @animator.stop
 
     assert_equal '', @io.string
   end
 
-  def test_start_is_a_no_op_when_not_a_tty
+  it 'start is a no op when not a tty' do
     @animator.start
 
     assert_equal '', @io.string
   end
 
-  def test_start_reasoning_is_a_no_op_when_not_a_tty
+  it 'start reasoning is a no op when not a tty' do
     @animator.start(:reasoning)
 
     assert_equal '', @io.string
   end
 
-  def test_thinking_frames_render_the_equalizer_when_enabled
+  it 'thinking frames render the equalizer when enabled' do
     io = StringIO.new
     io.define_singleton_method(:tty?) { true }
     animator = Riffer::Rig::UI::Animator.new(io: io, theme: Riffer::Rig::UI::Theme.new(enabled: true))
@@ -45,28 +45,28 @@ class Riffer::Rig::UI::AnimatorTest < Minitest::Test
     assert_includes io.string, 'riffing'
   end
 
-  def test_equalizer_has_no_escapes_when_theme_disabled
+  it 'equalizer has no escapes when theme disabled' do
     animator = Riffer::Rig::UI::Animator.new(io: StringIO.new, theme: Riffer::Rig::UI::Theme.new(enabled: false))
     frame = animator.equalizer(3)
 
     refute_includes frame, "\e["
   end
 
-  def test_equalizer_renders_the_neutral_label_by_default
+  it 'equalizer renders the neutral label by default' do
     animator = Riffer::Rig::UI::Animator.new(io: StringIO.new, theme: Riffer::Rig::UI::Theme.new(enabled: false))
     frame = animator.equalizer(3)
 
     assert_includes frame, 'riffing…'
   end
 
-  def test_equalizer_renders_the_given_label
+  it 'equalizer renders the given label' do
     animator = Riffer::Rig::UI::Animator.new(io: StringIO.new, theme: Riffer::Rig::UI::Theme.new(enabled: false))
     frame = animator.equalizer(3, 'pondering…')
 
     assert_includes frame, 'pondering…'
   end
 
-  def test_thinking_frames_render_reasoning_phrases_when_started_in_reasoning_mode
+  it 'thinking frames render reasoning phrases when started in reasoning mode' do
     io = StringIO.new
     io.define_singleton_method(:tty?) { true }
     animator = Riffer::Rig::UI::Animator.new(io: io, theme: Riffer::Rig::UI::Theme.new(enabled: true))
@@ -78,7 +78,7 @@ class Riffer::Rig::UI::AnimatorTest < Minitest::Test
     assert(Riffer::Rig::UI::Animator::REASONING_PHRASES.any? { |phrase| io.string.include?(phrase) })
   end
 
-  def test_relabeling_to_reasoning_does_not_restart_a_running_thread
+  it 'relabeling to reasoning does not restart a running thread' do
     io = StringIO.new
     io.define_singleton_method(:tty?) { true }
     animator = Riffer::Rig::UI::Animator.new(io: io, theme: Riffer::Rig::UI::Theme.new(enabled: true))

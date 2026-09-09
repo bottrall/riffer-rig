@@ -4,14 +4,14 @@ require 'test_helper'
 require 'tmpdir'
 require 'json'
 
-class Riffer::Rig::SettingsTest < Minitest::Test
+describe Riffer::Rig::Settings do
   def settings_file(dir, data)
     path = File.join(dir, 'settings.json')
     File.write(path, JSON.generate(data))
     path
   end
 
-  def test_returns_default_model_when_file_is_absent
+  it 'returns default model when file is absent' do
     Dir.mktmpdir do |dir|
       path = File.join(dir, 'settings.json')
 
@@ -19,7 +19,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_returns_model_from_settings_file
+  it 'returns model from settings file' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6' })
 
@@ -27,7 +27,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_returns_nil_pricing_when_file_is_absent
+  it 'returns nil pricing when file is absent' do
     Dir.mktmpdir do |dir|
       path = File.join(dir, 'settings.json')
 
@@ -35,7 +35,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_returns_nil_pricing_for_unconfigured_model
+  it 'returns nil pricing for unconfigured model' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'models' => {} })
 
@@ -43,7 +43,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_returns_input_pricing_for_configured_model
+  it 'returns input pricing for configured model' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, {
                              'models' => {
@@ -59,7 +59,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_returns_output_pricing_for_configured_model
+  it 'returns output pricing for configured model' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, {
                              'models' => {
@@ -75,7 +75,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_returns_cache_write_pricing_for_configured_model
+  it 'returns cache write pricing for configured model' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, {
                              'models' => {
@@ -91,7 +91,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_returns_cache_read_pricing_for_configured_model
+  it 'returns cache read pricing for configured model' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, {
                              'models' => {
@@ -107,7 +107,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_returns_default_model_for_malformed_json
+  it 'returns default model for malformed json' do
     Dir.mktmpdir do |dir|
       path = File.join(dir, 'settings.json')
       File.write(path, 'not json {{{')
@@ -116,7 +116,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_returns_nil_pricing_for_malformed_json
+  it 'returns nil pricing for malformed json' do
     Dir.mktmpdir do |dir|
       path = File.join(dir, 'settings.json')
       File.write(path, 'not json {{{')
@@ -125,7 +125,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_coerces_input_pricing_to_float
+  it 'coerces input pricing to float' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, {
                              'models' => {
@@ -141,7 +141,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_coerces_cache_read_pricing_to_float
+  it 'coerces cache read pricing to float' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, {
                              'models' => {
@@ -157,29 +157,29 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_provider_for_returns_anthropic_prefix
+  it 'provider for returns anthropic prefix' do
     assert_equal 'anthropic', Riffer::Rig::Settings.provider_for('anthropic/claude-sonnet-4-6')
   end
 
-  def test_provider_for_returns_openai_prefix
+  it 'provider for returns openai prefix' do
     assert_equal 'openai', Riffer::Rig::Settings.provider_for('openai/gpt-5-mini')
   end
 
-  def test_provider_for_returns_gemini_prefix
+  it 'provider for returns gemini prefix' do
     assert_equal 'gemini', Riffer::Rig::Settings.provider_for('gemini/gemini-2.5-flash')
   end
 
-  def test_provider_for_returns_openrouter_prefix
+  it 'provider for returns openrouter prefix' do
     assert_equal 'openrouter', Riffer::Rig::Settings.provider_for('openrouter/anthropic/claude-sonnet-4.6')
   end
 
-  def test_provider_for_returns_nil_for_model_without_slash
+  it 'provider for returns nil for model without slash' do
     assert_nil Riffer::Rig::Settings.provider_for('no-slash-model')
   end
 
   # model_options — no reasoning configured
 
-  def test_model_options_includes_cache_control_for_anthropic_model
+  it 'model options includes cache control for anthropic model' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6' })
 
@@ -187,7 +187,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_returns_empty_hash_for_openai_model_without_reasoning
+  it 'model options returns empty hash for openai model without reasoning' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'openai/o3' })
 
@@ -195,7 +195,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_returns_empty_hash_when_file_is_absent
+  it 'model options returns empty hash when file is absent' do
     Dir.mktmpdir do |dir|
       path = File.join(dir, 'settings.json')
 
@@ -208,7 +208,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
 
   # model_options — Anthropic reasoning levels
 
-  def test_model_options_sets_anthropic_effort_for_low_reasoning
+  it 'model options sets anthropic effort for low reasoning' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'reasoning' => 'low' })
 
@@ -216,7 +216,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_sets_anthropic_effort_for_medium_reasoning
+  it 'model options sets anthropic effort for medium reasoning' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'reasoning' => 'medium' })
 
@@ -224,7 +224,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_sets_anthropic_effort_for_high_reasoning
+  it 'model options sets anthropic effort for high reasoning' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'reasoning' => 'high' })
 
@@ -232,7 +232,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_retains_cache_control_when_anthropic_reasoning_is_set
+  it 'model options retains cache control when anthropic reasoning is set' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'reasoning' => 'low' })
 
@@ -244,7 +244,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
 
   # model_options — OpenAI reasoning levels
 
-  def test_model_options_sets_reasoning_effort_for_openai_low
+  it 'model options sets reasoning effort for openai low' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'openai/o3', 'reasoning' => 'low' })
 
@@ -252,7 +252,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_sets_reasoning_effort_for_openai_high
+  it 'model options sets reasoning effort for openai high' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'openai/o3', 'reasoning' => 'high' })
 
@@ -262,7 +262,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
 
   # model_options — OpenRouter reasoning levels
 
-  def test_model_options_sets_reasoning_effort_for_openrouter_medium
+  it 'model options sets reasoning effort for openrouter medium' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'openrouter/anthropic/claude-sonnet-4.6', 'reasoning' => 'medium' })
 
@@ -270,7 +270,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_sets_anthropic_effort_for_xhigh_reasoning
+  it 'model options sets anthropic effort for xhigh reasoning' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'reasoning' => 'xhigh' })
 
@@ -278,7 +278,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_sets_anthropic_effort_for_max_reasoning
+  it 'model options sets anthropic effort for max reasoning' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'reasoning' => 'max' })
 
@@ -286,7 +286,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_sets_reasoning_effort_for_openai_xhigh
+  it 'model options sets reasoning effort for openai xhigh' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'openai/o3', 'reasoning' => 'xhigh' })
 
@@ -294,7 +294,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_sets_reasoning_effort_for_openrouter_xhigh
+  it 'model options sets reasoning effort for openrouter xhigh' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'openrouter/anthropic/claude-sonnet-4.6', 'reasoning' => 'xhigh' })
 
@@ -304,7 +304,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
 
   # model_options — invalid / unknown reasoning values
 
-  def test_model_options_ignores_unrecognised_reasoning_value
+  it 'model options ignores unrecognised reasoning value' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'openai/o3', 'reasoning' => 'turbo' })
 
@@ -312,7 +312,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_ignores_max_reasoning_for_openai
+  it 'model options ignores max reasoning for openai' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'openai/o3', 'reasoning' => 'max' })
 
@@ -320,7 +320,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_ignores_max_reasoning_for_openrouter
+  it 'model options ignores max reasoning for openrouter' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'openrouter/anthropic/claude-sonnet-4.6', 'reasoning' => 'max' })
 
@@ -328,7 +328,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_ignores_reasoning_key_for_provider_without_support
+  it 'model options ignores reasoning key for provider without support' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'gemini/gemini-2.5-flash', 'reasoning' => 'high' })
 
@@ -336,7 +336,7 @@ class Riffer::Rig::SettingsTest < Minitest::Test
     end
   end
 
-  def test_model_options_ignores_output_config_for_provider_without_support
+  it 'model options ignores output config for provider without support' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'gemini/gemini-2.5-flash', 'reasoning' => 'high' })
 
