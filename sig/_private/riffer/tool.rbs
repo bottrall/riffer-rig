@@ -1,6 +1,0 @@
-# riffer types the `params` DSL block as `() -> void`, so `required` / `optional`
-# (defined on Riffer::Params) appear to target the tool class. Re-type the
-# block's self as Riffer::Params so those calls resolve.
-class Riffer::Tool
-  def self.params: () ?{ () [self: Riffer::Params] -> void } -> Riffer::Params?
-end
