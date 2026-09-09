@@ -4,6 +4,24 @@ require 'test_helper'
 require 'stringio'
 
 class Riffer::Rig::UI::SmootherTest < Minitest::Test
+  class EchoSink
+    attr_reader :slices, :finished
+
+    def initialize
+      @slices = []
+      @finished = false
+    end
+
+    def <<(slice)
+      @slices << slice
+      self
+    end
+
+    def finish
+      @finished = true
+    end
+  end
+
   def setup
     @io = StringIO.new
     @io.define_singleton_method(:tty?) { true }
@@ -29,6 +47,32 @@ class Riffer::Rig::UI::SmootherTest < Minitest::Test
     6.times { @smoother.tick }
 
     assert_equal 'a', @io.string
+  end
+
+  def test_tick_hands_a_paced_slice_to_the_sink
+    sink = EchoSink.new
+    smoother = Riffer::Rig::UI::Smoother.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: true), clock: @clock, sink: sink)
+    smoother << ('a' * 120)
+    smoother.tick
+
+    assert_equal 'a' * 2, sink.slices.join
+  end
+
+  def test_off_tty_writes_go_through_the_sink_not_raw_to_the_io
+    sink = EchoSink.new
+    smoother = Riffer::Rig::UI::Smoother.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), clock: @clock, sink: sink)
+    smoother << 'direct'
+    smoother.finish
+
+    assert_equal [['direct'], ''], [sink.slices, @io.string]
+  end
+
+  def test_finish_notifies_the_sink
+    sink = EchoSink.new
+    smoother = Riffer::Rig::UI::Smoother.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: true), clock: @clock, sink: sink)
+    smoother.finish
+
+    assert sink.finished
   end
 
   def test_tick_releases_a_proportional_slice_of_the_backlog
@@ -64,6 +108,7 @@ class Riffer::Rig::UI::SmootherTest < Minitest::Test
     smoother = Riffer::Rig::UI::Smoother.new(io: pipe, theme: Riffer::Rig::UI::Theme.new(enabled: false), clock: @clock)
 
     smoother << 'direct'
+    smoother.finish
 
     assert_equal 'direct', pipe.string
   end

@@ -19,3 +19,11 @@ module Riffer::Rig::UI::Banner
   extend ::Riffer::Rig::UI::Banner
 end
 
+module Riffer::Rig::UI::Markdown::UnstableTail
+  extend ::Riffer::Rig::UI::Markdown::UnstableTail
+end
+
+module Riffer::Rig::UI::Markdown::Walker
+  extend ::Riffer::Rig::UI::Markdown::Walker
+end
+

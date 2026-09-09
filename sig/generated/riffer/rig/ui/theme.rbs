@@ -7,6 +7,8 @@ class Riffer::Rig::UI::Theme
 
   def paint: (untyped text, untyped rgb) -> untyped
 
+  def italic: (untyped text) -> untyped
+
   def pink: (untyped text) -> untyped
 
   def magenta: (untyped text) -> untyped

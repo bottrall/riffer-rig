@@ -16,7 +16,17 @@ class Riffer::Rig::UI::Smoother
 
   MIN_CHARS_PER_TICK: untyped
 
-  def initialize: (?io: untyped, ?theme: untyped, ?clock: untyped) -> untyped
+  # A sink receives paced slices of the backlog. It defaults to raw printing
+  # so a bare Smoother still writes plain text synchronously.
+  class PrintSink
+    def initialize: (untyped io) -> untyped
+
+    def <<: (untyped slice) -> untyped
+
+    def finish: () -> untyped
+  end
+
+  def initialize: (?io: untyped, ?theme: untyped, ?clock: untyped, ?sink: untyped) -> untyped
 
   def start: () -> untyped
 
@@ -25,7 +35,9 @@ class Riffer::Rig::UI::Smoother
   # The write sits inside the mutex so a concurrent tick can't reorder a drain.
   def tick: () -> untyped
 
-  # Called before non-delta output so printed order matches stream order.
+  # Called before non-delta output so printed order matches stream order. On a
+  # TTY the backlog was already paced out in slices; off-TTY it delivers the
+  # full backlog at once so the sink renders whole markdown blocks.
   def drain: () -> untyped
 
   # Idempotent: the REPL's ensure path runs it even after a happy-path finish.

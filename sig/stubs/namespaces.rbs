@@ -5,6 +5,8 @@
 module Riffer
   module Rig
     module UI
+      module Markdown
+      end
     end
 
     module Tools
