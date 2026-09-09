@@ -4,7 +4,7 @@ Terminal coding agent built on the riffer framework.
 
 ## Quick Reference
 
-- **Ruby**: 4.0.5 (CI: 4.0)
+- **Ruby**: 4.0.6 (CI: 4.0)
 - **Lint + Test + Typecheck**: `bin/ci`
 - **Autoloading**: Zeitwerk (file paths must match module/class names)
 - **Namespace**: `Riffer::Rig`, compact style (`module Riffer::Rig::Tools::Read`); `version.rb` is the one exception — it must nest because the gemspec loads it before riffer
