@@ -1,0 +1,5 @@
+# Zeitwerk autovivifies this namespace module in Ruby; RBS needs it declared
+# explicitly so the compact `Riffer::Rig::UI::*` signatures resolve.
+
+module Riffer::Rig::UI
+end

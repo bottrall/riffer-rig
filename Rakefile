@@ -36,15 +36,13 @@ namespace :rbs do
     end
   end
 
-  desc 'Fail if a .rbs file in sig/manual or sig/_private shadows a deleted module'
+  desc 'Fail if a sig/manual file has no lib counterpart (file or Zeitwerk namespace dir)'
   task :lint_manual do
-    stale = Dir['sig/manual/**/*.rbs', 'sig/_private/riffer/**/*.rbs'].filter_map do |file|
-      module_name = File.readlines(file).lazy
-                        .filter_map { |line| line[/^module ([A-Z][\w:]*)/, 1] }
-                        .first
-      file if module_name && !File.exist?("lib/#{module_name.split('::').map(&:downcase).join('/')}.rb")
+    stale = Dir['sig/manual/**/*.rbs'].reject do |file|
+      lib_path = file.sub('sig/manual/', 'lib/').sub(/\.rbs\z/, '.rb')
+      File.exist?(lib_path) || Dir.exist?(lib_path.delete_suffix('.rb'))
     end
-    abort "sig files shadow deleted modules: #{stale.join(', ')}" unless stale.empty?
+    abort "sig/manual files without a lib counterpart: #{stale.join(', ')}" unless stale.empty?
   end
 
   desc 'Watch lib/ for changes and regenerate RBS files'
