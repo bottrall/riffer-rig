@@ -40,7 +40,9 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
     stdin, stdout_and_stderr, wait_thread = Open3.popen2e(command, chdir: Dir.pwd, pgroup: true)
     stdin.close
 
-    unless wait_thread.join(timeout_seconds)
+    joined = wait_thread.join(timeout_seconds) #: Thread?
+
+    unless joined
       kill_group(wait_thread.pid)
       output = stdout_and_stderr.read
       stdout_and_stderr.close
