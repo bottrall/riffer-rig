@@ -1,21 +1,41 @@
 # Generated from lib/riffer/rig/cli.rb with RBS::Inline
 
 module Riffer::Rig::CLI
-  PROVIDER_URLS: untyped
+  PROVIDER_URLS: Hash[String, String]
 
-  def start: (?output: untyped, ?input: untyped) -> untyped
+  # @rbs output: untyped
+  # @rbs input: untyped
+  # @rbs return: Integer
+  def start: (?output: untyped, ?input: untyped) -> Integer
 
   private
 
-  def configure_provider: (untyped provider, untyped api_key) -> untyped
+  # @rbs provider: String?
+  # @rbs api_key: String
+  # @rbs return: void
+  def configure_provider: (String? provider, String api_key) -> void
 
-  def onboard: (untyped provider, untyped theme, output: untyped, input: untyped) -> untyped
+  # @rbs provider: String?
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs output: untyped
+  # @rbs input: untyped
+  # @rbs return: String?
+  def onboard: (String? provider, Riffer::Rig::UI::Theme theme, output: untyped, input: untyped) -> String?
 
-  def env_var_for: (untyped provider) -> untyped
+  # @rbs provider: String?
+  # @rbs return: String
+  def env_var_for: (String? provider) -> String
 
-  def read_secret: (untyped input) -> untyped
+  # @rbs input: untyped
+  # @rbs return: String?
+  def read_secret: (untyped input) -> String?
 
-  def reveal_banner: (untyped theme, untyped animator, untyped model) -> untyped
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs animator: Riffer::Rig::UI::Animator
+  # @rbs model: String
+  # @rbs return: void
+  def reveal_banner: (Riffer::Rig::UI::Theme theme, Riffer::Rig::UI::Animator animator, String model) -> void
 
-  def count_skills: () -> untyped
+  # @rbs return: String
+  def count_skills: () -> String
 end

@@ -1,17 +1,17 @@
 # Generated from lib/riffer/rig/ui/palette.rb with RBS::Inline
 
 module Riffer::Rig::UI::Palette
-  PINK: untyped
+  PINK: Array[Integer]
 
-  MAGENTA: untyped
+  MAGENTA: Array[Integer]
 
-  PURPLE: untyped
+  PURPLE: Array[Integer]
 
-  BLUE: untyped
+  BLUE: Array[Integer]
 
-  CYAN: untyped
+  CYAN: Array[Integer]
 
-  GREY: untyped
+  GREY: Array[Integer]
 
-  RED: untyped
+  RED: Array[Integer]
 end

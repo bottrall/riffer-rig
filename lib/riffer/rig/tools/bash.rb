@@ -9,14 +9,19 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
 
   timeout 600
 
-  DEFAULT_TIMEOUT_MS = 120_000
-  MAX_OUTPUT_BYTES = 30_000
+  DEFAULT_TIMEOUT_MS = 120_000 #: Integer
+
+  MAX_OUTPUT_BYTES = 30_000 #: Integer
 
   params do
     required :command, String, description: 'The shell command to run'
     optional :timeout_ms, Integer, description: 'Kill the command after this many milliseconds', default: DEFAULT_TIMEOUT_MS
   end
 
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs command: String
+  # @rbs ?timeout_ms: Integer
+  # @rbs return: Riffer::Tools::Response
   def call(context:, command:, timeout_ms: DEFAULT_TIMEOUT_MS)
     output, status = run(command, timeout_ms / 1000.0)
     output = truncate(output.rstrip)
@@ -28,6 +33,9 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
 
   private
 
+  # @rbs command: String
+  # @rbs timeout_seconds: Float
+  # @rbs return: [String, Integer]
   def run(command, timeout_seconds)
     stdin, stdout_and_stderr, wait_thread = Open3.popen2e(command, chdir: Dir.pwd, pgroup: true)
     stdin.close
@@ -44,12 +52,17 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
     [output, wait_thread.value.exitstatus || 1]
   end
 
+  # @rbs pid: Integer
+  # @rbs return: Integer
   def kill_group(pid)
     Process.kill('TERM', -Process.getpgid(pid))
+    Process.getpgid(pid)
   rescue Errno::ESRCH, Errno::EPERM
-    nil
+    0
   end
 
+  # @rbs output: String
+  # @rbs return: String
   def truncate(output)
     return output if output.bytesize <= MAX_OUTPUT_BYTES
 

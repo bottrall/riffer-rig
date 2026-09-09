@@ -30,39 +30,63 @@
 # Omitting the key (or supplying an unrecognised value) leaves the model's
 # default reasoning behaviour unchanged.
 module Riffer::Rig::Settings
-  PATH: untyped
+  PATH: String
 
   DEFAULT_MODEL: ::String
 
-  REASONING_LEVELS_BY_PROVIDER: untyped
+  REASONING_LEVELS_BY_PROVIDER: Hash[String, Array[String]]
 
   # Returns the configured model string, or +DEFAULT_MODEL+ if not set.
-  def model: (?path: untyped) -> untyped
+  #
+  # @rbs path: String
+  # @rbs return: String
+  def model: (?path: String) -> String
 
   # Returns model options for the configured model and reasoning level, ready
   # to pass directly to the Riffer agent's +model_options+.
-  def model_options: (?path: untyped) -> untyped
+  #
+  # @rbs path: String
+  # @rbs return: Hash[Symbol, untyped]
+  def model_options: (?path: String) -> Hash[Symbol, untyped]
 
   # Returns the provider prefix for +model_string+, e.g. <tt>"anthropic"</tt>
   # for <tt>"anthropic/claude-sonnet-4-6"</tt>. Returns +nil+ if the model
   # string contains no slash.
-  def provider_for: (untyped model_string) -> untyped
-
-  # Returns the pricing hash for +model+, or +nil+ if not configured.
   #
-  # The returned hash has symbol keys +:input+, +:output+, +:cache_write+,
-  # +:cache_read+ (all Float, USD per million tokens).
-  def pricing_for: (untyped model, ?path: untyped) -> untyped
+  # @rbs model_string: String
+  # @rbs return: String?
+  def provider_for: (String model_string) -> String?
+
+  # Returns the pricing for +model+, or +nil+ if not configured.
+  #
+  # @rbs model: String
+  # @rbs path: String
+  # @rbs return: Pricing?
+  def pricing_for: (String model, ?path: String) -> Pricing?
 
   private
 
-  def base_options: (untyped provider) -> untyped
+  # @rbs provider: String?
+  # @rbs return: Hash[Symbol, untyped]
+  def base_options: (String? provider) -> Hash[Symbol, untyped]
 
-  def reasoning_for: (?path: untyped, ?provider: untyped) -> untyped
+  # @rbs path: String
+  # @rbs ?provider: String?
+  # @rbs return: String?
+  def reasoning_for: (?path: String, ?provider: untyped) -> String?
 
   # Maps a reasoning level to the provider-specific model option hash expected
   # by Riffer. Returns an empty hash when +level+ is +nil+.
-  def reasoning_options: (untyped level, untyped provider) -> untyped
+  #
+  # @rbs level: String?
+  # @rbs provider: String?
+  # @rbs return: Hash[Symbol, untyped]
+  def reasoning_options: (String? level, String? provider) -> Hash[Symbol, untyped]
 
-  def read: (untyped path) -> untyped
+  # The parsed settings file, or an empty hash when the file is absent or
+  # malformed.
+  #
+  # @rbs path: String
+  # @rbs return: Hash[String, untyped]
+  def read: (String path) -> Hash[String, untyped]
 end

@@ -5,7 +5,7 @@ class Riffer::Rig::Tools::Read < Riffer::Tool
   description 'Read a file from the filesystem. Returns its contents with line numbers. ' \
               'Use offset/limit to read a slice of a large file.'
 
-  DEFAULT_LIMIT = 2000
+  DEFAULT_LIMIT = 2000 #: Integer
 
   params do
     required :path, String, description: 'Path to the file (absolute, or relative to the working directory)'
@@ -13,6 +13,11 @@ class Riffer::Rig::Tools::Read < Riffer::Tool
     optional :limit, Integer, description: 'Maximum number of lines to read', default: DEFAULT_LIMIT
   end
 
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs path: String
+  # @rbs ?offset: Integer?
+  # @rbs ?limit: Integer
+  # @rbs return: Riffer::Tools::Response
   def call(context:, path:, offset: nil, limit: DEFAULT_LIMIT)
     resolved = File.expand_path(path, Dir.pwd)
     return error("File not found: #{path}", type: :not_found) unless File.file?(resolved)

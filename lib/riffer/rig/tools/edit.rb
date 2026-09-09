@@ -12,6 +12,12 @@ class Riffer::Rig::Tools::Edit < Riffer::Tool
     optional :replace_all, Riffer::Params::Boolean, description: 'Replace all occurrences instead of requiring a unique match', default: false
   end
 
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs path: String
+  # @rbs old_string: String
+  # @rbs new_string: String
+  # @rbs ?replace_all: bool
+  # @rbs return: Riffer::Tools::Response
   def call(context:, path:, old_string:, new_string:, replace_all: false)
     resolved = File.expand_path(path, Dir.pwd)
     return error("File not found: #{path}", type: :not_found) unless File.file?(resolved)

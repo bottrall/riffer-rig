@@ -1,5 +1,11 @@
 # Generated from lib/riffer/rig/tools/edit.rb with RBS::Inline
 
 class Riffer::Rig::Tools::Edit < Riffer::Tool
-  def call: (context: untyped, path: untyped, old_string: untyped, new_string: untyped, ?replace_all: untyped) -> untyped
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs path: String
+  # @rbs old_string: String
+  # @rbs new_string: String
+  # @rbs ?replace_all: bool
+  # @rbs return: Riffer::Tools::Response
+  def call: (context: Riffer::Agent::Context?, path: String, old_string: String, new_string: String, ?replace_all: untyped) -> Riffer::Tools::Response
 end

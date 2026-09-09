@@ -1,7 +1,8 @@
 # Generated from lib/riffer/rig/token_tally.rb with RBS::Inline
 
 # Accumulates token usage across multiple turns in a session and computes an
-# estimated cost based on a pricing hash sourced from +Riffer::Rig::Settings+.
+# estimated cost based on a pricing object sourced from
+# +Riffer::Rig::Settings+.
 #
 # Instantiate once per REPL session, call +add+ after each turn, then read
 # +total_tokens+ and +estimated_cost+ for display.
@@ -11,25 +12,48 @@
 #   tally.add(usage)
 #   tally.estimated_cost  # => 0.000042  (USD), or nil if pricing is nil
 class Riffer::Rig::TokenTally
+  @input_tokens: Integer
+
+  @output_tokens: Integer
+
+  @cache_write_tokens: Integer
+
+  @cache_read_tokens: Integer
+
+  # @rbs! @pricing: Riffer::Rig::Settings::Pricing?
   attr_reader input_tokens: untyped
 
+  # @rbs! @pricing: Riffer::Rig::Settings::Pricing?
   attr_reader output_tokens: untyped
 
+  # @rbs! @pricing: Riffer::Rig::Settings::Pricing?
   attr_reader cache_write_tokens: untyped
 
+  # @rbs! @pricing: Riffer::Rig::Settings::Pricing?
   attr_reader cache_read_tokens: untyped
 
-  def initialize: (?pricing: untyped) -> untyped
+  # @rbs ?pricing: Riffer::Rig::Settings::Pricing?
+  # @rbs return: void
+  def initialize: (?pricing: untyped) -> void
 
   # Accumulates token counts from a +Riffer::Providers::TokenUsage+ object.
-  def add: (untyped usage) -> untyped
+  #
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs return: void
+  def add: (Riffer::Providers::TokenUsage usage) -> void
 
   # Returns the total token count across all categories.
-  def total_tokens: () -> untyped
+  #
+  # @rbs return: Integer
+  def total_tokens: () -> Integer
 
   # Returns +true+ if any tokens have been counted.
-  def any?: () -> untyped
+  #
+  # @rbs return: bool
+  def any?: () -> bool
 
   # Returns the estimated cost in USD, or +nil+ if no pricing was provided.
-  def estimated_cost: () -> untyped
+  #
+  # @rbs return: Float?
+  def estimated_cost: () -> Float?
 end

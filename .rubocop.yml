@@ -46,3 +46,5 @@ Style/MutableConstant: # freeze shared constants / value objects
 # that contract even when a given tool doesn't use it.
 Lint/UnusedMethodArgument:
   AllowUnusedKeywordArguments: true
+Layout/LeadingCommentSpace: # `#: Type` is rbs-inline's assertion syntax; the space makes it a plain comment
+  Enabled: false

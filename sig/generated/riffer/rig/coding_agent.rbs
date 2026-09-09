@@ -1,9 +1,9 @@
 # Generated from lib/riffer/rig/coding_agent.rb with RBS::Inline
 
 class Riffer::Rig::CodingAgent < Riffer::Agent
-  GLOBAL_AGENTS_FILE: untyped
+  GLOBAL_AGENTS_FILE: String
 
-  GLOBAL_SKILLS_DIR: untyped
+  GLOBAL_SKILLS_DIR: String
 
-  PROJECT_SKILLS_DIR: untyped
+  PROJECT_SKILLS_DIR: ^() -> String
 end

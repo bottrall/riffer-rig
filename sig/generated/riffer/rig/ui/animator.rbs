@@ -3,39 +3,72 @@
 # Animated output is gated behind an interactive, colour-enabled TTY, so piped
 # or tested runs stay silent and escape-free.
 class Riffer::Rig::UI::Animator
-  REVEAL_FRAME_SECONDS: ::Float
+  REVEAL_FRAME_SECONDS: Float
 
-  SPINNER_FRAME_SECONDS: ::Float
+  SPINNER_FRAME_SECONDS: Float
 
-  EQ_LEVELS: untyped
+  EQ_LEVELS: Array[String]
 
-  EQ_BARS: ::Integer
+  EQ_BARS: Integer
 
-  NEUTRAL_LABEL: ::String
+  NEUTRAL_LABEL: String
 
-  REASONING_PHRASES: untyped
+  REASONING_PHRASES: Array[String]
 
-  REASONING_TICK_RANGE: untyped
+  REASONING_TICK_RANGE: Range[Integer]
 
-  def initialize: (?io: untyped, ?theme: untyped) -> untyped
+  @phrase: String?
+
+  @mode: Symbol
+
+  @thread: Thread?
+
+  @theme: Riffer::Rig::UI::Theme
+
+  @io: untyped
+
+  # @rbs io: untyped
+  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs return: void
+  def initialize: (?io: untyped, ?theme: untyped) -> void
 
   # When not on a TTY, prints the final frame once instead of animating.
-  def reveal: (untyped frames) -> untyped
+  #
+  # @rbs frames: Array[Array[String]]
+  # @rbs return: void
+  def reveal: (Array[Array[String]] frames) -> void
 
-  def start: (?untyped mode) -> untyped
+  # @rbs ?mode: Symbol
+  # @rbs return: void
+  def start: (?untyped mode) -> void
 
-  def stop: () -> untyped
+  # @rbs return: void
+  def stop: () -> void
 
-  def equalizer: (untyped tick, ?untyped label) -> untyped
+  # @rbs tick: Integer
+  # @rbs ?label: String
+  # @rbs return: String
+  def equalizer: (Integer tick, ?untyped label) -> String
 
   private
 
-  def animate: () -> untyped
+  # @rbs return: void
+  def animate: () -> void
 
   # Re-rolls both phrase and duration whenever the reasoning tick expires.
-  def roll_phrase: (untyped roll_at) -> untyped
+  #
+  # @rbs roll_at: Float
+  # @rbs return: Float
+  def roll_phrase: (Float roll_at) -> Float
 
-  def label: () -> untyped
+  # Range rand returns nil for an empty range; this one is a non-empty constant.
+  #
+  # @rbs return: Integer
+  def roll_rand: () -> Integer
 
-  def enabled?: () -> untyped
+  # @rbs return: String
+  def label: () -> String
+
+  # @rbs return: bool
+  def enabled?: () -> bool
 end

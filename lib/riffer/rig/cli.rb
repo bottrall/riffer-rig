@@ -10,8 +10,11 @@ module Riffer::Rig::CLI
     'openai' => 'https://platform.openai.com/api-keys',
     'gemini' => 'https://aistudio.google.com/app/apikey',
     'openrouter' => 'https://openrouter.ai/keys'
-  }.freeze
+  }.freeze #: Hash[String, String]
 
+  # @rbs output: untyped
+  # @rbs input: untyped
+  # @rbs return: Integer
   def start(output: $stdout, input: $stdin)
     theme = Riffer::Rig::UI::Theme.for(output)
 
@@ -38,6 +41,9 @@ module Riffer::Rig::CLI
 
   private
 
+  # @rbs provider: String?
+  # @rbs api_key: String
+  # @rbs return: void
   def configure_provider(provider, api_key)
     case provider
     when 'anthropic'  then Riffer.configure { |c| c.anthropic.api_key  = api_key }
@@ -47,6 +53,11 @@ module Riffer::Rig::CLI
     end
   end
 
+  # @rbs provider: String?
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs output: untyped
+  # @rbs input: untyped
+  # @rbs return: String?
   def onboard(provider, theme, output:, input:)
     url  = (provider && PROVIDER_URLS[provider]) || 'your provider'
     name = provider ? provider.capitalize : 'provider'
@@ -68,16 +79,24 @@ module Riffer::Rig::CLI
     key
   end
 
+  # @rbs provider: String?
+  # @rbs return: String
   def env_var_for(provider)
     (provider && Riffer::Rig::Credentials::PROVIDER_ENV_VARS[provider]) || 'the appropriate API key env var'
   end
 
+  # @rbs input: untyped
+  # @rbs return: String?
   def read_secret(input)
     return input.noecho(&:gets) if input.respond_to?(:noecho) && input.tty?
 
     input.gets
   end
 
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs animator: Riffer::Rig::UI::Animator
+  # @rbs model: String
+  # @rbs return: void
   def reveal_banner(theme, animator, model)
     loaded  = [Riffer::Rig::CodingAgent::GLOBAL_AGENTS_FILE, File.join(Dir.pwd, 'AGENTS.md')].select { |path| File.file?(path) }
     context = loaded.empty? ? 'none' : loaded.join(', ')
@@ -85,6 +104,7 @@ module Riffer::Rig::CLI
     animator.reveal([Riffer::Rig::UI::Banner.lines(theme, model: model, cwd: Dir.pwd, context: context, skills: count_skills, version: Riffer::Rig::VERSION)])
   end
 
+  # @rbs return: String
   def count_skills
     dirs    = [Riffer::Rig::CodingAgent::GLOBAL_SKILLS_DIR, Riffer::Rig::CodingAgent::PROJECT_SKILLS_DIR.call]
     backend = Riffer::Skills::FilesystemBackend.new(*dirs)
