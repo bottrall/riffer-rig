@@ -46,3 +46,5 @@ Style/MutableConstant: # freeze shared constants / value objects
 # that contract even when a given tool doesn't use it.
 Lint/UnusedMethodArgument:
   AllowUnusedKeywordArguments: true
+Layout/LeadingCommentSpace:
+  AllowRBSInlineAnnotation: true

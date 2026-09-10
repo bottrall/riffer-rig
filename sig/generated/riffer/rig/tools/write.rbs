@@ -1,5 +1,9 @@
 # Generated from lib/riffer/rig/tools/write.rb with RBS::Inline
 
 class Riffer::Rig::Tools::Write < Riffer::Tool
-  def call: (context: untyped, path: untyped, content: untyped) -> untyped
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs path: String
+  # @rbs content: String
+  # @rbs return: Riffer::Tools::Response
+  def call: (context: Riffer::Agent::Context?, path: String, content: String) -> Riffer::Tools::Response
 end

@@ -3,8 +3,18 @@
 require 'json'
 
 class Riffer::Rig::UI::Renderer
-  RESULT_PREVIEW_LIMIT = 200
+  RESULT_PREVIEW_LIMIT = 200 #: Integer
 
+  # @rbs @io: untyped
+  # @rbs @theme: Riffer::Rig::UI::Theme
+  # @rbs @tally: Riffer::Rig::TokenTally?
+  # @rbs @smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
+
+  # @rbs io: untyped
+  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs ?tally: Riffer::Rig::TokenTally?
+  # @rbs ?smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
+  # @rbs return: void
   def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io), tally: nil, smoother: nil)
     @io = io
     @theme = theme
@@ -12,6 +22,8 @@ class Riffer::Rig::UI::Renderer
     @smoother = smoother
   end
 
+  # @rbs event: Riffer::StreamEvents::Base
+  # @rbs return: void
   def render(event)
     case event
     when Riffer::StreamEvents::TextDelta
@@ -31,6 +43,8 @@ class Riffer::Rig::UI::Renderer
     end
   end
 
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: void
   def render_tool_result(message)
     return unless message.is_a?(Riffer::Messages::Tool)
 
@@ -40,46 +54,61 @@ class Riffer::Rig::UI::Renderer
 
   private
 
+  # @rbs return: Riffer::Rig::UI::Smoother | PassThroughSmoother
   def smoother
     @smoother || PassThroughSmoother.new(@io)
   end
 
-  # Stand-in when no smoother is injected, so a bare Renderer still prints
+  # Stand-in when no smoother is injected, so a bare Riffer::Rig::UI::Renderer still prints
   # synchronously.
   class PassThroughSmoother
+    # @rbs @io: untyped
+
+    # @rbs io: untyped
+    # @rbs return: void
     def initialize(io) = @io = io
 
+    # @rbs content: String
+    # @rbs return: self
     def <<(content)
       @io.print(content)
       @io.flush
       self
     end
 
+    # @rbs return: nil
     def drain = nil
 
+    # @rbs return: nil
     def finish = nil
   end
 
+  # @rbs return: void
   def drain_smoother
     smoother.drain
   end
 
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs return: void
   def render_token_usage(usage)
-    return unless @tally
+    tally = @tally
+    return unless tally
 
-    @tally.add(usage)
+    tally.add(usage)
 
     parts = ["↑#{usage.input_tokens}", "↓#{usage.output_tokens}"]
     parts << "cache_write:#{usage.cache_write_tokens}" if usage.cache_write_tokens&.positive?
     parts << "cache_read:#{usage.cache_read_tokens}" if usage.cache_read_tokens&.positive?
 
-    session_parts = ["session #{@tally.total_tokens} tok"]
-    cost = @tally.estimated_cost
+    session_parts = ["session #{tally.total_tokens} tok"]
+    cost = tally.estimated_cost
     session_parts << format('~$%.4f', cost) if cost
 
     @io.puts("\n#{@theme.dim("#{parts.join(' · ')}   #{session_parts.join(' · ')}")}")
   end
 
+  # @rbs arguments: String
+  # @rbs return: String
   def format_arguments(arguments)
     parsed = JSON.parse(arguments)
     parsed.map { |key, value| "#{key}: #{value.inspect}" }.join(', ')
@@ -87,6 +116,8 @@ class Riffer::Rig::UI::Renderer
     arguments
   end
 
+  # @rbs content: String
+  # @rbs return: String
   def preview(content)
     first_line = content.to_s.lines.first.to_s.chomp
     return first_line if first_line.length <= RESULT_PREVIEW_LIMIT

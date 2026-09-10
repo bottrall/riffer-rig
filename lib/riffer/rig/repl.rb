@@ -1,9 +1,28 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::REPL
-  EXIT_COMMANDS = ['/exit', '/quit'].freeze
-  SKILL_COMMAND = %r{\A/skill:([a-z0-9]+(?:-[a-z0-9]+)*)(?:\s+(.*))?\z}m
+  EXIT_COMMANDS = ['/exit', '/quit'].freeze #: Array[String]
 
+  SKILL_COMMAND = %r{\A/skill:([a-z0-9]+(?:-[a-z0-9]+)*)(?:\s+(.*))?\z}m #: Regexp
+
+  # @rbs @agent: Riffer::Agent
+  # @rbs @renderer: Riffer::Rig::UI::Renderer
+  # @rbs @animator: Riffer::Rig::UI::Animator
+  # @rbs @smoother: Riffer::Rig::UI::Smoother
+  # @rbs @cursor: Riffer::Rig::UI::Cursor
+  # @rbs @theme: Riffer::Rig::UI::Theme
+  # @rbs @input: untyped
+  # @rbs @output: untyped
+
+  # @rbs ?agent: Riffer::Agent
+  # @rbs ?renderer: Riffer::Rig::UI::Renderer
+  # @rbs input: untyped
+  # @rbs output: untyped
+  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs ?animator: Riffer::Rig::UI::Animator
+  # @rbs ?smoother: Riffer::Rig::UI::Smoother
+  # @rbs ?cursor: Riffer::Rig::UI::Cursor
+  # @rbs return: void
   def initialize(agent:, renderer:, input: $stdin, output: $stdout, theme: Riffer::Rig::UI::Theme.for(output), animator: Riffer::Rig::UI::Animator.new(io: output, theme:), smoother: Riffer::Rig::UI::Smoother.new(io: output, theme:), cursor: Riffer::Rig::UI::Cursor.new(io: output, theme:))
     @agent = agent
     @renderer = renderer
@@ -16,6 +35,7 @@ class Riffer::Rig::REPL
     @agent.session.on_message { |message| render_tool_result(message) }
   end
 
+  # @rbs return: Symbol
   def run
     loop do
       @output.print("\n#{@theme.pink('›')} ")
@@ -36,10 +56,13 @@ class Riffer::Rig::REPL
     end
 
     @output.puts("\n#{@theme.grey('see you on the next riff.')}")
+    :done
   end
 
   private
 
+  # @rbs prompt: String
+  # @rbs return: void
   def run_turn(prompt)
     @cursor.hide
     @animator.start
@@ -78,6 +101,9 @@ class Riffer::Rig::REPL
     @cursor.show
   end
 
+  # @rbs name: String
+  # @rbs args: String
+  # @rbs return: void
   def run_skill_command(name, args)
     block = activate_skill(name)
     return if block.nil?
@@ -85,6 +111,8 @@ class Riffer::Rig::REPL
     run_turn([block, args].reject(&:empty?).join("\n\n"))
   end
 
+  # @rbs name: String
+  # @rbs return: String?
   def activate_skill(name)
     skills = @agent.context.skills
 
@@ -107,6 +135,9 @@ class Riffer::Rig::REPL
     nil
   end
 
+  # @rbs name: String
+  # @rbs body: String
+  # @rbs return: String
   def skill_block(name, body)
     "<skill name=\"#{name}\">\n#{body}\n</skill>"
   end
@@ -114,6 +145,9 @@ class Riffer::Rig::REPL
   # Tool results can land mid-animation (tool execution emits no stream events,
   # so the indicator is up); stop it around the line so its next frame doesn't
   # erase what we printed.
+  #
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: void
   def render_tool_result(message)
     return unless message.is_a?(Riffer::Messages::Tool)
 

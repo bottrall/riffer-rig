@@ -189,7 +189,7 @@ describe Riffer::Rig::UI::Renderer do
   end
 
   it 'renders estimated cost for known model' do
-    pricing = { input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3 }
+    pricing = Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3)
     tally = Riffer::Rig::TokenTally.new(pricing: pricing)
     renderer = Riffer::Rig::UI::Renderer.new(
       io: @io,

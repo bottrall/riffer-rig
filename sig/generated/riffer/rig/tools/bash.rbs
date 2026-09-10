@@ -1,17 +1,28 @@
 # Generated from lib/riffer/rig/tools/bash.rb with RBS::Inline
 
 class Riffer::Rig::Tools::Bash < Riffer::Tool
-  DEFAULT_TIMEOUT_MS: ::Integer
+  DEFAULT_TIMEOUT_MS: Integer
 
-  MAX_OUTPUT_BYTES: ::Integer
+  MAX_OUTPUT_BYTES: Integer
 
-  def call: (context: untyped, command: untyped, ?timeout_ms: untyped) -> untyped
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs command: String
+  # @rbs ?timeout_ms: Integer
+  # @rbs return: Riffer::Tools::Response
+  def call: (context: Riffer::Agent::Context?, command: String, ?timeout_ms: untyped) -> Riffer::Tools::Response
 
   private
 
-  def run: (untyped command, untyped timeout_seconds) -> untyped
+  # @rbs command: String
+  # @rbs timeout_seconds: Float
+  # @rbs return: [String, Integer]
+  def run: (String command, Float timeout_seconds) -> [ String, Integer ]
 
-  def kill_group: (untyped pid) -> untyped
+  # @rbs pid: Integer
+  # @rbs return: Integer
+  def kill_group: (Integer pid) -> Integer
 
-  def truncate: (untyped output) -> untyped
+  # @rbs output: String
+  # @rbs return: String
+  def truncate: (String output) -> String
 end

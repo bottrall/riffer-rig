@@ -1,35 +1,68 @@
 # Generated from lib/riffer/rig/ui/renderer.rb with RBS::Inline
 
 class Riffer::Rig::UI::Renderer
-  RESULT_PREVIEW_LIMIT: ::Integer
+  RESULT_PREVIEW_LIMIT: Integer
 
-  def initialize: (?io: untyped, ?theme: untyped, ?tally: untyped, ?smoother: untyped) -> untyped
+  @io: untyped
 
-  def render: (untyped event) -> untyped
+  @theme: Riffer::Rig::UI::Theme
 
-  def render_tool_result: (untyped message) -> untyped
+  @tally: Riffer::Rig::TokenTally?
+
+  @smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
+
+  # @rbs io: untyped
+  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs ?tally: Riffer::Rig::TokenTally?
+  # @rbs ?smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
+  # @rbs return: void
+  def initialize: (?io: untyped, ?theme: untyped, ?tally: untyped, ?smoother: untyped) -> void
+
+  # @rbs event: Riffer::StreamEvents::Base
+  # @rbs return: void
+  def render: (Riffer::StreamEvents::Base event) -> void
+
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: void
+  def render_tool_result: (Riffer::Messages::Base message) -> void
 
   private
 
-  def smoother: () -> untyped
+  # @rbs return: Riffer::Rig::UI::Smoother | PassThroughSmoother
+  def smoother: () -> (Riffer::Rig::UI::Smoother | PassThroughSmoother)
 
-  # Stand-in when no smoother is injected, so a bare Renderer still prints
+  # Stand-in when no smoother is injected, so a bare Riffer::Rig::UI::Renderer still prints
   # synchronously.
   class PassThroughSmoother
-    def initialize: (untyped io) -> untyped
+    @io: untyped
 
-    def <<: (untyped content) -> untyped
+    # @rbs io: untyped
+    # @rbs return: void
+    def initialize: (untyped io) -> void
 
-    def drain: () -> untyped
+    # @rbs content: String
+    # @rbs return: self
+    def <<: (String content) -> self
 
-    def finish: () -> untyped
+    # @rbs return: nil
+    def drain: () -> nil
+
+    # @rbs return: nil
+    def finish: () -> nil
   end
 
-  def drain_smoother: () -> untyped
+  # @rbs return: void
+  def drain_smoother: () -> void
 
-  def render_token_usage: (untyped usage) -> untyped
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs return: void
+  def render_token_usage: (Riffer::Providers::TokenUsage usage) -> void
 
-  def format_arguments: (untyped arguments) -> untyped
+  # @rbs arguments: String
+  # @rbs return: String
+  def format_arguments: (String arguments) -> String
 
-  def preview: (untyped content) -> untyped
+  # @rbs content: String
+  # @rbs return: String
+  def preview: (String content) -> String
 end

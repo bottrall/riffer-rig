@@ -4,7 +4,7 @@
 # typing. On a non-TTY output it is transparent: writes pass through
 # synchronously and no thread ever runs.
 class Riffer::Rig::UI::Smoother
-  TICK_SECONDS: untyped
+  TICK_SECONDS: Float
 
   # A frame removes only a sixtieth of the remaining backlog — an exponential
   # decay whose tail keeps text flowing for a second or more, so the reveal
@@ -12,26 +12,56 @@ class Riffer::Rig::UI::Smoother
   # releases so the effective rate can settle at the provider's throughput;
   # the floor is fractional (10 chars/s) so it can't over-drain a backlog
   # that's trickling in slower than 60 chars/s.
-  BACKLOG_FRACTION_PER_TICK: untyped
+  BACKLOG_FRACTION_PER_TICK: Rational
 
-  MIN_CHARS_PER_TICK: untyped
+  MIN_CHARS_PER_TICK: Rational
 
-  def initialize: (?io: untyped, ?theme: untyped, ?clock: untyped) -> untyped
+  @stop: bool
 
-  def start: () -> untyped
+  @thread: Thread?
 
-  def <<: (untyped content) -> untyped
+  @mutex: Mutex
+
+  @carry: Rational
+
+  @backlog: String
+
+  @clock: singleton(Kernel)
+
+  @theme: Riffer::Rig::UI::Theme
+
+  @io: untyped
+
+  # @rbs io: untyped
+  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs clock: singleton(Kernel)
+  # @rbs return: void
+  def initialize: (?io: untyped, ?theme: untyped, ?clock: singleton(Kernel)) -> void
+
+  # @rbs return: void
+  def start: () -> void
+
+  # @rbs content: String
+  # @rbs return: self
+  def <<: (String content) -> self
 
   # The write sits inside the mutex so a concurrent tick can't reorder a drain.
-  def tick: () -> untyped
+  #
+  # @rbs return: void
+  def tick: () -> void
 
   # Called before non-delta output so printed order matches stream order.
-  def drain: () -> untyped
+  #
+  # @rbs return: void
+  def drain: () -> void
 
   # Idempotent: the REPL's ensure path runs it even after a happy-path finish.
-  def finish: () -> untyped
+  #
+  # @rbs return: void
+  def finish: () -> void
 
   private
 
-  def enabled?: () -> untyped
+  # @rbs return: bool
+  def enabled?: () -> bool
 end

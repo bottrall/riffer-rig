@@ -1,26 +1,65 @@
 # Generated from lib/riffer/rig/repl.rb with RBS::Inline
 
 class Riffer::Rig::REPL
-  EXIT_COMMANDS: untyped
+  EXIT_COMMANDS: Array[String]
 
-  SKILL_COMMAND: ::Regexp
+  SKILL_COMMAND: Regexp
 
-  def initialize: (agent: untyped, renderer: untyped, ?input: untyped, ?output: untyped, ?theme: untyped, ?animator: untyped, ?smoother: untyped, ?cursor: untyped) -> untyped
+  @output: untyped
 
-  def run: () -> untyped
+  @input: untyped
+
+  @theme: Riffer::Rig::UI::Theme
+
+  @cursor: Riffer::Rig::UI::Cursor
+
+  @smoother: Riffer::Rig::UI::Smoother
+
+  @animator: Riffer::Rig::UI::Animator
+
+  @renderer: Riffer::Rig::UI::Renderer
+
+  @agent: Riffer::Agent
+
+  # @rbs ?agent: Riffer::Agent
+  # @rbs ?renderer: Riffer::Rig::UI::Renderer
+  # @rbs input: untyped
+  # @rbs output: untyped
+  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs ?animator: Riffer::Rig::UI::Animator
+  # @rbs ?smoother: Riffer::Rig::UI::Smoother
+  # @rbs ?cursor: Riffer::Rig::UI::Cursor
+  # @rbs return: void
+  def initialize: (agent: untyped, renderer: untyped, ?input: untyped, ?output: untyped, ?theme: untyped, ?animator: untyped, ?smoother: untyped, ?cursor: untyped) -> void
+
+  # @rbs return: Symbol
+  def run: () -> Symbol
 
   private
 
-  def run_turn: (untyped prompt) -> untyped
+  # @rbs prompt: String
+  # @rbs return: void
+  def run_turn: (String prompt) -> void
 
-  def run_skill_command: (untyped name, untyped args) -> untyped
+  # @rbs name: String
+  # @rbs args: String
+  # @rbs return: void
+  def run_skill_command: (String name, String args) -> void
 
-  def activate_skill: (untyped name) -> untyped
+  # @rbs name: String
+  # @rbs return: String?
+  def activate_skill: (String name) -> String?
 
-  def skill_block: (untyped name, untyped body) -> untyped
+  # @rbs name: String
+  # @rbs body: String
+  # @rbs return: String
+  def skill_block: (String name, String body) -> String
 
   # Tool results can land mid-animation (tool execution emits no stream events,
   # so the indicator is up); stop it around the line so its next frame doesn't
   # erase what we printed.
-  def render_tool_result: (untyped message) -> untyped
+  #
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: void
+  def render_tool_result: (Riffer::Messages::Base message) -> void
 end

@@ -3,19 +3,31 @@
 # Hides the terminal cursor while a turn is in flight: a hidden cursor can't
 # flicker against the animator's erase-and-redraw churn.
 class Riffer::Rig::UI::Cursor
-  HIDE: ::String
+  HIDE: String
 
-  SHOW: ::String
+  SHOW: String
 
-  def initialize: (?io: untyped, ?theme: untyped) -> untyped
+  @io: untyped
 
-  def hide: () -> untyped
+  @theme: Riffer::Rig::UI::Theme
 
-  def show: () -> untyped
+  # @rbs io: untyped
+  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs return: void
+  def initialize: (?io: untyped, ?theme: untyped) -> void
+
+  # @rbs return: void
+  def hide: () -> void
+
+  # @rbs return: void
+  def show: () -> void
 
   private
 
-  def write: (untyped sequence) -> untyped
+  # @rbs sequence: String
+  # @rbs return: void
+  def write: (String sequence) -> void
 
-  def enabled?: () -> untyped
+  # @rbs return: bool
+  def enabled?: () -> bool
 end

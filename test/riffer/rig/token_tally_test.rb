@@ -2,7 +2,7 @@
 
 require 'test_helper'
 
-SONNET_PRICING = { input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3 }.freeze
+SONNET_PRICING = Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3)
 
 describe Riffer::Rig::TokenTally do
   def usage(input:, output:, cache_write: nil, cache_read: nil)

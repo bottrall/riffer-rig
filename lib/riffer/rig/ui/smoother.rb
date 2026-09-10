@@ -4,7 +4,7 @@
 # typing. On a non-TTY output it is transparent: writes pass through
 # synchronously and no thread ever runs.
 class Riffer::Rig::UI::Smoother
-  TICK_SECONDS = 1.0 / 60.0
+  TICK_SECONDS = 1.0 / 60.0 #: Float
 
   # A frame removes only a sixtieth of the remaining backlog — an exponential
   # decay whose tail keeps text flowing for a second or more, so the reveal
@@ -12,9 +12,24 @@ class Riffer::Rig::UI::Smoother
   # releases so the effective rate can settle at the provider's throughput;
   # the floor is fractional (10 chars/s) so it can't over-drain a backlog
   # that's trickling in slower than 60 chars/s.
-  BACKLOG_FRACTION_PER_TICK = Rational(1, 60)
-  MIN_CHARS_PER_TICK = Rational(1, 6)
+  #
+  BACKLOG_FRACTION_PER_TICK = Rational(1, 60) #: Rational
 
+  MIN_CHARS_PER_TICK = Rational(1, 6) #: Rational
+
+  # @rbs @io: untyped
+  # @rbs @theme: Riffer::Rig::UI::Theme
+  # @rbs @clock: singleton(Kernel)
+  # @rbs @backlog: String
+  # @rbs @carry: Rational
+  # @rbs @mutex: Mutex
+  # @rbs @thread: Thread?
+  # @rbs @stop: bool
+
+  # @rbs io: untyped
+  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs clock: singleton(Kernel)
+  # @rbs return: void
   def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io), clock: Kernel)
     @io = io
     @theme = theme
@@ -26,6 +41,7 @@ class Riffer::Rig::UI::Smoother
     @stop = false
   end
 
+  # @rbs return: void
   def start
     return unless enabled?
     return if @thread
@@ -39,6 +55,8 @@ class Riffer::Rig::UI::Smoother
     end
   end
 
+  # @rbs content: String
+  # @rbs return: self
   def <<(content)
     if enabled?
       @mutex.synchronize { @backlog << content }
@@ -50,6 +68,8 @@ class Riffer::Rig::UI::Smoother
   end
 
   # The write sits inside the mutex so a concurrent tick can't reorder a drain.
+  #
+  # @rbs return: void
   def tick
     @mutex.synchronize do
       return if @backlog.empty?
@@ -65,6 +85,8 @@ class Riffer::Rig::UI::Smoother
   end
 
   # Called before non-delta output so printed order matches stream order.
+  #
+  # @rbs return: void
   def drain
     @mutex.synchronize do
       return if @backlog.empty?
@@ -75,10 +97,13 @@ class Riffer::Rig::UI::Smoother
   end
 
   # Idempotent: the REPL's ensure path runs it even after a happy-path finish.
+  #
+  # @rbs return: void
   def finish
-    if @thread
+    thread = @thread
+    if thread
       @stop = true
-      @thread.join
+      thread.join
       @thread = nil
     end
     drain
@@ -86,6 +111,7 @@ class Riffer::Rig::UI::Smoother
 
   private
 
+  # @rbs return: bool
   def enabled?
     @theme.enabled && @io.respond_to?(:tty?) && @io.tty?
   end

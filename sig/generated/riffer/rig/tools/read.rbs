@@ -1,7 +1,12 @@
 # Generated from lib/riffer/rig/tools/read.rb with RBS::Inline
 
 class Riffer::Rig::Tools::Read < Riffer::Tool
-  DEFAULT_LIMIT: ::Integer
+  DEFAULT_LIMIT: Integer
 
-  def call: (context: untyped, path: untyped, ?offset: untyped, ?limit: untyped) -> untyped
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs path: String
+  # @rbs ?offset: Integer?
+  # @rbs ?limit: Integer
+  # @rbs return: Riffer::Tools::Response
+  def call: (context: Riffer::Agent::Context?, path: String, ?offset: untyped, ?limit: untyped) -> Riffer::Tools::Response
 end

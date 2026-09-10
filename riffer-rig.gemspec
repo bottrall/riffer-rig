@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
   spec.metadata['changelog_uri'] = 'https://github.com/bottrall/riffer-rig/blob/main/CHANGELOG.md'
   spec.metadata['source_code_uri'] = spec.homepage
 
-  spec.files = Dir['lib/**/*.rb', 'exe/*', 'README.md', 'CHANGELOG.md']
+  spec.files = Dir['lib/**/*.rb', 'exe/*', 'sig/generated/**/*', 'sig/manual/**/*', 'README.md', 'CHANGELOG.md']
   spec.bindir = 'exe'
   spec.executables = ['riffer']
   spec.require_paths = ['lib']

@@ -1,27 +1,60 @@
 # Generated from lib/riffer/rig/ui/theme.rb with RBS::Inline
 
-# Behaviour lives in a reopened class (rather than the `Data.define` block) so
-# the type checker can analyse the methods.
+# +enabled+ gates every escape so the same code path emits plain, escape-free
+# text when piped or tested.
 class Riffer::Rig::UI::Theme
-  def self.for: (untyped io) -> untyped
+  @enabled: bool
 
-  def paint: (untyped text, untyped rgb) -> untyped
+  # @rbs return: bool
+  # @dynamic enabled
+  attr_reader enabled: bool
 
-  def pink: (untyped text) -> untyped
+  # @rbs enabled: bool
+  # @rbs return: void
+  def initialize: (enabled: bool) -> void
 
-  def magenta: (untyped text) -> untyped
+  # @rbs io: untyped
+  # @rbs return: Riffer::Rig::UI::Theme
+  def self.for: (untyped io) -> Riffer::Rig::UI::Theme
 
-  def purple: (untyped text) -> untyped
+  # @rbs text: String
+  # @rbs rgb: Array[Integer]
+  # @rbs return: String
+  def paint: (String text, Array[Integer] rgb) -> String
 
-  def blue: (untyped text) -> untyped
+  # @rbs text: String
+  # @rbs return: String
+  def pink: (String text) -> String
 
-  def cyan: (untyped text) -> untyped
+  # @rbs text: String
+  # @rbs return: String
+  def magenta: (String text) -> String
 
-  def grey: (untyped text) -> untyped
+  # @rbs text: String
+  # @rbs return: String
+  def purple: (String text) -> String
 
-  def red: (untyped text) -> untyped
+  # @rbs text: String
+  # @rbs return: String
+  def blue: (String text) -> String
 
-  def dim: (untyped text) -> untyped
+  # @rbs text: String
+  # @rbs return: String
+  def cyan: (String text) -> String
 
-  def bold: (untyped text) -> untyped
+  # @rbs text: String
+  # @rbs return: String
+  def grey: (String text) -> String
+
+  # @rbs text: String
+  # @rbs return: String
+  def red: (String text) -> String
+
+  # @rbs text: String
+  # @rbs return: String
+  def dim: (String text) -> String
+
+  # @rbs text: String
+  # @rbs return: String
+  def bold: (String text) -> String
 end

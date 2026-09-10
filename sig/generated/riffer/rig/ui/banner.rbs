@@ -1,19 +1,42 @@
 # Generated from lib/riffer/rig/ui/banner.rb with RBS::Inline
 
 module Riffer::Rig::UI::Banner
-  WORDMARK: untyped
+  WORDMARK: Array[String]
 
-  ROW_COLOURS: untyped
+  ROW_COLOURS: Array[Array[Integer]]
 
-  INFO_LABEL_WIDTH: ::Integer
+  INFO_LABEL_WIDTH: Integer
 
-  INDENT: ::String
+  INDENT: String
 
-  def call: (untyped theme, model: untyped, cwd: untyped, context: untyped, skills: untyped, version: untyped) -> untyped
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs model: String
+  # @rbs cwd: String
+  # @rbs context: String
+  # @rbs skills: String
+  # @rbs version: String
+  # @rbs return: String
+  def call: (Riffer::Rig::UI::Theme theme, model: String, cwd: String, context: String, skills: String, version: String) -> String
 
-  def lines: (untyped theme, model: untyped, cwd: untyped, context: untyped, skills: untyped, version: untyped) -> untyped
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs model: String
+  # @rbs cwd: String
+  # @rbs context: String
+  # @rbs skills: String
+  # @rbs version: String
+  # @rbs return: Array[String]
+  def lines: (Riffer::Rig::UI::Theme theme, model: String, cwd: String, context: String, skills: String, version: String) -> Array[String]
 
-  def art: (untyped theme) -> untyped
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs return: Array[String]
+  def art: (Riffer::Rig::UI::Theme theme) -> Array[String]
 
-  def info: (untyped theme, model: untyped, cwd: untyped, context: untyped, skills: untyped, version: untyped) -> untyped
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs model: String
+  # @rbs cwd: String
+  # @rbs context: String
+  # @rbs skills: String
+  # @rbs version: String
+  # @rbs return: Array[String]
+  def info: (Riffer::Rig::UI::Theme theme, model: String, cwd: String, context: String, skills: String, version: String) -> Array[String]
 end

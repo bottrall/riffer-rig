@@ -3,9 +3,11 @@
 require 'date'
 
 class Riffer::Rig::CodingAgent < Riffer::Agent
-  GLOBAL_AGENTS_FILE = File.expand_path('~/.riffer/AGENTS.md')
-  GLOBAL_SKILLS_DIR  = File.expand_path('~/.riffer/skills')
-  PROJECT_SKILLS_DIR = -> { File.join(Dir.pwd, '.skills') }
+  GLOBAL_AGENTS_FILE = File.expand_path('~/.riffer/AGENTS.md') #: String
+
+  GLOBAL_SKILLS_DIR  = File.expand_path('~/.riffer/skills') #: String
+
+  PROJECT_SKILLS_DIR = -> { File.join(Dir.pwd, '.skills') } #: ^() -> String
 
   model Riffer::Rig::Settings.model
   model_options Riffer::Rig::Settings.model_options
@@ -40,9 +42,9 @@ class Riffer::Rig::CodingAgent < Riffer::Agent
 
       Available tools:
       - read: read a file's contents
-      - write: create or overwrite a file
+      - write: write content to a file
       - edit: replace an exact string in a file
-      - bash: run a shell command (use it for ls, rg/grep, find, tests, git, etc.)
+      - bash: run a shell command in the working directory
 
       Guidelines:
       - Be concise and direct in your responses.

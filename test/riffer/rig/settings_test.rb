@@ -55,7 +55,7 @@ describe Riffer::Rig::Settings do
 
       pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
 
-      assert_in_delta(3.0, pricing[:input])
+      assert_in_delta(3.0, pricing.input)
     end
   end
 
@@ -71,7 +71,7 @@ describe Riffer::Rig::Settings do
 
       pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
 
-      assert_in_delta(15.0, pricing[:output])
+      assert_in_delta(15.0, pricing.output)
     end
   end
 
@@ -87,7 +87,7 @@ describe Riffer::Rig::Settings do
 
       pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
 
-      assert_in_delta(3.75, pricing[:cache_write])
+      assert_in_delta(3.75, pricing.cache_write)
     end
   end
 
@@ -103,7 +103,7 @@ describe Riffer::Rig::Settings do
 
       pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
 
-      assert_in_delta(0.3, pricing[:cache_read])
+      assert_in_delta(0.3, pricing.cache_read)
     end
   end
 
@@ -137,7 +137,7 @@ describe Riffer::Rig::Settings do
 
       pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
 
-      assert_kind_of Float, pricing[:input]
+      assert_kind_of Float, pricing.input
     end
   end
 
@@ -153,7 +153,7 @@ describe Riffer::Rig::Settings do
 
       pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
 
-      assert_kind_of Float, pricing[:cache_read]
+      assert_kind_of Float, pricing.cache_read
     end
   end
 
