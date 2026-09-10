@@ -5,6 +5,8 @@ class Riffer::Rig::REPL
 
   SKILL_COMMAND: Regexp
 
+  @pending_tool_calls: Array[Riffer::StreamEvents::ToolCallDone]
+
   @output: untyped
 
   @input: untyped
@@ -54,6 +56,15 @@ class Riffer::Rig::REPL
   # @rbs body: String
   # @rbs return: String
   def skill_block: (String name, String body) -> String
+
+  # Tool call lines print below their round's stats line to reflect the actual
+  # timeline (usage is reported when the model stream closes, after the calls
+  # were decided). ToolCallDone events are therefore held until the stats line
+  # or the next event forces them out. Callers must have the spinner stopped —
+  # the flush renders between their existing stop/start pair.
+  #
+  # @rbs return: void
+  def flush_pending_tool_calls: () -> void
 
   # Tool results can land mid-animation (tool execution emits no stream events,
   # so the indicator is up); stop it around the line so its next frame doesn't
