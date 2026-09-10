@@ -195,7 +195,9 @@ describe Riffer::Rig::REPL do
 
     repl.run
 
-    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop, %i[start neutral], :stop, :stop], animator.calls
+    # The call line is stashed, so only the stats render touches the indicator;
+    # the stashed line flushes between that stop and restart.
+    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop, :stop], animator.calls
   end
 
   it 'indicator restarts after a skill activates' do
@@ -246,6 +248,87 @@ describe Riffer::Rig::REPL do
     epilogue = order.rindex { |call| call.is_a?(Array) && call.first == :write && call.last.empty? }
 
     assert_operator following_stop, :<, epilogue
+  end
+
+  it 'tool call lines print after the round stats line' do
+    output = StringIO.new
+    agent = stub_agent([
+                         Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}'),
+                         Riffer::StreamEvents::TokenUsageDone.new(token_usage: build_token_usage)
+                       ])
+    repl = build_repl(agent, output, "hi\n")
+
+    repl.run
+
+    assert_operator output.string.index('↑1 · ↓1'), :<, output.string.index('⚙ read()')
+  end
+
+  it 'all buffered tool calls print after the stats line' do
+    output = StringIO.new
+    agent = stub_agent([
+                         Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{"path": "a.rb"}'),
+                         Riffer::StreamEvents::ToolCallDone.new(item_id: 'i2', call_id: 'c2', name: 'bash', arguments: '{"command": "ls"}'),
+                         Riffer::StreamEvents::TokenUsageDone.new(token_usage: build_token_usage)
+                       ])
+    repl = build_repl(agent, output, "hi\n")
+
+    repl.run
+
+    assert_operator output.string.index('↑1 · ↓1'), :<, output.string.index('⚙ read')
+  end
+
+  it 'buffered tool calls keep their stream order' do
+    output = StringIO.new
+    agent = stub_agent([
+                         Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{"path": "a.rb"}'),
+                         Riffer::StreamEvents::ToolCallDone.new(item_id: 'i2', call_id: 'c2', name: 'bash', arguments: '{"command": "ls"}'),
+                         Riffer::StreamEvents::TokenUsageDone.new(token_usage: build_token_usage)
+                       ])
+    repl = build_repl(agent, output, "hi\n")
+
+    repl.run
+
+    assert_operator output.string.index('⚙ read'), :<, output.string.index('⚙ bash')
+  end
+
+  it 'buffered tool calls flush at end of turn without stats' do
+    output = StringIO.new
+    agent = stub_agent([Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}')])
+    repl = build_repl(agent, output, "hi\n")
+
+    repl.run
+
+    assert_includes output.string, '⚙ read()'
+  end
+
+  it 'buffered tool calls flush when the turn raises' do
+    output = StringIO.new
+    agent = stub_agent([Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}')])
+    agent.define_singleton_method(:stream) do |_prompt|
+      Enumerator.new do |y|
+        y << Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}')
+        raise 'boom'
+      end
+    end
+
+    repl = build_repl(agent, output, "hi\n")
+
+    repl.run
+
+    assert_includes output.string, '⚙ read()'
+  end
+
+  it 'buffered tool calls flush before the next round renders' do
+    output = StringIO.new
+    agent = stub_agent([
+                         Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}'),
+                         Riffer::StreamEvents::TextDelta.new('round two')
+                       ])
+    repl = build_repl(agent, output, "hi\n")
+
+    repl.run
+
+    assert_operator output.string.index('⚙ read()'), :<, output.string.index('round two')
   end
 
   it 'tool result printing stops and restarts the indicator' do
@@ -331,9 +414,9 @@ describe Riffer::Rig::REPL do
     agent
   end
 
-  def build_repl(agent, output, input_str, animator: Riffer::Rig::UI::Animator.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)), cursor: Riffer::Rig::UI::Cursor.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)))
+  def build_repl(agent, output, input_str, animator: Riffer::Rig::UI::Animator.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)), cursor: Riffer::Rig::UI::Cursor.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)), tally: Riffer::Rig::TokenTally.new)
     theme = Riffer::Rig::UI::Theme.new(enabled: false)
-    renderer = Riffer::Rig::UI::Renderer.new(io: output, theme: theme)
+    renderer = Riffer::Rig::UI::Renderer.new(io: output, theme: theme, tally: tally)
     Riffer::Rig::REPL.new(agent: agent, renderer: renderer, input: StringIO.new(input_str), output: output, theme: theme, animator: animator, cursor: cursor)
   end
 

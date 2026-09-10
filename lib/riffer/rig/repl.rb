@@ -13,6 +13,7 @@ class Riffer::Rig::REPL
   # @rbs @theme: Riffer::Rig::UI::Theme
   # @rbs @input: untyped
   # @rbs @output: untyped
+  # @rbs @pending_tool_calls: Array[Riffer::StreamEvents::ToolCallDone]
 
   # @rbs ?agent: Riffer::Agent
   # @rbs ?renderer: Riffer::Rig::UI::Renderer
@@ -32,6 +33,7 @@ class Riffer::Rig::REPL
     @theme = theme
     @input = input
     @output = output
+    @pending_tool_calls = []
     @agent.session.on_message { |message| render_tool_result(message) }
   end
 
@@ -77,23 +79,34 @@ class Riffer::Rig::REPL
         # Round bookkeeping: nothing renders, so the indicator just carries on
         # (or stays parked while the smoother finishes typing earlier text).
         next
-      when Riffer::StreamEvents::ToolCallDone, Riffer::StreamEvents::SkillActivation, Riffer::StreamEvents::TokenUsageDone
+      when Riffer::StreamEvents::ToolCallDone
+        # Tool call lines are held back so the round's stats line can print
+        # above them (see flush_pending_tool_calls).
+        @pending_tool_calls << event
+        next
+      when Riffer::StreamEvents::SkillActivation, Riffer::StreamEvents::TokenUsageDone
         # The spinner shares its line with what's about to print, and tool
         # execution plus the next model invocation emit no events — stop it for
         # the render, then bring it straight back to cover the silent stretch.
+        # Stats print before any pending tool call lines (see below).
         @animator.stop
         @renderer.render(event)
+        flush_pending_tool_calls
         @animator.start
         next
       else
         @animator.stop
       end
+      flush_pending_tool_calls
       @renderer.render(event)
     end
     @animator.stop
+    flush_pending_tool_calls
     @smoother.finish
     @output.puts
   rescue StandardError => e
+    @animator.stop
+    flush_pending_tool_calls
     @output.puts("\nError: #{e.message}")
   ensure
     @smoother.finish
@@ -140,6 +153,20 @@ class Riffer::Rig::REPL
   # @rbs return: String
   def skill_block(name, body)
     "<skill name=\"#{name}\">\n#{body}\n</skill>"
+  end
+
+  # Tool call lines print below their round's stats line to reflect the actual
+  # timeline (usage is reported when the model stream closes, after the calls
+  # were decided). ToolCallDone events are therefore held until the stats line
+  # or the next event forces them out. Callers must have the spinner stopped —
+  # the flush renders between their existing stop/start pair.
+  #
+  # @rbs return: void
+  def flush_pending_tool_calls
+    return if @pending_tool_calls.empty?
+
+    @pending_tool_calls.each { |event| @renderer.render(event) }
+    @pending_tool_calls = []
   end
 
   # Tool results can land mid-animation (tool execution emits no stream events,
