@@ -1,0 +1,132 @@
+---
+path: ".gem_rbs_collection"
+gems:
+- name: anthropic
+  version: 1.69.0
+  source:
+    type: rubygems
+- name: base64
+  version: 0.3.0
+  source:
+    type: rubygems
+- name: cgi
+  version: '0.5'
+  source:
+    type: git
+    name: ruby/gem_rbs_collection
+    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    remote: https://github.com/ruby/gem_rbs_collection.git
+    repo_dir: gems
+- name: connection_pool
+  version: '2.4'
+  source:
+    type: git
+    name: ruby/gem_rbs_collection
+    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    remote: https://github.com/ruby/gem_rbs_collection.git
+    repo_dir: gems
+- name: delegate
+  version: '0'
+  source:
+    type: stdlib
+- name: digest
+  version: '0'
+  source:
+    type: stdlib
+- name: ffi
+  version: 1.17.4
+  source:
+    type: rubygems
+- name: fileutils
+  version: '0'
+  source:
+    type: stdlib
+- name: io-console
+  version: '0'
+  source:
+    type: stdlib
+- name: listen
+  version: '3.9'
+  source:
+    type: git
+    name: ruby/gem_rbs_collection
+    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    remote: https://github.com/ruby/gem_rbs_collection.git
+    repo_dir: gems
+- name: logger
+  version: '1.7'
+  source:
+    type: git
+    name: ruby/gem_rbs_collection
+    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    remote: https://github.com/ruby/gem_rbs_collection.git
+    repo_dir: gems
+- name: minitest
+  version: '5.25'
+  source:
+    type: git
+    name: ruby/gem_rbs_collection
+    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    remote: https://github.com/ruby/gem_rbs_collection.git
+    repo_dir: gems
+- name: monitor
+  version: '0'
+  source:
+    type: stdlib
+- name: net-http
+  version: '0'
+  source:
+    type: stdlib
+- name: net-protocol
+  version: '0'
+  source:
+    type: stdlib
+- name: openai
+  version: 0.85.0
+  source:
+    type: rubygems
+- name: prism
+  version: 1.9.0
+  source:
+    type: rubygems
+- name: rake
+  version: '13.0'
+  source:
+    type: git
+    name: ruby/gem_rbs_collection
+    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    remote: https://github.com/ruby/gem_rbs_collection.git
+    repo_dir: gems
+- name: riffer
+  version: 0.45.0
+  source:
+    type: rubygems
+- name: stringio
+  version: '0'
+  source:
+    type: stdlib
+- name: tempfile
+  version: '0'
+  source:
+    type: stdlib
+- name: thor
+  version: '1.2'
+  source:
+    type: git
+    name: ruby/gem_rbs_collection
+    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    remote: https://github.com/ruby/gem_rbs_collection.git
+    repo_dir: gems
+- name: timeout
+  version: '0'
+  source:
+    type: stdlib
+- name: tmpdir
+  version: '0'
+  source:
+    type: stdlib
+- name: uri
+  version: '0'
+  source:
+    type: stdlib
+gemfile_lock_path: Gemfile.lock

@@ -9,12 +9,11 @@ target :lib do
 
   check 'lib'
 
+  collection_config 'rbs_collection.yaml'
+
   library 'date'
-  library 'fileutils'
-  library 'io-console'
   library 'json'
   library 'open3'
-  library 'riffer'
 
   configure_code_diagnostics(D::Ruby.all_error)
 end

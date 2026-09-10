@@ -21,6 +21,17 @@ RuboCop::RakeTask.new do |t|
 end
 
 namespace :rbs do
+  desc 'Fail if rbs_collection.lock.yaml is out of date with rbs_collection.yaml or Gemfile.lock'
+  task :collection_check do
+    before = File.read('rbs_collection.lock.yaml')
+    sh 'rbs collection update', verbose: false
+    after = File.read('rbs_collection.lock.yaml')
+    if before != after
+      File.write('rbs_collection.lock.yaml', before)
+      abort 'rbs_collection.lock.yaml is out of date; run `rbs collection update` and commit the result'
+    end
+  end
+
   desc 'Generate RBS signatures from inline annotations'
   task :generate do
     sh 'rbs-inline --opt-out --output=sig/generated lib'
@@ -67,7 +78,7 @@ task :plans do
 end
 
 desc 'Check RBS signatures are current, then type-check'
-task typecheck: %w[rbs:check rbs:lint_manual steep:check]
+task typecheck: %w[rbs:check rbs:collection_check rbs:lint_manual steep:check]
 
 desc 'Run everything CI runs'
 task ci: %i[test rubocop typecheck]

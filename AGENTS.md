@@ -9,6 +9,7 @@ Terminal coding agent built on the riffer framework.
 - **Autoloading**: Zeitwerk (file paths must match module/class names)
 - **Namespace**: `Riffer::Rig`, compact style (`module Riffer::Rig::Tools::Read`); `version.rb` is the one exception — it must nest because the gemspec loads it before riffer
 - **Types**: strict Steep over rbs-inline annotations — every method in `lib/` carries `@rbs` annotations; `sig/generated` is committed; run `bin/rbs` after any `lib/` change
+- **Third-party RBS**: managed by `rbs collection` (`rbs_collection.yaml` + committed lockfile; `.gem_rbs_collection/` is gitignored); `bin/setup` installs it, `bin/typecheck` fails if the lockfile is stale; bump the pinned collection revision deliberately, via `rbs collection update` run through `bundle exec`
 - **Tests**: Minitest (Spec style: `describe`/`it`, `assert_*` assertions), one assertion per `it`, `test/riffer/rig/` mirrors `lib/riffer/rig/`
 - **PR titles**: [Conventional Commits](https://www.conventionalcommits.org/) — `feat:` bumps the minor, `fix:` the patch; titles are linted in CI and become the squash commit on `main`
 - **Releases**: release-please keeps a release PR open; merging it publishes the gem. The `riffer` dependency is pinned to one minor (`~> 0.45.0`) — retitle Dependabot's riffer bump `feat(deps):` or `fix(deps):` so it releases
@@ -19,10 +20,10 @@ All wrappers delegate to the Rakefile under the hood.
 
 | Command         | Description                                                                           |
 | --------------- | ------------------------------------------------------------------------------------- |
-| `bin/setup`     | Install dependencies on a fresh checkout                                              |
+| `bin/setup`     | Install dependencies on a fresh checkout (gems + rbs collection)                      |
 | `bin/test`      | Run tests. Pass files and/or Minitest flags: `bin/test test/foo_test.rb -n /pattern/` |
 | `bin/lint`      | Check code style (pass `-a` to auto-fix)                                              |
-| `bin/typecheck` | Check `sig/generated` is current, then type-check with Steep                          |
+| `bin/typecheck` | Check the rbs collection lockfile and `sig/generated` are current, then type-check with Steep |
 | `bin/rbs`       | Regenerate `sig/generated` from the inline annotations in `lib/`                      |
 | `bin/ci`        | Run everything CI runs, serially. Use before pushing                                  |
 | `bin/build`     | Build the gem into `pkg/`                                                             |
@@ -53,3 +54,4 @@ Steep runs `D::Ruby.all_error`: every diagnostic Steep can emit is an error, inc
 - **Accessors**: an `attr_reader`/`attr_writer` on a class with declared members needs a `# @dynamic name1, name2` line directly above it — Steep only counts `def` nodes as implementations, so without it every accessor reports `MethodDefinitionMissing`.
 - **Noise policy**: when Steep surfaces a diagnostic, fix the annotation or the code. Diagnostics are never disabled in the Steepfile; the only escape is a targeted inline suppression with a `why` comment.
 - **Hand-written sigs**: `sig/manual/` mirrors `lib/` for signatures rbs-inline can't generate at all (e.g. `extend self` re-declarations, Zeitwerk-autovivified namespace modules). `sig/_private/` holds dependency-gem stubs (named by gem: `zeitwerk.rbs`, `open3.rbs`, `riffer/tool.rbs`) — RBS skips `_`-prefixed directories in library mode, so they never infect projects that install riffer-rig. `rbs:lint_manual` (part of `bin/typecheck`) fails if a manual/_private file outlives the module it documents.
+- **Stub policy**: reach for a gem's own shipped RBS or gem_rbs_collection first (both load automatically via the collection lockfile); write a `sig/_private/` stub only for a gem with no RBS anywhere (zeitwerk) or a stdlib signature gap (open3's missing `popen2e`). Re-check the collection when updating such a gem, and delete the stub as soon as real signatures exist.
