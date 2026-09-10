@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/bottrall/riffer-rig/compare/v0.2.1...v0.3.0) (2026-09-10)
+
+
+### Features
+
+* **types:** strict rbs-inline typing with collection-managed third-party RBS ([#164](https://github.com/bottrall/riffer-rig/issues/164)) ([be59fb9](https://github.com/bottrall/riffer-rig/commit/be59fb9102d9c6f9bae2a5f456650cc68131924f))
+
+
+### Bug Fixes
+
+* print tool call lines after the round's stats line ([#166](https://github.com/bottrall/riffer-rig/issues/166)) ([dcc4e80](https://github.com/bottrall/riffer-rig/commit/dcc4e8093ffaec0bc93bb3eaafb47acd72292710))
+
 ## [0.2.1](https://github.com/bottrall/riffer-rig/compare/v0.2.0...v0.2.1) (2026-09-08)
 
 
