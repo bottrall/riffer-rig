@@ -29,16 +29,12 @@ class Riffer::Rig::UI::Renderer
     when Riffer::StreamEvents::TextDelta
       smoother << event.content
     when Riffer::StreamEvents::ToolCallDone
-      drain_smoother
-      @io.puts("\n#{@theme.cyan("⚙ #{event.name}(#{format_arguments(event.arguments)})")}")
+      render_block(2) { @theme.cyan("⚙ #{event.name}(#{format_arguments(event.arguments)})") }
     when Riffer::StreamEvents::SkillActivation
-      drain_smoother
-      @io.puts("\n#{@theme.magenta("✦ skill: #{event.name}")}")
+      render_block(0) { @theme.magenta("✦ skill: #{event.name}") }
     when Riffer::StreamEvents::Interrupt
-      drain_smoother
-      @io.puts(@theme.dim("[interrupted: #{event.reason}]"))
+      render_block(0) { @theme.dim("[interrupted: #{event.reason}]") }
     when Riffer::StreamEvents::TokenUsageDone
-      drain_smoother
       render_token_usage(event.token_usage)
     end
   end
@@ -49,10 +45,23 @@ class Riffer::Rig::UI::Renderer
     return unless message.is_a?(Riffer::Messages::Tool)
 
     line = "↳ #{preview(message.content)}"
-    @io.puts(message.error? ? @theme.red(line) : @theme.dim(line))
+    render_block(4) { message.error? ? @theme.red(line) : @theme.dim(line) }
   end
 
   private
+
+  # Every non-prose block goes through here so spacing comes from the rule, not
+  # from each render site. Blank line above, indented content, newline below;
+  # the smoother is drained first so a pending partial prose block ends cleanly.
+  #
+  # @rbs indent: Integer
+  # @rbs return: void
+  def render_block(indent, &)
+    drain_smoother
+    @io.puts
+    @io.puts((' ' * indent) + yield)
+    @io.flush
+  end
 
   # @rbs return: Riffer::Rig::UI::Smoother | PassThroughSmoother
   def smoother
@@ -99,12 +108,11 @@ class Riffer::Rig::UI::Renderer
     parts = ["↑#{usage.input_tokens}", "↓#{usage.output_tokens}"]
     parts << "cache_write:#{usage.cache_write_tokens}" if usage.cache_write_tokens&.positive?
     parts << "cache_read:#{usage.cache_read_tokens}" if usage.cache_read_tokens&.positive?
-
-    session_parts = ["session #{tally.total_tokens} tok"]
+    parts << "session #{tally.total_tokens} tok"
     cost = tally.estimated_cost
-    session_parts << format('~$%.4f', cost) if cost
+    parts << format('~$%.4f', cost) if cost
 
-    @io.puts("\n#{@theme.dim("#{parts.join(' · ')}   #{session_parts.join(' · ')}")}")
+    render_block(0) { @theme.dim(parts.join(' · ')) }
   end
 
   # @rbs arguments: String

@@ -82,6 +82,38 @@ describe Riffer::Rig::UI::Renderer do
     assert_predicate recording_smoother, :drained?
   end
 
+  it 'renders tool call done as an indented block below a blank line' do
+    @renderer.render(Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}'))
+
+    assert_equal "\n  ⚙ read()\n", @io.string
+  end
+
+  it 'renders skill activation at column zero with a blank line above' do
+    @renderer.render(Riffer::StreamEvents::SkillActivation.new('refactor'))
+
+    assert_equal "\n✦ skill: refactor\n", @io.string
+  end
+
+  it 'renders tool results indented under their tool call' do
+    message = Riffer::Messages::Tool.new('done', tool_call_id: 'c1', name: 'write')
+    @renderer.render_tool_result(message)
+
+    assert_equal "\n    ↳ done\n", @io.string
+  end
+
+  it 'renders session stats in one dot separated list' do
+    tally = Riffer::Rig::TokenTally.new
+    renderer = Riffer::Rig::UI::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: false),
+      tally: tally
+    )
+    usage = Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50, cache_read_tokens: 200)
+    renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage))
+
+    assert_includes @io.string, '↑100 · ↓50 · cache_read:200 · session 350 tok'
+  end
+
   def recording_smoother
     @recording_smoother ||= Class.new do
       attr_reader :written

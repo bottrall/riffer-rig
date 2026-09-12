@@ -18,7 +18,36 @@ describe Riffer::Rig::REPL do
 
     repl.run
 
-    assert_includes output.string, 'next riff'
+    assert_match(/\n› \nsee you on the next riff\.\n\z/, output.string)
+  end
+
+  it 'prompt prints after one blank line' do
+    output = StringIO.new
+    repl = build_repl(Riffer::Rig::CodingAgent.new, output, "/exit\n")
+
+    repl.run
+
+    assert_includes output.string, "\n› "
+  end
+
+  it 'exit line follows the prompt line directly on an exit-only session' do
+    output = StringIO.new
+    repl = build_repl(Riffer::Rig::CodingAgent.new, output, "/exit\n")
+
+    repl.run
+
+    assert_includes output.string, "› \nsee you on the next riff.\n"
+  end
+
+  it 'turn error prints as a block with one blank line above' do
+    output = StringIO.new
+    agent = stub_agent([])
+    agent.define_singleton_method(:stream) { |_prompt| raise 'boom' }
+    repl = build_repl(agent, output, "hi\n")
+
+    repl.run
+
+    assert_includes output.string, "Error: boom\n"
   end
 
   it 'skill command activates skill and prints confirmation' do
@@ -216,9 +245,9 @@ describe Riffer::Rig::REPL do
 
     repl.run
 
-    # The call line is stashed, so only the stats render touches the indicator;
-    # the stashed line flushes between that stop and restart.
-    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop, :stop], animator.calls
+    # The call line renders on arrival and the stats render restarts the
+    # indicator after the next silent stretch.
+    assert_equal [%i[start neutral], :stop, :stop, %i[start neutral], :stop, :stop], animator.calls
   end
 
   it 'indicator restarts after a skill activates' do
@@ -280,7 +309,7 @@ describe Riffer::Rig::REPL do
     assert_operator following_stop, :<, epilogue
   end
 
-  it 'tool call lines print after the round stats line' do
+  it 'tool call lines print when they complete' do
     output = StringIO.new
     agent = stub_agent(
       [
@@ -297,36 +326,10 @@ describe Riffer::Rig::REPL do
 
     repl.run
 
-    assert_operator output.string.index('↑1 · ↓1'), :<, output.string.index('⚙ read()')
+    assert_operator output.string.index('⚙ read()'), :<, output.string.index('↑1 · ↓1')
   end
 
-  it 'all buffered tool calls print after the stats line' do
-    output = StringIO.new
-    agent = stub_agent(
-      [
-        Riffer::StreamEvents::ToolCallDone.new(
-          item_id: 'i1',
-          call_id: 'c1',
-          name: 'read',
-          arguments: '{"path": "a.rb"}'
-        ),
-        Riffer::StreamEvents::ToolCallDone.new(
-          item_id: 'i2',
-          call_id: 'c2',
-          name: 'bash',
-          arguments: '{"command": "ls"}'
-        ),
-        Riffer::StreamEvents::TokenUsageDone.new(token_usage: build_token_usage)
-      ]
-    )
-    repl = build_repl(agent, output, "hi\n")
-
-    repl.run
-
-    assert_operator output.string.index('↑1 · ↓1'), :<, output.string.index('⚙ read')
-  end
-
-  it 'buffered tool calls keep their stream order' do
+  it 'tool call lines keep their stream order' do
     output = StringIO.new
     agent = stub_agent(
       [
@@ -352,8 +355,9 @@ describe Riffer::Rig::REPL do
     assert_operator output.string.index('⚙ read'), :<, output.string.index('⚙ bash')
   end
 
-  it 'buffered tool calls flush at end of turn without stats' do
+  it 'tool result renders through the session callback' do
     output = StringIO.new
+    tool_message = Riffer::Messages::Tool.new('ok', tool_call_id: 'c1', name: 'read')
     agent = stub_agent(
       [Riffer::StreamEvents::ToolCallDone.new(
         item_id: 'i1',
@@ -362,55 +366,33 @@ describe Riffer::Rig::REPL do
         arguments: '{}'
       )]
     )
-    repl = build_repl(agent, output, "hi\n")
-
-    repl.run
-
-    assert_includes output.string, '⚙ read()'
-  end
-
-  it 'buffered tool calls flush when the turn raises' do
-    output = StringIO.new
-    agent = stub_agent(
-      [Riffer::StreamEvents::ToolCallDone.new(
-        item_id: 'i1',
-        call_id: 'c1',
-        name: 'read',
-        arguments: '{}'
-      )]
-    )
-    agent.define_singleton_method(:stream) do |_prompt|
-      Enumerator.new do |y|
-        y << Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}')
-        raise 'boom'
-      end
-    end
 
     repl = build_repl(agent, output, "hi\n")
-
     repl.run
+    repl.send(:render_tool_result, tool_message)
 
-    assert_includes output.string, '⚙ read()'
+    assert_match(/\n {4}↳ ok/, output.string)
   end
 
-  it 'buffered tool calls flush before the next round renders' do
+  it 'every rendered block is separated by one blank line' do
     output = StringIO.new
     agent = stub_agent(
       [
+        Riffer::StreamEvents::TextDelta.new('hello'),
         Riffer::StreamEvents::ToolCallDone.new(
           item_id: 'i1',
           call_id: 'c1',
           name: 'read',
           arguments: '{}'
         ),
-        Riffer::StreamEvents::TextDelta.new('round two')
+        Riffer::StreamEvents::TokenUsageDone.new(token_usage: build_token_usage)
       ]
     )
     repl = build_repl(agent, output, "hi\n")
 
     repl.run
 
-    assert_operator output.string.index('⚙ read()'), :<, output.string.index('round two')
+    assert_match(/hello\n {2}⚙ read\(\)/, output.string)
   end
 
   it 'tool result printing stops and restarts the indicator' do
@@ -438,9 +420,7 @@ describe Riffer::Rig::REPL do
 
     repl.run
 
-    epilogue = order.rindex { |call| call.is_a?(Array) && call.first == :write && call.last.empty? }
-
-    assert_operator order.rindex(:show), :>, epilogue
+    assert_operator order.rindex(:show), :>, order.rindex(:hide)
   end
 
   it 'cursor is shown when the turn raises' do
