@@ -9,6 +9,7 @@ class Riffer::Rig::UI::Renderer
   # @rbs @theme: Riffer::Rig::UI::Theme
   # @rbs @tally: Riffer::Rig::TokenTally?
   # @rbs @smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
+  # @rbs @deferred_usage: Riffer::Providers::TokenUsage?
 
   # @rbs io: untyped
   # @rbs ?theme: Riffer::Rig::UI::Theme
@@ -20,6 +21,7 @@ class Riffer::Rig::UI::Renderer
     @theme = theme
     @tally = tally
     @smoother = smoother
+    @deferred_usage = nil
   end
 
   # @rbs event: Riffer::StreamEvents::Base
@@ -35,8 +37,24 @@ class Riffer::Rig::UI::Renderer
     when Riffer::StreamEvents::Interrupt
       render_block(0) { @theme.dim("[interrupted: #{event.reason}]") }
     when Riffer::StreamEvents::TokenUsageDone
-      render_token_usage(event.token_usage)
+      @deferred_usage = @deferred_usage ? @deferred_usage + event.token_usage : event.token_usage
     end
+  end
+
+  # Usage arrives per model call but tool results arrive via the session
+  # callback after each call's stream ends, so rendering inline would print the
+  # stats above the results they belong with. Held until the turn's output is
+  # done, then printed as one line below it.
+  #
+  # @rbs return: void
+  def flush_usage
+    usage = @deferred_usage
+    @deferred_usage = nil
+    tally = @tally
+    return unless usage && tally
+
+    tally.add(usage)
+    render_block(0) { @theme.dim(usage_line(usage, tally)) }
   end
 
   # @rbs message: Riffer::Messages::Base
@@ -44,8 +62,11 @@ class Riffer::Rig::UI::Renderer
   def render_tool_result(message)
     return unless message.is_a?(Riffer::Messages::Tool)
 
+    drain_smoother
     line = "↳ #{preview(message.content)}"
-    render_block(4) { message.error? ? @theme.red(line) : @theme.dim(line) }
+    styled = message.error? ? @theme.red(line) : @theme.dim(line)
+    @io.print("    #{styled}\n")
+    @io.flush
   end
 
   private
@@ -61,6 +82,20 @@ class Riffer::Rig::UI::Renderer
     @io.puts
     @io.puts((' ' * indent) + yield)
     @io.flush
+  end
+
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs tally: Riffer::Rig::TokenTally
+  # @rbs return: String
+  def usage_line(usage, tally)
+    parts = ["↑#{usage.input_tokens}", "↓#{usage.output_tokens}"]
+    parts << "cache_write:#{usage.cache_write_tokens}" if usage.cache_write_tokens&.positive?
+    parts << "cache_read:#{usage.cache_read_tokens}" if usage.cache_read_tokens&.positive?
+    parts << "session #{tally.total_tokens} tok"
+    cost = tally.estimated_cost
+    parts << format('~$%.4f', cost) if cost
+
+    parts.join(' · ')
   end
 
   # @rbs return: Riffer::Rig::UI::Smoother | PassThroughSmoother
@@ -95,24 +130,6 @@ class Riffer::Rig::UI::Renderer
   # @rbs return: void
   def drain_smoother
     smoother.drain
-  end
-
-  # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs return: void
-  def render_token_usage(usage)
-    tally = @tally
-    return unless tally
-
-    tally.add(usage)
-
-    parts = ["↑#{usage.input_tokens}", "↓#{usage.output_tokens}"]
-    parts << "cache_write:#{usage.cache_write_tokens}" if usage.cache_write_tokens&.positive?
-    parts << "cache_read:#{usage.cache_read_tokens}" if usage.cache_read_tokens&.positive?
-    parts << "session #{tally.total_tokens} tok"
-    cost = tally.estimated_cost
-    parts << format('~$%.4f', cost) if cost
-
-    render_block(0) { @theme.dim(parts.join(' · ')) }
   end
 
   # @rbs arguments: String

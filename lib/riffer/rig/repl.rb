@@ -87,10 +87,16 @@ class Riffer::Rig::REPL
         @animator.start
       when Riffer::StreamEvents::ToolCallDelta, Riffer::StreamEvents::FinishReasonDone
         next
-      when Riffer::StreamEvents::SkillActivation, Riffer::StreamEvents::TokenUsageDone
+      when Riffer::StreamEvents::SkillActivation
         # Tool execution and the next model invocation emit no events, so the
         # spinner comes straight back on to cover the silent stretch.
         @animator.stop
+        @renderer.render(event)
+        @animator.start
+        next
+      when Riffer::StreamEvents::TokenUsageDone
+        # Usage renders nothing inline — it flushes below the turn's output.
+        # Restarting here covers the silent tool-execution stretch that follows.
         @renderer.render(event)
         @animator.start
         next
@@ -101,9 +107,8 @@ class Riffer::Rig::REPL
     end
     @animator.stop
     @smoother.finish
+    @renderer.flush_usage
   rescue StandardError => e
-    @animator.stop
-    @smoother.finish
     print_block { @theme.red("Error: #{e.message}") }
   ensure
     @animator.stop

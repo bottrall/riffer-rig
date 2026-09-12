@@ -245,9 +245,9 @@ describe Riffer::Rig::REPL do
 
     repl.run
 
-    # The call line renders on arrival and the stats render restarts the
-    # indicator after the next silent stretch.
-    assert_equal [%i[start neutral], :stop, :stop, %i[start neutral], :stop, :stop], animator.calls
+    # The call line renders on arrival and the usage event restarts the
+    # indicator to cover the tool-execution stretch.
+    assert_equal [%i[start neutral], :stop, %i[start neutral], :stop, :stop], animator.calls
   end
 
   it 'indicator restarts after a skill activates' do
@@ -329,49 +329,43 @@ describe Riffer::Rig::REPL do
     assert_operator output.string.index('⚙ read()'), :<, output.string.index('↑1 · ↓1')
   end
 
-  it 'tool call lines keep their stream order' do
+  it 'session stats print once below all tool results at end of turn' do
     output = StringIO.new
+    tool_message = Riffer::Messages::Tool.new('ok', tool_call_id: 'c1', name: 'read')
     agent = stub_agent(
       [
         Riffer::StreamEvents::ToolCallDone.new(
           item_id: 'i1',
           call_id: 'c1',
           name: 'read',
-          arguments: '{"path": "a.rb"}'
-        ),
-        Riffer::StreamEvents::ToolCallDone.new(
-          item_id: 'i2',
-          call_id: 'c2',
-          name: 'bash',
-          arguments: '{"command": "ls"}'
+          arguments: '{}'
         ),
         Riffer::StreamEvents::TokenUsageDone.new(token_usage: build_token_usage)
       ]
     )
+
     repl = build_repl(agent, output, "hi\n")
+    repl.send(:run_turn, 'hi')
+    repl.send(:render_tool_result, tool_message)
+    repl.send(:run_turn, 'again')
 
-    repl.run
+    # The first turn's usage flushes after its result prints; the second turn's
+    # flush must land below everything, including the second result.
+    call_line = output.string.index('⚙ read()')
+    stats_line = output.string.rindex('↑1 · ↓1')
+    last_result = output.string.rindex('↳ ok')
 
-    assert_operator output.string.index('⚙ read'), :<, output.string.index('⚙ bash')
+    assert_operator call_line, :<, last_result
+    assert_operator last_result, :<, stats_line
   end
 
-  it 'tool result renders through the session callback' do
+  it 'a turn with no usage prints no stats line' do
     output = StringIO.new
-    tool_message = Riffer::Messages::Tool.new('ok', tool_call_id: 'c1', name: 'read')
-    agent = stub_agent(
-      [Riffer::StreamEvents::ToolCallDone.new(
-        item_id: 'i1',
-        call_id: 'c1',
-        name: 'read',
-        arguments: '{}'
-      )]
-    )
+    repl = build_repl(stub_agent([Riffer::StreamEvents::TextDelta.new('hello')]), output, "hi\n")
 
-    repl = build_repl(agent, output, "hi\n")
     repl.run
-    repl.send(:render_tool_result, tool_message)
 
-    assert_match(/\n {4}↳ ok/, output.string)
+    refute_includes output.string, 'session'
   end
 
   it 'every rendered block is separated by one blank line' do

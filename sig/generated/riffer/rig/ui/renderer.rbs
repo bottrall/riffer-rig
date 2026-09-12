@@ -3,13 +3,15 @@
 class Riffer::Rig::UI::Renderer
   RESULT_PREVIEW_LIMIT: Integer
 
-  @io: untyped
+  @deferred_usage: Riffer::Providers::TokenUsage?
 
-  @theme: Riffer::Rig::UI::Theme
+  @smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
 
   @tally: Riffer::Rig::TokenTally?
 
-  @smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
+  @theme: Riffer::Rig::UI::Theme
+
+  @io: untyped
 
   # @rbs io: untyped
   # @rbs ?theme: Riffer::Rig::UI::Theme
@@ -21,6 +23,14 @@ class Riffer::Rig::UI::Renderer
   # @rbs event: Riffer::StreamEvents::Base
   # @rbs return: void
   def render: (Riffer::StreamEvents::Base event) -> void
+
+  # Usage arrives per model call but tool results arrive via the session
+  # callback after each call's stream ends, so rendering inline would print the
+  # stats above the results they belong with. Held until the turn's output is
+  # done, then printed as one line below it.
+  #
+  # @rbs return: void
+  def flush_usage: () -> void
 
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
@@ -35,6 +45,11 @@ class Riffer::Rig::UI::Renderer
   # @rbs indent: Integer
   # @rbs return: void
   def render_block: (Integer indent) ?{ (?) -> untyped } -> void
+
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs tally: Riffer::Rig::TokenTally
+  # @rbs return: String
+  def usage_line: (Riffer::Providers::TokenUsage usage, Riffer::Rig::TokenTally tally) -> String
 
   # @rbs return: Riffer::Rig::UI::Smoother | PassThroughSmoother
   def smoother: () -> (Riffer::Rig::UI::Smoother | PassThroughSmoother)
@@ -61,10 +76,6 @@ class Riffer::Rig::UI::Renderer
 
   # @rbs return: void
   def drain_smoother: () -> void
-
-  # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs return: void
-  def render_token_usage: (Riffer::Providers::TokenUsage usage) -> void
 
   # @rbs arguments: String
   # @rbs return: String
