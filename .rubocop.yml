@@ -12,39 +12,34 @@ AllCops:
     - "sig/**/*"
     - "vendor/**/*"
 
-# Size and complexity are not a concern here.
-Metrics/MethodLength: { Enabled: false }
-Metrics/ClassLength: { Enabled: false }
-Metrics/ModuleLength: { Enabled: false }
-Metrics/BlockLength: { Enabled: false }
-Metrics/ParameterLists: { Enabled: false }
-Metrics/AbcSize: { Enabled: false }
-Metrics/CyclomaticComplexity: { Enabled: false }
-Metrics/PerceivedComplexity: { Enabled: false }
-Layout/LineLength: { Enabled: false }
-Style/Documentation: { Enabled: false }
-
-# Encoded universal principles (see CLAUDE.md / docs).
-Style/ClassAndModuleChildren: # compact constant names
-  EnforcedStyle: compact
-  Exclude:
-    # The gemspec loads version.rb before riffer, so it must define the
-    # namespace nested (`module Riffer; module Rig`) rather than compact.
-    - "lib/riffer/rig/version.rb"
-Style/ModuleFunction: # modules of pure functions use `extend self` (ruby.md)
-  EnforcedStyle: extend_self
-Minitest/MultipleAssertions: # single-assertion principle
-  Max: 1
-Style/RescueStandardError: # never a bare rescue
-  EnforcedStyle: explicit
-Style/OptionalBooleanParameter: # no positional booleans
-  Enabled: true
-Style/MutableConstant: # freeze shared constants / value objects
+Layout/FirstMethodArgumentLineBreak:
   Enabled: true
 
-# Tools receive `context:` from the Riffer runtime; the keyword name is part of
-# that contract even when a given tool doesn't use it.
-Lint/UnusedMethodArgument:
-  AllowUnusedKeywordArguments: true
+Layout/MultilineMethodArgumentLineBreaks:
+  Enabled: true
+
 Layout/LeadingCommentSpace:
   AllowRBSInlineAnnotation: true
+
+Lint/UnusedMethodArgument:
+  AllowUnusedKeywordArguments: true
+
+Metrics:
+  Enabled: false
+
+Metrics/BlockNesting:
+  Enabled: true
+
+Minitest/MultipleAssertions:
+  Max: 1
+
+Style/ClassAndModuleChildren:
+  EnforcedStyle: compact
+  Exclude:
+    - "lib/riffer/rig/version.rb"
+
+Style/Documentation:
+  Enabled: false
+
+Style/ModuleFunction:
+  EnforcedStyle: extend_self

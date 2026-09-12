@@ -9,7 +9,10 @@ class Riffer::Rig::Tools::Edit < Riffer::Tool
     required :path, String, description: 'Path to the file (absolute, or relative to the working directory)'
     required :old_string, String, description: 'The exact text to replace'
     required :new_string, String, description: 'The text to replace it with'
-    optional :replace_all, Riffer::Params::Boolean, description: 'Replace all occurrences instead of requiring a unique match', default: false
+    optional :replace_all,
+             Riffer::Params::Boolean,
+             description: 'Replace all occurrences instead of requiring a unique match',
+             default: false
   end
 
   # @rbs context: Riffer::Agent::Context?
@@ -26,7 +29,12 @@ class Riffer::Rig::Tools::Edit < Riffer::Tool
     occurrences = content.scan(old_string).length
 
     return error("old_string not found in #{path}", type: :not_found) if occurrences.zero?
-    return error("old_string is not unique in #{path} (#{occurrences} matches). Pass replace_all or add more context.", type: :ambiguous_match) if occurrences > 1 && !replace_all
+    if occurrences > 1 && !replace_all
+      return error(
+        "old_string is not unique in #{path} (#{occurrences} matches). Pass replace_all or add more context.",
+        type: :ambiguous_match
+      )
+    end
 
     # Block form so backslash sequences in new_string (\0, \1, \\) are inserted
     # literally instead of being interpreted as regexp backreferences.

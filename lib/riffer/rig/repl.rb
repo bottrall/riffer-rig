@@ -24,7 +24,16 @@ class Riffer::Rig::REPL
   # @rbs ?smoother: Riffer::Rig::UI::Smoother
   # @rbs ?cursor: Riffer::Rig::UI::Cursor
   # @rbs return: void
-  def initialize(agent:, renderer:, input: $stdin, output: $stdout, theme: Riffer::Rig::UI::Theme.for(output), animator: Riffer::Rig::UI::Animator.new(io: output, theme:), smoother: Riffer::Rig::UI::Smoother.new(io: output, theme:), cursor: Riffer::Rig::UI::Cursor.new(io: output, theme:))
+  def initialize(agent:, renderer:, input: $stdin, output: $stdout, theme: Riffer::Rig::UI::Theme.for(output),
+                 animator: Riffer::Rig::UI::Animator.new(
+                   io: output,
+                   theme:
+                 ), smoother: Riffer::Rig::UI::Smoother.new(
+                   io: output,
+                   theme:
+                 ), cursor: Riffer::Rig::UI::Cursor.new(
+                   io: output, theme:
+                 ))
     @agent = agent
     @renderer = renderer
     @animator = animator

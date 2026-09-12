@@ -16,7 +16,11 @@ describe Riffer::Rig::UI::Renderer do
   end
 
   it 'routes text deltas through the smoother when one is present' do
-    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother)
+    renderer = Riffer::Rig::UI::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: false),
+      smoother: recording_smoother
+    )
 
     renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
 
@@ -24,7 +28,11 @@ describe Riffer::Rig::UI::Renderer do
   end
 
   it 'drains the smoother before rendering a tool call done event' do
-    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother)
+    renderer = Riffer::Rig::UI::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: false),
+      smoother: recording_smoother
+    )
 
     renderer.render(Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}'))
 
@@ -32,7 +40,11 @@ describe Riffer::Rig::UI::Renderer do
   end
 
   it 'drains the smoother before rendering a skill activation event' do
-    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother)
+    renderer = Riffer::Rig::UI::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: false),
+      smoother: recording_smoother
+    )
 
     renderer.render(Riffer::StreamEvents::SkillActivation.new('refactor'))
 
@@ -40,7 +52,11 @@ describe Riffer::Rig::UI::Renderer do
   end
 
   it 'drains the smoother before rendering an interrupt event' do
-    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother)
+    renderer = Riffer::Rig::UI::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: false),
+      smoother: recording_smoother
+    )
 
     renderer.render(Riffer::StreamEvents::Interrupt.new(reason: 'user'))
 
@@ -48,9 +64,20 @@ describe Riffer::Rig::UI::Renderer do
   end
 
   it 'drains the smoother before rendering token usage' do
-    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), smoother: recording_smoother, tally: Riffer::Rig::TokenTally.new)
+    renderer = Riffer::Rig::UI::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: false),
+      smoother: recording_smoother,
+      tally: Riffer::Rig::TokenTally.new
+    )
 
-    renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 1, output_tokens: 1)))
+    renderer.render(
+      Riffer::StreamEvents::TokenUsageDone.new(
+        token_usage: Riffer::Providers::TokenUsage.new(
+          input_tokens: 1, output_tokens: 1
+        )
+      )
+    )
 
     assert_predicate recording_smoother, :drained?
   end
@@ -178,12 +205,16 @@ describe Riffer::Rig::UI::Renderer do
       tally: tally
     )
 
-    renderer.render(Riffer::StreamEvents::TokenUsageDone.new(
-                      token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50)
-                    ))
-    renderer.render(Riffer::StreamEvents::TokenUsageDone.new(
-                      token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 200, output_tokens: 100)
-                    ))
+    renderer.render(
+      Riffer::StreamEvents::TokenUsageDone.new(
+        token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50)
+      )
+    )
+    renderer.render(
+      Riffer::StreamEvents::TokenUsageDone.new(
+        token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 200, output_tokens: 100)
+      )
+    )
 
     assert_includes @io.string, 'session 450 tok'
   end

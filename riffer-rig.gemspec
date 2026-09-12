@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email = ['jakebottrall@gmail.com']
 
   spec.summary = 'A dead-simple terminal coding agent built on riffer.'
-  spec.description = 'An interactive terminal coding agent (read/write/edit/bash) built on the riffer agentic framework.'
+  spec.description = 'An interactive terminal agent (read/write/edit/bash) built on the riffer agentic framework.'
   spec.homepage = 'https://github.com/bottrall/riffer-rig'
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 4.0'

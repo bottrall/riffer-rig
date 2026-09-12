@@ -15,7 +15,10 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
 
   params do
     required :command, String, description: 'The shell command to run'
-    optional :timeout_ms, Integer, description: 'Kill the command after this many milliseconds', default: DEFAULT_TIMEOUT_MS
+    optional :timeout_ms,
+             Integer,
+             description: 'Kill the command after this many milliseconds',
+             default: DEFAULT_TIMEOUT_MS
   end
 
   # @rbs context: Riffer::Agent::Context?
