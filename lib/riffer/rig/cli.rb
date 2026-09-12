@@ -101,7 +101,16 @@ module Riffer::Rig::CLI
     loaded  = [Riffer::Rig::CodingAgent::GLOBAL_AGENTS_FILE, File.join(Dir.pwd, 'AGENTS.md')].select { |path| File.file?(path) }
     context = loaded.empty? ? 'none' : loaded.join(', ')
 
-    animator.reveal([Riffer::Rig::UI::Banner.lines(theme, model: model, cwd: Dir.pwd, context: context, skills: count_skills, version: Riffer::Rig::VERSION)])
+    animator.reveal(
+      [Riffer::Rig::UI::Banner.lines(
+        theme,
+        model: model,
+        cwd: Dir.pwd,
+        context: context,
+        skills: count_skills,
+        version: Riffer::Rig::VERSION
+      )]
+    )
   end
 
   # @rbs return: String

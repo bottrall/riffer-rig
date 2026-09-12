@@ -45,13 +45,16 @@ describe Riffer::Rig::Settings do
 
   it 'returns input pricing for configured model' do
     Dir.mktmpdir do |dir|
-      path = settings_file(dir, {
-                             'models' => {
-                               'anthropic/claude-sonnet-4-6' => {
-                                 'input' => 3.0, 'output' => 15.0, 'cache_write' => 3.75, 'cache_read' => 0.3
-                               }
-                             }
-                           })
+      path = settings_file(
+        dir,
+        {
+          'models' => {
+            'anthropic/claude-sonnet-4-6' => {
+              'input' => 3.0, 'output' => 15.0, 'cache_write' => 3.75, 'cache_read' => 0.3
+            }
+          }
+        }
+      )
 
       pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
 
@@ -61,13 +64,16 @@ describe Riffer::Rig::Settings do
 
   it 'returns output pricing for configured model' do
     Dir.mktmpdir do |dir|
-      path = settings_file(dir, {
-                             'models' => {
-                               'anthropic/claude-sonnet-4-6' => {
-                                 'input' => 3.0, 'output' => 15.0, 'cache_write' => 3.75, 'cache_read' => 0.3
-                               }
-                             }
-                           })
+      path = settings_file(
+        dir,
+        {
+          'models' => {
+            'anthropic/claude-sonnet-4-6' => {
+              'input' => 3.0, 'output' => 15.0, 'cache_write' => 3.75, 'cache_read' => 0.3
+            }
+          }
+        }
+      )
 
       pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
 
@@ -77,13 +83,16 @@ describe Riffer::Rig::Settings do
 
   it 'returns cache write pricing for configured model' do
     Dir.mktmpdir do |dir|
-      path = settings_file(dir, {
-                             'models' => {
-                               'anthropic/claude-sonnet-4-6' => {
-                                 'input' => 3.0, 'output' => 15.0, 'cache_write' => 3.75, 'cache_read' => 0.3
-                               }
-                             }
-                           })
+      path = settings_file(
+        dir,
+        {
+          'models' => {
+            'anthropic/claude-sonnet-4-6' => {
+              'input' => 3.0, 'output' => 15.0, 'cache_write' => 3.75, 'cache_read' => 0.3
+            }
+          }
+        }
+      )
 
       pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
 
@@ -93,13 +102,16 @@ describe Riffer::Rig::Settings do
 
   it 'returns cache read pricing for configured model' do
     Dir.mktmpdir do |dir|
-      path = settings_file(dir, {
-                             'models' => {
-                               'anthropic/claude-sonnet-4-6' => {
-                                 'input' => 3.0, 'output' => 15.0, 'cache_write' => 3.75, 'cache_read' => 0.3
-                               }
-                             }
-                           })
+      path = settings_file(
+        dir,
+        {
+          'models' => {
+            'anthropic/claude-sonnet-4-6' => {
+              'input' => 3.0, 'output' => 15.0, 'cache_write' => 3.75, 'cache_read' => 0.3
+            }
+          }
+        }
+      )
 
       pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
 
@@ -127,13 +139,16 @@ describe Riffer::Rig::Settings do
 
   it 'coerces input pricing to float' do
     Dir.mktmpdir do |dir|
-      path = settings_file(dir, {
-                             'models' => {
-                               'anthropic/claude-sonnet-4-6' => {
-                                 'input' => 3, 'output' => 15, 'cache_write' => 4, 'cache_read' => 0
-                               }
-                             }
-                           })
+      path = settings_file(
+        dir,
+        {
+          'models' => {
+            'anthropic/claude-sonnet-4-6' => {
+              'input' => 3, 'output' => 15, 'cache_write' => 4, 'cache_read' => 0
+            }
+          }
+        }
+      )
 
       pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
 
@@ -143,13 +158,16 @@ describe Riffer::Rig::Settings do
 
   it 'coerces cache read pricing to float' do
     Dir.mktmpdir do |dir|
-      path = settings_file(dir, {
-                             'models' => {
-                               'anthropic/claude-sonnet-4-6' => {
-                                 'input' => 3, 'output' => 15, 'cache_write' => 4, 'cache_read' => 0
-                               }
-                             }
-                           })
+      path = settings_file(
+        dir,
+        {
+          'models' => {
+            'anthropic/claude-sonnet-4-6' => {
+              'input' => 3, 'output' => 15, 'cache_write' => 4, 'cache_read' => 0
+            }
+          }
+        }
+      )
 
       pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
 

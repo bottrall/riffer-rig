@@ -8,13 +8,27 @@ describe Riffer::Rig::UI::Banner do
   end
 
   it 'includes the provided info values' do
-    banner = Riffer::Rig::UI::Banner.call(@theme, model: 'anthropic/claude-x', cwd: '/tmp/proj', context: 'AGENTS.md', skills: '2', version: '9.9.9')
+    banner = Riffer::Rig::UI::Banner.call(
+      @theme,
+      model: 'anthropic/claude-x',
+      cwd: '/tmp/proj',
+      context: 'AGENTS.md',
+      skills: '2',
+      version: '9.9.9'
+    )
 
     assert_includes banner, '/tmp/proj'
   end
 
   it 'includes the model' do
-    banner = Riffer::Rig::UI::Banner.call(@theme, model: 'anthropic/claude-x', cwd: '/tmp/proj', context: 'none', skills: 'none', version: '9.9.9')
+    banner = Riffer::Rig::UI::Banner.call(
+      @theme,
+      model: 'anthropic/claude-x',
+      cwd: '/tmp/proj',
+      context: 'none',
+      skills: 'none',
+      version: '9.9.9'
+    )
 
     assert_includes banner, 'anthropic/claude-x'
   end

@@ -39,7 +39,9 @@ describe Riffer::Rig::UI::Animator do
     animator = Riffer::Rig::UI::Animator.new(io: io, theme: Riffer::Rig::UI::Theme.new(enabled: true))
     animator.start
     deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
-    Process.clock_gettime(Process::CLOCK_MONOTONIC) until io.string.include?('riffing') || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+    until io.string.include?('riffing') || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
     animator.stop
 
     assert_includes io.string, 'riffing'
@@ -72,7 +74,9 @@ describe Riffer::Rig::UI::Animator do
     animator = Riffer::Rig::UI::Animator.new(io: io, theme: Riffer::Rig::UI::Theme.new(enabled: true))
     animator.start(:reasoning)
     deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
-    Process.clock_gettime(Process::CLOCK_MONOTONIC) until Riffer::Rig::UI::Animator::REASONING_PHRASES.any? { |phrase| io.string.include?(phrase) } || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+    Process.clock_gettime(Process::CLOCK_MONOTONIC) until Riffer::Rig::UI::Animator::REASONING_PHRASES.any? do |phrase|
+      io.string.include?(phrase)
+    end || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
     animator.stop
 
     assert(Riffer::Rig::UI::Animator::REASONING_PHRASES.any? { |phrase| io.string.include?(phrase) })
