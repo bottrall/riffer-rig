@@ -83,7 +83,14 @@ describe Riffer::Rig::UI::Renderer do
   end
 
   it 'renders tool call done as an indented block below a blank line' do
-    @renderer.render(Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}'))
+    @renderer.render(
+      Riffer::StreamEvents::ToolCallDone.new(
+        item_id: 'i1',
+        call_id: 'c1',
+        name: 'read',
+        arguments: '{}'
+      )
+    )
 
     assert_equal "\n  ⚙ read()\n", @io.string
   end
