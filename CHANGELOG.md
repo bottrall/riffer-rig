@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/bottrall/riffer-rig/compare/v0.3.0...v0.3.1) (2026-09-12)
+
+
+### Bug Fixes
+
+* **lint:** adjust rubocop rules and reformat to match ([#168](https://github.com/bottrall/riffer-rig/issues/168)) ([56b81aa](https://github.com/bottrall/riffer-rig/commit/56b81aa904609f246340c8b8135ee7e57791abdd))
+
 ## [0.3.0](https://github.com/bottrall/riffer-rig/compare/v0.2.1...v0.3.0) (2026-09-10)
 
 
