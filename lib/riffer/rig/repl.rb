@@ -13,7 +13,6 @@ class Riffer::Rig::REPL
   # @rbs @theme: Riffer::Rig::UI::Theme
   # @rbs @input: untyped
   # @rbs @output: untyped
-  # @rbs @pending_tool_calls: Array[Riffer::StreamEvents::ToolCallDone]
 
   # @rbs ?agent: Riffer::Agent
   # @rbs ?renderer: Riffer::Rig::UI::Renderer
@@ -42,14 +41,16 @@ class Riffer::Rig::REPL
     @theme = theme
     @input = input
     @output = output
-    @pending_tool_calls = []
     @agent.session.on_message { |message| render_tool_result(message) }
   end
 
   # @rbs return: Symbol
   def run
     loop do
-      @output.print("\n#{@theme.pink('›')} ")
+      # The prompt holds the line open for typed input, so it can't share the
+      # newline-terminating print_block.
+      @output.puts
+      @output.print("#{@theme.pink('›')} ")
       line = @input.gets
       break if line.nil?
 
@@ -66,7 +67,7 @@ class Riffer::Rig::REPL
       end
     end
 
-    @output.puts("\n#{@theme.grey('see you on the next riff.')}")
+    print_block { @theme.grey('see you on the next riff.') }
     :done
   end
 
@@ -85,40 +86,26 @@ class Riffer::Rig::REPL
       when Riffer::StreamEvents::ReasoningDone
         @animator.start
       when Riffer::StreamEvents::ToolCallDelta, Riffer::StreamEvents::FinishReasonDone
-        # Round bookkeeping: nothing renders, so the indicator just carries on
-        # (or stays parked while the smoother finishes typing earlier text).
-        next
-      when Riffer::StreamEvents::ToolCallDone
-        # Tool call lines are held back so the round's stats line can print
-        # above them (see flush_pending_tool_calls).
-        @pending_tool_calls << event
         next
       when Riffer::StreamEvents::SkillActivation, Riffer::StreamEvents::TokenUsageDone
-        # The spinner shares its line with what's about to print, and tool
-        # execution plus the next model invocation emit no events — stop it for
-        # the render, then bring it straight back to cover the silent stretch.
-        # Stats print before any pending tool call lines (see below).
+        # Tool execution and the next model invocation emit no events, so the
+        # spinner comes straight back on to cover the silent stretch.
         @animator.stop
         @renderer.render(event)
-        flush_pending_tool_calls
         @animator.start
         next
       else
         @animator.stop
       end
-      flush_pending_tool_calls
       @renderer.render(event)
     end
     @animator.stop
-    flush_pending_tool_calls
     @smoother.finish
-    @output.puts
   rescue StandardError => e
     @animator.stop
-    flush_pending_tool_calls
-    @output.puts("\nError: #{e.message}")
-  ensure
     @smoother.finish
+    print_block { @theme.red("Error: #{e.message}") }
+  ensure
     @animator.stop
     @cursor.show
   end
@@ -139,7 +126,7 @@ class Riffer::Rig::REPL
     skills = @agent.context.skills
 
     unless skills
-      @output.puts(@theme.grey('No skills configured.'))
+      print_block { @theme.grey('No skills configured.') }
       return
     end
 
@@ -147,13 +134,13 @@ class Riffer::Rig::REPL
     # a non-mutating Context#read. `activate` marks the skill model-activated as
     # a side effect, which drops it from the model's catalog after manual use.
     body = skills.activate(name)
-    @output.puts(@theme.magenta("✦ skill: #{name}"))
+    print_block { @theme.magenta("✦ skill: #{name}") }
     skill_block(name, body)
   rescue Riffer::ArgumentError
-    @output.puts(@theme.red("Unknown skill: #{name}"))
+    print_block { @theme.red("Unknown skill: #{name}") }
     nil
   rescue StandardError => e
-    @output.puts(@theme.red("Error activating skill: #{e.message}"))
+    print_block { @theme.red("Error activating skill: #{e.message}") }
     nil
   end
 
@@ -164,24 +151,16 @@ class Riffer::Rig::REPL
     "<skill name=\"#{name}\">\n#{body}\n</skill>"
   end
 
-  # Tool call lines print below their round's stats line to reflect the actual
-  # timeline (usage is reported when the model stream closes, after the calls
-  # were decided). ToolCallDone events are therefore held until the stats line
-  # or the next event forces them out. Callers must have the spinner stopped —
-  # the flush renders between their existing stop/start pair.
+  # The renderer owns block spacing for event-driven output; chrome lines that
+  # never pass through it (prompt, errors, exit line) share the same rule here.
   #
   # @rbs return: void
-  def flush_pending_tool_calls
-    return if @pending_tool_calls.empty?
-
-    @pending_tool_calls.each { |event| @renderer.render(event) }
-    @pending_tool_calls = []
+  def print_block(&)
+    @output.puts
+    @output.puts(yield)
+    @output.flush
   end
 
-  # Tool results can land mid-animation (tool execution emits no stream events,
-  # so the indicator is up); stop it around the line so its next frame doesn't
-  # erase what we printed.
-  #
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
   def render_tool_result(message)

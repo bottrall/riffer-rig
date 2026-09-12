@@ -25,6 +25,7 @@ class Riffer::Rig::UI::Smoother
   # @rbs @mutex: Mutex
   # @rbs @thread: Thread?
   # @rbs @stop: bool
+  # @rbs @newline_pending: bool
 
   # @rbs io: untyped
   # @rbs ?theme: Riffer::Rig::UI::Theme
@@ -39,6 +40,7 @@ class Riffer::Rig::UI::Smoother
     @mutex = Mutex.new
     @thread = nil
     @stop = false
+    @newline_pending = false
   end
 
   # @rbs return: void
@@ -58,11 +60,14 @@ class Riffer::Rig::UI::Smoother
   # @rbs content: String
   # @rbs return: self
   def <<(content)
-    if enabled?
-      @mutex.synchronize { @backlog << content }
-    else
-      @io.print(content)
-      @io.flush
+    @mutex.synchronize do
+      if enabled?
+        @backlog << content
+      else
+        @io.print(content)
+        @io.flush
+      end
+      @newline_pending = !content.end_with?("\n")
     end
     self
   end
@@ -79,19 +84,30 @@ class Riffer::Rig::UI::Smoother
       return if count.zero?
 
       @carry -= count
-      @io.print(@backlog.slice!(0, count))
+      chunk = @backlog.slice!(0, count) || ''
+      @newline_pending = !chunk.end_with?("\n")
+      @io.print(chunk)
       @io.flush
     end
   end
 
-  # Called before non-delta output so printed order matches stream order.
+  # Called before non-prose output so printed order matches stream order. The
+  # backlog is flushed, then any partial prose block the model left without a
+  # trailing newline gets one, so block spacing never depends on the model's
+  # last character.
   #
   # @rbs return: void
   def drain
     @mutex.synchronize do
-      return if @backlog.empty?
+      unless @backlog.empty?
+        backlog = @backlog.slice!(0, @backlog.length) || ''
+        @newline_pending = !backlog.end_with?("\n")
+        @io.print(backlog)
+      end
+      return unless @newline_pending
 
-      @io.print(@backlog.slice!(0, @backlog.length))
+      @newline_pending = false
+      @io.print("\n")
       @io.flush
     end
   end

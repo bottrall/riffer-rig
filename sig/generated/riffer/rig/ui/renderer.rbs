@@ -28,6 +28,14 @@ class Riffer::Rig::UI::Renderer
 
   private
 
+  # Every non-prose block goes through here so spacing comes from the rule, not
+  # from each render site. Blank line above, indented content, newline below;
+  # the smoother is drained first so a pending partial prose block ends cleanly.
+  #
+  # @rbs indent: Integer
+  # @rbs return: void
+  def render_block: (Integer indent) ?{ (?) -> untyped } -> void
+
   # @rbs return: Riffer::Rig::UI::Smoother | PassThroughSmoother
   def smoother: () -> (Riffer::Rig::UI::Smoother | PassThroughSmoother)
 

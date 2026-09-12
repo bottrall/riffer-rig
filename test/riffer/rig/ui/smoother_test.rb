@@ -51,11 +51,25 @@ describe Riffer::Rig::UI::Smoother do
     assert_equal 'a' * 3, @io.string
   end
 
-  it 'drain flushes the entire backlog' do
+  it 'drain flushes the backlog and appends a newline when it lacks one' do
     @smoother << ('a' * 40)
     @smoother.drain
 
-    assert_equal 'a' * 40, @io.string
+    assert_equal "#{'a' * 40}\n", @io.string
+  end
+
+  it 'drain adds only the missing newline after a partial prose block' do
+    @smoother << 'partial line'
+    @smoother.drain
+
+    assert_equal "partial line\n", @io.string
+  end
+
+  it 'drain adds no blank line after a prose block that already ended cleanly' do
+    @smoother << "complete line\n"
+    @smoother.drain
+
+    assert_equal "complete line\n", @io.string
   end
 
   it 'drain is a no op with an empty backlog' do
@@ -73,12 +87,12 @@ describe Riffer::Rig::UI::Smoother do
     assert_equal 'direct', pipe.string
   end
 
-  it 'start spawns a thread that ticks until stopped' do
+  it 'drain emits the pending newline after the tick thread has drained' do
     @smoother << 'abcdef'
     @smoother.start
     @smoother.finish
 
-    assert_equal 'abcdef', @io.string
+    assert_equal "abcdef\n", @io.string
   end
 
   it 'finish flushes remaining backlog after stopping the thread' do
@@ -86,7 +100,7 @@ describe Riffer::Rig::UI::Smoother do
     @smoother.start
     @smoother.finish
 
-    assert_equal 'abcdef', @io.string
+    assert_equal "abcdef\n", @io.string
   end
 
   it 'finish without start does not raise' do
@@ -101,6 +115,6 @@ describe Riffer::Rig::UI::Smoother do
     @smoother.finish
     @smoother.finish
 
-    assert_equal 'ab', @io.string
+    assert_equal "ab\n", @io.string
   end
 end
