@@ -90,9 +90,7 @@ describe Riffer::Rig::UI::Renderer do
 
     renderer.render(
       Riffer::StreamEvents::TokenUsageDone.new(
-        token_usage: Riffer::Providers::TokenUsage.new(
-          input_tokens: 1, output_tokens: 1
-        )
+        token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 1, output_tokens: 1)
       )
     )
     renderer.flush_usage
@@ -131,11 +129,7 @@ describe Riffer::Rig::UI::Renderer do
 
   it 'defers token usage until flushed' do
     tally = Riffer::Rig::TokenTally.new
-    renderer = Riffer::Rig::UI::Renderer.new(
-      io: @io,
-      theme: Riffer::Rig::UI::Theme.new(enabled: false),
-      tally: tally
-    )
+    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), tally: tally)
     usage = Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50, cache_read_tokens: 200)
 
     renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage))
@@ -145,11 +139,7 @@ describe Riffer::Rig::UI::Renderer do
 
   it 'flush_usage prints the deferred usage as one stats block' do
     tally = Riffer::Rig::TokenTally.new
-    renderer = Riffer::Rig::UI::Renderer.new(
-      io: @io,
-      theme: Riffer::Rig::UI::Theme.new(enabled: false),
-      tally: tally
-    )
+    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), tally: tally)
     usage = Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50, cache_read_tokens: 200)
 
     renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage))
@@ -160,11 +150,7 @@ describe Riffer::Rig::UI::Renderer do
 
   it 'flush_usage sums usage across multiple rounds' do
     tally = Riffer::Rig::TokenTally.new
-    renderer = Riffer::Rig::UI::Renderer.new(
-      io: @io,
-      theme: Riffer::Rig::UI::Theme.new(enabled: false),
-      tally: tally
-    )
+    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false), tally: tally)
     renderer.render(
       Riffer::StreamEvents::TokenUsageDone.new(
         token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50)

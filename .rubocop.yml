@@ -15,11 +15,21 @@ AllCops:
 Layout/FirstMethodArgumentLineBreak:
   Enabled: true
 
-Layout/MultilineMethodArgumentLineBreaks:
+Layout/FirstMethodParameterLineBreak:
   Enabled: true
 
 Layout/LeadingCommentSpace:
   AllowRBSInlineAnnotation: true
+
+Layout/MultilineMethodArgumentLineBreaks:
+  Enabled: true
+
+Layout/MultilineMethodParameterLineBreaks:
+  Enabled: true
+
+Layout/RedundantLineBreak:
+  Enabled: true
+  InspectBlocks: false
 
 Lint/UnusedMethodArgument:
   AllowUnusedKeywordArguments: true

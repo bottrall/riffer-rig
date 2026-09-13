@@ -231,12 +231,7 @@ describe Riffer::Rig::REPL do
     agent = stub_agent(
       [
         Riffer::StreamEvents::ToolCallDelta.new(item_id: 'i1', arguments_delta: '{"f'),
-        Riffer::StreamEvents::ToolCallDone.new(
-          item_id: 'i1',
-          call_id: 'c1',
-          name: 'read',
-          arguments: '{}'
-        ),
+        Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}'),
         Riffer::StreamEvents::FinishReasonDone.new(finish_reason: :tool_calls),
         Riffer::StreamEvents::TokenUsageDone.new(token_usage: build_token_usage)
       ]
@@ -291,12 +286,7 @@ describe Riffer::Rig::REPL do
     output = StringIO.new
     output.define_singleton_method(:puts) { |str = ''| order << [:write, str] }
     agent = stub_agent(
-      [Riffer::StreamEvents::ToolCallDone.new(
-        item_id: 'i1',
-        call_id: 'c1',
-        name: 'read',
-        arguments: '{}'
-      )]
+      [Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}')]
     )
     repl = build_repl(agent, output, "hi\n", animator: animator)
 
@@ -313,12 +303,7 @@ describe Riffer::Rig::REPL do
     output = StringIO.new
     agent = stub_agent(
       [
-        Riffer::StreamEvents::ToolCallDone.new(
-          item_id: 'i1',
-          call_id: 'c1',
-          name: 'read',
-          arguments: '{}'
-        ),
+        Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}'),
         Riffer::StreamEvents::TokenUsageDone.new(token_usage: build_token_usage)
       ]
     )
@@ -334,12 +319,7 @@ describe Riffer::Rig::REPL do
     tool_message = Riffer::Messages::Tool.new('ok', tool_call_id: 'c1', name: 'read')
     agent = stub_agent(
       [
-        Riffer::StreamEvents::ToolCallDone.new(
-          item_id: 'i1',
-          call_id: 'c1',
-          name: 'read',
-          arguments: '{}'
-        ),
+        Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}'),
         Riffer::StreamEvents::TokenUsageDone.new(token_usage: build_token_usage)
       ]
     )
@@ -373,12 +353,7 @@ describe Riffer::Rig::REPL do
     agent = stub_agent(
       [
         Riffer::StreamEvents::TextDelta.new('hello'),
-        Riffer::StreamEvents::ToolCallDone.new(
-          item_id: 'i1',
-          call_id: 'c1',
-          name: 'read',
-          arguments: '{}'
-        ),
+        Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}'),
         Riffer::StreamEvents::TokenUsageDone.new(token_usage: build_token_usage)
       ]
     )
@@ -470,14 +445,14 @@ describe Riffer::Rig::REPL do
     agent
   end
 
-  def build_repl(agent, output, input_str,
-                 animator: Riffer::Rig::UI::Animator.new(
-                   io: output,
-                   theme: Riffer::Rig::UI::Theme.new(enabled: false)
-                 ), cursor: Riffer::Rig::UI::Cursor.new(
-                   io: output,
-                   theme: Riffer::Rig::UI::Theme.new(enabled: false)
-                 ), tally: Riffer::Rig::TokenTally.new)
+  def build_repl(
+    agent,
+    output,
+    input_str,
+    animator: Riffer::Rig::UI::Animator.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)),
+    cursor: Riffer::Rig::UI::Cursor.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)),
+    tally: Riffer::Rig::TokenTally.new
+  )
     theme = Riffer::Rig::UI::Theme.new(enabled: false)
     renderer = Riffer::Rig::UI::Renderer.new(io: output, theme: theme, tally: tally)
     Riffer::Rig::REPL.new(

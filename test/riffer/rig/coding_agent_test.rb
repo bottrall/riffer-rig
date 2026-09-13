@@ -88,8 +88,7 @@ describe Riffer::Rig::CodingAgent do
         agent = mock_agent
         agent.generate('hello')
 
-        skills_msg = agent.session.messages.grep(Riffer::Messages::System)
-                          .find { |m| m.content.include?('refactor') }
+        skills_msg = agent.session.messages.grep(Riffer::Messages::System).find { |m| m.content.include?('refactor') }
 
         refute_nil skills_msg
       end

@@ -12,12 +12,7 @@ class Riffer::Rig::CodingAgent < Riffer::Agent
   model Riffer::Rig::Settings.model
   model_options Riffer::Rig::Settings.model_options
 
-  uses_tools [
-    Riffer::Rig::Tools::Read,
-    Riffer::Rig::Tools::Write,
-    Riffer::Rig::Tools::Edit,
-    Riffer::Rig::Tools::Bash
-  ]
+  uses_tools [Riffer::Rig::Tools::Read, Riffer::Rig::Tools::Write, Riffer::Rig::Tools::Edit, Riffer::Rig::Tools::Bash]
 
   skills do
     backend(->(_ctx) { Riffer::Skills::FilesystemBackend.new(GLOBAL_SKILLS_DIR, PROJECT_SKILLS_DIR.call) })
