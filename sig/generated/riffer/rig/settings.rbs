@@ -83,10 +83,10 @@ module Riffer::Rig::Settings
   # @rbs return: Hash[Symbol, untyped]
   def reasoning_options: (String? level, String? provider) -> Hash[Symbol, untyped]
 
-  # The parsed settings file, or an empty hash when the file is absent or
+  # The parsed settings file, or an empty document when the file is absent or
   # malformed.
   #
   # @rbs path: String
-  # @rbs return: Hash[String, untyped]
-  def read: (String path) -> Hash[String, untyped]
+  # @rbs return: Document
+  def read: (String path) -> Document
 end

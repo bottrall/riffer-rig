@@ -7,10 +7,10 @@ class Riffer::Rig::UI::Cursor
 
   SHOW = "\e[?25h" #: String
 
-  # @rbs @io: untyped
+  # @rbs @io: IO
   # @rbs @theme: Riffer::Rig::UI::Theme
 
-  # @rbs io: untyped
+  # @rbs io: IO
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs return: void
   def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io))
@@ -41,6 +41,6 @@ class Riffer::Rig::UI::Cursor
 
   # @rbs return: bool
   def enabled?
-    @theme.enabled && @io.respond_to?(:tty?) && @io.tty?
+    @theme.enabled && @io.tty?
   end
 end

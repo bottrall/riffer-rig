@@ -12,8 +12,8 @@ module Riffer::Rig::CLI
     'openrouter' => 'https://openrouter.ai/keys'
   }.freeze #: Hash[String, String]
 
-  # @rbs output: untyped
-  # @rbs input: untyped
+  # @rbs output: IO
+  # @rbs input: IO
   # @rbs return: Integer
   def start(output: $stdout, input: $stdin)
     theme = Riffer::Rig::UI::Theme.for(output)
@@ -54,8 +54,8 @@ module Riffer::Rig::CLI
 
   # @rbs provider: String?
   # @rbs theme: Riffer::Rig::UI::Theme
-  # @rbs output: untyped
-  # @rbs input: untyped
+  # @rbs output: IO
+  # @rbs input: IO
   # @rbs return: String?
   def onboard(provider, theme, output:, input:)
     url  = (provider && PROVIDER_URLS[provider]) || 'your provider'
@@ -84,9 +84,10 @@ module Riffer::Rig::CLI
     (provider && Riffer::Rig::Credentials::PROVIDER_ENV_VARS[provider]) || 'the appropriate API key env var'
   end
 
-  # @rbs input: untyped
+  # @rbs input: IO
   # @rbs return: String?
   def read_secret(input)
+    # StringIO (tests, piped runs) lacks noecho, so the guard can't collapse to tty?
     return input.noecho(&:gets) if input.respond_to?(:noecho) && input.tty?
 
     input.gets

@@ -5,9 +5,9 @@ class Riffer::Rig::REPL
 
   SKILL_COMMAND: Regexp
 
-  @output: untyped
+  @output: IO
 
-  @input: untyped
+  @input: IO
 
   @theme: Riffer::Rig::UI::Theme
 
@@ -23,14 +23,14 @@ class Riffer::Rig::REPL
 
   # @rbs agent: Riffer::Agent
   # @rbs renderer: Riffer::Rig::UI::Renderer
-  # @rbs input: untyped
-  # @rbs output: untyped
+  # @rbs input: IO
+  # @rbs output: IO
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs animator: Riffer::Rig::UI::Animator
   # @rbs smoother: Riffer::Rig::UI::Smoother
   # @rbs cursor: Riffer::Rig::UI::Cursor
   # @rbs return: void
-  def initialize: (agent: Riffer::Agent, renderer: Riffer::Rig::UI::Renderer, ?input: untyped, ?output: untyped, ?theme: Riffer::Rig::UI::Theme, ?animator: Riffer::Rig::UI::Animator, ?smoother: Riffer::Rig::UI::Smoother, ?cursor: Riffer::Rig::UI::Cursor) -> void
+  def initialize: (agent: Riffer::Agent, renderer: Riffer::Rig::UI::Renderer, ?input: IO, ?output: IO, ?theme: Riffer::Rig::UI::Theme, ?animator: Riffer::Rig::UI::Animator, ?smoother: Riffer::Rig::UI::Smoother, ?cursor: Riffer::Rig::UI::Cursor) -> void
 
   # @rbs return: Symbol
   def run: () -> Symbol
@@ -59,6 +59,7 @@ class Riffer::Rig::REPL
   # their line with a newline but leave the renderer's tool-group state alone —
   # they can only follow prose, never mid-group.
   #
+  # @rbs &block: ^() -> String
   # @rbs return: void
   def print_block: () ?{ (?) -> untyped } -> void
 

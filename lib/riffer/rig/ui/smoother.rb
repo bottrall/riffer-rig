@@ -17,7 +17,7 @@ class Riffer::Rig::UI::Smoother
 
   MIN_CHARS_PER_TICK = Rational(1, 6) #: Rational
 
-  # @rbs @io: untyped
+  # @rbs @io: IO
   # @rbs @theme: Riffer::Rig::UI::Theme
   # @rbs @clock: singleton(Kernel)
   # @rbs @backlog: String
@@ -27,7 +27,7 @@ class Riffer::Rig::UI::Smoother
   # @rbs @stop: bool
   # @rbs @newline_pending: bool
 
-  # @rbs io: untyped
+  # @rbs io: IO
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs clock: singleton(Kernel)
   # @rbs return: void
@@ -129,6 +129,6 @@ class Riffer::Rig::UI::Smoother
 
   # @rbs return: bool
   def enabled?
-    @theme.enabled && @io.respond_to?(:tty?) && @io.tty?
+    @theme.enabled && @io.tty?
   end
 end

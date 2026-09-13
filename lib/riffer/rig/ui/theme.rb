@@ -15,10 +15,10 @@ class Riffer::Rig::UI::Theme
     @enabled = enabled
   end
 
-  # @rbs io: untyped
+  # @rbs io: IO
   # @rbs return: Riffer::Rig::UI::Theme
   def self.for(io)
-    new(enabled: io.respond_to?(:tty?) && io.tty? && !ENV.key?('NO_COLOR'))
+    new(enabled: io.tty? && !ENV.key?('NO_COLOR'))
   end
 
   # @rbs text: String

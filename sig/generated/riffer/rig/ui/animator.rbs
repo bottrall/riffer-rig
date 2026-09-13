@@ -27,12 +27,12 @@ class Riffer::Rig::UI::Animator
 
   @theme: Riffer::Rig::UI::Theme
 
-  @io: untyped
+  @io: IO
 
-  # @rbs io: untyped
+  # @rbs io: IO
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs return: void
-  def initialize: (?io: untyped, ?theme: Riffer::Rig::UI::Theme) -> void
+  def initialize: (?io: IO, ?theme: Riffer::Rig::UI::Theme) -> void
 
   # When not on a TTY, prints the final frame once instead of animating.
   #

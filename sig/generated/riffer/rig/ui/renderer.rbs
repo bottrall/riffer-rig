@@ -13,14 +13,14 @@ class Riffer::Rig::UI::Renderer
 
   @theme: Riffer::Rig::UI::Theme
 
-  @io: untyped
+  @io: IO
 
-  # @rbs io: untyped
+  # @rbs io: IO
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs tally: Riffer::Rig::TokenTally?
   # @rbs smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
   # @rbs return: void
-  def initialize: (?io: untyped, ?theme: Riffer::Rig::UI::Theme, ?tally: Riffer::Rig::TokenTally?, ?smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?) -> void
+  def initialize: (?io: IO, ?theme: Riffer::Rig::UI::Theme, ?tally: Riffer::Rig::TokenTally?, ?smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?) -> void
 
   # @rbs event: Riffer::StreamEvents::Base
   # @rbs return: void
@@ -53,6 +53,7 @@ class Riffer::Rig::UI::Renderer
   # so the next group opens with its own gap.
   #
   # @rbs indent: Integer
+  # @rbs &block: ^() -> String
   # @rbs return: void
   def render_block: (Integer indent) ?{ (?) -> untyped } -> void
 
@@ -65,6 +66,7 @@ class Riffer::Rig::UI::Renderer
   def render_prose: (String content) -> void
 
   # @rbs indent: Integer
+  # @rbs &block: ^() -> String
   # @rbs return: void
   def render_tool_activity: (Integer indent) ?{ (?) -> untyped } -> void
 
@@ -86,11 +88,11 @@ class Riffer::Rig::UI::Renderer
   # Stand-in when no smoother is injected, so a bare Riffer::Rig::UI::Renderer still prints
   # synchronously.
   class PassThroughSmoother
-    @io: untyped
+    @io: IO
 
-    # @rbs io: untyped
+    # @rbs io: IO
     # @rbs return: void
-    def initialize: (untyped io) -> void
+    def initialize: (IO io) -> void
 
     # @rbs content: String
     # @rbs return: self
