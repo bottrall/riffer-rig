@@ -9,10 +9,27 @@ describe Riffer::Rig::UI::Renderer do
     @renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false))
   end
 
-  it 'writes text delta content to the io' do
+  it 'renders text delta content to the io' do
     @renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
 
     assert_equal 'hello', @io.string
+  end
+
+  it 'separates prose after the prompt with a blank line' do
+    @renderer.prompt
+    @io.truncate(0)
+    @io.rewind
+
+    @renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
+
+    assert_equal "\nhello", @io.string
+  end
+
+  it 'does not stack blank lines between consecutive prose deltas' do
+    @renderer.render(Riffer::StreamEvents::TextDelta.new('hello '))
+    @renderer.render(Riffer::StreamEvents::TextDelta.new('world'))
+
+    assert_equal 'hello world', @io.string
   end
 
   it 'routes text deltas through the smoother when one is present' do

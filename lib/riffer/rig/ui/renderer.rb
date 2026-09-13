@@ -10,6 +10,7 @@ class Riffer::Rig::UI::Renderer
   # @rbs @tally: Riffer::Rig::TokenTally?
   # @rbs @smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
   # @rbs @deferred_usage: Riffer::Providers::TokenUsage?
+  # @rbs @prose_gap_pending: bool
 
   # @rbs io: untyped
   # @rbs ?theme: Riffer::Rig::UI::Theme
@@ -22,6 +23,7 @@ class Riffer::Rig::UI::Renderer
     @tally = tally
     @smoother = smoother
     @deferred_usage = nil
+    @prose_gap_pending = false
   end
 
   # @rbs event: Riffer::StreamEvents::Base
@@ -29,16 +31,29 @@ class Riffer::Rig::UI::Renderer
   def render(event)
     case event
     when Riffer::StreamEvents::TextDelta
-      smoother << event.content
+      render_prose(event.content)
     when Riffer::StreamEvents::ToolCallDone
-      render_block(2) { @theme.cyan("⚙ #{event.name}(#{format_arguments(event.arguments)})") }
+      render_tool_activity(2) { @theme.cyan("⚙ #{event.name}(#{format_arguments(event.arguments)})") }
     when Riffer::StreamEvents::SkillActivation
       render_block(0) { @theme.magenta("✦ skill: #{event.name}") }
     when Riffer::StreamEvents::Interrupt
       render_block(0) { @theme.dim("[interrupted: #{event.reason}]") }
     when Riffer::StreamEvents::TokenUsageDone
-      @deferred_usage = @deferred_usage ? @deferred_usage + event.token_usage : event.token_usage
+      current = @deferred_usage
+      @deferred_usage = current ? current + event.token_usage : event.token_usage
     end
+  end
+
+  # The prompt holds the line open for typed input, so unlike render_block it
+  # ends without a newline. It sits at the renderer so a tool group left open by
+  # the previous turn closes here, and the next turn's blocks open cleanly.
+  #
+  # @rbs return: void
+  def prompt
+    @prose_gap_pending = true
+    @io.puts
+    @io.print("#{@theme.pink('›')} ")
+    @io.flush
   end
 
   # Usage arrives per model call but tool results arrive via the session
@@ -62,7 +77,7 @@ class Riffer::Rig::UI::Renderer
   def render_tool_result(message)
     return unless message.is_a?(Riffer::Messages::Tool)
 
-    drain_smoother
+    open_tool_activity
     line = "↳ #{preview(message.content)}"
     styled = message.error? ? @theme.red(line) : @theme.dim(line)
     @io.print("    #{styled}\n")
@@ -71,17 +86,54 @@ class Riffer::Rig::UI::Renderer
 
   private
 
-  # Every non-prose block goes through here so spacing comes from the rule, not
-  # from each render site. Blank line above, indented content, newline below;
-  # the smoother is drained first so a pending partial prose block ends cleanly.
+  # Rule 2 for one-off blocks (skill line, interrupt, stats): one blank line
+  # above, no indent. The smoother drains first so any pending partial prose
+  # block ends cleanly before the gap is written, and any open tool group closes
+  # so the next group opens with its own gap.
   #
   # @rbs indent: Integer
   # @rbs return: void
   def render_block(indent, &)
     drain_smoother
     @io.puts
+    @prose_gap_pending = true
     @io.puts((' ' * indent) + yield)
     @io.flush
+  end
+
+  # The blank line above a prose block is written at the first delta after a
+  # non-prose block. Streaming makes "which block is first?" a stateful
+  # question, so the answer is tracked rather than embedded at each render site.
+  #
+  # @rbs content: String
+  # @rbs return: void
+  def render_prose(content)
+    if @prose_gap_pending
+      @prose_gap_pending = false
+      @io.print("\n")
+    end
+    smoother << content
+  end
+
+  # @rbs indent: Integer
+  # @rbs return: void
+  def render_tool_activity(indent, &)
+    open_tool_activity
+    @io.puts((' ' * indent) + yield)
+    @io.flush
+  end
+
+  # Tool-activity lines (⚙ calls, ↳ results) share one blank line above the
+  # group instead of one between each line — the gap goes between groups, not
+  # inside a pair. The group stays open so prose after it pays the closing gap.
+  #
+  # @rbs return: void
+  def open_tool_activity
+    return if @prose_gap_pending
+
+    drain_smoother
+    @io.puts
+    @prose_gap_pending = true
   end
 
   # @rbs usage: Riffer::Providers::TokenUsage

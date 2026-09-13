@@ -47,10 +47,7 @@ class Riffer::Rig::REPL
   # @rbs return: Symbol
   def run
     loop do
-      # The prompt holds the line open for typed input, so it can't share the
-      # newline-terminating print_block.
-      @output.puts
-      @output.print("#{@theme.pink('›')} ")
+      @renderer.prompt
       line = @input.gets
       break if line.nil?
 
@@ -109,6 +106,7 @@ class Riffer::Rig::REPL
     @smoother.finish
     @renderer.flush_usage
   rescue StandardError => e
+    @smoother.finish
     print_block { @theme.red("Error: #{e.message}") }
   ensure
     @animator.stop
@@ -156,8 +154,9 @@ class Riffer::Rig::REPL
     "<skill name=\"#{name}\">\n#{body}\n</skill>"
   end
 
-  # The renderer owns block spacing for event-driven output; chrome lines that
-  # never pass through it (prompt, errors, exit line) share the same rule here.
+  # Chrome lines that never pass through the renderer (errors, exit line) end
+  # their line with a newline but leave the renderer's tool-group state alone —
+  # they can only follow prose, never mid-group.
   #
   # @rbs return: void
   def print_block(&)
