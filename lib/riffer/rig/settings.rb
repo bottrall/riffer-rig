@@ -127,11 +127,10 @@ module Riffer::Rig::Settings
   # @rbs path: String
   # @rbs return: Document
   def read(path)
-    source = {} #: Hash[String, untyped]
-    return Document.new(source) unless File.file?(path)
+    return Document.new({}) unless File.file?(path)
 
     Document.new(JSON.parse(File.read(path)))
   rescue JSON::ParserError
-    Document.new(source)
+    Document.new({})
   end
 end
