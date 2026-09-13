@@ -53,9 +53,9 @@ class Riffer::Rig::UI::Renderer
   # so the next group opens with its own gap.
   #
   # @rbs indent: Integer
-  # @rbs &block: ^() -> String
+  # @rbs &block: () -> String
   # @rbs return: void
-  def render_block: (Integer indent) ?{ (?) -> untyped } -> void
+  def render_block: (Integer indent) { () -> String } -> void
 
   # The blank line above a prose block is written at the first delta after a
   # non-prose block. Streaming makes "which block is first?" a stateful
@@ -66,9 +66,9 @@ class Riffer::Rig::UI::Renderer
   def render_prose: (String content) -> void
 
   # @rbs indent: Integer
-  # @rbs &block: ^() -> String
+  # @rbs &block: () -> String
   # @rbs return: void
-  def render_tool_activity: (Integer indent) ?{ (?) -> untyped } -> void
+  def render_tool_activity: (Integer indent) { () -> String } -> void
 
   # Tool-activity lines (⚙ calls, ↳ results) share one blank line above the
   # group instead of one between each line — the gap goes between groups, not

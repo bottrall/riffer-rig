@@ -92,7 +92,7 @@ class Riffer::Rig::UI::Renderer
   # so the next group opens with its own gap.
   #
   # @rbs indent: Integer
-  # @rbs &block: ^() -> String
+  # @rbs &block: () -> String
   # @rbs return: void
   def render_block(indent, &)
     drain_smoother
@@ -117,7 +117,7 @@ class Riffer::Rig::UI::Renderer
   end
 
   # @rbs indent: Integer
-  # @rbs &block: ^() -> String
+  # @rbs &block: () -> String
   # @rbs return: void
   def render_tool_activity(indent, &)
     open_tool_activity

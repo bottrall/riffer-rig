@@ -158,7 +158,7 @@ class Riffer::Rig::REPL
   # their line with a newline but leave the renderer's tool-group state alone —
   # they can only follow prose, never mid-group.
   #
-  # @rbs &block: ^() -> String
+  # @rbs &block: () -> String
   # @rbs return: void
   def print_block(&)
     @output.puts
