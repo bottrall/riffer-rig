@@ -87,7 +87,6 @@ module Riffer::Rig::CLI
   # @rbs input: IO
   # @rbs return: String?
   def read_secret(input)
-    # StringIO (tests, piped runs) lacks noecho, so the guard can't collapse to tty?
     return input.noecho(&:gets) if input.respond_to?(:noecho) && input.tty?
 
     input.gets
