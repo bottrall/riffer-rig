@@ -5,6 +5,17 @@ class Riffer::Rig::Settings::Pricing
   # @dynamic input, output, cache_write, cache_read
   attr_reader :input, :output, :cache_write, :cache_read #: Float
 
+  # @rbs entry: Hash[String, untyped]
+  # @rbs return: ::Riffer::Rig::Settings::Pricing
+  def self.from(entry)
+    new(
+      input: entry.fetch('input', 0).to_f,
+      output: entry.fetch('output', 0).to_f,
+      cache_write: entry.fetch('cache_write', 0).to_f,
+      cache_read: entry.fetch('cache_read', 0).to_f
+    )
+  end
+
   # @rbs input: Float
   # @rbs output: Float
   # @rbs cache_write: Float

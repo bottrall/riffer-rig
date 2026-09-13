@@ -32,13 +32,13 @@ class Riffer::Rig::UI::Smoother
 
   @theme: Riffer::Rig::UI::Theme
 
-  @io: untyped
+  @io: IO
 
-  # @rbs io: untyped
+  # @rbs io: IO
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs clock: singleton(Kernel)
   # @rbs return: void
-  def initialize: (?io: untyped, ?theme: Riffer::Rig::UI::Theme, ?clock: singleton(Kernel)) -> void
+  def initialize: (?io: IO, ?theme: Riffer::Rig::UI::Theme, ?clock: singleton(Kernel)) -> void
 
   # @rbs return: void
   def start: () -> void

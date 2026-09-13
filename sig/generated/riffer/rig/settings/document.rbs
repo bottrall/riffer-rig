@@ -1,0 +1,20 @@
+# Generated from lib/riffer/rig/settings/document.rb with RBS::Inline
+
+class Riffer::Rig::Settings::Document
+  @model: String?
+
+  @reasoning: String?
+
+  @models: Hash[String, Riffer::Rig::Settings::Pricing]
+
+  # @dynamic model, reasoning, models
+  attr_reader model: String?
+
+  attr_reader reasoning: String?
+
+  attr_reader models: Hash[String, Riffer::Rig::Settings::Pricing]
+
+  # @rbs source: untyped
+  # @rbs return: void
+  def initialize: (untyped source) -> void
+end

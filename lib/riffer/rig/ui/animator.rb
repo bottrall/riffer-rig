@@ -23,14 +23,14 @@ class Riffer::Rig::UI::Animator
 
   REASONING_TICK_RANGE = (1..5) #: Range[Integer]
 
-  # @rbs @io: untyped
+  # @rbs @io: IO
   # @rbs @theme: Riffer::Rig::UI::Theme
   # @rbs @thread: Thread?
   # @rbs @mode: Symbol
   # @rbs @phrase: String?
   # @rbs @stop: bool
 
-  # @rbs io: untyped
+  # @rbs io: IO
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs return: void
   def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io))
@@ -141,6 +141,6 @@ class Riffer::Rig::UI::Animator
 
   # @rbs return: bool
   def enabled?
-    @theme.enabled && @io.respond_to?(:tty?) && @io.tty?
+    @theme.enabled && @io.tty?
   end
 end

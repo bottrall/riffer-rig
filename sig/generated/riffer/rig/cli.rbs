@@ -3,10 +3,10 @@
 module Riffer::Rig::CLI
   PROVIDER_URLS: Hash[String, String]
 
-  # @rbs output: untyped
-  # @rbs input: untyped
+  # @rbs output: IO
+  # @rbs input: IO
   # @rbs return: Integer
-  def start: (?output: untyped, ?input: untyped) -> Integer
+  def start: (?output: IO, ?input: IO) -> Integer
 
   private
 
@@ -17,18 +17,18 @@ module Riffer::Rig::CLI
 
   # @rbs provider: String?
   # @rbs theme: Riffer::Rig::UI::Theme
-  # @rbs output: untyped
-  # @rbs input: untyped
+  # @rbs output: IO
+  # @rbs input: IO
   # @rbs return: String?
-  def onboard: (String? provider, Riffer::Rig::UI::Theme theme, output: untyped, input: untyped) -> String?
+  def onboard: (String? provider, Riffer::Rig::UI::Theme theme, output: IO, input: IO) -> String?
 
   # @rbs provider: String?
   # @rbs return: String
   def env_var_for: (String? provider) -> String
 
-  # @rbs input: untyped
+  # @rbs input: IO
   # @rbs return: String?
-  def read_secret: (untyped input) -> String?
+  def read_secret: (IO input) -> String?
 
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs animator: Riffer::Rig::UI::Animator

@@ -13,9 +13,9 @@ class Riffer::Rig::UI::Theme
   # @rbs return: void
   def initialize: (enabled: bool) -> void
 
-  # @rbs io: untyped
+  # @rbs io: IO
   # @rbs return: Riffer::Rig::UI::Theme
-  def self.for: (untyped io) -> Riffer::Rig::UI::Theme
+  def self.for: (IO io) -> Riffer::Rig::UI::Theme
 
   # @rbs text: String
   # @rbs rgb: Array[Integer]

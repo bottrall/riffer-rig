@@ -5,14 +5,14 @@ require 'json'
 class Riffer::Rig::UI::Renderer
   RESULT_PREVIEW_LIMIT = 200 #: Integer
 
-  # @rbs @io: untyped
+  # @rbs @io: IO
   # @rbs @theme: Riffer::Rig::UI::Theme
   # @rbs @tally: Riffer::Rig::TokenTally?
   # @rbs @smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
   # @rbs @deferred_usage: Riffer::Providers::TokenUsage?
   # @rbs @prose_gap_pending: bool
 
-  # @rbs io: untyped
+  # @rbs io: IO
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs tally: Riffer::Rig::TokenTally?
   # @rbs smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
@@ -92,6 +92,7 @@ class Riffer::Rig::UI::Renderer
   # so the next group opens with its own gap.
   #
   # @rbs indent: Integer
+  # @rbs &block: () -> String
   # @rbs return: void
   def render_block(indent, &)
     drain_smoother
@@ -116,6 +117,7 @@ class Riffer::Rig::UI::Renderer
   end
 
   # @rbs indent: Integer
+  # @rbs &block: () -> String
   # @rbs return: void
   def render_tool_activity(indent, &)
     open_tool_activity
@@ -158,9 +160,9 @@ class Riffer::Rig::UI::Renderer
   # Stand-in when no smoother is injected, so a bare Riffer::Rig::UI::Renderer still prints
   # synchronously.
   class PassThroughSmoother
-    # @rbs @io: untyped
+    # @rbs @io: IO
 
-    # @rbs io: untyped
+    # @rbs io: IO
     # @rbs return: void
     def initialize(io) = @io = io
 

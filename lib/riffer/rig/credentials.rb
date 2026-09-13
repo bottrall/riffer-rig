@@ -54,7 +54,7 @@ module Riffer::Rig::Credentials
   # @rbs return: String
   def save_api_key(provider, key, path: PATH)
     FileUtils.mkdir_p(File.dirname(path), mode: 0o700)
-    data = read(path).tap { |h| h[provider] = key }
+    data = read(path).merge(provider => key)
     File.open(path, File::WRONLY | File::CREAT | File::TRUNC, 0o600) do |file|
       file.write(JSON.pretty_generate(data))
     end
@@ -68,21 +68,21 @@ module Riffer::Rig::Credentials
   # @rbs return: String?
   def key_from_file(provider, path)
     key = read(path)[provider]
-    return nil unless key.is_a?(String)
-    return key unless key.strip.empty?
+    return nil if key.nil? || key.strip.empty?
 
-    nil
+    key
   end
 
   # The parsed auth file, or an empty hash when the file is absent or
-  # malformed.
+  # malformed. Non-string values can't be keys, so they're dropped here rather
+  # than re-checked by every reader.
   #
   # @rbs path: String
-  # @rbs return: Hash[String, untyped]
+  # @rbs return: Hash[String, String]
   def read(path)
     return {} unless File.file?(path)
 
-    JSON.parse(File.read(path))
+    JSON.parse(File.read(path)).select { |_provider, key| key.is_a?(String) }
   rescue JSON::ParserError
     {}
   end

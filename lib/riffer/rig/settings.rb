@@ -51,7 +51,7 @@ module Riffer::Rig::Settings
   # @rbs path: String
   # @rbs return: String
   def model(path: PATH)
-    read(path).fetch('model', DEFAULT_MODEL)
+    read(path).model || DEFAULT_MODEL
   end
 
   # Returns model options for the configured model and reasoning level, ready
@@ -80,15 +80,7 @@ module Riffer::Rig::Settings
   # @rbs path: String
   # @rbs return: Pricing?
   def pricing_for(model, path: PATH)
-    entry = read(path).dig('models', model)
-    return nil unless entry.is_a?(Hash)
-
-    Pricing.new(
-      input: entry.fetch('input', 0).to_f,
-      output: entry.fetch('output', 0).to_f,
-      cache_write: entry.fetch('cache_write', 0).to_f,
-      cache_read: entry.fetch('cache_read', 0).to_f
-    )
+    read(path).models[model]
   end
 
   private
@@ -105,7 +97,7 @@ module Riffer::Rig::Settings
   # @rbs provider: String?
   # @rbs return: String?
   def reasoning_for(path: PATH, provider: nil)
-    level = read(path)['reasoning']
+    level = read(path).reasoning
     valid_levels = (provider && REASONING_LEVELS_BY_PROVIDER[provider]) || []
     valid_levels.include?(level) ? level : nil
   end
@@ -129,16 +121,16 @@ module Riffer::Rig::Settings
     end
   end
 
-  # The parsed settings file, or an empty hash when the file is absent or
+  # The parsed settings file, or an empty document when the file is absent or
   # malformed.
   #
   # @rbs path: String
-  # @rbs return: Hash[String, untyped]
+  # @rbs return: Document
   def read(path)
-    return {} unless File.file?(path)
+    return Document.new({}) unless File.file?(path)
 
-    JSON.parse(File.read(path))
+    Document.new(JSON.parse(File.read(path)))
   rescue JSON::ParserError
-    {}
+    Document.new({})
   end
 end

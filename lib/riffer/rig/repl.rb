@@ -11,13 +11,13 @@ class Riffer::Rig::REPL
   # @rbs @smoother: Riffer::Rig::UI::Smoother
   # @rbs @cursor: Riffer::Rig::UI::Cursor
   # @rbs @theme: Riffer::Rig::UI::Theme
-  # @rbs @input: untyped
-  # @rbs @output: untyped
+  # @rbs @input: IO
+  # @rbs @output: IO
 
   # @rbs agent: Riffer::Agent
   # @rbs renderer: Riffer::Rig::UI::Renderer
-  # @rbs input: untyped
-  # @rbs output: untyped
+  # @rbs input: IO
+  # @rbs output: IO
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs animator: Riffer::Rig::UI::Animator
   # @rbs smoother: Riffer::Rig::UI::Smoother
@@ -158,6 +158,7 @@ class Riffer::Rig::REPL
   # their line with a newline but leave the renderer's tool-group state alone —
   # they can only follow prose, never mid-group.
   #
+  # @rbs &block: () -> String
   # @rbs return: void
   def print_block(&)
     @output.puts
