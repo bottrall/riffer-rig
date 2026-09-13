@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/bottrall/riffer-rig/compare/v0.4.0...v0.5.0) (2026-09-13)
+
+
+### Features
+
+* type IO streams and JSON boundaries, dropping explicit untyped ([#174](https://github.com/bottrall/riffer-rig/issues/174)) ([22407be](https://github.com/bottrall/riffer-rig/commit/22407befc471d1fbbe14188456ee1ce248ddc4c7))
+
+
+### Bug Fixes
+
+* drop invalid ? optional markers from rbs-inline annotations ([#171](https://github.com/bottrall/riffer-rig/issues/171)) ([60030bf](https://github.com/bottrall/riffer-rig/commit/60030bf7ca930e9d35cbd8c2e3a8ae8ae1692830))
+
 ## [0.4.0](https://github.com/bottrall/riffer-rig/compare/v0.3.0...v0.4.0) (2026-09-13)
 
 
