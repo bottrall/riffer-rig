@@ -11,7 +11,7 @@ class Riffer::Rig::UI::Cursor
   # @rbs @theme: Riffer::Rig::UI::Theme
 
   # @rbs io: untyped
-  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs return: void
   def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io))
     @io = io

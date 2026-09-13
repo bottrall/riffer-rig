@@ -22,7 +22,7 @@ class Riffer::Rig::TokenTally
   # @dynamic input_tokens, output_tokens, cache_write_tokens, cache_read_tokens
   attr_reader :input_tokens, :output_tokens, :cache_write_tokens, :cache_read_tokens
 
-  # @rbs ?pricing: Riffer::Rig::Settings::Pricing?
+  # @rbs pricing: Riffer::Rig::Settings::Pricing?
   # @rbs return: void
   def initialize(pricing: nil)
     @pricing = pricing

@@ -14,14 +14,14 @@ class Riffer::Rig::REPL
   # @rbs @input: untyped
   # @rbs @output: untyped
 
-  # @rbs ?agent: Riffer::Agent
-  # @rbs ?renderer: Riffer::Rig::UI::Renderer
+  # @rbs agent: Riffer::Agent
+  # @rbs renderer: Riffer::Rig::UI::Renderer
   # @rbs input: untyped
   # @rbs output: untyped
-  # @rbs ?theme: Riffer::Rig::UI::Theme
-  # @rbs ?animator: Riffer::Rig::UI::Animator
-  # @rbs ?smoother: Riffer::Rig::UI::Smoother
-  # @rbs ?cursor: Riffer::Rig::UI::Cursor
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs animator: Riffer::Rig::UI::Animator
+  # @rbs smoother: Riffer::Rig::UI::Smoother
+  # @rbs cursor: Riffer::Rig::UI::Cursor
   # @rbs return: void
   def initialize(agent:, renderer:, input: $stdin, output: $stdout, theme: Riffer::Rig::UI::Theme.for(output),
                  animator: Riffer::Rig::UI::Animator.new(

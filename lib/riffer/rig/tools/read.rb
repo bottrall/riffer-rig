@@ -15,8 +15,8 @@ class Riffer::Rig::Tools::Read < Riffer::Tool
 
   # @rbs context: Riffer::Agent::Context?
   # @rbs path: String
-  # @rbs ?offset: Integer?
-  # @rbs ?limit: Integer
+  # @rbs offset: Integer?
+  # @rbs limit: Integer
   # @rbs return: Riffer::Tools::Response
   def call(context:, path:, offset: nil, limit: DEFAULT_LIMIT)
     resolved = File.expand_path(path, Dir.pwd)

@@ -12,9 +12,9 @@ class Riffer::Rig::UI::Cursor
   @theme: Riffer::Rig::UI::Theme
 
   # @rbs io: untyped
-  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs return: void
-  def initialize: (?io: untyped, ?theme: untyped) -> void
+  def initialize: (?io: untyped, ?theme: Riffer::Rig::UI::Theme) -> void
 
   # @rbs return: void
   def hide: () -> void

@@ -21,16 +21,16 @@ class Riffer::Rig::REPL
 
   @agent: Riffer::Agent
 
-  # @rbs ?agent: Riffer::Agent
-  # @rbs ?renderer: Riffer::Rig::UI::Renderer
+  # @rbs agent: Riffer::Agent
+  # @rbs renderer: Riffer::Rig::UI::Renderer
   # @rbs input: untyped
   # @rbs output: untyped
-  # @rbs ?theme: Riffer::Rig::UI::Theme
-  # @rbs ?animator: Riffer::Rig::UI::Animator
-  # @rbs ?smoother: Riffer::Rig::UI::Smoother
-  # @rbs ?cursor: Riffer::Rig::UI::Cursor
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs animator: Riffer::Rig::UI::Animator
+  # @rbs smoother: Riffer::Rig::UI::Smoother
+  # @rbs cursor: Riffer::Rig::UI::Cursor
   # @rbs return: void
-  def initialize: (agent: untyped, renderer: untyped, ?input: untyped, ?output: untyped, ?theme: untyped, ?animator: untyped, ?smoother: untyped, ?cursor: untyped) -> void
+  def initialize: (agent: Riffer::Agent, renderer: Riffer::Rig::UI::Renderer, ?input: untyped, ?output: untyped, ?theme: Riffer::Rig::UI::Theme, ?animator: Riffer::Rig::UI::Animator, ?smoother: Riffer::Rig::UI::Smoother, ?cursor: Riffer::Rig::UI::Cursor) -> void
 
   # @rbs return: Symbol
   def run: () -> Symbol

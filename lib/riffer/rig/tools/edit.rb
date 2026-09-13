@@ -19,7 +19,7 @@ class Riffer::Rig::Tools::Edit < Riffer::Tool
   # @rbs path: String
   # @rbs old_string: String
   # @rbs new_string: String
-  # @rbs ?replace_all: bool
+  # @rbs replace_all: bool
   # @rbs return: Riffer::Tools::Response
   def call(context:, path:, old_string:, new_string:, replace_all: false)
     resolved = File.expand_path(path, Dir.pwd)
