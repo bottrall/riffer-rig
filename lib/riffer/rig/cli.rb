@@ -21,8 +21,7 @@ module Riffer::Rig::CLI
     model    = Riffer::Rig::Settings.model
     provider = Riffer::Rig::Settings.provider_for(model)
 
-    api_key = (provider && Riffer::Rig::Credentials.api_key_for(provider)) ||
-              onboard(provider, theme, output:, input:)
+    api_key = (provider && Riffer::Rig::Credentials.api_key_for(provider)) || onboard(provider, theme, output:, input:)
     return 1 if api_key.nil?
 
     configure_provider(provider, api_key)
