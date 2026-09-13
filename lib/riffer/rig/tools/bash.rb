@@ -23,7 +23,7 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
 
   # @rbs context: Riffer::Agent::Context?
   # @rbs command: String
-  # @rbs ?timeout_ms: Integer
+  # @rbs timeout_ms: Integer
   # @rbs return: Riffer::Tools::Response
   def call(context:, command:, timeout_ms: DEFAULT_TIMEOUT_MS)
     output, status = run(command, timeout_ms / 1000.0)

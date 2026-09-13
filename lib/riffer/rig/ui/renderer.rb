@@ -13,9 +13,9 @@ class Riffer::Rig::UI::Renderer
   # @rbs @prose_gap_pending: bool
 
   # @rbs io: untyped
-  # @rbs ?theme: Riffer::Rig::UI::Theme
-  # @rbs ?tally: Riffer::Rig::TokenTally?
-  # @rbs ?smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs tally: Riffer::Rig::TokenTally?
+  # @rbs smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
   # @rbs return: void
   def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io), tally: nil, smoother: nil)
     @io = io

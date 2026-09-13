@@ -102,7 +102,7 @@ module Riffer::Rig::Settings
   end
 
   # @rbs path: String
-  # @rbs ?provider: String?
+  # @rbs provider: String?
   # @rbs return: String?
   def reasoning_for(path: PATH, provider: nil)
     level = read(path)['reasoning']

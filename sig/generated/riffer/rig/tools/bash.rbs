@@ -7,9 +7,9 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
 
   # @rbs context: Riffer::Agent::Context?
   # @rbs command: String
-  # @rbs ?timeout_ms: Integer
+  # @rbs timeout_ms: Integer
   # @rbs return: Riffer::Tools::Response
-  def call: (context: Riffer::Agent::Context?, command: String, ?timeout_ms: untyped) -> Riffer::Tools::Response
+  def call: (context: Riffer::Agent::Context?, command: String, ?timeout_ms: Integer) -> Riffer::Tools::Response
 
   private
 

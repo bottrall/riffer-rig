@@ -5,8 +5,8 @@ class Riffer::Rig::Tools::Read < Riffer::Tool
 
   # @rbs context: Riffer::Agent::Context?
   # @rbs path: String
-  # @rbs ?offset: Integer?
-  # @rbs ?limit: Integer
+  # @rbs offset: Integer?
+  # @rbs limit: Integer
   # @rbs return: Riffer::Tools::Response
-  def call: (context: Riffer::Agent::Context?, path: String, ?offset: untyped, ?limit: untyped) -> Riffer::Tools::Response
+  def call: (context: Riffer::Agent::Context?, path: String, ?offset: Integer?, ?limit: Integer) -> Riffer::Tools::Response
 end

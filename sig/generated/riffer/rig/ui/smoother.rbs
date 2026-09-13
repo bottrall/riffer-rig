@@ -35,10 +35,10 @@ class Riffer::Rig::UI::Smoother
   @io: untyped
 
   # @rbs io: untyped
-  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs clock: singleton(Kernel)
   # @rbs return: void
-  def initialize: (?io: untyped, ?theme: untyped, ?clock: singleton(Kernel)) -> void
+  def initialize: (?io: untyped, ?theme: Riffer::Rig::UI::Theme, ?clock: singleton(Kernel)) -> void
 
   # @rbs return: void
   def start: () -> void

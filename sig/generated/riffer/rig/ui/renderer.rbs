@@ -16,11 +16,11 @@ class Riffer::Rig::UI::Renderer
   @io: untyped
 
   # @rbs io: untyped
-  # @rbs ?theme: Riffer::Rig::UI::Theme
-  # @rbs ?tally: Riffer::Rig::TokenTally?
-  # @rbs ?smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs tally: Riffer::Rig::TokenTally?
+  # @rbs smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
   # @rbs return: void
-  def initialize: (?io: untyped, ?theme: untyped, ?tally: untyped, ?smoother: untyped) -> void
+  def initialize: (?io: untyped, ?theme: Riffer::Rig::UI::Theme, ?tally: Riffer::Rig::TokenTally?, ?smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?) -> void
 
   # @rbs event: Riffer::StreamEvents::Base
   # @rbs return: void

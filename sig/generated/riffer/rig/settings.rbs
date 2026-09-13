@@ -71,9 +71,9 @@ module Riffer::Rig::Settings
   def base_options: (String? provider) -> Hash[Symbol, untyped]
 
   # @rbs path: String
-  # @rbs ?provider: String?
+  # @rbs provider: String?
   # @rbs return: String?
-  def reasoning_for: (?path: String, ?provider: untyped) -> String?
+  def reasoning_for: (?path: String, ?provider: String?) -> String?
 
   # Maps a reasoning level to the provider-specific model option hash expected
   # by Riffer. Returns an empty hash when +level+ is +nil+.

@@ -31,7 +31,7 @@ class Riffer::Rig::UI::Animator
   # @rbs @stop: bool
 
   # @rbs io: untyped
-  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs return: void
   def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io))
     @io = io
@@ -60,7 +60,7 @@ class Riffer::Rig::UI::Animator
     end
   end
 
-  # @rbs ?mode: Symbol
+  # @rbs mode: Symbol
   # @rbs return: void
   def start(mode = :neutral)
     return unless enabled?
@@ -88,7 +88,7 @@ class Riffer::Rig::UI::Animator
   end
 
   # @rbs tick: Integer
-  # @rbs ?label: String
+  # @rbs label: String
   # @rbs return: String
   def equalizer(tick, label = NEUTRAL_LABEL)
     bars = Array.new(EQ_BARS) do |i|

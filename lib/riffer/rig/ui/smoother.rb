@@ -28,7 +28,7 @@ class Riffer::Rig::UI::Smoother
   # @rbs @newline_pending: bool
 
   # @rbs io: untyped
-  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs clock: singleton(Kernel)
   # @rbs return: void
   def initialize(io: $stdout, theme: Riffer::Rig::UI::Theme.for(io), clock: Kernel)

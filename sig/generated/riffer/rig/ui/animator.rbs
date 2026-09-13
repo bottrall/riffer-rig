@@ -30,9 +30,9 @@ class Riffer::Rig::UI::Animator
   @io: untyped
 
   # @rbs io: untyped
-  # @rbs ?theme: Riffer::Rig::UI::Theme
+  # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs return: void
-  def initialize: (?io: untyped, ?theme: untyped) -> void
+  def initialize: (?io: untyped, ?theme: Riffer::Rig::UI::Theme) -> void
 
   # When not on a TTY, prints the final frame once instead of animating.
   #
@@ -40,17 +40,17 @@ class Riffer::Rig::UI::Animator
   # @rbs return: void
   def reveal: (Array[Array[String]] frames) -> void
 
-  # @rbs ?mode: Symbol
+  # @rbs mode: Symbol
   # @rbs return: void
-  def start: (?untyped mode) -> void
+  def start: (?Symbol mode) -> void
 
   # @rbs return: void
   def stop: () -> void
 
   # @rbs tick: Integer
-  # @rbs ?label: String
+  # @rbs label: String
   # @rbs return: String
-  def equalizer: (Integer tick, ?untyped label) -> String
+  def equalizer: (Integer tick, ?String label) -> String
 
   private
 
