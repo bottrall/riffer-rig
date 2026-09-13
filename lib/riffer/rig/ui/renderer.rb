@@ -9,6 +9,8 @@ class Riffer::Rig::UI::Renderer
   # @rbs @theme: Riffer::Rig::UI::Theme
   # @rbs @tally: Riffer::Rig::TokenTally?
   # @rbs @smoother: Riffer::Rig::UI::Smoother | PassThroughSmoother?
+  # @rbs @deferred_usage: Riffer::Providers::TokenUsage?
+  # @rbs @prose_gap_pending: bool
 
   # @rbs io: untyped
   # @rbs ?theme: Riffer::Rig::UI::Theme
@@ -20,6 +22,8 @@ class Riffer::Rig::UI::Renderer
     @theme = theme
     @tally = tally
     @smoother = smoother
+    @deferred_usage = nil
+    @prose_gap_pending = false
   end
 
   # @rbs event: Riffer::StreamEvents::Base
@@ -27,20 +31,45 @@ class Riffer::Rig::UI::Renderer
   def render(event)
     case event
     when Riffer::StreamEvents::TextDelta
-      smoother << event.content
+      render_prose(event.content)
     when Riffer::StreamEvents::ToolCallDone
-      drain_smoother
-      @io.puts("\n#{@theme.cyan("⚙ #{event.name}(#{format_arguments(event.arguments)})")}")
+      render_tool_activity(2) { @theme.cyan("⚙ #{event.name}(#{format_arguments(event.arguments)})") }
     when Riffer::StreamEvents::SkillActivation
-      drain_smoother
-      @io.puts("\n#{@theme.magenta("✦ skill: #{event.name}")}")
+      render_block(0) { @theme.magenta("✦ skill: #{event.name}") }
     when Riffer::StreamEvents::Interrupt
-      drain_smoother
-      @io.puts(@theme.dim("[interrupted: #{event.reason}]"))
+      render_block(0) { @theme.dim("[interrupted: #{event.reason}]") }
     when Riffer::StreamEvents::TokenUsageDone
-      drain_smoother
-      render_token_usage(event.token_usage)
+      current = @deferred_usage
+      @deferred_usage = current ? current + event.token_usage : event.token_usage
     end
+  end
+
+  # The prompt holds the line open for typed input, so unlike render_block it
+  # ends without a newline. It sits at the renderer so a tool group left open by
+  # the previous turn closes here, and the next turn's blocks open cleanly.
+  #
+  # @rbs return: void
+  def prompt
+    @prose_gap_pending = true
+    @io.puts
+    @io.print("#{@theme.pink('›')} ")
+    @io.flush
+  end
+
+  # Usage arrives per model call but tool results arrive via the session
+  # callback after each call's stream ends, so rendering inline would print the
+  # stats above the results they belong with. Held until the turn's output is
+  # done, then printed as one line below it.
+  #
+  # @rbs return: void
+  def flush_usage
+    usage = @deferred_usage
+    @deferred_usage = nil
+    tally = @tally
+    return unless usage && tally
+
+    tally.add(usage)
+    render_block(0) { @theme.dim(usage_line(usage, tally)) }
   end
 
   # @rbs message: Riffer::Messages::Base
@@ -48,11 +77,78 @@ class Riffer::Rig::UI::Renderer
   def render_tool_result(message)
     return unless message.is_a?(Riffer::Messages::Tool)
 
+    open_tool_activity
     line = "↳ #{preview(message.content)}"
-    @io.puts(message.error? ? @theme.red(line) : @theme.dim(line))
+    styled = message.error? ? @theme.red(line) : @theme.dim(line)
+    @io.print("    #{styled}\n")
+    @io.flush
   end
 
   private
+
+  # Rule 2 for one-off blocks (skill line, interrupt, stats): one blank line
+  # above, no indent. The smoother drains first so any pending partial prose
+  # block ends cleanly before the gap is written, and any open tool group closes
+  # so the next group opens with its own gap.
+  #
+  # @rbs indent: Integer
+  # @rbs return: void
+  def render_block(indent, &)
+    drain_smoother
+    @io.puts
+    @prose_gap_pending = true
+    @io.puts((' ' * indent) + yield)
+    @io.flush
+  end
+
+  # The blank line above a prose block is written at the first delta after a
+  # non-prose block. Streaming makes "which block is first?" a stateful
+  # question, so the answer is tracked rather than embedded at each render site.
+  #
+  # @rbs content: String
+  # @rbs return: void
+  def render_prose(content)
+    if @prose_gap_pending
+      @prose_gap_pending = false
+      @io.print("\n")
+    end
+    smoother << content
+  end
+
+  # @rbs indent: Integer
+  # @rbs return: void
+  def render_tool_activity(indent, &)
+    open_tool_activity
+    @io.puts((' ' * indent) + yield)
+    @io.flush
+  end
+
+  # Tool-activity lines (⚙ calls, ↳ results) share one blank line above the
+  # group instead of one between each line — the gap goes between groups, not
+  # inside a pair. The group stays open so prose after it pays the closing gap.
+  #
+  # @rbs return: void
+  def open_tool_activity
+    return if @prose_gap_pending
+
+    drain_smoother
+    @io.puts
+    @prose_gap_pending = true
+  end
+
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs tally: Riffer::Rig::TokenTally
+  # @rbs return: String
+  def usage_line(usage, tally)
+    parts = ["↑#{usage.input_tokens}", "↓#{usage.output_tokens}"]
+    parts << "cache_write:#{usage.cache_write_tokens}" if usage.cache_write_tokens&.positive?
+    parts << "cache_read:#{usage.cache_read_tokens}" if usage.cache_read_tokens&.positive?
+    parts << "session #{tally.total_tokens} tok"
+    cost = tally.estimated_cost
+    parts << format('~$%.4f', cost) if cost
+
+    parts.join(' · ')
+  end
 
   # @rbs return: Riffer::Rig::UI::Smoother | PassThroughSmoother
   def smoother
@@ -86,25 +182,6 @@ class Riffer::Rig::UI::Renderer
   # @rbs return: void
   def drain_smoother
     smoother.drain
-  end
-
-  # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs return: void
-  def render_token_usage(usage)
-    tally = @tally
-    return unless tally
-
-    tally.add(usage)
-
-    parts = ["↑#{usage.input_tokens}", "↓#{usage.output_tokens}"]
-    parts << "cache_write:#{usage.cache_write_tokens}" if usage.cache_write_tokens&.positive?
-    parts << "cache_read:#{usage.cache_read_tokens}" if usage.cache_read_tokens&.positive?
-
-    session_parts = ["session #{tally.total_tokens} tok"]
-    cost = tally.estimated_cost
-    session_parts << format('~$%.4f', cost) if cost
-
-    @io.puts("\n#{@theme.dim("#{parts.join(' · ')}   #{session_parts.join(' · ')}")}")
   end
 
   # @rbs arguments: String

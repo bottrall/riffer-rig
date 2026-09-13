@@ -9,10 +9,27 @@ describe Riffer::Rig::UI::Renderer do
     @renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false))
   end
 
-  it 'writes text delta content to the io' do
+  it 'renders text delta content to the io' do
     @renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
 
     assert_equal 'hello', @io.string
+  end
+
+  it 'separates prose after the prompt with a blank line' do
+    @renderer.prompt
+    @io.truncate(0)
+    @io.rewind
+
+    @renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
+
+    assert_equal "\nhello", @io.string
+  end
+
+  it 'does not stack blank lines between consecutive prose deltas' do
+    @renderer.render(Riffer::StreamEvents::TextDelta.new('hello '))
+    @renderer.render(Riffer::StreamEvents::TextDelta.new('world'))
+
+    assert_equal 'hello world', @io.string
   end
 
   it 'routes text deltas through the smoother when one is present' do
@@ -78,6 +95,121 @@ describe Riffer::Rig::UI::Renderer do
         )
       )
     )
+    renderer.flush_usage
+
+    assert_predicate recording_smoother, :drained?
+  end
+
+  it 'renders tool call done as an indented block below a blank line' do
+    @renderer.render(
+      Riffer::StreamEvents::ToolCallDone.new(
+        item_id: 'i1',
+        call_id: 'c1',
+        name: 'read',
+        arguments: '{}'
+      )
+    )
+
+    assert_equal "\n  ⚙ read()\n", @io.string
+  end
+
+  it 'renders skill activation at column zero with a blank line above' do
+    @renderer.render(Riffer::StreamEvents::SkillActivation.new('refactor'))
+
+    assert_equal "\n✦ skill: refactor\n", @io.string
+  end
+
+  it 'renders tool results tight under their tool call' do
+    message = Riffer::Messages::Tool.new('done', tool_call_id: 'c1', name: 'write')
+    @renderer.render(
+      Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'write', arguments: '{}')
+    )
+    @renderer.render_tool_result(message)
+
+    assert_equal "\n  ⚙ write()\n    ↳ done\n", @io.string
+  end
+
+  it 'defers token usage until flushed' do
+    tally = Riffer::Rig::TokenTally.new
+    renderer = Riffer::Rig::UI::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: false),
+      tally: tally
+    )
+    usage = Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50, cache_read_tokens: 200)
+
+    renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage))
+
+    assert_empty @io.string
+  end
+
+  it 'flush_usage prints the deferred usage as one stats block' do
+    tally = Riffer::Rig::TokenTally.new
+    renderer = Riffer::Rig::UI::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: false),
+      tally: tally
+    )
+    usage = Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50, cache_read_tokens: 200)
+
+    renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage))
+    renderer.flush_usage
+
+    assert_equal "\n↑100 · ↓50 · cache_read:200 · session 350 tok\n", @io.string
+  end
+
+  it 'flush_usage sums usage across multiple rounds' do
+    tally = Riffer::Rig::TokenTally.new
+    renderer = Riffer::Rig::UI::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: false),
+      tally: tally
+    )
+    renderer.render(
+      Riffer::StreamEvents::TokenUsageDone.new(
+        token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50)
+      )
+    )
+    renderer.render(
+      Riffer::StreamEvents::TokenUsageDone.new(
+        token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 200, output_tokens: 100)
+      )
+    )
+    renderer.flush_usage
+
+    assert_includes @io.string, 'session 450 tok'
+  end
+
+  it 'flush_usage prints nothing when no usage arrived' do
+    renderer = Riffer::Rig::UI::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: false),
+      tally: Riffer::Rig::TokenTally.new
+    )
+
+    renderer.flush_usage
+
+    assert_empty @io.string
+  end
+
+  it 'flush_usage prints nothing when no tally provided' do
+    renderer = Riffer::Rig::UI::Renderer.new(io: @io, theme: Riffer::Rig::UI::Theme.new(enabled: false))
+    usage = Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50)
+
+    renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage))
+    renderer.flush_usage
+
+    assert_empty @io.string
+  end
+
+  it 'drains the smoother before rendering a tool result' do
+    renderer = Riffer::Rig::UI::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::UI::Theme.new(enabled: false),
+      smoother: recording_smoother
+    )
+
+    renderer.render_tool_result(Riffer::Messages::Tool.new('done', tool_call_id: 'c1', name: 'write'))
 
     assert_predicate recording_smoother, :drained?
   end
@@ -127,84 +259,63 @@ describe Riffer::Rig::UI::Renderer do
     assert_empty @io.string
   end
 
-  it 'renders input token count when tally is present' do
-    tally = Riffer::Rig::TokenTally.new
-    renderer = Riffer::Rig::UI::Renderer.new(
+  def rendering_renderer(**overrides)
+    Riffer::Rig::UI::Renderer.new(
       io: @io,
       theme: Riffer::Rig::UI::Theme.new(enabled: false),
-      tally: tally
+      tally: Riffer::Rig::TokenTally.new,
+      **overrides
     )
-    usage = Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50)
-    event = Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage)
+  end
 
-    renderer.render(event)
+  it 'renders input token count when tally is present' do
+    usage = Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50)
+    renderer = rendering_renderer
+    renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage))
+    renderer.flush_usage
 
     assert_includes @io.string, '↑100'
   end
 
   it 'renders output token count when tally is present' do
-    tally = Riffer::Rig::TokenTally.new
-    renderer = Riffer::Rig::UI::Renderer.new(
-      io: @io,
-      theme: Riffer::Rig::UI::Theme.new(enabled: false),
-      tally: tally
-    )
     usage = Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50)
-    event = Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage)
-
-    renderer.render(event)
+    renderer = rendering_renderer
+    renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage))
+    renderer.flush_usage
 
     assert_includes @io.string, '↓50'
   end
 
   it 'renders cache write token count when present' do
-    tally = Riffer::Rig::TokenTally.new
-    renderer = Riffer::Rig::UI::Renderer.new(
-      io: @io,
-      theme: Riffer::Rig::UI::Theme.new(enabled: false),
-      tally: tally
-    )
     usage = Riffer::Providers::TokenUsage.new(
       input_tokens: 100,
       output_tokens: 50,
       cache_write_tokens: 400,
       cache_read_tokens: 200
     )
-    event = Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage)
-
-    renderer.render(event)
+    renderer = rendering_renderer
+    renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage))
+    renderer.flush_usage
 
     assert_includes @io.string, 'cache_write:400'
   end
 
   it 'renders cache read token count when present' do
-    tally = Riffer::Rig::TokenTally.new
-    renderer = Riffer::Rig::UI::Renderer.new(
-      io: @io,
-      theme: Riffer::Rig::UI::Theme.new(enabled: false),
-      tally: tally
-    )
     usage = Riffer::Providers::TokenUsage.new(
       input_tokens: 100,
       output_tokens: 50,
       cache_write_tokens: 400,
       cache_read_tokens: 200
     )
-    event = Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage)
-
-    renderer.render(event)
+    renderer = rendering_renderer
+    renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage))
+    renderer.flush_usage
 
     assert_includes @io.string, 'cache_read:200'
   end
 
   it 'renders session token total across turns' do
-    tally = Riffer::Rig::TokenTally.new
-    renderer = Riffer::Rig::UI::Renderer.new(
-      io: @io,
-      theme: Riffer::Rig::UI::Theme.new(enabled: false),
-      tally: tally
-    )
-
+    renderer = rendering_renderer
     renderer.render(
       Riffer::StreamEvents::TokenUsageDone.new(
         token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50)
@@ -215,33 +326,26 @@ describe Riffer::Rig::UI::Renderer do
         token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 200, output_tokens: 100)
       )
     )
+    renderer.flush_usage
 
     assert_includes @io.string, 'session 450 tok'
   end
 
   it 'renders estimated cost for known model' do
     pricing = Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3)
-    tally = Riffer::Rig::TokenTally.new(pricing: pricing)
-    renderer = Riffer::Rig::UI::Renderer.new(
-      io: @io,
-      theme: Riffer::Rig::UI::Theme.new(enabled: false),
-      tally: tally
-    )
+    renderer = rendering_renderer(tally: Riffer::Rig::TokenTally.new(pricing: pricing))
     usage = Riffer::Providers::TokenUsage.new(input_tokens: 1000, output_tokens: 500)
     renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage))
+    renderer.flush_usage
 
     assert_includes @io.string, '~$'
   end
 
   it 'omits estimated cost when no pricing provided' do
-    tally = Riffer::Rig::TokenTally.new
-    renderer = Riffer::Rig::UI::Renderer.new(
-      io: @io,
-      theme: Riffer::Rig::UI::Theme.new(enabled: false),
-      tally: tally
-    )
     usage = Riffer::Providers::TokenUsage.new(input_tokens: 1000, output_tokens: 500)
+    renderer = rendering_renderer
     renderer.render(Riffer::StreamEvents::TokenUsageDone.new(token_usage: usage))
+    renderer.flush_usage
 
     refute_includes @io.string, '~$'
   end

@@ -16,6 +16,8 @@ class Riffer::Rig::UI::Smoother
 
   MIN_CHARS_PER_TICK: Rational
 
+  @newline_pending: bool
+
   @stop: bool
 
   @thread: Thread?
@@ -50,7 +52,10 @@ class Riffer::Rig::UI::Smoother
   # @rbs return: void
   def tick: () -> void
 
-  # Called before non-delta output so printed order matches stream order.
+  # Called before non-prose output so printed order matches stream order. The
+  # backlog is flushed, then any partial prose block the model left without a
+  # trailing newline gets one, so block spacing never depends on the model's
+  # last character.
   #
   # @rbs return: void
   def drain: () -> void
