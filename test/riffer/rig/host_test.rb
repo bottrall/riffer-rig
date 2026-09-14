@@ -2,24 +2,24 @@
 
 require 'test_helper'
 
-class Riffer::Rig::HostTest < Minitest::Test
-  def test_capabilities_is_empty
+describe Riffer::Rig::Host do
+  it 'declines every capability' do
     assert_empty Riffer::Rig::Host.new.capabilities
   end
 
-  def test_ask_returns_nil
+  it 'answers nil from ask' do
     assert_nil Riffer::Rig::Host.new.ask('hello')
   end
 
-  def test_confirm_returns_false
+  it 'answers false from confirm' do
     refute Riffer::Rig::Host.new.confirm('sure?')
   end
 
-  def test_notify_is_a_no_op
+  it 'treats notify as a no-op' do
     assert_nil Riffer::Rig::Host.new.notify('hi', level: :warn)
   end
 
-  def test_progress_yields
+  it 'yields from progress' do
     yielded = false
     Riffer::Rig::Host.new.progress('working') { yielded = true }
 

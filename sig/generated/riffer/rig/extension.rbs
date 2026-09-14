@@ -5,18 +5,24 @@
 # registrar. The process registry holds these objects; Session.new runs their
 # blocks.
 class Riffer::Rig::Extension
-  attr_reader name: untyped
+  @name: String
 
-  attr_reader requires: untyped
+  @requires: Gem::Requirement?
 
-  @block: ^(untyped) -> void
+  @block: ^(::Riffer::Rig::Registrar) -> void
 
-  # : (String, ?requires: String?, &(untyped) -> void) -> void
-  def initialize: (untyped name, ?requires: untyped) ?{ (?) -> untyped } -> untyped
+  # @dynamic name, requires
+  attr_reader name: String
 
-  # : () -> Hash[Symbol, untyped]
-  def to_h: () -> untyped
+  attr_reader requires: Gem::Requirement?
 
-  # : (Riffer::Rig::Registrar) -> void
-  def run: (untyped registrar) -> untyped
+  # @rbs name: String
+  # @rbs requires: String?
+  # @rbs &block: (::Riffer::Rig::Registrar) -> void
+  # @rbs return: void
+  def initialize: (String name, ?requires: String?) { (::Riffer::Rig::Registrar) -> void } -> void
+
+  # @rbs registrar: Riffer::Rig::Registrar
+  # @rbs return: void
+  def run: (Riffer::Rig::Registrar registrar) -> void
 end

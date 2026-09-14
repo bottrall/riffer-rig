@@ -2,39 +2,43 @@
 
 require 'test_helper'
 
-class Riffer::RigTest < Minitest::Test
-  def test_extension_records_an_extension_in_the_registry
+describe Riffer::Rig do
+  def drop(name)
+    Riffer::Rig.instance_variable_get(:@extensions).delete(name)
+  end
+
+  it 'records an extension in the registry' do
     extension = Riffer::Rig.extension('test_record') { |rig| rig }
 
     assert_same extension, Riffer::Rig.extensions['test_record']
   ensure
-    Riffer::Rig.instance_variable_get(:@extensions).delete('test_record')
+    drop('test_record')
   end
 
-  def test_re_recording_a_name_replaces_the_extension
+  it 'replaces the extension when a name is re-recorded' do
     Riffer::Rig.extension('test_replace') { |rig| rig }
     second = Riffer::Rig.extension('test_replace') { |rig| rig }
 
     assert_same second, Riffer::Rig.extensions['test_replace']
   ensure
-    Riffer::Rig.instance_variable_get(:@extensions).delete('test_replace')
+    drop('test_replace')
   end
 
-  def test_requires_mismatch_raises_a_load_error
+  it 'raises on a requires mismatch' do
     assert_raises(Riffer::ArgumentError) do
       Riffer::Rig.extension('test_mismatch', requires: '>= 99.0') { |rig| rig }
     end
   ensure
-    Riffer::Rig.instance_variable_get(:@extensions).delete('test_mismatch')
+    drop('test_mismatch')
   end
 
-  def test_requires_mismatch_names_the_requirement
+  it 'names the requirement in the mismatch error' do
     Riffer::Rig.extension('test_mismatch', requires: '>= 99.0') { |rig| rig }
   rescue Riffer::ArgumentError => e
     assert_includes e.message, 'requires riffer-rig >= 99.0'
   else
     flunk 'expected Riffer::ArgumentError'
   ensure
-    Riffer::Rig.instance_variable_get(:@extensions).delete('test_mismatch')
+    drop('test_mismatch')
   end
 end

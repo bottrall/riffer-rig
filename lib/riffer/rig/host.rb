@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-# rbs_inline: enabled
 
 # A host receives questions and out-of-band messages from a Session. It is
 # duck-typed: any object with #ask, #confirm, #notify, #progress and
@@ -18,27 +17,35 @@
 # The do-nothing host: the default +host:+ for a Session. Every capability is
 # declined, so callers take the declined path without any UI attempt.
 class Riffer::Rig::Host
-  # : () -> Set[Symbol]
+  # @rbs return: Set[Symbol]
   def capabilities
     Set.new.freeze
   end
 
-  # : (?String, ?options: Array[String]?, ?secret: bool) -> String?
+  # @rbs _question: String?
+  # @rbs options: Array[String]?
+  # @rbs secret: bool
+  # @rbs return: String?
   def ask(_question = nil, options: nil, secret: false)
     nil
   end
 
-  # : (?String) -> bool
+  # @rbs _question: String?
+  # @rbs return: bool
   def confirm(_question = nil)
     false
   end
 
-  # : (?String, ?level: Symbol) -> void
+  # @rbs _message: String?
+  # @rbs level: Symbol
+  # @rbs return: void
   def notify(_message = nil, level: :info)
     nil
   end
 
-  # : (?String) { () -> void } -> void
+  # @rbs _label: String?
+  # @rbs &block: ^() -> void
+  # @rbs return: void
   def progress(_label = nil, &block)
     block&.call
   end
