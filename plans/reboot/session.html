@@ -28,7 +28,7 @@
 
 <h2 id="decisions">Decisions</h2>
 
-<section class="topic" id="contract">
+<section class="topic enshrined" id="contract">
 <h3>The Session object and its contract</h3>
 <ul>
   <li><code>Session.new(...)</code> builds a per-instance <code>Riffer::Agent::Config</code>; there is no class-level agent DSL. Two Sessions in one process share nothing but the process-wide extension registry and riffer's provider repository.</li>
@@ -37,6 +37,7 @@
   <li>The constructor takes everything as keywords: <code>model:</code>, <code>credentials:</code>, <code>extensions:</code>, <code>tools:</code>, <code>settings:</code>, <code>pricing:</code>, <code>host:</code>, <code>cwd:</code>, <code>name:</code>, <code>instructions:</code>, <code>max_steps:</code>, <code>snapshot:</code>. All optional except <code>model:</code>; the Interfaces table gives each one's meaning.</li>
   <li>The current implementation's <code>CodingAgent</code> class-level DSL, its <code>Settings.model</code> lookup at class-definition time and its AGENTS.md reading inside <code>instructions</code> all go. Model, tools, skills backend and instructions are supplied per instance.</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/160">#160</a>. Two deviations: the null host is named <code>Riffer::Rig::Host</code>, not <code>NullHost</code> — zeitwerk maps <code>host.rb</code> to <code>Riffer::Rig::Host</code> and a nested class under it would be unloadable; and constructor keywords not yet honoured (<code>credentials:</code>, <code>pricing:</code>, <code>max_steps:</code>, <code>snapshot:</code>) are accepted and ignored, documented in <code>docs/EMBEDDING.md</code>.</p>
 </section>
 
 <section class="topic" id="prompting">
@@ -50,7 +51,7 @@
 </ul>
 </section>
 
-<section class="topic" id="system-message">
+<section class="topic enshrined" id="system-message">
 <h3>System message assembly and the base prompt</h3>
 
 <figure>
@@ -85,6 +86,7 @@ been given; each tool describes what it does and when to use it.
   <tr><td>Context</td><td>AGENTS.md arrives as a prompt section from its bundled extension, framed as user-authored instructions that outrank the base norms. The Session appends date and cwd itself.</td><td>Keeps "runtime does no disk scanning" and keeps AGENTS.md disableable.</td></tr>
   <tr><td>Reload</td><td>Sections re-render from the fresh registrar; the base prompt is gem code and is not re-read.</td><td>User-editable prompt text belongs in a section, not in the gem.</td></tr>
 </table></div>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/160">#160</a>; wording verified against the shipped heredoc in <code>lib/riffer/rig/session.rb</code>.</p>
 </section>
 
 <section class="topic" id="events">
@@ -182,6 +184,7 @@ been given; each tool describes what it does and when to use it.
   <tr><td><code>credentials:</code></td><td>hash keyed by provider identifier of resolved field values</td><td><code>{}</code></td></tr>
   <tr><td><code>extensions:</code></td><td>ordered list of extension objects (from <code>Riffer::Rig.extension</code> or <code>Riffer::Rig.bundled</code>) whose blocks run against this Session's registrar</td><td><code>[]</code></td></tr>
   <tr><td><code>tools:</code></td><td>allowlist of tool identifiers; nil means every registered tool</td><td><code>nil</code></td></tr>
+  <tr><td><code>credentials:</code></td><td>hash keyed by provider identifier of resolved field values</td><td><code>{}</code></td></tr>
   <tr><td><code>settings:</code></td><td>merged settings hash (core keys top level, extension keys under their names)</td><td><code>{}</code></td></tr>
   <tr><td><code>pricing:</code></td><td>model → <code>{input, output, cache_write, cache_read}</code> USD per million tokens</td><td><code>{}</code></td></tr>
   <tr><td><code>host:</code></td><td>an object implementing the Host duck</td><td><code>NullHost.new</code></td></tr>

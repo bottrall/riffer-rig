@@ -28,7 +28,7 @@
 
 <h2 id="decisions">Decisions</h2>
 
-<section class="topic" id="unit">
+<section class="topic enshrined" id="unit">
 <h3>The unit: a named registrar block</h3>
 
 <pre><code>Riffer::Rig.extension("git", requires: "&gt;= 0.3") do |rig|
@@ -61,6 +61,7 @@ end</code></pre>
   <li><code>Session.new(extensions: [...])</code> runs each block in order against a fresh registrar for that Session. Per-Session state lives in the block's locals; per-process state lives outside the block. Same process, no sandbox.</li>
   <li>An extension object is what the list holds: name, requirement, block. <code>Riffer::Rig.bundled(:read)</code> returns the bundled ones by the same type, so an embedder composes <code>extensions: [Riffer::Rig.bundled(:read), Riffer::Rig.bundled(:bash), MyExt]</code>.</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/160">#160</a>: <code>Riffer::Rig.extension</code> and the per-Session registrar (tool seam only) are shipped; <code>Riffer::Rig.bundled</code> waits for the Bundled ticket.</p>
 </section>
 
 <section class="topic" id="seams">
@@ -122,7 +123,7 @@ end</code></pre>
 </ul>
 </section>
 
-<section class="topic" id="host-interface">
+<section class="topic enshrined" id="host-interface">
 <h3>Host interface</h3>
 <div class="table-wrap"><table>
   <tr><th>Method</th><th>Purpose</th><th>NullHost</th></tr>
@@ -136,6 +137,7 @@ end</code></pre>
   <li>Duck-typed: any object with these methods is a host. Session and extensions check <code>capabilities</code> before asking, so a host that declines a capability is never asked and the caller takes the "declined" path.</li>
   <li>The terminal implements all four; headless implements only <code>notify</code> (stderr or NDJSON) and <code>progress</code> (stderr); ACP implements <code>notify</code> as a <code>session/update</code> and nothing else in the first server.</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/160">#160</a>. One deviation: the null host is named <code>Riffer::Rig::Host</code>, not <code>NullHost</code> — zeitwerk maps <code>host.rb</code> to <code>Riffer::Rig::Host</code> and a nested class under it would be unloadable.</p>
 </section>
 
 <section class="topic" id="errors">
