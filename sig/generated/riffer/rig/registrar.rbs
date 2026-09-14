@@ -5,12 +5,13 @@
 class Riffer::Rig::Registrar
   @tools: Array[singleton(Riffer::Tool)]
 
-  # : () -> void
-  def initialize: () -> untyped
+  # @rbs return: void
+  def initialize: () -> void
 
-  # : (singleton(Riffer::Tool)) -> void
-  def tool: (untyped klass) -> untyped
+  # @rbs klass: singleton(Riffer::Tool)
+  # @rbs return: void
+  def tool: (singleton(Riffer::Tool) klass) -> void
 
-  # : () -> Array[singleton(Riffer::Tool)]
-  def tools: () -> untyped
+  # @rbs return: Array[singleton(Riffer::Tool)]
+  def tools: () -> Array[singleton(Riffer::Tool)]
 end

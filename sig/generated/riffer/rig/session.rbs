@@ -3,7 +3,7 @@
 # The runtime: one Session builds its own Riffer::Agent from a per-instance
 # Riffer::Agent::Config and streams a prompt.
 #
-#   session = Riffer::Rig::Session.new(model: 'mock/x')
+#   session = Riffer::Rig::Session.new('mock/x')
 #   session.prompt('hello') { |event| ... }   # yields riffer StreamEvents
 #   session.prompt('hello').each { |event| }  # an Enumerator without a block
 #
@@ -21,40 +21,76 @@ class Riffer::Rig::Session
 
   DEFAULT_NAME: ::String
 
-  attr_reader agent: untyped
+  interface _Host
+    def ask: (?String, ?options: Array[String]?, ?secret: bool) -> String?
 
-  attr_reader cwd: untyped
+    def confirm: (?String) -> bool
 
-  attr_reader host: untyped
+    def notify: (?String, ?level: Symbol) -> void
 
-  attr_reader settings: untyped
+    def progress: (?String) { () -> void } -> void
+
+    def capabilities: () -> Set[Symbol]
+  end
+
+  @registrar: Riffer::Rig::Registrar
 
   @busy: bool
 
-  # : (
-  #    String,
-  #    ?extensions: Array[Riffer::Rig::Extension],
-  #    ?tools: Array[String]?,
-  #    ?settings: Hash[Symbol, untyped],
-  #    ?host: untyped,
-  #    ?cwd: String?,
-  #    ?name: String,
-  #    ?instructions: String?
-  #  ) -> void
-  def initialize: (untyped model, ?extensions: untyped, ?tools: untyped, ?settings: untyped, ?host: untyped, ?cwd: untyped, ?name: untyped, ?instructions: untyped) -> untyped
+  @settings: Hash[Symbol, untyped]
 
-  # : (String) { (untyped) -> void } -> nil
-  # : (String) -> Enumerator[untyped, void]
-  def prompt: (untyped text) ?{ (?) -> untyped } -> untyped
+  @host: _Host
+
+  @cwd: String
+
+  @agent: Riffer::Agent
+
+  # @dynamic agent, cwd, host, settings
+  attr_reader agent: Riffer::Agent
+
+  attr_reader cwd: String
+
+  attr_reader host: _Host
+
+  attr_reader settings: Hash[Symbol, untyped]
+
+  # @rbs model: String
+  # @rbs extensions: Array[Riffer::Rig::Extension]
+  # @rbs tools: Array[String]?
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs host: _Host
+  # @rbs cwd: String?
+  # @rbs name: String
+  # @rbs instructions: String?
+  # @rbs credentials: Hash[Symbol, untyped]
+  # @rbs pricing: Hash[Symbol, untyped]
+  # @rbs max_steps: Integer?
+  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs return: void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: _Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, untyped], ?pricing: Hash[Symbol, untyped], ?max_steps: Integer?, ?snapshot: Hash[Symbol, untyped]?) -> void
+
+  # @rbs text: String
+  # @rbs &block: ?(Riffer::StreamEvents::Base) -> void
+  # @rbs return: (nil | Enumerator[Riffer::StreamEvents::Base, void])
+  def prompt: (String text) ?{ (Riffer::StreamEvents::Base) -> void } -> (nil | Enumerator[Riffer::StreamEvents::Base, void])
 
   private
 
-  # : (Array[Riffer::Rig::Extension], Array[String]?) -> Riffer::Rig::Registrar
-  def build_registrar: (untyped extensions) -> untyped
+  # @rbs text: String
+  # @rbs &block: (Riffer::StreamEvents::Base) -> void
+  # @rbs return: nil
+  def stream_prompt: (String text) { (Riffer::StreamEvents::Base) -> void } -> nil
 
-  # : (Array[singleton(Riffer::Tool)], Array[String]?) -> Array[singleton(Riffer::Tool)]
-  def select_tools: (untyped registered, untyped allowlist) -> untyped
+  # @rbs extensions: Array[Riffer::Rig::Extension]
+  # @rbs return: Riffer::Rig::Registrar
+  def build_registrar: (Array[Riffer::Rig::Extension] extensions) -> Riffer::Rig::Registrar
 
-  # : (String) -> String
-  def system_prompt: (untyped base_prompt) -> untyped
+  # @rbs registered: Array[singleton(Riffer::Tool)]
+  # @rbs allowlist: Array[String]?
+  # @rbs return: Array[singleton(Riffer::Tool)]
+  def select_tools: (Array[singleton(Riffer::Tool)] registered, Array[String]? allowlist) -> Array[singleton(Riffer::Tool)]
+
+  # @rbs base_prompt: String
+  # @rbs return: String
+  def system_prompt: (String base_prompt) -> String
 end

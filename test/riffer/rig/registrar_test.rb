@@ -2,8 +2,8 @@
 
 require 'test_helper'
 
-class Riffer::Rig::RegistrarTest < Minitest::Test
-  def test_collects_tools_in_registration_order
+describe Riffer::Rig::Registrar do
+  it 'collects tools in registration order' do
     registrar = Riffer::Rig::Registrar.new
     registrar.tool(Riffer::Rig::Tools::Read)
     registrar.tool(Riffer::Rig::Tools::Bash)
@@ -11,7 +11,7 @@ class Riffer::Rig::RegistrarTest < Minitest::Test
     assert_equal [Riffer::Rig::Tools::Read, Riffer::Rig::Tools::Bash], registrar.tools
   end
 
-  def test_tools_returns_a_fresh_array
+  it 'returns a fresh array from tools' do
     registrar = Riffer::Rig::Registrar.new
     registrar.tool(Riffer::Rig::Tools::Read)
     registrar.tools << Riffer::Rig::Tools::Bash
