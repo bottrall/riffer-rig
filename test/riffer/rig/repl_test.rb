@@ -280,6 +280,26 @@ describe Riffer::Rig::REPL do
     assert_equal [%i[start neutral], :stop, %i[start reasoning], :stop, :stop], animator.calls
   end
 
+  it 'animator restarts drain the smoother backlog first' do
+    order = []
+    animator = Object.new
+    animator.define_singleton_method(:start) { |mode = :neutral| order << [:start, mode] }
+    animator.define_singleton_method(:stop) { order << :stop }
+    smoother = Object.new
+    smoother.define_singleton_method(:start) { order << :smoother_start }
+    smoother.define_singleton_method(:drain) { order << :drain }
+    smoother.define_singleton_method(:finish) { order << :smoother_finish }
+    agent = stub_agent([Riffer::StreamEvents::TextDelta.new('hello'), Riffer::StreamEvents::ReasoningDelta.new('hmm')])
+    repl = build_repl(agent, StringIO.new, "hi\n", animator: animator, smoother: smoother)
+
+    repl.run
+
+    last_drain = order.rindex(:drain)
+    reasoning_start = order.index(%i[start reasoning])
+
+    assert_operator last_drain, :<, reasoning_start
+  end
+
   it 'indicator is stopped before the end of turn newline' do
     animator = spy_animator
     order = animator.calls
@@ -451,6 +471,7 @@ describe Riffer::Rig::REPL do
     input_str,
     animator: Riffer::Rig::UI::Animator.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)),
     cursor: Riffer::Rig::UI::Cursor.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)),
+    smoother: Riffer::Rig::UI::Smoother.new(io: output, theme: Riffer::Rig::UI::Theme.new(enabled: false)),
     tally: Riffer::Rig::TokenTally.new
   )
     theme = Riffer::Rig::UI::Theme.new(enabled: false)
@@ -462,6 +483,7 @@ describe Riffer::Rig::REPL do
       output: output,
       theme: theme,
       animator: animator,
+      smoother: smoother,
       cursor: cursor
     )
   end

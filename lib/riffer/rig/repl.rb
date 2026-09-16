@@ -74,14 +74,14 @@ class Riffer::Rig::REPL
   # @rbs return: void
   def run_turn(prompt)
     @cursor.hide
-    @animator.start
+    start_animator
     @smoother.start
     @agent.stream(prompt).each do |event|
       case event
       when Riffer::StreamEvents::ReasoningDelta
-        @animator.start(:reasoning)
+        start_animator(:reasoning)
       when Riffer::StreamEvents::ReasoningDone
-        @animator.start
+        start_animator
       when Riffer::StreamEvents::ToolCallDelta, Riffer::StreamEvents::FinishReasonDone
         next
       when Riffer::StreamEvents::SkillActivation
@@ -89,13 +89,13 @@ class Riffer::Rig::REPL
         # spinner comes straight back on to cover the silent stretch.
         @animator.stop
         @renderer.render(event)
-        @animator.start
+        start_animator
         next
       when Riffer::StreamEvents::TokenUsageDone
         # Usage renders nothing inline — it flushes below the turn's output.
         # Restarting here covers the silent tool-execution stretch that follows.
         @renderer.render(event)
-        @animator.start
+        start_animator
         next
       else
         @animator.stop
@@ -173,6 +173,17 @@ class Riffer::Rig::REPL
 
     @animator.stop
     @renderer.render_tool_result(message)
-    @animator.start
+    start_animator
+  end
+
+  # Every animator start sits behind a smoother drain: the smoother's backlog
+  # may still be trickling out from streamed prose, and spinner frames drawn
+  # mid-drain would carve `\r…\e[K` through a half-printed sentence.
+  #
+  # @rbs mode: Symbol
+  # @rbs return: void
+  def start_animator(mode = :neutral)
+    @smoother.drain
+    @animator.start(mode)
   end
 end
