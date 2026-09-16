@@ -83,7 +83,7 @@ end</code></pre>
 <section class="topic" id="commands">
 <h3>Commands</h3>
 <ul>
-  <li>The block receives <code>ctx</code> with <code>args</code> (the text after the command name), <code>session</code>, <code>host</code>, <code>settings</code> (this extension's namespace), and helpers: <code>say(text)</code> emits a <code>command_output</code> event; <code>prompt(text)</code> sends a user turn to the model, so prompt templates are commands; <code>ask</code> and <code>confirm</code> forward to the host and return its answer (the null host declines).</li>
+  <li>The block receives <code>ctx</code> with <code>args</code> (the text after the command name), <code>runtime</code>, <code>host</code>, <code>settings</code> (this extension's namespace), and helpers: <code>say(text)</code> emits a <code>command_output</code> event; <code>prompt(text)</code> sends a user turn to the model, so prompt templates are commands; <code>ask</code> and <code>confirm</code> forward to the host and return its answer (the null host declines).</li>
   <li>Synchronous, one at a time, same rule as <code>Runtime#prompt</code>. A command that raises is caught and reported through <code>notify</code>; the Runtime stays usable.</li>
   <li>Core commands (<code>/model</code>, <code>/auth</code>, <code>/reload</code>, skill activation) are built on the same <code>Command</code> type and appear in <code>runtime.commands</code> alongside extension commands.</li>
 </ul>
@@ -183,7 +183,7 @@ end</code></pre>
   <tr><td><code>Riffer::Rig.extensions</code></td><td>the process registry, name → Extension, in record order</td></tr>
   <tr><td><code>Riffer::Rig.bundled(name = nil)</code></td><td>one bundled Extension, or all seven</td></tr>
   <tr><td><code>Registrar</code></td><td><code>tool</code>, <code>command</code>, <code>prompt</code>, <code>on</code>, <code>provider</code>, <code>mcp</code>, <code>skills</code>, <code>setting</code>; internal readers the Runtime uses to build its agent</td></tr>
-  <tr><td>Command <code>ctx</code></td><td><code>args</code>, <code>session</code>, <code>host</code>, <code>settings</code>, <code>say</code>, <code>prompt</code>, <code>ask</code>, <code>confirm</code></td></tr>
+  <tr><td>Command <code>ctx</code></td><td><code>args</code>, <code>runtime</code>, <code>host</code>, <code>settings</code>, <code>say</code>, <code>prompt</code>, <code>ask</code>, <code>confirm</code></td></tr>
   <tr><td>Host duck</td><td><code>ask</code>, <code>confirm</code>, <code>notify</code>, <code>progress</code>, <code>capabilities</code></td></tr>
   <tr><td>Settings keys</td><td><code>extensions.disabled</code> (array of names), <code>extensions.autoload</code> (boolean); extension keys under the extension name</td></tr>
 </table></div>
