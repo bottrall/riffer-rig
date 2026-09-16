@@ -2,7 +2,7 @@
 path: ".gem_rbs_collection"
 gems:
 - name: anthropic
-  version: 1.69.0
+  version: 1.70.0
   source:
     type: rubygems
 - name: base64
@@ -82,7 +82,7 @@ gems:
   source:
     type: stdlib
 - name: openai
-  version: 0.87.0
+  version: 0.90.0
   source:
     type: rubygems
 - name: prism
@@ -98,7 +98,7 @@ gems:
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: riffer
-  version: 0.45.0
+  version: 0.47.1
   source:
     type: rubygems
 - name: stringio
