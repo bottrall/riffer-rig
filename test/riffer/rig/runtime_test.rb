@@ -32,22 +32,22 @@ describe Riffer::Rig::Runtime do
     assert_instance_of Enumerator, runtime.prompt('hello')
   end
 
-  it 'asks and returns a turn with the response text' do
+  it 'asks and returns riffer response with the content' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
     runtime.agent.provider.stub_response('All done.')
 
-    turn = runtime.ask('hello')
+    response = runtime.ask('hello')
 
-    assert_equal 'All done.', turn.text
+    assert_equal 'All done.', response.content
   end
 
-  it 'asks and reports the stop reason from the provider' do
+  it 'asks and reports how the run ended' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
     runtime.agent.provider.stub_response('All done.')
 
-    turn = runtime.ask('hello')
+    response = runtime.ask('hello')
 
-    assert_equal :stop, turn.stop_reason
+    assert_equal :completed, response.outcome.reason
   end
 
   it 'asks and carries the run token usage' do
@@ -55,9 +55,9 @@ describe Riffer::Rig::Runtime do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
     runtime.agent.provider.stub_response('All done.', token_usage: usage)
 
-    turn = runtime.ask('hello')
+    response = runtime.ask('hello')
 
-    assert_equal usage, turn.usage
+    assert_equal usage, response.token_usage
   end
 
   it 'asks and lists the tool calls the model made' do
@@ -65,19 +65,25 @@ describe Riffer::Rig::Runtime do
     runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
     runtime.agent.provider.stub_response('The file says hi.')
 
-    turn = runtime.ask('read /tmp/x')
+    response = runtime.ask('read /tmp/x')
 
-    assert_equal ['read'], turn.tool_calls.map(&:name)
+    names = response.messages.filter_map do |message|
+      next unless message.is_a?(Riffer::Messages::Assistant)
+
+      message.tool_calls.map(&:name)
+    end.flatten
+
+    assert_equal ['read'], names
   end
 
-  it 'ends a capped turn with the max_steps stop reason' do
+  it 'ends a capped run with the max_steps outcome' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], tools: %w[read], max_steps: 1)
     runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
     runtime.agent.provider.stub_response('second response')
 
-    turn = runtime.ask('go')
+    response = runtime.ask('go')
 
-    assert_equal :max_steps, turn.stop_reason
+    assert_equal :max_steps, response.outcome.reason
   end
 
   it 'refuses an ask while a prompt is running' do

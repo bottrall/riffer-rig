@@ -20,7 +20,7 @@
 </nav>
 
 <h1>riffer-rig reboot: building plan</h1>
-<p class="lede">Everything decided for the post-hiatus reboot, regrouped so that whoever builds a unit reads one file. Temporary: each build PR deletes what it enshrines, and this directory is gone when the reboot is built and documented.</p>
+<p class="lede">Everything decided for the post-hiatus reboot, regrouped so that whoever builds a unit reads one file. Temporary: each build PR marks its topics enshrined, and this directory is gone when the reboot is built and documented.</p>
 
 <h2 id="thesis">Thesis</h2>
 
@@ -156,10 +156,10 @@
 <h2 id="consuming">How this plan is consumed</h2>
 
 <ul>
-  <li><strong>The text is frozen.</strong> Wording never changes after the plan PR merges. Discussion happens on the tickets each file cites under Provenance, or in build PRs.</li>
-  <li><strong>PRs delete what they enshrine.</strong> A build PR that lands a topic deletes that <code>&lt;section class="topic"&gt;</code> in the same PR and moves anything user-facing into README or a <code>docs/</code> guide (<a href="docs.html">Docs</a> says which). A unit file goes when no sections remain; <code>plans/reboot/</code> goes when no files remain; this index goes last. The plan only ever shrinks.</li>
-  <li><strong>A wrong section is deleted anyway.</strong> If a PR discovers the plan is wrong, it records the deviation in the PR description and deletes the section. The code is then the truth.</li>
-  <li><strong>Diagrams are prose.</strong> An inline SVG is deleted with its section.</li>
+  <li><strong>The text is frozen.</strong> Wording never changes after the plan PR merges — except an enshrine note, which a build PR adds to its own sections. Discussion happens on the tickets each file cites under Provenance, or in build PRs.</li>
+  <li><strong>PRs enshrine what they land.</strong> A build PR that lands a topic marks that <code>&lt;section class="topic"&gt;</code> with <code>class="topic enshrined"</code> and adds a <code>&lt;p class="note"&gt;</code> crediting the PR (and any deviations) in the same PR, and moves anything user-facing into README or a <code>docs/</code> guide (<a href="docs.html">Docs</a> says which). Sections stay for context; <a href="docs.html">Docs</a> says when the directory retires.</li>
+  <li><strong>A wrong section is corrected with a deviation note.</strong> If a PR discovers the plan is wrong, it records the deviation in the PR description, states it in the section's enshrine note, and lands the correction. The code is then the truth.</li>
+  <li><strong>Diagrams are prose.</strong> An SVG stays with its enshrined section.</li>
   <li><strong>Nothing here is a permanent record.</strong> The tickets are. This directory is served locally by <code>bin/plans</code> at <code>http://localhost:8001/reboot/</code> and also works from <code>file://</code>.</li>
 </ul>
 

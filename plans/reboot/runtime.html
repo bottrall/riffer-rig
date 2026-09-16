@@ -23,7 +23,7 @@
 <p class="lede">The runtime object. A plain Ruby object every host drives the same way.</p>
 
 <h2 id="scope">Scope</h2>
-<p><code>Riffer::Rig::Runtime</code> and the value objects around it: <code>Turn</code>, the rig-level events, <code>Command</code>, the null host. It wraps one <code>Riffer::Agent</code> built from a per-instance <code>Riffer::Agent::Config</code>. It assumes no TTY, scans no disk and accepts registered objects only. Files: <code>lib/riffer/rig/runtime.rb</code>, <code>lib/riffer/rig/events.rb</code>, <code>lib/riffer/rig/command.rb</code>, <code>lib/riffer/rig/host.rb</code> (the duck's documentation and <code>NullHost</code>), <code>lib/riffer/rig/turn.rb</code>.</p>
+<p><code>Riffer::Rig::Runtime</code> and the value objects around it: the rig-level events, <code>Command</code>, the null host. It wraps one <code>Riffer::Agent</code> built from a per-instance <code>Riffer::Agent::Config</code>. It assumes no TTY, scans no disk and accepts registered objects only. Files: <code>lib/riffer/rig/runtime.rb</code>, <code>lib/riffer/rig/events.rb</code>, <code>lib/riffer/rig/command.rb</code>, <code>lib/riffer/rig/host.rb</code> (the duck's documentation and <code>NullHost</code>).</p>
 <p><strong>Depends on:</strong> riffer only. <strong>Depended on by:</strong> every other unit. The registrar it runs extension blocks against is specified in <a href="extensions.html">Extensions</a>; this file covers what the Runtime does with the result.</p>
 
 <h2 id="decisions">Decisions</h2>
@@ -40,12 +40,16 @@
 <p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/160">#160</a>. Two deviations: the null host is named <code>Riffer::Rig::Host</code>, not <code>NullHost</code> — zeitwerk maps <code>host.rb</code> to <code>Riffer::Rig::Host</code> and a nested class under it would be unloadable; and constructor keywords not yet honoured (<code>credentials:</code>, <code>pricing:</code>, <code>max_steps:</code>, <code>snapshot:</code>) are accepted and ignored, documented in <code>docs/EMBEDDING.md</code>. Two more, typed seams: <code>pricing:</code> takes model → <code>Settings::Pricing</code> entries, and <code>credentials:</code> takes provider → key strings until the typed <code>auth.json</code> entries land in <a href="providers.html">Providers</a>.</p>
 </section>
 
-<section class="topic" id="prompting">
+<section class="topic enshrined" id="prompting">
 <h3>Prompting and the loop</h3>
 <ul>
   <li><code>prompt(text)</code> runs one turn on the calling thread. With a block it yields every event as it happens; without one it returns an Enumerator. It returns when the turn ends.</li>
+  <li><code>ask(text)</code> runs the turn to completion and returns riffer's <code>Agent::Response</code>. The planned <code>Turn</code> value object is dropped: riffer's response already carries the content, outcome, tool calls and usage, and riffer's contract is ours to change deliberately.</li>
+  <li><code>max_steps:</code> maps to riffer's <code>config.max_steps</code>. No default limit in the REPL; hitting it ends the run with outcome reason <code>max_steps</code>.</li>
+  <li>Run outcomes are riffer's: <code>completed</code>, provider finish reasons (<code>length</code>, <code>context_window</code>, <code>content_filter</code>, <code>malformed_output</code>, <code>error</code>, …), <code>max_steps</code>, <code>guardrail_blocked</code>, <code>invalid_structured_output</code>, <code>interrupted</code> (with the reason in <code>outcome.detail</code> — cancellation lands there until #110 gives it a vocabulary entry upstream). Hosts map them to exit codes or UI; the Runtime only reports them on the <code>Agent::Response</code>.</li>
   <li>The loop itself is riffer's. riffer-rig adds nothing to it beyond the callbacks the events, cancel and reload sections describe.</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/178">#178</a>. Deviations from the decisions as written: <code>ask</code> returns riffer's <code>Agent::Response</code> instead of a rig-owned <code>Turn</code> value object (the planned <code>text</code>/<code>stop_reason</code>/<code>tool_calls</code>/<code>usage</code>/<code>cost</code> readers map to <code>content</code>/<code>outcome.reason</code>/<code>messages</code>/<code>token_usage</code>/<code>token_usage.cost</code>), and the stop-reason vocabulary is riffer's outcome vocabulary plus the upstream <code>cancelled</code> entry #110 will add, not a rig-defined list.</p>
 </section>
 
 <section class="topic enshrined" id="system-message">
@@ -187,6 +191,7 @@ been given; each tool describes what it does and when to use it.
   <tr><td><code>cwd:</code></td><td>working directory for the environment block and for tools</td><td><code>Dir.pwd</code></td></tr>
   <tr><td><code>name:</code></td><td>the name interpolated into the base prompt</td><td><code>"riffer"</code></td></tr>
   <tr><td><code>instructions:</code></td><td>replaces the base prompt wholesale</td><td><code>nil</code> (use the base)</td></tr>
+  <tr><td><code>max_steps:</code></td><td>riffer <code>config.max_steps</code></td><td><code>nil</code></td></tr>
   <tr><td><code>snapshot:</code></td><td>a hash from <code>to_h</code> to restore</td><td><code>nil</code></td></tr>
 </table></div>
 
@@ -194,6 +199,7 @@ been given; each tool describes what it does and when to use it.
 <div class="table-wrap"><table>
   <tr><th>Method</th><th>Returns</th></tr>
   <tr><td><code>prompt(text) { |event| }</code> / <code>prompt(text)</code></td><td>nil with a block; an Enumerator of events without</td></tr>
+  <tr><td><code>ask(text)</code></td><td>riffer <code>Agent::Response</code> (deviation: was <code>Turn</code>)</td></tr>
   <tr><td><code>cancel</code></td><td>nil; thread-safe</td></tr>
   <tr><td><code>commands</code></td><td>array of <code>Command</code> (<code>name</code>, <code>description</code>)</td></tr>
   <tr><td><code>run_command(name, args)</code></td><td>nil; output arrives as events</td></tr>
@@ -210,7 +216,7 @@ been given; each tool describes what it does and when to use it.
 <h2 id="enshrines">Enshrines into</h2>
 <div class="table-wrap"><table>
   <tr><th>Topic</th><th>Code</th><th>Docs</th></tr>
-  <tr><td>Contract, prompting, events, cancel, commands, tally, snapshot, rebuild</td><td><code>lib/riffer/rig/runtime.rb</code>, <code>events.rb</code>, <code>command.rb</code>, <code>turn.rb</code></td><td><code>docs/EMBEDDING.md</code>; the NDJSON shape also in <code>docs/HEADLESS.md</code></td></tr>
+  <tr><td>Contract, prompting, events, cancel, commands, tally, snapshot, rebuild</td><td><code>lib/riffer/rig/runtime.rb</code>, <code>events.rb</code>, <code>command.rb</code></td><td><code>docs/EMBEDDING.md</code>; the NDJSON shape also in <code>docs/HEADLESS.md</code></td></tr>
   <tr><td>System message and base prompt</td><td>heredoc in <code>runtime.rb</code>; permanent docs permalink the source rather than restating it</td><td><code>docs/INSTRUCTIONS.md</code></td></tr>
   <tr><td>Per-runtime credentials</td><td><code>lib/riffer/rig/runtime.rb</code>, client Procs installed in <code>lib/riffer/rig.rb</code>; marked upstream candidate</td><td><code>docs/EMBEDDING.md</code></td></tr>
   <tr><td><code>/model</code></td><td>a core <code>Command</code> in <code>lib/riffer/rig/commands/model.rb</code></td><td>README Usage; <code>docs/CONFIGURATION.md</code></td></tr>

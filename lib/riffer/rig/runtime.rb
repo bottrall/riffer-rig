@@ -3,12 +3,13 @@
 require 'date'
 
 # One Runtime builds its own Riffer::Agent from a per-instance
-# Riffer::Agent::Config and runs a prompt: streamed, or gathered into a Turn.
+# Riffer::Agent::Config and runs a prompt: streamed as events, or run to
+# completion and returned as riffer's Agent::Response.
 #
 #   runtime = Riffer::Rig::Runtime.new('mock/x')
 #   runtime.prompt('hello') { |event| ... }   # yields riffer StreamEvents
 #   runtime.prompt('hello').each { |event| }  # an Enumerator without a block
-#   turn = runtime.ask('hello')               # a Riffer::Rig::Turn
+#   response = runtime.ask('hello')           # a Riffer::Agent::Response
 #
 # Two Runtimes in one process share nothing but the process-wide extension
 # registry and riffer's provider repository. One prompt runs at a time; a
@@ -122,24 +123,17 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs text: String
-  # @rbs return: Riffer::Rig::Turn
+  # @rbs return: Riffer::Agent::Response
   def ask(text)
     raise BusyError, 'a prompt is already running on this Runtime' if @busy
 
     @busy = true
-    run_turn(text)
+    @agent.stream(text).each { |event| event }
   ensure
     @busy = false
   end
 
   private
-
-  # @rbs text: String
-  # @rbs return: Riffer::Rig::Turn
-  def run_turn(text)
-    response = @agent.stream(text).each { |event| event }
-    Riffer::Rig::Turn.from_response(response)
-  end
 
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs return: Riffer::Rig::Registrar

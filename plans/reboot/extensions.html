@@ -68,7 +68,7 @@ end</code></pre>
 <h3>The eight seams</h3>
 <div class="table-wrap"><table>
   <tr><th>Call</th><th>Does</th><th>Backed by</th></tr>
-  <tr><td><code>rig.tool klass</code></td><td>adds a <code>Riffer::Tool</code> to the Runtime; its <code>identifier</code> is its name everywhere (<code>--tools</code>, replacement, <code>Turn#tool_calls</code>)</td><td>riffer tools</td></tr>
+  <tr><td><code>rig.tool klass</code></td><td>adds a <code>Riffer::Tool</code> to the Runtime; its <code>identifier</code> is its name everywhere (<code>--tools</code>, replacement, response <code>messages</code>)</td><td>riffer tools</td></tr>
   <tr><td><code>rig.command name, description: { |ctx| }</code></td><td>runtime slash command, works in every host</td><td>rig <code>Command</code></td></tr>
   <tr><td><code>rig.prompt(section) { |ctx| }</code></td><td>named system-prompt section, evaluated per turn</td><td>riffer instructions</td></tr>
   <tr><td><code>rig.on(event) { |e| }</code></td><td>lifecycle and loop handlers</td><td>riffer <code>on_message</code>, tool runtime, guardrail phases</td></tr>
