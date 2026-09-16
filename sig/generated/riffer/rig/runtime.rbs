@@ -1,0 +1,101 @@
+# Generated from lib/riffer/rig/runtime.rb with RBS::Inline
+
+# One Runtime builds its own Riffer::Agent from a per-instance
+# Riffer::Agent::Config and streams a prompt.
+#
+#   runtime = Riffer::Rig::Runtime.new('mock/x')
+#   runtime.prompt('hello') { |event| ... }   # yields riffer StreamEvents
+#   runtime.prompt('hello').each { |event| }  # an Enumerator without a block
+#
+# Two Runtimes in one process share nothing but the process-wide extension
+# registry and riffer's provider repository. One prompt runs at a time; a
+# second while one is running raises Riffer::Rig::Runtime::BusyError. The
+# Runtime never renders, never prints, never reads the filesystem.
+class Riffer::Rig::Runtime
+  # Raised when a second prompt or registrar build runs while one is already
+  # running on this Runtime.
+  class BusyError < StandardError
+  end
+
+  BASE_PROMPT_TEMPLATE: ::String
+
+  DEFAULT_NAME: ::String
+
+  # The legacy CodingAgent's default: an unlimited agent loop. riffer's own
+  # default (16) is too small for a general-purpose harness; #105 makes the
+  # limit host-configurable.
+  DEFAULT_MAX_STEPS: Integer?
+
+  interface _Host
+    def ask: (?String, ?options: Array[String]?, ?secret: bool) -> String?
+
+    def confirm: (?String) -> bool
+
+    def notify: (?String, ?level: Symbol) -> void
+
+    def progress: (?String) { () -> void } -> void
+
+    def capabilities: () -> Set[Symbol]
+  end
+
+  @registrar: Riffer::Rig::Registrar
+
+  @busy: bool
+
+  @settings: Hash[Symbol, untyped]
+
+  @host: _Host
+
+  @cwd: String
+
+  @agent: Riffer::Agent
+
+  # @dynamic agent, cwd, host, settings
+  attr_reader agent: Riffer::Agent
+
+  attr_reader cwd: String
+
+  attr_reader host: _Host
+
+  attr_reader settings: Hash[Symbol, untyped]
+
+  # @rbs model: String
+  # @rbs extensions: Array[Riffer::Rig::Extension]
+  # @rbs tools: Array[String]?
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs host: _Host
+  # @rbs cwd: String?
+  # @rbs name: String
+  # @rbs instructions: String?
+  # @rbs credentials: Hash[String, String]
+  # @rbs pricing: Hash[String, Riffer::Rig::Settings::Pricing]
+  # @rbs max_steps: Integer?
+  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs return: void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: _Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[String, String], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?max_steps: Integer?, ?snapshot: Hash[Symbol, untyped]?) -> void
+
+  # @rbs text: String
+  # @rbs &block: ?(Riffer::StreamEvents::Base) -> void
+  # @rbs return: (nil | Enumerator[Riffer::StreamEvents::Base, void])
+  def prompt: (String text) ?{ (Riffer::StreamEvents::Base) -> void } -> (nil | Enumerator[Riffer::StreamEvents::Base, void])
+
+  private
+
+  # @rbs text: String
+  # @rbs &block: (Riffer::StreamEvents::Base) -> void
+  # @rbs return: nil
+  def stream_prompt: (String text) { (Riffer::StreamEvents::Base) -> void } -> nil
+
+  # @rbs extensions: Array[Riffer::Rig::Extension]
+  # @rbs return: Riffer::Rig::Registrar
+  def build_registrar: (Array[Riffer::Rig::Extension] extensions) -> Riffer::Rig::Registrar
+
+  # @rbs registered: Array[singleton(Riffer::Tool)]
+  # @rbs allowlist: Array[String]?
+  # @rbs return: Array[singleton(Riffer::Tool)]
+  def select_tools: (Array[singleton(Riffer::Tool)] registered, Array[String]? allowlist) -> Array[singleton(Riffer::Tool)]
+
+  # @rbs base_prompt: String
+  # @rbs return: String
+  def system_prompt: (String base_prompt) -> String
+end

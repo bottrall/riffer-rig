@@ -1,0 +1,17 @@
+# Generated from lib/riffer/rig/registrar.rb with RBS::Inline
+
+# The per-Runtime registrar extension blocks run against. Seams are added one
+# at a time; today only #tool exists.
+class Riffer::Rig::Registrar
+  @tools: Array[singleton(Riffer::Tool)]
+
+  # @rbs return: void
+  def initialize: () -> void
+
+  # @rbs klass: singleton(Riffer::Tool)
+  # @rbs return: void
+  def tool: (singleton(Riffer::Tool) klass) -> void
+
+  # @rbs return: Array[singleton(Riffer::Tool)]
+  def tools: () -> Array[singleton(Riffer::Tool)]
+end
