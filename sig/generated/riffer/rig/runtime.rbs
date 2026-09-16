@@ -62,12 +62,12 @@ class Riffer::Rig::Runtime
   # @rbs cwd: String?
   # @rbs name: String
   # @rbs instructions: String?
-  # @rbs credentials: Hash[Symbol, untyped]
-  # @rbs pricing: Hash[Symbol, untyped]
+  # @rbs credentials: Hash[String, String]
+  # @rbs pricing: Hash[String, Riffer::Rig::Settings::Pricing]
   # @rbs max_steps: Integer?
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
-  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: _Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, untyped], ?pricing: Hash[Symbol, untyped], ?max_steps: Integer?, ?snapshot: Hash[Symbol, untyped]?) -> void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: _Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[String, String], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?max_steps: Integer?, ?snapshot: Hash[Symbol, untyped]?) -> void
 
   # @rbs text: String
   # @rbs &block: ?(Riffer::StreamEvents::Base) -> void

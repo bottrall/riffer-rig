@@ -36,7 +36,7 @@
   <li>Resolve credentials for the selected model's provider (<a href="providers.html#resolution">Providers: resolution</a>), asking the host when allowed.</li>
   <li>Take the bundled extensions minus <code>extensions.disabled</code> and the strip keywords.</li>
   <li>Load <code>~/.riffer/rig.rb</code>, then <code>&lt;cwd&gt;/.riffer/rig.rb</code> if trusted, recording tracked files. Append every extension recorded during those loads, in record order.</li>
-  <li>Construct the Runtime with <code>model:</code>, <code>credentials:</code>, <code>extensions:</code>, <code>tools:</code>, <code>settings:</code>, <code>pricing:</code>, <code>host:</code>, <code>cwd:</code>, <code>max_steps:</code>, and <code>snapshot:</code> when resuming.</li>
+  <li>Construct the Runtime with <code>model:</code>, <code>credentials:</code> (provider → key strings), <code>extensions:</code>, <code>tools:</code>, <code>settings:</code>, <code>pricing:</code> (model → <code>Settings::Pricing</code> entries), <code>host:</code>, <code>cwd:</code>, <code>max_steps:</code>, and <code>snapshot:</code> when resuming.</li>
   <li>Install the Loader-owned pieces on the Runtime: the <code>/reload</code> command, the <code>before_request</code> reload check (unless <code>reload</code> is <code>manual</code>), and the store observer on <code>on_message</code>.</li>
 </ol>
 <p>If <code>model:</code> is still unresolved after step 1 (no flag, no env, no setting) the Loader asks the host to run onboarding (<a href="hosts.html#terminal">Hosts: terminal</a>); the null host declines and the Loader raises the configuration error the headless host maps to exit 2.</p>

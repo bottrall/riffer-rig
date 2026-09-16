@@ -37,7 +37,7 @@
   <li>The constructor takes everything as keywords: <code>model:</code>, <code>credentials:</code>, <code>extensions:</code>, <code>tools:</code>, <code>settings:</code>, <code>pricing:</code>, <code>host:</code>, <code>cwd:</code>, <code>name:</code>, <code>instructions:</code>, <code>max_steps:</code>, <code>snapshot:</code>. All optional except <code>model:</code>; the Interfaces table gives each one's meaning.</li>
   <li>The current implementation's <code>CodingAgent</code> class-level DSL, its <code>Settings.model</code> lookup at class-definition time and its AGENTS.md reading inside <code>instructions</code> all go. Model, tools, skills backend and instructions are supplied per instance.</li>
 </ul>
-<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/160">#160</a>. Two deviations: the null host is named <code>Riffer::Rig::Host</code>, not <code>NullHost</code> — zeitwerk maps <code>host.rb</code> to <code>Riffer::Rig::Host</code> and a nested class under it would be unloadable; and constructor keywords not yet honoured (<code>credentials:</code>, <code>pricing:</code>, <code>max_steps:</code>, <code>snapshot:</code>) are accepted and ignored, documented in <code>docs/EMBEDDING.md</code>.</p>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/160">#160</a>. Two deviations: the null host is named <code>Riffer::Rig::Host</code>, not <code>NullHost</code> — zeitwerk maps <code>host.rb</code> to <code>Riffer::Rig::Host</code> and a nested class under it would be unloadable; and constructor keywords not yet honoured (<code>credentials:</code>, <code>pricing:</code>, <code>max_steps:</code>, <code>snapshot:</code>) are accepted and ignored, documented in <code>docs/EMBEDDING.md</code>. Two more, typed seams: <code>pricing:</code> takes model → <code>Settings::Pricing</code> entries, and <code>credentials:</code> takes provider → key strings until the typed <code>auth.json</code> entries land in <a href="providers.html">Providers</a>.</p>
 </section>
 
 <section class="topic" id="prompting">
@@ -126,7 +126,7 @@ been given; each tool describes what it does and when to use it.
 <section class="topic" id="credentials">
 <h3>Per-runtime credentials</h3>
 <ul>
-  <li><code>credentials:</code> is a hash keyed by provider identifier holding the resolved values for that Runtime (see <a href="providers.html#resolution">Providers: resolution</a>). The Runtime never resolves them itself.</li>
+  <li><code>credentials:</code> is a hash keyed by provider identifier holding the resolved key strings for that Runtime (see <a href="providers.html#resolution">Providers: resolution</a>). The Runtime never resolves them itself.</li>
   <li><code>Runtime#prompt</code> marks the Runtime as current for the calling thread (a thread-local). At boot riffer-rig installs one Proc per provider into <code>Riffer.config.&lt;provider&gt;.client</code>; riffer resolves that Proc on every LLM call, and it returns a client built from the current Runtime's credentials. Two Runtimes with different keys run in parallel threads.</li>
   <li><code>Riffer::Rig.credentials(:identifier)</code> reads the current Runtime's values; extension providers call it when building their client.</li>
   <li><code>Riffer.configure</code> remains a fallback a host may use at its edge; the shipped hosts do not.</li>
@@ -148,7 +148,7 @@ been given; each tool describes what it does and when to use it.
 <section class="topic" id="tally">
 <h3>Token tally and pricing</h3>
 <ul>
-  <li>The Runtime keeps a running tally of token usage across turns and prices it with the <code>pricing:</code> table it was given (the <code>models</code> block of settings, USD per million tokens; missing pricing means cost is nil, never zero). <code>Turn#usage</code> and <code>Turn#cost</code> and the <code>turn_end</code> event expose the per-turn numbers; <code>tally</code> exposes the totals.</li>
+  <li>The Runtime keeps a running tally of token usage across turns and prices it with the <code>pricing:</code> table it was given (model → <code>Settings::Pricing</code> entries from the <code>models</code> block of settings, USD per million tokens; missing pricing means cost is nil, never zero). <code>Turn#usage</code> and <code>Turn#cost</code> and the <code>turn_end</code> event expose the per-turn numbers; <code>tally</code> exposes the totals.</li>
   <li>The tally is kept across <code>rebuild</code>. It is not stored in the snapshot: assistant messages carry <code>token_usage</code>, so a restored Runtime re-sums it, and pricing comes from today's settings, never the file.</li>
   <li>The existing <code>TokenTally</code> module is the seed; it moves behind the Runtime.</li>
 </ul>
@@ -181,12 +181,11 @@ been given; each tool describes what it does and when to use it.
 <div class="table-wrap"><table>
   <tr><th>Keyword</th><th>Meaning</th><th>Default</th></tr>
   <tr><td><code>model:</code></td><td><code>"provider/name"</code>; bare names rejected</td><td>required</td></tr>
-  <tr><td><code>credentials:</code></td><td>hash keyed by provider identifier of resolved field values</td><td><code>{}</code></td></tr>
+  <tr><td><code>credentials:</code></td><td>hash keyed by provider identifier of resolved key strings</td><td><code>{}</code></td></tr>
   <tr><td><code>extensions:</code></td><td>ordered list of extension objects (from <code>Riffer::Rig.extension</code> or <code>Riffer::Rig.bundled</code>) whose blocks run against this Runtime's registrar</td><td><code>[]</code></td></tr>
   <tr><td><code>tools:</code></td><td>allowlist of tool identifiers; nil means every registered tool</td><td><code>nil</code></td></tr>
-  <tr><td><code>credentials:</code></td><td>hash keyed by provider identifier of resolved field values</td><td><code>{}</code></td></tr>
   <tr><td><code>settings:</code></td><td>merged settings hash (core keys top level, extension keys under their names)</td><td><code>{}</code></td></tr>
-  <tr><td><code>pricing:</code></td><td>model → <code>{input, output, cache_write, cache_read}</code> USD per million tokens</td><td><code>{}</code></td></tr>
+  <tr><td><code>pricing:</code></td><td>model → <code>Settings::Pricing</code> entries (USD per million tokens)</td><td><code>{}</code></td></tr>
   <tr><td><code>host:</code></td><td>an object implementing the Host duck</td><td><code>NullHost.new</code></td></tr>
   <tr><td><code>cwd:</code></td><td>working directory for the environment block and for tools</td><td><code>Dir.pwd</code></td></tr>
   <tr><td><code>name:</code></td><td>the name interpolated into the base prompt</td><td><code>"riffer"</code></td></tr>

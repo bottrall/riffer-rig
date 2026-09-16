@@ -61,8 +61,8 @@ class Riffer::Rig::Runtime
   # @rbs cwd: String?
   # @rbs name: String
   # @rbs instructions: String?
-  # @rbs credentials: Hash[Symbol, untyped]
-  # @rbs pricing: Hash[Symbol, untyped]
+  # @rbs credentials: Hash[String, String]
+  # @rbs pricing: Hash[String, Riffer::Rig::Settings::Pricing]
   # @rbs max_steps: Integer?
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void

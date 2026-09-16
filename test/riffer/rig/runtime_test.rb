@@ -65,8 +65,8 @@ describe Riffer::Rig::Runtime do
     runtime = Riffer::Rig::Runtime.new(
       'mock/test',
       extensions: [@extension],
-      credentials: { anthropic: {} },
-      pricing: {},
+      credentials: { 'anthropic' => 'sk-ant-test' },
+      pricing: { 'mock/test' => Riffer::Rig::Settings::Pricing.from({}) },
       max_steps: 10,
       snapshot: nil
     )
