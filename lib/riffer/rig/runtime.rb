@@ -31,6 +31,11 @@ class Riffer::Rig::Runtime
 
   DEFAULT_NAME = 'riffer'
 
+  # The legacy CodingAgent's default: an unlimited agent loop. riffer's own
+  # default (16) is too small for a general-purpose harness; #105 makes the
+  # limit host-configurable.
+  DEFAULT_MAX_STEPS = nil #: Integer?
+
   # @rbs!
   #   interface _Host
   #     def ask: (?String, ?options: Array[String]?, ?secret: bool) -> String?
@@ -77,7 +82,7 @@ class Riffer::Rig::Runtime
     instructions: nil,
     credentials: {},
     pricing: {},
-    max_steps: nil,
+    max_steps: DEFAULT_MAX_STEPS,
     snapshot: nil
   )
     @host = host
@@ -93,7 +98,8 @@ class Riffer::Rig::Runtime
       config: Riffer::Agent::Config.new(
         model: model,
         instructions: system_prompt(base_prompt),
-        tools_config: tool_classes
+        tools_config: tool_classes,
+        max_steps: max_steps
       )
     )
   end

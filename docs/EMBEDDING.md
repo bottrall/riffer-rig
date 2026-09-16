@@ -12,7 +12,7 @@ runtime = Riffer::Rig::Runtime.new(
 )
 ```
 
-The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `credentials:`, `pricing:`, `max_steps:` and `snapshot:` are accepted and ignored until their tickets land, and `settings:` is stored and exposed (`runtime.settings`) but nothing reads it yet. `pricing:` and `credentials:` already take the shapes the Loader will pass — `Settings::Pricing` entries and plain key strings respectively — so embedders building them today keep working when their tickets land.
+The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `credentials:`, `pricing:` and `snapshot:` are accepted and ignored until their tickets land, and `settings:` is stored and exposed (`runtime.settings`) but nothing reads it yet. `pricing:` and `credentials:` already take the shapes the Loader will pass — `Settings::Pricing` entries and plain key strings respectively — so embedders building them today keep working when their tickets land.
 
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
@@ -24,6 +24,7 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `cwd:`          | working directory for the environment block and for tools                   | `Dir.pwd`               |
 | `name:`         | the name interpolated into the [base prompt](INSTRUCTIONS.md)               | `"riffer"`              |
 | `instructions:` | replaces the base prompt wholesale (the environment block still applies)    | `nil` (use the base)    |
+| `max_steps:`    | agent-loop step limit; `nil` runs the loop without a limit                  | `nil`                   |
 | `credentials:`  | provider → resolved key string; accepted and ignored until per-runtime credentials land | `{}`       |
 | `pricing:`      | model → `Riffer::Rig::Settings::Pricing` entries (USD per million tokens); accepted and ignored until the token tally moves behind the Runtime | `{}` |
 

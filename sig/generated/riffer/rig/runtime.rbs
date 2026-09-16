@@ -21,6 +21,11 @@ class Riffer::Rig::Runtime
 
   DEFAULT_NAME: ::String
 
+  # The legacy CodingAgent's default: an unlimited agent loop. riffer's own
+  # default (16) is too small for a general-purpose harness; #105 makes the
+  # limit host-configurable.
+  DEFAULT_MAX_STEPS: Integer?
+
   interface _Host
     def ask: (?String, ?options: Array[String]?, ?secret: bool) -> String?
 

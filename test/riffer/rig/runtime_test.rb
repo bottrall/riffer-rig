@@ -67,11 +67,22 @@ describe Riffer::Rig::Runtime do
       extensions: [@extension],
       credentials: { 'anthropic' => 'sk-ant-test' },
       pricing: { 'mock/test' => Riffer::Rig::Settings::Pricing.from({}) },
-      max_steps: 10,
       snapshot: nil
     )
 
     assert_instance_of Riffer::Rig::Runtime, runtime
+  end
+
+  it 'defaults to an unlimited agent loop' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+
+    assert_nil runtime.agent.config.max_steps
+  end
+
+  it 'forwards max_steps to the agent' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], max_steps: 3)
+
+    assert_equal 3, runtime.agent.config.max_steps
   end
 
   it 'names the agent in the base prompt' do
