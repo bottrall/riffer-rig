@@ -32,6 +32,73 @@ describe Riffer::Rig::Runtime do
     assert_instance_of Enumerator, runtime.prompt('hello')
   end
 
+  it 'asks and returns a turn with the response text' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+    runtime.agent.provider.stub_response('All done.')
+
+    turn = runtime.ask('hello')
+
+    assert_equal 'All done.', turn.text
+  end
+
+  it 'asks and reports the stop reason from the provider' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+    runtime.agent.provider.stub_response('All done.')
+
+    turn = runtime.ask('hello')
+
+    assert_equal :stop, turn.stop_reason
+  end
+
+  it 'asks and carries the run token usage' do
+    usage = Riffer::Providers::TokenUsage.new(input_tokens: 10, output_tokens: 5)
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+    runtime.agent.provider.stub_response('All done.', token_usage: usage)
+
+    turn = runtime.ask('hello')
+
+    assert_equal usage, turn.usage
+  end
+
+  it 'asks and lists the tool calls the model made' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], tools: %w[read])
+    runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
+    runtime.agent.provider.stub_response('The file says hi.')
+
+    turn = runtime.ask('read /tmp/x')
+
+    assert_equal ['read'], turn.tool_calls.map(&:name)
+  end
+
+  it 'ends a capped turn with the max_steps stop reason' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], tools: %w[read], max_steps: 1)
+    runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
+    runtime.agent.provider.stub_response('second response')
+
+    turn = runtime.ask('go')
+
+    assert_equal :max_steps, turn.stop_reason
+  end
+
+  it 'refuses an ask while a prompt is running' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+    runtime.agent.provider.stub_response('first')
+    runtime.agent.provider.stub_response('second')
+
+    assert_raises(Riffer::Rig::Runtime::BusyError) do
+      runtime.prompt('hello') do
+        runtime.ask('second')
+      end
+    end
+  end
+
+  it 'keeps ask and prompt from colliding' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+    runtime.agent.provider.stub_response('All done.')
+
+    assert_nil runtime.prompt('hello') { |event| event }
+  end
+
   it 'registers the bundled tool classes through an extension' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
 

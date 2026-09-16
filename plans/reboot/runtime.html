@@ -44,9 +44,6 @@
 <h3>Prompting and the loop</h3>
 <ul>
   <li><code>prompt(text)</code> runs one turn on the calling thread. With a block it yields every event as it happens; without one it returns an Enumerator. It returns when the turn ends.</li>
-  <li><code>ask(text)</code> drains <code>prompt</code> and returns a <code>Turn</code>: <code>text</code>, <code>stop_reason</code>, <code>tool_calls</code>, <code>usage</code>, <code>cost</code>. The headless host and embedders build on it; the terminal builds on the stream.</li>
-  <li><code>max_steps:</code> maps to riffer's <code>config.max_steps</code>. No default limit in the REPL; hitting it ends the turn with stop reason <code>max_steps</code>.</li>
-  <li>Stop reasons are riffer's finish reasons plus <code>max_steps</code> and <code>cancelled</code>: <code>stop</code>, <code>length</code>, <code>context_window</code>, <code>content_filter</code>, <code>malformed_output</code>, <code>max_steps</code>, <code>cancelled</code>, <code>error</code>. Hosts map them to exit codes or UI; the Runtime only reports them in <code>turn_end</code>.</li>
   <li>The loop itself is riffer's. riffer-rig adds nothing to it beyond the callbacks the events, cancel and reload sections describe.</li>
 </ul>
 </section>
@@ -190,7 +187,6 @@ been given; each tool describes what it does and when to use it.
   <tr><td><code>cwd:</code></td><td>working directory for the environment block and for tools</td><td><code>Dir.pwd</code></td></tr>
   <tr><td><code>name:</code></td><td>the name interpolated into the base prompt</td><td><code>"riffer"</code></td></tr>
   <tr><td><code>instructions:</code></td><td>replaces the base prompt wholesale</td><td><code>nil</code> (use the base)</td></tr>
-  <tr><td><code>max_steps:</code></td><td>riffer <code>config.max_steps</code></td><td><code>nil</code></td></tr>
   <tr><td><code>snapshot:</code></td><td>a hash from <code>to_h</code> to restore</td><td><code>nil</code></td></tr>
 </table></div>
 
@@ -198,7 +194,6 @@ been given; each tool describes what it does and when to use it.
 <div class="table-wrap"><table>
   <tr><th>Method</th><th>Returns</th></tr>
   <tr><td><code>prompt(text) { |event| }</code> / <code>prompt(text)</code></td><td>nil with a block; an Enumerator of events without</td></tr>
-  <tr><td><code>ask(text)</code></td><td><code>Turn</code></td></tr>
   <tr><td><code>cancel</code></td><td>nil; thread-safe</td></tr>
   <tr><td><code>commands</code></td><td>array of <code>Command</code> (<code>name</code>, <code>description</code>)</td></tr>
   <tr><td><code>run_command(name, args)</code></td><td>nil; output arrives as events</td></tr>
