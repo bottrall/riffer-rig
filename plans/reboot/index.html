@@ -10,7 +10,7 @@
 
 <nav class="plan">
   <a href="index.html" aria-current="page">Index</a>
-  <a href="session.html">Session</a>
+  <a href="runtime.html">Runtime</a>
   <a href="extensions.html">Extensions</a>
   <a href="bundled.html">Bundled</a>
   <a href="loader.html">Loader</a>
@@ -41,7 +41,7 @@
 <ul>
   <li>extensions that touch the UI go through a host interface the terminal implements and an embedding host implements differently or ignores (<a href="extensions.html#host-interface">Extensions: Host interface</a>);</li>
   <li>extension discovery (scanning config and project directories) lives in the Loader; the runtime only accepts registered objects (<a href="loader.html#discovery">Loader: discovery</a>);</li>
-  <li>global state (riffer registries, config singletons) allows several isolated agents in one process (<a href="session.html#credentials">Session: per-session credentials</a>).</li>
+  <li>global state (riffer registries, config singletons) allows several isolated agents in one process (<a href="runtime.html#credentials">Runtime: per-runtime credentials</a>).</li>
 </ul>
 <p>Discipline: the runtime assumes no TTY, and no further embedding accommodation is made until a real host exists. No embedding host is planned yet; the first one will be whatever real Ruby app needs it.</p>
 
@@ -117,34 +117,34 @@
 <h2 id="units">Build units</h2>
 
 <figure>
-<svg viewBox="0 0 760 300" role="img" aria-label="Layer diagram: hosts on top, Loader beneath, Session and extensions in the runtime, riffer at the bottom">
+<svg viewBox="0 0 760 300" role="img" aria-label="Layer diagram: hosts on top, Loader beneath, Runtime and extensions in the runtime layer, riffer at the bottom">
   <text x="20" y="22" class="sub head">HOSTS · render events, own the TTY or the wire</text>
   <rect x="20" y="30" width="165" height="46" rx="6" class="box"/><text x="102" y="50" text-anchor="middle" class="lbl">Terminal</text><text x="102" y="66" text-anchor="middle" class="sub mono">riffer</text>
   <rect x="205" y="30" width="165" height="46" rx="6" class="box"/><text x="287" y="50" text-anchor="middle" class="lbl">Headless</text><text x="287" y="66" text-anchor="middle" class="sub mono">riffer -p</text>
   <rect x="390" y="30" width="165" height="46" rx="6" class="box"/><text x="472" y="50" text-anchor="middle" class="lbl">ACP</text><text x="472" y="66" text-anchor="middle" class="sub mono">riffer acp · acp-sdk</text>
   <rect x="575" y="30" width="165" height="46" rx="6" class="box"/><text x="657" y="50" text-anchor="middle" class="lbl">Your app</text><text x="657" y="66" text-anchor="middle" class="sub">Rails, script, job</text>
 
-  <text x="20" y="112" class="sub head">LOADER · filesystem conventions, builds a Session for a cwd</text>
+  <text x="20" y="112" class="sub head">LOADER · filesystem conventions, builds a Runtime for a cwd</text>
   <rect x="20" y="120" width="535" height="46" rx="6" class="box"/><text x="287" y="140" text-anchor="middle" class="lbl">Loader</text><text x="287" y="156" text-anchor="middle" class="sub">rig.rb · settings.json · auth.json · trust · AGENTS.md · skills · reload · session store</text>
   <path d="M102 76 V120 M287 76 V120 M472 76 V120" class="edge"/>
   <path d="M657 76 V210" class="edge" stroke-dasharray="4 4"/>
 
   <text x="20" y="202" class="sub head">RUNTIME · no TTY, no disk scanning, accepts registered objects only</text>
-  <rect x="20" y="210" width="350" height="46" rx="6" class="box core"/><text x="195" y="230" text-anchor="middle" class="lbl">Session</text><text x="195" y="246" text-anchor="middle" class="sub">prompt · events · cancel · commands · snapshot · rebuild</text>
+  <rect x="20" y="210" width="350" height="46" rx="6" class="box core"/><text x="195" y="230" text-anchor="middle" class="lbl">Runtime</text><text x="195" y="246" text-anchor="middle" class="sub">prompt · events · cancel · commands · snapshot · rebuild</text>
   <rect x="390" y="210" width="350" height="46" rx="6" class="box core"/><text x="565" y="230" text-anchor="middle" class="lbl">Extensions</text><text x="565" y="246" text-anchor="middle" class="sub">registrar · eight seams · Host duck · bundled: read write edit bash skills agents_md mcp</text>
   <path d="M287 166 V210" class="edge"/>
   <path d="M370 233 H390" class="edge"/>
 
   <rect x="20" y="276" width="720" height="18" rx="4" class="box"/><text x="380" y="289" text-anchor="middle" class="sub">riffer 0.45: agent loop, tools, skills, providers, MCP client, StreamEvents (unchanged)</text>
 </svg>
-<figcaption>Hosts drive a Session. The Loader builds one from the filesystem for the three shipped hosts; an embedding app may skip it and register objects directly.</figcaption>
+<figcaption>Hosts drive a Runtime. The Loader builds one from the filesystem for the three shipped hosts; an embedding app may skip it and register objects directly.</figcaption>
 </figure>
 
 <p>Units in dependency order. Each file's Scope names what it depends on. This is a <strong>reading order, not a PR sequence</strong>; sequencing the build is the builder's call.</p>
 
 <div class="table-wrap"><table>
   <tr><th>Unit</th><th>Scope</th></tr>
-  <tr><td><a href="session.html">Session</a></td><td>The runtime: <code>Riffer::Rig::Session</code>. Loop, system message assembly and the base prompt, events, cancel, commands, per-session credentials, tally, <code>/model</code>, snapshot, <code>rebuild</code>.</td></tr>
+  <tr><td><a href="runtime.html">Runtime</a></td><td><code>Riffer::Rig::Runtime</code>, the runtime object. Loop, system message assembly and the base prompt, events, cancel, commands, per-runtime credentials, tally, <code>/model</code>, snapshot, <code>rebuild</code>.</td></tr>
   <tr><td><a href="extensions.html">Extensions</a></td><td>The registrar block, the eight seams, commands, handlers, prompt sections, the Host interface, error isolation, <code>requires:</code>, the gem convention.</td></tr>
   <tr><td><a href="bundled.html">Bundled</a></td><td>read/write/edit/bash with their guidance sentences, AGENTS.md, Agent Skills, the MCP client; how a bundled item is disabled or replaced.</td></tr>
   <tr><td><a href="loader.html">Loader</a></td><td><code>rig.rb</code> discovery and trust, settings precedence, credential resolution, reload trigger and <code>/reload</code>, the session store and resume.</td></tr>

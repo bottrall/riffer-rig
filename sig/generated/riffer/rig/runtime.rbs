@@ -1,19 +1,19 @@
-# Generated from lib/riffer/rig/session.rb with RBS::Inline
+# Generated from lib/riffer/rig/runtime.rb with RBS::Inline
 
-# The runtime: one Session builds its own Riffer::Agent from a per-instance
+# One Runtime builds its own Riffer::Agent from a per-instance
 # Riffer::Agent::Config and streams a prompt.
 #
-#   session = Riffer::Rig::Session.new('mock/x')
-#   session.prompt('hello') { |event| ... }   # yields riffer StreamEvents
-#   session.prompt('hello').each { |event| }  # an Enumerator without a block
+#   runtime = Riffer::Rig::Runtime.new('mock/x')
+#   runtime.prompt('hello') { |event| ... }   # yields riffer StreamEvents
+#   runtime.prompt('hello').each { |event| }  # an Enumerator without a block
 #
-# Two Sessions in one process share nothing but the process-wide extension
+# Two Runtimes in one process share nothing but the process-wide extension
 # registry and riffer's provider repository. One prompt runs at a time; a
-# second while one is running raises Riffer::Rig::Session::BusyError. The
-# Session never renders, never prints, never reads the filesystem.
-class Riffer::Rig::Session
+# second while one is running raises Riffer::Rig::Runtime::BusyError. The
+# Runtime never renders, never prints, never reads the filesystem.
+class Riffer::Rig::Runtime
   # Raised when a second prompt or registrar build runs while one is already
-  # running on this Session.
+  # running on this Runtime.
   class BusyError < StandardError
   end
 

@@ -1,6 +1,6 @@
 # Hosts
 
-A host receives questions and out-of-band messages from a `Riffer::Rig::Session`. It is duck-typed: any object with these methods is a host.
+A host receives questions and out-of-band messages from a `Riffer::Rig::Runtime`. It is duck-typed: any object with these methods is a host.
 
 | Method                             | Purpose                                                     |
 | ---------------------------------- | ----------------------------------------------------------- |
@@ -14,4 +14,4 @@ A host receives questions and out-of-band messages from a `Riffer::Rig::Session`
 
 ## The null host
 
-`Riffer::Rig::Host` is the do-nothing host and the Session's default: every capability is declined (`ask` returns `nil`, `confirm` returns `false`, `notify` is a no-op, `progress` yields).
+`Riffer::Rig::Host` is the do-nothing host and the Runtime's default: every capability is declined (`ask` returns `nil`, `confirm` returns `false`, `notify` is a no-op, `progress` yields).

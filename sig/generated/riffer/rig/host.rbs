@@ -1,6 +1,6 @@
 # Generated from lib/riffer/rig/host.rb with RBS::Inline
 
-# A host receives questions and out-of-band messages from a Session. It is
+# A host receives questions and out-of-band messages from a Runtime. It is
 # duck-typed: any object with #ask, #confirm, #notify, #progress and
 # #capabilities is a host.
 #
@@ -14,7 +14,7 @@
 #
 # Callers check #capabilities before asking, so a host that declines a
 # capability is never asked and the caller takes the declined path.
-# The do-nothing host: the default +host:+ for a Session. Every capability is
+# The do-nothing host: the default +host:+ for a Runtime. Every capability is
 # declined, so callers take the declined path without any UI attempt.
 class Riffer::Rig::Host
   # @rbs return: Set[Symbol]

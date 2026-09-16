@@ -2,20 +2,20 @@
 
 require 'date'
 
-# The runtime: one Session builds its own Riffer::Agent from a per-instance
+# One Runtime builds its own Riffer::Agent from a per-instance
 # Riffer::Agent::Config and streams a prompt.
 #
-#   session = Riffer::Rig::Session.new('mock/x')
-#   session.prompt('hello') { |event| ... }   # yields riffer StreamEvents
-#   session.prompt('hello').each { |event| }  # an Enumerator without a block
+#   runtime = Riffer::Rig::Runtime.new('mock/x')
+#   runtime.prompt('hello') { |event| ... }   # yields riffer StreamEvents
+#   runtime.prompt('hello').each { |event| }  # an Enumerator without a block
 #
-# Two Sessions in one process share nothing but the process-wide extension
+# Two Runtimes in one process share nothing but the process-wide extension
 # registry and riffer's provider repository. One prompt runs at a time; a
-# second while one is running raises Riffer::Rig::Session::BusyError. The
-# Session never renders, never prints, never reads the filesystem.
-class Riffer::Rig::Session
+# second while one is running raises Riffer::Rig::Runtime::BusyError. The
+# Runtime never renders, never prints, never reads the filesystem.
+class Riffer::Rig::Runtime
   # Raised when a second prompt or registrar build runs while one is already
-  # running on this Session.
+  # running on this Runtime.
   class BusyError < StandardError; end
 
   BASE_PROMPT_TEMPLATE = <<~TEXT
@@ -102,7 +102,7 @@ class Riffer::Rig::Session
   # @rbs &block: ?(Riffer::StreamEvents::Base) -> void
   # @rbs return: (nil | Enumerator[Riffer::StreamEvents::Base, void])
   def prompt(text, &block)
-    raise BusyError, 'a prompt is already running on this Session' if @busy
+    raise BusyError, 'a prompt is already running on this Runtime' if @busy
 
     @busy = true
     return stream_prompt(text, &block) if block
@@ -125,7 +125,7 @@ class Riffer::Rig::Session
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs return: Riffer::Rig::Registrar
   def build_registrar(extensions)
-    raise BusyError, 'a prompt is already running on this Session' if @busy
+    raise BusyError, 'a prompt is already running on this Runtime' if @busy
 
     extensions.each_with_object(Riffer::Rig::Registrar.new) do |extension, registrar|
       extension.run(registrar)

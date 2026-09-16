@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# The per-Session registrar extension blocks run against. Seams are added one
+# The per-Runtime registrar extension blocks run against. Seams are added one
 # at a time; today only #tool exists.
 class Riffer::Rig::Registrar
   # @rbs @tools: Array[singleton(Riffer::Tool)]

@@ -10,7 +10,7 @@
 
 <nav class="plan">
   <a href="index.html">Index</a>
-  <a href="session.html">Session</a>
+  <a href="runtime.html">Runtime</a>
   <a href="extensions.html">Extensions</a>
   <a href="bundled.html">Bundled</a>
   <a href="loader.html">Loader</a>
@@ -24,7 +24,7 @@
 
 <h2 id="scope">Scope</h2>
 <p>Gemspec dependencies, the missing-SDK flow, model selection precedence, the recipe table, <code>auth.json</code> and the <code>providers</code> settings block, credential resolution, the <code>/auth</code> command, extension providers, provider-native tools. Files: <code>riffer-rig.gemspec</code>, <code>lib/riffer/rig/recipes.rb</code>, <code>lib/riffer/rig/credentials.rb</code> (reshaped), <code>lib/riffer/rig/commands/auth.rb</code>, <code>lib/riffer/rig/sdk.rb</code> (the installer).</p>
-<p><strong>Depends on:</strong> <a href="session.html">Session</a> (per-session credentials, <code>/model</code>), <a href="extensions.html">Extensions</a> (provider seam, Host <code>ask</code>). <strong>Depended on by:</strong> Loader (resolution), Hosts (the prompts).</p>
+<p><strong>Depends on:</strong> <a href="runtime.html">Runtime</a> (per-runtime credentials, <code>/model</code>), <a href="extensions.html">Extensions</a> (provider seam, Host <code>ask</code>). <strong>Depended on by:</strong> Loader (resolution), Hosts (the prompts).</p>
 
 <h2 id="decisions">Decisions</h2>
 
@@ -66,7 +66,7 @@
   <li><strong>No baked-in default.</strong> The current <code>DEFAULT_MODEL</code> constant goes. With no model resolved, onboarding lists the providers from <code>Riffer::Providers::Repository</code> (Mock excluded, extension-registered providers included), asks for a model string, and writes the choice to the home <code>settings.json</code>.</li>
   <li><strong>Precedence, highest first:</strong> <code>--model provider/name</code> flag → <code>RIFFER_MODEL</code> env var → <code>model</code> in settings (project over home) → onboarding.</li>
   <li>A model string without a provider prefix is rejected with a hint listing the registry's providers. No inference from credentials or name patterns. In headless mode this is exit 2.</li>
-  <li><code>/model provider/name</code> switches for the current Session only (<a href="session.html#model">Session: /model</a>); <code>/model --save</code> persists. It triggers the missing-SDK and credential flows as needed.</li>
+  <li><code>/model provider/name</code> switches for the current Runtime only (<a href="runtime.html#model">Runtime: /model</a>); <code>/model --save</code> persists. It triggers the missing-SDK and credential flows as needed.</li>
 </ul>
 </section>
 
@@ -109,7 +109,7 @@
 
 <ul>
   <li>Per required field, first hit wins. Optional fields are resolved through the same chain minus the ask.</li>
-  <li>Resolved once per Session build, cached on the Session as <code>credentials:</code>, re-resolved on reload. A recipe that writes a file therefore takes effect in the running session without a restart; recipes never instruct the user to restart.</li>
+  <li>Resolved once per Runtime build, cached on the Runtime as <code>credentials:</code>, re-resolved on reload. A recipe that writes a file therefore takes effect in the running session without a restart; recipes never instruct the user to restart.</li>
   <li>No validation. A pasted key is saved as-is; a bad key surfaces on the first request with the provider's own error. Probing would need per-provider code and break the one-entry goal.</li>
 </ul>
 </section>
@@ -121,7 +121,7 @@
 <pre><code>{"anthropic": {"type": "api_key", "api_key": "sk-ant-…"},
  "amazon_bedrock": {"type": "api_key", "api_token": "…"}}</code></pre>
   The <code>type</code> member follows pi and OpenCode and leaves room for an <code>oauth</code> type without reshaping the file. The current flat <code>{"anthropic": "sk-…"}</code> shape is replaced with no migration (the rename was already a clean cut).</li>
-  <li>A secret value may be a literal, a <code>$ENV_VAR</code> reference, or a <code>!shell command</code> whose stdout is the secret. That is how a keychain user plugs in <code>security find-generic-password</code> without rig owning keychain code. Expanded once per process when the Session is built.</li>
+  <li>A secret value may be a literal, a <code>$ENV_VAR</code> reference, or a <code>!shell command</code> whose stdout is the secret. That is how a keychain user plugs in <code>security find-generic-password</code> without rig owning keychain code. Expanded once per process when the Runtime is built.</li>
   <li>Non-secret fields (endpoint, region, base_url) go to <code>settings.json</code> under <code>"providers": {"azure_openai": {"endpoint": "…"}}</code>, home scope by default.</li>
   <li><strong>No OS keychain.</strong> pi and OpenCode are 0600 JSON with typed entries; Codex made keyring opt-in; Claude Code's keychain-with-file-fallback is where its auth bugs live.</li>
 </ul>
@@ -150,7 +150,7 @@
 <h3>Provider-native tools</h3>
 <ul>
   <li>Web search today, and code execution or file search later, arrive through riffer's provider seam. They are core (nothing an extension could add) and <strong>off by default</strong>.</li>
-  <li>Switched on per tool in settings: <code>"tools": {"native": {"web_search": true}}</code>. The Loader passes the switches to the Session, which enables the provider option only if the current provider supports it; otherwise nothing happens and no error is raised, so a provider change never silently changes what the agent can do.</li>
+  <li>Switched on per tool in settings: <code>"tools": {"native": {"web_search": true}}</code>. The Loader passes the switches to the Runtime, which enables the provider option only if the current provider supports it; otherwise nothing happens and no error is raised, so a provider change never silently changes what the agent can do.</li>
   <li>On a provider without native search the user brings a third-party tool.</li>
 </ul>
 </section>
@@ -169,7 +169,7 @@
   <tr><td><code>Riffer::Rig::Recipes[identifier]</code></td><td>the recipe hash; <code>Recipes.for(identifier)</code> returns the generic fallback for an unknown provider</td></tr>
   <tr><td>Recipe</td><td><code>url</code>, <code>sdk: [gem, requirement] | nil</code>, <code>chain: bool</code>, <code>fields: [{name, env: [...], secret:, required:, fallback:}]</code></td></tr>
   <tr><td><code>Riffer::Rig::Credentials</code></td><td><code>resolve(identifier, host:)</code> → field values; <code>store(identifier, values)</code>; <code>remove(identifier)</code>; <code>status(identifier)</code> → <code>:env | :stored | :chain | :missing</code></td></tr>
-  <tr><td><code>Riffer::Rig.credentials(identifier)</code></td><td>current Session's resolved values (defined on Session)</td></tr>
+  <tr><td><code>Riffer::Rig.credentials(identifier)</code></td><td>current Runtime's resolved values (defined on Runtime)</td></tr>
   <tr><td>Files</td><td><code>~/.riffer/auth.json</code>; <code>providers</code> block in <code>settings.json</code></td></tr>
   <tr><td>Settings keys owned here</td><td><code>model</code>, <code>reasoning</code>, <code>models</code>, <code>providers</code>, <code>tools.native</code></td></tr>
   <tr><td>Env vars</td><td><code>RIFFER_MODEL</code> plus each recipe's field env vars</td></tr>
@@ -183,11 +183,11 @@
   <tr><td>Selection</td><td><code>lib/riffer/rig/loader.rb</code>, <code>commands/model.rb</code></td><td>README Usage and Configuration; <code>docs/CONFIGURATION.md</code></td></tr>
   <tr><td>Recipes, resolution, storage, <code>/auth</code></td><td><code>lib/riffer/rig/recipes.rb</code>, <code>credentials.rb</code>, <code>commands/auth.rb</code></td><td>README Authentication; <code>docs/providers/PROVIDERS.md</code> and one page per provider</td></tr>
   <tr><td>Extension providers</td><td><code>lib/riffer/rig/registrar.rb</code></td><td><code>docs/providers/CUSTOM_PROVIDERS.md</code></td></tr>
-  <tr><td>Provider-native tools</td><td><code>lib/riffer/rig/session.rb</code></td><td><code>docs/TOOLS.md</code>, <code>docs/CONFIGURATION.md</code></td></tr>
+  <tr><td>Provider-native tools</td><td><code>lib/riffer/rig/runtime.rb</code></td><td><code>docs/TOOLS.md</code>, <code>docs/CONFIGURATION.md</code></td></tr>
 </table></div>
 
 <h2 id="provenance">Provenance</h2>
-<p class="provenance"><a href="https://github.com/bottrall/riffer-rig/issues/76">Decide the provider strategy and optional SDK dependencies</a>, <a href="https://github.com/bottrall/riffer-rig/issues/90">Decide per-provider onboarding recipes</a> (with its survey links to pi, OpenCode, Codex and Claude Code auth), <a href="https://github.com/bottrall/riffer-rig/issues/79">Decide the core-versus-extension principle</a> (recipe table and native tools are core), <a href="https://github.com/bottrall/riffer-rig/issues/80">Decide the runtime/CLI separation and the role of ACP</a> (per-session credentials).</p>
+<p class="provenance"><a href="https://github.com/bottrall/riffer-rig/issues/76">Decide the provider strategy and optional SDK dependencies</a>, <a href="https://github.com/bottrall/riffer-rig/issues/90">Decide per-provider onboarding recipes</a> (with its survey links to pi, OpenCode, Codex and Claude Code auth), <a href="https://github.com/bottrall/riffer-rig/issues/79">Decide the core-versus-extension principle</a> (recipe table and native tools are core), <a href="https://github.com/bottrall/riffer-rig/issues/80">Decide the runtime/CLI separation and the role of ACP</a> (per-runtime credentials).</p>
 
 </body>
 </html>
