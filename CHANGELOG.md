@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0](https://github.com/bottrall/riffer-rig/compare/v0.4.0...v0.5.0) (2026-09-19)
+
+
+### Features
+
+* add ask, max_steps and riffer response ([#178](https://github.com/bottrall/riffer-rig/issues/178)) ([948d753](https://github.com/bottrall/riffer-rig/commit/948d75354a7d0a5a9d35055b7d890dea9e51f1a1))
+* add Runtime with a per-instance agent, base prompt and tool seam ([#160](https://github.com/bottrall/riffer-rig/issues/160)) ([97019ca](https://github.com/bottrall/riffer-rig/commit/97019ca6f80c95bcf22e443652f1d90d453d02de))
+* type IO streams and JSON boundaries, dropping explicit untyped ([#174](https://github.com/bottrall/riffer-rig/issues/174)) ([22407be](https://github.com/bottrall/riffer-rig/commit/22407befc471d1fbbe14188456ee1ce248ddc4c7))
+
+
+### Bug Fixes
+
+* drain smoother backlog before every animator restart ([#177](https://github.com/bottrall/riffer-rig/issues/177)) ([3126155](https://github.com/bottrall/riffer-rig/commit/3126155fdeba3de2ab2b9905b7e7de55593de834))
+* drop invalid ? optional markers from rbs-inline annotations ([#171](https://github.com/bottrall/riffer-rig/issues/171)) ([60030bf](https://github.com/bottrall/riffer-rig/commit/60030bf7ca930e9d35cbd8c2e3a8ae8ae1692830))
+
 ## [0.4.0](https://github.com/bottrall/riffer-rig/compare/v0.3.0...v0.4.0) (2026-09-13)
 
 
