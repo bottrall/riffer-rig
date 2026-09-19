@@ -3,19 +3,21 @@
 require 'date'
 
 # One Runtime builds its own Riffer::Agent from a per-instance
-# Riffer::Agent::Config and streams a prompt.
+# Riffer::Agent::Config and runs a prompt: streamed as events, or run to
+# completion and returned as riffer's Agent::Response.
 #
 #   runtime = Riffer::Rig::Runtime.new('mock/x')
 #   runtime.prompt('hello') { |event| ... }   # yields riffer StreamEvents
 #   runtime.prompt('hello').each { |event| }  # an Enumerator without a block
+#   response = runtime.ask('hello')           # a Riffer::Agent::Response
 #
 # Two Runtimes in one process share nothing but the process-wide extension
 # registry and riffer's provider repository. One prompt runs at a time; a
 # second while one is running raises Riffer::Rig::Runtime::BusyError. The
 # Runtime never renders, never prints, never reads the filesystem.
 class Riffer::Rig::Runtime
-  # Raised when a second prompt or registrar build runs while one is already
-  # running on this Runtime.
+  # Raised when a second prompt, ask or registrar build runs while one is
+  # already running on this Runtime.
   class BusyError < StandardError; end
 
   BASE_PROMPT_TEMPLATE = <<~TEXT
@@ -32,8 +34,7 @@ class Riffer::Rig::Runtime
   DEFAULT_NAME = 'riffer'
 
   # The legacy CodingAgent's default: an unlimited agent loop. riffer's own
-  # default (16) is too small for a general-purpose harness; #105 makes the
-  # limit host-configurable.
+  # default (16) is too small for a general-purpose harness.
   DEFAULT_MAX_STEPS = nil #: Integer?
 
   # @rbs!
@@ -111,22 +112,28 @@ class Riffer::Rig::Runtime
     raise BusyError, 'a prompt is already running on this Runtime' if @busy
 
     @busy = true
-    return stream_prompt(text, &block) if block
+    if block
+      @agent.stream(text).each(&block)
+      nil
+    else
+      @agent.stream(text)
+    end
+  ensure
+    @busy = false
+  end
 
-    @agent.stream(text)
+  # @rbs text: String
+  # @rbs return: Riffer::Agent::Response
+  def ask(text)
+    raise BusyError, 'a prompt is already running on this Runtime' if @busy
+
+    @busy = true
+    @agent.stream(text).each { |event| event }
   ensure
     @busy = false
   end
 
   private
-
-  # @rbs text: String
-  # @rbs &block: (Riffer::StreamEvents::Base) -> void
-  # @rbs return: nil
-  def stream_prompt(text, &)
-    @agent.stream(text).each(&)
-    nil
-  end
 
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs return: Riffer::Rig::Registrar
