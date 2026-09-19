@@ -140,9 +140,9 @@ class Riffer::Rig::Runtime
   def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: _Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[String, String], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?max_steps: Integer?, ?snapshot: Hash[Symbol, untyped]?) -> void
 
   # @rbs text: String
-  # @rbs &block: ?(Riffer::Rig::Events::t) -> void
-  # @rbs return: (nil | Enumerator[Riffer::Rig::Events::t, Riffer::Agent::Response])
-  def prompt: (String text) ?{ (Riffer::Rig::Events::t) -> void } -> (nil | Enumerator[Riffer::Rig::Events::t, Riffer::Agent::Response])
+  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response])
+  def prompt: (String text) ?{ (::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void } -> (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response])
 
   # @rbs text: String
   # @rbs return: Riffer::Agent::Response
@@ -157,8 +157,8 @@ class Riffer::Rig::Runtime
   private
 
   # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
-  # @rbs return: Enumerator[Riffer::Rig::Events::t, Riffer::Agent::Response]
-  def wrap_stream: (Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response] stream) -> Enumerator[Riffer::Rig::Events::t, Riffer::Agent::Response]
+  # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
+  def wrap_stream: (Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response] stream) -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
 
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs return: Riffer::Rig::Registrar

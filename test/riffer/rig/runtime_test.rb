@@ -252,7 +252,7 @@ describe Riffer::Rig::Runtime do
 
     first = runtime.prompt('hello').first
 
-    assert_equal(Riffer::Rig::Events::SessionStart.new(id: runtime.id, reason: :new), first)
+    assert_equal(Riffer::Rig::Events::SessionStart.new(runtime.id, :new), first)
   end
 
   it 'emits session_start once, not on every prompt' do
@@ -273,7 +273,7 @@ describe Riffer::Rig::Runtime do
     last = nil
     runtime.prompt('hello') { |event| last = event }
 
-    assert_equal(Riffer::Rig::Events::TurnEnd.new(stop_reason: :completed, usage: usage), last)
+    assert_equal(Riffer::Rig::Events::TurnEnd.new(:completed, usage), last)
   end
 
   it 'leaves turn_end cost nil without pricing' do
@@ -327,7 +327,7 @@ describe Riffer::Rig::Runtime do
     runtime.host.notify('boom', level: :error)
     runtime.prompt('hello') { |event| notify_events << event if event.is_a?(Riffer::Rig::Events::Notify) }
 
-    assert_equal [Riffer::Rig::Events::Notify.new(message: 'boom', level: :error)], notify_events
+    assert_equal [Riffer::Rig::Events::Notify.new('boom', :error)], notify_events
   end
 
   it 'passes notify through to the wrapped host' do

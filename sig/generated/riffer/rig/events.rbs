@@ -1,93 +1,123 @@
 # Generated from lib/riffer/rig/events.rb with RBS::Inline
 
 # The rig-level events every host renders alongside riffer's StreamEvents.
-# They are immutable Data objects; each has +to_h+ — with the type folded in, so
+# They are frozen value objects; each has +to_h+ — with the type folded in, so
 # the headless host can print every record verbatim as NDJSON — and +type+, the
 # snake_case form of its class name.
 #
-#   Riffer::Rig::Events.SessionStart.new(id: '0198...', reason: :new).type
+#   Riffer::Rig::Events::SessionStart.new(id: '0198...', reason: :new).type
 #   # => :session_start
 #
-#   Riffer::Rig::Events.TurnEnd.new(stop_reason: :completed, usage: nil).to_h
+#   Riffer::Rig::Events::TurnEnd.new(stop_reason: :completed, usage: nil).to_h
 #   # => { stop_reason: :completed, usage: nil, type: :turn_end }
-#
-# The extra methods are attached with string +class_eval+: inside a literal
-# method body Steep resolves +self+ to the enclosing module, where the Data
-# members don't exist, and a +define_method+ block body hides them the same way.
-# The member types themselves are checked — they come from the +#: Type+
-# comments on the symbols below — as is every call site.
 module Riffer::Rig::Events
-  class SessionStart < Data
-    attr_reader id(): String
+  # Frozen value object: plain readers, a +type+ (the snake_case event name),
+  # and a +to_h+ with the type folded in.
+  class Event
+    # @rbs return: Symbol
+    def type: () -> Symbol
 
-    attr_reader reason(): Symbol
+    # @rbs return: Hash[Symbol, untyped]
+    def to_h: () -> Hash[Symbol, untyped]
 
-    def self.new: (String id, Symbol reason) -> instance
-                | (id: String, reason: Symbol) -> instance
+    # @rbs other: untyped
+    # @rbs return: bool
+    def ==: (untyped other) -> bool
 
-    def self.members: () -> [ :id, :reason ]
+    # @rbs return: Integer
+    def hash: () -> Integer
 
-    def members: () -> [ :id, :reason ]
+    # @rbs other: untyped
+    # @rbs return: bool
+    def eql?: (untyped other) -> bool
   end
 
-  class SessionEnd < Data
-    attr_reader reason(): Symbol
+  class SessionStart < Event
+    # @dynamic id, reason
+    attr_reader id: String
 
-    def self.new: (Symbol reason) -> instance
-                | (reason: Symbol) -> instance
+    attr_reader reason: Symbol
 
-    def self.members: () -> [ :reason ]
+    # @rbs id: String
+    # @rbs reason: Symbol
+    # @rbs return: void
+    def initialize: (String id, Symbol reason) -> void
 
-    def members: () -> [ :reason ]
+    # @rbs return: Symbol
+    def type: () -> Symbol
   end
 
-  class CommandOutput < Data
-    attr_reader command(): String
+  class SessionEnd < Event
+    # @dynamic reason
+    attr_reader reason: Symbol
 
-    attr_reader text(): String
+    # @rbs reason: Symbol
+    # @rbs return: void
+    def initialize: (Symbol reason) -> void
 
-    def self.new: (String command, String text) -> instance
-                | (command: String, text: String) -> instance
-
-    def self.members: () -> [ :command, :text ]
-
-    def members: () -> [ :command, :text ]
+    # @rbs return: Symbol
+    def type: () -> Symbol
   end
 
-  class SkillActivated < Data
-    attr_reader name(): String
+  class CommandOutput < Event
+    # @dynamic command, text
+    attr_reader command: String
 
-    def self.new: (String name) -> instance
-                | (name: String) -> instance
+    attr_reader text: String
 
-    def self.members: () -> [ :name ]
+    # @rbs command: String
+    # @rbs text: String
+    # @rbs return: void
+    def initialize: (String command, String text) -> void
 
-    def members: () -> [ :name ]
+    # @rbs return: Symbol
+    def type: () -> Symbol
   end
 
-  class Notify < Data
-    attr_reader message(): String?
+  class SkillActivated < Event
+    # @dynamic name
+    attr_reader name: String
 
-    attr_reader level(): Symbol
+    # @rbs name: String
+    # @rbs return: void
+    def initialize: (String name) -> void
 
-    def self.new: (String? message, Symbol level) -> instance
-                | (message: String?, level: Symbol) -> instance
-
-    def self.members: () -> [ :message, :level ]
-
-    def members: () -> [ :message, :level ]
+    # @rbs return: Symbol
+    def type: () -> Symbol
   end
 
-  class TurnEnd < Data
-    attr_reader stop_reason(): Symbol
+  class Notify < Event
+    # @dynamic message, level
+    attr_reader message: String?
 
-    attr_reader usage(): ::Riffer::Providers::TokenUsage?
+    attr_reader level: Symbol
 
-    def self.new: (Symbol stop_reason, ::Riffer::Providers::TokenUsage? usage) -> instance
-                | (stop_reason: Symbol, usage: ::Riffer::Providers::TokenUsage?) -> instance
+    # @rbs message: String?
+    # @rbs level: Symbol
+    # @rbs return: void
+    def initialize: (String? message, Symbol level) -> void
 
-    def self.members: () -> [ :stop_reason, :usage ]
+    # @rbs return: Symbol
+    def type: () -> Symbol
+  end
 
-    def members: () -> [ :stop_reason, :usage ]
+  class TurnEnd < Event
+    # @dynamic stop_reason, usage
+    attr_reader stop_reason: Symbol
+
+    attr_reader usage: ::Riffer::Providers::TokenUsage?
+
+    # @rbs stop_reason: Symbol
+    # @rbs usage: ::Riffer::Providers::TokenUsage?
+    # @rbs return: void
+    def initialize: (Symbol stop_reason, ::Riffer::Providers::TokenUsage? usage) -> void
+
+    # The USD cost of the turn's usage, or nil when pricing is missing.
+    #
+    # @rbs return: Float?
+    def cost: () -> Float?
+
+    # @rbs return: Symbol
+    def type: () -> Symbol
   end
 end

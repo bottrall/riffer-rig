@@ -112,7 +112,7 @@ class Riffer::Rig::Runtime
     # @rbs level: Symbol
     # @rbs return: void
     def notify(message = nil, level: :info)
-      queue(Riffer::Rig::Events::Notify.new(message: message, level: level))
+      queue(Riffer::Rig::Events::Notify.new(message, level))
       @host.notify(message, level: level)
     end
 
@@ -188,8 +188,8 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs text: String
-  # @rbs &block: ?(Riffer::Rig::Events::t) -> void
-  # @rbs return: (nil | Enumerator[Riffer::Rig::Events::t, Riffer::Agent::Response])
+  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response])
   def prompt(text, &block)
     raise BusyError, 'a prompt is already running on this Runtime' if @busy
     raise ClosedError, 'this Runtime is closed' if @closed
@@ -224,20 +224,20 @@ class Riffer::Rig::Runtime
   def close
     @closed = true
     @session_start_pending = false
-    @notifier.queue(Riffer::Rig::Events::SessionEnd.new(reason: :close))
+    @notifier.queue(Riffer::Rig::Events::SessionEnd.new(:close))
   end
 
   private
 
   # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
-  # @rbs return: Enumerator[Riffer::Rig::Events::t, Riffer::Agent::Response]
+  # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
   def wrap_stream(stream)
     Enumerator.new do |yielder|
-      yielder << Riffer::Rig::Events::SessionStart.new(id: @id, reason: :new) if @session_start_pending
+      yielder << Riffer::Rig::Events::SessionStart.new(@id, :new) if @session_start_pending
       @session_start_pending = false
       @notifier.drain.each { |event| yielder << event }
       response = stream.each { |event| yielder << event }
-      yielder << Riffer::Rig::Events::TurnEnd.new(stop_reason: response.outcome.reason, usage: response.token_usage)
+      yielder << Riffer::Rig::Events::TurnEnd.new(response.outcome.reason, response.token_usage)
       response
     end
   end

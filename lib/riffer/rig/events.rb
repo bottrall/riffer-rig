@@ -1,89 +1,173 @@
 # frozen_string_literal: true
 
-require 'securerandom'
-
 # The rig-level events every host renders alongside riffer's StreamEvents.
-# They are immutable Data objects; each has +to_h+ — with the type folded in, so
+# They are frozen value objects; each has +to_h+ — with the type folded in, so
 # the headless host can print every record verbatim as NDJSON — and +type+, the
 # snake_case form of its class name.
 #
-#   Riffer::Rig::Events.SessionStart.new(id: '0198...', reason: :new).type
+#   Riffer::Rig::Events::SessionStart.new(id: '0198...', reason: :new).type
 #   # => :session_start
 #
-#   Riffer::Rig::Events.TurnEnd.new(stop_reason: :completed, usage: nil).to_h
+#   Riffer::Rig::Events::TurnEnd.new(stop_reason: :completed, usage: nil).to_h
 #   # => { stop_reason: :completed, usage: nil, type: :turn_end }
-#
-# The extra methods are attached with string +class_eval+: inside a literal
-# method body Steep resolves +self+ to the enclosing module, where the Data
-# members don't exist, and a +define_method+ block body hides them the same way.
-# The member types themselves are checked — they come from the +#: Type+
-# comments on the symbols below — as is every call site.
 module Riffer::Rig::Events
-  extend self
+  # Frozen value object: plain readers, a +type+ (the snake_case event name),
+  # and a +to_h+ with the type folded in.
+  class Event
+    # @rbs return: Symbol
+    def type
+      raise NotImplementedError, "#{self.class.name} must define type"
+    end
 
-  SessionStart = Data.define(
-    :id, #: String
-    :reason #: Symbol
-  )
+    # @rbs return: Hash[Symbol, untyped]
+    def to_h
+      hash = { type: type } #: Hash[Symbol, untyped]
+      instance_variables.each { |name| hash[name.to_s.delete_prefix('@').to_sym] = instance_variable_get(name) }
+      hash
+    end
 
-  SessionEnd = Data.define(
-    :reason #: Symbol
-  )
+    # @rbs other: untyped
+    # @rbs return: bool
+    def ==(other)
+      other.class == self.class && other.to_h == to_h
+    end
 
-  CommandOutput = Data.define(
-    :command, #: String
-    :text #: String
-  )
+    # @rbs return: Integer
+    def hash
+      [self.class, to_h].hash
+    end
 
-  SkillActivated = Data.define(
-    :name #: String
-  )
+    # @rbs other: untyped
+    # @rbs return: bool
+    def eql?(other)
+      self == other
+    end
+  end
 
-  Notify = Data.define(
-    :message, #: String?
-    :level #: Symbol
-  )
+  class SessionStart < Event
+    # @dynamic id, reason
+    attr_reader :id #: String
+    attr_reader :reason #: Symbol
 
-  TurnEnd = Data.define(
-    :stop_reason, #: Symbol
-    :usage #: ::Riffer::Providers::TokenUsage?
-  )
+    # @rbs id: String
+    # @rbs reason: Symbol
+    # @rbs return: void
+    def initialize(id, reason)
+      super()
+      @id = id
+      @reason = reason
+      freeze
+    end
 
-  SessionStart.class_eval <<~RUBY, __FILE__, __LINE__ + 1
-    def type = :session_start
+    # @rbs return: Symbol
+    def type
+      :session_start
+    end
+  end
 
-    def to_h = super().merge(type: :session_start)
-  RUBY
+  class SessionEnd < Event
+    # @dynamic reason
+    attr_reader :reason #: Symbol
 
-  SessionEnd.class_eval <<~RUBY, __FILE__, __LINE__ + 1
-    def type = :session_end
+    # @rbs reason: Symbol
+    # @rbs return: void
+    def initialize(reason)
+      super()
+      @reason = reason
+      freeze
+    end
 
-    def to_h = super().merge(type: :session_end)
-  RUBY
+    # @rbs return: Symbol
+    def type
+      :session_end
+    end
+  end
 
-  CommandOutput.class_eval <<~RUBY, __FILE__, __LINE__ + 1
-    def type = :command_output
+  class CommandOutput < Event
+    # @dynamic command, text
+    attr_reader :command #: String
+    attr_reader :text #: String
 
-    def to_h = super().merge(type: :command_output)
-  RUBY
+    # @rbs command: String
+    # @rbs text: String
+    # @rbs return: void
+    def initialize(command, text)
+      super()
+      @command = command
+      @text = text
+      freeze
+    end
 
-  SkillActivated.class_eval <<~RUBY, __FILE__, __LINE__ + 1
-    def type = :skill_activated
+    # @rbs return: Symbol
+    def type
+      :command_output
+    end
+  end
 
-    def to_h = super().merge(type: :skill_activated)
-  RUBY
+  class SkillActivated < Event
+    # @dynamic name
+    attr_reader :name #: String
 
-  Notify.class_eval <<~RUBY, __FILE__, __LINE__ + 1
-    def type = :notify
+    # @rbs name: String
+    # @rbs return: void
+    def initialize(name)
+      super()
+      @name = name
+      freeze
+    end
 
-    def to_h = super().merge(type: :notify)
-  RUBY
+    # @rbs return: Symbol
+    def type
+      :skill_activated
+    end
+  end
 
-  TurnEnd.class_eval <<~RUBY, __FILE__, __LINE__ + 1
-    def cost = usage&.cost
+  class Notify < Event
+    # @dynamic message, level
+    attr_reader :message #: String?
+    attr_reader :level #: Symbol
 
-    def type = :turn_end
+    # @rbs message: String?
+    # @rbs level: Symbol
+    # @rbs return: void
+    def initialize(message, level)
+      super()
+      @message = message
+      @level = level
+      freeze
+    end
 
-    def to_h = super().merge(type: :turn_end)
-  RUBY
+    # @rbs return: Symbol
+    def type
+      :notify
+    end
+  end
+
+  class TurnEnd < Event
+    # @dynamic stop_reason, usage
+    attr_reader :stop_reason #: Symbol
+    attr_reader :usage #: ::Riffer::Providers::TokenUsage?
+
+    # @rbs stop_reason: Symbol
+    # @rbs usage: ::Riffer::Providers::TokenUsage?
+    # @rbs return: void
+    def initialize(stop_reason, usage)
+      super()
+      @stop_reason = stop_reason
+      @usage = usage
+      freeze
+    end
+
+    # The USD cost of the turn's usage, or nil when pricing is missing.
+    #
+    # @rbs return: Float?
+    def cost
+      usage&.cost
+    end
+
+    # @rbs return: Symbol
+    def type
+      :turn_end
+    end
+  end
 end
