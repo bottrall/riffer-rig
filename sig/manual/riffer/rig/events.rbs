@@ -1,0 +1,48 @@
+# rbs-inline cannot see inside the string `class_eval` heredocs that attach
+# `type`/`cost`/`to_h` to the Data classes, so they are hand-declared here. The
+# members and their accessors generate from the `#: Type` comments on the
+# Data.define symbols into sig/generated/riffer/rig/events.rbs.
+
+module Riffer::Rig::Events
+  class SessionStart < Data
+    def type: () -> Symbol
+
+    def to_h: () -> Hash[Symbol, untyped]
+  end
+
+  class SessionEnd < Data
+    def type: () -> Symbol
+
+    def to_h: () -> Hash[Symbol, untyped]
+  end
+
+  class CommandOutput < Data
+    def type: () -> Symbol
+
+    def to_h: () -> Hash[Symbol, untyped]
+  end
+
+  class SkillActivated < Data
+    def type: () -> Symbol
+
+    def to_h: () -> Hash[Symbol, untyped]
+  end
+
+  class Notify < Data
+    def type: () -> Symbol
+
+    def to_h: () -> Hash[Symbol, untyped]
+  end
+
+  class TurnEnd < Data
+    def cost: () -> Float?
+
+    def type: () -> Symbol
+
+    def to_h: () -> Hash[Symbol, untyped]
+  end
+end
+
+module Riffer::Rig::Events
+  type t = ::Riffer::StreamEvents::Base | SessionStart | SessionEnd | CommandOutput | SkillActivated | Notify | TurnEnd
+end

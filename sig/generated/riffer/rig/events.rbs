@@ -1,0 +1,93 @@
+# Generated from lib/riffer/rig/events.rb with RBS::Inline
+
+# The rig-level events every host renders alongside riffer's StreamEvents.
+# They are immutable Data objects; each has +to_h+ — with the type folded in, so
+# the headless host can print every record verbatim as NDJSON — and +type+, the
+# snake_case form of its class name.
+#
+#   Riffer::Rig::Events.SessionStart.new(id: '0198...', reason: :new).type
+#   # => :session_start
+#
+#   Riffer::Rig::Events.TurnEnd.new(stop_reason: :completed, usage: nil).to_h
+#   # => { stop_reason: :completed, usage: nil, type: :turn_end }
+#
+# The extra methods are attached with string +class_eval+: inside a literal
+# method body Steep resolves +self+ to the enclosing module, where the Data
+# members don't exist, and a +define_method+ block body hides them the same way.
+# The member types themselves are checked — they come from the +#: Type+
+# comments on the symbols below — as is every call site.
+module Riffer::Rig::Events
+  class SessionStart < Data
+    attr_reader id(): String
+
+    attr_reader reason(): Symbol
+
+    def self.new: (String id, Symbol reason) -> instance
+                | (id: String, reason: Symbol) -> instance
+
+    def self.members: () -> [ :id, :reason ]
+
+    def members: () -> [ :id, :reason ]
+  end
+
+  class SessionEnd < Data
+    attr_reader reason(): Symbol
+
+    def self.new: (Symbol reason) -> instance
+                | (reason: Symbol) -> instance
+
+    def self.members: () -> [ :reason ]
+
+    def members: () -> [ :reason ]
+  end
+
+  class CommandOutput < Data
+    attr_reader command(): String
+
+    attr_reader text(): String
+
+    def self.new: (String command, String text) -> instance
+                | (command: String, text: String) -> instance
+
+    def self.members: () -> [ :command, :text ]
+
+    def members: () -> [ :command, :text ]
+  end
+
+  class SkillActivated < Data
+    attr_reader name(): String
+
+    def self.new: (String name) -> instance
+                | (name: String) -> instance
+
+    def self.members: () -> [ :name ]
+
+    def members: () -> [ :name ]
+  end
+
+  class Notify < Data
+    attr_reader message(): String?
+
+    attr_reader level(): Symbol
+
+    def self.new: (String? message, Symbol level) -> instance
+                | (message: String?, level: Symbol) -> instance
+
+    def self.members: () -> [ :message, :level ]
+
+    def members: () -> [ :message, :level ]
+  end
+
+  class TurnEnd < Data
+    attr_reader stop_reason(): Symbol
+
+    attr_reader usage(): ::Riffer::Providers::TokenUsage?
+
+    def self.new: (Symbol stop_reason, ::Riffer::Providers::TokenUsage? usage) -> instance
+                | (stop_reason: Symbol, usage: ::Riffer::Providers::TokenUsage?) -> instance
+
+    def self.members: () -> [ :stop_reason, :usage ]
+
+    def members: () -> [ :stop_reason, :usage ]
+  end
+end

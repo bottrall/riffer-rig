@@ -90,7 +90,7 @@ been given; each tool describes what it does and when to use it.
 <p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/160">#160</a>; wording verified against the shipped heredoc in <code>lib/riffer/rig/runtime.rb</code>.</p>
 </section>
 
-<section class="topic" id="events">
+<section class="topic enshrined" id="events">
 <h3>Events</h3>
 <p>The stream a host consumes is riffer's <code>StreamEvents</code> unchanged, plus a few rig-level events. Every host renders this one stream; the ACP adapter is the only place it is mapped to another vocabulary, and the headless host prints it as NDJSON verbatim.</p>
 <div class="table-wrap"><table>
@@ -103,6 +103,7 @@ been given; each tool describes what it does and when to use it.
   <tr><td><code>turn_end</code></td><td><code>stop_reason</code>, <code>usage</code>, <code>cost</code></td><td>the last event of every <code>prompt</code></td></tr>
 </table></div>
 <p>Event objects are immutable value objects (<code>Data</code>). Each has <code>to_h</code>; the event type name is the class name in snake_case, which is what the NDJSON <code>"type"</code> field carries. Extension handlers that observe the loop (<code>after_tool_call</code>, <code>after_response</code>, <code>turn_end</code>, <code>stream</code>) receive these same objects; the vetoable <code>before_*</code> hooks are described under <a href="extensions.html#handlers">Extensions: handlers</a>.</p>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/174">#106</a>: the six event classes ship in <code>lib/riffer/rig/events.rb</code> as <code>Data</code> objects with <code>to_h</code> (the <code>"type"</code> field is folded into <code>to_h</code> so a headless host prints records verbatim) and the snake_case <code>type</code> reader; <code>session_start(reason: :new)</code> opens the first prompt and <code>turn_end</code> closes every <code>prompt</code> (stop reason from riffer's outcome vocabulary, usage from the run's <code>TokenUsage</code>, cost its USD figure), <code>host.notify</code> is mirrored as <code>notify</code>, and <code>close</code> closes the Runtime (further prompts raise). Deviations of schedule, not design: <code>session_start</code>'s <code>:restore</code>/<code>:reload</code> reasons, <code>session_end</code>'s <code>:reload</code>, <code>command_output</code> and <code>skill_activated</code> are defined but first emitted by the snapshot, rebuild, command and skill tickets; handler delivery waits on the handlers ticket; and <code>turn_end</code>'s <code>stop_reason</code> is riffer's outcome vocabulary per the <a href="#prompting">prompting</a> note, not a rig-defined list. NDJSON shape documented in <code>docs/HEADLESS.md</code>; event list in <code>docs/EMBEDDING.md</code>.</p>
 </section>
 
 <section class="topic" id="cancel">
@@ -212,6 +213,7 @@ been given; each tool describes what it does and when to use it.
   <tr><td><code>close</code></td><td>emits <code>session_end(reason: :close)</code>, stops MCP servers</td></tr>
   <tr><td><code>Riffer::Rig.credentials(id)</code></td><td>the current thread's Runtime's credentials for one provider</td></tr>
 </table></div>
+<p class="note">Rows <code>close</code>, <code>id</code> and <code>errors</code> enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/174">#106</a>: <code>close</code> emits <code>session_end(reason: :close)</code> and the Runtime refuses further prompts and asks (stopping MCP servers waits on the MCP ticket); <code>id</code> is a UUIDv7 minted at construction; <code>errors</code> waits on the extension-error ticket.</p>
 
 <h2 id="enshrines">Enshrines into</h2>
 <div class="table-wrap"><table>

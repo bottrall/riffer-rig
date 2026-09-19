@@ -9,6 +9,10 @@
 #   runtime.prompt('hello').each { |event| }  # an Enumerator without a block
 #   response = runtime.ask('hello')           # a Riffer::Agent::Response
 #
+# Every prompt ends with a rig-level Riffer::Rig::Events::TurnEnd carrying the run's
+# stop reason and token usage; construction emits Riffer::Rig::Events::SessionStart and
+# close emits Riffer::Rig::Events::SessionEnd. See Riffer::Rig::Events for the vocabulary.
+#
 # Two Runtimes in one process share nothing but the process-wide extension
 # registry and riffer's provider repository. One prompt runs at a time; a
 # second while one is running raises Riffer::Rig::Runtime::BusyError. The
@@ -17,6 +21,10 @@ class Riffer::Rig::Runtime
   # Raised when a second prompt, ask or registrar build runs while one is
   # already running on this Runtime.
   class BusyError < StandardError
+  end
+
+  # Raised when a prompt or ask is sent to a Runtime that has been closed.
+  class ClosedError < StandardError
   end
 
   BASE_PROMPT_TEMPLATE: ::String
@@ -28,22 +36,30 @@ class Riffer::Rig::Runtime
   DEFAULT_MAX_STEPS: Integer?
 
   interface _Host
-    def ask: (?String, ?options: Array[String]?, ?secret: bool) -> String?
+    def ask: (?String?, ?options: Array[String]?, ?secret: bool) -> String?
 
-    def confirm: (?String) -> bool
+    def confirm: (?String?) -> bool
 
-    def notify: (?String, ?level: Symbol) -> void
+    def notify: (?String?, ?level: Symbol) -> void
 
-    def progress: (?String) { () -> void } -> void
+    def progress: (?String?) { () -> void } -> void
 
     def capabilities: () -> Set[Symbol]
   end
 
   @registrar: Riffer::Rig::Registrar
 
+  @session_start_pending: bool
+
+  @closed: bool
+
   @busy: bool
 
   @settings: Hash[Symbol, untyped]
+
+  @notifier: NotifyingHost
+
+  @id: String
 
   @host: _Host
 
@@ -59,6 +75,54 @@ class Riffer::Rig::Runtime
   attr_reader host: _Host
 
   attr_reader settings: Hash[Symbol, untyped]
+
+  # UUIDv7 minted at construction; also the snapshot id and ACP sessionId.
+  #
+  # @dynamic id
+  attr_reader id: String
+
+  # Wraps the given host and mirrors every notify into a rig-level
+  # Riffer::Rig::Events::Notify on the next prompt's stream, so stream consumers see
+  # extension errors too.
+  class NotifyingHost
+    @host: _Host
+
+    @queue: Array[Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd]
+
+    # @dynamic capabilities
+    attr_reader capabilities: Set[Symbol]
+
+    # @rbs host: _Host
+    # @rbs return: void
+    def initialize: (_Host host) -> void
+
+    # @rbs question: String?
+    # @rbs options: Array[String]?
+    # @rbs secret: bool
+    # @rbs return: String?
+    def ask: (?String? question, ?options: Array[String]?, ?secret: bool) -> String?
+
+    # @rbs question: String?
+    # @rbs return: bool
+    def confirm: (?String? question) -> bool
+
+    # @rbs message: String?
+    # @rbs level: Symbol
+    # @rbs return: void
+    def notify: (?String? message, ?level: Symbol) -> void
+
+    # @rbs label: String?
+    # @rbs &block: ^() -> void
+    # @rbs return: void
+    def progress: (?String? label) ?{ (?) -> untyped } -> void
+
+    # @rbs event: (Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd)
+    # @rbs return: void
+    def queue: (Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd event) -> void
+
+    # @rbs return: Array[(Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd)]
+    def drain: () -> Array[Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd]
+  end
 
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]
@@ -76,15 +140,25 @@ class Riffer::Rig::Runtime
   def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: _Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[String, String], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?max_steps: Integer?, ?snapshot: Hash[Symbol, untyped]?) -> void
 
   # @rbs text: String
-  # @rbs &block: ?(Riffer::StreamEvents::Base) -> void
-  # @rbs return: (nil | Enumerator[Riffer::StreamEvents::Base, void])
-  def prompt: (String text) ?{ (Riffer::StreamEvents::Base) -> void } -> (nil | Enumerator[Riffer::StreamEvents::Base, void])
+  # @rbs &block: ?(Riffer::Rig::Events::t) -> void
+  # @rbs return: (nil | Enumerator[Riffer::Rig::Events::t, Riffer::Agent::Response])
+  def prompt: (String text) ?{ (Riffer::Rig::Events::t) -> void } -> (nil | Enumerator[Riffer::Rig::Events::t, Riffer::Agent::Response])
 
   # @rbs text: String
   # @rbs return: Riffer::Agent::Response
   def ask: (String text) -> Riffer::Agent::Response
 
+  # Queues Riffer::Rig::Events::SessionEnd with reason +:close+ and refuses
+  # further prompts and asks.
+  #
+  # @rbs return: void
+  def close: () -> void
+
   private
+
+  # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  # @rbs return: Enumerator[Riffer::Rig::Events::t, Riffer::Agent::Response]
+  def wrap_stream: (Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response] stream) -> Enumerator[Riffer::Rig::Events::t, Riffer::Agent::Response]
 
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs return: Riffer::Rig::Registrar

@@ -12,6 +12,7 @@ target :lib do
   collection_config 'rbs_collection.yaml'
 
   library 'date'
+  library 'securerandom'
   library 'json'
   library 'open3'
   library 'io-console'

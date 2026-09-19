@@ -232,4 +232,118 @@ describe Riffer::Rig::Runtime do
 
     assert_equal 'second', runtime.prompt('hello').find { |event| event.is_a?(Riffer::StreamEvents::TextDone) }.content
   end
+
+  it 'mints a uuid_v7 id at construction' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+
+    assert_match(/\A[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}\z/, runtime.id)
+  end
+
+  it 'gives each runtime its own id' do
+    one = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+    two = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+
+    refute_equal one.id, two.id
+  end
+
+  it 'opens every prompt with a session_start' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+    runtime.agent.provider.stub_response('All done.')
+
+    first = runtime.prompt('hello').first
+
+    assert_equal(Riffer::Rig::Events::SessionStart.new(id: runtime.id, reason: :new), first)
+  end
+
+  it 'emits session_start once, not on every prompt' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+    runtime.agent.provider.stub_response('first')
+    runtime.agent.provider.stub_response('second')
+    runtime.prompt('hello').each { |event| event }
+    second = runtime.prompt('hello').first
+
+    refute_instance_of Riffer::Rig::Events::SessionStart, second
+  end
+
+  it 'closes every prompt with a turn_end' do
+    usage = Riffer::Providers::TokenUsage.new(input_tokens: 10, output_tokens: 5)
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+    runtime.agent.provider.stub_response('All done.', token_usage: usage)
+
+    last = nil
+    runtime.prompt('hello') { |event| last = event }
+
+    assert_equal(Riffer::Rig::Events::TurnEnd.new(stop_reason: :completed, usage: usage), last)
+  end
+
+  it 'leaves turn_end cost nil without pricing' do
+    usage = Riffer::Providers::TokenUsage.new(input_tokens: 10, output_tokens: 5)
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+    runtime.agent.provider.stub_response('All done.', token_usage: usage)
+
+    last = nil
+    runtime.prompt('hello') { |event| last = event }
+
+    assert_nil last.cost
+  end
+
+  it 'reports a max_steps run in turn_end' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], tools: %w[read], max_steps: 1)
+    runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
+    runtime.agent.provider.stub_response('second response')
+
+    last = nil
+    runtime.prompt('go') { |event| last = event }
+
+    assert_equal :max_steps, last.stop_reason
+  end
+
+  it 'closes a runtime and refuses further prompts' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+    runtime.close
+
+    assert_raises(Riffer::Rig::Runtime::ClosedError) { runtime.prompt('hello') }
+  end
+
+  it 'closes a runtime and refuses further asks' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+    runtime.close
+
+    assert_raises(Riffer::Rig::Runtime::ClosedError) { runtime.ask('hello') }
+  end
+
+  it 'mirrors host.notify as a notify event on the stream' do
+    notifies = []
+    host = Object.new
+    host.define_singleton_method(:capabilities) { Set.new.freeze }
+    host.define_singleton_method(:ask) { |*| nil }
+    host.define_singleton_method(:confirm) { |*| false }
+    host.define_singleton_method(:notify) { |message, level:| notifies << [message, level] }
+    host.define_singleton_method(:progress) { |*, &block| block&.call }
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], host: host)
+    runtime.agent.provider.stub_response('All done.')
+
+    notify_events = []
+    runtime.host.notify('boom', level: :error)
+    runtime.prompt('hello') { |event| notify_events << event if event.is_a?(Riffer::Rig::Events::Notify) }
+
+    assert_equal [Riffer::Rig::Events::Notify.new(message: 'boom', level: :error)], notify_events
+  end
+
+  it 'passes notify through to the wrapped host' do
+    notifies = []
+    host = Object.new
+    host.define_singleton_method(:capabilities) { Set.new.freeze }
+    host.define_singleton_method(:ask) { |*| nil }
+    host.define_singleton_method(:confirm) { |*| false }
+    host.define_singleton_method(:notify) { |message, level:| notifies << [message, level] }
+    host.define_singleton_method(:progress) { |*, &block| block&.call }
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], host: host)
+    runtime.agent.provider.stub_response('All done.')
+
+    runtime.host.notify('boom', level: :error)
+    runtime.prompt('hello').each { |event| event }
+
+    assert_equal [['boom', :error]], notifies
+  end
 end
