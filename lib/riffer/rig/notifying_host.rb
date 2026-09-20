@@ -1,22 +1,13 @@
 # frozen_string_literal: true
 
-# @rbs!
-#   interface _Host
-#     def ask: (?String?, ?options: Array[String]?, ?secret: bool) -> String?
-#     def confirm: (?String?) -> bool
-#     def notify: (?String?, ?level: Symbol) -> void
-#     def progress: (?String?) { () -> void } -> void
-#     def capabilities: () -> Set[Symbol]
-#   end
-
 class Riffer::Rig::NotifyingHost
-  # @rbs @host: _Host
+  # @rbs @host: Riffer::Rig::Host
   # @rbs @queue: Array[Riffer::Rig::Events::Event]
 
   # @dynamic capabilities
   attr_reader :capabilities #: Set[Symbol]
 
-  # @rbs host: _Host
+  # @rbs host: Riffer::Rig::Host
   # @rbs return: void
   def initialize(host)
     @host = host
