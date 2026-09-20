@@ -1,14 +1,4 @@
 # frozen_string_literal: true
 
-# The rig-level events every host renders alongside riffer's StreamEvents.
-# They are frozen value objects; each has +to_h+ — with the type folded in, so
-# the headless host can print every record verbatim as NDJSON — and +type+, the
-# snake_case form of its class name.
-#
-#   Riffer::Rig::Events::SessionStart.new(id: '0198...', reason: :new).type
-#   # => :session_start
-#
-#   Riffer::Rig::Events::TurnEnd.new(stop_reason: :completed, usage: nil).to_h
-#   # => { stop_reason: :completed, usage: nil, type: :turn_end }
 module Riffer::Rig::Events
 end
