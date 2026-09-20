@@ -28,6 +28,7 @@ class Riffer::Rig::Runtime
   DEFAULT_MAX_STEPS = nil #: Integer?
 
   # @rbs @agent: Riffer::Agent
+  # @rbs @base_prompt: String
   # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs @cwd: String
   # @rbs @host: Riffer::Rig::Hosts::Mirror
@@ -85,12 +86,12 @@ class Riffer::Rig::Runtime
     @session_start_pending = true
     @registrar = build_registrar(extensions)
     tool_classes = select_tools(@registrar.tools, tools)
-    base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
+    @base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
 
     @agent = Riffer::Agent.new(
       config: Riffer::Agent::Config.new(
         model: model,
-        instructions: system_prompt(base_prompt),
+        instructions: system_prompt([]),
         tools_config: tool_classes,
         max_steps: max_steps
       )
@@ -105,6 +106,7 @@ class Riffer::Rig::Runtime
     raise ClosedError, 'this Runtime is closed' if @closed
 
     @busy = true
+    refresh_system_message
     if block
       wrap_stream(@agent.stream(text)).each(&block)
       nil
@@ -122,6 +124,7 @@ class Riffer::Rig::Runtime
     raise ClosedError, 'this Runtime is closed' if @closed
 
     @busy = true
+    refresh_system_message
     @agent.stream(text).each { |event| event }
   ensure
     @busy = false
@@ -168,9 +171,22 @@ class Riffer::Rig::Runtime
     registered.select { |klass| allowlist.include?(klass.name) }
   end
 
-  # @rbs base_prompt: String
+  # @rbs return: void
+  def refresh_system_message
+    # Upstream candidate: riffer resolves `instructions` once, in Agent.new, so
+    # a per-turn system message has to be swapped into the session by hand.
+    session = @agent.session
+    session.set([Riffer::Messages::System.new(system_prompt(rendered_sections)), *session.messages.drop(1)])
+  end
+
+  # @rbs return: Array[String]
+  def rendered_sections
+    @registrar.prompts.each_value.map { |section| section.call(self).to_s }.reject(&:empty?)
+  end
+
+  # @rbs sections: Array[String]
   # @rbs return: String
-  def system_prompt(base_prompt)
-    "#{base_prompt}\n\nCurrent date: #{Date.today}\nCurrent working directory: #{@cwd}"
+  def system_prompt(sections)
+    [@base_prompt, *sections, "Current date: #{Date.today}\nCurrent working directory: #{@cwd}"].join("\n\n")
   end
 end

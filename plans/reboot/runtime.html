@@ -87,7 +87,7 @@ been given; each tool describes what it does and when to use it.
   <tr><td>Context</td><td>AGENTS.md arrives as a prompt section from its bundled extension, framed as user-authored instructions that outrank the base norms. The Runtime appends date and cwd itself.</td><td>Keeps "runtime does no disk scanning" and keeps AGENTS.md disableable.</td></tr>
   <tr><td>Reload</td><td>Sections re-render from the fresh registrar; the base prompt is gem code and is not re-read.</td><td>User-editable prompt text belongs in a section, not in the gem.</td></tr>
 </table></div>
-<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/160">#160</a>; wording verified against the shipped heredoc in <code>lib/riffer/rig/runtime.rb</code>.</p>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/160">#160</a>; wording verified against the shipped heredoc in <code>lib/riffer/rig/runtime.rb</code>. Prompt sections, row Reload and the section half of row Context enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/184">#184</a>: the Runtime keeps the base prompt from construction and re-renders the sections from its current registrar, and the environment block, at the start of every turn (the date is therefore read per turn, not at construction); the swap of the registrar itself waits on the <a href="#rebuild">rebuild</a> ticket, and the AGENTS.md file reading on its <a href="bundled.html">Bundled</a> ticket. Deviations are in the note under <a href="extensions.html#prompt-sections">Extensions: Prompt sections</a>.</p>
 </section>
 
 <section class="topic enshrined" id="events">
