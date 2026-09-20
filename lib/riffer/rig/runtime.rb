@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'date'
+require 'securerandom'
 
 # One Runtime builds its own Riffer::Agent from a per-instance
 # Riffer::Agent::Config and runs a prompt: streamed as events, or run to
@@ -11,6 +12,10 @@ require 'date'
 #   runtime.prompt('hello').each { |event| }  # an Enumerator without a block
 #   response = runtime.ask('hello')           # a Riffer::Agent::Response
 #
+# Every prompt ends with a rig-level Riffer::Rig::Events::TurnEnd carrying the run's
+# stop reason and token usage; construction emits Riffer::Rig::Events::SessionStart on
+# the first prompt. See Riffer::Rig::Events for the vocabulary.
+#
 # Two Runtimes in one process share nothing but the process-wide extension
 # registry and riffer's provider repository. One prompt runs at a time; a
 # second while one is running raises Riffer::Rig::Runtime::BusyError. The
@@ -19,6 +24,9 @@ class Riffer::Rig::Runtime
   # Raised when a second prompt, ask or registrar build runs while one is
   # already running on this Runtime.
   class BusyError < StandardError; end
+
+  # Raised when a prompt or ask is sent to a Runtime that has been closed.
+  class ClosedError < StandardError; end
 
   BASE_PROMPT_TEMPLATE = <<~TEXT
     You are %<name>s, a general-purpose agent. You work by using the tools you have
@@ -37,20 +45,15 @@ class Riffer::Rig::Runtime
   # default (16) is too small for a general-purpose harness.
   DEFAULT_MAX_STEPS = nil #: Integer?
 
-  # @rbs!
-  #   interface _Host
-  #     def ask: (?String, ?options: Array[String]?, ?secret: bool) -> String?
-  #     def confirm: (?String) -> bool
-  #     def notify: (?String, ?level: Symbol) -> void
-  #     def progress: (?String) { () -> void } -> void
-  #     def capabilities: () -> Set[Symbol]
-  #   end
-
   # @rbs @agent: Riffer::Agent
   # @rbs @cwd: String
   # @rbs @host: _Host
+  # @rbs @id: String
+  # @rbs @notifier: Riffer::Rig::NotifyingHost
   # @rbs @settings: Hash[Symbol, untyped]
   # @rbs @busy: bool
+  # @rbs @closed: bool
+  # @rbs @session_start_pending: bool
   # @rbs @registrar: Riffer::Rig::Registrar
 
   # @dynamic agent, cwd, host, settings
@@ -58,6 +61,11 @@ class Riffer::Rig::Runtime
   attr_reader :cwd #: String
   attr_reader :host #: _Host
   attr_reader :settings #: Hash[Symbol, untyped]
+
+  # UUIDv7 minted at construction; also the snapshot id and ACP sessionId.
+  #
+  # @dynamic id
+  attr_reader :id #: String
 
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]
@@ -86,11 +94,15 @@ class Riffer::Rig::Runtime
     max_steps: DEFAULT_MAX_STEPS,
     snapshot: nil
   )
-    @host = host
+    @id = ::SecureRandom.uuid_v7
+    @notifier = Riffer::Rig::NotifyingHost.new(host)
+    @host = @notifier
     @cwd = cwd || Dir.pwd
     @settings = settings
 
     @busy = false
+    @closed = false
+    @session_start_pending = true
     @registrar = build_registrar(extensions)
     tool_classes = select_tools(@registrar.tools, tools)
     base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
@@ -106,17 +118,18 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs text: String
-  # @rbs &block: ?(Riffer::StreamEvents::Base) -> void
-  # @rbs return: (nil | Enumerator[Riffer::StreamEvents::Base, void])
+  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response])
   def prompt(text, &block)
     raise BusyError, 'a prompt is already running on this Runtime' if @busy
+    raise ClosedError, 'this Runtime is closed' if @closed
 
     @busy = true
     if block
-      @agent.stream(text).each(&block)
+      wrap_stream(@agent.stream(text)).each(&block)
       nil
     else
-      @agent.stream(text)
+      wrap_stream(@agent.stream(text))
     end
   ensure
     @busy = false
@@ -126,6 +139,7 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Agent::Response
   def ask(text)
     raise BusyError, 'a prompt is already running on this Runtime' if @busy
+    raise ClosedError, 'this Runtime is closed' if @closed
 
     @busy = true
     @agent.stream(text).each { |event| event }
@@ -133,7 +147,28 @@ class Riffer::Rig::Runtime
     @busy = false
   end
 
+  # Refuses further prompts and asks; emitting Riffer::Rig::Events::SessionEnd
+  # waits on the rebuild ticket, which owns the stream's session_end reasons.
+  #
+  # @rbs return: void
+  def close
+    @closed = true
+  end
+
   private
+
+  # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
+  def wrap_stream(stream)
+    Enumerator.new do |yielder|
+      yielder << Riffer::Rig::Events::SessionStart.new(@id, :new) if @session_start_pending
+      @session_start_pending = false
+      @notifier.drain.each { |event| yielder << event }
+      response = stream.each { |event| yielder << event }
+      yielder << Riffer::Rig::Events::TurnEnd.new(response.outcome.reason, response.token_usage)
+      response
+    end
+  end
 
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs return: Riffer::Rig::Registrar

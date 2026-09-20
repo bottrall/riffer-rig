@@ -1,0 +1,4 @@
+# Generated from lib/riffer/rig/events.rb with RBS::Inline
+
+module Riffer::Rig::Events
+end

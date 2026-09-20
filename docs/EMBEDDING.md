@@ -67,6 +67,23 @@ end
 
 How the run ended is riffer's `response.outcome` — `reason` is one of riffer's vocabulary (`completed`, provider finish reasons like `length` and `content_filter`, `max_steps`, `guardrail_blocked`, `interrupted`, …) and `detail` carries the specifics, such as the interrupt reason behind `:interrupted`. A future cancel will end runs the same way until #110 gives `cancelled` a vocabulary entry upstream. Hosts map `outcome.reason` to exit codes or UI.
 
+## Rig events
+
+The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-level events from `Riffer::Rig::Events`. They are immutable `Data` value objects; each has `to_h` — with the type folded in, so a headless host can print every record verbatim as NDJSON — and `type`, the snake_case form of its class name.
+
+| Rig event         | Carries                          | When                                                              |
+| ----------------- | -------------------------------- | ----------------------------------------------------------------- |
+| `session_start`   | `id`, `reason` (`:new`, `:restore`, `:reload`) | opens the first prompt after construction (or a restore, or a rebuild) |
+| `session_end`     | `reason` (`:reload`, `:close`)   | on `close` (queued — see the note below) |
+| `command_output`  | `command`, `text`                | a command called `ctx.say`                                        |
+| `skill_activated` | `name`                           | a skill was activated by command                                  |
+| `notify`          | `message`, `level`               | mirrors every `host.notify`, so a stream consumer sees extension errors too |
+| `turn_end`        | `stop_reason`, `usage`, `cost`   | the last event of every `prompt`; `usage` is riffer's `TokenUsage` and `cost` its USD figure, `nil` when unpriced |
+
+`session_start` and `session_end` currently carry reason `:new` and `:close` only — `:restore` and `:reload` arrive with the snapshot and rebuild tickets. `close` refuses further prompts and asks with `Riffer::Rig::Runtime::ClosedError`; `session_end` waits on the rebuild ticket, which owns the stream's session_end reasons.
+
+Every `prompt` ends with `turn_end` — with a block or as an Enumerator — so a stream consumer never needs `ask` to learn how the turn ended and what it cost. The headless host prints this same stream as NDJSON; see [Headless mode](HEADLESS.md) for the wire shape.
+
 ## Capping the loop
 
 `max_steps:` caps how many LLM steps one run may take (`nil` — the default — runs the loop without a limit). A run that hits the cap ends with `outcome.reason: :max_steps`; the model's partial output is still on the response.

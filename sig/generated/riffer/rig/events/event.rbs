@@ -1,0 +1,20 @@
+# Generated from lib/riffer/rig/events/event.rb with RBS::Inline
+
+class Riffer::Rig::Events::Event
+  # @rbs return: Symbol
+  def type: () -> Symbol
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+
+  # @rbs other: untyped
+  # @rbs return: bool
+  def ==: (untyped other) -> bool
+
+  # @rbs return: Integer
+  def hash: () -> Integer
+
+  # @rbs other: untyped
+  # @rbs return: bool
+  def eql?: (untyped other) -> bool
+end
