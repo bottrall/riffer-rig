@@ -3,25 +3,6 @@
 require 'json'
 require 'fileutils'
 
-# Reads and writes API keys for each supported provider in
-# <tt>~/.riffer/auth.json</tt>.
-#
-# Keys are stored under the provider name, e.g.:
-#
-#   {
-#     "anthropic": "sk-ant-...",
-#     "openai": "sk-...",
-#     "gemini": "...",
-#     "openrouter": "sk-or-..."
-#   }
-#
-# The environment variable checked per provider:
-#
-#   anthropic  → ANTHROPIC_API_KEY
-#   openai     → OPENAI_API_KEY
-#   gemini     → GEMINI_API_KEY
-#   openrouter → OPENROUTER_API_KEY
-#
 module Riffer::Rig::Credentials
   extend self
 
@@ -34,9 +15,6 @@ module Riffer::Rig::Credentials
     'openrouter' => 'OPENROUTER_API_KEY'
   }.freeze #: Hash[String, String]
 
-  # Returns the API key for +provider+, checking the environment variable first,
-  # then the stored file. Returns +nil+ if no key is available.
-  #
   # @rbs provider: String?
   # @rbs path: String
   # @rbs return: String?
@@ -46,8 +24,6 @@ module Riffer::Rig::Credentials
     key || key_from_file(provider, path)
   end
 
-  # Saves an API key for +provider+ to the auth file with 0600 permissions.
-  #
   # @rbs provider: String
   # @rbs key: String
   # @rbs path: String
@@ -73,10 +49,6 @@ module Riffer::Rig::Credentials
     key
   end
 
-  # The parsed auth file, or an empty hash when the file is absent or
-  # malformed. Non-string values can't be keys, so they're dropped here rather
-  # than re-checked by every reader.
-  #
   # @rbs path: String
   # @rbs return: Hash[String, String]
   def read(path)

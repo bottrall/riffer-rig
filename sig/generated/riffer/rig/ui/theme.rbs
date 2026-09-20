@@ -1,11 +1,8 @@
 # Generated from lib/riffer/rig/ui/theme.rb with RBS::Inline
 
-# +enabled+ gates every escape so the same code path emits plain, escape-free
-# text when piped or tested.
 class Riffer::Rig::UI::Theme
   @enabled: bool
 
-  # @rbs return: bool
   # @dynamic enabled
   attr_reader enabled: bool
 

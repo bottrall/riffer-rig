@@ -4,7 +4,6 @@ require 'test_helper'
 require 'stringio'
 
 class FakeClock
-  # Returns instantly, so the tick thread drains as fast as the test allows.
   def sleep(_seconds) = nil
 end
 

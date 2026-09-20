@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Opens the stream of the first prompt after construction.
 class Riffer::Rig::Events::SessionStart < Riffer::Rig::Events::Event
   # @dynamic id, reason
   attr_reader :id #: String

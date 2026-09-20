@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
-# Run the test suite, or a subset of it.
-#
-#   bin/test                          full suite
-#   bin/test test/foo_test.rb         one file
-#   bin/test test/a_test.rb test/b_test.rb -n /pattern/
-#
-# File arguments become rake's TEST= list; flags are forwarded to Minitest via
-# TESTOPTS=. Rake's test loader treats every argument that doesn't start with
+# Rake's test loader treats every argument that doesn't start with
 # `-` as a file, so a flag's value (`--seed 1`, `-n /pattern/`) is joined onto
 # the flag (`--seed=1`, `-n/pattern/`), which Minitest's option parser accepts.
 set -e

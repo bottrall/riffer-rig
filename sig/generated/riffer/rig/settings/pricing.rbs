@@ -1,6 +1,6 @@
 # Generated from lib/riffer/rig/settings/pricing.rb with RBS::Inline
 
-# USD per million tokens, parsed from a model's entry in the settings file.
+# Holds a model's prices in USD per million tokens.
 class Riffer::Rig::Settings::Pricing
   # @dynamic input, output, cache_write, cache_read
   attr_reader input: Float
@@ -14,6 +14,8 @@ class Riffer::Rig::Settings::Pricing
   # @dynamic input, output, cache_write, cache_read
   attr_reader cache_read: Float
 
+  # Builds a Pricing from a settings-file entry, pricing missing keys at zero.
+  #
   # @rbs entry: Hash[String, untyped]
   # @rbs return: ::Riffer::Rig::Settings::Pricing
   def self.from: (Hash[String, untyped] entry) -> ::Riffer::Rig::Settings::Pricing

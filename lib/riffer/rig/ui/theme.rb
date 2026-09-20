@@ -1,11 +1,8 @@
 # frozen_string_literal: true
 
-# +enabled+ gates every escape so the same code path emits plain, escape-free
-# text when piped or tested.
 class Riffer::Rig::UI::Theme
   # @rbs @enabled: bool
 
-  # @rbs return: bool
   # @dynamic enabled
   attr_reader :enabled #: bool
 

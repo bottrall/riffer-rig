@@ -1,5 +1,6 @@
 # Generated from lib/riffer/rig/events/session_start.rb with RBS::Inline
 
+# Opens the stream of the first prompt after construction.
 class Riffer::Rig::Events::SessionStart < Riffer::Rig::Events::Event
   # @dynamic id, reason
   attr_reader id: String

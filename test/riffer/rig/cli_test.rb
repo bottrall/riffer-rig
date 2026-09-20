@@ -16,8 +16,7 @@ describe Riffer::Rig::CLI do
 
   private
 
-  # CLI.start mutates the global Riffer config and reads ENV; snapshot and
-  # restore both so tests leave no residue.
+  # CLI.start mutates the global Riffer config and reads ENV.
   def with_clean_global_state
     previous = {
       anthropic: Riffer.config.anthropic.api_key,

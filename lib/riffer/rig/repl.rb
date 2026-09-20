@@ -154,9 +154,8 @@ class Riffer::Rig::REPL
     "<skill name=\"#{name}\">\n#{body}\n</skill>"
   end
 
-  # Chrome lines that never pass through the renderer (errors, exit line) end
-  # their line with a newline but leave the renderer's tool-group state alone —
-  # they can only follow prose, never mid-group.
+  # Bypasses the renderer's tool-group state: these lines (errors, the exit
+  # line) can only follow prose, never land mid-group.
   #
   # @rbs &block: () -> String
   # @rbs return: void

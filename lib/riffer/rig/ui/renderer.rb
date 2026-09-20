@@ -44,9 +44,8 @@ class Riffer::Rig::UI::Renderer
     end
   end
 
-  # The prompt holds the line open for typed input, so unlike render_block it
-  # ends without a newline. It sits at the renderer so a tool group left open by
-  # the previous turn closes here, and the next turn's blocks open cleanly.
+  # Sits on the renderer so a tool group left open by the previous turn closes
+  # here, and the next turn's blocks open cleanly.
   #
   # @rbs return: void
   def prompt
@@ -58,8 +57,7 @@ class Riffer::Rig::UI::Renderer
 
   # Usage arrives per model call but tool results arrive via the session
   # callback after each call's stream ends, so rendering inline would print the
-  # stats above the results they belong with. Held until the turn's output is
-  # done, then printed as one line below it.
+  # stats above the results they belong with.
   #
   # @rbs return: void
   def flush_usage
@@ -86,11 +84,6 @@ class Riffer::Rig::UI::Renderer
 
   private
 
-  # Rule 2 for one-off blocks (skill line, interrupt, stats): one blank line
-  # above, no indent. The smoother drains first so any pending partial prose
-  # block ends cleanly before the gap is written, and any open tool group closes
-  # so the next group opens with its own gap.
-  #
   # @rbs indent: Integer
   # @rbs &block: () -> String
   # @rbs return: void
@@ -102,9 +95,8 @@ class Riffer::Rig::UI::Renderer
     @io.flush
   end
 
-  # The blank line above a prose block is written at the first delta after a
-  # non-prose block. Streaming makes "which block is first?" a stateful
-  # question, so the answer is tracked rather than embedded at each render site.
+  # Streaming makes "which delta opens a prose block?" a stateful question, so
+  # the gap is tracked in a flag rather than written at each render site.
   #
   # @rbs content: String
   # @rbs return: void
@@ -126,8 +118,7 @@ class Riffer::Rig::UI::Renderer
   end
 
   # Tool-activity lines (⚙ calls, ↳ results) share one blank line above the
-  # group instead of one between each line — the gap goes between groups, not
-  # inside a pair. The group stays open so prose after it pays the closing gap.
+  # group; the group stays open so the prose after it pays the closing gap.
   #
   # @rbs return: void
   def open_tool_activity
@@ -157,8 +148,6 @@ class Riffer::Rig::UI::Renderer
     @smoother || PassThroughSmoother.new(@io)
   end
 
-  # Stand-in when no smoother is injected, so a bare Riffer::Rig::UI::Renderer still prints
-  # synchronously.
   class PassThroughSmoother
     # @rbs @io: IO
 

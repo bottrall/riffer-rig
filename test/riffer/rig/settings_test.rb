@@ -195,8 +195,6 @@ describe Riffer::Rig::Settings do
     assert_nil Riffer::Rig::Settings.provider_for('no-slash-model')
   end
 
-  # model_options — no reasoning configured
-
   it 'model options includes cache control for anthropic model' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6' })
@@ -223,8 +221,6 @@ describe Riffer::Rig::Settings do
       assert_equal({ cache_control: { type: :ephemeral } }, opts)
     end
   end
-
-  # model_options — Anthropic reasoning levels
 
   it 'model options sets anthropic effort for low reasoning' do
     Dir.mktmpdir do |dir|
@@ -260,8 +256,6 @@ describe Riffer::Rig::Settings do
     end
   end
 
-  # model_options — OpenAI reasoning levels
-
   it 'model options sets reasoning effort for openai low' do
     Dir.mktmpdir do |dir|
       path = settings_file(dir, { 'model' => 'openai/o3', 'reasoning' => 'low' })
@@ -277,8 +271,6 @@ describe Riffer::Rig::Settings do
       assert_equal 'high', Riffer::Rig::Settings.model_options(path: path)[:reasoning]
     end
   end
-
-  # model_options — OpenRouter reasoning levels
 
   it 'model options sets reasoning effort for openrouter medium' do
     Dir.mktmpdir do |dir|
@@ -319,8 +311,6 @@ describe Riffer::Rig::Settings do
       assert_equal 'xhigh', Riffer::Rig::Settings.model_options(path: path)[:reasoning]
     end
   end
-
-  # model_options — invalid / unknown reasoning values
 
   it 'model options ignores unrecognised reasoning value' do
     Dir.mktmpdir do |dir|

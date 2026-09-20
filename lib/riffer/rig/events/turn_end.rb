@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Ends every prompt's stream with the run's stop reason and token usage.
 class Riffer::Rig::Events::TurnEnd < Riffer::Rig::Events::Event
   # @dynamic stop_reason, usage
   attr_reader :stop_reason #: Symbol
@@ -15,7 +16,7 @@ class Riffer::Rig::Events::TurnEnd < Riffer::Rig::Events::Event
     freeze
   end
 
-  # The USD cost of the turn's usage, or nil when pricing is missing.
+  # Returns the USD cost of the turn's usage, or nil when the model is unpriced.
   #
   # @rbs return: Float?
   def cost

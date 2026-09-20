@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-# Every project chore is defined here, once. The scripts in bin/ are the
-# documented entry points; each one delegates to a task below and adds nothing
-# but argument translation. See README "Development".
-
 require 'bundler/gem_tasks'
 require 'rake/testtask'
 require 'rubocop/rake_task'
@@ -15,7 +11,6 @@ Rake::TestTask.new(:test) do |t|
   t.warning = false
 end
 
-# Extra CLI arguments arrive via RUBOCOP_OPTS, mirroring rake's TESTOPTS.
 RuboCop::RakeTask.new do |t|
   t.options = ENV.fetch('RUBOCOP_OPTS', '').split
 end

@@ -3,29 +3,14 @@
 require 'date'
 require 'securerandom'
 
-# One Runtime builds its own Riffer::Agent from a per-instance
-# Riffer::Agent::Config and runs a prompt: streamed as events, or run to
-# completion and returned as riffer's Agent::Response.
-#
-#   runtime = Riffer::Rig::Runtime.new('mock/x')
-#   runtime.prompt('hello') { |event| ... }   # yields riffer StreamEvents
-#   runtime.prompt('hello').each { |event| }  # an Enumerator without a block
-#   response = runtime.ask('hello')           # a Riffer::Agent::Response
-#
-# Every prompt ends with a rig-level Riffer::Rig::Events::TurnEnd carrying the run's
-# stop reason and token usage; construction emits Riffer::Rig::Events::SessionStart on
-# the first prompt. See Riffer::Rig::Events for the vocabulary.
-#
-# Two Runtimes in one process share nothing but the process-wide extension
-# registry, riffer's provider repository and riffer's config. One prompt runs at a time; a
-# second while one is running raises Riffer::Rig::Runtime::BusyError. The
-# Runtime never renders, never prints, never reads the filesystem.
+# Runs prompts on its own Riffer::Agent, streaming events or returning the
+# response. It never renders, prints or reads the filesystem: anything a host
+# needs is a Runtime feature, so embedders get it too.
 class Riffer::Rig::Runtime
-  # Raised when a second prompt, ask or registrar build runs while one is
-  # already running on this Runtime.
+  # Raised when a prompt or ask starts while another is running.
   class BusyError < StandardError; end
 
-  # Raised when a prompt or ask is sent to a Runtime that has been closed.
+  # Raised when a prompt or ask is sent to a closed Runtime.
   class ClosedError < StandardError; end
 
   BASE_PROMPT_TEMPLATE = <<~TEXT
@@ -41,8 +26,8 @@ class Riffer::Rig::Runtime
 
   DEFAULT_NAME = 'riffer'
 
-  # The legacy CodingAgent's default: an unlimited agent loop. riffer's own
-  # default (16) is too small for a general-purpose harness.
+  # Unlimited: riffer's own default (16) is too small for a general-purpose
+  # harness.
   DEFAULT_MAX_STEPS = nil #: Integer?
 
   # @rbs @agent: Riffer::Agent
@@ -57,18 +42,25 @@ class Riffer::Rig::Runtime
   # @rbs @session_start_pending: bool
   # @rbs @registrar: Riffer::Rig::Registrar
 
-  # @dynamic agent, credentials, cwd, host, settings
+  # @dynamic agent, credentials, cwd, settings
   attr_reader :agent #: Riffer::Agent
   attr_reader :credentials #: Hash[Symbol, Hash[Symbol, String]]
   attr_reader :cwd #: String
-  attr_reader :host #: _Host
   attr_reader :settings #: Hash[Symbol, untyped]
 
-  # UUIDv7 minted at construction; also the snapshot id and ACP sessionId.
+  # Returns the given host, wrapped so every notify is mirrored onto the stream.
+  #
+  # @dynamic host
+  attr_reader :host #: _Host
+
+  # Returns the UUIDv7 minted at construction; also the snapshot id and ACP
+  # sessionId.
   #
   # @dynamic id
   attr_reader :id #: String
 
+  # Builds the agent, running each extension's block against a fresh registrar.
+  #
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs tools: Array[String]?
@@ -120,6 +112,9 @@ class Riffer::Rig::Runtime
     )
   end
 
+  # Streams one turn's events to the block, or returns them as an Enumerator
+  # when no block is given.
+  #
   # @rbs text: String
   # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
   # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response])
@@ -138,6 +133,8 @@ class Riffer::Rig::Runtime
     @busy = false
   end
 
+  # Runs one turn to completion and returns riffer's response.
+  #
   # @rbs text: String
   # @rbs return: Riffer::Agent::Response
   def ask(text)
@@ -150,11 +147,12 @@ class Riffer::Rig::Runtime
     @busy = false
   end
 
-  # Refuses further prompts and asks; emitting Riffer::Rig::Events::SessionEnd
-  # waits on the rebuild ticket, which owns the stream's session_end reasons.
+  # Refuses further prompts and asks.
   #
   # @rbs return: void
   def close
+    # TODO: emit Riffer::Rig::Events::SessionEnd once the rebuild ticket settles
+    # the stream's session_end reasons.
     @closed = true
   end
 
