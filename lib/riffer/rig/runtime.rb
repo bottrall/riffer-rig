@@ -27,8 +27,11 @@ class Riffer::Rig::Runtime
   # harness.
   DEFAULT_MAX_STEPS = nil #: Integer?
 
+  INTERRUPT_CANCELLED = :cancelled #: Symbol
+
   # @rbs @agent: Riffer::Agent
   # @rbs @base_prompt: String
+  # @rbs @cancel_flag: Riffer::Rig::CancelFlag
   # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs @cwd: String
   # @rbs @host: Riffer::Rig::Hosts::Mirror
@@ -83,12 +86,14 @@ class Riffer::Rig::Runtime
 
     @busy = false
     @closed = false
+    @cancel_flag = Riffer::Rig::CancelFlag.new
     @session_start_pending = true
     @registrar = build_registrar(extensions)
     tool_classes = select_tools(@registrar.tools, tools)
     @base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
 
     @agent = Riffer::Agent.new(
+      context: { cancel_flag: @cancel_flag },
       config: Riffer::Agent::Config.new(
         model: model,
         instructions: system_prompt([]),
@@ -96,6 +101,7 @@ class Riffer::Rig::Runtime
         max_steps: max_steps
       )
     )
+    @agent.session.on_message { |_message| interrupt_if_cancelled }
   end
 
   # @rbs text: String
@@ -106,6 +112,7 @@ class Riffer::Rig::Runtime
     raise ClosedError, 'this Runtime is closed' if @closed
 
     @busy = true
+    @cancel_flag.clear
     refresh_system_message
     if block
       wrap_stream(@agent.stream(text)).each(&block)
@@ -124,10 +131,17 @@ class Riffer::Rig::Runtime
     raise ClosedError, 'this Runtime is closed' if @closed
 
     @busy = true
+    @cancel_flag.clear
     refresh_system_message
     @agent.stream(text).each { |event| event }
   ensure
     @busy = false
+  end
+
+  # @rbs return: nil
+  def cancel
+    @cancel_flag.set
+    nil
   end
 
   # @rbs return: void
@@ -147,9 +161,51 @@ class Riffer::Rig::Runtime
       @session_start_pending = false
       @host.drain.each { |event| yielder << event }
       response = stream.each { |event| yielder << event }
-      yielder << Riffer::Rig::Events::TurnEnd.new(response.outcome.reason, response.token_usage)
+      yielder << Riffer::Rig::Events::TurnEnd.new(stop_reason(response.outcome), response.token_usage)
       response
     end
+  end
+
+  # @rbs return: void
+  def interrupt_if_cancelled
+    return unless @cancel_flag.set?
+
+    heal_orphaned_tool_calls
+    # Upstream candidate: a cancel token on riffer's run loop. Until then the
+    # loop can only be stopped from inside, at a message boundary.
+    @agent.interrupt!(INTERRUPT_CANCELLED)
+  end
+
+  # @rbs return: void
+  def heal_orphaned_tool_calls
+    # Upstream candidate: riffer fills orphans itself only under its
+    # process-wide experimental_history_healing flag, which is not the
+    # Runtime's to flip. Left orphaned, the calls would run on the next prompt.
+    session = @agent.session
+    _assistant, orphans = session.pending_tool_calls
+    session.set([*session.messages, *orphans.map { |tool_call| interrupted_result(tool_call) }])
+  end
+
+  # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
+  # @rbs return: Riffer::Messages::Tool
+  def interrupted_result(tool_call)
+    response = Riffer::Agent::Session::Repair::ORPHAN_PLACEHOLDER.call(tool_call)
+    Riffer::Messages::Tool.new(
+      response.content,
+      tool_call_id: tool_call.call_id,
+      name: tool_call.name,
+      error: response.error_message,
+      error_type: response.error_type
+    )
+  end
+
+  # @rbs outcome: Riffer::Agent::Outcome
+  # @rbs return: Symbol
+  def stop_reason(outcome)
+    # Upstream candidate: riffer's outcome vocabulary is closed, so a cancel
+    # reaches us as :interrupted with the reason in detail.
+    cancelled = outcome.reason == :interrupted && outcome.detail == INTERRUPT_CANCELLED.to_s
+    cancelled ? INTERRUPT_CANCELLED : outcome.reason
   end
 
   # @rbs extensions: Array[Riffer::Rig::Extension]

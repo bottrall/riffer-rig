@@ -65,7 +65,7 @@ if (usage = response.token_usage)
 end
 ```
 
-How the run ended is riffer's `response.outcome` — `reason` is one of riffer's vocabulary (`completed`, provider finish reasons like `length` and `content_filter`, `max_steps`, `guardrail_blocked`, `interrupted`, …) and `detail` carries the specifics, such as the interrupt reason behind `:interrupted`. A future cancel will end runs the same way until #110 gives `cancelled` a vocabulary entry upstream. Hosts map `outcome.reason` to exit codes or UI.
+How the run ended is riffer's `response.outcome` — `reason` is one of riffer's vocabulary (`completed`, provider finish reasons like `length` and `content_filter`, `max_steps`, `guardrail_blocked`, `interrupted`, …) and `detail` carries the specifics, such as the interrupt reason behind `:interrupted`. A [cancelled](#cancelling-a-turn) run ends the same way — `reason: :interrupted`, `detail: "cancelled"` — because riffer's outcome vocabulary has no `cancelled` entry yet. Hosts map `outcome.reason` to exit codes or UI.
 
 ## Rig events
 
@@ -78,11 +78,27 @@ The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-
 | `command_output`  | `command`, `text`                | a command called `ctx.say`                                        |
 | `skill_activated` | `name`                           | a skill was activated by command                                  |
 | `notify`          | `message`, `level`               | mirrors every `host.notify`, so a stream consumer sees extension errors too |
-| `turn_end`        | `stop_reason`, `usage`, `cost`   | the last event of every `prompt`; `usage` is riffer's `TokenUsage` and `cost` its USD figure, `nil` when unpriced |
+| `turn_end`        | `stop_reason`, `usage`, `cost`   | the last event of every `prompt`; `stop_reason` is riffer's outcome reason, or `:cancelled` after a `cancel`; `usage` is riffer's `TokenUsage` and `cost` its USD figure, `nil` when unpriced |
 
 `session_start` and `session_end` currently carry reason `:new` and `:close` only — `:restore` and `:reload` arrive with the snapshot and rebuild tickets. `close` refuses further prompts and asks with `Riffer::Rig::Runtime::ClosedError`; `session_end` waits on the rebuild ticket, which owns the stream's session_end reasons.
 
 Every `prompt` ends with `turn_end` — with a block or as an Enumerator — so a stream consumer never needs `ask` to learn how the turn ended and what it cost. The headless host prints this same stream as NDJSON; see [Headless mode](HEADLESS.md) for the wire shape.
+
+## Cancelling a turn
+
+`cancel` stops the running turn. It is thread-safe and meant to be called from another thread — a signal handler's worker, a UI thread, a request handler — while `prompt` or `ask` blocks the thread that started the turn. It returns `nil` immediately; the turn ends on its own thread.
+
+```ruby
+turn = Thread.new { runtime.prompt('refactor everything') { |event| render(event) } }
+runtime.cancel
+turn.join
+```
+
+The turn stops at the next message boundary — after the assistant message being streamed completes, or after the tool calls in flight return — not mid-token. The bundled `bash` tool does not wait that long: it polls the cancel flag, kills its command's process group and returns a tool error ending in `[cancelled]`. A tool of your own can do the same through `context[:cancel_flag].set?`.
+
+A cancelled turn leaves the conversation usable. Tool calls that never got a result are filled with an "interrupted" tool error, riffer emits its `Riffer::StreamEvents::Interrupt` event with reason `:cancelled`, and the stream closes with `turn_end` carrying `stop_reason: :cancelled`. From `ask`, the response's outcome is `reason: :interrupted` with `detail: "cancelled"`. The next `prompt` or `ask` carries on from there.
+
+`cancel` with no turn running is a no-op: the flag is cleared when the next turn starts.
 
 ## Capping the loop
 

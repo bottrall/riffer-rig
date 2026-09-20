@@ -5,6 +5,8 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
 
   MAX_OUTPUT_BYTES: Integer
 
+  POLL_SECONDS: Float
+
   # @rbs context: Riffer::Agent::Context?
   # @rbs command: String
   # @rbs timeout_ms: Integer
@@ -15,8 +17,18 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
 
   # @rbs command: String
   # @rbs timeout_seconds: Float
+  # @rbs cancel_flag: Riffer::Rig::CancelFlag?
   # @rbs return: [String, Integer]
-  def run: (String command, Float timeout_seconds) -> [ String, Integer ]
+  def run: (String command, Float timeout_seconds, Riffer::Rig::CancelFlag? cancel_flag) -> [ String, Integer ]
+
+  # @rbs wait_thread: Process::Waiter
+  # @rbs deadline: Float
+  # @rbs cancel_flag: Riffer::Rig::CancelFlag?
+  # @rbs return: Symbol
+  def await: (Process::Waiter wait_thread, Float deadline, Riffer::Rig::CancelFlag? cancel_flag) -> Symbol
+
+  # @rbs return: Float
+  def monotonic_now: () -> Float
 
   # @rbs pid: Integer
   # @rbs return: Integer

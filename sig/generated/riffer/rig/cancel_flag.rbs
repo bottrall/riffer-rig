@@ -1,0 +1,19 @@
+# Generated from lib/riffer/rig/cancel_flag.rb with RBS::Inline
+
+class Riffer::Rig::CancelFlag
+  @mutex: Thread::Mutex
+
+  @set: bool
+
+  # @rbs return: void
+  def initialize: () -> void
+
+  # @rbs return: void
+  def set: () -> void
+
+  # @rbs return: void
+  def clear: () -> void
+
+  # @rbs return: bool
+  def set?: () -> bool
+end
