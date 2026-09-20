@@ -21,9 +21,11 @@ end
 describe Riffer::Rig::Credentials do
   let(:null_host) { Riffer::Rig::Hosts::Null.new }
 
-  let(:fallback_recipe) do
-    fallback = -> { 'from-fallback' }
-    { fields: [{ name: :region, env: ['ACME_REGION'], secret: false, required: true, fallback: fallback }] }
+  let(:fallback_setup) do
+    region = Riffer::Rig::ProviderSetup::Field.new(
+      name: :region, env: ['ACME_REGION'], secret: false, required: true, fallback: -> { 'from-fallback' }
+    )
+    Riffer::Rig::ProviderSetup.new(fields: [region])
   end
 
   describe '.resolve' do
@@ -70,9 +72,9 @@ describe Riffer::Rig::Credentials do
 
     it 'prefers the stored value over the fallback' do
       in_tmp_home do |paths|
-        Riffer::Rig::Credentials.store(:acme, { region: 'from-settings' }, recipe: fallback_recipe, **paths)
+        Riffer::Rig::Credentials.store(:acme, { region: 'from-settings' }, setup: fallback_setup, **paths)
 
-        resolution = Riffer::Rig::Credentials.resolve(:acme, host: null_host, recipe: fallback_recipe, env: {}, **paths)
+        resolution = Riffer::Rig::Credentials.resolve(:acme, host: null_host, setup: fallback_setup, env: {}, **paths)
 
         assert_equal({ region: 'from-settings' }, resolution.values)
       end
@@ -82,7 +84,7 @@ describe Riffer::Rig::Credentials do
       in_tmp_home do |paths|
         host = AnsweringHost.new('from-host')
 
-        Riffer::Rig::Credentials.resolve(:acme, host: host, recipe: fallback_recipe, env: {}, **paths)
+        Riffer::Rig::Credentials.resolve(:acme, host: host, setup: fallback_setup, env: {}, **paths)
 
         assert_empty host.asked
       end
@@ -90,7 +92,7 @@ describe Riffer::Rig::Credentials do
 
     it 'returns the fallback value' do
       in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.resolve(:acme, host: null_host, recipe: fallback_recipe, env: {}, **paths)
+        resolution = Riffer::Rig::Credentials.resolve(:acme, host: null_host, setup: fallback_setup, env: {}, **paths)
 
         assert_equal({ region: 'from-fallback' }, resolution.values)
       end
@@ -226,6 +228,22 @@ describe Riffer::Rig::Credentials do
       end
     end
 
+    it 'does not run a stored !command when the environment already answers' do
+      in_tmp_home do |paths|
+        marker = File.join(File.dirname(paths[:auth_path]), 'marker')
+        Riffer::Rig::Credentials.store(:anthropic, { api_key: "!touch #{marker}" }, **paths)
+
+        Riffer::Rig::Credentials.resolve(
+          :anthropic,
+          host: null_host,
+          env: { 'ANTHROPIC_API_KEY' => 'sk-env' },
+          **paths
+        )
+
+        refute_path_exists marker
+      end
+    end
+
     it 'ignores the old flat file shape' do
       in_tmp_home do |paths|
         FileUtils.mkdir_p(File.dirname(paths[:auth_path]))
@@ -357,7 +375,7 @@ describe Riffer::Rig::Credentials do
       end
     end
 
-    it 'is :chain for a chain recipe with no secret' do
+    it 'is :chain for a chain setup with no secret' do
       in_tmp_home do |paths|
         assert_equal :chain, Riffer::Rig::Credentials.status(:amazon_bedrock, env: {}, auth_path: paths[:auth_path])
       end
@@ -403,7 +421,7 @@ describe Riffer::Rig::Credentials do
       assert_equal 'already-set', config.amazon_bedrock.api_token
     end
 
-    it 'assigns nothing for a provider without a built-in recipe' do
+    it 'assigns nothing for a provider without a built-in setup' do
       assert_nil Riffer::Rig::Credentials.apply(:acme, { api_key: 'sk-acme' }, config: config)
     end
   end
