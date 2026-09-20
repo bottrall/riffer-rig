@@ -13,8 +13,8 @@ require 'securerandom'
 #   response = runtime.ask('hello')           # a Riffer::Agent::Response
 #
 # Every prompt ends with a rig-level Riffer::Rig::Events::TurnEnd carrying the run's
-# stop reason and token usage; construction emits Riffer::Rig::Events::SessionStart and
-# close emits Riffer::Rig::Events::SessionEnd. See Riffer::Rig::Events for the vocabulary.
+# stop reason and token usage; construction emits Riffer::Rig::Events::SessionStart on
+# the first prompt. See Riffer::Rig::Events for the vocabulary.
 #
 # Two Runtimes in one process share nothing but the process-wide extension
 # registry and riffer's provider repository. One prompt runs at a time; a
@@ -147,14 +147,12 @@ class Riffer::Rig::Runtime
     @busy = false
   end
 
-  # Queues Riffer::Rig::Events::SessionEnd with reason +:close+ and refuses
-  # further prompts and asks.
+  # Refuses further prompts and asks; emitting Riffer::Rig::Events::SessionEnd
+  # waits on the rebuild ticket, which owns the stream's session_end reasons.
   #
   # @rbs return: void
   def close
     @closed = true
-    @session_start_pending = false
-    @notifier.queue(Riffer::Rig::Events::SessionEnd.new(:close))
   end
 
   private

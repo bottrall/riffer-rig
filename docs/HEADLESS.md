@@ -17,7 +17,7 @@ Every event riffer-rig emits is printed as one JSON object per line — riffer's
 
 `turn_end` is always the last record of a prompt: `stop_reason` is riffer's outcome vocabulary (`completed`, `length`, `max_steps`, `interrupted`, …), `usage` is the run's token totals, and `cost` (USD, present when the model is priced) rides on `usage`. A consumer that only reads the last line still knows how the turn ended and what it cost.
 
-Rig events beyond `session_start` and `turn_end` — `session_end`, `command_output`, `skill_activated`, `notify` — appear in the same stream, so one consumer sees everything the terminal sees. `notify` mirrors every `host.notify`, including extension errors.
+Rig events beyond `session_start` and `turn_end` — `session_end`, `command_output`, `skill_activated`, `notify` — will appear in the same stream once the snapshot and rebuild tickets land: one consumer then sees everything the terminal sees. `notify` mirrors every `host.notify`, including extension errors.
 
 ## The flag
 

@@ -210,10 +210,10 @@ been given; each tool describes what it does and when to use it.
   <tr><td><code>rebuild(extensions:, settings:)</code></td><td>nil; raises inside a handler</td></tr>
   <tr><td><code>id</code>, <code>cwd</code>, <code>host</code>, <code>settings</code>, <code>errors</code></td><td>readers; <code>errors</code> is the list of <code>{extension, error}</code> recorded while loading</td></tr>
   <tr><td><code>on_message { |message| }</code></td><td>registers an observer riffer calls per message; the Loader's store appends through it</td></tr>
-  <tr><td><code>close</code></td><td>emits <code>session_end(reason: :close)</code>, stops MCP servers</td></tr>
+  <tr><td><code>close</code></td><td>refuses further prompts and asks; stops MCP servers</td></tr>
   <tr><td><code>Riffer::Rig.credentials(id)</code></td><td>the current thread's Runtime's credentials for one provider</td></tr>
 </table></div>
-<p class="note">Rows <code>close</code>, <code>id</code> and <code>errors</code> enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/179">#179</a>: <code>close</code> emits <code>session_end(reason: :close)</code> and the Runtime refuses further prompts and asks (stopping MCP servers waits on the MCP ticket); <code>id</code> is a UUIDv7 minted at construction; <code>errors</code> waits on the extension-error ticket.</p>
+<p class="note">Rows <code>close</code>, <code>id</code> and <code>errors</code> enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/179">#179</a>: <code>close</code> refuses further prompts and asks (emitting <code>session_end(reason: :close)</code> waits on the rebuild ticket, which owns the stream's session_end reasons; stopping MCP servers waits on the MCP ticket); <code>id</code> is a UUIDv7 minted at construction; <code>errors</code> waits on the extension-error ticket.</p>
 
 <h2 id="enshrines">Enshrines into</h2>
 <div class="table-wrap"><table>

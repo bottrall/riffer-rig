@@ -74,13 +74,13 @@ The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-
 | Rig event         | Carries                          | When                                                              |
 | ----------------- | -------------------------------- | ----------------------------------------------------------------- |
 | `session_start`   | `id`, `reason` (`:new`, `:restore`, `:reload`) | opens the first prompt after construction (or a restore, or a rebuild) |
-| `session_end`     | `reason` (`:reload`, `:close`)   | before a rebuild replaces the registrar; on `close`                |
+| `session_end`     | `reason` (`:reload`, `:close`)   | on `close` (queued — see the note below) |
 | `command_output`  | `command`, `text`                | a command called `ctx.say`                                        |
 | `skill_activated` | `name`                           | a skill was activated by command                                  |
 | `notify`          | `message`, `level`               | mirrors every `host.notify`, so a stream consumer sees extension errors too |
 | `turn_end`        | `stop_reason`, `usage`, `cost`   | the last event of every `prompt`; `usage` is riffer's `TokenUsage` and `cost` its USD figure, `nil` when unpriced |
 
-`session_start` and `session_end` currently carry reason `:new` and `:close` only — `:restore` and `:reload` arrive with the snapshot and rebuild tickets. `close` emits `session_end` and the Runtime refuses further prompts and asks with `Riffer::Rig::Runtime::ClosedError`.
+`session_start` and `session_end` currently carry reason `:new` and `:close` only — `:restore` and `:reload` arrive with the snapshot and rebuild tickets. `close` refuses further prompts and asks with `Riffer::Rig::Runtime::ClosedError`; `session_end` waits on the rebuild ticket, which owns the stream's session_end reasons.
 
 Every `prompt` ends with `turn_end` — with a block or as an Enumerator — so a stream consumer never needs `ask` to learn how the turn ended and what it cost. The headless host prints this same stream as NDJSON; see [Headless mode](HEADLESS.md) for the wire shape.
 
