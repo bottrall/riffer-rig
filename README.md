@@ -37,12 +37,12 @@ Each value resolves on its own: environment variable first, then the stored valu
 
 | Provider         | Environment variables                                                     | Guide                                              |
 | ---------------- | ------------------------------------------------------------------------- | -------------------------------------------------- |
-| `anthropic`      | `ANTHROPIC_API_KEY`                                                       | [Anthropic](docs/providers/ANTHROPIC.md)           |
-| `openai`         | `OPENAI_API_KEY`; optional `OPENAI_BASE_URL`                              | [OpenAI](docs/providers/OPENAI.md)                 |
-| `gemini`         | `GEMINI_API_KEY`                                                          | [Gemini](docs/providers/GEMINI.md)                 |
-| `openrouter`     | `OPENROUTER_API_KEY`                                                      | [OpenRouter](docs/providers/OPENROUTER.md)         |
-| `azure_openai`   | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`                           | [Azure OpenAI](docs/providers/AZURE_OPENAI.md)     |
-| `amazon_bedrock` | `AWS_REGION` or `AWS_DEFAULT_REGION`; optional `AWS_BEARER_TOKEN_BEDROCK` | [Amazon Bedrock](docs/providers/AMAZON_BEDROCK.md) |
+| `anthropic`      | `ANTHROPIC_API_KEY`                                                       | [Anthropic](docs/PROVIDERS.md#anthropic)           |
+| `openai`         | `OPENAI_API_KEY`; optional `OPENAI_BASE_URL`                              | [OpenAI](docs/PROVIDERS.md#openai)                 |
+| `gemini`         | `GEMINI_API_KEY`                                                          | [Gemini](docs/PROVIDERS.md#gemini)                 |
+| `openrouter`     | `OPENROUTER_API_KEY`                                                      | [OpenRouter](docs/PROVIDERS.md#openrouter)         |
+| `azure_openai`   | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`                           | [Azure OpenAI](docs/PROVIDERS.md#azure-openai)     |
+| `amazon_bedrock` | `AWS_REGION` or `AWS_DEFAULT_REGION`; optional `AWS_BEARER_TOKEN_BEDROCK` | [Amazon Bedrock](docs/PROVIDERS.md#amazon-bedrock) |
 
 `auth.json` holds one typed entry per provider, and a stored secret may be a literal, a `$ENV_VAR` reference or a `!shell command` whose stdout is the secret:
 
@@ -53,7 +53,7 @@ Each value resolves on its own: environment variable first, then the stored valu
 }
 ```
 
-The flat `{"anthropic": "sk-…"}` shape earlier versions wrote is no longer read; paste the key again when prompted. [Providers](docs/providers/PROVIDERS.md) has the full format.
+The flat `{"anthropic": "sk-…"}` shape earlier versions wrote is no longer read; paste the key again when prompted. [Providers](docs/PROVIDERS.md) has the full format.
 
 ### Configuration
 

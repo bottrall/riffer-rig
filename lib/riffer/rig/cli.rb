@@ -54,15 +54,15 @@ module Riffer::Rig::CLI
   # @rbs input: IO
   # @rbs return: Hash[Symbol, String]?
   def onboard(provider, resolution, theme, output:, input:)
-    recipe = Riffer::Rig::Recipes.for(provider)
-    missing = recipe[:fields].select { |field| resolution.missing.include?(field[:name]) }
+    setup = Riffer::Rig::ProviderSetup.for(provider)
+    missing = setup.fields.select { |field| resolution.missing.include?(field.name) }
 
     output.puts(theme.cyan('♪ welcome to riffer-rig ♪'))
-    output.puts(theme.grey("No #{provider} credentials found. Create them at #{recipe[:url] || 'your provider'}"))
+    output.puts(theme.grey("No #{provider} credentials found. Create them at #{setup.url || 'your provider'}"))
 
-    answers = missing.to_h { |field| [field[:name], prompt(provider, field, theme, output:, input:)] }
+    answers = missing.to_h { |field| [field.name, prompt(provider, field, theme, output:, input:)] }
     if answers.values.any?(&:empty?)
-      env_vars = missing.flat_map { |field| field[:env] }.join(', ')
+      env_vars = missing.flat_map(&:env).join(', ')
       output.puts(theme.grey("Nothing entered. Set #{env_vars} or re-run riffer to try again."))
       return nil
     end
@@ -73,16 +73,16 @@ module Riffer::Rig::CLI
   end
 
   # @rbs provider: String
-  # @rbs field: Riffer::Rig::Recipes::field
+  # @rbs field: Riffer::Rig::ProviderSetup::Field
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs output: IO
   # @rbs input: IO
   # @rbs return: String
   def prompt(provider, field, theme, output:, input:)
-    hint = field[:secret] ? " #{theme.grey('(hidden)')}" : ''
-    output.print("#{theme.pink('›')} Paste your #{provider} #{field[:name]}#{hint}: ")
+    hint = field.secret ? " #{theme.grey('(hidden)')}" : ''
+    output.print("#{theme.pink('›')} Paste your #{provider} #{field.name}#{hint}: ")
 
-    answer = (field[:secret] ? read_secret(input) : input.gets).to_s.strip
+    answer = (field.secret ? read_secret(input) : input.gets).to_s.strip
     output.puts
     answer
   end

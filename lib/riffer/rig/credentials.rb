@@ -18,7 +18,7 @@ module Riffer::Rig::Credentials
 
   # @rbs identifier: String | Symbol
   # @rbs host: Riffer::Rig::Hosts::Base
-  # @rbs recipe: Riffer::Rig::Recipes::recipe
+  # @rbs setup: Riffer::Rig::ProviderSetup
   # @rbs env: _Env
   # @rbs auth_path: String
   # @rbs settings_path: String
@@ -26,23 +26,22 @@ module Riffer::Rig::Credentials
   def resolve(
     identifier,
     host:,
-    recipe: Riffer::Rig::Recipes.for(identifier),
+    setup: Riffer::Rig::ProviderSetup.for(identifier),
     env: ENV,
     auth_path: PATH,
     settings_path: Riffer::Rig::Settings::PATH
   )
     secrets = stored_secrets(identifier, auth_path)
     plain = Riffer::Rig::Settings.provider_fields(identifier.to_s, path: settings_path)
-    found = recipe[:fields].to_h do |field|
-      stored = field[:secret] ? expand(secrets[field[:name].to_s], env) : plain[field[:name].to_s]
-      [field[:name], from_env(field, env) || stored || field[:fallback]&.call]
+    found = setup.fields.to_h do |field|
+      [field.name, from_env(field, env) || stored_value(field, secrets, plain, env) || field.fallback&.call]
     end.compact
-    required = recipe[:fields].select { |field| field[:required] }
-    answers = ask_for(required.reject { |field| found.key?(field[:name]) }, identifier, host)
-    store(identifier, answers, recipe:, auth_path:, settings_path:)
+    required = setup.fields.select(&:required)
+    answers = ask_for(required.reject { |field| found.key?(field.name) }, identifier, host)
+    store(identifier, answers, setup:, auth_path:, settings_path:)
 
     values = found.merge(answers)
-    Resolution.new(values:, missing: required.map { |field| field[:name] } - values.keys)
+    Resolution.new(values:, missing: required.map(&:name) - values.keys)
   end
 
   # @rbs identifier: String | Symbol
@@ -50,7 +49,7 @@ module Riffer::Rig::Credentials
   # @rbs config: Riffer::Config
   # @rbs return: void
   def apply(identifier, values, config: Riffer.config)
-    return unless Riffer::Rig::Recipes[identifier]
+    return unless Riffer::Rig::ProviderSetup[identifier]
 
     provider_config = config.public_send(identifier)
     values.each { |name, value| provider_config[name] = value }
@@ -58,18 +57,18 @@ module Riffer::Rig::Credentials
 
   # @rbs identifier: String | Symbol
   # @rbs values: Hash[Symbol, String]
-  # @rbs recipe: Riffer::Rig::Recipes::recipe
+  # @rbs setup: Riffer::Rig::ProviderSetup
   # @rbs auth_path: String
   # @rbs settings_path: String
   # @rbs return: void
   def store(
     identifier,
     values,
-    recipe: Riffer::Rig::Recipes.for(identifier),
+    setup: Riffer::Rig::ProviderSetup.for(identifier),
     auth_path: PATH,
     settings_path: Riffer::Rig::Settings::PATH
   )
-    secret_names = recipe[:fields].select { |field| field[:secret] }.map { |field| field[:name].to_s }
+    secret_names = setup.fields.select(&:secret).map { |field| field.name.to_s }
     fields = values.transform_keys(&:to_s)
     secrets = fields.slice(*secret_names)
     plain = fields.except(*secret_names)
@@ -94,37 +93,46 @@ module Riffer::Rig::Credentials
   end
 
   # @rbs identifier: String | Symbol
-  # @rbs recipe: Riffer::Rig::Recipes::recipe
+  # @rbs setup: Riffer::Rig::ProviderSetup
   # @rbs env: _Env
   # @rbs auth_path: String
   # @rbs return: :env | :stored | :chain | :missing
-  def status(identifier, recipe: Riffer::Rig::Recipes.for(identifier), env: ENV, auth_path: PATH)
-    secret_fields = recipe[:fields].select { |field| field[:secret] }
+  def status(identifier, setup: Riffer::Rig::ProviderSetup.for(identifier), env: ENV, auth_path: PATH)
+    secret_fields = setup.fields.select(&:secret)
     return :env if secret_fields.any? { |field| from_env(field, env) }
 
     stored = stored_secrets(identifier, auth_path)
-    return :stored if secret_fields.any? { |field| stored.key?(field[:name].to_s) }
+    return :stored if secret_fields.any? { |field| stored.key?(field.name.to_s) }
 
-    recipe[:chain] ? :chain : :missing
+    setup.chain ? :chain : :missing
   end
 
   private
 
-  # @rbs fields: Array[Riffer::Rig::Recipes::field]
+  # @rbs fields: Array[Riffer::Rig::ProviderSetup::Field]
   # @rbs identifier: String | Symbol
   # @rbs host: Riffer::Rig::Hosts::Base
   # @rbs return: Hash[Symbol, String]
   def ask_for(fields, identifier, host)
     fields.to_h do |field|
-      [field[:name], presence(host.ask("#{identifier} #{field[:name]}", secret: field[:secret]))]
+      [field.name, presence(host.ask("#{identifier} #{field.name}", secret: field.secret))]
     end.compact
   end
 
-  # @rbs field: Riffer::Rig::Recipes::field
+  # @rbs field: Riffer::Rig::ProviderSetup::Field
   # @rbs env: _Env
   # @rbs return: String?
   def from_env(field, env)
-    field[:env].filter_map { |name| presence(env[name]) }.first
+    field.env.filter_map { |name| presence(env[name]) }.first
+  end
+
+  # @rbs field: Riffer::Rig::ProviderSetup::Field
+  # @rbs secrets: Hash[String, String]
+  # @rbs plain: Hash[String, String]
+  # @rbs env: _Env
+  # @rbs return: String?
+  def stored_value(field, secrets, plain, env)
+    field.secret ? expand(secrets[field.name.to_s], env) : plain[field.name.to_s]
   end
 
   # @rbs value: String?

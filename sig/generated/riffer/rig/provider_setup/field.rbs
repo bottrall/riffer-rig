@@ -1,0 +1,22 @@
+# Generated from lib/riffer/rig/provider_setup/field.rb with RBS::Inline
+
+class Riffer::Rig::ProviderSetup::Field
+  # @dynamic name, env, secret, required, fallback
+  attr_reader name: Symbol
+
+  attr_reader env: Array[String]
+
+  attr_reader secret: bool
+
+  attr_reader required: bool
+
+  attr_reader fallback: (^() -> String?)?
+
+  # @rbs name: Symbol
+  # @rbs env: Array[String]
+  # @rbs secret: bool
+  # @rbs required: bool
+  # @rbs fallback: (^() -> String?)?
+  # @rbs return: void
+  def initialize: (name: Symbol, env: Array[String], secret: bool, required: bool, ?fallback: (^() -> String?)?) -> void
+end

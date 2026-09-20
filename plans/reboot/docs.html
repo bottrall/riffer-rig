@@ -85,6 +85,7 @@
   <tr><td><code>providers/AMAZON_BEDROCK.md</code></td><td><code>providers/amazon-bedrock</code></td><td>Region, credential chain or bearer token, SDK install</td></tr>
   <tr><td><code>providers/CUSTOM_PROVIDERS.md</code></td><td><code>providers/custom</code></td><td>The provider seam and <code>recipe:</code></td></tr>
 </table></div>
+<p class="note">Providers group changed in <a href="https://github.com/bottrall/riffer-rig/issues/109">#109</a>: the group is two flat sources rather than eight under <code>providers/</code>. <code>PROVIDERS.md</code> shipped with the six per-provider pages folded into its table and sections, and <code>CUSTOM_PROVIDERS.md</code> comes later with the provider seam, whose keyword is <code>setup:</code> rather than <code>recipe:</code>. <code>docs/providers/</code> does not exist. Manifest slugs such as <code>providers/overview</code> are unaffected, because the manifest maps <code>source</code> to <code>slug</code>. The section is not enshrined by this.</p>
 </section>
 
 <section class="topic" id="generator">

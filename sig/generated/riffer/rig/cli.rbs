@@ -25,12 +25,12 @@ module Riffer::Rig::CLI
   def onboard: (String provider, Riffer::Rig::Credentials::Resolution resolution, Riffer::Rig::UI::Theme theme, output: IO, input: IO) -> Hash[Symbol, String]?
 
   # @rbs provider: String
-  # @rbs field: Riffer::Rig::Recipes::field
+  # @rbs field: Riffer::Rig::ProviderSetup::Field
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs output: IO
   # @rbs input: IO
   # @rbs return: String
-  def prompt: (String provider, Riffer::Rig::Recipes::field field, Riffer::Rig::UI::Theme theme, output: IO, input: IO) -> String
+  def prompt: (String provider, Riffer::Rig::ProviderSetup::Field field, Riffer::Rig::UI::Theme theme, output: IO, input: IO) -> String
 
   # @rbs input: IO
   # @rbs return: String?
