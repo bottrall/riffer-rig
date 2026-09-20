@@ -1,0 +1,19 @@
+# Generated from lib/riffer/rig/events/command_output.rb with RBS::Inline
+
+class Riffer::Rig::Events::CommandOutput < Riffer::Rig::Events::Event
+  # @dynamic command, text
+  attr_reader command: String
+
+  attr_reader text: String
+
+  # @rbs command: String
+  # @rbs text: String
+  # @rbs return: void
+  def initialize: (String command, String text) -> void
+
+  # @rbs return: Symbol
+  def type: () -> Symbol
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

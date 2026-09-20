@@ -45,20 +45,11 @@ class Riffer::Rig::Runtime
   # default (16) is too small for a general-purpose harness.
   DEFAULT_MAX_STEPS = nil #: Integer?
 
-  # @rbs!
-  #   interface _Host
-  #     def ask: (?String?, ?options: Array[String]?, ?secret: bool) -> String?
-  #     def confirm: (?String?) -> bool
-  #     def notify: (?String?, ?level: Symbol) -> void
-  #     def progress: (?String?) { () -> void } -> void
-  #     def capabilities: () -> Set[Symbol]
-  #   end
-
   # @rbs @agent: Riffer::Agent
   # @rbs @cwd: String
   # @rbs @host: _Host
   # @rbs @id: String
-  # @rbs @notifier: NotifyingHost
+  # @rbs @notifier: Riffer::Rig::NotifyingHost
   # @rbs @settings: Hash[Symbol, untyped]
   # @rbs @busy: bool
   # @rbs @closed: bool
@@ -75,67 +66,6 @@ class Riffer::Rig::Runtime
   #
   # @dynamic id
   attr_reader :id #: String
-
-  # Wraps the given host and mirrors every notify into a rig-level
-  # Riffer::Rig::Events::Notify on the next prompt's stream, so stream consumers see
-  # extension errors too.
-  class NotifyingHost
-    # @rbs @host: _Host
-    # @rbs @queue: Array[(Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd)]
-
-    # @dynamic capabilities
-    attr_reader :capabilities #: Set[Symbol]
-
-    # @rbs host: _Host
-    # @rbs return: void
-    def initialize(host)
-      @host = host
-      @capabilities = host.capabilities
-      @queue = []
-    end
-
-    # @rbs question: String?
-    # @rbs options: Array[String]?
-    # @rbs secret: bool
-    # @rbs return: String?
-    def ask(question = nil, options: nil, secret: false)
-      @host.ask(question, options: options, secret: secret)
-    end
-
-    # @rbs question: String?
-    # @rbs return: bool
-    def confirm(question = nil)
-      @host.confirm(question)
-    end
-
-    # @rbs message: String?
-    # @rbs level: Symbol
-    # @rbs return: void
-    def notify(message = nil, level: :info)
-      queue(Riffer::Rig::Events::Notify.new(message, level))
-      @host.notify(message, level: level)
-    end
-
-    # @rbs label: String?
-    # @rbs &block: ^() -> void
-    # @rbs return: void
-    def progress(label = nil, &block)
-      @host.progress(label) { block&.call }
-    end
-
-    # @rbs event: (Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd)
-    # @rbs return: void
-    def queue(event)
-      @queue << event
-    end
-
-    # @rbs return: Array[(Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd)]
-    def drain
-      queued = @queue
-      @queue = []
-      queued
-    end
-  end
 
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]
@@ -165,7 +95,7 @@ class Riffer::Rig::Runtime
     snapshot: nil
   )
     @id = ::SecureRandom.uuid_v7
-    @notifier = NotifyingHost.new(host)
+    @notifier = Riffer::Rig::NotifyingHost.new(host)
     @host = @notifier
     @cwd = cwd || Dir.pwd
     @settings = settings

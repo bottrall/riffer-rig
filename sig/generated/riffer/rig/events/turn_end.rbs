@@ -1,0 +1,24 @@
+# Generated from lib/riffer/rig/events/turn_end.rb with RBS::Inline
+
+class Riffer::Rig::Events::TurnEnd < Riffer::Rig::Events::Event
+  # @dynamic stop_reason, usage
+  attr_reader stop_reason: Symbol
+
+  attr_reader usage: ::Riffer::Providers::TokenUsage?
+
+  # @rbs stop_reason: Symbol
+  # @rbs usage: ::Riffer::Providers::TokenUsage?
+  # @rbs return: void
+  def initialize: (Symbol stop_reason, ::Riffer::Providers::TokenUsage? usage) -> void
+
+  # The USD cost of the turn's usage, or nil when pricing is missing.
+  #
+  # @rbs return: Float?
+  def cost: () -> Float?
+
+  # @rbs return: Symbol
+  def type: () -> Symbol
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

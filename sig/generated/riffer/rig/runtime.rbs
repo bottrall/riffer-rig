@@ -35,18 +35,6 @@ class Riffer::Rig::Runtime
   # default (16) is too small for a general-purpose harness.
   DEFAULT_MAX_STEPS: Integer?
 
-  interface _Host
-    def ask: (?String?, ?options: Array[String]?, ?secret: bool) -> String?
-
-    def confirm: (?String?) -> bool
-
-    def notify: (?String?, ?level: Symbol) -> void
-
-    def progress: (?String?) { () -> void } -> void
-
-    def capabilities: () -> Set[Symbol]
-  end
-
   @registrar: Riffer::Rig::Registrar
 
   @session_start_pending: bool
@@ -57,7 +45,7 @@ class Riffer::Rig::Runtime
 
   @settings: Hash[Symbol, untyped]
 
-  @notifier: NotifyingHost
+  @notifier: Riffer::Rig::NotifyingHost
 
   @id: String
 
@@ -80,49 +68,6 @@ class Riffer::Rig::Runtime
   #
   # @dynamic id
   attr_reader id: String
-
-  # Wraps the given host and mirrors every notify into a rig-level
-  # Riffer::Rig::Events::Notify on the next prompt's stream, so stream consumers see
-  # extension errors too.
-  class NotifyingHost
-    @host: _Host
-
-    @queue: Array[Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd]
-
-    # @dynamic capabilities
-    attr_reader capabilities: Set[Symbol]
-
-    # @rbs host: _Host
-    # @rbs return: void
-    def initialize: (_Host host) -> void
-
-    # @rbs question: String?
-    # @rbs options: Array[String]?
-    # @rbs secret: bool
-    # @rbs return: String?
-    def ask: (?String? question, ?options: Array[String]?, ?secret: bool) -> String?
-
-    # @rbs question: String?
-    # @rbs return: bool
-    def confirm: (?String? question) -> bool
-
-    # @rbs message: String?
-    # @rbs level: Symbol
-    # @rbs return: void
-    def notify: (?String? message, ?level: Symbol) -> void
-
-    # @rbs label: String?
-    # @rbs &block: ^() -> void
-    # @rbs return: void
-    def progress: (?String? label) ?{ (?) -> untyped } -> void
-
-    # @rbs event: (Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd)
-    # @rbs return: void
-    def queue: (Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd event) -> void
-
-    # @rbs return: Array[(Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd)]
-    def drain: () -> Array[Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd]
-  end
 
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]

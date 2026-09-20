@@ -1,0 +1,19 @@
+# Generated from lib/riffer/rig/events/notify.rb with RBS::Inline
+
+class Riffer::Rig::Events::Notify < Riffer::Rig::Events::Event
+  # @dynamic message, level
+  attr_reader message: String?
+
+  attr_reader level: Symbol
+
+  # @rbs message: String?
+  # @rbs level: Symbol
+  # @rbs return: void
+  def initialize: (String? message, Symbol level) -> void
+
+  # @rbs return: Symbol
+  def type: () -> Symbol
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

@@ -1,0 +1,19 @@
+# Generated from lib/riffer/rig/events/session_start.rb with RBS::Inline
+
+class Riffer::Rig::Events::SessionStart < Riffer::Rig::Events::Event
+  # @dynamic id, reason
+  attr_reader id: String
+
+  attr_reader reason: Symbol
+
+  # @rbs id: String
+  # @rbs reason: Symbol
+  # @rbs return: void
+  def initialize: (String id, Symbol reason) -> void
+
+  # @rbs return: Symbol
+  def type: () -> Symbol
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

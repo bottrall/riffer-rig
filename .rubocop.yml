@@ -54,6 +54,7 @@ Style/ClassAndModuleChildren:
   EnforcedStyle: compact
   Exclude:
     - "lib/riffer/rig/version.rb"
+    - "lib/riffer/rig/events.rb"
 
 Style/Documentation:
   Enabled: false
