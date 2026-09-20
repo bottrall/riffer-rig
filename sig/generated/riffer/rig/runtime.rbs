@@ -31,7 +31,7 @@ class Riffer::Rig::Runtime
 
   @id: String
 
-  @host: Riffer::Rig::Host
+  @host: Riffer::Rig::NotifyingHost
 
   @cwd: String
 

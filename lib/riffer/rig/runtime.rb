@@ -30,7 +30,7 @@ class Riffer::Rig::Runtime
   # @rbs @agent: Riffer::Agent
   # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs @cwd: String
-  # @rbs @host: Riffer::Rig::Host
+  # @rbs @host: Riffer::Rig::NotifyingHost
   # @rbs @id: String
   # @rbs @notifier: Riffer::Rig::NotifyingHost
   # @rbs @settings: Hash[Symbol, untyped]
