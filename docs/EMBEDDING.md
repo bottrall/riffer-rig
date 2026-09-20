@@ -12,7 +12,7 @@ runtime = Riffer::Rig::Runtime.new(
 )
 ```
 
-The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `credentials:`, `pricing:` and `snapshot:` are accepted and ignored until their tickets land, and `settings:` is stored and exposed (`runtime.settings`) but nothing reads it yet. `pricing:` and `credentials:` already take the shapes the Loader will pass — `Settings::Pricing` entries and plain key strings respectively — so embedders building them today keep working when their tickets land.
+The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `pricing:` and `snapshot:` are accepted and ignored until their tickets land, and `settings:` and `credentials:` are stored and exposed (`runtime.settings`, `runtime.credentials`) but nothing reads them yet. `pricing:` and `credentials:` already take the shapes the Loader will pass — `Settings::Pricing` entries and each provider's resolved field values respectively — so embedders building them today keep working when their tickets land. Provider keys reach riffer through `Riffer.configure` or the SDKs' environment variables, one set per process.
 
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
@@ -25,10 +25,10 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `name:`         | the name interpolated into the [base prompt](INSTRUCTIONS.md)               | `"riffer"`              |
 | `instructions:` | replaces the base prompt wholesale (the environment block still applies)    | `nil` (use the base)    |
 | `max_steps:`    | agent-loop step limit; `nil` runs the loop without a limit                  | `nil`                   |
-| `credentials:`  | provider → resolved key string; accepted and ignored until per-runtime credentials land | `{}`       |
+| `credentials:`  | provider → resolved field values (`{ anthropic: { api_key: "…" } }`), stored as given and exposed but not yet read | `{}` |
 | `pricing:`      | model → `Riffer::Rig::Settings::Pricing` entries (USD per million tokens); accepted and ignored until the token tally moves behind the Runtime | `{}` |
 
-Two Runtimes in one process share nothing but the process-wide extension registry and riffer's provider repository.
+Two Runtimes in one process share nothing but the process-wide extension registry, riffer's provider repository and riffer's config, which holds the process's one set of provider credentials.
 
 ## Prompting
 

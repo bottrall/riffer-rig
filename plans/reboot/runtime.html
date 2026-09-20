@@ -31,7 +31,7 @@
 <section class="topic enshrined" id="contract">
 <h3>The Runtime object and its contract</h3>
 <ul>
-  <li><code>Runtime.new(...)</code> builds a per-instance <code>Riffer::Agent::Config</code>; there is no class-level agent DSL. Two Runtimes in one process share nothing but the process-wide extension registry and riffer's provider repository.</li>
+  <li><code>Runtime.new(...)</code> builds a per-instance <code>Riffer::Agent::Config</code>; there is no class-level agent DSL. Two Runtimes in one process share nothing but the process-wide extension registry, riffer's provider repository and riffer's config, which holds the process's one set of provider credentials.</li>
   <li>One prompt at a time per Runtime. A second <code>prompt</code> while one is running raises. Parallelism means more Runtimes, in more threads.</li>
   <li>The Runtime never renders, never prints, never reads the filesystem. Anything a host needs becomes a Runtime feature so embedders get it too.</li>
   <li>The constructor takes everything as keywords: <code>model:</code>, <code>credentials:</code>, <code>extensions:</code>, <code>tools:</code>, <code>settings:</code>, <code>pricing:</code>, <code>host:</code>, <code>cwd:</code>, <code>name:</code>, <code>instructions:</code>, <code>max_steps:</code>, <code>snapshot:</code>. All optional except <code>model:</code>; the Interfaces table gives each one's meaning.</li>
@@ -125,15 +125,15 @@ been given; each tool describes what it does and when to use it.
 </ul>
 </section>
 
-<section class="topic" id="credentials">
-<h3>Per-runtime credentials</h3>
+<section class="topic enshrined" id="credentials">
+<h3>Credentials</h3>
 <ul>
-  <li><code>credentials:</code> is a hash keyed by provider identifier holding the resolved key strings for that Runtime (see <a href="providers.html#resolution">Providers: resolution</a>). The Runtime never resolves them itself.</li>
-  <li><code>Runtime#prompt</code> marks the Runtime as current for the calling thread (a thread-local). At boot riffer-rig installs one Proc per provider into <code>Riffer.config.&lt;provider&gt;.client</code>; riffer resolves that Proc on every LLM call, and it returns a client built from the current Runtime's credentials. Two Runtimes with different keys run in parallel threads.</li>
-  <li><code>Riffer::Rig.credentials(:identifier)</code> reads the current Runtime's values; extension providers call it when building their client.</li>
-  <li><code>Riffer.configure</code> remains a fallback a host may use at its edge; the shipped hosts do not.</li>
-  <li>Contained in riffer-rig, marked as an upstream candidate (a per-agent provider option in riffer).</li>
+  <li><code>credentials:</code> is a hash keyed by provider identifier holding that provider's resolved field values, e.g. <code>{anthropic: {api_key: "…"}}</code> (see <a href="providers.html#resolution">Providers: resolution</a>). The Runtime stores it as given, exposes it as <code>Runtime#credentials</code> and never resolves anything itself.</li>
+  <li>Provider credentials are one set per process. They reach riffer through <code>Riffer.config</code>: <code>Riffer::Rig::Credentials.apply</code> assigns each resolved value to the member its recipe field names (<a href="providers.html#recipes">Providers: recipes</a>). The Loader does this when it builds a Runtime; <code>/auth</code> and <code>/model</code> do it when they change a Runtime's credentials.</li>
+  <li><code>Riffer::Rig.credentials(:identifier)</code> reads the process's resolved values for one provider; extension providers call it when building their client.</li>
+  <li>A host that skips the Loader calls <code>Riffer.configure</code> at its edge.</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/181">#181</a>, with the Interfaces row <code>credentials:</code>: the Runtime stores the hash and exposes <code>Runtime#credentials</code>. Assignment to <code>Riffer.config</code> waits on the recipe and Loader tickets; <code>Riffer::Rig.credentials</code> waits on the extension-providers ticket.</p>
 </section>
 
 <section class="topic" id="model">
@@ -183,7 +183,7 @@ been given; each tool describes what it does and when to use it.
 <div class="table-wrap"><table>
   <tr><th>Keyword</th><th>Meaning</th><th>Default</th></tr>
   <tr><td><code>model:</code></td><td><code>"provider/name"</code>; bare names rejected</td><td>required</td></tr>
-  <tr><td><code>credentials:</code></td><td>hash keyed by provider identifier of resolved key strings</td><td><code>{}</code></td></tr>
+  <tr><td><code>credentials:</code></td><td>hash keyed by provider identifier of each provider's resolved field values</td><td><code>{}</code></td></tr>
   <tr><td><code>extensions:</code></td><td>ordered list of extension objects (from <code>Riffer::Rig.extension</code> or <code>Riffer::Rig.bundled</code>) whose blocks run against this Runtime's registrar</td><td><code>[]</code></td></tr>
   <tr><td><code>tools:</code></td><td>allowlist of tool identifiers; nil means every registered tool</td><td><code>nil</code></td></tr>
   <tr><td><code>settings:</code></td><td>merged settings hash (core keys top level, extension keys under their names)</td><td><code>{}</code></td></tr>
@@ -211,7 +211,7 @@ been given; each tool describes what it does and when to use it.
   <tr><td><code>id</code>, <code>cwd</code>, <code>host</code>, <code>settings</code>, <code>errors</code></td><td>readers; <code>errors</code> is the list of <code>{extension, error}</code> recorded while loading</td></tr>
   <tr><td><code>on_message { |message| }</code></td><td>registers an observer riffer calls per message; the Loader's store appends through it</td></tr>
   <tr><td><code>close</code></td><td>refuses further prompts and asks; stops MCP servers</td></tr>
-  <tr><td><code>Riffer::Rig.credentials(id)</code></td><td>the current thread's Runtime's credentials for one provider</td></tr>
+  <tr><td><code>Riffer::Rig.credentials(id)</code></td><td>the process's resolved credentials for one provider</td></tr>
 </table></div>
 <p class="note">Rows <code>close</code>, <code>id</code> and <code>errors</code> enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/179">#179</a>: <code>close</code> refuses further prompts and asks (emitting <code>session_end(reason: :close)</code> waits on the rebuild ticket, which owns the stream's session_end reasons; stopping MCP servers waits on the MCP ticket); <code>id</code> is a UUIDv7 minted at construction; <code>errors</code> waits on the extension-error ticket.</p>
 
@@ -220,7 +220,7 @@ been given; each tool describes what it does and when to use it.
   <tr><th>Topic</th><th>Code</th><th>Docs</th></tr>
   <tr><td>Contract, prompting, events, cancel, commands, tally, snapshot, rebuild</td><td><code>lib/riffer/rig/runtime.rb</code>, <code>events.rb</code>, <code>command.rb</code></td><td><code>docs/EMBEDDING.md</code>; the NDJSON shape also in <code>docs/HEADLESS.md</code></td></tr>
   <tr><td>System message and base prompt</td><td>heredoc in <code>runtime.rb</code>; permanent docs permalink the source rather than restating it</td><td><code>docs/INSTRUCTIONS.md</code></td></tr>
-  <tr><td>Per-runtime credentials</td><td><code>lib/riffer/rig/runtime.rb</code>, client Procs installed in <code>lib/riffer/rig.rb</code>; marked upstream candidate</td><td><code>docs/EMBEDDING.md</code></td></tr>
+  <tr><td>Credentials</td><td><code>lib/riffer/rig/runtime.rb</code></td><td><code>docs/EMBEDDING.md</code></td></tr>
   <tr><td><code>/model</code></td><td>a core <code>Command</code> in <code>lib/riffer/rig/commands/model.rb</code></td><td>README Usage; <code>docs/CONFIGURATION.md</code></td></tr>
   <tr><td>Host duck and <code>NullHost</code></td><td><code>lib/riffer/rig/host.rb</code></td><td><code>docs/HOSTS.md</code></td></tr>
 </table></div>

@@ -77,7 +77,7 @@ end</code></pre>
   <tr><td><code>rig.skills backend</code></td><td>adds a skills source</td><td><code>Riffer::Skills::Backend</code></td></tr>
   <tr><td><code>rig.setting key, default:</code></td><td>declares a namespaced settings key</td><td>rig settings</td></tr>
 </table></div>
-<p>Providers are the one process-wide seam by choice: providers are stateless and credentials are already per-Runtime via the client Proc. Two Runtimes cannot map one prefix to different classes; accepted until a real host needs it. Providers are never unregistered on reload; re-registration is idempotent.</p>
+<p>Providers are the one process-wide seam by choice: providers are stateless, and riffer keeps one provider repository and one set of provider credentials per process. Two Runtimes cannot map one prefix to different classes; accepted until a real host needs it. Providers are never unregistered on reload; re-registration is idempotent.</p>
 </section>
 
 <section class="topic" id="commands">

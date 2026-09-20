@@ -134,11 +134,23 @@ describe Riffer::Rig::Runtime do
     assert_equal [Riffer::Rig::Tools::Read, Riffer::Rig::Tools::Bash], runtime.agent.tools
   end
 
+  it 'stores credentials as given' do
+    credentials = { anthropic: { api_key: 'sk-ant-test' } }
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], credentials: credentials)
+
+    assert_same credentials, runtime.credentials
+  end
+
+  it 'defaults to no credentials' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+
+    assert_empty runtime.credentials
+  end
+
   it 'accepts keywords whose tickets have not landed' do
     runtime = Riffer::Rig::Runtime.new(
       'mock/test',
       extensions: [@extension],
-      credentials: { 'anthropic' => 'sk-ant-test' },
       pricing: { 'mock/test' => Riffer::Rig::Settings::Pricing.from({}) },
       snapshot: nil
     )

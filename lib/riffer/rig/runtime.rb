@@ -17,7 +17,7 @@ require 'securerandom'
 # the first prompt. See Riffer::Rig::Events for the vocabulary.
 #
 # Two Runtimes in one process share nothing but the process-wide extension
-# registry and riffer's provider repository. One prompt runs at a time; a
+# registry, riffer's provider repository and riffer's config. One prompt runs at a time; a
 # second while one is running raises Riffer::Rig::Runtime::BusyError. The
 # Runtime never renders, never prints, never reads the filesystem.
 class Riffer::Rig::Runtime
@@ -46,6 +46,7 @@ class Riffer::Rig::Runtime
   DEFAULT_MAX_STEPS = nil #: Integer?
 
   # @rbs @agent: Riffer::Agent
+  # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs @cwd: String
   # @rbs @host: _Host
   # @rbs @id: String
@@ -56,8 +57,9 @@ class Riffer::Rig::Runtime
   # @rbs @session_start_pending: bool
   # @rbs @registrar: Riffer::Rig::Registrar
 
-  # @dynamic agent, cwd, host, settings
+  # @dynamic agent, credentials, cwd, host, settings
   attr_reader :agent #: Riffer::Agent
+  attr_reader :credentials #: Hash[Symbol, Hash[Symbol, String]]
   attr_reader :cwd #: String
   attr_reader :host #: _Host
   attr_reader :settings #: Hash[Symbol, untyped]
@@ -75,7 +77,7 @@ class Riffer::Rig::Runtime
   # @rbs cwd: String?
   # @rbs name: String
   # @rbs instructions: String?
-  # @rbs credentials: Hash[String, String]
+  # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs pricing: Hash[String, Riffer::Rig::Settings::Pricing]
   # @rbs max_steps: Integer?
   # @rbs snapshot: Hash[Symbol, untyped]?
@@ -99,6 +101,7 @@ class Riffer::Rig::Runtime
     @host = @notifier
     @cwd = cwd || Dir.pwd
     @settings = settings
+    @credentials = credentials
 
     @busy = false
     @closed = false
