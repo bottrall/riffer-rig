@@ -16,6 +16,13 @@ require 'securerandom'
 # stop reason and token usage; construction emits Riffer::Rig::Events::SessionStart on
 # the first prompt. See Riffer::Rig::Events for the vocabulary.
 #
+# While a prompt or ask runs, the Runtime is current for the executing fiber:
+# riffer-rig's client Procs build that fiber's provider clients from its
+# +credentials:+ and Riffer::Rig.credentials reads them. A blockless prompt
+# enumerated with +.next+ runs its body in its own fiber, so the caller sees
+# no current Runtime between +.next+ calls even though the LLM call inside
+# resolves the right one.
+#
 # Two Runtimes in one process share nothing but the process-wide extension
 # registry and riffer's provider repository. One prompt runs at a time; a
 # second while one is running raises Riffer::Rig::Runtime::BusyError. The
@@ -45,7 +52,12 @@ class Riffer::Rig::Runtime
   # default (16) is too small for a general-purpose harness.
   DEFAULT_MAX_STEPS = nil #: Integer?
 
+  CURRENT_KEY = :riffer_rig_current_runtime
+  private_constant :CURRENT_KEY
+
   # @rbs @agent: Riffer::Agent
+  # @rbs @clients: Hash[Symbol, untyped]
+  # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs @cwd: String
   # @rbs @host: _Host
   # @rbs @id: String
@@ -56,8 +68,9 @@ class Riffer::Rig::Runtime
   # @rbs @session_start_pending: bool
   # @rbs @registrar: Riffer::Rig::Registrar
 
-  # @dynamic agent, cwd, host, settings
+  # @dynamic agent, credentials, cwd, host, settings
   attr_reader :agent #: Riffer::Agent
+  attr_reader :credentials #: Hash[Symbol, Hash[Symbol, String]]
   attr_reader :cwd #: String
   attr_reader :host #: _Host
   attr_reader :settings #: Hash[Symbol, untyped]
@@ -67,6 +80,13 @@ class Riffer::Rig::Runtime
   # @dynamic id
   attr_reader :id #: String
 
+  # Returns the Runtime prompting on the calling fiber, nil outside a prompt.
+  #
+  # @rbs return: Riffer::Rig::Runtime?
+  def self.current
+    Fiber[CURRENT_KEY]
+  end
+
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs tools: Array[String]?
@@ -75,7 +95,7 @@ class Riffer::Rig::Runtime
   # @rbs cwd: String?
   # @rbs name: String
   # @rbs instructions: String?
-  # @rbs credentials: Hash[String, String]
+  # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs pricing: Hash[String, Riffer::Rig::Settings::Pricing]
   # @rbs max_steps: Integer?
   # @rbs snapshot: Hash[Symbol, untyped]?
@@ -99,6 +119,8 @@ class Riffer::Rig::Runtime
     @host = @notifier
     @cwd = cwd || Dir.pwd
     @settings = settings
+    @credentials = credentials
+    @clients = {}
 
     @busy = false
     @closed = false
@@ -142,7 +164,7 @@ class Riffer::Rig::Runtime
     raise ClosedError, 'this Runtime is closed' if @closed
 
     @busy = true
-    @agent.stream(text).each { |event| event }
+    as_current { @agent.stream(text).each { |event| event } }
   ensure
     @busy = false
   end
@@ -155,18 +177,44 @@ class Riffer::Rig::Runtime
     @closed = true
   end
 
+  # Returns this Runtime's SDK client for +provider+, building it with the
+  # block on first use.
+  #
+  # @rbs provider: Symbol
+  # @rbs &block: () -> untyped
+  # @rbs return: untyped
+  def client(provider)
+    @clients.fetch(provider) { @clients[provider] = yield }
+  end
+
   private
+
+  # @rbs &block: () -> Riffer::Agent::Response
+  # @rbs return: Riffer::Agent::Response
+  def as_current
+    previous = self.class.current
+    Fiber[CURRENT_KEY] = self
+    # Nested rather than a method-level `ensure`: Steep reports FallbackAny
+    # for a local read only from a method-level `ensure`.
+    begin
+      yield
+    ensure
+      Fiber[CURRENT_KEY] = previous
+    end
+  end
 
   # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
   def wrap_stream(stream)
     Enumerator.new do |yielder|
-      yielder << Riffer::Rig::Events::SessionStart.new(@id, :new) if @session_start_pending
-      @session_start_pending = false
-      @notifier.drain.each { |event| yielder << event }
-      response = stream.each { |event| yielder << event }
-      yielder << Riffer::Rig::Events::TurnEnd.new(response.outcome.reason, response.token_usage)
-      response
+      as_current do
+        yielder << Riffer::Rig::Events::SessionStart.new(@id, :new) if @session_start_pending
+        @session_start_pending = false
+        @notifier.drain.each { |event| yielder << event }
+        response = stream.each { |event| yielder << event }
+        yielder << Riffer::Rig::Events::TurnEnd.new(response.outcome.reason, response.token_usage)
+        response
+      end
     end
   end
 

@@ -1,0 +1,27 @@
+# Generated from lib/riffer/rig/clients.rb with RBS::Inline
+
+# Upstream candidate: a per-agent provider option in riffer replaces these
+# process-wide client Procs. riffer never falls back to a provider's own
+# build_client once a Proc is configured, so each builder reproduces its
+# provider's build_client, reading Riffer.config wherever the current Runtime
+# holds no api_key.
+module Riffer::Rig::Clients
+  # Azure and OpenRouter pass nil through uncompacted: they borrow the OpenAI
+  # SDK, which would otherwise fall back to OPENAI_API_KEY / OPENAI_BASE_URL
+  # and send an OpenAI credential to the other vendor.
+  BUILDERS: Hash[Symbol, ^(untyped, String?) -> untyped]
+
+  # Installs one client Proc per built-in provider. A client the host already
+  # configured is left in place.
+  #
+  # @rbs config: Riffer::Config
+  # @rbs return: void
+  def install: (Riffer::Config config) -> void
+
+  private
+
+  # @rbs provider: Symbol
+  # @rbs config: Riffer::Config
+  # @rbs return: untyped
+  def client: (Symbol provider, Riffer::Config config) -> untyped
+end

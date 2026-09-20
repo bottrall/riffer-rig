@@ -12,7 +12,7 @@ runtime = Riffer::Rig::Runtime.new(
 )
 ```
 
-The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `credentials:`, `pricing:` and `snapshot:` are accepted and ignored until their tickets land, and `settings:` is stored and exposed (`runtime.settings`) but nothing reads it yet. `pricing:` and `credentials:` already take the shapes the Loader will pass — `Settings::Pricing` entries and plain key strings respectively — so embedders building them today keep working when their tickets land.
+The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `pricing:` and `snapshot:` are accepted and ignored until their tickets land, and `settings:` is stored and exposed (`runtime.settings`) but nothing reads it yet. `pricing:` already takes the shape the Loader will pass — `Settings::Pricing` entries — so embedders building it today keep working when its ticket lands.
 
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
@@ -25,7 +25,7 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `name:`         | the name interpolated into the [base prompt](INSTRUCTIONS.md)               | `"riffer"`              |
 | `instructions:` | replaces the base prompt wholesale (the environment block still applies)    | `nil` (use the base)    |
 | `max_steps:`    | agent-loop step limit; `nil` runs the loop without a limit                  | `nil`                   |
-| `credentials:`  | provider → resolved key string; accepted and ignored until per-runtime credentials land | `{}`       |
+| `credentials:`  | provider → resolved credential values; see [Per-runtime credentials](#per-runtime-credentials) | `{}` |
 | `pricing:`      | model → `Riffer::Rig::Settings::Pricing` entries (USD per million tokens); accepted and ignored until the token tally moves behind the Runtime | `{}` |
 
 Two Runtimes in one process share nothing but the process-wide extension registry and riffer's provider repository.
@@ -46,6 +46,39 @@ runtime.prompt('and this one?').each { |event| ... }
 ```
 
 One prompt runs at a time per Runtime; a second `prompt` or `ask` while one is running raises `Riffer::Rig::Runtime::BusyError`. Parallelism means more Runtimes, in more threads.
+
+## Per-runtime credentials
+
+`credentials:` gives one Runtime its own provider keys: a hash keyed by provider identifier, each value a hash of that provider's resolved values. The Runtime never resolves them — no environment lookup, no `auth.json` — it stores the hash as given.
+
+```ruby
+alice = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', credentials: { anthropic: { api_key: alice_key } })
+bob = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', credentials: { anthropic: { api_key: bob_key } })
+
+[alice, bob].map { |runtime| Thread.new { runtime.ask('hello') } }.each(&:join)
+```
+
+While `prompt` or `ask` runs, the Runtime is current for the executing fiber. When riffer-rig loads it installs one Proc per built-in provider (`anthropic`, `openai`, `gemini`, `openrouter`, `azure_openai`, `amazon_bedrock`) into `Riffer.config.<provider>.client`; riffer resolves that Proc on every LLM call and gets a client built with the current Runtime's `api_key` (the bearer token, for Bedrock). Runtimes holding different keys prompt in parallel threads without seeing each other's. A blockless `prompt` enumerated externally with `.next` runs its body in its own fiber, so `Runtime.current` reads nil on the caller's side between `.next` calls even though the LLM call inside resolves the right Runtime. A Runtime builds each provider's client once and keeps it.
+
+`Riffer.configure` remains the fallback a host may use at its edge. Where the current Runtime holds no `api_key` for a provider — or a riffer agent runs outside any Runtime — the client is built from `Riffer.config` exactly as riffer builds it: `api_key`, `base_url`, `endpoint`, `region`, `api_token` and the SDK's own environment variables all still apply. Non-secret values such as `base_url`, `endpoint` and `region` always come from `Riffer.config`.
+
+```ruby
+Riffer.configure { |config| config.openai.api_key = ENV.fetch('OPENAI_API_KEY') }
+
+Riffer::Rig::Runtime.new('openai/gpt-5').ask('hello') # uses the configured key
+```
+
+A `client` the host sets on `Riffer.config.<provider>` before requiring `riffer/rig` is left in place, and that provider then ignores per-runtime credentials.
+
+`Riffer::Rig.credentials(:identifier)` returns the current Runtime's values for one provider — `nil` outside a prompt, or when the Runtime holds none. An extension provider calls it when building its client:
+
+```ruby
+def build_client
+  Acme::Client.new(api_key: Riffer::Rig.credentials(:acme)&.fetch(:api_key))
+end
+```
+
+riffer keeps a provider's built client for the life of the provider instance, which is one Runtime's agent, so the key read there stays that Runtime's.
 
 ## Asking for a turn
 

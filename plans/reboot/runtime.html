@@ -125,7 +125,7 @@ been given; each tool describes what it does and when to use it.
 </ul>
 </section>
 
-<section class="topic" id="credentials">
+<section class="topic enshrined" id="credentials">
 <h3>Per-runtime credentials</h3>
 <ul>
   <li><code>credentials:</code> is a hash keyed by provider identifier holding the resolved key strings for that Runtime (see <a href="providers.html#resolution">Providers: resolution</a>). The Runtime never resolves them itself.</li>
@@ -134,6 +134,7 @@ been given; each tool describes what it does and when to use it.
   <li><code>Riffer.configure</code> remains a fallback a host may use at its edge; the shipped hosts do not.</li>
   <li>Contained in riffer-rig, marked as an upstream candidate (a per-agent provider option in riffer).</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/181">#181</a>, with the Interfaces rows <code>credentials:</code> and <code>Riffer::Rig.credentials(id)</code>. Readings and deviations: <code>credentials:</code> is provider symbol → a hash of field values (<code>{anthropic: {api_key: "…"}}</code>), not provider → key string, stored as given and read back by <code>Riffer::Rig.credentials(:identifier)</code>; until the recipe's <code>name</code> field (#109) says which <code>Riffer.config</code> member each value lands on, the Procs pass only <code>api_key</code> to the SDK client (the bearer token for Bedrock). riffer uses whatever a configured Proc returns and never falls back to its own client, so each Proc reproduces its provider's client construction and reads <code>Riffer.config</code> wherever the current Runtime holds no <code>api_key</code> — that, and any call outside a prompt, is the <code>Riffer.configure</code> fallback. A Runtime builds each provider's client once and keeps it. A <code>client</code> the host configured before riffer-rig loads is left in place, so that provider ignores per-runtime credentials. The builders live in <code>lib/riffer/rig/clients.rb</code> and <code>lib/riffer/rig.rb</code> installs them at load. <code>ask</code> marks the Runtime current as <code>prompt</code> does (a blockless <code>prompt</code> while it is enumerated); <code>run_command</code> will when the command ticket adds it. The current-Runtime pointer is fiber storage (<code>Fiber[]</code>), not a thread variable: a thread variable is shared by every fiber on a thread, so two Runtimes interleaved via <code>.next</code> would resolve each other's clients, and an abandoned externally-enumerated prompt would leave its Runtime current forever. Fiber storage confines each prompt's writes to the fiber running it; a blockless <code>prompt</code> enumerated with <code>.next</code> runs its body in its own fiber, so the caller sees no current Runtime between <code>.next</code> calls even though the LLM call inside resolves the right one. The readers are <code>Riffer::Rig::Runtime.current</code> and <code>Runtime#credentials</code>.</p>
 </section>
 
 <section class="topic" id="model">

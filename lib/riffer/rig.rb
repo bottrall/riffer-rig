@@ -38,4 +38,17 @@ module Riffer::Rig
   def self.extensions
     @extensions.dup
   end
+
+  # Returns the credential values the Runtime prompting on the calling fiber
+  # holds for one provider; nil outside a prompt or when it holds none.
+  #
+  #   Riffer::Rig.credentials(:acme) # => { api_key: '...' }
+  #
+  # @rbs id: Symbol
+  # @rbs return: Hash[Symbol, String]?
+  def self.credentials(id)
+    Runtime.current&.then { |runtime| runtime.credentials[id] }
+  end
 end
+
+Riffer::Rig::Clients.install(Riffer.config)

@@ -138,12 +138,96 @@ describe Riffer::Rig::Runtime do
     runtime = Riffer::Rig::Runtime.new(
       'mock/test',
       extensions: [@extension],
-      credentials: { 'anthropic' => 'sk-ant-test' },
       pricing: { 'mock/test' => Riffer::Rig::Settings::Pricing.from({}) },
       snapshot: nil
     )
 
     assert_instance_of Riffer::Rig::Runtime, runtime
+  end
+
+  it 'stores the credentials as given' do
+    credentials = { anthropic: { api_key: 'sk-ant-test' } }
+    runtime = Riffer::Rig::Runtime.new('mock/test', credentials: credentials)
+
+    assert_same credentials, runtime.credentials
+  end
+
+  it 'has no current Runtime outside a prompt' do
+    assert_nil Riffer::Rig::Runtime.current
+  end
+
+  it 'is current for the thread while a prompt runs' do
+    runtime = Riffer::Rig::Runtime.new('mock/test')
+    runtime.agent.provider.stub_response('All done.')
+    current = nil
+    runtime.prompt('hello') { current = Riffer::Rig::Runtime.current }
+
+    assert_same runtime, current
+  end
+
+  it 'is current while a blockless prompt is enumerated' do
+    runtime = Riffer::Rig::Runtime.new('mock/test')
+    runtime.agent.provider.stub_response('All done.')
+    current = nil
+    runtime.prompt('hello').each { current = Riffer::Rig::Runtime.current }
+
+    assert_same runtime, current
+  end
+
+  it 'has no current Runtime on the caller side between interleaved .next calls' do
+    one = Riffer::Rig::Runtime.new('mock/test')
+    two = Riffer::Rig::Runtime.new('mock/test')
+    one.agent.provider.stub_response('All done.')
+    two.agent.provider.stub_response('All done.')
+    enum_one = one.prompt('hello')
+    enum_two = two.prompt('hello')
+    enum_one.next
+    enum_two.next
+
+    assert_nil Riffer::Rig::Runtime.current
+  end
+
+  it 'is current for the thread while an ask runs' do
+    probe = Class.new(Riffer::Tool) do
+      identifier 'current_probe'
+      description 'Reports the current Runtime id'
+
+      def call(context:)
+        text(Riffer::Rig::Runtime.current&.id.to_s)
+      end
+    end
+    extension = Riffer::Rig::Extension.new('probe') { |rig| rig.tool probe }
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [extension])
+    runtime.agent.provider.stub_response('', tool_calls: [{ name: 'current_probe', arguments: '{}' }])
+    runtime.agent.provider.stub_response('All done.')
+
+    tool_message = runtime.ask('hello').messages.grep(Riffer::Messages::Tool).first
+
+    assert_equal runtime.id, tool_message.content
+  end
+
+  it 'is no longer current once the prompt ends' do
+    runtime = Riffer::Rig::Runtime.new('mock/test')
+    runtime.agent.provider.stub_response('All done.')
+    runtime.prompt('hello') { |event| event }
+
+    assert_nil Riffer::Rig::Runtime.current
+  end
+
+  it 'restores the outer Runtime when a nested prompt ends' do
+    outer = Riffer::Rig::Runtime.new('mock/test')
+    inner = Riffer::Rig::Runtime.new('mock/test')
+    outer.agent.provider.stub_response('All done.')
+    inner.agent.provider.stub_response('All done.')
+    current = nil
+    outer.prompt('hello') do |event|
+      next unless event.is_a?(Riffer::Rig::Events::TurnEnd)
+
+      inner.prompt('hello') { |nested| nested }
+      current = Riffer::Rig::Runtime.current
+    end
+
+    assert_same outer, current
   end
 
   it 'defaults to an unlimited agent loop' do
