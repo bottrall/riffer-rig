@@ -11,34 +11,4 @@
 #   Riffer::Rig::Events::TurnEnd.new(stop_reason: :completed, usage: nil).to_h
 #   # => { stop_reason: :completed, usage: nil, type: :turn_end }
 module Riffer::Rig::Events
-  # Frozen value object: plain readers, a +type+ (the snake_case event name),
-  # and a +to_h+ with the type folded in.
-  class Event
-    # @rbs return: Symbol
-    def type
-      raise NotImplementedError, "#{self.class.name} must define type"
-    end
-
-    # @rbs return: Hash[Symbol, untyped]
-    def to_h
-      raise NotImplementedError, "#{self.class.name} must define to_h"
-    end
-
-    # @rbs other: untyped
-    # @rbs return: bool
-    def ==(other)
-      other.class == self.class && other.to_h == to_h
-    end
-
-    # @rbs return: Integer
-    def hash
-      [self.class, to_h].hash
-    end
-
-    # @rbs other: untyped
-    # @rbs return: bool
-    def eql?(other)
-      self == other
-    end
-  end
 end
