@@ -129,7 +129,7 @@ been given; each tool describes what it does and when to use it.
 <h3>Credentials</h3>
 <ul>
   <li><code>credentials:</code> is a hash keyed by provider identifier holding that provider's resolved field values, e.g. <code>{anthropic: {api_key: "…"}}</code> (see <a href="providers.html#resolution">Providers: resolution</a>). The Runtime stores it as given, exposes it as <code>Runtime#credentials</code> and never resolves anything itself.</li>
-  <li>Provider credentials are one set per process. They reach riffer through <code>Riffer.config</code>: <code>Riffer::Rig::Credentials</code> assigns each resolved value to the member its recipe field names (<a href="providers.html#recipes">Providers: recipes</a>). The Loader does this when it builds a Runtime; <code>/auth</code> and <code>/model</code> do it when they change a Runtime's credentials.</li>
+  <li>Provider credentials are one set per process. They reach riffer through <code>Riffer.config</code>: <code>Riffer::Rig::Credentials.apply</code> assigns each resolved value to the member its recipe field names (<a href="providers.html#recipes">Providers: recipes</a>). The Loader does this when it builds a Runtime; <code>/auth</code> and <code>/model</code> do it when they change a Runtime's credentials.</li>
   <li><code>Riffer::Rig.credentials(:identifier)</code> reads the process's resolved values for one provider; extension providers call it when building their client.</li>
   <li>A host that skips the Loader calls <code>Riffer.configure</code> at its edge.</li>
 </ul>

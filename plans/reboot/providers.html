@@ -131,7 +131,7 @@
 <h3><code>/auth</code></h3>
 <ul>
   <li><code>/auth</code> lists every registry provider with a status: <code>env</code>, <code>stored</code>, <code>chain</code> or <code>missing</code>.</li>
-  <li><code>/auth &lt;provider&gt;</code> re-runs the recipe (key rotation).</li>
+  <li><code>/auth &lt;provider&gt;</code> re-runs the recipe (key rotation) and applies the new values, so the next request uses them.</li>
   <li><code>/auth remove &lt;provider&gt;</code> deletes the <code>auth.json</code> entry and the <code>providers</code> block in settings.</li>
   <li>Runtime-owned, so terminal and ACP share it. Not named <code>/login</code>, which implies OAuth.</li>
 </ul>
@@ -168,7 +168,7 @@
   <tr><th>Surface</th><th>Shape</th></tr>
   <tr><td><code>Riffer::Rig::Recipes[identifier]</code></td><td>the recipe hash; <code>Recipes.for(identifier)</code> returns the generic fallback for an unknown provider</td></tr>
   <tr><td>Recipe</td><td><code>url</code>, <code>sdk: [gem, requirement] | nil</code>, <code>chain: bool</code>, <code>fields: [{name, env: [...], secret:, required:, fallback:}]</code></td></tr>
-  <tr><td><code>Riffer::Rig::Credentials</code></td><td><code>resolve(identifier, host:)</code> → field values; <code>store(identifier, values)</code>; <code>remove(identifier)</code>; <code>status(identifier)</code> → <code>:env | :stored | :chain | :missing</code></td></tr>
+  <tr><td><code>Riffer::Rig::Credentials</code></td><td><code>resolve(identifier, host:)</code> → field values; <code>apply(identifier, values)</code> assigns them to <code>Riffer.config</code> by each field's <code>name</code>; <code>store(identifier, values)</code>; <code>remove(identifier)</code>; <code>status(identifier)</code> → <code>:env | :stored | :chain | :missing</code></td></tr>
   <tr><td><code>Riffer::Rig.credentials(identifier)</code></td><td>the process's resolved values for one provider</td></tr>
   <tr><td>Files</td><td><code>~/.riffer/auth.json</code>; <code>providers</code> block in <code>settings.json</code></td></tr>
   <tr><td>Settings keys owned here</td><td><code>model</code>, <code>reasoning</code>, <code>models</code>, <code>providers</code>, <code>tools.native</code></td></tr>
