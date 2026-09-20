@@ -54,7 +54,7 @@
   <li>Tools resolve relative paths against the Runtime's <code>cwd</code>, not <code>Dir.pwd</code>, so two Runtimes in one process can work in different directories.</li>
   <li>A tool's name on <code>--tools</code> and <code>tools:</code> is its riffer <code>identifier</code>: <code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, and whatever identifier an extension tool declares.</li>
 </ul>
-<p class="note">The bullet "<code>bash</code> reads the Runtime's cancel flag" enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/110">#110</a>: the Runtime hands its <code>Riffer::Rig::CancelFlag</code> to tools as <code>context[:cancel_flag]</code>; <code>bash</code> polls it every 100 ms while the command runs, sends <code>TERM</code> to the process group and returns a tool error ending in <code>[cancelled]</code> (status 130). The rest of the section waits on the Bundled ticket, so the section is not yet marked enshrined.</p>
+<p class="note">The bullet "<code>bash</code> reads the Runtime's cancel flag" enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/186">#186</a>: the Runtime hands its <code>Riffer::Rig::CancelFlag</code> to tools as <code>context[:cancel_flag]</code>; <code>bash</code> polls it every 100 ms while the command runs, sends <code>TERM</code> to the process group and returns a tool error ending in <code>[cancelled]</code> (status 130). The rest of the section waits on the Bundled ticket, so the section is not yet marked enshrined.</p>
 </section>
 
 <section class="topic" id="agents-md">
