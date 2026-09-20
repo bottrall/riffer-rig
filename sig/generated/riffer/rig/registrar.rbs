@@ -3,6 +3,8 @@
 class Riffer::Rig::Registrar
   @tools: Array[singleton(Riffer::Tool)]
 
+  @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+
   # @rbs return: void
   def initialize: () -> void
 
@@ -10,6 +12,14 @@ class Riffer::Rig::Registrar
   # @rbs return: void
   def tool: (singleton(Riffer::Tool) klass) -> void
 
+  # @rbs name: Symbol
+  # @rbs &block: (Riffer::Rig::Runtime) -> String?
+  # @rbs return: void
+  def prompt: (Symbol name) { (Riffer::Rig::Runtime) -> String? } -> void
+
   # @rbs return: Array[singleton(Riffer::Tool)]
   def tools: () -> Array[singleton(Riffer::Tool)]
+
+  # @rbs return: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+  def prompts: () -> Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
 end

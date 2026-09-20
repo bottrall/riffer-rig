@@ -225,6 +225,90 @@ describe Riffer::Rig::Runtime do
     refute_includes runtime.agent.instruction_message.content, 'general-purpose agent'
   end
 
+  it 'renders sections in load order between the base and the environment block' do
+    sections = Riffer::Rig::Extension.new('sections') do |rig|
+      rig.prompt(:first) { 'SECTION_ONE' }
+      rig.prompt(:second) { 'SECTION_TWO' }
+    end
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [sections], cwd: '/tmp/proj')
+    runtime.agent.provider.stub_response('All done.')
+    runtime.ask('hello')
+
+    assert_match(
+      /Lead with the outcome.*\n\nSECTION_ONE\n\nSECTION_TWO\n\nCurrent date: /m,
+      runtime.agent.provider.calls.last[:messages].first[:content]
+    )
+  end
+
+  it 're-evaluates a section every turn without a rebuild' do
+    branch = 'main'
+    sections = Riffer::Rig::Extension.new('sections') { |rig| rig.prompt(:branch) { "Branch: #{branch}" } }
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [sections])
+    runtime.agent.provider.stub_response('One.')
+    runtime.agent.provider.stub_response('Two.')
+    runtime.ask('hello')
+    branch = 'feature'
+    runtime.prompt('again') { |event| event }
+
+    assert_includes runtime.agent.provider.calls.last[:messages].first[:content], 'Branch: feature'
+  end
+
+  it 'keeps one system message across turns' do
+    sections = Riffer::Rig::Extension.new('sections') { |rig| rig.prompt(:branch) { 'Branch: main' } }
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [sections])
+    runtime.agent.provider.stub_response('One.')
+    runtime.agent.provider.stub_response('Two.')
+    runtime.ask('hello')
+    runtime.ask('again')
+
+    roles = runtime.agent.provider.calls.last[:messages].map { |message| message[:role].to_s }
+
+    assert_equal %w[system user assistant user], roles
+  end
+
+  it 'lets a later registration of the same section name win' do
+    earlier = Riffer::Rig::Extension.new('earlier') { |rig| rig.prompt(:branch) { 'EARLIER' } }
+    later = Riffer::Rig::Extension.new('later') { |rig| rig.prompt(:branch) { 'LATER' } }
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [earlier, later])
+    runtime.agent.provider.stub_response('All done.')
+    runtime.ask('hello')
+
+    refute_includes runtime.agent.provider.calls.last[:messages].first[:content], 'EARLIER'
+  end
+
+  it 'passes the runtime to a section' do
+    sections = Riffer::Rig::Extension.new('sections') { |rig| rig.prompt(:cwd) { |ctx| "In #{ctx.cwd}" } }
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [sections], cwd: '/tmp/proj')
+    runtime.agent.provider.stub_response('All done.')
+    runtime.ask('hello')
+
+    assert_includes runtime.agent.provider.calls.last[:messages].first[:content], 'In /tmp/proj'
+  end
+
+  it 'skips a section that renders nothing' do
+    sections = Riffer::Rig::Extension.new('sections') { |rig| rig.prompt(:skills) { nil } }
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [sections], instructions: 'CUSTOM_BASE')
+    runtime.agent.provider.stub_response('All done.')
+    runtime.ask('hello')
+
+    assert_match(/\ACUSTOM_BASE\n\nCurrent date: /, runtime.agent.provider.calls.last[:messages].first[:content])
+  end
+
+  it 'appends sections and the environment block under custom instructions' do
+    sections = Riffer::Rig::Extension.new('sections') { |rig| rig.prompt(:branch) { 'Branch: main' } }
+    runtime = Riffer::Rig::Runtime.new(
+      'mock/test',
+      extensions: [sections],
+      instructions: 'CUSTOM_BASE',
+      cwd: '/tmp/proj'
+    )
+    runtime.agent.provider.stub_response('All done.')
+    runtime.ask('hello')
+
+    assert_equal "CUSTOM_BASE\n\nBranch: main\n\nCurrent date: #{Date.today}\nCurrent working directory: /tmp/proj",
+                 runtime.agent.provider.calls.last[:messages].first[:content]
+  end
+
   it 'raises on a second prompt while one runs' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
     runtime.agent.provider.stub_response('first')

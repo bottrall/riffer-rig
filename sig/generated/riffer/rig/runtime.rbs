@@ -35,6 +35,8 @@ class Riffer::Rig::Runtime
 
   @credentials: Hash[Symbol, Hash[Symbol, String]]
 
+  @base_prompt: String
+
   @agent: Riffer::Agent
 
   # @dynamic agent, credentials, cwd, host, id, settings
@@ -92,7 +94,13 @@ class Riffer::Rig::Runtime
   # @rbs return: Array[singleton(Riffer::Tool)]
   def select_tools: (Array[singleton(Riffer::Tool)] registered, Array[String]? allowlist) -> Array[singleton(Riffer::Tool)]
 
-  # @rbs base_prompt: String
+  # @rbs return: void
+  def refresh_system_message: () -> void
+
+  # @rbs return: Array[String]
+  def rendered_sections: () -> Array[String]
+
+  # @rbs sections: Array[String]
   # @rbs return: String
-  def system_prompt: (String base_prompt) -> String
+  def system_prompt: (Array[String] sections) -> String
 end

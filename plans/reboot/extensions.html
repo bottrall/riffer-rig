@@ -78,6 +78,7 @@ end</code></pre>
   <tr><td><code>rig.setting key, default:</code></td><td>declares a namespaced settings key</td><td>rig settings</td></tr>
 </table></div>
 <p>Providers are the one process-wide seam by choice: providers are stateless, and riffer keeps one provider repository and one set of provider credentials per process. Two Runtimes cannot map one prefix to different classes; accepted until a real host needs it. Providers are never unregistered on reload; re-registration is idempotent.</p>
+<p class="note">Row <code>rig.prompt</code> enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/184">#184</a> (row <code>rig.tool</code> shipped in <a href="https://github.com/bottrall/riffer-rig/pull/160">#160</a>); the other six rows wait on their tickets, so the section is not yet marked enshrined. One deviation on "Backed by": riffer resolves <code>instructions</code> once, in <code>Agent.new</code>, so the per-turn evaluation is the Runtime's own; see the note under <a href="#prompt-sections">Prompt sections</a>.</p>
 </section>
 
 <section class="topic" id="commands">
@@ -105,13 +106,14 @@ end</code></pre>
 </ul>
 </section>
 
-<section class="topic" id="prompt-sections">
+<section class="topic enshrined" id="prompt-sections">
 <h3>Prompt sections</h3>
 <ul>
   <li>Named sections render after the base prompt in load order, before the environment block. A later registration of the same section name replaces the earlier one.</li>
   <li>Sections are Procs evaluated every turn, so their content is always current without a reload. AGENTS.md and the skills listing are sections owned by their bundled extensions (<code>:agents_md</code>, <code>:skills</code>), so a user can swap either by registering the same name later without disabling the extension.</li>
   <li>A section's text is appended as-is. A contributor that needs framing (AGENTS.md as "user-authored instructions that outrank the norms above") writes that framing itself; the base prompt names no contributor.</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/184">#184</a>: <code>Registrar#prompt</code> stores the blocks by name and the Runtime renders them between the base prompt and the environment block. Three deviations. riffer resolves <code>instructions</code> once, in <code>Agent.new</code>, so the Runtime re-renders the whole system message at the start of every <code>prompt</code> and <code>ask</code> and swaps it in as the session's leading message; the workaround is marked in <code>lib/riffer/rig/runtime.rb</code> as an upstream candidate. The plan leaves <code>ctx</code> undefined for a section: the block receives the Runtime (<code>cwd</code>, <code>settings</code>, <code>host</code>). A replacing registration keeps the replaced section's place in the order, and a section that returns <code>nil</code> or an empty string is left out of that turn's message. The <code>:agents_md</code> and <code>:skills</code> sections wait on their <a href="bundled.html">Bundled</a> tickets.</p>
 </section>
 
 <section class="topic" id="settings-seam">
