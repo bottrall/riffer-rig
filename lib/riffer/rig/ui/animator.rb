@@ -120,11 +120,10 @@ class Riffer::Rig::UI::Animator
     now + roll_rand
   end
 
-  # Range rand returns nil for an empty range; this one is a non-empty constant.
-  #
   # @rbs return: Integer
   def roll_rand
     x = rand(REASONING_TICK_RANGE)
+    # Range rand returns nil for an empty range; this one is a non-empty constant.
     x || 0
   end
 

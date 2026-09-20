@@ -1,37 +1,24 @@
 # Generated from lib/riffer/rig/host.rb with RBS::Inline
 
-# Declines every capability; the default host for a Runtime. Hosts are
-# duck-typed, and callers check #capabilities before asking, so a declined
-# capability is never asked.
 class Riffer::Rig::Host
-  # Returns the methods the host truly supports: none.
-  #
   # @rbs return: Set[Symbol]
   def capabilities: () -> Set[Symbol]
 
-  # Declines the question.
-  #
   # @rbs _question: String?
   # @rbs options: Array[String]?
   # @rbs secret: bool
   # @rbs return: String?
   def ask: (?untyped _question, ?options: Array[String]?, ?secret: bool) -> String?
 
-  # Declines the confirmation.
-  #
   # @rbs _question: String?
   # @rbs return: bool
   def confirm: (?untyped _question) -> bool
 
-  # Discards the message.
-  #
   # @rbs _message: String?
   # @rbs level: Symbol
   # @rbs return: void
   def notify: (?untyped _message, ?level: Symbol) -> void
 
-  # Runs the block without reporting progress.
-  #
   # @rbs _label: String?
   # @rbs &block: ^() -> void
   # @rbs return: void

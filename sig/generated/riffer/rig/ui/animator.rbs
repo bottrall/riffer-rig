@@ -57,8 +57,6 @@ class Riffer::Rig::UI::Animator
   # @rbs return: Float
   def roll_phrase: (Float roll_at) -> Float
 
-  # Range rand returns nil for an empty range; this one is a non-empty constant.
-  #
   # @rbs return: Integer
   def roll_rand: () -> Integer
 

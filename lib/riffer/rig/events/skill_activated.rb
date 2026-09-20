@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# Reports a skill activated by command.
 class Riffer::Rig::Events::SkillActivated < Riffer::Rig::Events::Event
   # @dynamic name
   attr_reader :name #: String

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# Carries a command's output text.
 class Riffer::Rig::Events::CommandOutput < Riffer::Rig::Events::Event
   # @dynamic command, text
   attr_reader :command #: String

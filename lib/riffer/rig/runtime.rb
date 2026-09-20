@@ -3,14 +3,11 @@
 require 'date'
 require 'securerandom'
 
-# Runs prompts on its own Riffer::Agent, streaming events or returning the
-# response. It never renders, prints or reads the filesystem: anything a host
-# needs is a Runtime feature, so embedders get it too.
+# Never renders, prints or reads the filesystem: anything a host needs is a
+# Runtime feature, so embedders get it too.
 class Riffer::Rig::Runtime
-  # Raised when a prompt or ask starts while another is running.
   class BusyError < StandardError; end
 
-  # Raised when a prompt or ask is sent to a closed Runtime.
   class ClosedError < StandardError; end
 
   BASE_PROMPT_TEMPLATE = <<~TEXT
@@ -42,25 +39,14 @@ class Riffer::Rig::Runtime
   # @rbs @session_start_pending: bool
   # @rbs @registrar: Riffer::Rig::Registrar
 
-  # @dynamic agent, credentials, cwd, settings
+  # @dynamic agent, credentials, cwd, host, id, settings
   attr_reader :agent #: Riffer::Agent
   attr_reader :credentials #: Hash[Symbol, Hash[Symbol, String]]
   attr_reader :cwd #: String
+  attr_reader :host #: _Host
+  attr_reader :id #: String
   attr_reader :settings #: Hash[Symbol, untyped]
 
-  # Returns the given host, wrapped so every notify is mirrored onto the stream.
-  #
-  # @dynamic host
-  attr_reader :host #: _Host
-
-  # Returns the UUIDv7 minted at construction; also the snapshot id and ACP
-  # sessionId.
-  #
-  # @dynamic id
-  attr_reader :id #: String
-
-  # Builds the agent, running each extension's block against a fresh registrar.
-  #
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs tools: Array[String]?
@@ -88,6 +74,7 @@ class Riffer::Rig::Runtime
     max_steps: DEFAULT_MAX_STEPS,
     snapshot: nil
   )
+    # Doubles as the snapshot id and ACP sessionId.
     @id = ::SecureRandom.uuid_v7
     @notifier = Riffer::Rig::NotifyingHost.new(host)
     @host = @notifier
@@ -112,9 +99,6 @@ class Riffer::Rig::Runtime
     )
   end
 
-  # Streams one turn's events to the block, or returns them as an Enumerator
-  # when no block is given.
-  #
   # @rbs text: String
   # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
   # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response])
@@ -133,8 +117,6 @@ class Riffer::Rig::Runtime
     @busy = false
   end
 
-  # Runs one turn to completion and returns riffer's response.
-  #
   # @rbs text: String
   # @rbs return: Riffer::Agent::Response
   def ask(text)
@@ -147,8 +129,6 @@ class Riffer::Rig::Runtime
     @busy = false
   end
 
-  # Refuses further prompts and asks.
-  #
   # @rbs return: void
   def close
     # TODO: emit Riffer::Rig::Events::SessionEnd once the rebuild ticket settles

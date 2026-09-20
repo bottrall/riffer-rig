@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# A hidden cursor can't flicker against the animator's erase-and-redraw churn.
 class Riffer::Rig::UI::Cursor
   HIDE = "\e[?25l" #: String
 

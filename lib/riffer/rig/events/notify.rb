@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# Mirrors a host notify onto the stream, so stream consumers see extension
-# errors too.
 class Riffer::Rig::Events::Notify < Riffer::Rig::Events::Event
   # @dynamic message, level
   attr_reader :message #: String?

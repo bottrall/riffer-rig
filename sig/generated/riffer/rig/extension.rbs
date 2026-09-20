@@ -1,6 +1,5 @@
 # Generated from lib/riffer/rig/extension.rb with RBS::Inline
 
-# Holds a named registrar block and its optional riffer-rig version requirement.
 class Riffer::Rig::Extension
   @name: String
 
@@ -19,8 +18,6 @@ class Riffer::Rig::Extension
   # @rbs return: void
   def initialize: (String name, ?requires: String?) { (::Riffer::Rig::Registrar) -> void } -> void
 
-  # Runs the block against a Runtime's registrar.
-  #
   # @rbs registrar: Riffer::Rig::Registrar
   # @rbs return: void
   def run: (Riffer::Rig::Registrar registrar) -> void

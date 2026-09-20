@@ -13,9 +13,6 @@ module Riffer::Rig
   # @rbs self.@extensions: Hash[String, Riffer::Rig::Extension]
   @extensions = {} #: Hash[String, Riffer::Rig::Extension]
 
-  # Records a named extension block in the process registry. Re-recording a
-  # name replaces the block, so reloading a file never duplicates it.
-  #
   # @rbs name: String
   # @rbs requires: String?
   # @rbs &block: (::Riffer::Rig::Registrar) -> void
@@ -27,11 +24,11 @@ module Riffer::Rig
             "extension #{name} requires riffer-rig #{ext.requires}, found #{Riffer::Rig::VERSION}"
     end
 
+    # Keyed by name so reloading a file replaces its block rather than
+    # duplicating it.
     @extensions[name] = ext
   end
 
-  # Returns a copy of the process registry, keyed by extension name.
-  #
   # @rbs return: Hash[String, Riffer::Rig::Extension]
   def self.extensions
     @extensions.dup

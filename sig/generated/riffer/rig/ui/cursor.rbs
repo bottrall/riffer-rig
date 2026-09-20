@@ -1,6 +1,5 @@
 # Generated from lib/riffer/rig/ui/cursor.rb with RBS::Inline
 
-# A hidden cursor can't flicker against the animator's erase-and-redraw churn.
 class Riffer::Rig::UI::Cursor
   HIDE: String
 

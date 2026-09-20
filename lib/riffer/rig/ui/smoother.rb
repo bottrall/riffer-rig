@@ -105,10 +105,9 @@ class Riffer::Rig::UI::Smoother
     end
   end
 
-  # Idempotent: the REPL's ensure path runs it even after a happy-path finish.
-  #
   # @rbs return: void
   def finish
+    # Idempotent: the REPL's ensure path runs it even after a happy-path finish.
     thread = @thread
     if thread
       @stop = true

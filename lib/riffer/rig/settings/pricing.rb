@@ -1,12 +1,9 @@
 # frozen_string_literal: true
 
-# Holds a model's prices in USD per million tokens.
 class Riffer::Rig::Settings::Pricing
   # @dynamic input, output, cache_write, cache_read
   attr_reader :input, :output, :cache_write, :cache_read #: Float
 
-  # Builds a Pricing from a settings-file entry, pricing missing keys at zero.
-  #
   # @rbs entry: Hash[String, untyped]
   # @rbs return: ::Riffer::Rig::Settings::Pricing
   def self.from(entry)

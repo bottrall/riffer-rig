@@ -1,32 +1,19 @@
 # Generated from lib/riffer/rig/events/event.rb with RBS::Inline
 
-# Defines what every rig-level event shares: a type, a hash form and value
-# equality.
 class Riffer::Rig::Events::Event
-  # Returns the snake_case event name.
-  #
   # @rbs return: Symbol
   def type: () -> Symbol
 
-  # Returns the event's fields with the type folded in, so a record serializes
-  # verbatim as NDJSON.
-  #
   # @rbs return: Hash[Symbol, untyped]
   def to_h: () -> Hash[Symbol, untyped]
 
-  # Compares events by class and fields.
-  #
   # @rbs other: untyped
   # @rbs return: bool
   def ==: (untyped other) -> bool
 
-  # Hashes by class and fields, matching #==.
-  #
   # @rbs return: Integer
   def hash: () -> Integer
 
-  # Matches #==, so equal events collide as Hash keys.
-  #
   # @rbs other: untyped
   # @rbs return: bool
   def eql?: (untyped other) -> bool

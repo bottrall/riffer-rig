@@ -49,8 +49,6 @@ class Riffer::Rig::UI::Smoother
   # @rbs return: void
   def drain: () -> void
 
-  # Idempotent: the REPL's ensure path runs it even after a happy-path finish.
-  #
   # @rbs return: void
   def finish: () -> void
 

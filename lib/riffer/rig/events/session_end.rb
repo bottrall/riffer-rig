@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# Closes a session's stream.
 class Riffer::Rig::Events::SessionEnd < Riffer::Rig::Events::Event
   # @dynamic reason
   attr_reader :reason #: Symbol

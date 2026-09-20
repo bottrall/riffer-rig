@@ -1,6 +1,5 @@
 # Generated from lib/riffer/rig/events/skill_activated.rb with RBS::Inline
 
-# Reports a skill activated by command.
 class Riffer::Rig::Events::SkillActivated < Riffer::Rig::Events::Event
   # @dynamic name
   attr_reader name: String

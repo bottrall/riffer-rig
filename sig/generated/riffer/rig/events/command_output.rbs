@@ -1,6 +1,5 @@
 # Generated from lib/riffer/rig/events/command_output.rb with RBS::Inline
 
-# Carries a command's output text.
 class Riffer::Rig::Events::CommandOutput < Riffer::Rig::Events::Event
   # @dynamic command, text
   attr_reader command: String

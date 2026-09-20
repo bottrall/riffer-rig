@@ -73,6 +73,8 @@ class Riffer::Rig::REPL
   # @rbs prompt: String
   # @rbs return: void
   def run_turn(prompt)
+    # A hidden cursor can't flicker against the animator's erase-and-redraw
+    # churn.
     @cursor.hide
     start_animator
     @smoother.start
@@ -154,12 +156,11 @@ class Riffer::Rig::REPL
     "<skill name=\"#{name}\">\n#{body}\n</skill>"
   end
 
-  # Bypasses the renderer's tool-group state: these lines (errors, the exit
-  # line) can only follow prose, never land mid-group.
-  #
   # @rbs &block: () -> String
   # @rbs return: void
   def print_block(&)
+    # Bypasses the renderer's tool-group state: these lines (errors, the exit
+    # line) can only follow prose, never land mid-group.
     @output.puts
     @output.puts(yield)
     @output.flush
@@ -175,13 +176,12 @@ class Riffer::Rig::REPL
     start_animator
   end
 
-  # Every animator start sits behind a smoother drain: the smoother's backlog
-  # may still be trickling out from streamed prose, and spinner frames drawn
-  # mid-drain would carve `\r…\e[K` through a half-printed sentence.
-  #
   # @rbs mode: Symbol
   # @rbs return: void
   def start_animator(mode = :neutral)
+    # The smoother's backlog may still be trickling out from streamed prose,
+    # and spinner frames drawn mid-drain would carve `\r…\e[K` through a
+    # half-printed sentence.
     @smoother.drain
     @animator.start(mode)
   end
