@@ -33,6 +33,10 @@ Layout/RedundantLineBreak:
 
 Lint/UnusedMethodArgument:
   AllowUnusedKeywordArguments: true
+  Exclude:
+    # rbs-inline leaves a `_`-prefixed parameter untyped, so the null host
+    # keeps the contract's parameter names.
+    - "lib/riffer/rig/hosts/null.rb"
 
 Metrics:
   Enabled: false
@@ -45,9 +49,9 @@ Minitest/MultipleAssertions:
 
 Naming/PredicateMethod:
   Exclude:
-    # Host#confirm is a blocking prompt named by the host duck's contract, not
+    # Hosts::Base#confirm is a blocking prompt named by the host contract, not
     # a predicate.
-    - "lib/riffer/rig/host.rb"
+    - "lib/riffer/rig/hosts/*.rb"
 
 Style/ClassAndModuleChildren:
   EnforcedStyle: compact

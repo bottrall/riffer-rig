@@ -23,7 +23,7 @@
 <p class="lede">Every filesystem convention in one place. Builds a Runtime for a working directory; the runtime itself never learns where anything lives.</p>
 
 <h2 id="scope">Scope</h2>
-<p><code>Riffer::Rig::Loader</code>: discovery of <code>rig.rb</code> files and their trust, settings and credential resolution, the reload check and <code>/reload</code>, the session store and resume, and the one-call constructor <code>Loader.runtime</code>. Used by the terminal, the headless host and the ACP server; a Rails host skips it and registers objects directly. Files: <code>lib/riffer/rig/loader.rb</code>, <code>lib/riffer/rig/settings.rb</code> (reshaped), <code>lib/riffer/rig/trust.rb</code>, <code>lib/riffer/rig/store/jsonl.rb</code>, <code>lib/riffer/rig/commands/reload.rb</code>.</p>
+<p><code>Riffer::Rig::Loader</code>: discovery of <code>rig.rb</code> files and their trust, settings and credential resolution, the reload check and <code>/reload</code>, the session store and resume, and the one-call constructor <code>Loader.runtime</code>. Used by the terminal, the headless host and the ACP server; a Rails host skips it and registers objects directly. Files: <code>lib/riffer/rig/loader.rb</code>, <code>lib/riffer/rig/settings.rb</code> (reshaped), <code>lib/riffer/rig/trust.rb</code>, <code>lib/riffer/rig/stores/</code> (<code>base.rb</code>, <code>jsonl.rb</code>), <code>lib/riffer/rig/commands/reload.rb</code>.</p>
 <p><strong>Depends on:</strong> <a href="runtime.html">Runtime</a>, <a href="extensions.html">Extensions</a>, <a href="bundled.html">Bundled</a>, and the credential resolution rules in <a href="providers.html">Providers</a>. <strong>Depended on by:</strong> the three shipped hosts.</p>
 
 <h2 id="decisions">Decisions</h2>
@@ -147,9 +147,9 @@
 <h3>Runtime store and resume</h3>
 <ul>
   <li>The Loader takes a <code>store:</code> collaborator, mints the Runtime id, appends entries as they land, restores snapshots, and prunes nothing. Hosts never see the store; they only choose which session to drive. Embedders without a Loader get no store.</li>
-  <li><strong>Store duck:</strong> <code>append(id, entry)</code> (one entry hash, in order), <code>read(id)</code> (entries in order), <code>list(cwd: nil)</code> (header entries, optionally filtered by cwd), <code>delete(id)</code>. A Rails host implements it over its own tables or skips the Loader and serialises the snapshot directly.</li>
+  <li><strong>Store contract:</strong> the abstract class <code>Riffer::Rig::Stores::Base</code>, built the way <a href="extensions.html#host-interface"><code>Hosts::Base</code></a> is (every method raises <code>NotImplementedError</code>; <code>assert_implements</code> holds each subclass to all four): <code>append(id, entry)</code> (one entry hash, in order), <code>read(id)</code> (entries in order), <code>list(cwd: nil)</code> (header entries, optionally filtered by cwd), <code>delete(id)</code>. A Rails host subclasses it over its own tables or skips the Loader and serialises the snapshot directly.</li>
   <li><strong>Entries:</strong> <code>header</code> (<code>schema_version</code>, <code>id</code>, <code>cwd</code>, <code>created_at</code>, <code>model</code>, <code>riffer_rig_version</code>, <code>riffer_version</code>, <code>title</code> = the first user prompt truncated to one line), <code>message</code> (a riffer message <code>to_h</code>, appended via <code>runtime.on_message</code>), <code>model</code> (each <code>/model</code> change), <code>skill</code> (each activation). Restore folds entries into a snapshot: last <code>model</code> wins, <code>skill</code> accumulates, <code>message</code> is the history. New entry types can be added without a schema bump.</li>
-  <li><strong>Default store: JSONL</strong> at <code>~/.riffer/sessions/&lt;cwd-slug&gt;/&lt;uuid&gt;.jsonl</code>, one entry per line, appended with <code>File.write(mode: "a")</code>. Zero dependencies, <code>cat</code>- and <code>jq</code>-able; a crash loses at most one line. The slug directory makes per-project listing a directory read, but the header's <code>cwd</code> is the truth, not the path. SQLite is not in core; it belongs in an extension gem such as <code>riffer-rig-sqlite</code>.</li>
+  <li><strong>Default store: <code>Stores::JSONL</code></strong> at <code>~/.riffer/sessions/&lt;cwd-slug&gt;/&lt;uuid&gt;.jsonl</code>, one entry per line, appended with <code>File.write(mode: "a")</code>. Zero dependencies, <code>cat</code>- and <code>jq</code>-able; a crash loses at most one line. The slug directory makes per-project listing a directory read, but the header's <code>cwd</code> is the truth, not the path. SQLite is not in core; it belongs in an extension gem such as <code>riffer-rig-sqlite</code>.</li>
   <li><strong>Restore</strong> reads the entries, folds them, and builds the Runtime with <code>snapshot:</code> plus today's extensions from <code>rig.rb</code>; the Runtime's restore rules (heal orphaned tail tool calls, saved model only with credentials, missing skills dropped) apply. Nothing blocks a resume.</li>
   <li><strong>Selection</strong> the Loader offers hosts: <code>continue(cwd:)</code> (most recently updated session whose header cwd matches, or nil), <code>resume(id)</code> (or nil if unknown), <code>list(cwd:, all: false)</code> for a picker, <code>delete(id)</code>.</li>
   <li><strong>Policies:</strong> every Loader-built session is saved, including <code>-p</code> one-shots; opt out per run with <code>store: nil</code> (<code>--no-save</code>) or globally with <code>"sessions": {"save": false}</code>; keep forever, delete only from the picker; titles are the first prompt, no model call; scoped per cwd by default.</li>
@@ -161,12 +161,12 @@
 <div class="table-wrap"><table>
   <tr><th>Surface</th><th>Shape</th></tr>
   <tr><td><code>Loader.runtime(cwd:, host:, **keywords)</code></td><td>builds and returns a Runtime in one call</td></tr>
-  <tr><td><code>Loader.new(cwd:, host:, store: Store::JSONL.new)</code></td><td>the object; <code>runtime(**keywords)</code>, <code>reload(runtime, force: false)</code>, <code>continue</code>, <code>resume(id)</code>, <code>list(all:)</code>, <code>delete(id)</code></td></tr>
+  <tr><td><code>Loader.new(cwd:, host:, store: Stores::JSONL.new)</code></td><td>the object; <code>runtime(**keywords)</code>, <code>reload(runtime, force: false)</code>, <code>continue</code>, <code>resume(id)</code>, <code>list(all:)</code>, <code>delete(id)</code></td></tr>
   <tr><td>Strip and override keywords</td><td><code>model:</code>, <code>extensions: false</code>, <code>skills: false</code>, <code>agents_md: false</code>, <code>tools: [...]</code>, <code>max_steps:</code>, <code>reload: :auto | :manual</code>, <code>snapshot:</code>; each maps to a Runtime keyword or a Loader step</td></tr>
   <tr><td>Files</td><td><code>~/.riffer/{settings.json,auth.json,trust.json,rig.rb,sessions/}</code>, <code>&lt;cwd&gt;/.riffer/{settings.json,rig.rb}</code></td></tr>
   <tr><td>Settings keys owned here</td><td><code>reload</code>, <code>sessions.save</code>, <code>extensions.autoload</code></td></tr>
   <tr><td>Commands installed</td><td><code>/reload</code></td></tr>
-  <tr><td>Store duck</td><td><code>append</code>, <code>read</code>, <code>list</code>, <code>delete</code></td></tr>
+  <tr><td><code>Stores::Base</code></td><td><code>append</code>, <code>read</code>, <code>list</code>, <code>delete</code></td></tr>
 </table></div>
 
 <h2 id="enshrines">Enshrines into</h2>
@@ -176,7 +176,7 @@
   <tr><td>Settings</td><td><code>lib/riffer/rig/settings.rb</code></td><td><code>docs/CONFIGURATION.md</code>; README Configuration</td></tr>
   <tr><td>Credentials</td><td><code>lib/riffer/rig/loader.rb</code> calling <code>credentials.rb</code></td><td><code>docs/providers/PROVIDERS.md</code></td></tr>
   <tr><td>Reload</td><td><code>lib/riffer/rig/loader.rb</code>, <code>commands/reload.rb</code></td><td><code>docs/RELOADING.md</code></td></tr>
-  <tr><td>Store and resume</td><td><code>lib/riffer/rig/store/jsonl.rb</code>, <code>loader.rb</code></td><td><code>docs/SESSIONS.md</code></td></tr>
+  <tr><td>Store and resume</td><td><code>lib/riffer/rig/stores/</code> (<code>base.rb</code>, <code>jsonl.rb</code>), <code>loader.rb</code></td><td><code>docs/SESSIONS.md</code></td></tr>
 </table></div>
 
 <h2 id="provenance">Provenance</h2>

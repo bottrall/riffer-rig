@@ -1,0 +1,26 @@
+# Generated from lib/riffer/rig/hosts/null.rb with RBS::Inline
+
+class Riffer::Rig::Hosts::Null < Riffer::Rig::Hosts::Base
+  # @rbs return: Set[Symbol]
+  def capabilities: () -> Set[Symbol]
+
+  # @rbs question: String?
+  # @rbs options: Array[String]?
+  # @rbs secret: bool
+  # @rbs return: String?
+  def ask: (?String? question, ?options: Array[String]?, ?secret: bool) -> String?
+
+  # @rbs question: String?
+  # @rbs return: bool
+  def confirm: (?String? question) -> bool
+
+  # @rbs message: String?
+  # @rbs level: Symbol
+  # @rbs return: void
+  def notify: (?String? message, ?level: Symbol) -> void
+
+  # @rbs label: String?
+  # @rbs &block: ? () -> void
+  # @rbs return: void
+  def progress: (?String? label) ?{ () -> void } -> void
+end

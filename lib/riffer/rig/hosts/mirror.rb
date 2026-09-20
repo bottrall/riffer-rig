@@ -1,15 +1,16 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::NotifyingHost
-  # @rbs @host: Riffer::Rig::Host
+class Riffer::Rig::Hosts::Mirror < Riffer::Rig::Hosts::Base
+  # @rbs @host: Riffer::Rig::Hosts::Base
   # @rbs @queue: Array[Riffer::Rig::Events::Event]
 
   # @dynamic capabilities
   attr_reader :capabilities #: Set[Symbol]
 
-  # @rbs host: Riffer::Rig::Host
+  # @rbs host: Riffer::Rig::Hosts::Base
   # @rbs return: void
   def initialize(host)
+    super()
     @host = host
     @capabilities = host.capabilities
     @queue = []
@@ -38,7 +39,7 @@ class Riffer::Rig::NotifyingHost
   end
 
   # @rbs label: String?
-  # @rbs &block: ^() -> void
+  # @rbs &block: ? () -> void
   # @rbs return: void
   def progress(label = nil, &block)
     @host.progress(label) { block&.call }

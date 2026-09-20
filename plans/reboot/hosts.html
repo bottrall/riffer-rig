@@ -20,11 +20,11 @@
 </nav>
 
 <h1>Hosts</h1>
-<p class="lede">Three thin clients over the same Runtime: the terminal, the headless printer and the ACP adapter. Each implements the Host duck and renders the one event stream.</p>
+<p class="lede">Three thin clients over the same Runtime: the terminal, the headless printer and the ACP adapter. Each supplies a <code>Hosts::Base</code> subclass and renders the one event stream.</p>
 
 <h2 id="scope">Scope</h2>
 <p><code>exe/riffer</code> and the three host namespaces <code>Riffer::Rig::Terminal</code>, <code>Riffer::Rig::Headless</code>, <code>Riffer::Rig::ACP</code>, plus the standalone <code>acp-sdk</code> gem. The existing <code>ui/</code> code (renderer, animator, banner, theme, palette, pixels, riffy) moves under <code>Terminal</code>. Files: <code>exe/riffer</code>, <code>lib/riffer/rig/cli.rb</code> (the dispatcher), <code>lib/riffer/rig/terminal.rb</code> and <code>terminal/</code>, <code>lib/riffer/rig/headless.rb</code>, <code>lib/riffer/rig/acp.rb</code>.</p>
-<p><strong>Depends on:</strong> every unit above; hosts use only the public Runtime, Host, Loader and Events API. <strong>Depended on by:</strong> nothing.</p>
+<p><strong>Depends on:</strong> every unit above; hosts use only the public Runtime, Hosts, Loader and Events API. <strong>Depended on by:</strong> nothing.</p>
 
 <h2 id="decisions">Decisions</h2>
 
@@ -48,7 +48,7 @@
 
 <ul>
   <li><code>exe/riffer</code> is a small dispatcher: no arguments → Terminal; <code>-p</code>/<code>--print</code> → Headless; <code>acp</code> → ACP. <code>acp</code> is the only subcommand; there is no <code>riffer sessions</code>.</li>
-  <li>A host uses only the public Runtime, Host, Loader and Events API, <strong>enforced by a test</strong> that the <code>Terminal</code>, <code>Headless</code> and <code>ACP</code> namespaces reference no other <code>Riffer::Rig</code> constant. Anything a host needs becomes a Runtime or Loader feature, so embedders get it too.</li>
+  <li>A host uses only the public Runtime, Hosts, Loader and Events API, <strong>enforced by a test</strong> that the <code>Terminal</code>, <code>Headless</code> and <code>ACP</code> namespaces reference no other <code>Riffer::Rig</code> constant. Anything a host needs becomes a Runtime or Loader feature, so embedders get it too.</li>
   <li>Every CLI flag is a Runtime or Loader keyword first; the host only translates argv.</li>
   <li>Hosts do nothing for reload; they get it through the Loader-built Runtime.</li>
 </ul>
