@@ -41,26 +41,4 @@ describe Riffer::Rig do
   ensure
     drop('test_mismatch')
   end
-
-  it 'returns no credentials outside a prompt' do
-    assert_nil Riffer::Rig.credentials(:anthropic)
-  end
-
-  it 'returns the current Runtime credentials inside a prompt' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', credentials: { anthropic: { api_key: 'sk-ant-test' } })
-    runtime.agent.provider.stub_response('All done.')
-    values = nil
-    runtime.prompt('hello') { values = Riffer::Rig.credentials(:anthropic) }
-
-    assert_equal({ api_key: 'sk-ant-test' }, values)
-  end
-
-  it 'returns no credentials for a provider the current Runtime holds none for' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', credentials: { anthropic: { api_key: 'sk-ant-test' } })
-    runtime.agent.provider.stub_response('All done.')
-    values = :unset
-    runtime.prompt('hello') { values = Riffer::Rig.credentials(:openai) }
-
-    assert_nil values
-  end
 end

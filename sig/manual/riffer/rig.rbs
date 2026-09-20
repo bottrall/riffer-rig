@@ -1,12 +1,11 @@
-# rbs-inline emits the `def self.extension` / `def self.extensions` /
-# `def self.credentials` declarations in `sig/generated/riffer/rig.rbs`, but
-# Steep binds them to the file that first declares the module in RBS
-# (`lib/riffer/rig/version.rb`'s empty reopen), so it reports
-# MethodDefinitionMissing at that reopen. Making the generated declarations
-# visible there without duplicating them needs a `...` alias per method.
+# rbs-inline emits the `def self.extension` / `def self.extensions`
+# declarations in `sig/generated/riffer/rig.rbs`, but Steep binds them to the
+# file that first declares the module in RBS (`lib/riffer/rig/version.rb`'s
+# empty reopen), so it reports MethodDefinitionMissing at that reopen. Making
+# the generated declarations visible there without duplicating them needs a
+# `...` alias per method.
 
 module Riffer::Rig
   def self.extension: ...
   def self.extensions: ...
-  def self.credentials: ...
 end

@@ -41,7 +41,7 @@
 <ul>
   <li>extensions that touch the UI go through a host interface the terminal implements and an embedding host implements differently or ignores (<a href="extensions.html#host-interface">Extensions: Host interface</a>);</li>
   <li>extension discovery (scanning config and project directories) lives in the Loader; the runtime only accepts registered objects (<a href="loader.html#discovery">Loader: discovery</a>);</li>
-  <li>global state (riffer registries, config singletons) allows several isolated agents in one process (<a href="runtime.html#credentials">Runtime: per-runtime credentials</a>).</li>
+  <li>global state (riffer registries, config singletons) allows several agents in one process: each Runtime builds its own agent and registrar, and provider credentials are one set per process (<a href="runtime.html#contract">Runtime: contract</a>).</li>
 </ul>
 <p>Discipline: the runtime assumes no TTY, and no further embedding accommodation is made until a real host exists. No embedding host is planned yet; the first one will be whatever real Ruby app needs it.</p>
 
@@ -144,7 +144,7 @@
 
 <div class="table-wrap"><table>
   <tr><th>Unit</th><th>Scope</th></tr>
-  <tr><td><a href="runtime.html">Runtime</a></td><td><code>Riffer::Rig::Runtime</code>, the runtime object. Loop, system message assembly and the base prompt, events, cancel, commands, per-runtime credentials, tally, <code>/model</code>, snapshot, <code>rebuild</code>.</td></tr>
+  <tr><td><a href="runtime.html">Runtime</a></td><td><code>Riffer::Rig::Runtime</code>, the runtime object. Loop, system message assembly and the base prompt, events, cancel, commands, credentials, tally, <code>/model</code>, snapshot, <code>rebuild</code>.</td></tr>
   <tr><td><a href="extensions.html">Extensions</a></td><td>The registrar block, the eight seams, commands, handlers, prompt sections, the Host interface, error isolation, <code>requires:</code>, the gem convention.</td></tr>
   <tr><td><a href="bundled.html">Bundled</a></td><td>read/write/edit/bash with their guidance sentences, AGENTS.md, Agent Skills, the MCP client; how a bundled item is disabled or replaced.</td></tr>
   <tr><td><a href="loader.html">Loader</a></td><td><code>rig.rb</code> discovery and trust, settings precedence, credential resolution, reload trigger and <code>/reload</code>, the session store and resume.</td></tr>

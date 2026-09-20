@@ -18,13 +18,4 @@ module Riffer::Rig
 
   # @rbs return: Hash[String, Riffer::Rig::Extension]
   def self.extensions: () -> Hash[String, Riffer::Rig::Extension]
-
-  # Returns the credential values the Runtime prompting on the calling fiber
-  # holds for one provider; nil outside a prompt or when it holds none.
-  #
-  #   Riffer::Rig.credentials(:acme) # => { api_key: '...' }
-  #
-  # @rbs id: Symbol
-  # @rbs return: Hash[Symbol, String]?
-  def self.credentials: (Symbol id) -> Hash[Symbol, String]?
 end

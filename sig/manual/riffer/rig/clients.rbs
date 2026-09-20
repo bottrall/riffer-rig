@@ -1,8 +1,0 @@
-# rbs-inline does not emit `extend self` for modules that use it, so their
-# instance methods aren't visible as singleton methods (e.g.
-# `Riffer::Rig::Clients.install`). Reopening the module here to `extend` itself
-# restores that, matching the runtime behaviour.
-
-module Riffer::Rig::Clients
-  extend ::Riffer::Rig::Clients
-end
