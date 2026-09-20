@@ -8,7 +8,11 @@ describe Riffer::Rig::CLI do
     with_clean_global_state do
       ENV['ANTHROPIC_API_KEY'] = 'sk-ant-test'
 
-      exit_code = Riffer::Rig::CLI.start(output: StringIO.new, input: StringIO.new(''))
+      exit_code = Riffer::Rig::CLI.start(
+        output: StringIO.new,
+        input: StringIO.new(''),
+        model: 'anthropic/claude-sonnet-4-6'
+      )
 
       assert_equal 0, exit_code
     end

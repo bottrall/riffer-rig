@@ -5,26 +5,21 @@ require 'io/console'
 module Riffer::Rig::CLI
   extend self
 
-  PROVIDER_URLS = {
-    'anthropic' => 'https://console.anthropic.com/settings/keys',
-    'openai' => 'https://platform.openai.com/api-keys',
-    'gemini' => 'https://aistudio.google.com/app/apikey',
-    'openrouter' => 'https://openrouter.ai/keys'
-  }.freeze #: Hash[String, String]
-
   # @rbs output: IO
   # @rbs input: IO
+  # @rbs model: String
   # @rbs return: Integer
-  def start(output: $stdout, input: $stdin)
+  def start(output: $stdout, input: $stdin, model: Riffer::Rig::Settings.model)
     theme = Riffer::Rig::UI::Theme.for(output)
 
-    model    = Riffer::Rig::Settings.model
     provider = Riffer::Rig::Settings.provider_for(model)
 
-    api_key = (provider && Riffer::Rig::Credentials.api_key_for(provider)) || onboard(provider, theme, output:, input:)
-    return 1 if api_key.nil?
+    if provider
+      values = credentials_for(provider, theme, output:, input:)
+      return 1 if values.nil?
 
-    configure_provider(provider, api_key)
+      Riffer::Rig::Credentials.apply(provider, values)
+    end
 
     agent    = Riffer::Rig::CodingAgent.new
     animator = Riffer::Rig::UI::Animator.new(io: output, theme:)
@@ -40,48 +35,56 @@ module Riffer::Rig::CLI
 
   private
 
-  # @rbs provider: String?
-  # @rbs api_key: String
-  # @rbs return: void
-  def configure_provider(provider, api_key)
-    case provider
-    when 'anthropic'  then Riffer.configure { |c| c.anthropic.api_key  = api_key }
-    when 'openai'     then Riffer.configure { |c| c.openai.api_key     = api_key }
-    when 'gemini'     then Riffer.configure { |c| c.gemini.api_key     = api_key }
-    when 'openrouter' then Riffer.configure { |c| c.openrouter.api_key = api_key }
-    end
-  end
-
-  # @rbs provider: String?
+  # @rbs provider: String
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs output: IO
   # @rbs input: IO
-  # @rbs return: String?
-  def onboard(provider, theme, output:, input:)
-    url  = (provider && PROVIDER_URLS[provider]) || 'your provider'
-    name = provider ? provider.capitalize : 'provider'
+  # @rbs return: Hash[Symbol, String]?
+  def credentials_for(provider, theme, output:, input:)
+    resolution = Riffer::Rig::Credentials.resolve(provider, host: Riffer::Rig::Hosts::Null.new)
+    return resolution.values if resolution.missing.empty?
+
+    onboard(provider, resolution, theme, output:, input:)
+  end
+
+  # @rbs provider: String
+  # @rbs resolution: Riffer::Rig::Credentials::Resolution
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs output: IO
+  # @rbs input: IO
+  # @rbs return: Hash[Symbol, String]?
+  def onboard(provider, resolution, theme, output:, input:)
+    recipe = Riffer::Rig::Recipes.for(provider)
+    missing = recipe[:fields].select { |field| resolution.missing.include?(field[:name]) }
 
     output.puts(theme.cyan('♪ welcome to riffer-rig ♪'))
-    output.puts(theme.grey("No #{name} API key found. Create one at #{url}"))
-    output.print("#{theme.pink('›')} Paste your #{name} API key #{theme.grey('(hidden)')}: ")
+    output.puts(theme.grey("No #{provider} credentials found. Create them at #{recipe[:url] || 'your provider'}"))
 
-    key = read_secret(input).to_s.strip
-    output.puts
-
-    if key.empty?
-      output.puts(theme.grey("No key entered. Set #{env_var_for(provider)} or re-run riffer to try again."))
+    answers = missing.to_h { |field| [field[:name], prompt(provider, field, theme, output:, input:)] }
+    if answers.values.any?(&:empty?)
+      env_vars = missing.flat_map { |field| field[:env] }.join(', ')
+      output.puts(theme.grey("Nothing entered. Set #{env_vars} or re-run riffer to try again."))
       return nil
     end
 
-    Riffer::Rig::Credentials.save_api_key(provider, key) if provider
-    output.puts(theme.grey("Saved to #{Riffer::Rig::Credentials::PATH} (permissions 600)."))
-    key
+    Riffer::Rig::Credentials.store(provider, answers)
+    output.puts(theme.grey("Saved under #{File.dirname(Riffer::Rig::Credentials::PATH)} (auth.json permissions 600)."))
+    resolution.values.merge(answers)
   end
 
-  # @rbs provider: String?
+  # @rbs provider: String
+  # @rbs field: Riffer::Rig::Recipes::field
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs output: IO
+  # @rbs input: IO
   # @rbs return: String
-  def env_var_for(provider)
-    (provider && Riffer::Rig::Credentials::PROVIDER_ENV_VARS[provider]) || 'the appropriate API key env var'
+  def prompt(provider, field, theme, output:, input:)
+    hint = field[:secret] ? " #{theme.grey('(hidden)')}" : ''
+    output.print("#{theme.pink('›')} Paste your #{provider} #{field[:name]}#{hint}: ")
+
+    answer = (field[:secret] ? read_secret(input) : input.gets).to_s.strip
+    output.puts
+    answer
   end
 
   # @rbs input: IO
