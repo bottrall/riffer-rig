@@ -1,4 +1,3 @@
 #!/usr/bin/env bash
-# Run RuboCop. Any arguments are forwarded, e.g. `bin/lint -a lib/`.
 set -e
 exec bundle exec rake rubocop RUBOCOP_OPTS="$*"

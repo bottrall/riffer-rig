@@ -3,13 +3,6 @@
 module Riffer::Rig
   self.@extensions: Hash[String, Riffer::Rig::Extension]
 
-  # Records an extension block in the process registry and returns the
-  # extension object. Re-recording a name replaces the block.
-  #
-  #   Riffer::Rig.extension('git') do |rig|
-  #     rig.tool GitLog
-  #   end
-  #
   # @rbs name: String
   # @rbs requires: String?
   # @rbs &block: (::Riffer::Rig::Registrar) -> void

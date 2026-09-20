@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# Animated output is gated behind an interactive, colour-enabled TTY, so piped
-# or tested runs stay silent and escape-free.
 class Riffer::Rig::UI::Animator
   REVEAL_FRAME_SECONDS = 0.05 #: Float
 
@@ -41,8 +39,6 @@ class Riffer::Rig::UI::Animator
     @phrase = nil
   end
 
-  # When not on a TTY, prints the final frame once instead of animating.
-  #
   # @rbs frames: Array[Array[String]]
   # @rbs return: void
   def reveal(frames)
@@ -104,7 +100,7 @@ class Riffer::Rig::UI::Animator
   # @rbs return: void
   def animate
     tick = 0
-    roll_at = 0.0 # force an immediate phrase roll when entering reasoning mode
+    roll_at = 0.0
     until @stop
       roll_at = roll_phrase(roll_at)
       @io.print("\r  #{equalizer(tick, label)}\e[K")
@@ -114,8 +110,6 @@ class Riffer::Rig::UI::Animator
     end
   end
 
-  # Re-rolls both phrase and duration whenever the reasoning tick expires.
-  #
   # @rbs roll_at: Float
   # @rbs return: Float
   def roll_phrase(roll_at)
@@ -126,11 +120,10 @@ class Riffer::Rig::UI::Animator
     now + roll_rand
   end
 
-  # Range rand returns nil for an empty range; this one is a non-empty constant.
-  #
   # @rbs return: Integer
   def roll_rand
     x = rand(REASONING_TICK_RANGE)
+    # Range rand returns nil for an empty range; this one is a non-empty constant.
     x || 0
   end
 

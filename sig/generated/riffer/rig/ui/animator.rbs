@@ -1,7 +1,5 @@
 # Generated from lib/riffer/rig/ui/animator.rb with RBS::Inline
 
-# Animated output is gated behind an interactive, colour-enabled TTY, so piped
-# or tested runs stay silent and escape-free.
 class Riffer::Rig::UI::Animator
   REVEAL_FRAME_SECONDS: Float
 
@@ -34,8 +32,6 @@ class Riffer::Rig::UI::Animator
   # @rbs return: void
   def initialize: (?io: IO, ?theme: Riffer::Rig::UI::Theme) -> void
 
-  # When not on a TTY, prints the final frame once instead of animating.
-  #
   # @rbs frames: Array[Array[String]]
   # @rbs return: void
   def reveal: (Array[Array[String]] frames) -> void
@@ -57,14 +53,10 @@ class Riffer::Rig::UI::Animator
   # @rbs return: void
   def animate: () -> void
 
-  # Re-rolls both phrase and duration whenever the reasoning tick expires.
-  #
   # @rbs roll_at: Float
   # @rbs return: Float
   def roll_phrase: (Float roll_at) -> Float
 
-  # Range rand returns nil for an empty range; this one is a non-empty constant.
-  #
   # @rbs return: Integer
   def roll_rand: () -> Integer
 

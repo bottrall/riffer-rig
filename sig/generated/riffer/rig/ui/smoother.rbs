@@ -1,19 +1,15 @@
 # Generated from lib/riffer/rig/ui/smoother.rb with RBS::Inline
 
-# Paces streamed text onto a 60fps cadence so API bursts read as continuous
-# typing. On a non-TTY output it is transparent: writes pass through
-# synchronously and no thread ever runs.
 class Riffer::Rig::UI::Smoother
   TICK_SECONDS: Float
 
-  # A frame removes only a sixtieth of the remaining backlog — an exponential
-  # decay whose tail keeps text flowing for a second or more, so the reveal
-  # never visibly stops between chunks. The carry accrues sub-character
-  # releases so the effective rate can settle at the provider's throughput;
-  # the floor is fractional (10 chars/s) so it can't over-drain a backlog
-  # that's trickling in slower than 60 chars/s.
+  # Releasing a fraction of the backlog, not a fixed rate, makes the reveal an
+  # exponential decay: its tail keeps text flowing for a second or more, so
+  # output never visibly stops between chunks.
   BACKLOG_FRACTION_PER_TICK: Rational
 
+  # Fractional (10 chars/s) so the floor can't over-drain a backlog that's
+  # trickling in slower than 60 chars/s.
   MIN_CHARS_PER_TICK: Rational
 
   @newline_pending: bool
@@ -47,21 +43,12 @@ class Riffer::Rig::UI::Smoother
   # @rbs return: self
   def <<: (String content) -> self
 
-  # The write sits inside the mutex so a concurrent tick can't reorder a drain.
-  #
   # @rbs return: void
   def tick: () -> void
 
-  # Called before non-prose output so printed order matches stream order. The
-  # backlog is flushed, then any partial prose block the model left without a
-  # trailing newline gets one, so block spacing never depends on the model's
-  # last character.
-  #
   # @rbs return: void
   def drain: () -> void
 
-  # Idempotent: the REPL's ensure path runs it even after a happy-path finish.
-  #
   # @rbs return: void
   def finish: () -> void
 

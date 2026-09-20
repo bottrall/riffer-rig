@@ -1,7 +1,3 @@
-# Release and publish. release-please keeps a release PR open on main; merging
-# it tags vX.Y.Z and creates the GitHub Release, and the publish job pushes the
-# gem to RubyGems.org via Trusted Publishing (no API key).
-#
 # The publish job lives in this workflow rather than on a `release` event
 # because releases created with the default GITHUB_TOKEN do not trigger other
 # workflows. The RubyGems trusted publisher is pinned to this file name and the

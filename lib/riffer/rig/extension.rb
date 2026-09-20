@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-# An extension recorded by <tt>Riffer::Rig.extension</tt>: a name, an optional
-# Gem::Requirement on riffer-rig, and the block that runs against a Runtime's
-# registrar. The process registry holds these objects; Runtime.new runs their
-# blocks.
 class Riffer::Rig::Extension
   # @rbs @name: String
   # @rbs @requires: Gem::Requirement?

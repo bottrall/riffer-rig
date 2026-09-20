@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# USD per million tokens, parsed from a model's entry in the settings file.
 class Riffer::Rig::Settings::Pricing
   # @dynamic input, output, cache_write, cache_read
   attr_reader :input, :output, :cache_write, :cache_read #: Float

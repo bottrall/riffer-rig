@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-# Wraps the given host and mirrors every notify into a rig-level
-# Riffer::Rig::Events::Notify on the next prompt's stream, so stream consumers see
-# extension errors too.
 # @rbs!
 #   interface _Host
 #     def ask: (?String?, ?options: Array[String]?, ?secret: bool) -> String?

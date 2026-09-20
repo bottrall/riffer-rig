@@ -15,8 +15,6 @@ class Riffer::Rig::Events::TurnEnd < Riffer::Rig::Events::Event
     freeze
   end
 
-  # The USD cost of the turn's usage, or nil when pricing is missing.
-  #
   # @rbs return: Float?
   def cost
     usage&.cost

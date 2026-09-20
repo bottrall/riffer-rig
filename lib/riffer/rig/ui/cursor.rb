@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# Hides the terminal cursor while a turn is in flight: a hidden cursor can't
-# flicker against the animator's erase-and-redraw churn.
 class Riffer::Rig::UI::Cursor
   HIDE = "\e[?25l" #: String
 

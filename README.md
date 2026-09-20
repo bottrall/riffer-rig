@@ -28,17 +28,41 @@ riffer
 
 ### Authentication
 
-`riffer-rig` talks to Anthropic. Provide your API key in either of two ways:
+`riffer-rig` talks to the provider named by the model's prefix — `anthropic/claude-sonnet-4-6`, the default, means Anthropic. Provide that provider's API key in either of two ways:
 
-- Set the `ANTHROPIC_API_KEY` environment variable, or
+- Set the provider's environment variable, or
 - Run `riffer` and paste your key when prompted on first launch. It is saved to `~/.riffer/auth.json` (file permissions `600`) for subsequent runs.
 
-Create a key at https://console.anthropic.com/settings/keys.
+The environment variable wins when both are set.
+
+| Provider     | Environment variable | Create a key                                |
+| ------------ | -------------------- | ------------------------------------------- |
+| `anthropic`  | `ANTHROPIC_API_KEY`  | https://console.anthropic.com/settings/keys |
+| `openai`     | `OPENAI_API_KEY`     | https://platform.openai.com/api-keys        |
+| `gemini`     | `GEMINI_API_KEY`     | https://aistudio.google.com/app/apikey      |
+| `openrouter` | `OPENROUTER_API_KEY` | https://openrouter.ai/keys                  |
 
 ### Configuration
 
-- `RIFFER_MODEL` — override the default model.
 - `AGENTS.md` — if present, an `AGENTS.md` in the current working directory and/or a global `~/.riffer/AGENTS.md` is loaded as additional context.
+- `~/.riffer/settings.json` — optional user settings. Every key is optional:
+
+  ```json
+  {
+    "model": "anthropic/claude-sonnet-4-6",
+    "reasoning": "low",
+    "models": {
+      "anthropic/claude-sonnet-4-6": {
+        "input": 3.0,
+        "output": 15.0,
+        "cache_write": 3.75,
+        "cache_read": 0.3
+      }
+    }
+  }
+  ```
+
+  `models` holds pricing in USD per million tokens; a model without an entry shows no cost. `reasoning` is translated to the provider's own parameter — Anthropic accepts `low`, `medium`, `high`, `xhigh` and `max`; OpenAI and OpenRouter accept `low`, `medium`, `high` and `xhigh`. Omitting it, or supplying an unrecognised value, leaves the model's default reasoning behaviour unchanged.
 
 ## Development
 

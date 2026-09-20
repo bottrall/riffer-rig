@@ -13,13 +13,6 @@ module Riffer::Rig
   # @rbs self.@extensions: Hash[String, Riffer::Rig::Extension]
   @extensions = {} #: Hash[String, Riffer::Rig::Extension]
 
-  # Records an extension block in the process registry and returns the
-  # extension object. Re-recording a name replaces the block.
-  #
-  #   Riffer::Rig.extension('git') do |rig|
-  #     rig.tool GitLog
-  #   end
-  #
   # @rbs name: String
   # @rbs requires: String?
   # @rbs &block: (::Riffer::Rig::Registrar) -> void
@@ -31,6 +24,8 @@ module Riffer::Rig
             "extension #{name} requires riffer-rig #{ext.requires}, found #{Riffer::Rig::VERSION}"
     end
 
+    # Keyed by name so reloading a file replaces its block rather than
+    # duplicating it.
     @extensions[name] = ext
   end
 

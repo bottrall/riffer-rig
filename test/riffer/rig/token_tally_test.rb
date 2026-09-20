@@ -81,7 +81,6 @@ describe Riffer::Rig::TokenTally do
 
   it 'estimated cost uses pricing' do
     tally = Riffer::Rig::TokenTally.new(pricing: SONNET_PRICING)
-    # 1M input @ $3.0/M + 1M output @ $15.0/M = $18.0
     tally.add(usage(input: 1_000_000, output: 1_000_000))
 
     assert_in_delta 18.0, tally.estimated_cost, 0.0001
@@ -89,7 +88,6 @@ describe Riffer::Rig::TokenTally do
 
   it 'estimated cost includes cache tokens' do
     tally = Riffer::Rig::TokenTally.new(pricing: SONNET_PRICING)
-    # 1M cache_write @ $3.75/M + 1M cache_read @ $0.30/M = $4.05
     tally.add(usage(input: 0, output: 0, cache_write: 1_000_000, cache_read: 1_000_000))
 
     assert_in_delta 4.05, tally.estimated_cost, 0.0001

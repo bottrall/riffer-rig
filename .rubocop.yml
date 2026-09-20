@@ -45,9 +45,8 @@ Minitest/MultipleAssertions:
 
 Naming/PredicateMethod:
   Exclude:
-    # Files implementing a duck type whose method names are fixed by the
-    # duck's public contract, not by Ruby predicate semantics:
-    #   - Host#confirm is a blocking prompt, not a predicate.
+    # Host#confirm is a blocking prompt named by the host duck's contract, not
+    # a predicate.
     - "lib/riffer/rig/host.rb"
 
 Style/ClassAndModuleChildren:

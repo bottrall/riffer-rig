@@ -1,4 +1,3 @@
-# Download sources
 sources:
   # Pinned so an upstream push can't break typecheck with no gem change.
   - type: git
@@ -7,5 +6,4 @@ sources:
     revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
     repo_dir: gems
 
-# A directory to install the downloaded RBSs
 path: .gem_rbs_collection

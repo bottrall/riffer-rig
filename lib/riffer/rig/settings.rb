@@ -3,36 +3,6 @@
 require 'json'
 require 'fileutils'
 
-# Reads and writes the riffer-rig user settings file at
-# <tt>~/.riffer/settings.json</tt>.
-#
-# Example file:
-#
-#   {
-#     "model": "anthropic/claude-sonnet-4-6",
-#     "reasoning": "low",
-#     "models": {
-#       "anthropic/claude-sonnet-4-6": {
-#         "input": 3.0,
-#         "output": 15.0,
-#         "cache_write": 3.75,
-#         "cache_read": 0.3
-#       }
-#     }
-#   }
-#
-# All keys are optional. Missing pricing means cost display is suppressed.
-# <tt>"reasoning"</tt> is translated to the appropriate provider-specific
-# parameter on each API call; accepted values depend on the provider:
-#
-# - Anthropic: <tt>"low"</tt>, <tt>"medium"</tt>, <tt>"high"</tt>,
-#   <tt>"xhigh"</tt>, <tt>"max"</tt>
-# - OpenAI / OpenRouter: <tt>"low"</tt>, <tt>"medium"</tt>, <tt>"high"</tt>,
-#   <tt>"xhigh"</tt>
-#
-# Omitting the key (or supplying an unrecognised value) leaves the model's
-# default reasoning behaviour unchanged.
-#
 module Riffer::Rig::Settings
   extend self
 
@@ -46,17 +16,12 @@ module Riffer::Rig::Settings
     'openrouter' => %w[low medium high xhigh].freeze
   }.freeze #: Hash[String, Array[String]]
 
-  # Returns the configured model string, or +DEFAULT_MODEL+ if not set.
-  #
   # @rbs path: String
   # @rbs return: String
   def model(path: PATH)
     read(path).model || DEFAULT_MODEL
   end
 
-  # Returns model options for the configured model and reasoning level, ready
-  # to pass directly to the Riffer agent's +model_options+.
-  #
   # @rbs path: String
   # @rbs return: Hash[Symbol, untyped]
   def model_options(path: PATH)
@@ -64,18 +29,12 @@ module Riffer::Rig::Settings
     base_options(provider).merge(reasoning_options(reasoning_for(path:, provider:), provider))
   end
 
-  # Returns the provider prefix for +model_string+, e.g. <tt>"anthropic"</tt>
-  # for <tt>"anthropic/claude-sonnet-4-6"</tt>. Returns +nil+ if the model
-  # string contains no slash.
-  #
   # @rbs model_string: String
   # @rbs return: String?
   def provider_for(model_string)
     model_string.split('/', 2).first if model_string.include?('/')
   end
 
-  # Returns the pricing for +model+, or +nil+ if not configured.
-  #
   # @rbs model: String
   # @rbs path: String
   # @rbs return: Pricing?
@@ -102,9 +61,6 @@ module Riffer::Rig::Settings
     valid_levels.include?(level) ? level : nil
   end
 
-  # Maps a reasoning level to the provider-specific model option hash expected
-  # by Riffer. Returns an empty hash when +level+ is +nil+.
-  #
   # @rbs level: String?
   # @rbs provider: String?
   # @rbs return: Hash[Symbol, untyped]
@@ -121,9 +77,6 @@ module Riffer::Rig::Settings
     end
   end
 
-  # The parsed settings file, or an empty document when the file is absent or
-  # malformed.
-  #
   # @rbs path: String
   # @rbs return: Document
   def read(path)

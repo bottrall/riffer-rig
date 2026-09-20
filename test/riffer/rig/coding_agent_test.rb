@@ -64,7 +64,6 @@ describe Riffer::Rig::CodingAgent do
           You are a test skill.
         MD
 
-        # Point the backend at the .skills dir so it finds test-skill.
         agent = isolated_agent(global_dir: dir, project_dir: File.join(dir, '.skills'))
 
         assert_includes agent.tools.map(&:name), 'skill_activate'
@@ -127,9 +126,6 @@ describe Riffer::Rig::CodingAgent do
     Riffer::Rig::CodingAgent.new(config: config)
   end
 
-  # Builds an agent with a skills backend isolated to +global_dir+ and
-  # +project_dir+, preventing the real ~/.riffer/skills from influencing
-  # tool registration in tests.
   def isolated_agent(global_dir:, project_dir:)
     config = Riffer::Rig::CodingAgent.config.dup
     config.skills_config = Riffer::Skills::Config.new.tap do |sc|
