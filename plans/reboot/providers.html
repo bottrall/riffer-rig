@@ -70,7 +70,7 @@
 </ul>
 </section>
 
-<section class="topic" id="recipes">
+<section class="topic enshrined" id="recipes">
 <h3>Recipe shape and the six built-in recipes</h3>
 <ul>
   <li>A recipe is <strong>data</strong>: a hash keyed by riffer's registry identifier with a help <code>url</code>, the <code>sdk</code> pair above, an optional <code>chain: true</code>, and a list of <code>fields</code>.</li>
@@ -88,9 +88,10 @@
   <tr><td><code>amazon_bedrock</code></td><td><code>chain: true</code>; required <code>region</code>, env <code>AWS_REGION</code> / <code>AWS_DEFAULT_REGION</code>, fallback <code>Aws.shared_config.region</code>; optional secret <code>api_token</code>, env <code>AWS_BEARER_TOKEN_BEDROCK</code></td></tr>
 </table></div>
 <p>Bedrock onboarding: ask for region only when nothing resolves, then one choice: AWS credential chain (default, stores nothing) or paste a bearer token.</p>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/109">#109</a>, with the Interfaces rows <code>Riffer::Rig::Recipes[...]</code> and Recipe: the table ships as data in <code>lib/riffer/rig/recipes.rb</code>, marked there as an upstream candidate. Deviations: the <code>sdk</code> pair waits on the SDK ticket; <code>url</code> is optional as well as <code>chain</code>, because the generic fallback recipe has none; and the Bedrock region fallback requires <code>aws-sdk-core</code> on demand and resolves nothing when the gem is absent. The Bedrock data (<code>chain: true</code>, the optional <code>api_token</code>) is here; the terminal prompt that renders the chain-or-token choice waits on the terminal host ticket.</p>
 </section>
 
-<section class="topic" id="resolution">
+<section class="topic enshrined" id="resolution">
 <h3>Resolution order</h3>
 
 <figure>
@@ -112,9 +113,10 @@
   <li>Resolved once per Runtime build, assigned to <code>Riffer.config</code> by each field's <code>name</code>, cached on the Runtime as <code>credentials:</code>, and re-resolved on reload. A recipe that writes a file therefore takes effect in the running session without a restart; recipes never instruct the user to restart.</li>
   <li>No validation. A pasted key is saved as-is; a bad key surfaces on the first request with the provider's own error. Probing would need per-provider code and break the one-entry goal.</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/109">#109</a>, with the Interfaces rows <code>Riffer::Rig::Credentials</code> and Env vars (the recipe field vars; <code>RIFFER_MODEL</code> waits on the Loader ticket). Deviations: <code>resolve</code> returns a <code>Credentials::Resolution</code> holding <code>values</code> and the <code>missing</code> required field names rather than the bare values, so a declining host leaves the caller both; <code>resolve</code> stores what the host answers, so an asked field is asked once; and <code>status</code> reports where the recipe's secret comes from (<code>:env</code>, then <code>:stored</code>, then <code>:chain</code> for a chain recipe, else <code>:missing</code>) without reading plain fields, calling a fallback or running a command. Resolving once per Runtime build, caching on the Runtime and re-resolving on reload wait on the Loader ticket. Until the terminal host lands, the CLI resolves with the null host and prompts for the missing fields itself.</p>
 </section>
 
-<section class="topic" id="storage">
+<section class="topic enshrined" id="storage">
 <h3>Storage</h3>
 <ul>
   <li><code>~/.riffer/auth.json</code> (mode 0600, directory 0700) holds <strong>secret fields only</strong>, one typed entry per provider:
@@ -125,6 +127,7 @@
   <li>Non-secret fields (endpoint, region, base_url) go to <code>settings.json</code> under <code>"providers": {"azure_openai": {"endpoint": "…"}}</code>, home scope by default.</li>
   <li><strong>No OS keychain.</strong> pi and OpenCode are 0600 JSON with typed entries; Codex made keyring opt-in; Claude Code's keychain-with-file-fallback is where its auth bugs live.</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/109">#109</a>, with the Interfaces row Files. Deviations: only entries typed <code>api_key</code> are read, so the old flat shape is ignored rather than rejected; <code>$VAR</code> and <code>!command</code> expand on every <code>resolve</code>, which makes once per process the Loader's single call; a value in <code>settings.json</code> is never expanded, so a settings file cannot run a command; and the <code>providers</code> block is written to the home <code>settings.json</code>, the only scope settings has so far.</p>
 </section>
 
 <section class="topic" id="auth-command">
@@ -137,13 +140,14 @@
 </ul>
 </section>
 
-<section class="topic" id="extension-providers">
+<section class="topic enshrined" id="extension-providers">
 <h3>Extension providers</h3>
 <ul>
   <li>The provider seam takes an optional <code>recipe:</code>: <code>rig.provider(:acme, recipe: {url: …, fields: […]}) { AcmeProvider }</code>. Rig resolves it like a built-in and exposes values through <code>Riffer::Rig.credentials(:acme)</code>; the provider class reads that when building its client. Built-ins get the same lookup plus the <code>Riffer.config</code> assignment.</li>
   <li>No <code>recipe:</code> → generic fallback: one secret <code>api_key</code> with env <code>&lt;IDENTIFIER&gt;_API_KEY</code>.</li>
   <li>Extension providers appear in onboarding, <code>/model</code> hints and <code>/auth</code> like built-ins, because all three read the registry.</li>
 </ul>
+<p class="note">Bullet 2 enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/109">#109</a>: <code>Riffer::Rig::Recipes.for(identifier)</code> returns the generic recipe for an identifier with no built-in entry. The <code>recipe:</code> option on the provider seam, <code>Riffer::Rig.credentials</code> and the registry-driven listings wait on the extension-providers ticket.</p>
 </section>
 
 <section class="topic" id="native-tools">

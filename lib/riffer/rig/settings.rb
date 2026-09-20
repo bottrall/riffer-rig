@@ -42,7 +42,45 @@ module Riffer::Rig::Settings
     read(path).models[model]
   end
 
+  # @rbs identifier: String
+  # @rbs path: String
+  # @rbs return: Hash[String, String]
+  def provider_fields(identifier, path: PATH)
+    read(path).providers[identifier] || {}
+  end
+
+  # @rbs identifier: String
+  # @rbs fields: Hash[String, String]
+  # @rbs path: String
+  # @rbs return: void
+  def store_provider(identifier, fields, path: PATH)
+    update_providers(path) do |providers|
+      providers.merge(identifier => fields) { |_identifier, stored, given| stored.merge(given) }
+    end
+  end
+
+  # @rbs identifier: String
+  # @rbs path: String
+  # @rbs return: void
+  def remove_provider(identifier, path: PATH)
+    update_providers(path) { |providers| providers.except(identifier) }
+  end
+
   private
+
+  # @rbs path: String
+  # @rbs &: (Hash[String, Hash[String, String]]) -> Hash[String, Hash[String, String]]
+  # @rbs return: void
+  def update_providers(path)
+    source = read_source(path)
+    current = Document.new(source).providers
+    providers = yield current
+    return if providers == current
+
+    FileUtils.mkdir_p(File.dirname(path), mode: 0o700)
+    document = providers.empty? ? source.except('providers') : source.merge('providers' => providers)
+    File.write(path, JSON.pretty_generate(document))
+  end
 
   # @rbs provider: String?
   # @rbs return: Hash[Symbol, untyped]
@@ -80,10 +118,16 @@ module Riffer::Rig::Settings
   # @rbs path: String
   # @rbs return: Document
   def read(path)
-    return Document.new({}) unless File.file?(path)
+    Document.new(read_source(path))
+  end
 
-    Document.new(JSON.parse(File.read(path)))
+  # @rbs path: String
+  # @rbs return: Hash[String, untyped]
+  def read_source(path)
+    return {} unless File.file?(path)
+
+    JSON.parse(File.read(path))
   rescue JSON::ParserError
-    Document.new({})
+    {}
   end
 end

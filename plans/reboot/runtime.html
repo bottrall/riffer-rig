@@ -133,7 +133,7 @@ been given; each tool describes what it does and when to use it.
   <li><code>Riffer::Rig.credentials(:identifier)</code> reads the process's resolved values for one provider; extension providers call it when building their client.</li>
   <li>A host that skips the Loader calls <code>Riffer.configure</code> at its edge.</li>
 </ul>
-<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/181">#181</a>, with the Interfaces row <code>credentials:</code>: the Runtime stores the hash and exposes <code>Runtime#credentials</code>. Assignment to <code>Riffer.config</code> waits on the recipe and Loader tickets; <code>Riffer::Rig.credentials</code> waits on the extension-providers ticket.</p>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/181">#181</a>, with the Interfaces row <code>credentials:</code>: the Runtime stores the hash and exposes <code>Runtime#credentials</code>. Assignment to <code>Riffer.config</code> waits on the recipe and Loader tickets; <code>Riffer::Rig.credentials</code> waits on the extension-providers ticket. The <code>Riffer::Rig::Credentials.apply</code> half of bullet 2 landed in <a href="https://github.com/bottrall/riffer-rig/issues/109">#109</a>: it assigns each value to the <code>Riffer.config.&lt;provider&gt;</code> member its field names, leaves the other members alone and does nothing for a provider without a built-in recipe; the Loader's call and the <code>/auth</code> and <code>/model</code> calls wait on their tickets.</p>
 </section>
 
 <section class="topic" id="model">

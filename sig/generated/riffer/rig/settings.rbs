@@ -24,7 +24,28 @@ module Riffer::Rig::Settings
   # @rbs return: Pricing?
   def pricing_for: (String model, ?path: String) -> Pricing?
 
+  # @rbs identifier: String
+  # @rbs path: String
+  # @rbs return: Hash[String, String]
+  def provider_fields: (String identifier, ?path: String) -> Hash[String, String]
+
+  # @rbs identifier: String
+  # @rbs fields: Hash[String, String]
+  # @rbs path: String
+  # @rbs return: void
+  def store_provider: (String identifier, Hash[String, String] fields, ?path: String) -> void
+
+  # @rbs identifier: String
+  # @rbs path: String
+  # @rbs return: void
+  def remove_provider: (String identifier, ?path: String) -> void
+
   private
+
+  # @rbs path: String
+  # @rbs &: (Hash[String, Hash[String, String]]) -> Hash[String, Hash[String, String]]
+  # @rbs return: void
+  def update_providers: (String path) { (Hash[String, Hash[String, String]]) -> Hash[String, Hash[String, String]] } -> void
 
   # @rbs provider: String?
   # @rbs return: Hash[Symbol, untyped]
@@ -43,4 +64,8 @@ module Riffer::Rig::Settings
   # @rbs path: String
   # @rbs return: Document
   def read: (String path) -> Document
+
+  # @rbs path: String
+  # @rbs return: Hash[String, untyped]
+  def read_source: (String path) -> Hash[String, untyped]
 end

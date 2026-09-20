@@ -28,19 +28,32 @@ riffer
 
 ### Authentication
 
-`riffer-rig` talks to the provider named by the model's prefix — `anthropic/claude-sonnet-4-6`, the default, means Anthropic. Provide that provider's API key in either of two ways:
+`riffer-rig` talks to the provider named by the model's prefix — `anthropic/claude-sonnet-4-6`, the default, means Anthropic. Provide that provider's credentials in either of two ways:
 
-- Set the provider's environment variable, or
-- Run `riffer` and paste your key when prompted on first launch. It is saved to `~/.riffer/auth.json` (file permissions `600`) for subsequent runs.
+- Set the provider's environment variables, or
+- Run `riffer` and paste each missing value when prompted on first launch. Secrets are saved to `~/.riffer/auth.json` (file permissions `600`); plain values such as an endpoint or region are saved to the `providers` block in `~/.riffer/settings.json`.
 
-The environment variable wins when both are set.
+Each value resolves on its own: environment variable first, then the stored value, then a provider-specific fallback (the AWS shared config for the Bedrock region), then the prompt. Optional values are never prompted for.
 
-| Provider     | Environment variable | Create a key                                |
-| ------------ | -------------------- | ------------------------------------------- |
-| `anthropic`  | `ANTHROPIC_API_KEY`  | https://console.anthropic.com/settings/keys |
-| `openai`     | `OPENAI_API_KEY`     | https://platform.openai.com/api-keys        |
-| `gemini`     | `GEMINI_API_KEY`     | https://aistudio.google.com/app/apikey      |
-| `openrouter` | `OPENROUTER_API_KEY` | https://openrouter.ai/keys                  |
+| Provider         | Environment variables                                                     | Guide                                              |
+| ---------------- | ------------------------------------------------------------------------- | -------------------------------------------------- |
+| `anthropic`      | `ANTHROPIC_API_KEY`                                                       | [Anthropic](docs/providers/ANTHROPIC.md)           |
+| `openai`         | `OPENAI_API_KEY`; optional `OPENAI_BASE_URL`                              | [OpenAI](docs/providers/OPENAI.md)                 |
+| `gemini`         | `GEMINI_API_KEY`                                                          | [Gemini](docs/providers/GEMINI.md)                 |
+| `openrouter`     | `OPENROUTER_API_KEY`                                                      | [OpenRouter](docs/providers/OPENROUTER.md)         |
+| `azure_openai`   | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`                           | [Azure OpenAI](docs/providers/AZURE_OPENAI.md)     |
+| `amazon_bedrock` | `AWS_REGION` or `AWS_DEFAULT_REGION`; optional `AWS_BEARER_TOKEN_BEDROCK` | [Amazon Bedrock](docs/providers/AMAZON_BEDROCK.md) |
+
+`auth.json` holds one typed entry per provider, and a stored secret may be a literal, a `$ENV_VAR` reference or a `!shell command` whose stdout is the secret:
+
+```json
+{
+  "anthropic": { "type": "api_key", "api_key": "sk-ant-…" },
+  "openai": { "type": "api_key", "api_key": "!security find-generic-password -s openai -w" }
+}
+```
+
+The flat `{"anthropic": "sk-…"}` shape earlier versions wrote is no longer read; paste the key again when prompted. [Providers](docs/providers/PROVIDERS.md) has the full format.
 
 ### Configuration
 

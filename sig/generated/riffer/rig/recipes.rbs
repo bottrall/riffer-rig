@@ -1,0 +1,27 @@
+# Generated from lib/riffer/rig/recipes.rb with RBS::Inline
+
+module Riffer::Rig::Recipes
+  type field = { name: Symbol, env: Array[String], secret: bool, required: bool, ?fallback: ^() -> String? }
+
+  type recipe = { ?url: String, ?chain: bool, fields: Array[field] }
+
+  AWS_SHARED_CONFIG_REGION: ^() -> String?
+
+  # Upstream candidate: each riffer provider could declare its own credential
+  # fields, and this table would go.
+  TABLE: Hash[Symbol, recipe]
+
+  # @rbs identifier: String | Symbol
+  # @rbs return: recipe?
+  def []: (String | Symbol identifier) -> recipe?
+
+  # @rbs identifier: String | Symbol
+  # @rbs return: recipe
+  def for: (String | Symbol identifier) -> recipe
+
+  private
+
+  # @rbs identifier: String | Symbol
+  # @rbs return: recipe
+  def generic: (String | Symbol identifier) -> recipe
+end
