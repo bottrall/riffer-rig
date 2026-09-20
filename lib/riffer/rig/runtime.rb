@@ -30,7 +30,7 @@ class Riffer::Rig::Runtime
   # @rbs @agent: Riffer::Agent
   # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs @cwd: String
-  # @rbs @host: _Host
+  # @rbs @host: Riffer::Rig::Host
   # @rbs @id: String
   # @rbs @notifier: Riffer::Rig::NotifyingHost
   # @rbs @settings: Hash[Symbol, untyped]
@@ -43,7 +43,7 @@ class Riffer::Rig::Runtime
   attr_reader :agent #: Riffer::Agent
   attr_reader :credentials #: Hash[Symbol, Hash[Symbol, String]]
   attr_reader :cwd #: String
-  attr_reader :host #: _Host
+  attr_reader :host #: Riffer::Rig::Host
   attr_reader :id #: String
   attr_reader :settings #: Hash[Symbol, untyped]
 
@@ -51,7 +51,7 @@ class Riffer::Rig::Runtime
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs tools: Array[String]?
   # @rbs settings: Hash[Symbol, untyped]
-  # @rbs host: _Host
+  # @rbs host: Riffer::Rig::Host
   # @rbs cwd: String?
   # @rbs name: String
   # @rbs instructions: String?
