@@ -20,7 +20,7 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `extensions:`   | ordered extension objects whose blocks run against this Runtime's registrar | `[]`                    |
 | `tools:`        | allowlist of tool identifiers; `nil` means every registered tool            | `nil`                   |
 | `settings:`     | merged settings hash, stored and exposed but not yet read                   | `{}`                    |
-| `host:`         | an object implementing the [Host duck](HOSTS.md)                            | `Riffer::Rig::Host.new` |
+| `host:`         | a [`Riffer::Rig::Hosts::Base`](HOSTS.md) subclass instance                  | `Riffer::Rig::Hosts::Null.new` |
 | `cwd:`          | working directory for the environment block and for tools                   | `Dir.pwd`               |
 | `name:`         | the name interpolated into the [base prompt](INSTRUCTIONS.md)               | `"riffer"`              |
 | `instructions:` | replaces the base prompt wholesale (the environment block still applies)    | `nil` (use the base)    |

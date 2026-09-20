@@ -27,11 +27,9 @@ class Riffer::Rig::Runtime
 
   @settings: Hash[Symbol, untyped]
 
-  @notifier: Riffer::Rig::NotifyingHost
-
   @id: String
 
-  @host: _Host
+  @host: Riffer::Rig::Hosts::Mirror
 
   @cwd: String
 
@@ -46,7 +44,7 @@ class Riffer::Rig::Runtime
 
   attr_reader cwd: String
 
-  attr_reader host: _Host
+  attr_reader host: Riffer::Rig::Hosts::Mirror
 
   attr_reader id: String
 
@@ -56,7 +54,7 @@ class Riffer::Rig::Runtime
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs tools: Array[String]?
   # @rbs settings: Hash[Symbol, untyped]
-  # @rbs host: _Host
+  # @rbs host: Riffer::Rig::Hosts::Base
   # @rbs cwd: String?
   # @rbs name: String
   # @rbs instructions: String?
@@ -65,7 +63,7 @@ class Riffer::Rig::Runtime
   # @rbs max_steps: Integer?
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
-  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: _Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?max_steps: Integer?, ?snapshot: Hash[Symbol, untyped]?) -> void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::Base, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?max_steps: Integer?, ?snapshot: Hash[Symbol, untyped]?) -> void
 
   # @rbs text: String
   # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void

@@ -324,15 +324,15 @@ describe Riffer::Rig::Runtime do
     assert_raises(Riffer::Rig::Runtime::ClosedError) { runtime.ask('hello') }
   end
 
-  it 'mirrors host.notify as a notify event on the stream' do
-    notifies = []
-    host = Object.new
-    host.define_singleton_method(:capabilities) { Set.new.freeze }
-    host.define_singleton_method(:ask) { |*| nil }
-    host.define_singleton_method(:confirm) { |*| false }
-    host.define_singleton_method(:notify) { |message, level:| notifies << [message, level] }
-    host.define_singleton_method(:progress) { |*, &block| block&.call }
+  it 'wraps the given host' do
+    host = Class.new(Riffer::Rig::Hosts::Null) { define_method(:capabilities) { Set[:notify].freeze } }.new
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], host: host)
+
+    assert_equal Set[:notify], runtime.host.capabilities
+  end
+
+  it 'mirrors host.notify as a notify event on the stream' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
     runtime.agent.provider.stub_response('All done.')
 
     notify_events = []
@@ -340,22 +340,5 @@ describe Riffer::Rig::Runtime do
     runtime.prompt('hello') { |event| notify_events << event if event.is_a?(Riffer::Rig::Events::Notify) }
 
     assert_equal [Riffer::Rig::Events::Notify.new('boom', :error)], notify_events
-  end
-
-  it 'passes notify through to the wrapped host' do
-    notifies = []
-    host = Object.new
-    host.define_singleton_method(:capabilities) { Set.new.freeze }
-    host.define_singleton_method(:ask) { |*| nil }
-    host.define_singleton_method(:confirm) { |*| false }
-    host.define_singleton_method(:notify) { |message, level:| notifies << [message, level] }
-    host.define_singleton_method(:progress) { |*, &block| block&.call }
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], host: host)
-    runtime.agent.provider.stub_response('All done.')
-
-    runtime.host.notify('boom', level: :error)
-    runtime.prompt('hello').each { |event| event }
-
-    assert_equal [['boom', :error]], notifies
   end
 end

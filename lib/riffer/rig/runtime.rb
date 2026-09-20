@@ -30,9 +30,8 @@ class Riffer::Rig::Runtime
   # @rbs @agent: Riffer::Agent
   # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs @cwd: String
-  # @rbs @host: _Host
+  # @rbs @host: Riffer::Rig::Hosts::Mirror
   # @rbs @id: String
-  # @rbs @notifier: Riffer::Rig::NotifyingHost
   # @rbs @settings: Hash[Symbol, untyped]
   # @rbs @busy: bool
   # @rbs @closed: bool
@@ -43,7 +42,7 @@ class Riffer::Rig::Runtime
   attr_reader :agent #: Riffer::Agent
   attr_reader :credentials #: Hash[Symbol, Hash[Symbol, String]]
   attr_reader :cwd #: String
-  attr_reader :host #: _Host
+  attr_reader :host #: Riffer::Rig::Hosts::Mirror
   attr_reader :id #: String
   attr_reader :settings #: Hash[Symbol, untyped]
 
@@ -51,7 +50,7 @@ class Riffer::Rig::Runtime
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs tools: Array[String]?
   # @rbs settings: Hash[Symbol, untyped]
-  # @rbs host: _Host
+  # @rbs host: Riffer::Rig::Hosts::Base
   # @rbs cwd: String?
   # @rbs name: String
   # @rbs instructions: String?
@@ -65,7 +64,7 @@ class Riffer::Rig::Runtime
     extensions: [],
     tools: nil,
     settings: {},
-    host: Riffer::Rig::Host.new,
+    host: Riffer::Rig::Hosts::Null.new,
     cwd: nil,
     name: DEFAULT_NAME,
     instructions: nil,
@@ -76,8 +75,7 @@ class Riffer::Rig::Runtime
   )
     # Doubles as the snapshot id and ACP sessionId.
     @id = ::SecureRandom.uuid_v7
-    @notifier = Riffer::Rig::NotifyingHost.new(host)
-    @host = @notifier
+    @host = Riffer::Rig::Hosts::Mirror.new(host)
     @cwd = cwd || Dir.pwd
     @settings = settings
     @credentials = credentials
@@ -144,7 +142,7 @@ class Riffer::Rig::Runtime
     Enumerator.new do |yielder|
       yielder << Riffer::Rig::Events::SessionStart.new(@id, :new) if @session_start_pending
       @session_start_pending = false
-      @notifier.drain.each { |event| yielder << event }
+      @host.drain.each { |event| yielder << event }
       response = stream.each { |event| yielder << event }
       yielder << Riffer::Rig::Events::TurnEnd.new(response.outcome.reason, response.token_usage)
       response

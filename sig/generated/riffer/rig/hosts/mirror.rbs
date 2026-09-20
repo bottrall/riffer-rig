@@ -1,16 +1,16 @@
-# Generated from lib/riffer/rig/notifying_host.rb with RBS::Inline
+# Generated from lib/riffer/rig/hosts/mirror.rb with RBS::Inline
 
-class Riffer::Rig::NotifyingHost
-  @host: _Host
+class Riffer::Rig::Hosts::Mirror < Riffer::Rig::Hosts::Base
+  @host: Riffer::Rig::Hosts::Base
 
   @queue: Array[Riffer::Rig::Events::Event]
 
   # @dynamic capabilities
   attr_reader capabilities: Set[Symbol]
 
-  # @rbs host: _Host
+  # @rbs host: Riffer::Rig::Hosts::Base
   # @rbs return: void
-  def initialize: (_Host host) -> void
+  def initialize: (Riffer::Rig::Hosts::Base host) -> void
 
   # @rbs question: String?
   # @rbs options: Array[String]?
@@ -28,9 +28,9 @@ class Riffer::Rig::NotifyingHost
   def notify: (?String? message, ?level: Symbol) -> void
 
   # @rbs label: String?
-  # @rbs &block: ^() -> void
+  # @rbs &block: ? () -> void
   # @rbs return: void
-  def progress: (?String? label) ?{ (?) -> untyped } -> void
+  def progress: (?String? label) ?{ () -> void } -> void
 
   # @rbs event: Riffer::Rig::Events::Event
   # @rbs return: void
@@ -38,16 +38,4 @@ class Riffer::Rig::NotifyingHost
 
   # @rbs return: Array[Riffer::Rig::Events::Event]
   def drain: () -> Array[Riffer::Rig::Events::Event]
-end
-
-interface _Host
-  def ask: (?String?, ?options: Array[String]?, ?secret: bool) -> String?
-
-  def confirm: (?String?) -> bool
-
-  def notify: (?String?, ?level: Symbol) -> void
-
-  def progress: (?String?) { () -> void } -> void
-
-  def capabilities: () -> Set[Symbol]
 end
