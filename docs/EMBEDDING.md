@@ -69,7 +69,7 @@ How the run ended is riffer's `response.outcome` — `reason` is one of riffer's
 
 ## Rig events
 
-The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-level events from `Riffer::Rig::Events`. They are immutable `Data` value objects; each has `to_h` — with the type folded in, so a headless host can print every record verbatim as NDJSON — and `type`, the snake_case form of its class name.
+The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-level events from `Riffer::Rig::Events`. They are frozen value objects, equal when their class and fields match; each has `to_h` — with the type folded in, so a headless host can print every record verbatim as NDJSON — and `type`, the snake_case form of its class name.
 
 | Rig event         | Carries                          | When                                                              |
 | ----------------- | -------------------------------- | ----------------------------------------------------------------- |

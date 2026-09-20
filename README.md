@@ -37,7 +37,6 @@ Create a key at https://console.anthropic.com/settings/keys.
 
 ### Configuration
 
-- `RIFFER_MODEL` — override the default model.
 - `AGENTS.md` — if present, an `AGENTS.md` in the current working directory and/or a global `~/.riffer/AGENTS.md` is loaded as additional context.
 - `~/.riffer/settings.json` — optional user settings. Every key is optional:
 
