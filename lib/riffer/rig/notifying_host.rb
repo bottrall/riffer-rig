@@ -14,7 +14,7 @@
 
 class Riffer::Rig::NotifyingHost
   # @rbs @host: _Host
-  # @rbs @queue: Array[(Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd)]
+  # @rbs @queue: Array[Riffer::Rig::Events::Event]
 
   # @dynamic capabilities
   attr_reader :capabilities #: Set[Symbol]
@@ -56,13 +56,13 @@ class Riffer::Rig::NotifyingHost
     @host.progress(label) { block&.call }
   end
 
-  # @rbs event: (Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd)
+  # @rbs event: Riffer::Rig::Events::Event
   # @rbs return: void
   def queue(event)
     @queue << event
   end
 
-  # @rbs return: Array[(Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd)]
+  # @rbs return: Array[Riffer::Rig::Events::Event]
   def drain
     queued = @queue
     @queue = []

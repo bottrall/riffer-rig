@@ -3,7 +3,7 @@
 class Riffer::Rig::NotifyingHost
   @host: _Host
 
-  @queue: Array[Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd]
+  @queue: Array[Riffer::Rig::Events::Event]
 
   # @dynamic capabilities
   attr_reader capabilities: Set[Symbol]
@@ -32,12 +32,12 @@ class Riffer::Rig::NotifyingHost
   # @rbs return: void
   def progress: (?String? label) ?{ (?) -> untyped } -> void
 
-  # @rbs event: (Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd)
+  # @rbs event: Riffer::Rig::Events::Event
   # @rbs return: void
-  def queue: (Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd event) -> void
+  def queue: (Riffer::Rig::Events::Event event) -> void
 
-  # @rbs return: Array[(Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd)]
-  def drain: () -> Array[Riffer::Rig::Events::Notify | Riffer::Rig::Events::SessionEnd]
+  # @rbs return: Array[Riffer::Rig::Events::Event]
+  def drain: () -> Array[Riffer::Rig::Events::Event]
 end
 
 interface _Host
