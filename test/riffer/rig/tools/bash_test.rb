@@ -37,7 +37,7 @@ describe Riffer::Rig::Tools::Bash do
   end
 
   def with_cancel_after(seconds)
-    flag = Riffer::Rig::CancelFlag.new
+    flag = Riffer::Rig::Runtime::CancelFlag.new
     canceller = Thread.new do
       sleep seconds
       flag.set
@@ -67,7 +67,7 @@ describe Riffer::Rig::Tools::Bash do
   end
 
   it 'ignores a flag that is not set' do
-    context = Riffer::Agent::Context.new(cancel_flag: Riffer::Rig::CancelFlag.new)
+    context = Riffer::Agent::Context.new(cancel_flag: Riffer::Rig::Runtime::CancelFlag.new)
     response = @tool.call(context: context, command: 'echo hello')
 
     assert_equal 'hello', response.content

@@ -23,7 +23,7 @@ class Riffer::Rig::Runtime
 
   @base_prompt: String
 
-  @cancel_flag: Riffer::Rig::CancelFlag
+  @cancel_flag: Riffer::Rig::Runtime::CancelFlag
 
   @credentials: Hash[Symbol, Hash[Symbol, String]]
 

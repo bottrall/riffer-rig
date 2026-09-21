@@ -31,7 +31,7 @@ class Riffer::Rig::Runtime
 
   # @rbs @agent: Riffer::Agent
   # @rbs @base_prompt: String
-  # @rbs @cancel_flag: Riffer::Rig::CancelFlag
+  # @rbs @cancel_flag: Riffer::Rig::Runtime::CancelFlag
   # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs @cwd: String
   # @rbs @host: Riffer::Rig::Hosts::Mirror
@@ -86,7 +86,7 @@ class Riffer::Rig::Runtime
 
     @busy = false
     @closed = false
-    @cancel_flag = Riffer::Rig::CancelFlag.new
+    @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
     @session_start_pending = true
     @registrar = build_registrar(extensions)
     tool_classes = select_tools(@registrar.tools, tools)

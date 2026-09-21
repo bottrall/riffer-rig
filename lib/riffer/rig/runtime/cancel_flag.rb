@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::CancelFlag
+class Riffer::Rig::Runtime::CancelFlag
   # @rbs @mutex: Thread::Mutex
   # @rbs @set: bool
 

@@ -28,7 +28,7 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
   # @rbs timeout_ms: Integer
   # @rbs return: Riffer::Tools::Response
   def call(context:, command:, timeout_ms: DEFAULT_TIMEOUT_MS)
-    cancel_flag = context&.[](:cancel_flag) #: Riffer::Rig::CancelFlag?
+    cancel_flag = context&.[](:cancel_flag) #: Riffer::Rig::Runtime::CancelFlag?
     output, status = run(command, timeout_ms / 1000.0, cancel_flag)
     output = truncate(output.rstrip)
 
@@ -41,7 +41,7 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
 
   # @rbs command: String
   # @rbs timeout_seconds: Float
-  # @rbs cancel_flag: Riffer::Rig::CancelFlag?
+  # @rbs cancel_flag: Riffer::Rig::Runtime::CancelFlag?
   # @rbs return: [String, Integer]
   def run(command, timeout_seconds, cancel_flag)
     stdin, stdout_and_stderr, wait_thread = Open3.popen2e(command, chdir: Dir.pwd, pgroup: true)
@@ -61,7 +61,7 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
 
   # @rbs wait_thread: Process::Waiter
   # @rbs deadline: Float
-  # @rbs cancel_flag: Riffer::Rig::CancelFlag?
+  # @rbs cancel_flag: Riffer::Rig::Runtime::CancelFlag?
   # @rbs return: Symbol
   def await(wait_thread, deadline, cancel_flag)
     # Upstream candidate: a cancel token on riffer's run loop would reach a
