@@ -7,11 +7,6 @@ require 'open3'
 module Riffer::Rig::Credentials
   extend self
 
-  # @rbs!
-  #   interface _Env
-  #     def []: (String) -> String?
-  #   end
-
   PATH = File.expand_path('~/.riffer/auth.json') #: String
 
   ENTRY_TYPE = 'api_key'
@@ -19,7 +14,7 @@ module Riffer::Rig::Credentials
   # @rbs identifier: String | Symbol
   # @rbs host: Riffer::Rig::Hosts::Base
   # @rbs setup: Riffer::Rig::ProviderSetup
-  # @rbs env: _Env
+  # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
   # @rbs return: Resolution
@@ -27,14 +22,14 @@ module Riffer::Rig::Credentials
     identifier,
     host:,
     setup: Riffer::Rig::ProviderSetup.for(identifier),
-    env: ENV,
+    env: Riffer::Rig::Env.new,
     auth_path: PATH,
     settings_path: Riffer::Rig::Settings::PATH
   )
     secrets = stored_secrets(identifier, auth_path)
     plain = Riffer::Rig::Settings.provider_fields(identifier.to_s, path: settings_path)
     found = setup.fields.to_h do |field|
-      [field.name, from_env(field, env) || stored_value(field, secrets, plain, env) || field.fallback&.call]
+      [field.name, env.value_for(field) || stored_value(field, secrets, plain, env) || field.fallback&.call]
     end.compact
     required = setup.fields.select(&:required)
     answers = ask_for(required.reject { |field| found.key?(field.name) }, identifier, host)
@@ -94,12 +89,12 @@ module Riffer::Rig::Credentials
 
   # @rbs identifier: String | Symbol
   # @rbs setup: Riffer::Rig::ProviderSetup
-  # @rbs env: _Env
+  # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs return: :env | :stored | :chain | :missing
-  def status(identifier, setup: Riffer::Rig::ProviderSetup.for(identifier), env: ENV, auth_path: PATH)
+  def status(identifier, setup: Riffer::Rig::ProviderSetup.for(identifier), env: Riffer::Rig::Env.new, auth_path: PATH)
     secret_fields = setup.fields.select(&:secret)
-    return :env if secret_fields.any? { |field| from_env(field, env) }
+    return :env if secret_fields.any? { |field| env.value_for(field) }
 
     stored = stored_secrets(identifier, auth_path)
     return :stored if secret_fields.any? { |field| stored.key?(field.name.to_s) }
@@ -120,27 +115,20 @@ module Riffer::Rig::Credentials
   end
 
   # @rbs field: Riffer::Rig::ProviderSetup::Field
-  # @rbs env: _Env
-  # @rbs return: String?
-  def from_env(field, env)
-    field.env.filter_map { |name| presence(env[name]) }.first
-  end
-
-  # @rbs field: Riffer::Rig::ProviderSetup::Field
   # @rbs secrets: Hash[String, String]
   # @rbs plain: Hash[String, String]
-  # @rbs env: _Env
+  # @rbs env: Riffer::Rig::Env
   # @rbs return: String?
   def stored_value(field, secrets, plain, env)
     field.secret ? expand(secrets[field.name.to_s], env) : plain[field.name.to_s]
   end
 
   # @rbs value: String?
-  # @rbs env: _Env
+  # @rbs env: Riffer::Rig::Env
   # @rbs return: String?
   def expand(value, env)
     return nil if value.nil?
-    return presence(env[value.delete_prefix('$')]) if value.start_with?('$')
+    return env[value.delete_prefix('$')] if value.start_with?('$')
     return presence(run(value.delete_prefix('!'))) if value.start_with?('!')
 
     value

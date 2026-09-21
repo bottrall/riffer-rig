@@ -8,14 +8,15 @@ module Riffer::Rig::CLI
   # @rbs output: IO
   # @rbs input: IO
   # @rbs model: String
+  # @rbs env: Riffer::Rig::Env
   # @rbs return: Integer
-  def start(output: $stdout, input: $stdin, model: Riffer::Rig::Settings.model)
-    theme = Riffer::Rig::UI::Theme.for(output)
+  def start(output: $stdout, input: $stdin, model: Riffer::Rig::Settings.model, env: Riffer::Rig::Env.new)
+    theme = Riffer::Rig::UI::Theme.for(output, env:)
 
     provider = Riffer::Rig::Settings.provider_for(model)
 
     if provider
-      values = credentials_for(provider, theme, output:, input:)
+      values = credentials_for(provider, theme, output:, input:, env:)
       return 1 if values.nil?
 
       Riffer::Rig::Credentials.apply(provider, values)
@@ -39,9 +40,10 @@ module Riffer::Rig::CLI
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs output: IO
   # @rbs input: IO
+  # @rbs env: Riffer::Rig::Env
   # @rbs return: Hash[Symbol, String]?
-  def credentials_for(provider, theme, output:, input:)
-    resolution = Riffer::Rig::Credentials.resolve(provider, host: Riffer::Rig::Hosts::Null.new)
+  def credentials_for(provider, theme, output:, input:, env:)
+    resolution = Riffer::Rig::Credentials.resolve(provider, host: Riffer::Rig::Hosts::Null.new, env:)
     return resolution.values if resolution.missing.empty?
 
     onboard(provider, resolution, theme, output:, input:)

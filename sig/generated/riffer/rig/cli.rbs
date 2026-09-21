@@ -4,8 +4,9 @@ module Riffer::Rig::CLI
   # @rbs output: IO
   # @rbs input: IO
   # @rbs model: String
+  # @rbs env: Riffer::Rig::Env
   # @rbs return: Integer
-  def start: (?output: IO, ?input: IO, ?model: String) -> Integer
+  def start: (?output: IO, ?input: IO, ?model: String, ?env: Riffer::Rig::Env) -> Integer
 
   private
 
@@ -13,8 +14,9 @@ module Riffer::Rig::CLI
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs output: IO
   # @rbs input: IO
+  # @rbs env: Riffer::Rig::Env
   # @rbs return: Hash[Symbol, String]?
-  def credentials_for: (String provider, Riffer::Rig::UI::Theme theme, output: IO, input: IO) -> Hash[Symbol, String]?
+  def credentials_for: (String provider, Riffer::Rig::UI::Theme theme, output: IO, input: IO, env: Riffer::Rig::Env) -> Hash[Symbol, String]?
 
   # @rbs provider: String
   # @rbs resolution: Riffer::Rig::Credentials::Resolution
