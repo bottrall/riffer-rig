@@ -144,7 +144,9 @@ Riffer::Rig::Credentials.apply(:azure_openai, resolution.values)
 
 `status` reports where a provider's secret comes from: `:env` when one of its env vars is set, `:stored` when `auth.json` has it, `:chain` when neither holds and the setup entry offers the SDK's own credential chain, otherwise `:missing`. It reads no plain fields and runs no command.
 
-`resolve`, `store` and `remove` take `auth_path:` and `settings_path:` to point at other files, and `status` takes `auth_path:`. `resolve` and `status` take `env:` in place of `ENV`; `resolve`, `store` and `status` take `setup:` in place of the `Riffer::Rig::ProviderSetup.for(identifier)` lookup; `apply` takes `config:` in place of `Riffer.config`.
+`resolve`, `store` and `remove` take `auth_path:` and `settings_path:` to point at other files, and `status` takes `auth_path:`. `resolve` and `status` take `env:`, a `Riffer::Rig::Env`; `resolve`, `store` and `status` take `setup:` in place of the `Riffer::Rig::ProviderSetup.for(identifier)` lookup; `apply` takes `config:` in place of `Riffer.config`.
+
+A `Riffer::Rig::Env` is a frozen snapshot of the process environment, and `riffer-rig` reads the process environment nowhere else. `Riffer::Rig::Env.new` snapshots the real one; `Riffer::Rig::Env.new('ANTHROPIC_API_KEY' => '…')` builds one from a hash, for an embedder or a test.
 
 ## Riffer::Rig::ProviderSetup
 
