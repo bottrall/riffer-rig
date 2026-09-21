@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.6.0](https://github.com/bottrall/riffer-rig/compare/v0.5.0...v0.6.0) (2026-09-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* Riffer::Rig::Host is removed. A host subclasses Riffer::Rig::Hosts::Base and implements all five methods; the null host is Riffer::Rig::Hosts::Null.
+
+### Features
+
+* add the rig event vocabulary and close ([#179](https://github.com/bottrall/riffer-rig/issues/179)) ([35bfa6e](https://github.com/bottrall/riffer-rig/commit/35bfa6e5dc1dc9825fd03843a4e69ec24e675b66))
+* cancel a running turn from any thread ([#186](https://github.com/bottrall/riffer-rig/issues/186)) ([ec68188](https://github.com/bottrall/riffer-rig/commit/ec68188cc7dbcaf0cd56dd41d83cda216661fbe7))
+* named prompt sections rendered every turn ([#184](https://github.com/bottrall/riffer-rig/issues/184)) ([d190a07](https://github.com/bottrall/riffer-rig/commit/d190a07dfa99764b82bba00745a07e7738c3532a))
+* store credentials on the Runtime ([#181](https://github.com/bottrall/riffer-rig/issues/181)) ([474a515](https://github.com/bottrall/riffer-rig/commit/474a51586011e413482f0275a7abd3a542e91914))
+
+
+### Code Refactoring
+
+* make the host contract the abstract Hosts::Base ([#183](https://github.com/bottrall/riffer-rig/issues/183)) ([3fd4f14](https://github.com/bottrall/riffer-rig/commit/3fd4f14a193d546ae06e00776f209a52c0593854))
+
 ## [0.5.0](https://github.com/bottrall/riffer-rig/compare/v0.4.0...v0.5.0) (2026-09-19)
 
 
