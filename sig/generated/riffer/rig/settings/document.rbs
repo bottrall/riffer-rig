@@ -7,12 +7,16 @@ class Riffer::Rig::Settings::Document
 
   @models: Hash[String, Riffer::Rig::Settings::Pricing]
 
-  # @dynamic model, reasoning, models
+  @providers: Hash[String, Hash[String, String]]
+
+  # @dynamic model, reasoning, models, providers
   attr_reader model: String?
 
   attr_reader reasoning: String?
 
   attr_reader models: Hash[String, Riffer::Rig::Settings::Pricing]
+
+  attr_reader providers: Hash[String, Hash[String, String]]
 
   # @rbs source: untyped
   # @rbs return: void

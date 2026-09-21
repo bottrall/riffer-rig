@@ -1,30 +1,38 @@
 # Generated from lib/riffer/rig/cli.rb with RBS::Inline
 
 module Riffer::Rig::CLI
-  PROVIDER_URLS: Hash[String, String]
-
   # @rbs output: IO
   # @rbs input: IO
+  # @rbs model: String
+  # @rbs env: Riffer::Rig::Env
   # @rbs return: Integer
-  def start: (?output: IO, ?input: IO) -> Integer
+  def start: (?output: IO, ?input: IO, ?model: String, ?env: Riffer::Rig::Env) -> Integer
 
   private
 
-  # @rbs provider: String?
-  # @rbs api_key: String
-  # @rbs return: void
-  def configure_provider: (String? provider, String api_key) -> void
-
-  # @rbs provider: String?
+  # @rbs provider: String
   # @rbs theme: Riffer::Rig::UI::Theme
   # @rbs output: IO
   # @rbs input: IO
-  # @rbs return: String?
-  def onboard: (String? provider, Riffer::Rig::UI::Theme theme, output: IO, input: IO) -> String?
+  # @rbs env: Riffer::Rig::Env
+  # @rbs return: Hash[Symbol, String]?
+  def credentials_for: (String provider, Riffer::Rig::UI::Theme theme, output: IO, input: IO, env: Riffer::Rig::Env) -> Hash[Symbol, String]?
 
-  # @rbs provider: String?
+  # @rbs provider: String
+  # @rbs resolution: Riffer::Rig::Credentials::Resolution
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs output: IO
+  # @rbs input: IO
+  # @rbs return: Hash[Symbol, String]?
+  def onboard: (String provider, Riffer::Rig::Credentials::Resolution resolution, Riffer::Rig::UI::Theme theme, output: IO, input: IO) -> Hash[Symbol, String]?
+
+  # @rbs provider: String
+  # @rbs field: Riffer::Rig::ProviderSetup::Field
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs output: IO
+  # @rbs input: IO
   # @rbs return: String
-  def env_var_for: (String? provider) -> String
+  def prompt: (String provider, Riffer::Rig::ProviderSetup::Field field, Riffer::Rig::UI::Theme theme, output: IO, input: IO) -> String
 
   # @rbs input: IO
   # @rbs return: String?

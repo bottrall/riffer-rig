@@ -175,6 +175,59 @@ describe Riffer::Rig::Settings do
     end
   end
 
+  it 'provider fields returns the providers block for one provider' do
+    Dir.mktmpdir do |dir|
+      path = settings_file(dir, { 'providers' => { 'azure_openai' => { 'endpoint' => 'https://azure.test' } } })
+
+      assert_equal(
+        { 'endpoint' => 'https://azure.test' },
+        Riffer::Rig::Settings.provider_fields('azure_openai', path: path)
+      )
+    end
+  end
+
+  it 'provider fields is empty for a provider without a block' do
+    Dir.mktmpdir do |dir|
+      path = settings_file(dir, { 'providers' => 'not a hash' })
+
+      assert_empty Riffer::Rig::Settings.provider_fields('azure_openai', path: path)
+    end
+  end
+
+  it 'store provider merges fields into an existing block' do
+    Dir.mktmpdir do |dir|
+      path = settings_file(dir, { 'providers' => { 'openai' => { 'base_url' => 'https://old.test' } } })
+
+      Riffer::Rig::Settings.store_provider('openai', { 'base_url' => 'https://new.test' }, path: path)
+
+      assert_equal({ 'base_url' => 'https://new.test' }, Riffer::Rig::Settings.provider_fields('openai', path: path))
+    end
+  end
+
+  it 'remove provider keeps the other blocks' do
+    Dir.mktmpdir do |dir|
+      path = settings_file(
+        dir,
+        { 'providers' => { 'openai' => { 'base_url' => 'https://proxy.test' },
+                           'amazon_bedrock' => { 'region' => 'us-west-2' } } }
+      )
+
+      Riffer::Rig::Settings.remove_provider('openai', path: path)
+
+      assert_equal({ 'amazon_bedrock' => { 'region' => 'us-west-2' } }, JSON.parse(File.read(path))['providers'])
+    end
+  end
+
+  it 'remove provider writes nothing when the provider has no block' do
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, 'settings.json')
+
+      Riffer::Rig::Settings.remove_provider('openai', path: path)
+
+      refute_path_exists path
+    end
+  end
+
   it 'provider for returns anthropic prefix' do
     assert_equal 'anthropic', Riffer::Rig::Settings.provider_for('anthropic/claude-sonnet-4-6')
   end
