@@ -17,27 +17,31 @@ class Riffer::Rig::Runtime
   # harness.
   DEFAULT_MAX_STEPS: Integer?
 
-  @registrar: Riffer::Rig::Registrar
+  INTERRUPT_CANCELLED: Symbol
 
-  @session_start_pending: bool
-
-  @closed: bool
-
-  @busy: bool
-
-  @settings: Hash[Symbol, untyped]
-
-  @id: String
-
-  @host: Riffer::Rig::Hosts::Mirror
-
-  @cwd: String
-
-  @credentials: Hash[Symbol, Hash[Symbol, String]]
+  @agent: Riffer::Agent
 
   @base_prompt: String
 
-  @agent: Riffer::Agent
+  @cancel_flag: Riffer::Rig::Runtime::CancelFlag
+
+  @credentials: Hash[Symbol, Hash[Symbol, String]]
+
+  @cwd: String
+
+  @host: Riffer::Rig::Hosts::Mirror
+
+  @id: String
+
+  @settings: Hash[Symbol, untyped]
+
+  @busy: bool
+
+  @closed: bool
+
+  @session_start_pending: bool
+
+  @registrar: Riffer::Rig::Registrar
 
   # @dynamic agent, credentials, cwd, host, id, settings
   attr_reader agent: Riffer::Agent
@@ -76,6 +80,9 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Agent::Response
   def ask: (String text) -> Riffer::Agent::Response
 
+  # @rbs return: nil
+  def cancel: () -> nil
+
   # @rbs return: void
   def close: () -> void
 
@@ -84,6 +91,20 @@ class Riffer::Rig::Runtime
   # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
   def wrap_stream: (Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response] stream) -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
+
+  # @rbs return: void
+  def interrupt_if_cancelled: () -> void
+
+  # @rbs return: void
+  def heal_orphaned_tool_calls: () -> void
+
+  # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
+  # @rbs return: Riffer::Messages::Tool
+  def interrupted_result: (Riffer::Messages::Assistant::ToolCall tool_call) -> Riffer::Messages::Tool
+
+  # @rbs outcome: Riffer::Agent::Outcome
+  # @rbs return: Symbol
+  def stop_reason: (Riffer::Agent::Outcome outcome) -> Symbol
 
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs return: Riffer::Rig::Registrar

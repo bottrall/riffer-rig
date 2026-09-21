@@ -36,6 +36,43 @@ describe Riffer::Rig::Tools::Bash do
     assert_includes response.content, 'timed out'
   end
 
+  def with_cancel_after(seconds)
+    flag = Riffer::Rig::Runtime::CancelFlag.new
+    canceller = Thread.new do
+      sleep seconds
+      flag.set
+    end
+    yield Riffer::Agent::Context.new(cancel_flag: flag)
+  ensure
+    canceller.join
+  end
+
+  it 'returns within a second of the cancel' do
+    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    with_cancel_after(0.2) { |context| @tool.call(context: context, command: 'sleep 30') }
+
+    assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - started, :<, 1.2
+  end
+
+  it 'reports the cancel as a tool error' do
+    response = with_cancel_after(0.2) { |context| @tool.call_with_validation(context: context, command: 'sleep 30') }
+
+    assert_predicate response, :error?
+  end
+
+  it 'tells the model the command was cancelled' do
+    response = with_cancel_after(0.2) { |context| @tool.call_with_validation(context: context, command: 'sleep 30') }
+
+    assert_includes response.content, '[cancelled]'
+  end
+
+  it 'ignores a flag that is not set' do
+    context = Riffer::Agent::Context.new(cancel_flag: Riffer::Rig::Runtime::CancelFlag.new)
+    response = @tool.call(context: context, command: 'echo hello')
+
+    assert_equal 'hello', response.content
+  end
+
   def test_kill_group_returns_the_childs_process_group_id
     pid = Process.spawn('sleep 5', pgroup: true)
 

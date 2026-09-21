@@ -425,4 +425,91 @@ describe Riffer::Rig::Runtime do
 
     assert_equal [Riffer::Rig::Events::Notify.new('boom', :error)], notify_events
   end
+
+  describe '#cancel' do
+    before do
+      started = @started = Queue.new
+      release = @release = Queue.new
+      gate = Class.new(Riffer::Tool) do
+        identifier 'gate'
+        description 'Blocks until the test releases it'
+
+        define_method(:call) do |**|
+          started << true
+          release.pop
+          text('released')
+        end
+      end
+      @gate_extension = Riffer::Rig.extension('test_runtime_cancel') { |rig| rig.tool gate }
+      @runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@gate_extension])
+      @runtime.agent.provider.stub_response(
+        '', tool_calls: [{ name: 'gate', arguments: '{}' }, { name: 'gate', arguments: '{}' }]
+      )
+      @runtime.agent.provider.stub_response('after the cancel')
+    end
+
+    after do
+      Riffer::Rig.instance_variable_get(:@extensions).delete('test_runtime_cancel')
+    end
+
+    def cancel_mid_tool
+      Thread.new do
+        @started.pop
+        @runtime.cancel
+        @release.close
+      end
+    end
+
+    def cancelled_turn_events
+      canceller = cancel_mid_tool
+      events = []
+      @runtime.prompt('go') { |event| events << event }
+      canceller.join
+      events
+    end
+
+    it 'ends the turn with the cancelled stop reason' do
+      assert_equal :cancelled, cancelled_turn_events.last.stop_reason
+    end
+
+    it 'emits the riffer interrupt event with the cancelled reason' do
+      interrupt = cancelled_turn_events.find { |event| event.is_a?(Riffer::StreamEvents::Interrupt) }
+
+      assert_equal :cancelled, interrupt.reason
+    end
+
+    it 'heals the tool calls the cancel orphaned' do
+      cancelled_turn_events
+      healed = @runtime.agent.session.messages.grep(Riffer::Messages::Tool).find do |message|
+        message.tool_call_id == 'mock_call_1'
+      end
+
+      assert_equal :interrupted, healed.error_type
+    end
+
+    it 'prompts again after a cancelled turn' do
+      cancelled_turn_events
+
+      assert_equal :completed, @runtime.ask('again').outcome.reason
+    end
+
+    it 'reports a cancelled ask as interrupted with the cancelled detail' do
+      canceller = cancel_mid_tool
+      outcome = @runtime.ask('go').outcome
+      canceller.join
+
+      assert_equal [:interrupted, 'cancelled'], [outcome.reason, outcome.detail]
+    end
+
+    it 'returns nil' do
+      assert_nil @runtime.cancel
+    end
+
+    it 'is a no-op when idle' do
+      @release.close
+      @runtime.cancel
+
+      assert_equal :completed, @runtime.ask('go').outcome.reason
+    end
+  end
 end
