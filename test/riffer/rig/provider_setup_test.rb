@@ -9,9 +9,10 @@ describe Riffer::Rig::ProviderSetup do
     assert_equal expected, Riffer::Rig::ProviderSetup::TABLE.keys
   end
 
-  it 'names only members of the provider config' do
+  it 'names only settable fields of the provider config' do
     unknown = Riffer::Rig::ProviderSetup::TABLE.flat_map do |identifier, setup|
-      setup.fields.map(&:name) - Riffer.config.public_send(identifier).members
+      provider_config = Riffer.config.public_send(identifier)
+      setup.fields.map(&:name).reject { |name| provider_config.respond_to?(:"#{name}=") }
     end
 
     assert_empty unknown

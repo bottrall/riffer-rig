@@ -47,7 +47,7 @@ module Riffer::Rig::Credentials
     return unless Riffer::Rig::ProviderSetup[identifier]
 
     provider_config = config.public_send(identifier)
-    values.each { |name, value| provider_config[name] = value }
+    values.each { |name, value| provider_config.public_send(:"#{name}=", value) }
   end
 
   # @rbs identifier: String | Symbol
