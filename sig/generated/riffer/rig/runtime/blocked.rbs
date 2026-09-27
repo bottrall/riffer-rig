@@ -1,0 +1,10 @@
+# Generated from lib/riffer/rig/runtime/blocked.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::Blocked
+  # @dynamic reason
+  attr_reader reason: String
+
+  # @rbs reason: String
+  # @rbs return: void
+  def initialize: (String reason) -> void
+end

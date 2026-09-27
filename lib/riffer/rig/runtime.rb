@@ -44,6 +44,7 @@ class Riffer::Rig::Runtime
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
   # @rbs @declared_settings: Hash[String, Hash[Symbol, untyped]]
   # @rbs @errors: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
+  # @rbs @handlers: Riffer::Rig::Runtime::Handlers
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader :agent #: Riffer::Agent
@@ -104,18 +105,19 @@ class Riffer::Rig::Runtime
     commands = [Riffer::Rig::Commands::Model.command, *registrars.flat_map { |registrar| registrar.commands.values }]
     @commands = commands.to_h { |command| [command.name, command] }
     tool_classes = select_tools(registrars.flat_map { |registrar| registrar.tools.to_a }.to_h.values, tools)
+    @handlers = Riffer::Rig::Runtime::Handlers.new(merge_handlers(registrars), @host)
     @base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
 
-    @agent = build_agent(
-      model,
-      Riffer::Agent::Config.new(
-        model: ->(context) { context[:model] },
-        instructions: system_prompt([]),
-        tools_config: tool_classes,
-        max_steps: max_steps
-      )
+    config = Riffer::Agent::Config.new(
+      model: ->(context) { context[:model] },
+      instructions: system_prompt([]),
+      tools_config: tool_classes,
+      max_steps: max_steps,
+      tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(@handlers)
     )
-    @agent.session.on_message { |_message| interrupt_if_cancelled }
+    config.add_guardrail(:before, klass: Riffer::Rig::Runtime::RequestGuardrail, options: { handlers: @handlers })
+    @agent = build_agent(model, config)
+    @agent.session.on_message { |message| observe_message(message) }
   end
 
   # @rbs text: String
@@ -125,10 +127,10 @@ class Riffer::Rig::Runtime
     claim
     begin
       if block
-        wrap_stream(start_turn(text)).each(&block)
+        turn(text).each(&block)
         nil
       else
-        wrap_stream(start_turn(text))
+        turn(text)
       end
     ensure
       @busy = false
@@ -140,7 +142,7 @@ class Riffer::Rig::Runtime
   def ask(text)
     claim
     begin
-      start_turn(text).each { |event| event }
+      turn(text).each { |event| event }
     ensure
       @busy = false
     end
@@ -200,9 +202,12 @@ class Riffer::Rig::Runtime
 
   # @rbs return: void
   def close
-    # TODO: emit Riffer::Rig::Events::SessionEnd once the rebuild ticket settles
-    # the stream's session_end reasons.
+    return if @closed
+
+    # TODO: emit Riffer::Rig::Events::SessionEnd on the stream once the rebuild
+    # ticket settles the stream's session_end reasons.
     @closed = true
+    @handlers.observe(:session_end, Riffer::Rig::Events::SessionEnd.new(:close)) unless @session_start_pending
   end
 
   private
@@ -228,7 +233,19 @@ class Riffer::Rig::Runtime
   def start_turn(text)
     @cancel_flag.clear
     refresh_system_message
-    @agent.stream(text)
+    prompt = @handlers.before_prompt(text)
+    prompt.is_a?(Riffer::Rig::Runtime::Blocked) ? blocked_turn(prompt.reason) : @agent.stream(prompt)
+  end
+
+  # @rbs reason: String
+  # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  def blocked_turn(reason)
+    response = Riffer::Agent::Response.new(
+      '',
+      outcome: Riffer::Agent::Outcome.new(reason: :guardrail_blocked, detail: reason),
+      messages: @agent.session.messages.dup.freeze
+    )
+    Enumerator.new { |_yielder| response }
   end
 
   # @rbs name: String
@@ -259,21 +276,62 @@ class Riffer::Rig::Runtime
       host: @host,
       settings: settings,
       emit: emit,
-      turn: ->(text) { wrap_stream(start_turn(text)).each(&emit) }
+      turn: ->(text) { turn(text).each(&emit) }
     )
   end
 
-  # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  # @rbs text: String
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
-  def wrap_stream(stream)
+  def turn(text)
     Enumerator.new do |yielder|
-      yielder << Riffer::Rig::Events::SessionStart.new(@id, :new) if @session_start_pending
-      @session_start_pending = false
-      @host.drain.each { |event| yielder << event }
-      response = stream.each { |event| yielder << event }
-      yielder << Riffer::Rig::Events::TurnEnd.new(stop_reason(response.outcome), response.token_usage)
+      if @session_start_pending
+        @session_start_pending = false
+        session_start = Riffer::Rig::Events::SessionStart.new(@id, :new)
+        @handlers.observe(:session_start, session_start)
+        yielder << session_start
+      end
+      @host.drain.each { |queued| yielder << queued }
+      response = start_turn(text).each { |event| pass_through(yielder, event) }
+      turn_end = Riffer::Rig::Events::TurnEnd.new(stop_reason(response.outcome), response.token_usage)
+      @handlers.observe(:turn_end, turn_end)
+      @host.drain.each { |queued| yielder << queued }
+      yielder << turn_end
       response
     end
+  end
+
+  # @rbs yielder: Enumerator::Yielder
+  # @rbs event: ::Riffer::StreamEvents::Base
+  # @rbs return: void
+  def pass_through(yielder, event)
+    @handlers.observe(:stream, event)
+    yielder << event
+    # Mid-turn notifies (a failing handler, a blocked request) reach the stream
+    # next to the event that raised them, not at the next turn.
+    @host.drain.each { |queued| yielder << queued }
+  end
+
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: void
+  def observe_message(message)
+    interrupt_if_cancelled
+    case message
+    when Riffer::Messages::Assistant
+      @handlers.observe(:after_response, Riffer::Rig::Events::AfterResponse.new(message))
+    when Riffer::Messages::Tool
+      before_next_request if @agent.session.pending_tool_calls.last.empty?
+    end
+  end
+
+  # @rbs return: void
+  def before_next_request
+    messages = @agent.session.messages
+    # Upstream candidate: riffer has no hook between tool results and the next
+    # request, so the last tool result's on_message stands in for one.
+    verdict = @handlers.before_request(messages)
+    return @agent.interrupt!(verdict.reason) if verdict.is_a?(Riffer::Rig::Runtime::Blocked)
+
+    @agent.session.set(verdict.dup) unless verdict.equal?(messages)
   end
 
   # @rbs return: void
@@ -352,6 +410,13 @@ class Riffer::Rig::Runtime
       [extension.to_sym, defaults.merge(given)]
     end
     settings.merge(namespaces)
+  end
+
+  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  def merge_handlers(registrars)
+    Riffer::Rig::Registrar::EVENTS.to_h do |event|
+      [event, registrars.flat_map { |registrar| registrar.handlers.fetch(event) }]
+    end
   end
 
   # @rbs registered: Array[singleton(Riffer::Tool)]

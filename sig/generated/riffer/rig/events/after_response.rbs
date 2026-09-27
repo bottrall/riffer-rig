@@ -1,0 +1,16 @@
+# Generated from lib/riffer/rig/events/after_response.rb with RBS::Inline
+
+class Riffer::Rig::Events::AfterResponse < Riffer::Rig::Events::Event
+  # @dynamic message
+  attr_reader message: ::Riffer::Messages::Assistant
+
+  # @rbs message: ::Riffer::Messages::Assistant
+  # @rbs return: void
+  def initialize: (::Riffer::Messages::Assistant message) -> void
+
+  # @rbs return: Symbol
+  def type: () -> Symbol
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

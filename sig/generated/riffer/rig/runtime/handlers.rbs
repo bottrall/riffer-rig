@@ -1,0 +1,49 @@
+# Generated from lib/riffer/rig/runtime/handlers.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::Handlers
+  @handlers: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+
+  @host: Riffer::Rig::Hosts::Base
+
+  # @rbs handlers: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  # @rbs host: Riffer::Rig::Hosts::Base
+  # @rbs return: void
+  def initialize: (Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]] handlers, Riffer::Rig::Hosts::Base host) -> void
+
+  # @rbs name: Symbol
+  # @rbs event: Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base
+  # @rbs return: void
+  def observe: (Symbol name, Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base event) -> void
+
+  # @rbs text: String
+  # @rbs return: String | Riffer::Rig::Runtime::Blocked
+  def before_prompt: (String text) -> (String | Riffer::Rig::Runtime::Blocked)
+
+  # @rbs tool: String
+  # @rbs args: Hash[Symbol, untyped]
+  # @rbs return: Hash[Symbol, untyped] | Riffer::Rig::Runtime::Blocked
+  def before_tool_call: (String tool, Hash[Symbol, untyped] args) -> (Hash[Symbol, untyped] | Riffer::Rig::Runtime::Blocked)
+
+  # @rbs messages: Array[::Riffer::Messages::Base]
+  # @rbs return: Array[::Riffer::Messages::Base] | Riffer::Rig::Runtime::Blocked
+  def before_request: (Array[::Riffer::Messages::Base] messages) -> (Array[::Riffer::Messages::Base] | Riffer::Rig::Runtime::Blocked)
+
+  private
+
+  # @rbs name: Symbol
+  # @rbs payload: untyped
+  # @rbs accepts: ^(untyped) -> bool
+  # @rbs &: (untyped) -> Riffer::Rig::Events::Event
+  # @rbs return: untyped
+  def veto: (Symbol name, untyped payload, ^(untyped) -> bool accepts) { (untyped) -> Riffer::Rig::Events::Event } -> untyped
+
+  # @rbs outcome: untyped
+  # @rbs return: untyped
+  def announce: (untyped outcome) -> untyped
+
+  # @rbs name: Symbol
+  # @rbs handler: ^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped
+  # @rbs event: Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base
+  # @rbs return: untyped
+  def call: (Symbol name, ^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped handler, Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base event) -> untyped
+end

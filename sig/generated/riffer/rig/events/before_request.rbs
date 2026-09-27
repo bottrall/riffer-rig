@@ -1,0 +1,16 @@
+# Generated from lib/riffer/rig/events/before_request.rb with RBS::Inline
+
+class Riffer::Rig::Events::BeforeRequest < Riffer::Rig::Events::Event
+  # @dynamic messages
+  attr_reader messages: Array[::Riffer::Messages::Base]
+
+  # @rbs messages: Array[::Riffer::Messages::Base]
+  # @rbs return: void
+  def initialize: (Array[::Riffer::Messages::Base] messages) -> void
+
+  # @rbs return: Symbol
+  def type: () -> Symbol
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

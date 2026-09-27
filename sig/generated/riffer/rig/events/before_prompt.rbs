@@ -1,0 +1,16 @@
+# Generated from lib/riffer/rig/events/before_prompt.rb with RBS::Inline
+
+class Riffer::Rig::Events::BeforePrompt < Riffer::Rig::Events::Event
+  # @dynamic text
+  attr_reader text: String
+
+  # @rbs text: String
+  # @rbs return: void
+  def initialize: (String text) -> void
+
+  # @rbs return: Symbol
+  def type: () -> Symbol
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

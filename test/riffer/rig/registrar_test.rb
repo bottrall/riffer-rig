@@ -135,4 +135,32 @@ describe Riffer::Rig::Registrar do
     assert_equal 'extension name mcp collides with a core settings key',
                  Riffer::Rig::Registrar.new('mcp').collision.message
   end
+
+  it 'collects handlers per event in registration order' do
+    registrar = Riffer::Rig::Registrar.new('git')
+    first = proc { :first }
+    second = proc { :second }
+    registrar.on(:before_tool_call, &first)
+    registrar.on(:before_tool_call, &second)
+
+    assert_equal [first, second], registrar.handlers[:before_tool_call]
+  end
+
+  it 'starts every event with no handlers' do
+    assert_equal Riffer::Rig::Registrar::EVENTS.to_h { |event| [event, []] }, Riffer::Rig::Registrar.new('git').handlers
+  end
+
+  it 'rejects an unknown event' do
+    registrar = Riffer::Rig::Registrar.new('git')
+
+    assert_raises(Riffer::ArgumentError) { registrar.on(:before_everything) { nil } }
+  end
+
+  it 'returns fresh arrays from handlers' do
+    registrar = Riffer::Rig::Registrar.new('git')
+    registrar.on(:stream) { nil }
+    registrar.handlers[:stream].clear
+
+    assert_equal 1, registrar.handlers[:stream].length
+  end
 end

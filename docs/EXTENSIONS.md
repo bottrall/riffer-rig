@@ -60,6 +60,41 @@ The block receives a `ctx`:
 
 A command runs synchronously, one at a time, under the same rule as `prompt`: `run_command` while a prompt or another command is running raises `Riffer::Rig::Runtime::BusyError`. A command that calls `ctx.runtime.prompt` or `ctx.runtime.ask` hits the same rule; `ctx.prompt` is the way to run a turn from a command. A command that raises is caught and reported through the host's `notify` at level `:error`, and the Runtime stays usable.
 
+## The `rig.on` seam
+
+```ruby
+rig.on(:before_tool_call) { |e| next :block, 'no force pushes' if e.tool == 'bash' && e.args[:command] =~ /push --force/ }
+rig.on(:before_prompt) { |e| "#{e.text}\n\nAnswer in one paragraph." }
+rig.on(:turn_end) { |e| warn "turn cost $#{e.cost}" if e.cost }
+```
+
+Adds a handler for one event of the Runtime's lifecycle or loop. The block receives the event object; every event is immutable, so a handler that wants to change something returns the change rather than mutating the event. Handlers for the same event run in load order — extension order, then registration order within an extension. An unknown event name raises `Riffer::ArgumentError` when the extension block runs.
+
+| Event              | Kind        | The event carries                                  | Fires                                                                 |
+| ------------------ | ----------- | -------------------------------------------------- | --------------------------------------------------------------------- |
+| `session_start`    | lifecycle   | `id`, `reason` (`:new`)                            | once, as the Runtime's first turn starts                              |
+| `session_end`      | lifecycle   | `reason` (`:close`)                                | on `close`, if a session started                                      |
+| `before_prompt`    | vetoable    | `text`                                             | as each `prompt` or `ask` starts, before the text reaches the session |
+| `before_request`   | vetoable    | `messages` (the whole request)                     | before every LLM call: at the start of the turn and again after each round of tool results |
+| `before_tool_call` | vetoable    | `tool` (the identifier), `args` (symbol keys)      | before each tool runs                                                 |
+| `after_tool_call`  | observe     | `tool`, `args` (as run), `result` (the tool's `Riffer::Tools::Response`) | after each tool runs                        |
+| `after_response`   | observe     | `message` (the `Riffer::Messages::Assistant`)      | after each model response is added to the session                     |
+| `turn_end`         | observe     | `stop_reason`, `usage`, `cost`                     | as each turn ends, `ask` included                                     |
+| `stream`           | passthrough | the riffer `StreamEvent` itself                    | for every riffer stream event of a turn, `ask` included               |
+
+Lifecycle handlers are where an extension acquires and releases process-wide state; the `:restore` and `:reload` reasons arrive with the snapshot and rebuild tickets.
+
+A vetoable handler may return:
+
+- a replacement payload — a `String` for `before_prompt`, an args `Hash` for `before_tool_call`, an `Array` of `Riffer::Messages::Base` for `before_request`. The next handler receives an event built from it, and the last one wins. Any other return value (including `nil`) changes nothing.
+- `:block`, or `[:block, reason]` (`next :block, 'reason'` inside the block). Later handlers do not run. A blocked tool call becomes a tool error carrying the reason (error type `:blocked`) that the model sees, and the turn carries on. A blocked prompt never reaches the model or the session, the host is told the reason through `notify` at level `:warning`, and the turn ends with stop reason `:guardrail_blocked`. A blocked request also notifies the host: at the start of the turn it ends the turn with `:guardrail_blocked`, and after tool results it interrupts the turn (`:interrupted`, the reason in the outcome's `detail`).
+
+A replacement request is written back to the session, so later requests carry it too. A replacement tool payload changes what the tool runs with; the model's own tool call in the history is left as it sent it.
+
+Observe and passthrough handlers change nothing: their return values are ignored, and a `stream` handler sees each riffer event unchanged, the same object the host receives.
+
+Handlers run on the thread running the turn, one at a time — tools run sequentially so their handlers never overlap.
+
 ## Bundled extensions and replacement
 
 The four tools ship as bundled extensions — `Riffer::Rig.bundled(:read)`, `:write`, `:edit`, `:bash` — built on the same seams as any other extension; `Riffer::Rig.bundled` returns them all in load order. [Tools](TOOLS.md) describes them.
@@ -93,6 +128,8 @@ The Runtime wraps each registrar block. A block that raises a `StandardError`, a
 - The host gets one `notify` at level `:error`, `"Extension <name> failed to load: <message>"`, which the [mirror](HOSTS.md#the-mirror) also queues as a `notify` event for the next `prompt` or `run_command` to emit.
 
 Errors go to the host only, never into the model's context.
+
+At run time a handler that raises is caught and reported through the host's `notify` at level `:error` (`"before_tool_call handler failed: …"`), and the turn continues: the remaining handlers run, and a raising vetoable handler counts as no veto. Unlike a load error it is not recorded on `runtime.errors`. The `notify` event reaches the stream next to the event being handled.
 
 ## API versioning
 

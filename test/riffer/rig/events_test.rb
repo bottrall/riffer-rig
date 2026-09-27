@@ -53,6 +53,51 @@ describe Riffer::Rig::Events do
     assert_nil event.cost
   end
 
+  it 'types and round-trips a before_prompt' do
+    event = Riffer::Rig::Events::BeforePrompt.new('hello')
+
+    assert_equal({ text: 'hello', type: :before_prompt }, event.to_h)
+  end
+
+  it 'types and round-trips a before_tool_call' do
+    event = Riffer::Rig::Events::BeforeToolCall.new('bash', { command: 'ls' })
+
+    assert_equal({ tool: 'bash', args: { command: 'ls' }, type: :before_tool_call }, event.to_h)
+  end
+
+  it 'freezes the args of a before_tool_call' do
+    event = Riffer::Rig::Events::BeforeToolCall.new('bash', { command: 'ls' })
+
+    assert_predicate event.args, :frozen?
+  end
+
+  it 'types and round-trips a before_request' do
+    messages = [Riffer::Messages::User.new('hi')]
+    event = Riffer::Rig::Events::BeforeRequest.new(messages)
+
+    assert_equal({ messages: messages, type: :before_request }, event.to_h)
+  end
+
+  it 'freezes the messages of a before_request' do
+    event = Riffer::Rig::Events::BeforeRequest.new([Riffer::Messages::User.new('hi')])
+
+    assert_predicate event.messages, :frozen?
+  end
+
+  it 'types and round-trips an after_tool_call' do
+    result = Riffer::Tools::Response.text('ok')
+    event = Riffer::Rig::Events::AfterToolCall.new('bash', { command: 'ls' }, result)
+
+    assert_equal({ tool: 'bash', args: { command: 'ls' }, result: result, type: :after_tool_call }, event.to_h)
+  end
+
+  it 'types and round-trips an after_response' do
+    message = Riffer::Messages::Assistant.new('done')
+    event = Riffer::Rig::Events::AfterResponse.new(message)
+
+    assert_equal({ message: message, type: :after_response }, event.to_h)
+  end
+
   it 'freezes events at construction' do
     event = Riffer::Rig::Events::Notify.new('x', :info)
 
