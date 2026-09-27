@@ -45,8 +45,6 @@ class Riffer::Rig::CodingAgent < Riffer::Agent
         Guidelines:
         - Be concise and direct in your responses.
         - Show file paths clearly when working with files.
-        - Use bash for file exploration (ls, rg, find) rather than guessing.
-        - Prefer editing existing files over creating new ones.
       PROMPT
     end
   )

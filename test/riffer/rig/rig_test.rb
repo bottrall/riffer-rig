@@ -31,4 +31,12 @@ describe Riffer::Rig do
   ensure
     drop('test_mismatch')
   end
+
+  it 'returns the bundled extensions in load order' do
+    assert_equal %w[read write edit bash], Riffer::Rig.bundled.map(&:name)
+  end
+
+  it 'returns one bundled extension by name' do
+    assert_same Riffer::Rig::Bundled::Bash, Riffer::Rig.bundled(:bash)
+  end
 end

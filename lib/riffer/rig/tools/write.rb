@@ -4,7 +4,8 @@ require 'fileutils'
 
 class Riffer::Rig::Tools::Write < Riffer::Tool
   identifier 'write'
-  description 'Write content to a file, creating it (and any parent directories) or overwriting it.'
+  description 'Write content to a file, creating it (and any parent directories) or overwriting it. ' \
+              'Use this for new files or full rewrites; prefer edit for changes to an existing file.'
 
   params do
     required :path, String, description: 'Path to the file (absolute, or relative to the working directory)'
@@ -16,7 +17,7 @@ class Riffer::Rig::Tools::Write < Riffer::Tool
   # @rbs content: String
   # @rbs return: Riffer::Tools::Response
   def call(context:, path:, content:)
-    resolved = File.expand_path(path, Dir.pwd)
+    resolved = File.expand_path(path, context&.[](:cwd))
     FileUtils.mkdir_p(File.dirname(resolved))
     File.write(resolved, content)
 

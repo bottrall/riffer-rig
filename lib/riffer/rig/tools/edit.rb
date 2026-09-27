@@ -3,7 +3,8 @@
 class Riffer::Rig::Tools::Edit < Riffer::Tool
   identifier 'edit'
   description 'Replace an exact string in a file. By default old_string must occur exactly once; ' \
-              'set replace_all to replace every occurrence.'
+              'set replace_all to replace every occurrence. ' \
+              'Prefer this over write for existing files; pass enough surrounding text to make old_string unique.'
 
   params do
     required :path, String, description: 'Path to the file (absolute, or relative to the working directory)'
@@ -22,7 +23,7 @@ class Riffer::Rig::Tools::Edit < Riffer::Tool
   # @rbs replace_all: bool
   # @rbs return: Riffer::Tools::Response
   def call(context:, path:, old_string:, new_string:, replace_all: false)
-    resolved = File.expand_path(path, Dir.pwd)
+    resolved = File.expand_path(path, context&.[](:cwd))
     return error("File not found: #{path}", type: :not_found) unless File.file?(resolved)
 
     content = File.read(resolved)

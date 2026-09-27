@@ -5,7 +5,7 @@ require 'open3'
 class Riffer::Rig::Tools::Bash < Riffer::Tool
   identifier 'bash'
   description 'Run a shell command in the working directory and return its combined stdout/stderr and exit status. ' \
-              'Use this for listing, searching (rg/grep/find), running tests, git, etc.'
+              'Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers.'
 
   timeout 600
 
@@ -29,7 +29,10 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
   # @rbs return: Riffer::Tools::Response
   def call(context:, command:, timeout_ms: DEFAULT_TIMEOUT_MS)
     cancel_flag = context&.[](:cancel_flag) #: Riffer::Rig::Runtime::CancelFlag?
-    output, status = run(command, timeout_ms / 1000.0, cancel_flag)
+    # The pre-#124 CLI runs CodingAgent outside a Runtime, so its tools get no
+    # :cwd; #124 removes this fallback.
+    cwd = context&.[](:cwd) || Dir.pwd #: String
+    output, status = run(command, cwd, timeout_ms / 1000.0, cancel_flag)
     output = truncate(output.rstrip)
 
     return error("Command exited with status #{status}\n#{output}", type: :command_failed) unless status.zero?
@@ -40,11 +43,12 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
   private
 
   # @rbs command: String
+  # @rbs cwd: String
   # @rbs timeout_seconds: Float
   # @rbs cancel_flag: Riffer::Rig::Runtime::CancelFlag?
   # @rbs return: [String, Integer]
-  def run(command, timeout_seconds, cancel_flag)
-    stdin, stdout_and_stderr, wait_thread = Open3.popen2e(command, chdir: Dir.pwd, pgroup: true)
+  def run(command, cwd, timeout_seconds, cancel_flag)
+    stdin, stdout_and_stderr, wait_thread = Open3.popen2e(command, chdir: cwd, pgroup: true)
     stdin.close
 
     ending = await(wait_thread, monotonic_now + timeout_seconds, cancel_flag)

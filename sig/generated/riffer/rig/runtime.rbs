@@ -165,6 +165,10 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def record_error: (Riffer::Rig::Extension extension, StandardError error) -> void
 
+  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs return: Array[String]
+  def overrides: (Array[Riffer::Rig::Registrar] registrars) -> Array[String]
+
   # @rbs registered: Array[singleton(Riffer::Tool)]
   # @rbs allowlist: Array[String]?
   # @rbs return: Array[singleton(Riffer::Tool)]

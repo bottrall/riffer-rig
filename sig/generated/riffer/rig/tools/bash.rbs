@@ -16,10 +16,11 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
   private
 
   # @rbs command: String
+  # @rbs cwd: String
   # @rbs timeout_seconds: Float
   # @rbs cancel_flag: Riffer::Rig::Runtime::CancelFlag?
   # @rbs return: [String, Integer]
-  def run: (String command, Float timeout_seconds, Riffer::Rig::Runtime::CancelFlag? cancel_flag) -> [ String, Integer ]
+  def run: (String command, String cwd, Float timeout_seconds, Riffer::Rig::Runtime::CancelFlag? cancel_flag) -> [ String, Integer ]
 
   # @rbs wait_thread: Process::Waiter
   # @rbs deadline: Float

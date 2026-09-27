@@ -1,0 +1,5 @@
+# Generated from lib/riffer/rig/bundled/write.rb with RBS::Inline
+
+module Riffer::Rig::Bundled
+  Write: Riffer::Rig::Extension
+end

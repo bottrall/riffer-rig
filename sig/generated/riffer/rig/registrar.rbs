@@ -3,11 +3,14 @@
 class Riffer::Rig::Registrar
   @extension: String
 
-  @tools: Array[singleton(Riffer::Tool)]
+  @tools: Hash[String, singleton(Riffer::Tool)]
 
   @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
 
   @commands: Hash[String, Riffer::Rig::Command]
+
+  # @dynamic extension
+  attr_reader extension: String
 
   # @rbs extension: String
   # @rbs return: void
@@ -28,12 +31,15 @@ class Riffer::Rig::Registrar
   # @rbs return: void
   def command: (String name, description: String) { (Riffer::Rig::Command::Context) -> void } -> void
 
-  # @rbs return: Array[singleton(Riffer::Tool)]
-  def tools: () -> Array[singleton(Riffer::Tool)]
+  # @rbs return: Hash[String, singleton(Riffer::Tool)]
+  def tools: () -> Hash[String, singleton(Riffer::Tool)]
 
   # @rbs return: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   def prompts: () -> Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
 
   # @rbs return: Hash[String, Riffer::Rig::Command]
   def commands: () -> Hash[String, Riffer::Rig::Command]
+
+  # @rbs return: Array[String]
+  def registrations: () -> Array[String]
 end
