@@ -86,11 +86,31 @@ describe Riffer::Rig::TokenTally do
     assert_in_delta 18.0, tally.estimated_cost, 0.0001
   end
 
-  it 'estimated cost includes cache tokens' do
+  it 'estimated cost prices cache tokens as part of input at their own rates' do
     tally = Riffer::Rig::TokenTally.new(pricing: SONNET_PRICING)
-    tally.add(usage(input: 0, output: 0, cache_write: 1_000_000, cache_read: 1_000_000))
+    tally.add(usage(input: 3_000_000, output: 0, cache_write: 1_000_000, cache_read: 1_000_000))
 
-    assert_in_delta 4.05, tally.estimated_cost, 0.0001
+    assert_in_delta 7.05, tally.estimated_cost, 0.0001
+  end
+
+  it 'returns the usage it adds, priced' do
+    tally = Riffer::Rig::TokenTally.new(pricing: SONNET_PRICING)
+
+    assert_in_delta 18.0, tally.add(usage(input: 1_000_000, output: 1_000_000)).cost, 0.0001
+  end
+
+  it 'returns the usage it adds unpriced when no pricing provided' do
+    tally = Riffer::Rig::TokenTally.new
+
+    assert_nil tally.add(usage(input: 100, output: 50)).cost
+  end
+
+  it 'sums the usage it adds' do
+    tally = Riffer::Rig::TokenTally.new
+    tally.add(usage(input: 100, output: 50))
+    tally.add(usage(input: 200, output: 75))
+
+    assert_equal({ input_tokens: 300, output_tokens: 125 }, tally.usage.to_h)
   end
 
   it 'estimated cost returns nil when no pricing provided' do

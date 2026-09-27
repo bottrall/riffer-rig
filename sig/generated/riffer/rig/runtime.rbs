@@ -43,6 +43,8 @@ class Riffer::Rig::Runtime
 
   @registrar: Riffer::Rig::Registrar
 
+  @tally: Riffer::Rig::TokenTally
+
   # @dynamic agent, credentials, cwd, host, id, settings
   attr_reader agent: Riffer::Agent
 
@@ -83,6 +85,9 @@ class Riffer::Rig::Runtime
   # @rbs return: nil
   def cancel: () -> nil
 
+  # @rbs return: Riffer::Providers::TokenUsage
+  def tally: () -> Riffer::Providers::TokenUsage
+
   # @rbs return: void
   def close: () -> void
 
@@ -91,6 +96,10 @@ class Riffer::Rig::Runtime
   # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
   def wrap_stream: (Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response] stream) -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
+
+  # @rbs response: Riffer::Agent::Response
+  # @rbs return: Riffer::Agent::Response
+  def settle: (Riffer::Agent::Response response) -> Riffer::Agent::Response
 
   # @rbs return: void
   def interrupt_if_cancelled: () -> void

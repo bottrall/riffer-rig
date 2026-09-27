@@ -41,6 +41,7 @@ class Riffer::Rig::Runtime
   # @rbs @closed: bool
   # @rbs @session_start_pending: bool
   # @rbs @registrar: Riffer::Rig::Registrar
+  # @rbs @tally: Riffer::Rig::TokenTally
 
   # @dynamic agent, credentials, cwd, host, id, settings
   attr_reader :agent #: Riffer::Agent
@@ -88,6 +89,7 @@ class Riffer::Rig::Runtime
     @closed = false
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
     @session_start_pending = true
+    @tally = Riffer::Rig::TokenTally.new(pricing: pricing[model])
     @registrar = build_registrar(extensions)
     tool_classes = select_tools(@registrar.tools, tools)
     @base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
@@ -133,7 +135,7 @@ class Riffer::Rig::Runtime
     @busy = true
     @cancel_flag.clear
     refresh_system_message
-    @agent.stream(text).each { |event| event }
+    settle(@agent.stream(text).each { |event| event })
   ensure
     @busy = false
   end
@@ -142,6 +144,11 @@ class Riffer::Rig::Runtime
   def cancel
     @cancel_flag.set
     nil
+  end
+
+  # @rbs return: Riffer::Providers::TokenUsage
+  def tally
+    @tally.usage
   end
 
   # @rbs return: void
@@ -160,10 +167,32 @@ class Riffer::Rig::Runtime
       yielder << Riffer::Rig::Events::SessionStart.new(@id, :new) if @session_start_pending
       @session_start_pending = false
       @host.drain.each { |event| yielder << event }
-      response = stream.each { |event| yielder << event }
+      response = settle(stream.each { |event| yielder << event })
       yielder << Riffer::Rig::Events::TurnEnd.new(stop_reason(response.outcome), response.token_usage)
       response
     end
+  end
+
+  # @rbs response: Riffer::Agent::Response
+  # @rbs return: Riffer::Agent::Response
+  def settle(response)
+    usage = response.token_usage
+    return response unless usage
+
+    # Upstream candidate: per-agent pricing in riffer. Riffer.config.pricing is
+    # process-wide, so the Runtime prices its own turns and swaps the usage into
+    # a copy of the response.
+    Riffer::Agent::Response.new(
+      response.content,
+      outcome: response.outcome,
+      tripwire: response.tripwire,
+      modifications: response.modifications,
+      reasoning: response.reasoning,
+      structured_output: response.structured_output,
+      messages: response.messages,
+      token_usage: @tally.add(usage),
+      steps: response.steps
+    )
   end
 
   # @rbs return: void

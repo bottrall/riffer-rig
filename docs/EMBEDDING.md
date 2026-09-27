@@ -12,7 +12,7 @@ runtime = Riffer::Rig::Runtime.new(
 )
 ```
 
-The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `pricing:` and `snapshot:` are accepted and ignored until their tickets land, and `settings:` and `credentials:` are stored and exposed (`runtime.settings`, `runtime.credentials`) but nothing reads them yet. `pricing:` and `credentials:` already take the shapes the Loader will pass — `Settings::Pricing` entries and each provider's resolved field values respectively — so embedders building them today keep working when their tickets land. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.resolve` finds a provider's values and `Riffer::Rig::Credentials.apply` assigns them (see [Providers](PROVIDERS.md)), or set them yourself with `Riffer.configure`.
+The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `credentials:`, `pricing:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `snapshot:` is accepted and ignored until its ticket lands, and `settings:` and `credentials:` are stored and exposed (`runtime.settings`, `runtime.credentials`) but nothing reads them yet. `credentials:` already takes the shape the Loader will pass — each provider's resolved field values — so embedders building it today keep working when its ticket lands. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.resolve` finds a provider's values and `Riffer::Rig::Credentials.apply` assigns them (see [Providers](PROVIDERS.md)), or set them yourself with `Riffer.configure`.
 
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
@@ -26,7 +26,7 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `instructions:` | replaces the base prompt; sections and the environment block still apply    | `nil` (use the base)    |
 | `max_steps:`    | agent-loop step limit; `nil` runs the loop without a limit                  | `nil`                   |
 | `credentials:`  | provider → resolved field values (`{ anthropic: { api_key: "…" } }`), stored as given and exposed but not yet read | `{}` |
-| `pricing:`      | model → `Riffer::Rig::Settings::Pricing` entries (USD per million tokens); accepted and ignored until the token tally moves behind the Runtime | `{}` |
+| `pricing:`      | model → `Riffer::Rig::Settings::Pricing` entries (USD per million tokens) that price every turn and the [tally](#token-tally-and-cost) | `{}` |
 
 Two Runtimes in one process share nothing but the process-wide extension registry, riffer's provider repository and riffer's config, which holds the process's one set of provider credentials.
 
@@ -66,6 +66,23 @@ end
 ```
 
 How the run ended is riffer's `response.outcome` — `reason` is one of riffer's vocabulary (`completed`, provider finish reasons like `length` and `content_filter`, `max_steps`, `guardrail_blocked`, `interrupted`, …) and `detail` carries the specifics, such as the interrupt reason behind `:interrupted`. A [cancelled](#cancelling-a-turn) run ends the same way — `reason: :interrupted`, `detail: "cancelled"` — because riffer's outcome vocabulary has no `cancelled` entry yet. Hosts map `outcome.reason` to exit codes or UI.
+
+## Token tally and cost
+
+The Runtime keeps a running tally of token usage across its turns — every `prompt` and every `ask` — and prices it with the `pricing:` entry for its model. `tally` returns the totals as riffer's `Riffer::Providers::TokenUsage`; its `cost` is the running USD total.
+
+```ruby
+pricing = { 'anthropic/claude-sonnet-4-6' => Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3) }
+runtime = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', pricing: pricing)
+response = runtime.ask('Fix the failing test')
+response.token_usage.cost # => this turn, in USD
+runtime.tally.input_tokens # => every turn so far
+runtime.tally.cost         # => every turn so far, in USD
+```
+
+Each turn's usage carries its own `cost`: on the `ask` response as `response.token_usage.cost`, and on the stream as the closing `turn_end` event's `usage` and `cost` — the same values. Rates are USD per million tokens. riffer counts cache reads and writes inside `input_tokens`, so the cached share is priced at the `cache_read` and `cache_write` rates and only the rest at `input`.
+
+Missing pricing means `nil`, never zero: with no `pricing:` entry for the model, a turn's `cost` is whatever riffer reported (`nil` unless `Riffer.config.pricing` prices the model) and `tally.cost` is `nil`. With an entry, `tally.cost` starts at `0.0`. The terminal takes its pricing from the `models` block of `~/.riffer/settings.json` ([Configuration](CONFIGURATION.md#models)); an embedder passes its own.
 
 ## Rig events
 

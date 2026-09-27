@@ -75,7 +75,7 @@ The flat `{"anthropic": "sk-…"}` shape earlier versions wrote is no longer rea
   }
   ```
 
-  `models` holds pricing in USD per million tokens; a model without an entry shows no cost. `reasoning` is translated to the provider's own parameter — Anthropic accepts `low`, `medium`, `high`, `xhigh` and `max`; OpenAI and OpenRouter accept `low`, `medium`, `high` and `xhigh`. Omitting it, or supplying an unrecognised value, leaves the model's default reasoning behaviour unchanged.
+  `models` prices each model in USD per million tokens; [Configuration](docs/CONFIGURATION.md#models) has the format. `reasoning` is translated to the provider's own parameter — Anthropic accepts `low`, `medium`, `high`, `xhigh` and `max`; OpenAI and OpenRouter accept `low`, `medium`, `high` and `xhigh`. Omitting it, or supplying an unrecognised value, leaves the model's default reasoning behaviour unchanged.
 
 ## Development
 
