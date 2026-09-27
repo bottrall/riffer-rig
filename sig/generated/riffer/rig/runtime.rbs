@@ -45,9 +45,11 @@ class Riffer::Rig::Runtime
 
   @commands: Hash[String, Riffer::Rig::Command]
 
+  @declared_settings: Hash[String, Hash[Symbol, untyped]]
+
   @errors: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
 
-  # @dynamic agent, credentials, cwd, host, id, settings
+  # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader agent: Riffer::Agent
 
   attr_reader credentials: Hash[Symbol, Hash[Symbol, String]]
@@ -59,6 +61,8 @@ class Riffer::Rig::Runtime
   attr_reader id: String
 
   attr_reader settings: Hash[Symbol, untyped]
+
+  attr_reader declared_settings: Hash[String, Hash[Symbol, untyped]]
 
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]
@@ -168,6 +172,10 @@ class Riffer::Rig::Runtime
   # @rbs registrars: Array[Riffer::Rig::Registrar]
   # @rbs return: Array[String]
   def overrides: (Array[Riffer::Rig::Registrar] registrars) -> Array[String]
+
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: Hash[Symbol, untyped]
+  def with_declared_defaults: (Hash[Symbol, untyped] settings) -> Hash[Symbol, untyped]
 
   # @rbs registered: Array[singleton(Riffer::Tool)]
   # @rbs allowlist: Array[String]?

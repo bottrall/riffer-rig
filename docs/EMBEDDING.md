@@ -12,14 +12,14 @@ runtime = Riffer::Rig::Runtime.new(
 )
 ```
 
-The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `credentials:`, `pricing:`, `riffer_config:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `snapshot:` is accepted and ignored until its ticket lands, `settings:` is stored and exposed (`runtime.settings`) and read only by [commands](#commands), each through its extension's namespace, and `credentials:` is stored and exposed (`runtime.credentials`) but nothing reads it yet. `credentials:` already takes the shape the Loader will pass — each provider's resolved field values — so embedders building it today keep working when its ticket lands. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.resolve` finds a provider's values and `Riffer::Rig::Credentials.apply` assigns them (see [Providers](PROVIDERS.md)), or set them yourself with `Riffer.configure`.
+The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `credentials:`, `pricing:`, `riffer_config:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `snapshot:` is accepted and ignored until its ticket lands, and `credentials:` is stored and exposed (`runtime.credentials`) but nothing reads it yet. `credentials:` already takes the shape the Loader will pass — each provider's resolved field values — so embedders building it today keep working when its ticket lands. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.resolve` finds a provider's values and `Riffer::Rig::Credentials.apply` assigns them (see [Providers](PROVIDERS.md)), or set them yourself with `Riffer.configure`.
 
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
 | `model`         | `"provider/name"`; required, positional                                     | —                       |
 | `extensions:`   | ordered extension objects whose blocks run against this Runtime's registrar; `Riffer::Rig.bundled` gives the [bundled tools](TOOLS.md) | `[]`                    |
 | `tools:`        | allowlist of tool identifiers; `nil` means every registered tool            | `nil`                   |
-| `settings:`     | merged settings hash; a command reads its extension's key as `ctx.settings` | `{}`                    |
+| `settings:`     | merged settings hash (core keys top level, extension keys under their names); a command reads its extension's namespace as `ctx.settings` | `{}` |
 | `host:`         | a [`Riffer::Rig::Hosts::Base`](HOSTS.md) subclass instance                  | `Riffer::Rig::Hosts::Null.new` |
 | `cwd:`          | working directory for the environment block, and the directory tools resolve relative paths against | `Dir.pwd`               |
 | `name:`         | the name interpolated into the [base prompt](INSTRUCTIONS.md)               | `"riffer"`              |
@@ -28,6 +28,8 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `credentials:`  | provider → resolved field values (`{ anthropic: { api_key: "…" } }`), stored as given and exposed but not yet read | `{}` |
 | `pricing:`      | model → `Riffer::Rig::Settings::Pricing` entries (USD per million tokens), registered into riffer's pricing when the Runtime is built; see [tally](#token-tally-and-cost) | `{}` |
 | `riffer_config:` | the `Riffer::Config` whose `pricing` receives the `pricing:` entries      | `Riffer.config`         |
+
+`runtime.settings` is the `settings:` hash with each extension's [declared defaults](EXTENSIONS.md#the-rigsetting-seam) filled into its namespace; core reads it only to hand each [command](#commands) its extension's namespace. `runtime.declared_settings` is the table of what extensions declared, extension name → key → default, for a host to render.
 
 Two Runtimes in one process share nothing but the process-wide extension registry, riffer's provider repository and riffer's config, which holds the process's one set of provider credentials.
 

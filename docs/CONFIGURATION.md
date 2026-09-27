@@ -41,3 +41,20 @@ The provider is one of `anthropic`, `openai`, `gemini`, `openrouter`, `azure_ope
 Each entry becomes a `Riffer::Rig::Settings::Pricing` and reaches the Runtime through its `pricing:` keyword, which registers it into riffer's `Riffer.config.pricing` so every turn and the running total carry a cost (see [Embedding](EMBEDDING.md#token-tally-and-cost)).
 
 A model without an entry has no cost: it is shown as missing, never as zero. An entry that is not an object is ignored.
+
+## Extension namespaces
+
+Core keys — `model`, `reasoning`, `models`, `reload`, `extensions`, `sessions`, `providers`, `mcp` and `tools` — stay at the top level. Every other top-level key is an extension's namespace, named after the extension, holding the keys that extension declares with [`rig.setting`](EXTENSIONS.md#the-rigsetting-seam):
+
+```json
+{
+  "model": "anthropic/claude-sonnet-4-6",
+  "git": {
+    "depth": 10
+  }
+}
+```
+
+A key left out takes the default the extension declared. An extension cannot be named after a core key; one that is fails to load and is reported.
+
+An embedder passes the same shape as the Runtime's `settings:` hash, with symbol keys — `{ model: '…', git: { depth: 10 } }` (see [Embedding](EMBEDDING.md#constructing-a-runtime)).
