@@ -17,7 +17,7 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
 | `model`         | `"provider/name"`; required, positional                                     | —                       |
-| `extensions:`   | ordered extension objects whose blocks run against this Runtime's registrar; `Riffer::Rig.bundled` gives the [bundled tools](TOOLS.md) | `[]`                    |
+| `extensions:`   | ordered extension objects whose blocks run against this Runtime's registrar; `Riffer::Rig.bundled` gives the [bundled tools](TOOLS.md) and [AGENTS.md section](INSTRUCTIONS.md#agentsmd) | `[]`                    |
 | `tools:`        | allowlist of tool identifiers; `nil` means every registered tool            | `nil`                   |
 | `settings:`     | merged settings hash (core keys top level, extension keys under their names); a command reads its extension's namespace as `ctx.settings` | `{}` |
 | `host:`         | a [`Riffer::Rig::Hosts::Base`](HOSTS.md) subclass instance                  | `Riffer::Rig::Hosts::Null.new` |

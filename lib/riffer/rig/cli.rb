@@ -102,7 +102,7 @@ module Riffer::Rig::CLI
   # @rbs model: String
   # @rbs return: void
   def reveal_banner(theme, animator, model)
-    loaded  = [Riffer::Rig::CodingAgent::GLOBAL_AGENTS_FILE, File.join(Dir.pwd, 'AGENTS.md')].select { |path| File.file?(path) }
+    loaded  = Riffer::Rig::AgentsMd.paths(Dir.pwd)
     context = loaded.empty? ? 'none' : loaded.join(', ')
 
     animator.reveal(

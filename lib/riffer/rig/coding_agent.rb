@@ -3,8 +3,6 @@
 require 'date'
 
 class Riffer::Rig::CodingAgent < Riffer::Agent
-  GLOBAL_AGENTS_FILE = File.expand_path('~/.riffer/AGENTS.md') #: String
-
   GLOBAL_SKILLS_DIR  = File.expand_path('~/.riffer/skills') #: String
 
   PROJECT_SKILLS_DIR = -> { File.join(Dir.pwd, '.skills') } #: ^() -> String
@@ -22,18 +20,7 @@ class Riffer::Rig::CodingAgent < Riffer::Agent
 
   instructions(
     lambda do
-      context_files = [GLOBAL_AGENTS_FILE, File.join(Dir.pwd, 'AGENTS.md')]
-        .select { |path| File.file?(path) }
-        .map { |path| "<project_instructions path=\"#{path}\">\n#{File.read(path)}\n</project_instructions>" }
-
-      project_context =
-        if context_files.empty?
-          ''
-        else
-          "\n\n<project_context>\n#{context_files.join("\n\n")}\n</project_context>"
-        end
-
-      <<~PROMPT.chomp + project_context + "\n\nCurrent date: #{Date.today}\nCurrent working directory: #{Dir.pwd}"
+      base = <<~PROMPT.chomp
         You are an expert coding assistant running inside riffer-rig, a terminal coding agent. You help the user by reading files, running shell commands, editing code, and writing new files.
 
         Available tools:
@@ -46,6 +33,10 @@ class Riffer::Rig::CodingAgent < Riffer::Agent
         - Be concise and direct in your responses.
         - Show file paths clearly when working with files.
       PROMPT
+
+      environment = "Current date: #{Date.today}\nCurrent working directory: #{Dir.pwd}"
+
+      [base, Riffer::Rig::AgentsMd.section(Dir.pwd), environment].compact.join("\n\n")
     end
   )
 end

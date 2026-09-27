@@ -27,7 +27,7 @@ Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', extensions: Riffer::Rig.
 
 ## The bundled extensions
 
-`Riffer::Rig.bundled(:read)` returns the bundled extension of that name — the same `Riffer::Rig::Extension` type `Riffer::Rig.extension` returns — and `Riffer::Rig.bundled` with no argument returns all of them in load order: `read`, `write`, `edit`, `bash`. An unknown name raises `KeyError`. An embedder composes them with its own:
+`Riffer::Rig.bundled(:read)` returns the bundled extension of that name — the same `Riffer::Rig::Extension` type `Riffer::Rig.extension` returns — and `Riffer::Rig.bundled` with no argument returns all of them in load order: `read`, `write`, `edit`, `bash`, then `agents_md` ([Instructions](INSTRUCTIONS.md#agentsmd)). An unknown name raises `KeyError`. An embedder composes them with its own:
 
 ```ruby
 Riffer::Rig::Runtime.new(

@@ -97,7 +97,7 @@ Hooks run on the thread running the turn, one at a time — tools run sequential
 
 ## Bundled extensions and replacement
 
-The four tools ship as bundled extensions — `Riffer::Rig.bundled(:read)`, `:write`, `:edit`, `:bash` — built on the same seams as any other extension; `Riffer::Rig.bundled` returns them all in load order. [Tools](TOOLS.md) describes them.
+The four tools ship as bundled extensions — `Riffer::Rig.bundled(:read)`, `:write`, `:edit`, `:bash` — and so does the `:agents_md` prompt section, `Riffer::Rig.bundled(:agents_md)`, all built on the same seams as any other extension; `Riffer::Rig.bundled` returns them all in load order. [Tools](TOOLS.md) describes the tools and [Instructions](INSTRUCTIONS.md#agentsmd) the AGENTS.md section.
 
 A later extension replaces anything an earlier one registered by registering under the same name: a tool with the same identifier, a command with the same name, a prompt section with the same name. Later wins, and the Runtime reports each replacement across extensions through the host's `notify` at level `:info`, as "Extension LATER replaces KIND NAME from EARLIER". Nothing is deregistered, so the original extension is still there to pass to another Runtime.
 

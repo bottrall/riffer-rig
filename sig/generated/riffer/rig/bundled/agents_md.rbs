@@ -1,0 +1,5 @@
+# Generated from lib/riffer/rig/bundled/agents_md.rb with RBS::Inline
+
+module Riffer::Rig::Bundled
+  AgentsMd: Riffer::Rig::Extension
+end
