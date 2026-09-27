@@ -24,20 +24,10 @@ describe Riffer::Rig do
     drop('test_replace')
   end
 
-  it 'raises on a requires mismatch' do
-    assert_raises(Riffer::ArgumentError) do
-      Riffer::Rig.extension('test_mismatch', requires: '>= 99.0') { |rig| rig }
-    end
-  ensure
-    drop('test_mismatch')
-  end
+  it 'records an extension whose requires is unmet' do
+    extension = Riffer::Rig.extension('test_mismatch', requires: '>= 99.0') { |rig| rig }
 
-  it 'names the requirement in the mismatch error' do
-    Riffer::Rig.extension('test_mismatch', requires: '>= 99.0') { |rig| rig }
-  rescue Riffer::ArgumentError => e
-    assert_includes e.message, 'requires riffer-rig >= 99.0'
-  else
-    flunk 'expected Riffer::ArgumentError'
+    assert_same extension, Riffer::Rig.extensions['test_mismatch']
   ensure
     drop('test_mismatch')
   end

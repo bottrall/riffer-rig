@@ -45,6 +45,8 @@ class Riffer::Rig::Runtime
 
   @commands: Hash[String, Riffer::Rig::Command]
 
+  @errors: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
+
   # @dynamic agent, credentials, cwd, host, id, settings
   attr_reader agent: Riffer::Agent
 
@@ -92,6 +94,9 @@ class Riffer::Rig::Runtime
   # @rbs return: nil
   def run_command: (String name, ?String args) ?{ (::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void } -> nil
 
+  # @rbs return: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
+  def errors: () -> Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
+
   # @rbs return: nil
   def cancel: () -> nil
 
@@ -136,6 +141,16 @@ class Riffer::Rig::Runtime
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs return: Array[Riffer::Rig::Registrar]
   def build_registrars: (Array[Riffer::Rig::Extension] extensions) -> Array[Riffer::Rig::Registrar]
+
+  # @rbs extension: Riffer::Rig::Extension
+  # @rbs registrar: Riffer::Rig::Registrar
+  # @rbs return: StandardError?
+  def load_extension: (Riffer::Rig::Extension extension, Riffer::Rig::Registrar registrar) -> StandardError?
+
+  # @rbs extension: Riffer::Rig::Extension
+  # @rbs error: StandardError
+  # @rbs return: void
+  def record_error: (Riffer::Rig::Extension extension, StandardError error) -> void
 
   # @rbs registered: Array[singleton(Riffer::Tool)]
   # @rbs allowlist: Array[String]?

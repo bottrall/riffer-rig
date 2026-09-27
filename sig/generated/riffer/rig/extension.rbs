@@ -1,16 +1,23 @@
 # Generated from lib/riffer/rig/extension.rb with RBS::Inline
 
 class Riffer::Rig::Extension
+  class RequirementError < StandardError
+  end
+
   @name: String
 
   @requires: Gem::Requirement?
 
+  @mismatch: RequirementError?
+
   @block: ^(::Riffer::Rig::Registrar) -> void
 
-  # @dynamic name, requires
+  # @dynamic name, requires, mismatch
   attr_reader name: String
 
   attr_reader requires: Gem::Requirement?
+
+  attr_reader mismatch: RequirementError?
 
   # @rbs name: String
   # @rbs requires: String?
@@ -21,4 +28,10 @@ class Riffer::Rig::Extension
   # @rbs registrar: Riffer::Rig::Registrar
   # @rbs return: void
   def run: (Riffer::Rig::Registrar registrar) -> void
+
+  private
+
+  # @rbs requirement: Gem::Requirement?
+  # @rbs return: RequirementError?
+  def check: (Gem::Requirement? requirement) -> RequirementError?
 end

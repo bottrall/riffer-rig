@@ -10,7 +10,7 @@ Riffer::Rig.extension('git', requires: '>= 0.3') do |rig|
 end
 ```
 
-`Riffer::Rig.extension(name, requires: nil) { |rig| }` records the block in a process-level registry keyed by name and returns the extension object. Re-executing the same file (a reload) replaces the block rather than appending a duplicate. `requires:` is a `Gem::Requirement` string checked against the riffer-rig version when the block is recorded; a mismatch raises `Riffer::ArgumentError`.
+`Riffer::Rig.extension(name, requires: nil) { |rig| }` records the block in a process-level registry keyed by name and returns the extension object. Re-executing the same file (a reload) replaces the block rather than appending a duplicate. `requires:` is a `Gem::Requirement` string checked against the riffer-rig version when the block is recorded; a mismatch does not raise but is a load error, reported when a Runtime loads the extension (see [Error isolation](#error-isolation)).
 
 `Runtime.new(extensions: [...])` runs each block, in order, against a fresh registrar of its own and merges what they register. Two Runtimes never share tools or commands; per-Runtime state lives in the block's locals, per-process state lives outside the block. Same process, no sandbox.
 
@@ -62,4 +62,24 @@ A command runs synchronously, one at a time, under the same rule as `prompt`: `r
 
 ## Error isolation
 
-The Runtime wraps each registrar block. A failure skips that extension; the rest load. Errors go to the host only, never into the model's context.
+The Runtime wraps each registrar block. A block that raises a `StandardError`, or an extension whose `requires:` the running riffer-rig does not satisfy, is a load error:
+
+- The extension is skipped, including anything its block registered before it raised; the rest load, in order.
+- `runtime.errors` records it as `{ extension:, error: }` — the extension object and the exception (a `Riffer::Rig::Extension::RequirementError` for an unmet `requires:`). An empty array means every extension loaded.
+- The host gets one `notify` at level `:error`, `"Extension <name> failed to load: <message>"`, which the [mirror](HOSTS.md#the-mirror) also queues as a `notify` event for the next `prompt` or `run_command` to emit.
+
+Errors go to the host only, never into the model's context.
+
+## API versioning
+
+The registrar surface — `Riffer::Rig.extension` and the `rig.*` seams — is public API of riffer-rig and follows its release policy (see [Releasing](../README.md#releasing)); there is no separate API number. While riffer-rig is 0.x, a breaking change to the surface ships in a minor release with a BREAKING CHANGES section in the changelog, after one minor of deprecation where feasible.
+
+Pin the riffer-rig versions an extension is written against with `requires:`:
+
+```ruby
+Riffer::Rig.extension('git', requires: '~> 0.7') do |rig|
+  # ...
+end
+```
+
+A riffer-rig outside the requirement reports the extension as a load error rather than running its block.

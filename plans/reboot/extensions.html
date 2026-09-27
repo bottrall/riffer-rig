@@ -146,21 +146,23 @@ end</code></pre>
 <p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/160">#160</a>. Revised in <a href="https://github.com/bottrall/riffer-rig/pull/183">#183</a>, with two deviations. The host is not a duck: <code>Riffer::Rig::Hosts::Base</code> is an abstract class whose five methods each raise <code>NotImplementedError</code>, a host subclasses it and implements all five (including the ones it declines), and every host lives under <code>Riffer::Rig::Hosts</code> in <code>lib/riffer/rig/hosts/</code>. RBS cannot mark a method abstract, so a shared test assertion, <code>assert_implements</code>, holds each subclass to overriding every <code>Base</code> method. And the null host is <code>Riffer::Rig::Hosts::Null</code>, not <code>NullHost</code>. The Runtime wraps the host it is given in <code>Riffer::Rig::Hosts::Mirror</code>, which forwards every call and queues the <code>notify</code> event; <code>runtime.host</code> returns the mirror.</p>
 </section>
 
-<section class="topic" id="errors">
+<section class="topic enshrined" id="errors">
 <h3>Error isolation</h3>
 <ul>
   <li>The Loader wraps each <code>require</code> and the Runtime wraps each registrar block. A failure records <code>{extension, error}</code> on <code>runtime.errors</code>, skips that extension, and the host gets one <code>notify</code>. The rest of the extensions load.</li>
   <li>At run time a raising handler or command is caught and reported the same way and the turn continues; a raising <code>before_*</code> handler counts as no veto.</li>
   <li>Errors go to the host only, never into the model's context.</li>
 </ul>
+<p class="note">Bullets 1 (the Runtime half) and 3 enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/114">#114</a>: the Runtime runs each extension against its own registrar, so a block that raises a <code>StandardError</code> leaves nothing registered; <code>runtime.errors</code> holds one <code>{extension:, error:}</code> hash per failure, and the host gets one <code>notify</code> at level <code>:error</code> reading <code>Extension &lt;name&gt; failed to load: &lt;message&gt;</code>, which the mirror also queues as a <code>notify</code> event; the model's messages never carry it. Documented in <code>docs/EXTENSIONS.md</code>. Deviation: only <code>StandardError</code> is caught, as for commands, so a <code>ScriptError</code> (a <code>LoadError</code> from a <code>require</code> inside the block) still propagates out of <code>Runtime.new</code>. The Loader's <code>require</code> wrapping waits on <a href="https://github.com/bottrall/riffer-rig/issues/126">#126</a>; of bullet 2, raising commands were already reported through <code>notify</code> by <a href="https://github.com/bottrall/riffer-rig/pull/190">#190</a>, and raising handlers wait on the handlers ticket.</p>
 </section>
 
-<section class="topic" id="versioning">
+<section class="topic enshrined" id="versioning">
 <h3>API versioning</h3>
 <ul>
   <li>The registrar surface is public API of riffer-rig under the release policy: 0.x minor bumps, a BREAKING CHANGES section, one minor of deprecation where feasible. No separate API number.</li>
   <li><code>requires:</code> on an extension is a Gem::Requirement string checked against <code>Riffer::Rig::VERSION</code> when the block is recorded; a mismatch is a load error reported like any other.</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/114">#114</a>: the release policy for the registrar surface is written into <code>docs/EXTENSIONS.md</code> under API versioning, pointing at the README's Releasing section. <code>Riffer::Rig::Extension.new</code> checks <code>requires:</code> against <code>Riffer::Rig::VERSION</code> when the block is recorded and keeps an unmet requirement as <code>extension.mismatch</code>, a <code>Riffer::Rig::Extension::RequirementError</code>. Deviation: recording has no Runtime or host to report to, so the mismatch is reported when a Runtime loads the extension, as a load error on <code>runtime.errors</code> with one <code>notify</code>, and its block never runs; <code>Riffer::Rig.extension</code> no longer raises <code>Riffer::ArgumentError</code> on a mismatch, as it did from <a href="https://github.com/bottrall/riffer-rig/pull/160">#160</a>.</p>
 </section>
 
 <section class="topic" id="gems">

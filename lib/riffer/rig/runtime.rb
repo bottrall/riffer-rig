@@ -42,6 +42,7 @@ class Riffer::Rig::Runtime
   # @rbs @session_start_pending: bool
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
+  # @rbs @errors: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
 
   # @dynamic agent, credentials, cwd, host, id, settings
   attr_reader :agent #: Riffer::Agent
@@ -92,6 +93,7 @@ class Riffer::Rig::Runtime
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
     @session_start_pending = true
     Riffer::Rig::Settings::Pricing.register(pricing, riffer_config.pricing)
+    @errors = []
     registrars = build_registrars(extensions)
     @prompts = registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h
     @commands = registrars.flat_map { |registrar| registrar.commands.to_a }.to_h
@@ -157,6 +159,11 @@ class Riffer::Rig::Runtime
     end
     @host.drain.each(&emit)
     nil
+  end
+
+  # @rbs return: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
+  def errors
+    @errors.dup
   end
 
   # @rbs return: nil
@@ -264,9 +271,35 @@ class Riffer::Rig::Runtime
   def build_registrars(extensions)
     raise BusyError, 'a prompt is already running on this Runtime' if @busy
 
-    extensions.map do |extension|
-      Riffer::Rig::Registrar.new(extension.name).tap { |registrar| extension.run(registrar) }
+    extensions.filter_map do |extension|
+      registrar = Riffer::Rig::Registrar.new(extension.name)
+      error = load_extension(extension, registrar)
+      next registrar unless error
+
+      record_error(extension, error)
+      nil
     end
+  end
+
+  # @rbs extension: Riffer::Rig::Extension
+  # @rbs registrar: Riffer::Rig::Registrar
+  # @rbs return: StandardError?
+  def load_extension(extension, registrar)
+    mismatch = extension.mismatch
+    return mismatch if mismatch
+
+    extension.run(registrar)
+    nil
+  rescue StandardError => e
+    e
+  end
+
+  # @rbs extension: Riffer::Rig::Extension
+  # @rbs error: StandardError
+  # @rbs return: void
+  def record_error(extension, error)
+    @errors << { extension: extension, error: error }
+    @host.notify("Extension #{extension.name} failed to load: #{error.message}", level: :error)
   end
 
   # @rbs registered: Array[singleton(Riffer::Tool)]
