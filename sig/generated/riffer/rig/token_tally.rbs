@@ -1,32 +1,35 @@
 # Generated from lib/riffer/rig/token_tally.rb with RBS::Inline
 
 class Riffer::Rig::TokenTally
-  @rates: Riffer::Config::Pricing::Rates?
+  @input_tokens: Integer
 
-  @usage: Riffer::Providers::TokenUsage
+  @output_tokens: Integer
 
-  # @dynamic usage
-  attr_reader usage: Riffer::Providers::TokenUsage
+  @cache_write_tokens: Integer
+
+  @cache_read_tokens: Integer
+
+  @pricing: Riffer::Rig::Settings::Pricing?
+
+  # @dynamic input_tokens, output_tokens, cache_write_tokens, cache_read_tokens
+  attr_reader input_tokens: untyped
+
+  # @dynamic input_tokens, output_tokens, cache_write_tokens, cache_read_tokens
+  attr_reader output_tokens: untyped
+
+  # @dynamic input_tokens, output_tokens, cache_write_tokens, cache_read_tokens
+  attr_reader cache_write_tokens: untyped
+
+  # @dynamic input_tokens, output_tokens, cache_write_tokens, cache_read_tokens
+  attr_reader cache_read_tokens: untyped
 
   # @rbs pricing: Riffer::Rig::Settings::Pricing?
   # @rbs return: void
   def initialize: (?pricing: Riffer::Rig::Settings::Pricing?) -> void
 
   # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs return: Riffer::Providers::TokenUsage
-  def add: (Riffer::Providers::TokenUsage usage) -> Riffer::Providers::TokenUsage
-
-  # @rbs return: Integer
-  def input_tokens: () -> Integer
-
-  # @rbs return: Integer
-  def output_tokens: () -> Integer
-
-  # @rbs return: Integer
-  def cache_write_tokens: () -> Integer
-
-  # @rbs return: Integer
-  def cache_read_tokens: () -> Integer
+  # @rbs return: void
+  def add: (Riffer::Providers::TokenUsage usage) -> void
 
   # @rbs return: Integer
   def total_tokens: () -> Integer
@@ -36,10 +39,4 @@ class Riffer::Rig::TokenTally
 
   # @rbs return: Float?
   def estimated_cost: () -> Float?
-
-  private
-
-  # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs return: Riffer::Providers::TokenUsage
-  def price: (Riffer::Providers::TokenUsage usage) -> Riffer::Providers::TokenUsage
 end

@@ -15,6 +15,17 @@ class Riffer::Rig::Settings::Pricing
     )
   end
 
+  # @rbs table: Hash[String, ::Riffer::Rig::Settings::Pricing]
+  # @rbs registry: ::Riffer::Config::Pricing
+  # @rbs return: void
+  def self.register(table, registry)
+    table.each do |model, entry|
+      registry.set(
+        model, input: entry.input, output: entry.output, cache_read: entry.cache_read, cache_write: entry.cache_write
+      )
+    end
+  end
+
   # @rbs input: Float
   # @rbs output: Float
   # @rbs cache_write: Float

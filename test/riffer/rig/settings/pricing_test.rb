@@ -2,34 +2,52 @@
 
 require 'test_helper'
 
-class Riffer::Rig::Settings::PricingTest < Minitest::Test
-  def test_exposes_input_price
-    pricing = Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3)
-
-    assert_in_delta 3.0, pricing.input
+describe Riffer::Rig::Settings::Pricing do
+  def sonnet
+    Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3)
   end
 
-  def test_exposes_output_price
-    pricing = Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3)
-
-    assert_in_delta 15.0, pricing.output
+  it 'exposes the input price' do
+    assert_in_delta 3.0, sonnet.input
   end
 
-  def test_exposes_cache_write_price
-    pricing = Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3)
-
-    assert_in_delta 3.75, pricing.cache_write
+  it 'exposes the output price' do
+    assert_in_delta 15.0, sonnet.output
   end
 
-  def test_exposes_cache_read_price
-    pricing = Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3)
-
-    assert_in_delta 0.3, pricing.cache_read
+  it 'exposes the cache write price' do
+    assert_in_delta 3.75, sonnet.cache_write
   end
 
-  def test_input_is_read_only
-    pricing = Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3)
+  it 'exposes the cache read price' do
+    assert_in_delta 0.3, sonnet.cache_read
+  end
 
-    assert_raises(NoMethodError) { pricing.input = 1.0 }
+  it 'keeps the input price read-only' do
+    assert_raises(NoMethodError) { sonnet.input = 1.0 }
+  end
+
+  describe '.register' do
+    def registered_rates
+      registry = Riffer::Config::Pricing.new
+      Riffer::Rig::Settings::Pricing.register({ 'anthropic/claude-sonnet-4-6' => sonnet }, registry)
+      registry.rates_for('anthropic/claude-sonnet-4-6')
+    end
+
+    it 'registers the input rate under the model id' do
+      assert_in_delta 3.0, registered_rates.input
+    end
+
+    it 'registers the output rate under the model id' do
+      assert_in_delta 15.0, registered_rates.output
+    end
+
+    it 'registers the cache write rate under the model id' do
+      assert_in_delta 3.75, registered_rates.cache_write
+    end
+
+    it 'registers the cache read rate under the model id' do
+      assert_in_delta 0.3, registered_rates.cache_read
+    end
   end
 end

@@ -26,6 +26,6 @@
 | `cache_write` | input tokens written to the prompt cache | `0`         |
 | `cache_read`  | input tokens read from the prompt cache  | `0`         |
 
-Each entry becomes a `Riffer::Rig::Settings::Pricing` and reaches the Runtime through its `pricing:` keyword, which prices every turn and keeps the session's running total (see [Embedding](EMBEDDING.md#token-tally-and-cost)).
+Each entry becomes a `Riffer::Rig::Settings::Pricing` and reaches the Runtime through its `pricing:` keyword, which registers it into riffer's `Riffer.config.pricing` so every turn and the running total carry a cost (see [Embedding](EMBEDDING.md#token-tally-and-cost)).
 
 A model without an entry has no cost: it is shown as missing, never as zero. An entry that is not an object is ignored.

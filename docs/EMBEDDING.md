@@ -12,7 +12,7 @@ runtime = Riffer::Rig::Runtime.new(
 )
 ```
 
-The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `credentials:`, `pricing:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `snapshot:` is accepted and ignored until its ticket lands, and `settings:` and `credentials:` are stored and exposed (`runtime.settings`, `runtime.credentials`) but nothing reads them yet. `credentials:` already takes the shape the Loader will pass — each provider's resolved field values — so embedders building it today keep working when its ticket lands. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.resolve` finds a provider's values and `Riffer::Rig::Credentials.apply` assigns them (see [Providers](PROVIDERS.md)), or set them yourself with `Riffer.configure`.
+The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `credentials:`, `pricing:`, `riffer_config:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `snapshot:` is accepted and ignored until its ticket lands, and `settings:` and `credentials:` are stored and exposed (`runtime.settings`, `runtime.credentials`) but nothing reads them yet. `credentials:` already takes the shape the Loader will pass — each provider's resolved field values — so embedders building it today keep working when its ticket lands. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.resolve` finds a provider's values and `Riffer::Rig::Credentials.apply` assigns them (see [Providers](PROVIDERS.md)), or set them yourself with `Riffer.configure`.
 
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
@@ -26,7 +26,8 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `instructions:` | replaces the base prompt; sections and the environment block still apply    | `nil` (use the base)    |
 | `max_steps:`    | agent-loop step limit; `nil` runs the loop without a limit                  | `nil`                   |
 | `credentials:`  | provider → resolved field values (`{ anthropic: { api_key: "…" } }`), stored as given and exposed but not yet read | `{}` |
-| `pricing:`      | model → `Riffer::Rig::Settings::Pricing` entries (USD per million tokens) that price every turn and the [tally](#token-tally-and-cost) | `{}` |
+| `pricing:`      | model → `Riffer::Rig::Settings::Pricing` entries (USD per million tokens), registered into riffer's pricing when the Runtime is built; see [tally](#token-tally-and-cost) | `{}` |
+| `riffer_config:` | the `Riffer::Config` whose `pricing` receives the `pricing:` entries      | `Riffer.config`         |
 
 Two Runtimes in one process share nothing but the process-wide extension registry, riffer's provider repository and riffer's config, which holds the process's one set of provider credentials.
 
@@ -69,7 +70,7 @@ How the run ended is riffer's `response.outcome` — `reason` is one of riffer's
 
 ## Token tally and cost
 
-The Runtime keeps a running tally of token usage across its turns — every `prompt` and every `ask` — and prices it with the `pricing:` entry for its model. `tally` returns the totals as riffer's `Riffer::Providers::TokenUsage`; its `cost` is the running USD total.
+riffer prices usage at source: each provider looks its model up in `Riffer.config.pricing` and sets `cost` on the usage it reports. The Runtime registers every `pricing:` entry there when it is built, and `tally` returns riffer's running total for the Runtime's agent — `agent.context.token_usage`, a `Riffer::Providers::TokenUsage` summed over every model call of every `prompt` and `ask`, or `nil` before the first turn.
 
 ```ruby
 pricing = { 'anthropic/claude-sonnet-4-6' => Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3) }
@@ -80,9 +81,9 @@ runtime.tally.input_tokens # => every turn so far
 runtime.tally.cost         # => every turn so far, in USD
 ```
 
-Each turn's usage carries its own `cost`: on the `ask` response as `response.token_usage.cost`, and on the stream as the closing `turn_end` event's `usage` and `cost` — the same values. Rates are USD per million tokens. riffer counts cache reads and writes inside `input_tokens`, so the cached share is priced at the `cache_read` and `cache_write` rates and only the rest at `input`.
+Each turn's usage is riffer's: on the `ask` response as `response.token_usage`, and on the stream as the closing `turn_end` event's `usage` and `cost` — the same values. Rates are USD per million tokens. riffer counts cache reads and writes inside `input_tokens`, so the cached share is priced at the `cache_read` and `cache_write` rates and only the rest at `input`.
 
-Missing pricing means `nil`, never zero: with no `pricing:` entry for the model, a turn's `cost` is whatever riffer reported (`nil` unless `Riffer.config.pricing` prices the model) and `tally.cost` is `nil`. With an entry, `tally.cost` starts at `0.0`. The terminal takes its pricing from the `models` block of `~/.riffer/settings.json` ([Configuration](CONFIGURATION.md#models)); an embedder passes its own.
+Missing pricing means `nil`, never zero: a model `Riffer.config.pricing` has no rates for reports no `cost`, and neither does the tally. Pricing is process-wide and keyed by model id, so two Runtimes that price the same model differently share whichever registered last. The terminal takes its pricing from the `models` block of `~/.riffer/settings.json` ([Configuration](CONFIGURATION.md#models)); an embedder passes its own, or registers rates itself with `Riffer.config.pricing.set`.
 
 ## Rig events
 

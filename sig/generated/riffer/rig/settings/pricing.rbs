@@ -17,6 +17,11 @@ class Riffer::Rig::Settings::Pricing
   # @rbs return: ::Riffer::Rig::Settings::Pricing
   def self.from: (Hash[String, untyped] entry) -> ::Riffer::Rig::Settings::Pricing
 
+  # @rbs table: Hash[String, ::Riffer::Rig::Settings::Pricing]
+  # @rbs registry: ::Riffer::Config::Pricing
+  # @rbs return: void
+  def self.register: (Hash[String, ::Riffer::Rig::Settings::Pricing] table, ::Riffer::Config::Pricing registry) -> void
+
   # @rbs input: Float
   # @rbs output: Float
   # @rbs cache_write: Float
