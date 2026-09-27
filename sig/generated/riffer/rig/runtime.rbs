@@ -97,6 +97,13 @@ class Riffer::Rig::Runtime
   # @rbs return: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
   def errors: () -> Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
 
+  # @rbs return: String
+  def model: () -> String
+
+  # @rbs model: String
+  # @rbs return: void
+  def model=: (String model) -> void
+
   # @rbs return: nil
   def cancel: () -> nil
 
@@ -110,6 +117,12 @@ class Riffer::Rig::Runtime
 
   # @rbs return: void
   def claim: () -> void
+
+  # @rbs model: String
+  # @rbs config: Riffer::Agent::Config
+  # @rbs session: Riffer::Agent::Session?
+  # @rbs return: Riffer::Agent
+  def build_agent: (String model, Riffer::Agent::Config config, ?session: Riffer::Agent::Session?) -> Riffer::Agent
 
   # @rbs text: String
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]

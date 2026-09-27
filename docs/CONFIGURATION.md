@@ -2,6 +2,18 @@
 
 `~/.riffer/settings.json` holds optional user settings. Every key is optional; the [README](../README.md#configuration) lists them all.
 
+## `model`
+
+`model` is the model new sessions start with, as a `"provider/name"` string: the provider's identifier, a slash, then the provider's own model name.
+
+```json
+{ "model": "anthropic/claude-sonnet-4-6" }
+```
+
+The provider is one of `anthropic`, `openai`, `gemini`, `openrouter`, `azure_openai` or `amazon_bedrock` ([Providers](PROVIDERS.md) has each one's setup). Everything after the first slash is passed to the provider unchanged, so a name with slashes of its own works as written: `openrouter/anthropic/claude-sonnet-4-6`. A string without a provider prefix is rejected, never inferred from the bare name; `/model` answers one with a hint listing the providers.
+
+`/model provider/name` overrides this key for the current session only: the override wins until the session ends, and `settings.json` is left unchanged ([Switching the model](../README.md#switching-the-model)).
+
 ## `models`
 
 `models` prices each model, keyed by its `"provider/name"` string. Rates are USD per million tokens:

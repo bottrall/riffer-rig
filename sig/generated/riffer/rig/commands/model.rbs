@@ -1,0 +1,33 @@
+# Generated from lib/riffer/rig/commands/model.rb with RBS::Inline
+
+module Riffer::Rig::Commands::Model
+  MODEL_STRING: Regexp
+
+  # Upstream candidate: riffer's Repository keeps extension registrations
+  # private and lists no identifiers, so the hint names riffer's built-ins.
+  PROVIDERS: Array[Symbol]
+
+  HINT: String
+
+  SAVE_UNAVAILABLE: ::String
+
+  # @rbs return: Riffer::Rig::Command
+  def command: () -> Riffer::Rig::Command
+
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs return: void
+  def run: (Riffer::Rig::Command::Context ctx) -> void
+
+  private
+
+  # @rbs model: String
+  # @rbs provider: String
+  # @rbs missing: Array[Symbol]
+  # @rbs return: String
+  def refusal: (String model, String provider, Array[Symbol] missing) -> String
+
+  # @rbs provider: String
+  # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
+  # @rbs return: Array[Symbol]
+  def missing_credentials: (String provider, Hash[Symbol, Hash[Symbol, String]] credentials) -> Array[Symbol]
+end
