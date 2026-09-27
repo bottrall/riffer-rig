@@ -60,6 +60,7 @@ class Riffer::Rig::Runtime
   # @rbs instructions: String?
   # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs pricing: Hash[String, Riffer::Rig::Settings::Pricing]
+  # @rbs riffer_config: Riffer::Config
   # @rbs max_steps: Integer?
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
@@ -74,6 +75,7 @@ class Riffer::Rig::Runtime
     instructions: nil,
     credentials: {},
     pricing: {},
+    riffer_config: Riffer.config,
     max_steps: DEFAULT_MAX_STEPS,
     snapshot: nil
   )
@@ -88,6 +90,7 @@ class Riffer::Rig::Runtime
     @closed = false
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
     @session_start_pending = true
+    Riffer::Rig::Settings::Pricing.register(pricing, riffer_config.pricing)
     @registrar = build_registrar(extensions)
     tool_classes = select_tools(@registrar.tools, tools)
     @base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
@@ -142,6 +145,11 @@ class Riffer::Rig::Runtime
   def cancel
     @cancel_flag.set
     nil
+  end
+
+  # @rbs return: Riffer::Providers::TokenUsage?
+  def tally
+    @agent.context.token_usage
   end
 
   # @rbs return: void

@@ -66,10 +66,11 @@ class Riffer::Rig::Runtime
   # @rbs instructions: String?
   # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs pricing: Hash[String, Riffer::Rig::Settings::Pricing]
+  # @rbs riffer_config: Riffer::Config
   # @rbs max_steps: Integer?
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
-  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::Base, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?max_steps: Integer?, ?snapshot: Hash[Symbol, untyped]?) -> void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::Base, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?max_steps: Integer?, ?snapshot: Hash[Symbol, untyped]?) -> void
 
   # @rbs text: String
   # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
@@ -82,6 +83,9 @@ class Riffer::Rig::Runtime
 
   # @rbs return: nil
   def cancel: () -> nil
+
+  # @rbs return: Riffer::Providers::TokenUsage?
+  def tally: () -> Riffer::Providers::TokenUsage?
 
   # @rbs return: void
   def close: () -> void

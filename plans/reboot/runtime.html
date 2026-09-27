@@ -148,13 +148,14 @@ been given; each tool describes what it does and when to use it.
 </ul>
 </section>
 
-<section class="topic" id="tally">
+<section class="topic enshrined" id="tally">
 <h3>Token tally and pricing</h3>
 <ul>
   <li>The Runtime keeps a running tally of token usage across turns and prices it with the <code>pricing:</code> table it was given (model → <code>Settings::Pricing</code> entries from the <code>models</code> block of settings, USD per million tokens; missing pricing means cost is nil, never zero). <code>Turn#usage</code> and <code>Turn#cost</code> and the <code>turn_end</code> event expose the per-turn numbers; <code>tally</code> exposes the totals.</li>
   <li>The tally is kept across <code>rebuild</code>. It is not stored in the snapshot: assistant messages carry <code>token_usage</code>, so a restored Runtime re-sums it, and pricing comes from today's settings, never the file.</li>
   <li>The existing <code>TokenTally</code> module is the seed; it moves behind the Runtime.</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/189">#189</a>, with the Interfaces rows <code>pricing:</code> and <code>tally</code>. Deviations: the tally is riffer's own <code>Agent::Context#token_usage</code>, which riffer sums over every model call on the Runtime's one agent, rather than the seed <code>TokenTally</code> moved behind the Runtime — <code>TokenTally</code> stays only for the old CLI and its renderer until the terminal ticket (#124). Cost is priced at source by riffer: the Runtime registers its <code>pricing:</code> entries into riffer's model-keyed <code>Riffer.config.pricing</code> when it is built (through a new <code>riffer_config:</code> keyword defaulting to <code>Riffer.config</code>, the <code>Credentials.apply</code> pattern), so pricing is process-wide and two Runtimes pricing the same model id differently share the last registration; cache reads and writes are priced as subsets of <code>input_tokens</code>, per riffer. <code>tally</code> returns riffer's <code>TokenUsage</code>, nil before the first turn, and its <code>cost</code> is nil when the model has no rates. There is no <code>Turn</code> object (see the <a href="#prompting">prompting</a> note): the <code>ask</code> response's <code>token_usage</code> and <code>token_usage.cost</code> serve as <code>Turn#usage</code> and <code>Turn#cost</code>, and <code>turn_end</code> carries the same usage. Kept across <code>rebuild</code> is left to the rebuild ticket (#120) and re-summing on restore to the snapshot ticket (#119); riffer's public <code>context.token_usage=</code> setter is the seam for both. Documented in <code>docs/EMBEDDING.md</code>; the <code>models</code> block in <code>docs/CONFIGURATION.md</code>.</p>
 </section>
 
 <section class="topic" id="snapshot">

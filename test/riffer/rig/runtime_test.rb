@@ -148,12 +148,7 @@ describe Riffer::Rig::Runtime do
   end
 
   it 'accepts keywords whose tickets have not landed' do
-    runtime = Riffer::Rig::Runtime.new(
-      'mock/test',
-      extensions: [@extension],
-      pricing: { 'mock/test' => Riffer::Rig::Settings::Pricing.from({}) },
-      snapshot: nil
-    )
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], snapshot: nil)
 
     assert_instance_of Riffer::Rig::Runtime, runtime
   end
@@ -424,6 +419,97 @@ describe Riffer::Rig::Runtime do
     runtime.prompt('hello') { |event| notify_events << event if event.is_a?(Riffer::Rig::Events::Notify) }
 
     assert_equal [Riffer::Rig::Events::Notify.new('boom', :error)], notify_events
+  end
+
+  describe '#tally' do
+    before do
+      @riffer_config = Riffer.config
+      # Riffer's providers price usage from the global Riffer.config, so the
+      # tests swap in a fresh one rather than leak pricing into other tests.
+      Riffer.instance_variable_set(:@config, Riffer::Config.new)
+    end
+
+    after do
+      Riffer.instance_variable_set(:@config, @riffer_config)
+    end
+
+    def priced_runtime(pricing)
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], pricing: pricing)
+      runtime.agent.provider.stub_response(
+        'One.', token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 1_000_000, output_tokens: 200_000)
+      )
+      runtime.agent.provider.stub_response(
+        'Two.',
+        token_usage: Riffer::Providers::TokenUsage.new(
+          input_tokens: 2_000_000, output_tokens: 100_000, cache_write_tokens: 500_000, cache_read_tokens: 1_000_000
+        )
+      )
+      runtime
+    end
+
+    def pricing
+      { 'mock/test' => Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3) }
+    end
+
+    it 'is nil before the first turn' do
+      assert_nil priced_runtime(pricing).tally
+    end
+
+    it 'sums usage across turns' do
+      runtime = priced_runtime(pricing)
+      runtime.ask('hello')
+      runtime.prompt('again') { |event| event }
+
+      assert_equal(
+        { input_tokens: 3_000_000, output_tokens: 300_000, cache_write_tokens: 500_000, cache_read_tokens: 1_000_000 },
+        runtime.tally.to_h.except(:cost)
+      )
+    end
+
+    it 'prices a turn in USD per million tokens' do
+      assert_in_delta 6.0, priced_runtime(pricing).ask('hello').token_usage.cost
+    end
+
+    it 'sums the cost across turns' do
+      runtime = priced_runtime(pricing)
+      runtime.ask('hello')
+      runtime.prompt('again') { |event| event }
+
+      assert_in_delta 11.175, runtime.tally.cost
+    end
+
+    it 'leaves a turn unpriced without a pricing entry' do
+      assert_nil priced_runtime({ 'other/model' => pricing['mock/test'] }).ask('hello').token_usage.cost
+    end
+
+    it 'leaves the total unpriced without a pricing entry' do
+      runtime = priced_runtime({})
+      runtime.ask('hello')
+
+      assert_nil runtime.tally.cost
+    end
+
+    it 'carries the turn usage on turn_end' do
+      last = nil
+      response = priced_runtime(pricing).prompt('hello').each { |event| last = event }
+
+      assert_same response.token_usage, last.usage
+    end
+
+    it 'carries the turn cost on turn_end' do
+      last = nil
+      response = priced_runtime(pricing).prompt('hello').each { |event| last = event }
+
+      assert_in_delta response.token_usage.cost, last.cost
+    end
+  end
+
+  it 'registers its pricing into the riffer config it is given' do
+    riffer_config = Riffer::Config.new
+    pricing = { 'mock/test' => Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 0.0, cache_read: 0.0) }
+    Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], pricing: pricing, riffer_config: riffer_config)
+
+    assert_in_delta 3.0, riffer_config.pricing.rates_for('mock/test').input
   end
 
   describe '#cancel' do
