@@ -421,6 +421,38 @@ describe Riffer::Rig::Runtime do
     assert_equal [Riffer::Rig::Events::Notify.new('boom', :error)], notify_events
   end
 
+  describe '#model' do
+    it 'is the model the Runtime was built with' do
+      assert_equal 'mock/test', Riffer::Rig::Runtime.new('mock/test').model
+    end
+
+    it 'is the override after assignment' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      runtime.model = 'mock/other'
+
+      assert_equal 'mock/other', runtime.model
+    end
+
+    it 'keeps the session across an assignment' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      session = runtime.agent.session
+      runtime.model = 'mock/other'
+
+      assert_same session, runtime.agent.session
+    end
+
+    it 'keeps the model when the assignment names an unknown provider' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      begin
+        runtime.model = 'acme/fast'
+      rescue Riffer::ArgumentError
+        nil
+      end
+
+      assert_equal 'mock/test', runtime.model
+    end
+  end
+
   describe '#tally' do
     before do
       @riffer_config = Riffer.config
@@ -625,7 +657,8 @@ describe Riffer::Rig::Runtime do
       assert_equal(
         [['log', 'Recent commits'], ['review', 'Review the diff'], ['depth', 'Show the depth'],
          ['boom', 'Always fails'], ['which', 'Ask a question'], ['hello', 'Say hello']],
-        runtime.commands.map { |command| [command.name, command.description] }
+        runtime.commands.reject { |command| command.extension == 'core' }
+               .map { |command| [command.name, command.description] }
       )
     end
 
@@ -633,7 +666,7 @@ describe Riffer::Rig::Runtime do
       later = Riffer::Rig::Extension.new('later') { |rig| rig.command('log', description: 'Later log') { |_ctx| nil } }
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git, later])
 
-      assert_equal 'Later log', runtime.commands.first.description
+      assert_equal 'Later log', runtime.commands.find { |command| command.name == 'log' }.description
     end
 
     it 'emits a command_output event from ctx.say' do

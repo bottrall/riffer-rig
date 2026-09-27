@@ -96,14 +96,15 @@ class Riffer::Rig::Runtime
     @errors = []
     registrars = build_registrars(extensions)
     @prompts = registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h
-    @commands = registrars.flat_map { |registrar| registrar.commands.to_a }.to_h
+    commands = [Riffer::Rig::Commands::Model.command, *registrars.flat_map { |registrar| registrar.commands.values }]
+    @commands = commands.to_h { |command| [command.name, command] }
     tool_classes = select_tools(registrars.flat_map(&:tools), tools)
     @base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
 
-    @agent = Riffer::Agent.new(
-      context: { cancel_flag: @cancel_flag },
-      config: Riffer::Agent::Config.new(
-        model: model,
+    @agent = build_agent(
+      model,
+      Riffer::Agent::Config.new(
+        model: ->(context) { context[:model] },
         instructions: system_prompt([]),
         tools_config: tool_classes,
         max_steps: max_steps
@@ -166,6 +167,21 @@ class Riffer::Rig::Runtime
     @errors.dup
   end
 
+  # @rbs return: String
+  def model
+    "#{@agent.provider_name}/#{@agent.model_name}"
+  end
+
+  # @rbs model: String
+  # @rbs return: void
+  def model=(model)
+    # Upstream candidate: riffer resolves the model Proc once, in Agent.new, so
+    # a switch rebuilds the agent over the same session and config.
+    agent = build_agent(model, @agent.config, session: @agent.session)
+    agent.context.token_usage = @agent.context.token_usage
+    @agent = agent
+  end
+
   # @rbs return: nil
   def cancel
     @cancel_flag.set
@@ -192,6 +208,14 @@ class Riffer::Rig::Runtime
     raise ClosedError, 'this Runtime is closed' if @closed
 
     @busy = true
+  end
+
+  # @rbs model: String
+  # @rbs config: Riffer::Agent::Config
+  # @rbs session: Riffer::Agent::Session?
+  # @rbs return: Riffer::Agent
+  def build_agent(model, config, session: nil)
+    Riffer::Agent.new(session: session, context: { cancel_flag: @cancel_flag, model: model }, config: config)
   end
 
   # @rbs text: String

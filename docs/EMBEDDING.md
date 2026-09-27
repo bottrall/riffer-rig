@@ -142,6 +142,17 @@ end
 
 A command runs under the same rule as `prompt`: one at a time per Runtime, so `run_command` while a prompt or command is running raises `Riffer::Rig::Runtime::BusyError`, and after `close` it raises `Riffer::Rig::Runtime::ClosedError`. A command that raises never escapes `run_command`: it is reported through `host.notify` at level `:error` (and so as a `notify` event), and the Runtime stays usable. An unknown name is reported the same way. `cancel` stops a turn a command started, as it stops any other.
 
+## Switching the model
+
+`model` is the effective `"provider/name"` string. Assigning `model=` switches it for this Runtime only: history, the tally, tools and the host all carry over, and the next model call goes to the new model. A string without a provider prefix, or with a provider riffer's registry does not know, raises `Riffer::ArgumentError` and leaves the model unchanged.
+
+```ruby
+runtime.model # => "anthropic/claude-sonnet-4-6"
+runtime.model = 'openai/gpt-5'
+```
+
+`model` is also a core command, listed in `commands` ahead of every extension's: `run_command('model', 'openai/gpt-5')` validates before it assigns. A bare name or an unknown provider gets a `command_output` listing the providers; a provider whose required fields are missing from the Runtime's `credentials:` is refused through `notify` at level `:error`, as is `--save`, which is not available yet. With no argument it reports the current model.
+
 ## Capping the loop
 
 `max_steps:` caps how many LLM steps one run may take (`nil` — the default — runs the loop without a limit). A run that hits the cap ends with `outcome.reason: :max_steps`; the model's partial output is still on the response.
