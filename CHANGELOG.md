@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.6.0](https://github.com/bottrall/riffer-rig/compare/v0.5.0...v0.6.0) (2026-09-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* the flat `{"anthropic": "sk-..."}` auth.json shape is no longer read, with no migration. Stored keys must be re-entered or rewritten as `{"anthropic": {"type": "api_key", "api_key": "sk-..."}}`.
+* Riffer::Rig::Host is removed. A host subclasses Riffer::Rig::Hosts::Base and implements all five methods; the null host is Riffer::Rig::Hosts::Null.
+
+### Features
+
+* add the rig event vocabulary and close ([#179](https://github.com/bottrall/riffer-rig/issues/179)) ([35bfa6e](https://github.com/bottrall/riffer-rig/commit/35bfa6e5dc1dc9825fd03843a4e69ec24e675b66))
+* cancel a running turn from any thread ([#186](https://github.com/bottrall/riffer-rig/issues/186)) ([ec68188](https://github.com/bottrall/riffer-rig/commit/ec68188cc7dbcaf0cd56dd41d83cda216661fbe7))
+* **deps:** upgrade riffer to 0.49.0 ([#188](https://github.com/bottrall/riffer-rig/issues/188)) ([821413f](https://github.com/bottrall/riffer-rig/commit/821413f5af65bfcb159ddad532deb3c15779112d))
+* named prompt sections rendered every turn ([#184](https://github.com/bottrall/riffer-rig/issues/184)) ([d190a07](https://github.com/bottrall/riffer-rig/commit/d190a07dfa99764b82bba00745a07e7738c3532a))
+* provider setup table and typed auth.json credentials ([#185](https://github.com/bottrall/riffer-rig/issues/185)) ([0a30c35](https://github.com/bottrall/riffer-rig/commit/0a30c357793716acfabcd1ddd41ea9f98c8a6a8f))
+* store credentials on the Runtime ([#181](https://github.com/bottrall/riffer-rig/issues/181)) ([474a515](https://github.com/bottrall/riffer-rig/commit/474a51586011e413482f0275a7abd3a542e91914))
+
+
+### Code Refactoring
+
+* make the host contract the abstract Hosts::Base ([#183](https://github.com/bottrall/riffer-rig/issues/183)) ([3fd4f14](https://github.com/bottrall/riffer-rig/commit/3fd4f14a193d546ae06e00776f209a52c0593854))
+
 ## [0.5.0](https://github.com/bottrall/riffer-rig/compare/v0.4.0...v0.5.0) (2026-09-19)
 
 
