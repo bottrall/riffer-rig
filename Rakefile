@@ -63,7 +63,10 @@ end
 namespace :steep do
   desc 'Type-check with Steep'
   task :check do
-    sh "steep check #{ENV.fetch('STEEP_OPTS', '')}".strip
+    # --no-daemon: Steep 2.1 otherwise routes the check through whatever
+    # language server holds the project socket, including orphaned ones,
+    # which can hang or report stale results.
+    sh "steep check --no-daemon #{ENV.fetch('STEEP_OPTS', '')}".strip
   end
 end
 
