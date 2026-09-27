@@ -2,21 +2,13 @@
 path: ".gem_rbs_collection"
 gems:
 - name: anthropic
-  version: 1.70.0
+  version: 1.71.0
   source:
     type: rubygems
 - name: base64
   version: 0.3.0
   source:
     type: rubygems
-- name: cgi
-  version: '0.5'
-  source:
-    type: git
-    name: ruby/gem_rbs_collection
-    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
-    remote: https://github.com/ruby/gem_rbs_collection.git
-    repo_dir: gems
 - name: connection_pool
   version: '2.4'
   source:
@@ -25,10 +17,6 @@ gems:
     revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
-- name: delegate
-  version: '0'
-  source:
-    type: stdlib
 - name: digest
   version: '0'
   source:
@@ -82,7 +70,7 @@ gems:
   source:
     type: stdlib
 - name: openai
-  version: 0.90.0
+  version: 0.92.0
   source:
     type: rubygems
 - name: prism
@@ -101,14 +89,6 @@ gems:
   version: 0.49.0
   source:
     type: rubygems
-- name: stringio
-  version: '0'
-  source:
-    type: stdlib
-- name: tempfile
-  version: '0'
-  source:
-    type: stdlib
 - name: thor
   version: '1.2'
   source:
@@ -118,10 +98,6 @@ gems:
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: timeout
-  version: '0'
-  source:
-    type: stdlib
-- name: tmpdir
   version: '0'
   source:
     type: stdlib
