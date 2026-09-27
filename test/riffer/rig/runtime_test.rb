@@ -1287,4 +1287,192 @@ describe Riffer::Rig::Runtime do
       assert_equal %i[second first], order
     end
   end
+
+  describe 'snapshots' do
+    def usage(input, output)
+      Riffer::Providers::TokenUsage.new(input_tokens: input, output_tokens: output)
+    end
+
+    def saved_runtime
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+      runtime.agent.provider.stub_response('Hi there.', token_usage: usage(10, 5))
+      runtime.ask('hello')
+      runtime
+    end
+
+    def restored(snapshot, **)
+      Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], snapshot: snapshot, **)
+    end
+
+    def with_orphaned_tail(snapshot)
+      call = Riffer::Messages::Assistant::ToolCall.new(call_id: 'orphan', name: 'read', arguments: '{"path":"/tmp/x"}')
+      snapshot.merge(messages: [*snapshot[:messages], Riffer::Messages::Assistant.new('', tool_calls: [call]).to_h])
+    end
+
+    def first_prompt_events(runtime)
+      runtime.agent.provider.stub_response('Again.')
+      runtime.prompt('again').to_a
+    end
+
+    it 'holds the id, messages, model override and activated skills' do
+      assert_equal %i[id messages model skills], saved_runtime.to_h.keys
+    end
+
+    it 'holds the messages as riffer hashes' do
+      runtime = saved_runtime
+
+      assert_equal runtime.agent.session.messages.map(&:to_h), runtime.to_h[:messages]
+    end
+
+    it 'holds no model without an override' do
+      assert_nil saved_runtime.to_h[:model]
+    end
+
+    it 'holds the model override' do
+      runtime = saved_runtime
+      runtime.model = 'mock/other'
+
+      assert_equal 'mock/other', runtime.to_h[:model]
+    end
+
+    it 'holds no skills while none are activated' do
+      assert_empty saved_runtime.to_h[:skills]
+    end
+
+    it 'restores the id' do
+      snapshot = saved_runtime.to_h
+
+      assert_equal snapshot[:id], restored(snapshot).id
+    end
+
+    it 'continues the conversation after a restore' do
+      runtime = restored(saved_runtime.to_h)
+      runtime.agent.provider.stub_response('Welcome back.')
+      runtime.ask('still there?')
+      sent = runtime.agent.provider.calls.last[:messages].map { |message| message[:content] }
+
+      assert_equal ['hello', 'Hi there.', 'still there?'], sent.drop(1)
+    end
+
+    it 'continues the conversation from a JSON round trip' do
+      snapshot = JSON.parse(JSON.generate(saved_runtime.to_h), symbolize_names: true)
+      runtime = restored(snapshot)
+      runtime.agent.provider.stub_response('Welcome back.')
+
+      assert_equal 'Welcome back.', runtime.ask('still there?').content
+    end
+
+    it 'opens the first prompt after a restore with session_start(reason: :restore)' do
+      snapshot = saved_runtime.to_h
+      first = first_prompt_events(restored(snapshot)).first
+
+      assert_equal Riffer::Rig::Events::SessionStart.new(snapshot[:id], :restore), first
+    end
+
+    it 'delivers session_start(reason: :restore) to hooks' do
+      reasons = []
+      hooks = Riffer::Rig::Extension.new('restore_hooks') { |rig| rig.on(:session_start) { |e| reasons << e.reason } }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [hooks], snapshot: saved_runtime.to_h)
+      first_prompt_events(runtime)
+
+      assert_equal [:restore], reasons
+    end
+
+    it 'heals an orphaned tail tool call with an interrupted result' do
+      runtime = restored(with_orphaned_tail(saved_runtime.to_h))
+      healed = runtime.agent.session.messages.last
+
+      assert_equal ['orphan', :interrupted], [healed.tool_call_id, healed.error_type]
+    end
+
+    it 'applies the saved model when its provider has credentials' do
+      runtime = saved_runtime
+      runtime.model = 'mock/other'
+
+      assert_equal 'mock/other', restored(runtime.to_h, credentials: { mock: {} }).model
+    end
+
+    it 'keeps the saved model as the override of the restored Runtime' do
+      runtime = saved_runtime
+      runtime.model = 'mock/other'
+
+      assert_equal 'mock/other', restored(runtime.to_h, credentials: { mock: {} }).to_h[:model]
+    end
+
+    it 'uses the given model when the saved provider has no credentials' do
+      runtime = saved_runtime
+      runtime.model = 'mock/other'
+
+      assert_equal 'mock/test', restored(runtime.to_h).model
+    end
+
+    it 'notifies once when the saved provider has no credentials' do
+      runtime = saved_runtime
+      runtime.model = 'mock/other'
+      notifies = first_prompt_events(restored(runtime.to_h)).grep(Riffer::Rig::Events::Notify)
+
+      assert_equal 1, notifies.length
+    end
+
+    it 'does not notify when there is no saved model' do
+      notifies = first_prompt_events(restored(saved_runtime.to_h)).grep(Riffer::Rig::Events::Notify)
+
+      assert_empty notifies
+    end
+
+    it 'restores the tally as the sum of the messages token usage' do
+      runtime = saved_runtime
+      runtime.agent.provider.stub_response('Second.', token_usage: usage(20, 7))
+      runtime.ask('again')
+
+      assert_equal usage(30, 12).to_h, restored(runtime.to_h).tally.to_h
+    end
+
+    it 'restores a nil tally when no message carries usage' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+      runtime.agent.provider.stub_response('No usage.')
+      runtime.ask('hello')
+
+      assert_nil restored(runtime.to_h).tally
+    end
+  end
+
+  describe '#on_message' do
+    it 'fires once per message the turn adds' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], tools: %w[read])
+      observed = []
+      runtime.on_message { |message| observed << message }
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
+      runtime.agent.provider.stub_response('The file says hi.')
+      runtime.ask('read /tmp/x')
+
+      assert_equal runtime.agent.session.messages.drop(1), observed
+    end
+
+    it 'keeps firing once per message after a model switch' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+      observed = []
+      runtime.on_message { |message| observed << message }
+      runtime.model = 'mock/other'
+      runtime.agent.provider.stub_response('All done.')
+      runtime.ask('hello')
+
+      assert_equal 2, observed.length
+    end
+
+    it 'fires for a restored Runtime' do
+      runtime = restored_for_observer
+      observed = []
+      runtime.on_message { |message| observed << message }
+      runtime.agent.provider.stub_response('All done.')
+      runtime.ask('hello')
+
+      assert_equal ['hello', 'All done.'], observed.map(&:content)
+    end
+
+    def restored_for_observer
+      saved = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+      Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], snapshot: saved.to_h)
+    end
+  end
 end

@@ -82,7 +82,7 @@ Adds a hook for one event of the Runtime's lifecycle or loop. The block receives
 | `turn_end`         | observe     | `stop_reason`, `usage`, `cost`                     | as each turn ends, `ask` included                                     |
 | `stream`           | passthrough | the riffer `StreamEvent` itself                    | for every riffer stream event of a turn, `ask` included               |
 
-Lifecycle hooks are where an extension acquires and releases process-wide state; the `:restore` and `:reload` reasons arrive with the snapshot and rebuild tickets.
+Lifecycle hooks are where an extension acquires and releases process-wide state; `session_start` carries `:restore` on a Runtime built from a [snapshot](EMBEDDING.md#snapshots), and the `:reload` reasons arrive with the rebuild ticket.
 
 A vetoable hook may return:
 
