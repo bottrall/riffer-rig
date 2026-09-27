@@ -41,4 +41,18 @@ describe Riffer::Rig::UI::Theme do
   it 'for disables colour for a non tty' do
     refute Riffer::Rig::UI::Theme.for(StringIO.new).enabled
   end
+
+  it 'for enables colour for a tty the env says nothing about' do
+    assert Riffer::Rig::UI::Theme.for(tty, env: Riffer::Rig::Env.new({})).enabled
+  end
+
+  it 'for disables colour when the injected env sets NO_COLOR' do
+    refute Riffer::Rig::UI::Theme.for(tty, env: Riffer::Rig::Env.new('NO_COLOR' => '1')).enabled
+  end
+
+  private
+
+  def tty
+    StringIO.new.tap { |io| io.define_singleton_method(:tty?) { true } }
+  end
 end

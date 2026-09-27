@@ -13,9 +13,10 @@ class Riffer::Rig::UI::Theme
   end
 
   # @rbs io: IO
+  # @rbs env: Riffer::Rig::Env
   # @rbs return: Riffer::Rig::UI::Theme
-  def self.for(io)
-    new(enabled: io.tty? && !ENV.key?('NO_COLOR'))
+  def self.for(io, env: Riffer::Rig::Env.new)
+    new(enabled: io.tty? && !env.no_color)
   end
 
   # @rbs text: String
