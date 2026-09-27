@@ -1,11 +1,11 @@
 # Generated from lib/riffer/rig/runtime/tool_runtime.rb with RBS::Inline
 
 class Riffer::Rig::Runtime::ToolRuntime < Riffer::Tools::Runtime
-  @handlers: Riffer::Rig::Runtime::Handlers
+  @hooks: Riffer::Rig::Runtime::Hooks
 
-  # @rbs handlers: Riffer::Rig::Runtime::Handlers
+  # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs return: void
-  def initialize: (Riffer::Rig::Runtime::Handlers handlers) -> void
+  def initialize: (Riffer::Rig::Runtime::Hooks hooks) -> void
 
   private
 

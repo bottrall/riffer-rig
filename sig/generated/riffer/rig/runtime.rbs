@@ -49,7 +49,7 @@ class Riffer::Rig::Runtime
 
   @errors: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
 
-  @handlers: Riffer::Rig::Runtime::Handlers
+  @hooks: Riffer::Rig::Runtime::Hooks
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader agent: Riffer::Agent
@@ -196,7 +196,7 @@ class Riffer::Rig::Runtime
   def with_declared_defaults: (Hash[Symbol, untyped] settings) -> Hash[Symbol, untyped]
 
   # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
-  def merge_handlers: (untyped registrars) -> Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  def merge_hooks: (untyped registrars) -> Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
   # @rbs registered: Array[singleton(Riffer::Tool)]
   # @rbs allowlist: Array[String]?

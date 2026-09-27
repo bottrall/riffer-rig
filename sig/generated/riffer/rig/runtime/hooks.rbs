@@ -1,14 +1,14 @@
-# Generated from lib/riffer/rig/runtime/handlers.rb with RBS::Inline
+# Generated from lib/riffer/rig/runtime/hooks.rb with RBS::Inline
 
-class Riffer::Rig::Runtime::Handlers
-  @handlers: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+class Riffer::Rig::Runtime::Hooks
+  @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
   @host: Riffer::Rig::Hosts::Base
 
-  # @rbs handlers: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  # @rbs hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
   # @rbs host: Riffer::Rig::Hosts::Base
   # @rbs return: void
-  def initialize: (Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]] handlers, Riffer::Rig::Hosts::Base host) -> void
+  def initialize: (Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]] hooks, Riffer::Rig::Hosts::Base host) -> void
 
   # @rbs name: Symbol
   # @rbs event: Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base
@@ -42,8 +42,8 @@ class Riffer::Rig::Runtime::Handlers
   def announce: (untyped outcome) -> untyped
 
   # @rbs name: Symbol
-  # @rbs handler: ^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped
+  # @rbs hook: ^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped
   # @rbs event: Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base
   # @rbs return: untyped
-  def call: (Symbol name, ^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped handler, Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base event) -> untyped
+  def call: (Symbol name, ^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped hook, Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base event) -> untyped
 end

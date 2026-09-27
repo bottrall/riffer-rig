@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Runtime::Handlers
-  # @rbs @handlers: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+class Riffer::Rig::Runtime::Hooks
+  # @rbs @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
   # @rbs @host: Riffer::Rig::Hosts::Base
 
-  # @rbs handlers: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  # @rbs hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
   # @rbs host: Riffer::Rig::Hosts::Base
   # @rbs return: void
-  def initialize(handlers, host)
-    @handlers = handlers
+  def initialize(hooks, host)
+    @hooks = hooks
     @host = host
   end
 
@@ -16,7 +16,7 @@ class Riffer::Rig::Runtime::Handlers
   # @rbs event: Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base
   # @rbs return: void
   def observe(name, event)
-    @handlers.fetch(name).each { |handler| call(name, handler, event) }
+    @hooks.fetch(name).each { |hook| call(name, hook, event) }
   end
 
   # @rbs text: String
@@ -49,10 +49,10 @@ class Riffer::Rig::Runtime::Handlers
   # @rbs &: (untyped) -> Riffer::Rig::Events::Event
   # @rbs return: untyped
   def veto(name, payload, accepts)
-    @handlers.fetch(name).reduce(payload) do |current, handler|
-      result = call(name, handler, yield(current))
+    @hooks.fetch(name).reduce(payload) do |current, hook|
+      result = call(name, hook, yield(current))
       verdict, reason = result
-      break Riffer::Rig::Runtime::Blocked.new(reason&.to_s || "blocked by a #{name} handler") if verdict == :block
+      break Riffer::Rig::Runtime::Blocked.new(reason&.to_s || "blocked by a #{name} hook") if verdict == :block
 
       accepts.call(result) ? result : current
     end
@@ -66,13 +66,13 @@ class Riffer::Rig::Runtime::Handlers
   end
 
   # @rbs name: Symbol
-  # @rbs handler: ^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped
+  # @rbs hook: ^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped
   # @rbs event: Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base
   # @rbs return: untyped
-  def call(name, handler, event)
-    handler.call(event)
+  def call(name, hook, event)
+    hook.call(event)
   rescue StandardError => e
-    @host.notify("#{name} handler failed: #{e.message}", level: :error)
+    @host.notify("#{name} hook failed: #{e.message}", level: :error)
     nil
   end
 end

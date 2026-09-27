@@ -68,7 +68,7 @@ rig.on(:before_prompt) { |e| "#{e.text}\n\nAnswer in one paragraph." }
 rig.on(:turn_end) { |e| warn "turn cost $#{e.cost}" if e.cost }
 ```
 
-Adds a handler for one event of the Runtime's lifecycle or loop. The block receives the event object; every event is immutable, so a handler that wants to change something returns the change rather than mutating the event. Handlers for the same event run in load order — extension order, then registration order within an extension. An unknown event name raises `Riffer::ArgumentError` when the extension block runs.
+Adds a hook for one event of the Runtime's lifecycle or loop. The block receives the event object; every event is immutable, so a hook that wants to change something returns the change rather than mutating the event. Hooks for the same event run in load order — extension order, then registration order within an extension. An unknown event name raises `Riffer::ArgumentError` when the extension block runs.
 
 | Event              | Kind        | The event carries                                  | Fires                                                                 |
 | ------------------ | ----------- | -------------------------------------------------- | --------------------------------------------------------------------- |
@@ -82,18 +82,18 @@ Adds a handler for one event of the Runtime's lifecycle or loop. The block recei
 | `turn_end`         | observe     | `stop_reason`, `usage`, `cost`                     | as each turn ends, `ask` included                                     |
 | `stream`           | passthrough | the riffer `StreamEvent` itself                    | for every riffer stream event of a turn, `ask` included               |
 
-Lifecycle handlers are where an extension acquires and releases process-wide state; the `:restore` and `:reload` reasons arrive with the snapshot and rebuild tickets.
+Lifecycle hooks are where an extension acquires and releases process-wide state; the `:restore` and `:reload` reasons arrive with the snapshot and rebuild tickets.
 
-A vetoable handler may return:
+A vetoable hook may return:
 
-- a replacement payload — a `String` for `before_prompt`, an args `Hash` for `before_tool_call`, an `Array` of `Riffer::Messages::Base` for `before_request`. The next handler receives an event built from it, and the last one wins. Any other return value (including `nil`) changes nothing.
-- `:block`, or `[:block, reason]` (`next :block, 'reason'` inside the block). Later handlers do not run. A blocked tool call becomes a tool error carrying the reason (error type `:blocked`) that the model sees, and the turn carries on. A blocked prompt never reaches the model or the session, the host is told the reason through `notify` at level `:warning`, and the turn ends with stop reason `:guardrail_blocked`. A blocked request also notifies the host: at the start of the turn it ends the turn with `:guardrail_blocked`, and after tool results it interrupts the turn (`:interrupted`, the reason in the outcome's `detail`).
+- a replacement payload — a `String` for `before_prompt`, an args `Hash` for `before_tool_call`, an `Array` of `Riffer::Messages::Base` for `before_request`. The next hook receives an event built from it, and the last one wins. Any other return value (including `nil`) changes nothing.
+- `:block`, or `[:block, reason]` (`next :block, 'reason'` inside the block). Later hooks do not run. A blocked tool call becomes a tool error carrying the reason (error type `:blocked`) that the model sees, and the turn carries on. A blocked prompt never reaches the model or the session, the host is told the reason through `notify` at level `:warning`, and the turn ends with stop reason `:guardrail_blocked`. A blocked request also notifies the host: at the start of the turn it ends the turn with `:guardrail_blocked`, and after tool results it interrupts the turn (`:interrupted`, the reason in the outcome's `detail`).
 
 A replacement request is written back to the session, so later requests carry it too. A replacement tool payload changes what the tool runs with; the model's own tool call in the history is left as it sent it.
 
-Observe and passthrough handlers change nothing: their return values are ignored, and a `stream` handler sees each riffer event unchanged, the same object the host receives.
+Observe and passthrough hooks change nothing: their return values are ignored, and a `stream` hook sees each riffer event unchanged, the same object the host receives.
 
-Handlers run on the thread running the turn, one at a time — tools run sequentially so their handlers never overlap.
+Hooks run on the thread running the turn, one at a time — tools run sequentially so their hooks never overlap.
 
 ## Bundled extensions and replacement
 
@@ -129,7 +129,7 @@ The Runtime wraps each registrar block. A block that raises a `StandardError`, a
 
 Errors go to the host only, never into the model's context.
 
-At run time a handler that raises is caught and reported through the host's `notify` at level `:error` (`"before_tool_call handler failed: …"`), and the turn continues: the remaining handlers run, and a raising vetoable handler counts as no veto. Unlike a load error it is not recorded on `runtime.errors`. The `notify` event reaches the stream next to the event being handled.
+At run time a hook that raises is caught and reported through the host's `notify` at level `:error` (`"before_tool_call hook failed: …"`), and the turn continues: the remaining hooks run, and a raising vetoable hook counts as no veto. Unlike a load error it is not recorded on `runtime.errors`. The `notify` event reaches the stream next to the event being handled.
 
 ## API versioning
 

@@ -8,7 +8,7 @@ class Riffer::Rig::Registrar
 
   EVENTS: Array[Symbol]
 
-  @handlers: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
   @settings: Hash[Symbol, untyped]
 
@@ -69,5 +69,5 @@ class Riffer::Rig::Registrar
   def registrations: () -> Array[String]
 
   # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
-  def handlers: () -> Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  def hooks: () -> Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
 end

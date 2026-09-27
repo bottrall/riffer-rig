@@ -1010,7 +1010,7 @@ describe Riffer::Rig::Runtime do
     end
   end
 
-  describe 'handlers' do
+  describe 'hooks' do
     before do
       echo = Class.new(Riffer::Tool) do
         identifier 'echo'
@@ -1026,7 +1026,7 @@ describe Riffer::Rig::Runtime do
     end
 
     def runtime_with(&)
-      Riffer::Rig::Runtime.new('mock/test', extensions: [@echo, Riffer::Rig::Extension.new('handlers', &)])
+      Riffer::Rig::Runtime.new('mock/test', extensions: [@echo, Riffer::Rig::Extension.new('hooks', &)])
     end
 
     def stub_tool_turn(runtime, text = 'hi')
@@ -1055,7 +1055,7 @@ describe Riffer::Rig::Runtime do
       assert_equal :blocked, tool_result(runtime).error_type
     end
 
-    it 'feeds a replacement tool payload to the next handler' do
+    it 'feeds a replacement tool payload to the next hook' do
       seen = nil
       runtime = runtime_with do |rig|
         rig.on(:before_tool_call) { |e| e.args.merge(text: 'replaced') }
@@ -1212,7 +1212,7 @@ describe Riffer::Rig::Runtime do
       assert_equal [:completed], reasons
     end
 
-    it 'shows stream handlers every riffer stream event, unchanged' do
+    it 'shows stream hooks every riffer stream event, unchanged' do
       seen = []
       runtime = runtime_with { |rig| rig.on(:stream) { |e| seen << e } }
       stub_tool_turn(runtime)
@@ -1260,15 +1260,15 @@ describe Riffer::Rig::Runtime do
       assert_empty events
     end
 
-    it 'reports a raising handler through notify' do
+    it 'reports a raising hook through notify' do
       runtime = runtime_with { |rig| rig.on(:before_tool_call) { |_e| raise 'boom' } }
       stub_tool_turn(runtime)
       notifies = runtime.prompt('go').grep(Riffer::Rig::Events::Notify)
 
-      assert_equal [Riffer::Rig::Events::Notify.new('before_tool_call handler failed: boom', :error)], notifies
+      assert_equal [Riffer::Rig::Events::Notify.new('before_tool_call hook failed: boom', :error)], notifies
     end
 
-    it 'continues the turn after a handler raises' do
+    it 'continues the turn after a hook raises' do
       runtime = runtime_with { |rig| rig.on(:before_tool_call) { |_e| raise 'boom' } }
       stub_tool_turn(runtime)
       runtime.ask('go')
@@ -1276,7 +1276,7 @@ describe Riffer::Rig::Runtime do
       assert_equal 'echo: hi', tool_result(runtime).content
     end
 
-    it 'runs handlers in load order across extensions' do
+    it 'runs hooks in load order across extensions' do
       order = []
       first = Riffer::Rig::Extension.new('first') { |rig| rig.on(:before_prompt) { |_e| order << :first } }
       second = Riffer::Rig::Extension.new('second') { |rig| rig.on(:before_prompt) { |_e| order << :second } }

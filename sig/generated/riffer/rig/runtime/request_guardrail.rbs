@@ -3,11 +3,11 @@
 # riffer runs its before guardrails once per run, just ahead of the first
 # request; the Runtime's on_message observer covers the requests after it.
 class Riffer::Rig::Runtime::RequestGuardrail < Riffer::Guardrail
-  @handlers: Riffer::Rig::Runtime::Handlers
+  @hooks: Riffer::Rig::Runtime::Hooks
 
-  # @rbs handlers: Riffer::Rig::Runtime::Handlers
+  # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs return: void
-  def initialize: (handlers: Riffer::Rig::Runtime::Handlers) -> void
+  def initialize: (hooks: Riffer::Rig::Runtime::Hooks) -> void
 
   # @rbs messages: Array[Riffer::Messages::Base]
   # @rbs context: untyped

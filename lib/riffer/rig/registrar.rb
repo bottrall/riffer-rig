@@ -16,7 +16,7 @@ class Riffer::Rig::Registrar
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
   # @rbs @settings: Hash[Symbol, untyped]
-  # @rbs @handlers: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  # @rbs @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
   # @dynamic extension
   attr_reader :extension #: String
@@ -29,7 +29,7 @@ class Riffer::Rig::Registrar
     @prompts = {}
     @commands = {}
     @settings = {}
-    @handlers = EVENTS.to_h { |event| [event, []] }
+    @hooks = EVENTS.to_h { |event| [event, []] }
   end
 
   # @rbs return: NameCollisionError?
@@ -71,10 +71,10 @@ class Riffer::Rig::Registrar
   # @rbs &block: (Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped
   # @rbs return: void
   def on(event, &block)
-    handlers = @handlers.fetch(event) do
+    hooks = @hooks.fetch(event) do
       raise Riffer::ArgumentError, "unknown event #{event.inspect}; expected one of #{EVENTS.join(', ')}"
     end
-    handlers << block
+    hooks << block
   end
 
   # @rbs return: Hash[String, singleton(Riffer::Tool)]
@@ -107,7 +107,7 @@ class Riffer::Rig::Registrar
   end
 
   # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
-  def handlers
-    @handlers.transform_values(&:dup)
+  def hooks
+    @hooks.transform_values(&:dup)
   end
 end

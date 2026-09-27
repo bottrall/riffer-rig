@@ -3,14 +3,14 @@
 require 'json'
 
 class Riffer::Rig::Runtime::ToolRuntime < Riffer::Tools::Runtime
-  # @rbs @handlers: Riffer::Rig::Runtime::Handlers
+  # @rbs @hooks: Riffer::Rig::Runtime::Hooks
 
-  # @rbs handlers: Riffer::Rig::Runtime::Handlers
+  # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs return: void
-  def initialize(handlers)
-    # Sequential, so handlers never run concurrently.
+  def initialize(hooks)
+    # Sequential, so hooks never run concurrently.
     super(runner: Riffer::Runner::Sequential.new)
-    @handlers = handlers
+    @hooks = hooks
   end
 
   private
@@ -24,12 +24,12 @@ class Riffer::Rig::Runtime::ToolRuntime < Riffer::Tools::Runtime
     args = parse_arguments(tool_call.arguments)
     return super unless args.is_a?(Hash)
 
-    verdict = @handlers.before_tool_call(tool_call.name, args)
+    verdict = @hooks.before_tool_call(tool_call.name, args)
     return Riffer::Tools::Response.error(verdict.reason, type: :blocked) if verdict.is_a?(Riffer::Rig::Runtime::Blocked)
 
     call = verdict.equal?(args) ? tool_call : replace_arguments(tool_call, verdict)
     response = super(call, tools: tools, context: context, assistant_message: assistant_message)
-    @handlers.observe(:after_tool_call, Riffer::Rig::Events::AfterToolCall.new(tool_call.name, verdict, response))
+    @hooks.observe(:after_tool_call, Riffer::Rig::Events::AfterToolCall.new(tool_call.name, verdict, response))
     response
   rescue JSON::ParserError
     super

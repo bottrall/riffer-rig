@@ -136,18 +136,18 @@ describe Riffer::Rig::Registrar do
                  Riffer::Rig::Registrar.new('mcp').collision.message
   end
 
-  it 'collects handlers per event in registration order' do
+  it 'collects hooks per event in registration order' do
     registrar = Riffer::Rig::Registrar.new('git')
     first = proc { :first }
     second = proc { :second }
     registrar.on(:before_tool_call, &first)
     registrar.on(:before_tool_call, &second)
 
-    assert_equal [first, second], registrar.handlers[:before_tool_call]
+    assert_equal [first, second], registrar.hooks[:before_tool_call]
   end
 
-  it 'starts every event with no handlers' do
-    assert_equal Riffer::Rig::Registrar::EVENTS.to_h { |event| [event, []] }, Riffer::Rig::Registrar.new('git').handlers
+  it 'starts every event with no hooks' do
+    assert_equal Riffer::Rig::Registrar::EVENTS.to_h { |event| [event, []] }, Riffer::Rig::Registrar.new('git').hooks
   end
 
   it 'rejects an unknown event' do
@@ -156,11 +156,11 @@ describe Riffer::Rig::Registrar do
     assert_raises(Riffer::ArgumentError) { registrar.on(:before_everything) { nil } }
   end
 
-  it 'returns fresh arrays from handlers' do
+  it 'returns fresh arrays from hooks' do
     registrar = Riffer::Rig::Registrar.new('git')
     registrar.on(:stream) { nil }
-    registrar.handlers[:stream].clear
+    registrar.hooks[:stream].clear
 
-    assert_equal 1, registrar.handlers[:stream].length
+    assert_equal 1, registrar.hooks[:stream].length
   end
 end
