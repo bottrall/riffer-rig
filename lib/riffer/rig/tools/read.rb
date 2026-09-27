@@ -20,7 +20,7 @@ class Riffer::Rig::Tools::Read < Riffer::Tool
   # @rbs limit: Integer
   # @rbs return: Riffer::Tools::Response
   def call(context:, path:, offset: nil, limit: DEFAULT_LIMIT)
-    resolved = Riffer::Rig::Tools::WorkingDirectory.expand(path, context)
+    resolved = File.expand_path(path, context&.[](:cwd))
     return error("File not found: #{path}", type: :not_found) unless File.file?(resolved)
     return error('offset must be >= 1', type: :invalid_argument) if offset && offset < 1
 

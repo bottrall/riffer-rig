@@ -17,7 +17,7 @@ class Riffer::Rig::Tools::Write < Riffer::Tool
   # @rbs content: String
   # @rbs return: Riffer::Tools::Response
   def call(context:, path:, content:)
-    resolved = Riffer::Rig::Tools::WorkingDirectory.expand(path, context)
+    resolved = File.expand_path(path, context&.[](:cwd))
     FileUtils.mkdir_p(File.dirname(resolved))
     File.write(resolved, content)
 

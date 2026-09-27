@@ -23,7 +23,7 @@ class Riffer::Rig::Tools::Edit < Riffer::Tool
   # @rbs replace_all: bool
   # @rbs return: Riffer::Tools::Response
   def call(context:, path:, old_string:, new_string:, replace_all: false)
-    resolved = Riffer::Rig::Tools::WorkingDirectory.expand(path, context)
+    resolved = File.expand_path(path, context&.[](:cwd))
     return error("File not found: #{path}", type: :not_found) unless File.file?(resolved)
 
     content = File.read(resolved)
