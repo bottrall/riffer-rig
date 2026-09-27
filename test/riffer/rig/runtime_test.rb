@@ -923,4 +923,90 @@ describe Riffer::Rig::Runtime do
       assert_empty runtime.host.drain
     end
   end
+
+  describe 'declared settings' do
+    before do
+      @git = Riffer::Rig::Extension.new('git') do |rig|
+        rig.setting :depth, default: 3
+        rig.setting :remote, default: 'origin'
+        rig.command('show', description: 'Show the settings') { |ctx| ctx.say(ctx.settings.inspect) }
+      end
+    end
+
+    def settings_output(runtime)
+      events = []
+      runtime.run_command('show') { |event| events << event }
+      events.first.text
+    end
+
+    it 'applies a declared default when the settings lack the key' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
+
+      assert_equal({ depth: 3, remote: 'origin' }.inspect, settings_output(runtime))
+    end
+
+    it 'lets a provided value override the declared default' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git], settings: { git: { depth: 10 } })
+
+      assert_equal({ depth: 10, remote: 'origin' }.inspect, settings_output(runtime))
+    end
+
+    it 'shows a command only its own namespace' do
+      runtime = Riffer::Rig::Runtime.new(
+        'mock/test', extensions: [@git], settings: { model: 'mock/other', other: { depth: 1 } }
+      )
+
+      assert_equal({ depth: 3, remote: 'origin' }.inspect, settings_output(runtime))
+    end
+
+    it 'exposes the merged settings with declared defaults filled in' do
+      runtime = Riffer::Rig::Runtime.new(
+        'mock/test', extensions: [@git], settings: { model: 'mock/other', git: { depth: 10 } }
+      )
+
+      assert_equal({ model: 'mock/other', git: { depth: 10, remote: 'origin' } }, runtime.settings)
+    end
+
+    it 'exposes a table of declared keys per extension' do
+      bare = Riffer::Rig::Extension.new('bare') { |rig| rig.tool Riffer::Rig::Tools::Read }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git, bare])
+
+      assert_equal({ 'git' => { depth: 3, remote: 'origin' } }, runtime.declared_settings)
+    end
+
+    it 'rejects extensions named after core settings keys' do
+      colliding = %w[mcp model].map { |name| Riffer::Rig::Extension.new(name) { |rig| rig.tool Riffer::Rig::Tools::Read } }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: colliding)
+
+      assert_empty runtime.agent.tools
+    end
+
+    it 'records a colliding extension on errors' do
+      mcp = Riffer::Rig::Extension.new('mcp') { |rig| rig.setting :servers, default: [] }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [mcp])
+
+      assert_equal(
+        [[mcp, Riffer::Rig::Registrar::NameCollisionError]],
+        runtime.errors.map { |entry| [entry[:extension], entry[:error].class] }
+      )
+    end
+
+    it 'reports a colliding extension through notify' do
+      model = Riffer::Rig::Extension.new('model') { |rig| rig.setting :name, default: 'x' }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [model])
+      runtime.agent.provider.stub_response('All done.')
+
+      notice = 'Extension model failed to load: extension name model collides with a core settings key'
+
+      assert_equal [Riffer::Rig::Events::Notify.new(notice, :error)],
+                   runtime.prompt('hello').grep(Riffer::Rig::Events::Notify)
+    end
+
+    it 'leaves the core settings key untouched by a colliding extension' do
+      model = Riffer::Rig::Extension.new('model') { |rig| rig.setting :name, default: 'x' }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [model], settings: { model: 'mock/other' })
+
+      assert_equal({ model: 'mock/other' }, runtime.settings)
+    end
+  end
 end

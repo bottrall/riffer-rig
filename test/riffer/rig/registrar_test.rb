@@ -110,4 +110,29 @@ describe Riffer::Rig::Registrar do
 
     assert_equal ['tool bash', 'prompt section branch', 'command log'], registrar.registrations
   end
+
+  it 'collects declared settings with their defaults' do
+    registrar = Riffer::Rig::Registrar.new('git')
+    registrar.setting(:depth, default: 3)
+    registrar.setting(:remote, default: 'origin')
+
+    assert_equal({ depth: 3, remote: 'origin' }, registrar.settings)
+  end
+
+  it 'returns a fresh hash from settings' do
+    registrar = Riffer::Rig::Registrar.new('git')
+    registrar.setting(:depth, default: 3)
+    registrar.settings.clear
+
+    assert_equal({ depth: 3 }, registrar.settings)
+  end
+
+  it 'finds no collision for an extension name outside the core keys' do
+    assert_nil Riffer::Rig::Registrar.new('git').collision
+  end
+
+  it 'rejects an extension named after a core settings key' do
+    assert_equal 'extension name mcp collides with a core settings key',
+                 Riffer::Rig::Registrar.new('mcp').collision.message
+  end
 end

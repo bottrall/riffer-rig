@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Registrar
-  # @rbs @extension: String
+  class NameCollisionError < StandardError; end
+
+  CORE_SETTINGS_KEYS = %w[model reasoning models reload extensions sessions providers mcp tools].freeze #: Array[String]
+
   # @rbs @tools: Hash[String, singleton(Riffer::Tool)]
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
+  # @rbs @settings: Hash[Symbol, untyped]
 
   # @dynamic extension
   attr_reader :extension #: String
@@ -16,6 +20,14 @@ class Riffer::Rig::Registrar
     @tools = {}
     @prompts = {}
     @commands = {}
+    @settings = {}
+  end
+
+  # @rbs return: NameCollisionError?
+  def collision
+    return unless CORE_SETTINGS_KEYS.include?(@extension)
+
+    NameCollisionError.new("extension name #{@extension} collides with a core settings key")
   end
 
   # @rbs klass: singleton(Riffer::Tool)
@@ -39,6 +51,13 @@ class Riffer::Rig::Registrar
     @commands[name] = Riffer::Rig::Command.new(name, description: description, extension: @extension, &)
   end
 
+  # @rbs key: Symbol
+  # @rbs default: untyped
+  # @rbs return: void
+  def setting(key, default:)
+    @settings[key] = default
+  end
+
   # @rbs return: Hash[String, singleton(Riffer::Tool)]
   def tools
     @tools.dup
@@ -52,6 +71,11 @@ class Riffer::Rig::Registrar
   # @rbs return: Hash[String, Riffer::Rig::Command]
   def commands
     @commands.dup
+  end
+
+  # @rbs return: Hash[Symbol, untyped]
+  def settings
+    @settings.dup
   end
 
   # @rbs return: Array[String]

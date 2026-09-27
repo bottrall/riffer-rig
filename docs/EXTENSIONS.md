@@ -50,7 +50,7 @@ The block receives a `ctx`:
 | `args`                                  | the text after the command name, as one string (`""` when there is none)                               |
 | `runtime`                               | the Runtime running the command                                                                        |
 | `host`                                  | the Runtime's host (the [mirror](HOSTS.md#the-mirror))                                                 |
-| `settings`                              | this extension's namespace of the Runtime's `settings:` — `settings[:git]` for an extension named `git` — or `{}` when it has none |
+| `settings`                              | this extension's namespace of the Runtime's settings — `settings[:git]` for an extension named `git`, with its [declared defaults](#the-rigsetting-seam) filled in — or `{}` when it has none |
 | `say(text)`                             | emits a `command_output` event carrying the command's name and `text`                                  |
 | `prompt(text)`                          | sends `text` to the model as a user turn, so a prompt template is a command; the turn's events stream to the caller of `run_command` |
 | `ask(question, options: nil, secret: false)` | forwards to the host and returns its answer, or `nil` when the host does not support `:ask`       |
@@ -66,12 +66,30 @@ The four tools ship as bundled extensions — `Riffer::Rig.bundled(:read)`, `:wr
 
 A later extension replaces anything an earlier one registered by registering under the same name: a tool with the same identifier, a command with the same name, a prompt section with the same name. Later wins, and the Runtime reports each replacement across extensions through the host's `notify` at level `:info`, as "Extension LATER replaces KIND NAME from EARLIER". Nothing is deregistered, so the original extension is still there to pass to another Runtime.
 
+## The `rig.setting` seam
+
+```ruby
+Riffer::Rig.extension('git') do |rig|
+  rig.setting :depth, default: 3
+  rig.command('log', description: 'Recent commits') { |ctx| ctx.say `git log -n #{ctx.settings[:depth]} --oneline` }
+end
+```
+
+Declares a key under the extension's namespace of the settings: `"git": { "depth": 10 }` in `settings.json` (see [Configuration](CONFIGURATION.md#extension-namespaces)), read as `ctx.settings[:depth]`.
+
+- When the Runtime's `settings:` hash lacks the key, the declared default applies; a provided value overrides it. `runtime.settings` holds the result, so a prompt section reads the same values through `ctx.settings[:git]`.
+- A command's `ctx.settings` is its own extension's namespace only; core keys and other extensions' namespaces are not in it. Keys present in the namespace but never declared are passed through unchanged.
+- `runtime.declared_settings` lists what each extension declared, extension name → key → default, so a host can render a table of them. Nothing else in core reads it.
+- A later declaration of the same key replaces the earlier default.
+
+Core settings keys stay top level, so an extension cannot take one as its name: an extension named `model`, `reasoning`, `models`, `reload`, `extensions`, `sessions`, `providers`, `mcp` or `tools` is rejected with a `Riffer::Rig::Registrar::NameCollisionError` before its block runs, and reported as a load error (see [Error isolation](#error-isolation)).
+
 ## Error isolation
 
-The Runtime wraps each registrar block. A block that raises a `StandardError`, or an extension whose `requires:` the running riffer-rig does not satisfy, is a load error:
+The Runtime wraps each registrar block. A block that raises a `StandardError`, an extension whose `requires:` the running riffer-rig does not satisfy, or an extension named after a core settings key is a load error:
 
 - The extension is skipped, including anything its block registered before it raised; the rest load, in order.
-- `runtime.errors` records it as `{ extension:, error: }` — the extension object and the exception (a `Riffer::Rig::Extension::RequirementError` for an unmet `requires:`). An empty array means every extension loaded.
+- `runtime.errors` records it as `{ extension:, error: }` — the extension object and the exception (a `Riffer::Rig::Extension::RequirementError` for an unmet `requires:`, a `Riffer::Rig::Registrar::NameCollisionError` for a core key taken as a name). An empty array means every extension loaded.
 - The host gets one `notify` at level `:error`, `"Extension <name> failed to load: <message>"`, which the [mirror](HOSTS.md#the-mirror) also queues as a `notify` event for the next `prompt` or `run_command` to emit.
 
 Errors go to the host only, never into the model's context.

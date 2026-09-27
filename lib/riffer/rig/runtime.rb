@@ -42,15 +42,17 @@ class Riffer::Rig::Runtime
   # @rbs @session_start_pending: bool
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
+  # @rbs @declared_settings: Hash[String, Hash[Symbol, untyped]]
   # @rbs @errors: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
 
-  # @dynamic agent, credentials, cwd, host, id, settings
+  # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader :agent #: Riffer::Agent
   attr_reader :credentials #: Hash[Symbol, Hash[Symbol, String]]
   attr_reader :cwd #: String
   attr_reader :host #: Riffer::Rig::Hosts::Mirror
   attr_reader :id #: String
   attr_reader :settings #: Hash[Symbol, untyped]
+  attr_reader :declared_settings #: Hash[String, Hash[Symbol, untyped]]
 
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]
@@ -85,7 +87,6 @@ class Riffer::Rig::Runtime
     @id = ::SecureRandom.uuid_v7
     @host = Riffer::Rig::Hosts::Mirror.new(host)
     @cwd = cwd || Dir.pwd
-    @settings = settings
     @credentials = credentials
 
     @busy = false
@@ -96,6 +97,9 @@ class Riffer::Rig::Runtime
     @errors = []
     registrars = build_registrars(extensions)
     overrides(registrars).each { |message| @host.notify(message, level: :info) }
+    @declared_settings = registrars.to_h { |registrar| [registrar.extension, registrar.settings] }
+                                   .reject { |_extension, declared| declared.empty? }
+    @settings = with_declared_defaults(settings)
     @prompts = registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h
     commands = [Riffer::Rig::Commands::Model.command, *registrars.flat_map { |registrar| registrar.commands.values }]
     @commands = commands.to_h { |command| [command.name, command] }
@@ -310,8 +314,8 @@ class Riffer::Rig::Runtime
   # @rbs registrar: Riffer::Rig::Registrar
   # @rbs return: StandardError?
   def load_extension(extension, registrar)
-    mismatch = extension.mismatch
-    return mismatch if mismatch
+    rejection = extension.mismatch || registrar.collision
+    return rejection if rejection
 
     extension.run(registrar)
     nil
@@ -338,6 +342,16 @@ class Riffer::Rig::Runtime
           "Extension #{later} replaces #{registration} from #{earlier}"
         end
       end
+  end
+
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: Hash[Symbol, untyped]
+  def with_declared_defaults(settings)
+    namespaces = @declared_settings.to_h do |extension, defaults|
+      given = settings[extension.to_sym] || {} #: Hash[Symbol, untyped]
+      [extension.to_sym, defaults.merge(given)]
+    end
+    settings.merge(namespaces)
   end
 
   # @rbs registered: Array[singleton(Riffer::Tool)]
