@@ -95,13 +95,6 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def interrupt_if_cancelled: () -> void
 
-  # @rbs return: void
-  def heal_orphaned_tool_calls: () -> void
-
-  # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
-  # @rbs return: Riffer::Messages::Tool
-  def interrupted_result: (Riffer::Messages::Assistant::ToolCall tool_call) -> Riffer::Messages::Tool
-
   # @rbs outcome: Riffer::Agent::Outcome
   # @rbs return: Symbol
   def stop_reason: (Riffer::Agent::Outcome outcome) -> Symbol
