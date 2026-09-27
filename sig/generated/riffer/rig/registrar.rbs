@@ -6,6 +6,10 @@ class Riffer::Rig::Registrar
 
   CORE_SETTINGS_KEYS: Array[String]
 
+  EVENTS: Array[Symbol]
+
+  @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+
   @settings: Hash[Symbol, untyped]
 
   @commands: Hash[String, Riffer::Rig::Command]
@@ -44,6 +48,11 @@ class Riffer::Rig::Registrar
   # @rbs return: void
   def setting: (Symbol key, default: untyped) -> void
 
+  # @rbs event: Symbol
+  # @rbs &block: (Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped
+  # @rbs return: void
+  def on: (Symbol event) { (Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped } -> void
+
   # @rbs return: Hash[String, singleton(Riffer::Tool)]
   def tools: () -> Hash[String, singleton(Riffer::Tool)]
 
@@ -58,4 +67,7 @@ class Riffer::Rig::Registrar
 
   # @rbs return: Array[String]
   def registrations: () -> Array[String]
+
+  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  def hooks: () -> Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
 end

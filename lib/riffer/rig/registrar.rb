@@ -5,10 +5,18 @@ class Riffer::Rig::Registrar
 
   CORE_SETTINGS_KEYS = %w[model reasoning models reload extensions sessions providers mcp tools].freeze #: Array[String]
 
+  EVENTS = %i[
+    session_start session_end
+    before_prompt before_tool_call before_request
+    after_tool_call after_response turn_end
+    stream
+  ].freeze #: Array[Symbol]
+
   # @rbs @tools: Hash[String, singleton(Riffer::Tool)]
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
   # @rbs @settings: Hash[Symbol, untyped]
+  # @rbs @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
   # @dynamic extension
   attr_reader :extension #: String
@@ -21,6 +29,7 @@ class Riffer::Rig::Registrar
     @prompts = {}
     @commands = {}
     @settings = {}
+    @hooks = EVENTS.to_h { |event| [event, []] }
   end
 
   # @rbs return: NameCollisionError?
@@ -58,6 +67,16 @@ class Riffer::Rig::Registrar
     @settings[key] = default
   end
 
+  # @rbs event: Symbol
+  # @rbs &block: (Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped
+  # @rbs return: void
+  def on(event, &block)
+    hooks = @hooks.fetch(event) do
+      raise Riffer::ArgumentError, "unknown event #{event.inspect}; expected one of #{EVENTS.join(', ')}"
+    end
+    hooks << block
+  end
+
   # @rbs return: Hash[String, singleton(Riffer::Tool)]
   def tools
     @tools.dup
@@ -85,5 +104,10 @@ class Riffer::Rig::Registrar
       *@prompts.keys.map { |name| "prompt section #{name}" },
       *@commands.keys.map { |name| "command #{name}" }
     ]
+  end
+
+  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  def hooks
+    @hooks.transform_values(&:dup)
   end
 end

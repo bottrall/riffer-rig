@@ -1,0 +1,16 @@
+# Generated from lib/riffer/rig/runtime/request_guardrail.rb with RBS::Inline
+
+# riffer runs its before guardrails once per run, just ahead of the first
+# request; the Runtime's on_message observer covers the requests after it.
+class Riffer::Rig::Runtime::RequestGuardrail < Riffer::Guardrail
+  @hooks: Riffer::Rig::Runtime::Hooks
+
+  # @rbs hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs return: void
+  def initialize: (hooks: Riffer::Rig::Runtime::Hooks) -> void
+
+  # @rbs messages: Array[Riffer::Messages::Base]
+  # @rbs context: untyped
+  # @rbs return: Riffer::Guardrails::Result
+  def process_input: (Array[Riffer::Messages::Base] messages, context: untyped) -> Riffer::Guardrails::Result
+end

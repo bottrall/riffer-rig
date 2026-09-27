@@ -1009,4 +1009,282 @@ describe Riffer::Rig::Runtime do
       assert_equal({ model: 'mock/other' }, runtime.settings)
     end
   end
+
+  describe 'hooks' do
+    before do
+      echo = Class.new(Riffer::Tool) do
+        identifier 'echo'
+        description 'Echoes its text'
+
+        params do
+          required :text, String
+        end
+
+        define_method(:call) { |context:, text:| text("echo: #{text}") } # rubocop:disable Lint/UnusedBlockArgument
+      end
+      @echo = Riffer::Rig::Extension.new('echo') { |rig| rig.tool echo }
+    end
+
+    def runtime_with(&)
+      Riffer::Rig::Runtime.new('mock/test', extensions: [@echo, Riffer::Rig::Extension.new('hooks', &)])
+    end
+
+    def stub_tool_turn(runtime, text = 'hi')
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'echo', arguments: { text: text }.to_json }])
+      runtime.agent.provider.stub_response('All done.')
+    end
+
+    def tool_result(runtime)
+      runtime.agent.session.messages.grep(Riffer::Messages::Tool).last
+    end
+
+    it 'turns a blocked tool call into a tool error the model sees' do
+      runtime = runtime_with { |rig| rig.on(:before_tool_call) { |_e| next :block, 'no echoes' } }
+      stub_tool_turn(runtime)
+      runtime.ask('go')
+      sent = runtime.agent.provider.calls.last[:messages].find { |message| message[:role].to_s == 'tool' }
+
+      assert_equal 'no echoes', sent[:content]
+    end
+
+    it 'marks a blocked tool call as an error' do
+      runtime = runtime_with { |rig| rig.on(:before_tool_call) { |_e| next :block, 'no echoes' } }
+      stub_tool_turn(runtime)
+      runtime.ask('go')
+
+      assert_equal :blocked, tool_result(runtime).error_type
+    end
+
+    it 'feeds a replacement tool payload to the next hook' do
+      seen = nil
+      runtime = runtime_with do |rig|
+        rig.on(:before_tool_call) { |e| e.args.merge(text: 'replaced') }
+        rig.on(:before_tool_call) { |e| seen = e.args[:text] }
+      end
+      stub_tool_turn(runtime)
+      runtime.ask('go')
+
+      assert_equal 'replaced', seen
+    end
+
+    it 'runs the tool with the replacement payload' do
+      runtime = runtime_with { |rig| rig.on(:before_tool_call) { |e| e.args.merge(text: 'replaced') } }
+      stub_tool_turn(runtime)
+      runtime.ask('go')
+
+      assert_equal 'echo: replaced', tool_result(runtime).content
+    end
+
+    it 'fires before_request before each LLM call in a two-step tool turn' do
+      count = 0
+      runtime = runtime_with { |rig| rig.on(:before_request) { |_e| count += 1 } }
+      stub_tool_turn(runtime)
+      runtime.ask('go')
+
+      assert_equal 2, count
+    end
+
+    it 'fires the second before_request after the tool result' do
+      last = nil
+      runtime = runtime_with { |rig| rig.on(:before_request) { |e| last = e.messages.last } }
+      stub_tool_turn(runtime)
+      runtime.ask('go')
+
+      assert_instance_of Riffer::Messages::Tool, last
+    end
+
+    it 'sends a replacement request payload to the model' do
+      runtime = runtime_with do |rig|
+        rig.on(:before_request) do |e|
+          next unless e.messages.last.is_a?(Riffer::Messages::Tool)
+
+          [*e.messages, Riffer::Messages::User.new('MID_TURN_NOTE')]
+        end
+      end
+      stub_tool_turn(runtime)
+      runtime.ask('go')
+
+      assert_equal 'MID_TURN_NOTE', runtime.agent.provider.calls.last[:messages].last[:content]
+    end
+
+    it 'blocks the first request as a guardrail block' do
+      runtime = runtime_with { |rig| rig.on(:before_request) { |_e| next :block, 'offline' } }
+      runtime.agent.provider.stub_response('All done.')
+
+      assert_equal :guardrail_blocked, runtime.ask('go').outcome.reason
+    end
+
+    it 'interrupts the turn when a later request is blocked' do
+      runtime = runtime_with do |rig|
+        rig.on(:before_request) { |e| next :block, 'enough' if e.messages.last.is_a?(Riffer::Messages::Tool) }
+      end
+      stub_tool_turn(runtime)
+      outcome = runtime.ask('go').outcome
+
+      assert_equal [:interrupted, 'enough'], [outcome.reason, outcome.detail]
+    end
+
+    it 'sends a replacement prompt to the model' do
+      runtime = runtime_with { |rig| rig.on(:before_prompt) { |e| "#{e.text} (be brief)" } }
+      runtime.agent.provider.stub_response('All done.')
+      runtime.ask('go')
+
+      assert_equal 'go (be brief)', runtime.agent.provider.calls.last[:messages].last[:content]
+    end
+
+    it 'never calls the model for a blocked prompt' do
+      runtime = runtime_with { |rig| rig.on(:before_prompt) { |_e| next :block, 'not now' } }
+      runtime.ask('go')
+
+      assert_empty runtime.agent.provider.calls
+    end
+
+    it 'keeps a blocked prompt out of the session' do
+      runtime = runtime_with { |rig| rig.on(:before_prompt) { |_e| next :block, 'not now' } }
+      runtime.ask('go')
+
+      assert_empty runtime.agent.session.messages.grep(Riffer::Messages::User)
+    end
+
+    it 'ends a blocked prompt with a guardrail_blocked turn_end' do
+      runtime = runtime_with { |rig| rig.on(:before_prompt) { |_e| next :block, 'not now' } }
+      last = nil
+      runtime.prompt('go') { |event| last = event }
+
+      assert_equal :guardrail_blocked, last.stop_reason
+    end
+
+    it 'tells the host why a prompt was blocked' do
+      runtime = runtime_with { |rig| rig.on(:before_prompt) { |_e| next :block, 'not now' } }
+      notifies = runtime.prompt('go').grep(Riffer::Rig::Events::Notify)
+
+      assert_equal [Riffer::Rig::Events::Notify.new('not now', :warning)], notifies
+    end
+
+    it 'ignores what after_tool_call returns' do
+      runtime = runtime_with { |rig| rig.on(:after_tool_call) { |_e| 'IGNORED' } }
+      stub_tool_turn(runtime)
+      runtime.ask('go')
+
+      assert_equal 'echo: hi', tool_result(runtime).content
+    end
+
+    it 'hands after_tool_call the tool result' do
+      result = nil
+      runtime = runtime_with { |rig| rig.on(:after_tool_call) { |e| result = e.result.content } }
+      stub_tool_turn(runtime)
+      runtime.ask('go')
+
+      assert_equal 'echo: hi', result
+    end
+
+    it 'ignores what after_response returns' do
+      runtime = runtime_with { |rig| rig.on(:after_response) { |_e| 'IGNORED' } }
+      runtime.agent.provider.stub_response('All done.')
+
+      assert_equal 'All done.', runtime.ask('go').content
+    end
+
+    it 'fires after_response once per model response' do
+      count = 0
+      runtime = runtime_with { |rig| rig.on(:after_response) { |_e| count += 1 } }
+      stub_tool_turn(runtime)
+      runtime.ask('go')
+
+      assert_equal 2, count
+    end
+
+    it 'ignores what turn_end returns' do
+      runtime = runtime_with { |rig| rig.on(:turn_end) { |_e| :block } }
+      runtime.agent.provider.stub_response('All done.')
+      last = nil
+      runtime.prompt('go') { |event| last = event }
+
+      assert_equal :completed, last.stop_reason
+    end
+
+    it 'fires turn_end on ask as well as prompt' do
+      reasons = []
+      runtime = runtime_with { |rig| rig.on(:turn_end) { |e| reasons << e.stop_reason } }
+      runtime.agent.provider.stub_response('All done.')
+      runtime.ask('go')
+
+      assert_equal [:completed], reasons
+    end
+
+    it 'shows stream hooks every riffer stream event, unchanged' do
+      seen = []
+      runtime = runtime_with { |rig| rig.on(:stream) { |e| seen << e } }
+      stub_tool_turn(runtime)
+      streamed = runtime.prompt('go').grep(Riffer::StreamEvents::Base)
+
+      assert_equal streamed.map(&:object_id), seen.map(&:object_id)
+    end
+
+    it 'fires session_start with the new reason' do
+      events = []
+      runtime = runtime_with { |rig| rig.on(:session_start) { |e| events << e } }
+      runtime.agent.provider.stub_response('All done.')
+      runtime.ask('go')
+
+      assert_equal [Riffer::Rig::Events::SessionStart.new(runtime.id, :new)], events
+    end
+
+    it 'fires session_start once across turns' do
+      count = 0
+      runtime = runtime_with { |rig| rig.on(:session_start) { |_e| count += 1 } }
+      runtime.agent.provider.stub_response('One.')
+      runtime.agent.provider.stub_response('Two.')
+      runtime.ask('go')
+      runtime.ask('again')
+
+      assert_equal 1, count
+    end
+
+    it 'fires session_end with the close reason' do
+      events = []
+      runtime = runtime_with { |rig| rig.on(:session_end) { |e| events << e } }
+      runtime.agent.provider.stub_response('All done.')
+      runtime.ask('go')
+      runtime.close
+      runtime.close
+
+      assert_equal [Riffer::Rig::Events::SessionEnd.new(:close)], events
+    end
+
+    it 'skips session_end for a session that never started' do
+      events = []
+      runtime = runtime_with { |rig| rig.on(:session_end) { |e| events << e } }
+      runtime.close
+
+      assert_empty events
+    end
+
+    it 'reports a raising hook through notify' do
+      runtime = runtime_with { |rig| rig.on(:before_tool_call) { |_e| raise 'boom' } }
+      stub_tool_turn(runtime)
+      notifies = runtime.prompt('go').grep(Riffer::Rig::Events::Notify)
+
+      assert_equal [Riffer::Rig::Events::Notify.new('before_tool_call hook failed: boom', :error)], notifies
+    end
+
+    it 'continues the turn after a hook raises' do
+      runtime = runtime_with { |rig| rig.on(:before_tool_call) { |_e| raise 'boom' } }
+      stub_tool_turn(runtime)
+      runtime.ask('go')
+
+      assert_equal 'echo: hi', tool_result(runtime).content
+    end
+
+    it 'runs hooks in load order across extensions' do
+      order = []
+      first = Riffer::Rig::Extension.new('first') { |rig| rig.on(:before_prompt) { |_e| order << :first } }
+      second = Riffer::Rig::Extension.new('second') { |rig| rig.on(:before_prompt) { |_e| order << :second } }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [second, first])
+      runtime.agent.provider.stub_response('All done.')
+      runtime.ask('go')
+
+      assert_equal %i[second first], order
+    end
+  end
 end

@@ -1,0 +1,23 @@
+# Generated from lib/riffer/rig/runtime/tool_runtime.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::ToolRuntime < Riffer::Tools::Runtime
+  @hooks: Riffer::Rig::Runtime::Hooks
+
+  # @rbs hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs return: void
+  def initialize: (Riffer::Rig::Runtime::Hooks hooks) -> void
+
+  private
+
+  # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
+  # @rbs tools: Array[singleton(Riffer::Tool)]
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs assistant_message: Riffer::Messages::Assistant?
+  # @rbs return: Riffer::Tools::Response
+  def dispatch_tool_call: (Riffer::Messages::Assistant::ToolCall tool_call, tools: Array[singleton(Riffer::Tool)], context: Riffer::Agent::Context?, ?assistant_message: Riffer::Messages::Assistant?) -> Riffer::Tools::Response
+
+  # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
+  # @rbs args: Hash[Symbol, untyped]
+  # @rbs return: Riffer::Messages::Assistant::ToolCall
+  def replace_arguments: (Riffer::Messages::Assistant::ToolCall tool_call, Hash[Symbol, untyped] args) -> Riffer::Messages::Assistant::ToolCall
+end

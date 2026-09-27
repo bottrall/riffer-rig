@@ -49,6 +49,8 @@ class Riffer::Rig::Runtime
 
   @errors: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
 
+  @hooks: Riffer::Rig::Runtime::Hooks
+
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader agent: Riffer::Agent
 
@@ -132,6 +134,10 @@ class Riffer::Rig::Runtime
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
   def start_turn: (String text) -> Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
 
+  # @rbs reason: String
+  # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  def blocked_turn: (String reason) -> Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+
   # @rbs name: String
   # @rbs args: String
   # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
@@ -144,9 +150,21 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Rig::Command::Context
   def command_context: (Riffer::Rig::Command command, String args, ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void emit) -> Riffer::Rig::Command::Context
 
-  # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  # @rbs text: String
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
-  def wrap_stream: (Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response] stream) -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
+  def turn: (String text) -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
+
+  # @rbs yielder: Enumerator::Yielder
+  # @rbs event: ::Riffer::StreamEvents::Base
+  # @rbs return: void
+  def pass_through: (Enumerator::Yielder yielder, ::Riffer::StreamEvents::Base event) -> void
+
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: void
+  def observe_message: (Riffer::Messages::Base message) -> void
+
+  # @rbs return: void
+  def before_next_request: () -> void
 
   # @rbs return: void
   def interrupt_if_cancelled: () -> void
@@ -176,6 +194,9 @@ class Riffer::Rig::Runtime
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs return: Hash[Symbol, untyped]
   def with_declared_defaults: (Hash[Symbol, untyped] settings) -> Hash[Symbol, untyped]
+
+  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  def merge_hooks: (untyped registrars) -> Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
   # @rbs registered: Array[singleton(Riffer::Tool)]
   # @rbs allowlist: Array[String]?

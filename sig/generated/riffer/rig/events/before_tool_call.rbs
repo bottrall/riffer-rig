@@ -1,0 +1,19 @@
+# Generated from lib/riffer/rig/events/before_tool_call.rb with RBS::Inline
+
+class Riffer::Rig::Events::BeforeToolCall < Riffer::Rig::Events::Event
+  # @dynamic tool, args
+  attr_reader tool: String
+
+  attr_reader args: Hash[Symbol, untyped]
+
+  # @rbs tool: String
+  # @rbs args: Hash[Symbol, untyped]
+  # @rbs return: void
+  def initialize: (String tool, Hash[Symbol, untyped] args) -> void
+
+  # @rbs return: Symbol
+  def type: () -> Symbol
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end
