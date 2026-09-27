@@ -1475,4 +1475,253 @@ describe Riffer::Rig::Runtime do
       Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], snapshot: saved.to_h)
     end
   end
+
+  describe '#rebuild' do
+    before do
+      @lifecycle = []
+      lifecycle = @lifecycle
+      @old = Riffer::Rig::Extension.new('old') do |rig|
+        rig.tool Riffer::Rig::Tools::Read
+        rig.command('old', description: 'The old command') { |ctx| ctx.say('old') }
+        rig.prompt(:section) { 'OLD_SECTION' }
+        rig.on(:before_prompt) { |_e| lifecycle << :old_hook }
+        rig.on(:session_end) { |e| lifecycle << [:old, e] }
+      end
+      @new = Riffer::Rig::Extension.new('new') do |rig|
+        rig.tool Riffer::Rig::Tools::Bash
+        rig.command('new', description: 'The new command') { |ctx| ctx.say('new') }
+        rig.prompt(:section) { 'NEW_SECTION' }
+        rig.on(:before_prompt) { |_e| lifecycle << :new_hook }
+        rig.on(:session_start) { |e| lifecycle << [:new, e] }
+      end
+      @runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@old])
+    end
+
+    def started(runtime)
+      usage = Riffer::Providers::TokenUsage.new(input_tokens: 7, output_tokens: 3)
+      runtime.agent.provider.stub_response('Before.', token_usage: usage)
+      runtime.ask('before')
+      runtime
+    end
+
+    def rebuilt(runtime = started(@runtime), extensions: [@new], settings: {})
+      runtime.rebuild(extensions: extensions, settings: settings)
+      runtime
+    end
+
+    def next_turn(runtime)
+      runtime.agent.provider.stub_response('After.')
+      runtime.prompt('after').to_a
+    end
+
+    it 'returns nil' do
+      assert_nil @runtime.rebuild(extensions: [@new], settings: {})
+    end
+
+    it 'swaps in the tools of the new list' do
+      assert_equal [Riffer::Rig::Tools::Bash], rebuilt.agent.tools
+    end
+
+    it 'swaps in the commands of the new list' do
+      assert_equal %w[model new], rebuilt.commands.map(&:name)
+    end
+
+    it 'renders the prompt sections of the new list' do
+      runtime = rebuilt
+      next_turn(runtime)
+
+      assert_includes runtime.agent.provider.calls.last[:messages].first[:content], 'NEW_SECTION'
+    end
+
+    it 'runs the hooks of the new list only' do
+      runtime = rebuilt
+      @lifecycle.clear
+      next_turn(runtime)
+
+      assert_equal [:new_hook], @lifecycle
+    end
+
+    it 'applies the new settings with the new declared defaults' do
+      declaring = Riffer::Rig::Extension.new('git') { |rig| rig.setting :depth, default: 3 }
+
+      runtime = rebuilt(extensions: [declaring], settings: { model: 'mock/other' })
+
+      assert_equal({ model: 'mock/other', git: { depth: 3 } }, runtime.settings)
+    end
+
+    it 'keeps the message history' do
+      runtime = started(@runtime)
+      history = runtime.agent.session.messages.drop(1)
+
+      assert_equal history, rebuilt(runtime).agent.session.messages.drop(1)
+    end
+
+    it 'keeps the tally' do
+      assert_equal 10, rebuilt.tally.total_tokens
+    end
+
+    it 'keeps the /model override' do
+      runtime = started(@runtime)
+      runtime.model = 'mock/other'
+
+      assert_equal 'mock/other', rebuilt(runtime, settings: { model: 'mock/test' }).model
+    end
+
+    it 'keeps the id' do
+      id = @runtime.id
+
+      assert_equal id, rebuilt.id
+    end
+
+    it 'keeps the host' do
+      host = @runtime.host
+
+      assert_same host, rebuilt.host
+    end
+
+    it 'keeps the tool allowlist' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@old], tools: %w[read])
+
+      assert_empty rebuilt(runtime).agent.tools
+    end
+
+    it 'clears the load errors of the old list' do
+      broken = Riffer::Rig::Extension.new('broken') { |_rig| raise 'kaboom' }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [broken])
+
+      assert_empty rebuilt(runtime).errors
+    end
+
+    it 'fires session_end with the reload reason on the old hooks' do
+      rebuilt
+
+      assert_includes @lifecycle, [:old, Riffer::Rig::Events::SessionEnd.new(:reload)]
+    end
+
+    it 'fires session_start with the reload reason on the new hooks' do
+      runtime = rebuilt
+
+      assert_includes @lifecycle, [:new, Riffer::Rig::Events::SessionStart.new(runtime.id, :reload)]
+    end
+
+    it 'opens the next turn with session_end then session_start, both for the reload' do
+      runtime = rebuilt
+
+      session_end = Riffer::Rig::Events::SessionEnd.new(:reload)
+      session_start = Riffer::Rig::Events::SessionStart.new(runtime.id, :reload)
+
+      assert_equal [session_end, session_start], next_turn(runtime).take(2)
+    end
+
+    it 'leaves a session that never started to open with session_start new' do
+      runtime = rebuilt(@runtime)
+
+      assert_equal Riffer::Rig::Events::SessionStart.new(runtime.id, :new), next_turn(runtime).first
+    end
+
+    describe 'with a raising extension in the new list' do
+      before do
+        @broken = Riffer::Rig::Extension.new('broken') do |rig|
+          rig.tool Riffer::Rig::Tools::Write
+          raise 'kaboom'
+        end
+        started(@runtime)
+      end
+
+      def attempt
+        @runtime.rebuild(extensions: [@new, @broken], settings: { model: 'mock/other' })
+      rescue RuntimeError
+        nil
+      end
+
+      it 'propagates the error' do
+        assert_raises(RuntimeError) { @runtime.rebuild(extensions: [@new, @broken], settings: {}) }
+      end
+
+      it 'keeps the old tools' do
+        attempt
+
+        assert_equal [Riffer::Rig::Tools::Read], @runtime.agent.tools
+      end
+
+      it 'keeps the old commands' do
+        attempt
+
+        assert_equal %w[model old], @runtime.commands.map(&:name)
+      end
+
+      it 'keeps the old settings' do
+        attempt
+
+        assert_empty @runtime.settings
+      end
+
+      it 'fires no lifecycle hooks' do
+        @lifecycle.clear
+        attempt
+
+        assert_empty @lifecycle
+      end
+
+      it 'releases the Runtime for the next rebuild' do
+        attempt
+
+        assert_nil @runtime.rebuild(extensions: [@new], settings: {})
+      end
+    end
+
+    it 'raises from inside a hook' do
+      runtime = nil
+      reloading = Riffer::Rig::Extension.new('reloading') do |rig|
+        rig.on(:turn_end) { |_e| runtime.rebuild(extensions: [], settings: {}) }
+      end
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [reloading])
+      runtime.agent.provider.stub_response('All done.')
+      notifies = []
+      runtime.prompt('go') { |event| notifies << event if event.is_a?(Riffer::Rig::Events::Notify) }
+      notice = 'turn_end hook failed: a prompt is already running on this Runtime'
+
+      assert_equal [Riffer::Rig::Events::Notify.new(notice, :error)], notifies
+    end
+
+    it 'raises from inside a command' do
+      reloading = Riffer::Rig::Extension.new('reloading') do |rig|
+        rig.command('reload', description: 'Rebuild') { |ctx| ctx.runtime.rebuild(extensions: [], settings: {}) }
+      end
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [reloading])
+      events = []
+      runtime.run_command('reload') { |event| events << event }
+
+      notice = 'Command reload failed: a prompt is already running on this Runtime'
+
+      assert_equal [Riffer::Rig::Events::Notify.new(notice, :error)], events
+    end
+
+    it 'raises on a closed Runtime' do
+      @runtime.close
+
+      assert_raises(Riffer::Rig::Runtime::ClosedError) { @runtime.rebuild(extensions: [@new], settings: {}) }
+    end
+
+    describe 'providers' do
+      before do
+        @provider = Riffer::Rig::Extension.new('provider') do |_rig|
+          Riffer::Providers::Repository.register(:rig_rebuild) { Riffer::Providers::Mock }
+        end
+        @on_provider = Riffer::Rig::Runtime.new('rig_rebuild/fast', extensions: [@provider])
+      end
+
+      after do
+        Riffer::Providers::Repository.unregister(:rig_rebuild)
+      end
+
+      it 'keeps a provider registered before the rebuild' do
+        assert_equal 'rig_rebuild/fast', rebuilt(@on_provider, extensions: []).model
+      end
+
+      it 're-registers a provider idempotently' do
+        assert_equal 'rig_rebuild/fast', rebuilt(@on_provider, extensions: [@provider]).model
+      end
+    end
+  end
 end
