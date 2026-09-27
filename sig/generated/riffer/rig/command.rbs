@@ -1,0 +1,23 @@
+# Generated from lib/riffer/rig/command.rb with RBS::Inline
+
+class Riffer::Rig::Command
+  @block: ^(Riffer::Rig::Command::Context) -> void
+
+  # @dynamic name, description, extension
+  attr_reader name: String
+
+  attr_reader description: String
+
+  attr_reader extension: String
+
+  # @rbs name: String
+  # @rbs description: String
+  # @rbs extension: String
+  # @rbs &block: (Riffer::Rig::Command::Context) -> void
+  # @rbs return: void
+  def initialize: (String name, description: String, extension: String) { (Riffer::Rig::Command::Context) -> void } -> void
+
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs return: void
+  def call: (Riffer::Rig::Command::Context ctx) -> void
+end

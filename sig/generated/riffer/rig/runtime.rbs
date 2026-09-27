@@ -41,7 +41,9 @@ class Riffer::Rig::Runtime
 
   @session_start_pending: bool
 
-  @registrar: Riffer::Rig::Registrar
+  @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+
+  @commands: Hash[String, Riffer::Rig::Command]
 
   # @dynamic agent, credentials, cwd, host, id, settings
   attr_reader agent: Riffer::Agent
@@ -81,6 +83,15 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Agent::Response
   def ask: (String text) -> Riffer::Agent::Response
 
+  # @rbs return: Array[Riffer::Rig::Command]
+  def commands: () -> Array[Riffer::Rig::Command]
+
+  # @rbs name: String
+  # @rbs args: String
+  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs return: nil
+  def run_command: (String name, ?String args) ?{ (::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void } -> nil
+
   # @rbs return: nil
   def cancel: () -> nil
 
@@ -91,6 +102,25 @@ class Riffer::Rig::Runtime
   def close: () -> void
 
   private
+
+  # @rbs return: void
+  def claim: () -> void
+
+  # @rbs text: String
+  # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  def start_turn: (String text) -> Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+
+  # @rbs name: String
+  # @rbs args: String
+  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs return: void
+  def execute: (String name, String args, ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void emit) -> void
+
+  # @rbs command: Riffer::Rig::Command
+  # @rbs args: String
+  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs return: Riffer::Rig::Command::Context
+  def command_context: (Riffer::Rig::Command command, String args, ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void emit) -> Riffer::Rig::Command::Context
 
   # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
@@ -104,8 +134,8 @@ class Riffer::Rig::Runtime
   def stop_reason: (Riffer::Agent::Outcome outcome) -> Symbol
 
   # @rbs extensions: Array[Riffer::Rig::Extension]
-  # @rbs return: Riffer::Rig::Registrar
-  def build_registrar: (Array[Riffer::Rig::Extension] extensions) -> Riffer::Rig::Registrar
+  # @rbs return: Array[Riffer::Rig::Registrar]
+  def build_registrars: (Array[Riffer::Rig::Extension] extensions) -> Array[Riffer::Rig::Registrar]
 
   # @rbs registered: Array[singleton(Riffer::Tool)]
   # @rbs allowlist: Array[String]?

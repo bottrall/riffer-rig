@@ -1,0 +1,46 @@
+# Generated from lib/riffer/rig/command/context.rb with RBS::Inline
+
+class Riffer::Rig::Command::Context
+  @command: String
+
+  @emit: ^(Riffer::Rig::Events::Event) -> void
+
+  @turn: ^(String) -> void
+
+  # @dynamic args, runtime, host, settings
+  attr_reader args: String
+
+  attr_reader runtime: Riffer::Rig::Runtime
+
+  attr_reader host: Riffer::Rig::Hosts::Base
+
+  attr_reader settings: Hash[Symbol, untyped]
+
+  # @rbs command: String
+  # @rbs args: String
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs host: Riffer::Rig::Hosts::Base
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs emit: ^(Riffer::Rig::Events::Event) -> void
+  # @rbs turn: ^(String) -> void
+  # @rbs return: void
+  def initialize: (String command, String args, runtime: Riffer::Rig::Runtime, host: Riffer::Rig::Hosts::Base, settings: Hash[Symbol, untyped], emit: ^(Riffer::Rig::Events::Event) -> void, turn: ^(String) -> void) -> void
+
+  # @rbs text: String
+  # @rbs return: nil
+  def say: (String text) -> nil
+
+  # @rbs text: String
+  # @rbs return: nil
+  def prompt: (String text) -> nil
+
+  # @rbs question: String?
+  # @rbs options: Array[String]?
+  # @rbs secret: bool
+  # @rbs return: String?
+  def ask: (?String? question, ?options: Array[String]?, ?secret: bool) -> String?
+
+  # @rbs question: String?
+  # @rbs return: bool
+  def confirm: (?String? question) -> bool
+end

@@ -40,7 +40,8 @@ class Riffer::Rig::Runtime
   # @rbs @busy: bool
   # @rbs @closed: bool
   # @rbs @session_start_pending: bool
-  # @rbs @registrar: Riffer::Rig::Registrar
+  # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+  # @rbs @commands: Hash[String, Riffer::Rig::Command]
 
   # @dynamic agent, credentials, cwd, host, id, settings
   attr_reader :agent #: Riffer::Agent
@@ -91,8 +92,10 @@ class Riffer::Rig::Runtime
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
     @session_start_pending = true
     Riffer::Rig::Settings::Pricing.register(pricing, riffer_config.pricing)
-    @registrar = build_registrar(extensions)
-    tool_classes = select_tools(@registrar.tools, tools)
+    registrars = build_registrars(extensions)
+    @prompts = registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h
+    @commands = registrars.flat_map { |registrar| registrar.commands.to_a }.to_h
+    tool_classes = select_tools(registrars.flat_map(&:tools), tools)
     @base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
 
     @agent = Riffer::Agent.new(
@@ -111,34 +114,49 @@ class Riffer::Rig::Runtime
   # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
   # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response])
   def prompt(text, &block)
-    raise BusyError, 'a prompt is already running on this Runtime' if @busy
-    raise ClosedError, 'this Runtime is closed' if @closed
-
-    @busy = true
-    @cancel_flag.clear
-    refresh_system_message
-    if block
-      wrap_stream(@agent.stream(text)).each(&block)
-      nil
-    else
-      wrap_stream(@agent.stream(text))
+    claim
+    begin
+      if block
+        wrap_stream(start_turn(text)).each(&block)
+        nil
+      else
+        wrap_stream(start_turn(text))
+      end
+    ensure
+      @busy = false
     end
-  ensure
-    @busy = false
   end
 
   # @rbs text: String
   # @rbs return: Riffer::Agent::Response
   def ask(text)
-    raise BusyError, 'a prompt is already running on this Runtime' if @busy
-    raise ClosedError, 'this Runtime is closed' if @closed
+    claim
+    begin
+      start_turn(text).each { |event| event }
+    ensure
+      @busy = false
+    end
+  end
 
-    @busy = true
-    @cancel_flag.clear
-    refresh_system_message
-    @agent.stream(text).each { |event| event }
-  ensure
-    @busy = false
+  # @rbs return: Array[Riffer::Rig::Command]
+  def commands
+    @commands.values
+  end
+
+  # @rbs name: String
+  # @rbs args: String
+  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs return: nil
+  def run_command(name, args = '', &block)
+    claim
+    emit = block || ->(_event) {} #: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+    begin
+      execute(name, args, emit)
+    ensure
+      @busy = false
+    end
+    @host.drain.each(&emit)
+    nil
   end
 
   # @rbs return: nil
@@ -160,6 +178,54 @@ class Riffer::Rig::Runtime
   end
 
   private
+
+  # @rbs return: void
+  def claim
+    raise BusyError, 'a prompt is already running on this Runtime' if @busy
+    raise ClosedError, 'this Runtime is closed' if @closed
+
+    @busy = true
+  end
+
+  # @rbs text: String
+  # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  def start_turn(text)
+    @cancel_flag.clear
+    refresh_system_message
+    @agent.stream(text)
+  end
+
+  # @rbs name: String
+  # @rbs args: String
+  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs return: void
+  def execute(name, args, emit)
+    command = @commands.fetch(name, nil)
+    return @host.notify("Unknown command: #{name}", level: :error) unless command
+
+    begin
+      command.call(command_context(command, args, emit))
+    rescue StandardError => e
+      @host.notify("Command #{name} failed: #{e.message}", level: :error)
+    end
+  end
+
+  # @rbs command: Riffer::Rig::Command
+  # @rbs args: String
+  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs return: Riffer::Rig::Command::Context
+  def command_context(command, args, emit)
+    settings = @settings[command.extension.to_sym] || {} #: Hash[Symbol, untyped]
+    Riffer::Rig::Command::Context.new(
+      command.name,
+      args,
+      runtime: self,
+      host: @host,
+      settings: settings,
+      emit: emit,
+      turn: ->(text) { wrap_stream(start_turn(text)).each(&emit) }
+    )
+  end
 
   # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
@@ -194,12 +260,12 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs extensions: Array[Riffer::Rig::Extension]
-  # @rbs return: Riffer::Rig::Registrar
-  def build_registrar(extensions)
+  # @rbs return: Array[Riffer::Rig::Registrar]
+  def build_registrars(extensions)
     raise BusyError, 'a prompt is already running on this Runtime' if @busy
 
-    extensions.each_with_object(Riffer::Rig::Registrar.new) do |extension, registrar|
-      extension.run(registrar)
+    extensions.map do |extension|
+      Riffer::Rig::Registrar.new(extension.name).tap { |registrar| extension.run(registrar) }
     end
   end
 
@@ -222,7 +288,7 @@ class Riffer::Rig::Runtime
 
   # @rbs return: Array[String]
   def rendered_sections
-    @registrar.prompts.each_value.map { |section| section.call(self).to_s }.reject(&:empty?)
+    @prompts.each_value.map { |section| section.call(self).to_s }.reject(&:empty?)
   end
 
   # @rbs sections: Array[String]
