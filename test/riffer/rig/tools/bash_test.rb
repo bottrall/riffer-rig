@@ -104,4 +104,18 @@ describe Riffer::Rig::Tools::Bash do
   def test_kill_group_returns_zero_when_the_group_is_gone
     assert_equal 0, @tool.send(:kill_group, -1)
   end
+
+  it 'ends its description with its guidance sentence' do
+    assert Riffer::Rig::Tools::Bash.description.end_with?(
+      'Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers.'
+    )
+  end
+
+  it 'runs in the cwd in its context' do
+    Dir.mktmpdir do |dir|
+      response = @tool.call(context: Riffer::Agent::Context.new(cwd: dir), command: 'pwd')
+
+      assert_equal File.realpath(dir), response.content
+    end
+  end
 end

@@ -57,4 +57,20 @@ describe Riffer::Rig::Tools::Edit do
       end
     end
   end
+
+  it 'ends its description with its guidance sentence' do
+    assert Riffer::Rig::Tools::Edit.description.end_with?(
+      'Prefer this over write for existing files; pass enough surrounding text to make old_string unique.'
+    )
+  end
+
+  it 'resolves a relative path against the cwd in its context' do
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, 'note.txt'), 'hello world')
+      context = Riffer::Agent::Context.new(cwd: dir)
+      @tool.call(context: context, path: 'note.txt', old_string: 'world', new_string: 'rig')
+
+      assert_equal 'hello rig', File.read(File.join(dir, 'note.txt'))
+    end
+  end
 end

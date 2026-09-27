@@ -20,7 +20,7 @@ end
 rig.tool klass
 ```
 
-Adds a `Riffer::Tool` to the Runtime; its identifier is its name everywhere. When the extension block runs, the registrar collects the tool classes and the Runtime passes them to its agent. `tools:` on `Runtime.new` is an allowlist of tool identifiers over what extensions registered — `nil` (the default) means every registered tool.
+Adds a `Riffer::Tool` to the Runtime; its identifier is its name everywhere. When the extension block runs, the registrar collects the tool classes and the Runtime passes them to its agent. `tools:` on `Runtime.new` is an allowlist of tool identifiers over what extensions registered — `nil` (the default) means every registered tool. A later registration of the same identifier replaces the earlier tool and keeps its place in the list; that is how a user replaces a [bundled tool](TOOLS.md#replacing-a-tool).
 
 ## The `rig.prompt` seam
 
@@ -59,6 +59,12 @@ The block receives a `ctx`:
 `ask` and `confirm` check `host.capabilities` first, so a host that declines them — the null host, headless — is never asked and the command takes the declined path.
 
 A command runs synchronously, one at a time, under the same rule as `prompt`: `run_command` while a prompt or another command is running raises `Riffer::Rig::Runtime::BusyError`. A command that calls `ctx.runtime.prompt` or `ctx.runtime.ask` hits the same rule; `ctx.prompt` is the way to run a turn from a command. A command that raises is caught and reported through the host's `notify` at level `:error`, and the Runtime stays usable.
+
+## Bundled extensions and replacement
+
+The four tools ship as bundled extensions — `Riffer::Rig.bundled(:read)`, `:write`, `:edit`, `:bash` — built on the same seams as any other extension; `Riffer::Rig.bundled` returns them all in load order. [Tools](TOOLS.md) describes them.
+
+A later extension replaces anything an earlier one registered by registering under the same name: a tool with the same identifier, a command with the same name, a prompt section with the same name. Later wins, and the Runtime reports each replacement across extensions through the host's `notify` at level `:info`, as "Extension LATER replaces KIND NAME from EARLIER". Nothing is deregistered, so the original extension is still there to pass to another Runtime.
 
 ## Error isolation
 

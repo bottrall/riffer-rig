@@ -49,4 +49,19 @@ describe Riffer::Rig::Tools::Read do
       end
     end
   end
+
+  it 'ends its description with its guidance sentence' do
+    assert Riffer::Rig::Tools::Read.description.end_with?(
+      'Read a file before editing it, and read rather than guess what a file contains.'
+    )
+  end
+
+  it 'resolves a relative path against the cwd in its context' do
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, 'greeting.txt'), 'hello')
+      response = @tool.call(context: Riffer::Agent::Context.new(cwd: dir), path: 'greeting.txt')
+
+      assert_equal "     1\thello", response.content
+    end
+  end
 end

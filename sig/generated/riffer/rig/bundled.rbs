@@ -1,0 +1,5 @@
+# Generated from lib/riffer/rig/bundled.rb with RBS::Inline
+
+module Riffer::Rig::Bundled
+  BY_NAME: Hash[Symbol, Riffer::Rig::Extension]
+end

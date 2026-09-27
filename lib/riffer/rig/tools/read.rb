@@ -3,7 +3,8 @@
 class Riffer::Rig::Tools::Read < Riffer::Tool
   identifier 'read'
   description 'Read a file from the filesystem. Returns its contents with line numbers. ' \
-              'Use offset/limit to read a slice of a large file.'
+              'Use offset/limit to read a slice of a large file. ' \
+              'Read a file before editing it, and read rather than guess what a file contains.'
 
   DEFAULT_LIMIT = 2000 #: Integer
 
@@ -19,7 +20,7 @@ class Riffer::Rig::Tools::Read < Riffer::Tool
   # @rbs limit: Integer
   # @rbs return: Riffer::Tools::Response
   def call(context:, path:, offset: nil, limit: DEFAULT_LIMIT)
-    resolved = File.expand_path(path, Dir.pwd)
+    resolved = Riffer::Rig::Tools::WorkingDirectory.expand(path, context)
     return error("File not found: #{path}", type: :not_found) unless File.file?(resolved)
     return error('offset must be >= 1', type: :invalid_argument) if offset && offset < 1
 

@@ -95,10 +95,11 @@ class Riffer::Rig::Runtime
     Riffer::Rig::Settings::Pricing.register(pricing, riffer_config.pricing)
     @errors = []
     registrars = build_registrars(extensions)
+    overrides(registrars).each { |message| @host.notify(message, level: :info) }
     @prompts = registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h
     commands = [Riffer::Rig::Commands::Model.command, *registrars.flat_map { |registrar| registrar.commands.values }]
     @commands = commands.to_h { |command| [command.name, command] }
-    tool_classes = select_tools(registrars.flat_map(&:tools), tools)
+    tool_classes = select_tools(registrars.flat_map { |registrar| registrar.tools.to_a }.to_h.values, tools)
     @base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
 
     @agent = build_agent(
@@ -215,7 +216,7 @@ class Riffer::Rig::Runtime
   # @rbs session: Riffer::Agent::Session?
   # @rbs return: Riffer::Agent
   def build_agent(model, config, session: nil)
-    Riffer::Agent.new(session: session, context: { cancel_flag: @cancel_flag, model: model }, config: config)
+    Riffer::Agent.new(session: session, context: { cancel_flag: @cancel_flag, cwd: @cwd, model: model }, config: config)
   end
 
   # @rbs text: String
@@ -324,6 +325,19 @@ class Riffer::Rig::Runtime
   def record_error(extension, error)
     @errors << { extension: extension, error: error }
     @host.notify("Extension #{extension.name} failed to load: #{error.message}", level: :error)
+  end
+
+  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs return: Array[String]
+  def overrides(registrars)
+    registrars
+      .flat_map { |registrar| registrar.registrations.map { |registration| [registration, registrar.extension] } }
+      .group_by(&:first)
+      .flat_map do |registration, claims|
+        claims.map(&:last).each_cons(2).map do |earlier, later|
+          "Extension #{later} replaces #{registration} from #{earlier}"
+        end
+      end
   end
 
   # @rbs registered: Array[singleton(Riffer::Tool)]

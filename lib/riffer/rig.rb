@@ -27,4 +27,10 @@ module Riffer::Rig
   def self.extensions
     @extensions.dup
   end
+
+  # @rbs name: Symbol?
+  # @rbs return: Riffer::Rig::Extension | Array[Riffer::Rig::Extension]
+  def self.bundled(name = nil)
+    name ? Bundled::BY_NAME.fetch(name) : Bundled::BY_NAME.values
+  end
 end

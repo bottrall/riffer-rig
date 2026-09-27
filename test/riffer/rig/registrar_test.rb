@@ -8,15 +8,31 @@ describe Riffer::Rig::Registrar do
     registrar.tool(Riffer::Rig::Tools::Read)
     registrar.tool(Riffer::Rig::Tools::Bash)
 
-    assert_equal [Riffer::Rig::Tools::Read, Riffer::Rig::Tools::Bash], registrar.tools
+    assert_equal [Riffer::Rig::Tools::Read, Riffer::Rig::Tools::Bash], registrar.tools.values
   end
 
-  it 'returns a fresh array from tools' do
+  it 'keys tools by their identifier' do
     registrar = Riffer::Rig::Registrar.new('git')
     registrar.tool(Riffer::Rig::Tools::Read)
-    registrar.tools << Riffer::Rig::Tools::Bash
 
-    assert_equal [Riffer::Rig::Tools::Read], registrar.tools
+    assert_equal %w[read], registrar.tools.keys
+  end
+
+  it 'replaces a tool registered again under the same identifier' do
+    registrar = Riffer::Rig::Registrar.new('git')
+    later = Class.new(Riffer::Tool) { identifier 'read' }
+    registrar.tool(Riffer::Rig::Tools::Read)
+    registrar.tool(later)
+
+    assert_equal({ 'read' => later }, registrar.tools)
+  end
+
+  it 'returns a fresh hash from tools' do
+    registrar = Riffer::Rig::Registrar.new('git')
+    registrar.tool(Riffer::Rig::Tools::Read)
+    registrar.tools.clear
+
+    assert_equal %w[read], registrar.tools.keys
   end
 
   it 'collects prompt sections in registration order' do
@@ -80,5 +96,18 @@ describe Riffer::Rig::Registrar do
     registrar.commands.clear
 
     assert_equal %w[log], registrar.commands.keys
+  end
+
+  it 'names the extension it collects for' do
+    assert_equal 'git', Riffer::Rig::Registrar.new('git').extension
+  end
+
+  it 'lists every registration by kind and name' do
+    registrar = Riffer::Rig::Registrar.new('git')
+    registrar.tool(Riffer::Rig::Tools::Bash)
+    registrar.prompt(:branch) { 'main' }
+    registrar.command('log', description: 'Recent commits') { |_ctx| nil }
+
+    assert_equal ['tool bash', 'prompt section branch', 'command log'], registrar.registrations
   end
 end

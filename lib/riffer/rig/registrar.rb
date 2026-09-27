@@ -2,15 +2,18 @@
 
 class Riffer::Rig::Registrar
   # @rbs @extension: String
-  # @rbs @tools: Array[singleton(Riffer::Tool)]
+  # @rbs @tools: Hash[String, singleton(Riffer::Tool)]
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
+
+  # @dynamic extension
+  attr_reader :extension #: String
 
   # @rbs extension: String
   # @rbs return: void
   def initialize(extension)
     @extension = extension
-    @tools = []
+    @tools = {}
     @prompts = {}
     @commands = {}
   end
@@ -18,7 +21,7 @@ class Riffer::Rig::Registrar
   # @rbs klass: singleton(Riffer::Tool)
   # @rbs return: void
   def tool(klass)
-    @tools << klass
+    @tools[klass.identifier] = klass
   end
 
   # @rbs name: Symbol
@@ -36,7 +39,7 @@ class Riffer::Rig::Registrar
     @commands[name] = Riffer::Rig::Command.new(name, description: description, extension: @extension, &)
   end
 
-  # @rbs return: Array[singleton(Riffer::Tool)]
+  # @rbs return: Hash[String, singleton(Riffer::Tool)]
   def tools
     @tools.dup
   end
@@ -49,5 +52,14 @@ class Riffer::Rig::Registrar
   # @rbs return: Hash[String, Riffer::Rig::Command]
   def commands
     @commands.dup
+  end
+
+  # @rbs return: Array[String]
+  def registrations
+    [
+      *@tools.keys.map { |identifier| "tool #{identifier}" },
+      *@prompts.keys.map { |name| "prompt section #{name}" },
+      *@commands.keys.map { |name| "command #{name}" }
+    ]
   end
 end

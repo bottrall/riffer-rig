@@ -843,4 +843,84 @@ describe Riffer::Rig::Runtime do
       assert_empty Riffer::Rig::Runtime.new('mock/test', extensions: [@first, @last]).errors
     end
   end
+
+  describe 'bundled extensions' do
+    def read_in(dir)
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [Riffer::Rig.bundled(:read)], cwd: dir)
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"note.txt"}' }])
+      runtime.agent.provider.stub_response('Done.')
+      runtime.ask('read note.txt').messages.find { |message| message.is_a?(Riffer::Messages::Tool) }.content
+    end
+
+    def replaced_bash
+      Class.new(Riffer::Tool) do
+        identifier 'bash'
+        description 'A sandboxed shell'
+      end
+    end
+
+    it 'reads the same relative path from each runtime cwd' do
+      Dir.mktmpdir do |one|
+        Dir.mktmpdir do |two|
+          File.write(File.join(one, 'note.txt'), 'from one')
+          File.write(File.join(two, 'note.txt'), 'from two')
+
+          assert_equal ["     1\tfrom one", "     1\tfrom two"], [read_in(one), read_in(two)]
+        end
+      end
+    end
+
+    it 'lets a later extension replace a bundled tool by identifier' do
+      sandbox = replaced_bash
+      replacement = Riffer::Rig::Extension.new('sandbox') { |rig| rig.tool sandbox }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [*Riffer::Rig.bundled, replacement])
+
+      assert_equal [Riffer::Rig::Tools::Read, Riffer::Rig::Tools::Write, Riffer::Rig::Tools::Edit, sandbox],
+                   runtime.agent.tools
+    end
+
+    it 'reports the replaced tool through notify at info level' do
+      sandbox = replaced_bash
+      replacement = Riffer::Rig::Extension.new('sandbox') { |rig| rig.tool sandbox }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [Riffer::Rig.bundled(:bash), replacement])
+
+      assert_equal [Riffer::Rig::Events::Notify.new('Extension sandbox replaces tool bash from bash', :info)],
+                   runtime.host.drain
+    end
+
+    it 'keeps the bundled original reachable after a replacement' do
+      sandbox = replaced_bash
+      replacement = Riffer::Rig::Extension.new('sandbox') { |rig| rig.tool sandbox }
+      Riffer::Rig::Runtime.new('mock/test', extensions: [Riffer::Rig.bundled(:bash), replacement])
+      registrar = Riffer::Rig::Registrar.new('bash')
+      Riffer::Rig.bundled(:bash).run(registrar)
+
+      assert_equal [Riffer::Rig::Tools::Bash], registrar.tools.values
+    end
+
+    it 'reports a replaced command through notify' do
+      earlier = Riffer::Rig::Extension.new('earlier') { |rig| rig.command('log', description: 'a') { |_ctx| nil } }
+      later = Riffer::Rig::Extension.new('later') { |rig| rig.command('log', description: 'b') { |_ctx| nil } }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [earlier, later])
+
+      assert_equal [Riffer::Rig::Events::Notify.new('Extension later replaces command log from earlier', :info)],
+                   runtime.host.drain
+    end
+
+    it 'reports a replaced prompt section through notify' do
+      earlier = Riffer::Rig::Extension.new('earlier') { |rig| rig.prompt(:branch) { 'a' } }
+      later = Riffer::Rig::Extension.new('later') { |rig| rig.prompt(:branch) { 'b' } }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [earlier, later])
+
+      notice = Riffer::Rig::Events::Notify.new('Extension later replaces prompt section branch from earlier', :info)
+
+      assert_equal [notice], runtime.host.drain
+    end
+
+    it 'notifies nothing when no registration is replaced' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: Riffer::Rig.bundled)
+
+      assert_empty runtime.host.drain
+    end
+  end
 end

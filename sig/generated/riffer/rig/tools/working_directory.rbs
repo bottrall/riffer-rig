@@ -1,0 +1,12 @@
+# Generated from lib/riffer/rig/tools/working_directory.rb with RBS::Inline
+
+module Riffer::Rig::Tools::WorkingDirectory
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs return: String
+  def self.of: (Riffer::Agent::Context? context) -> String
+
+  # @rbs path: String
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs return: String
+  def self.expand: (String path, Riffer::Agent::Context? context) -> String
+end

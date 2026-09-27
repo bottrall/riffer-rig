@@ -36,4 +36,18 @@ describe Riffer::Rig::Tools::Write do
       end
     end
   end
+
+  it 'ends its description with its guidance sentence' do
+    assert Riffer::Rig::Tools::Write.description.end_with?(
+      'Use this for new files or full rewrites; prefer edit for changes to an existing file.'
+    )
+  end
+
+  it 'resolves a relative path against the cwd in its context' do
+    Dir.mktmpdir do |dir|
+      @tool.call(context: Riffer::Agent::Context.new(cwd: dir), path: 'out.txt', content: 'hello')
+
+      assert_equal 'hello', File.read(File.join(dir, 'out.txt'))
+    end
+  end
 end

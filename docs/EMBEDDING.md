@@ -17,11 +17,11 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
 | `model`         | `"provider/name"`; required, positional                                     | —                       |
-| `extensions:`   | ordered extension objects whose blocks run against this Runtime's registrar | `[]`                    |
+| `extensions:`   | ordered extension objects whose blocks run against this Runtime's registrar; `Riffer::Rig.bundled` gives the [bundled tools](TOOLS.md) | `[]`                    |
 | `tools:`        | allowlist of tool identifiers; `nil` means every registered tool            | `nil`                   |
 | `settings:`     | merged settings hash; a command reads its extension's key as `ctx.settings` | `{}`                    |
 | `host:`         | a [`Riffer::Rig::Hosts::Base`](HOSTS.md) subclass instance                  | `Riffer::Rig::Hosts::Null.new` |
-| `cwd:`          | working directory for the environment block and for tools                   | `Dir.pwd`               |
+| `cwd:`          | working directory for the environment block, and the directory tools resolve relative paths against | `Dir.pwd`               |
 | `name:`         | the name interpolated into the [base prompt](INSTRUCTIONS.md)               | `"riffer"`              |
 | `instructions:` | replaces the base prompt; sections and the environment block still apply    | `nil` (use the base)    |
 | `max_steps:`    | agent-loop step limit; `nil` runs the loop without a limit                  | `nil`                   |

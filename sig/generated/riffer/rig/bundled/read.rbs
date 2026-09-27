@@ -1,0 +1,5 @@
+# Generated from lib/riffer/rig/bundled/read.rb with RBS::Inline
+
+module Riffer::Rig::Bundled
+  Read: Riffer::Rig::Extension
+end

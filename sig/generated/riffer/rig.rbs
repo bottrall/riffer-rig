@@ -11,4 +11,8 @@ module Riffer::Rig
 
   # @rbs return: Hash[String, Riffer::Rig::Extension]
   def self.extensions: () -> Hash[String, Riffer::Rig::Extension]
+
+  # @rbs name: Symbol?
+  # @rbs return: Riffer::Rig::Extension | Array[Riffer::Rig::Extension]
+  def self.bundled: (?Symbol? name) -> (Riffer::Rig::Extension | Array[Riffer::Rig::Extension])
 end
