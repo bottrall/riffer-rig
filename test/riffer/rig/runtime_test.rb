@@ -598,4 +598,148 @@ describe Riffer::Rig::Runtime do
       assert_equal :completed, @runtime.ask('go').outcome.reason
     end
   end
+
+  describe 'commands' do
+    before do
+      @git = Riffer::Rig::Extension.new('git') do |rig|
+        rig.command('log', description: 'Recent commits') { |ctx| ctx.say("commits: #{ctx.args}") }
+        rig.command('review', description: 'Review the diff') { |ctx| ctx.prompt("Review this diff: #{ctx.args}") }
+        rig.command('depth', description: 'Show the depth') { |ctx| ctx.say(ctx.settings.fetch(:depth, 'none').to_s) }
+        rig.command('boom', description: 'Always fails') { |_ctx| raise 'kaboom' }
+        rig.command('which', description: 'Ask a question') { |ctx| ctx.say(ctx.ask('Which branch?').inspect) }
+      end
+      @other = Riffer::Rig::Extension.new('other') do |rig|
+        rig.command('hello', description: 'Say hello') { |ctx| ctx.say('hello') }
+      end
+    end
+
+    def command_events(runtime, name, args = '')
+      events = []
+      runtime.run_command(name, args) { |event| events << event }
+      events
+    end
+
+    it 'lists names and descriptions in load order' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git, @other])
+
+      assert_equal(
+        [['log', 'Recent commits'], ['review', 'Review the diff'], ['depth', 'Show the depth'],
+         ['boom', 'Always fails'], ['which', 'Ask a question'], ['hello', 'Say hello']],
+        runtime.commands.map { |command| [command.name, command.description] }
+      )
+    end
+
+    it 'lets a later extension replace a command of the same name' do
+      later = Riffer::Rig::Extension.new('later') { |rig| rig.command('log', description: 'Later log') { |_ctx| nil } }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git, later])
+
+      assert_equal 'Later log', runtime.commands.first.description
+    end
+
+    it 'emits a command_output event from ctx.say' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
+
+      assert_equal [Riffer::Rig::Events::CommandOutput.new('log', 'commits: -n 3')],
+                   command_events(runtime, 'log', '-n 3')
+    end
+
+    it 'sends a user turn to the model from ctx.prompt' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
+      runtime.agent.provider.stub_response('Looks fine.')
+      command_events(runtime, 'review', 'HEAD~1')
+
+      assert_equal 'Review this diff: HEAD~1', runtime.agent.provider.calls.last[:messages].last[:content]
+    end
+
+    it 'streams the turn ctx.prompt runs to the block' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
+      runtime.agent.provider.stub_response('Looks fine.')
+
+      assert_equal :completed, command_events(runtime, 'review').grep(Riffer::Rig::Events::TurnEnd).first.stop_reason
+    end
+
+    it 'reads the extension namespace of the settings' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git], settings: { git: { depth: 3 } })
+
+      assert_equal [Riffer::Rig::Events::CommandOutput.new('depth', '3')], command_events(runtime, 'depth')
+    end
+
+    it 'gives an empty settings namespace to an extension with none' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
+
+      assert_equal [Riffer::Rig::Events::CommandOutput.new('depth', 'none')], command_events(runtime, 'depth')
+    end
+
+    it 'returns nil from ctx.ask under the null host' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
+
+      assert_equal [Riffer::Rig::Events::CommandOutput.new('which', 'nil')], command_events(runtime, 'which')
+    end
+
+    it 'returns nil' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
+
+      assert_nil runtime.run_command('log', '')
+    end
+
+    it 'reports a raising command through notify' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
+
+      assert_equal [Riffer::Rig::Events::Notify.new('Command boom failed: kaboom', :error)],
+                   command_events(runtime, 'boom')
+    end
+
+    it 'stays usable after a raising command' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
+      runtime.agent.provider.stub_response('All done.')
+      command_events(runtime, 'boom')
+
+      assert_equal :completed, runtime.ask('hello').outcome.reason
+    end
+
+    it 'reports an unknown command through notify' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
+
+      assert_equal [Riffer::Rig::Events::Notify.new('Unknown command: nope', :error)], command_events(runtime, 'nope')
+    end
+
+    it 'raises while a prompt runs' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
+      runtime.agent.provider.stub_response('All done.')
+
+      assert_raises(Riffer::Rig::Runtime::BusyError) do
+        runtime.prompt('hello') { runtime.run_command('log', '') }
+      end
+    end
+
+    it 'keeps the Runtime busy after refusing a nested command' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
+      runtime.agent.provider.stub_response('All done.')
+
+      assert_raises(Riffer::Rig::Runtime::BusyError) do
+        runtime.prompt('hello') do
+          runtime.run_command('log', '')
+        rescue Riffer::Rig::Runtime::BusyError
+          runtime.ask('second')
+        end
+      end
+    end
+
+    it 'refuses a prompt from inside a command and reports it' do
+      nested = Riffer::Rig::Extension.new('nested') do |rig|
+        rig.command('nest', description: 'Prompt the runtime directly') { |ctx| ctx.runtime.ask('hi') }
+      end
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [nested])
+
+      assert_equal 'Command nest failed: a prompt is already running on this Runtime',
+                   command_events(runtime, 'nest').first.message
+    end
+
+    it 'refuses a command on a closed Runtime' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
+      runtime.close
+
+      assert_raises(Riffer::Rig::Runtime::ClosedError) { runtime.run_command('log', '') }
+    end
+  end
 end

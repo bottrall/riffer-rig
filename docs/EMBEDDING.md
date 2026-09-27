@@ -12,14 +12,14 @@ runtime = Riffer::Rig::Runtime.new(
 )
 ```
 
-The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `credentials:`, `pricing:`, `riffer_config:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `snapshot:` is accepted and ignored until its ticket lands, and `settings:` and `credentials:` are stored and exposed (`runtime.settings`, `runtime.credentials`) but nothing reads them yet. `credentials:` already takes the shape the Loader will pass — each provider's resolved field values — so embedders building it today keep working when its ticket lands. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.resolve` finds a provider's values and `Riffer::Rig::Credentials.apply` assigns them (see [Providers](PROVIDERS.md)), or set them yourself with `Riffer.configure`.
+The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `credentials:`, `pricing:`, `riffer_config:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `snapshot:` is accepted and ignored until its ticket lands, `settings:` is stored and exposed (`runtime.settings`) and read only by [commands](#commands), each through its extension's namespace, and `credentials:` is stored and exposed (`runtime.credentials`) but nothing reads it yet. `credentials:` already takes the shape the Loader will pass — each provider's resolved field values — so embedders building it today keep working when its ticket lands. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.resolve` finds a provider's values and `Riffer::Rig::Credentials.apply` assigns them (see [Providers](PROVIDERS.md)), or set them yourself with `Riffer.configure`.
 
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
 | `model`         | `"provider/name"`; required, positional                                     | —                       |
 | `extensions:`   | ordered extension objects whose blocks run against this Runtime's registrar | `[]`                    |
 | `tools:`        | allowlist of tool identifiers; `nil` means every registered tool            | `nil`                   |
-| `settings:`     | merged settings hash, stored and exposed but not yet read                   | `{}`                    |
+| `settings:`     | merged settings hash; a command reads its extension's key as `ctx.settings` | `{}`                    |
 | `host:`         | a [`Riffer::Rig::Hosts::Base`](HOSTS.md) subclass instance                  | `Riffer::Rig::Hosts::Null.new` |
 | `cwd:`          | working directory for the environment block and for tools                   | `Dir.pwd`               |
 | `name:`         | the name interpolated into the [base prompt](INSTRUCTIONS.md)               | `"riffer"`              |
@@ -117,6 +117,30 @@ The turn stops at the next message boundary — after the assistant message bein
 A cancelled turn leaves the conversation usable. Tool calls that never got a result are filled with an "interrupted" tool error, riffer emits its `Riffer::StreamEvents::Interrupt` event with reason `:cancelled`, and the stream closes with `turn_end` carrying `stop_reason: :cancelled`. From `ask`, the response's outcome is `reason: :interrupted` with `detail: "cancelled"`. The next `prompt` or `ask` carries on from there.
 
 `cancel` with no turn running is a no-op: the flag is cleared when the next turn starts.
+
+## Commands
+
+Slash commands are runtime objects: extensions register them with [`rig.command`](EXTENSIONS.md#the-rigcommand-seam), and every host drives them through the Runtime, so a command works the same in the terminal, headless and over ACP. Commands that end or replace the Runtime itself — `/exit`, `/new`, `/resume` — belong to the host, not here.
+
+`commands` lists the registered commands in load order. Each is a `Riffer::Rig::Command` with a `name` (without the leading slash) and a `description`:
+
+```ruby
+runtime.commands.each { |command| puts "/#{command.name}  #{command.description}" }
+```
+
+`run_command(name, args)` runs one on the calling thread and returns `nil`; its output arrives as events. With a block it yields each one as it happens — `command_output` for every `ctx.say`, the whole stream of a turn the command starts with `ctx.prompt` (from `session_start`, if it is the Runtime's first turn, to `turn_end`), and a `notify` for anything the host was told. Without a block the events are discarded, as `ask` discards the stream.
+
+```ruby
+runtime.run_command('log', '5') do |event|
+  case event
+  when Riffer::Rig::Events::CommandOutput then puts event.text
+  when Riffer::StreamEvents::TextDelta then print event.content
+  when Riffer::Rig::Events::Notify then warn event.message
+  end
+end
+```
+
+A command runs under the same rule as `prompt`: one at a time per Runtime, so `run_command` while a prompt or command is running raises `Riffer::Rig::Runtime::BusyError`, and after `close` it raises `Riffer::Rig::Runtime::ClosedError`. A command that raises never escapes `run_command`: it is reported through `host.notify` at level `:error` (and so as a `notify` event), and the Runtime stays usable. An unknown name is reported the same way. `cancel` stops a turn a command started, as it stops any other.
 
 ## Capping the loop
 

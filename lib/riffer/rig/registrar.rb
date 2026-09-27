@@ -1,13 +1,18 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Registrar
+  # @rbs @extension: String
   # @rbs @tools: Array[singleton(Riffer::Tool)]
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+  # @rbs @commands: Hash[String, Riffer::Rig::Command]
 
+  # @rbs extension: String
   # @rbs return: void
-  def initialize
+  def initialize(extension)
+    @extension = extension
     @tools = []
     @prompts = {}
+    @commands = {}
   end
 
   # @rbs klass: singleton(Riffer::Tool)
@@ -23,6 +28,14 @@ class Riffer::Rig::Registrar
     @prompts[name] = block
   end
 
+  # @rbs name: String
+  # @rbs description: String
+  # @rbs &block: (Riffer::Rig::Command::Context) -> void
+  # @rbs return: void
+  def command(name, description:, &)
+    @commands[name] = Riffer::Rig::Command.new(name, description: description, extension: @extension, &)
+  end
+
   # @rbs return: Array[singleton(Riffer::Tool)]
   def tools
     @tools.dup
@@ -31,5 +44,10 @@ class Riffer::Rig::Registrar
   # @rbs return: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   def prompts
     @prompts.dup
+  end
+
+  # @rbs return: Hash[String, Riffer::Rig::Command]
+  def commands
+    @commands.dup
   end
 end
