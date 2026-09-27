@@ -742,4 +742,72 @@ describe Riffer::Rig::Runtime do
       assert_raises(Riffer::Rig::Runtime::ClosedError) { runtime.run_command('log', '') }
     end
   end
+
+  describe 'extension load errors' do
+    before do
+      @first = Riffer::Rig::Extension.new('first') { |rig| rig.tool Riffer::Rig::Tools::Read }
+      @broken = Riffer::Rig::Extension.new('broken') do |rig|
+        rig.tool Riffer::Rig::Tools::Write
+        raise 'kaboom'
+      end
+      @last = Riffer::Rig::Extension.new('last') { |rig| rig.tool Riffer::Rig::Tools::Bash }
+      @runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@first, @broken, @last])
+    end
+
+    it 'registers the extensions around a raising one' do
+      assert_equal [Riffer::Rig::Tools::Read, Riffer::Rig::Tools::Bash], @runtime.agent.tools
+    end
+
+    it 'records the raising extension on errors' do
+      assert_equal([[@broken, 'kaboom']], @runtime.errors.map { |entry| [entry[:extension], entry[:error].message] })
+    end
+
+    it 'reports the failure with one notify at error level' do
+      @runtime.agent.provider.stub_response('All done.')
+
+      assert_equal [Riffer::Rig::Events::Notify.new('Extension broken failed to load: kaboom', :error)],
+                   @runtime.prompt('hello').grep(Riffer::Rig::Events::Notify)
+    end
+
+    it 'keeps the error out of the model context' do
+      @runtime.agent.provider.stub_response('All done.')
+      @runtime.ask('hello')
+
+      refute_includes @runtime.agent.provider.calls.last[:messages].to_s, 'kaboom'
+    end
+
+    it 'reports an unmet requires as a load error' do
+      future = Riffer::Rig::Extension.new('future', requires: '>= 99') { |rig| rig.tool Riffer::Rig::Tools::Edit }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [future])
+      runtime.agent.provider.stub_response('All done.')
+
+      assert_equal(
+        [Riffer::Rig::Events::Notify.new(
+          "Extension future failed to load: extension future requires riffer-rig >= 99, found #{Riffer::Rig::VERSION}",
+          :error
+        )],
+        runtime.prompt('hello').grep(Riffer::Rig::Events::Notify)
+      )
+    end
+
+    it 'skips an extension whose requires is unmet' do
+      future = Riffer::Rig::Extension.new('future', requires: '>= 99') { |rig| rig.tool Riffer::Rig::Tools::Edit }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [future])
+
+      assert_empty runtime.agent.tools
+    end
+
+    it 'loads an extension whose requires is met' do
+      current = Riffer::Rig::Extension.new('current', requires: "= #{Riffer::Rig::VERSION}") do |rig|
+        rig.tool Riffer::Rig::Tools::Edit
+      end
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [current])
+
+      assert_equal [Riffer::Rig::Tools::Edit], runtime.agent.tools
+    end
+
+    it 'records no errors when every extension loads' do
+      assert_empty Riffer::Rig::Runtime.new('mock/test', extensions: [@first, @last]).errors
+    end
+  end
 end

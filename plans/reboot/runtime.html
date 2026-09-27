@@ -217,6 +217,7 @@ been given; each tool describes what it does and when to use it.
   <tr><td><code>Riffer::Rig.credentials(id)</code></td><td>the process's resolved credentials for one provider</td></tr>
 </table></div>
 <p class="note">Rows <code>close</code>, <code>id</code> and <code>errors</code> enshrined in <a href="https://github.com/bottrall/riffer-rig/pull/179">#179</a>: <code>close</code> refuses further prompts and asks (emitting <code>session_end(reason: :close)</code> waits on the rebuild ticket, which owns the stream's session_end reasons; stopping MCP servers waits on the MCP ticket); <code>id</code> is a UUIDv7 minted at construction; <code>errors</code> waits on the extension-error ticket.</p>
+<p class="note">Row <code>errors</code> shipped in <a href="https://github.com/bottrall/riffer-rig/issues/114">#114</a>: an array of <code>{extension:, error:}</code> hashes, one per extension that failed to load (see <a href="extensions.html#errors">Extensions: Error isolation</a>); the reader returns a copy.</p>
 
 <h2 id="enshrines">Enshrines into</h2>
 <div class="table-wrap"><table>

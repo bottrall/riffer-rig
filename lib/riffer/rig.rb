@@ -18,15 +18,9 @@ module Riffer::Rig
   # @rbs &block: (::Riffer::Rig::Registrar) -> void
   # @rbs return: Riffer::Rig::Extension
   def self.extension(name, requires: nil, &)
-    ext = Extension.new(name, requires: requires, &)
-    if ext.requires && !ext.requires.satisfied_by?(Gem::Version.new(Riffer::Rig::VERSION))
-      raise Riffer::ArgumentError,
-            "extension #{name} requires riffer-rig #{ext.requires}, found #{Riffer::Rig::VERSION}"
-    end
-
     # Keyed by name so reloading a file replaces its block rather than
     # duplicating it.
-    @extensions[name] = ext
+    @extensions[name] = Extension.new(name, requires: requires, &)
   end
 
   # @rbs return: Hash[String, Riffer::Rig::Extension]
