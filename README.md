@@ -99,7 +99,7 @@ PR titles are [conventional commits](https://www.conventionalcommits.org/) and a
 
 [release-please](https://github.com/googleapis/release-please) keeps a release PR open that bumps `lib/riffer/rig/version.rb` and writes `CHANGELOG.md`. Merging that PR tags `vX.Y.Z`, creates the GitHub Release and publishes the gem to RubyGems.org through Trusted Publishing; nothing is pushed by hand.
 
-riffer is pinned to one minor (`~> 0.45.0`) because its 0.x minors may break. When Dependabot opens the riffer bump, retitle it `feat(deps):` or `fix(deps):` before merging so it releases and appears in the changelog.
+riffer is pinned to one minor (`~> 0.49.0`) because its 0.x minors may break. When Dependabot opens the riffer bump, retitle it `feat(deps):` or `fix(deps):` before merging so it releases and appears in the changelog.
 
 ## Contributing
 

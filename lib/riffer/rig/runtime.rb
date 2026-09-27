@@ -170,33 +170,10 @@ class Riffer::Rig::Runtime
   def interrupt_if_cancelled
     return unless @cancel_flag.set?
 
-    heal_orphaned_tool_calls
+    @agent.session.discard_pending_tool_calls
     # Upstream candidate: a cancel token on riffer's run loop. Until then the
     # loop can only be stopped from inside, at a message boundary.
     @agent.interrupt!(INTERRUPT_CANCELLED)
-  end
-
-  # @rbs return: void
-  def heal_orphaned_tool_calls
-    # Upstream candidate: riffer fills orphans itself only under its
-    # process-wide experimental_history_healing flag, which is not the
-    # Runtime's to flip. Left orphaned, the calls would run on the next prompt.
-    session = @agent.session
-    _assistant, orphans = session.pending_tool_calls
-    session.set([*session.messages, *orphans.map { |tool_call| interrupted_result(tool_call) }])
-  end
-
-  # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
-  # @rbs return: Riffer::Messages::Tool
-  def interrupted_result(tool_call)
-    response = Riffer::Agent::Session::Repair::ORPHAN_PLACEHOLDER.call(tool_call)
-    Riffer::Messages::Tool.new(
-      response.content,
-      tool_call_id: tool_call.call_id,
-      name: tool_call.name,
-      error: response.error_message,
-      error_type: response.error_type
-    )
   end
 
   # @rbs outcome: Riffer::Agent::Outcome
