@@ -36,7 +36,7 @@ class Riffer::Rig::CodingAgent < Riffer::Agent
 
       environment = "Current date: #{Date.today}\nCurrent working directory: #{Dir.pwd}"
 
-      [base, Riffer::Rig::AgentsMd.section(Dir.pwd), environment].compact.join("\n\n")
+      [base, Riffer::Rig::Prompts::AgentsMd.section(Dir.pwd), environment].compact.join("\n\n")
     end
   )
 end

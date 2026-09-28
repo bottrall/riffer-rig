@@ -1,6 +1,6 @@
-# Generated from lib/riffer/rig/agents_md.rb with RBS::Inline
+# Generated from lib/riffer/rig/prompts/agents_md.rb with RBS::Inline
 
-module Riffer::Rig::AgentsMd
+module Riffer::Rig::Prompts::AgentsMd
   FRAMING: String
 
   # @rbs cwd: String

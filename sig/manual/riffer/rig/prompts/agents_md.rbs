@@ -1,6 +1,6 @@
 # rbs-inline does not emit `extend self`, so without this reopen the module's
 # methods aren't visible as singleton methods.
 
-module Riffer::Rig::AgentsMd
-  extend ::Riffer::Rig::AgentsMd
+module Riffer::Rig::Prompts::AgentsMd
+  extend ::Riffer::Rig::Prompts::AgentsMd
 end

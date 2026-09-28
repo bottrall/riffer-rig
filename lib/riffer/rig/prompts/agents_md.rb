@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Riffer::Rig::AgentsMd
+module Riffer::Rig::Prompts::AgentsMd
   extend self
 
   FRAMING = 'The user wrote the following instructions in AGENTS.md files, ordered from the most general to ' \

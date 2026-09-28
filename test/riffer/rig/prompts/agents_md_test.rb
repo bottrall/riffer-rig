@@ -2,7 +2,7 @@
 
 require 'test_helper'
 
-describe Riffer::Rig::AgentsMd do
+describe Riffer::Rig::Prompts::AgentsMd do
   before do
     @tmp = Dir.mktmpdir
     @original_home = Dir.home
@@ -29,7 +29,7 @@ describe Riffer::Rig::AgentsMd do
   # The walk reaches the real filesystem root, so a stray AGENTS.md above the
   # tmpdir would otherwise leak into these assertions.
   def own_paths(cwd)
-    Riffer::Rig::AgentsMd.paths(cwd).select { |path| path.start_with?(@tmp) }
+    Riffer::Rig::Prompts::AgentsMd.paths(cwd).select { |path| path.start_with?(@tmp) }
   end
 
   it 'lists the global file, then every ancestor file from the outermost down to the cwd' do
@@ -63,18 +63,18 @@ describe Riffer::Rig::AgentsMd do
       "<project_instructions path=\"#{path}\">\n#{rules}\n</project_instructions>"
     end
 
-    assert Riffer::Rig::AgentsMd.section(@cwd).end_with?("\n\n#{blocks.join("\n\n")}")
+    assert Riffer::Rig::Prompts::AgentsMd.section(@cwd).end_with?("\n\n#{blocks.join("\n\n")}")
   end
 
   it 'leads the section with the framing sentence' do
     write_all
 
-    assert Riffer::Rig::AgentsMd.section(@cwd).start_with?("#{Riffer::Rig::AgentsMd::FRAMING}\n\n")
+    assert Riffer::Rig::Prompts::AgentsMd.section(@cwd).start_with?("#{Riffer::Rig::Prompts::AgentsMd::FRAMING}\n\n")
   end
 
   it 'renders nothing when no file exists' do
-    skip 'an AGENTS.md above the tmpdir' unless Riffer::Rig::AgentsMd.paths(@cwd).empty?
+    skip 'an AGENTS.md above the tmpdir' unless Riffer::Rig::Prompts::AgentsMd.paths(@cwd).empty?
 
-    assert_nil Riffer::Rig::AgentsMd.section(@cwd)
+    assert_nil Riffer::Rig::Prompts::AgentsMd.section(@cwd)
   end
 end
