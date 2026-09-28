@@ -40,6 +40,9 @@ class Riffer::Rig::Runtime
   # @rbs @busy: bool
   # @rbs @closed: bool
   # @rbs @session_start_pending: bool
+  # @rbs @session_start_reason: Symbol
+  # @rbs @model_override: String?
+  # @rbs @message_observers: Array[^(Riffer::Messages::Base) -> void]
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
   # @rbs @declared_settings: Hash[String, Hash[Symbol, untyped]]
@@ -85,7 +88,7 @@ class Riffer::Rig::Runtime
     snapshot: nil
   )
     # Doubles as the snapshot id and ACP sessionId.
-    @id = ::SecureRandom.uuid_v7
+    @id = snapshot ? snapshot.fetch(:id) : ::SecureRandom.uuid_v7
     @host = Riffer::Rig::Hosts::Mirror.new(host)
     @cwd = cwd || Dir.pwd
     @credentials = credentials
@@ -94,6 +97,8 @@ class Riffer::Rig::Runtime
     @closed = false
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
     @session_start_pending = true
+    @session_start_reason = snapshot ? :restore : :new
+    @message_observers = []
     Riffer::Rig::Settings::Pricing.register(pricing, riffer_config.pricing)
     @errors = []
     registrars = build_registrars(extensions)
@@ -116,7 +121,7 @@ class Riffer::Rig::Runtime
       tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(@hooks)
     )
     config.add_guardrail(:before, klass: Riffer::Rig::Runtime::RequestGuardrail, options: { hooks: @hooks })
-    @agent = build_agent(model, config)
+    @agent = snapshot ? restore(snapshot, model, config) : build_agent(model, config)
     @agent.session.on_message { |message| observe_message(message) }
   end
 
@@ -187,6 +192,19 @@ class Riffer::Rig::Runtime
     agent = build_agent(model, @agent.config, session: @agent.session)
     agent.context.token_usage = @agent.context.token_usage
     @agent = agent
+    @model_override = model
+  end
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h
+    { id: @id, messages: @agent.session.messages.map(&:to_h), model: @model_override, skills: activated_skills }
+  end
+
+  # @rbs &block: (Riffer::Messages::Base) -> void
+  # @rbs return: nil
+  def on_message(&block)
+    @message_observers << block
+    nil
   end
 
   # @rbs return: nil
@@ -234,7 +252,13 @@ class Riffer::Rig::Runtime
     @cancel_flag.clear
     refresh_system_message
     prompt = @hooks.before_prompt(text)
-    prompt.is_a?(Riffer::Rig::Runtime::Blocked) ? blocked_turn(prompt.reason) : @agent.stream(prompt)
+    return blocked_turn(prompt.reason) if prompt.is_a?(Riffer::Rig::Runtime::Blocked)
+
+    stream = @agent.stream(prompt)
+    # Upstream candidate: riffer adds the prompt to the session silently, so
+    # its on_message never sees the user message a store has to keep.
+    deliver(@agent.session.messages.last)
+    stream
   end
 
   # @rbs reason: String
@@ -286,7 +310,7 @@ class Riffer::Rig::Runtime
     Enumerator.new do |yielder|
       if @session_start_pending
         @session_start_pending = false
-        session_start = Riffer::Rig::Events::SessionStart.new(@id, :new)
+        session_start = Riffer::Rig::Events::SessionStart.new(@id, @session_start_reason)
         @hooks.observe(:session_start, session_start)
         yielder << session_start
       end
@@ -314,6 +338,7 @@ class Riffer::Rig::Runtime
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
   def observe_message(message)
+    deliver(message)
     interrupt_if_cancelled
     case message
     when Riffer::Messages::Assistant
@@ -321,6 +346,12 @@ class Riffer::Rig::Runtime
     when Riffer::Messages::Tool
       before_next_request if @agent.session.pending_tool_calls.last.empty?
     end
+  end
+
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: void
+  def deliver(message)
+    @message_observers.each { |observer| observer.call(message) }
   end
 
   # @rbs return: void
@@ -351,6 +382,63 @@ class Riffer::Rig::Runtime
     # reaches us as :interrupted with the reason in detail.
     cancelled = outcome.reason == :interrupted && outcome.detail == INTERRUPT_CANCELLED.to_s
     cancelled ? INTERRUPT_CANCELLED : outcome.reason
+  end
+
+  # @rbs snapshot: Hash[Symbol, untyped]
+  # @rbs model: String
+  # @rbs config: Riffer::Agent::Config
+  # @rbs return: Riffer::Agent
+  def restore(snapshot, model, config)
+    @model_override = restorable_model(snapshot.fetch(:model), model)
+    # Upstream candidate: riffer's Serializer carries an agent's config, never
+    # its history, so this and to_h round-trip the session message by message;
+    # a Session.from_h could also heal orphaned tool calls on load.
+    messages = snapshot.fetch(:messages).map { |message| Riffer::Messages::Base.from_hash(message) }
+    session = Riffer::Agent::Session.new(messages: messages)
+    session.discard_pending_tool_calls
+    agent = build_agent(@model_override || model, config, session: session)
+    agent.context.token_usage = usage_of(messages)
+    reactivate(agent.context.skills, snapshot.fetch(:skills))
+    agent
+  end
+
+  # @rbs saved: String?
+  # @rbs model: String
+  # @rbs return: String?
+  def restorable_model(saved, model)
+    return nil unless saved
+
+    provider = saved.split('/', 2).first.to_s
+    return saved if @credentials.key?(provider.to_sym)
+
+    @host.notify("Not restoring model #{saved}: #{provider} has no credentials; using #{model}", level: :warning)
+    nil
+  end
+
+  # @rbs messages: Array[Riffer::Messages::Base]
+  # @rbs return: Riffer::Providers::TokenUsage?
+  def usage_of(messages)
+    # Upstream candidate: TokenUsage has no zero to seed sum with, and no usage
+    # at all must stay nil; a loaded session could restore its own tally.
+    messages.filter_map { |message| message.token_usage if message.is_a?(Riffer::Messages::Assistant) }
+            .reduce { |total, usage| total + usage } # rubocop:disable Performance/Sum
+  end
+
+  # @rbs skills: Riffer::Skills::Context?
+  # @rbs names: Array[String]
+  # @rbs return: void
+  def reactivate(skills, names)
+    return unless skills
+
+    names.select { |name| skills.skills.key?(name) }.each { |name| skills.activate(name) }
+  end
+
+  # @rbs return: Array[String]
+  def activated_skills
+    # Upstream candidate: Skills::Context keeps its activated list private, so
+    # the catalog is filtered through activated? instead.
+    skills = @agent.context.skills
+    skills ? skills.skills.keys.select { |name| skills.activated?(name) } : []
   end
 
   # @rbs extensions: Array[Riffer::Rig::Extension]

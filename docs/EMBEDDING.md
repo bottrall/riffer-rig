@@ -12,7 +12,7 @@ runtime = Riffer::Rig::Runtime.new(
 )
 ```
 
-The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `credentials:`, `pricing:`, `riffer_config:`. All except the model are optional. Keywords not yet honoured are accepted and documented as such: `snapshot:` is accepted and ignored until its ticket lands, and `credentials:` is stored and exposed (`runtime.credentials`) but nothing reads it yet. `credentials:` already takes the shape the Loader will pass — each provider's resolved field values — so embedders building it today keep working when its ticket lands. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.resolve` finds a provider's values and `Riffer::Rig::Credentials.apply` assigns them (see [Providers](PROVIDERS.md)), or set them yourself with `Riffer.configure`.
+The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `credentials:`, `pricing:`, `riffer_config:`, `snapshot:`. All except the model are optional. `credentials:` is stored and exposed (`runtime.credentials`); only `/model` and a [restore](#snapshots) read it so far. `credentials:` already takes the shape the Loader will pass — each provider's resolved field values — so embedders building it today keep working when its ticket lands. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.resolve` finds a provider's values and `Riffer::Rig::Credentials.apply` assigns them (see [Providers](PROVIDERS.md)), or set them yourself with `Riffer.configure`.
 
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
@@ -25,9 +25,10 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `name:`         | the name interpolated into the [base prompt](INSTRUCTIONS.md)               | `"riffer"`              |
 | `instructions:` | replaces the base prompt; sections and the environment block still apply    | `nil` (use the base)    |
 | `max_steps:`    | agent-loop step limit; `nil` runs the loop without a limit                  | `nil`                   |
-| `credentials:`  | provider → resolved field values (`{ anthropic: { api_key: "…" } }`), stored as given and exposed but not yet read | `{}` |
+| `credentials:`  | provider → resolved field values (`{ anthropic: { api_key: "…" } }`), stored as given and exposed; read by `/model` and a restore | `{}` |
 | `pricing:`      | model → `Riffer::Rig::Settings::Pricing` entries (USD per million tokens), registered into riffer's pricing when the Runtime is built; see [tally](#token-tally-and-cost) | `{}` |
 | `riffer_config:` | the `Riffer::Config` whose `pricing` receives the `pricing:` entries      | `Riffer.config`         |
+| `snapshot:`     | a hash from `to_h` to restore; see [Snapshots](#snapshots)                 | `nil`                   |
 
 `runtime.settings` is the `settings:` hash with each extension's [declared defaults](EXTENSIONS.md#the-rigsetting-seam) filled into its namespace; core reads it only to hand each [command](#commands) its extension's namespace. `runtime.declared_settings` is the table of what extensions declared, extension name → key → default, for a host to render.
 
@@ -100,7 +101,7 @@ The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-
 | `notify`          | `message`, `level`               | mirrors every `host.notify`, so a stream consumer sees extension errors too |
 | `turn_end`        | `stop_reason`, `usage`, `cost`   | the last event of every `prompt`; `stop_reason` is riffer's outcome reason, or `:cancelled` after a `cancel`; `usage` is riffer's `TokenUsage` and `cost` its USD figure, `nil` when unpriced |
 
-`session_start` and `session_end` currently carry reason `:new` and `:close` only — `:restore` and `:reload` arrive with the snapshot and rebuild tickets. `close` refuses further prompts and asks with `Riffer::Rig::Runtime::ClosedError`; `session_end` waits on the rebuild ticket, which owns the stream's session_end reasons.
+`session_start` carries `:new`, or `:restore` on a Runtime built from a [snapshot](#snapshots); `session_end` carries `:close`. The `:reload` reasons arrive with the rebuild ticket. `close` refuses further prompts and asks with `Riffer::Rig::Runtime::ClosedError`; `session_end` waits on the rebuild ticket, which owns the stream's session_end reasons.
 
 Every `prompt` ends with `turn_end` — with a block or as an Enumerator — so a stream consumer never needs `ask` to learn how the turn ended and what it cost. The headless host prints this same stream as NDJSON; see [Headless mode](HEADLESS.md) for the wire shape.
 
@@ -164,3 +165,42 @@ runtime = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', max_steps: 8)
 response = runtime.ask('do the thing')
 puts response.outcome.reason # => :max_steps if the cap stopped the loop
 ```
+
+## Snapshots
+
+A Runtime saves and restores as a plain hash. `to_h` returns the snapshot; `Riffer::Rig::Runtime.new(model, snapshot: hash, ...)` builds a Runtime that carries on from it. The Runtime never touches disk: keeping the hash — as JSON, in a database, anywhere — is the embedder's job. [Sessions](SESSIONS.md) describes what a snapshot holds.
+
+```ruby
+snapshot = runtime.to_h
+File.write('session.json', JSON.generate(snapshot))
+
+snapshot = JSON.parse(File.read('session.json'), symbolize_names: true)
+runtime = Riffer::Rig::Runtime.new(
+  'anthropic/claude-sonnet-4-6',
+  extensions: Riffer::Rig.bundled,
+  credentials: credentials,
+  snapshot: snapshot,
+)
+runtime.ask('where were we?')
+```
+
+The snapshot's keys are symbols; parse JSON with `symbolize_names: true`. A snapshot holds history, not registrations: tools, commands, hooks, prompt sections and declared settings come from the `extensions:` and `settings:` given at restore time, through the same path a fresh Runtime takes. The tally is not stored either — the restored Runtime's `tally` is the sum of its messages' `token_usage`.
+
+History is data, and the present wins, so nothing in a snapshot blocks a restore:
+
+- A tool call for a tool that no longer exists is just history the model reads.
+- Tool calls at the tail with no result — a process killed mid-turn — are filled with an "interrupted" tool error on load, as a [cancel](#cancelling-a-turn) does, and are never run.
+- The saved model (a `model=` or `/model` switch) applies only if its provider has an entry in `credentials:`; otherwise the given model is used and the host gets one `notify` at level `:warning`. A Runtime restored with its saved model keeps it as its own override, so its next `to_h` saves it again.
+- Activated skills re-apply by name; a skill that no longer exists is dropped.
+
+The first prompt of a restored Runtime opens with `session_start` carrying the snapshot's `id` and reason `:restore`, and extensions' `session_start` hooks see the same reason.
+
+## Observing messages
+
+`on_message { |message| }` registers an observer called with each message the conversation gains, in order: the user's prompt, each assistant message and each tool result, as riffer's `Riffer::Messages` objects. It is how a store appends to a session as it happens rather than snapshotting at the end:
+
+```ruby
+runtime.on_message { |message| log.puts(JSON.generate(message.to_h)) }
+```
+
+Observers run on the prompting thread, inside the turn, once per message; they survive a model switch. The system message is not delivered — it is rebuilt every turn — nor are the "interrupted" results filled in after a cancel or on restore.

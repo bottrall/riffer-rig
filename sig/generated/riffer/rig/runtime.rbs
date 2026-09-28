@@ -41,6 +41,12 @@ class Riffer::Rig::Runtime
 
   @session_start_pending: bool
 
+  @session_start_reason: Symbol
+
+  @model_override: String?
+
+  @message_observers: Array[^(Riffer::Messages::Base) -> void]
+
   @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
 
   @commands: Hash[String, Riffer::Rig::Command]
@@ -110,6 +116,13 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def model=: (String model) -> void
 
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+
+  # @rbs &block: (Riffer::Messages::Base) -> void
+  # @rbs return: nil
+  def on_message: () { (Riffer::Messages::Base) -> void } -> nil
+
   # @rbs return: nil
   def cancel: () -> nil
 
@@ -163,6 +176,10 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def observe_message: (Riffer::Messages::Base message) -> void
 
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: void
+  def deliver: (Riffer::Messages::Base message) -> void
+
   # @rbs return: void
   def before_next_request: () -> void
 
@@ -172,6 +189,29 @@ class Riffer::Rig::Runtime
   # @rbs outcome: Riffer::Agent::Outcome
   # @rbs return: Symbol
   def stop_reason: (Riffer::Agent::Outcome outcome) -> Symbol
+
+  # @rbs snapshot: Hash[Symbol, untyped]
+  # @rbs model: String
+  # @rbs config: Riffer::Agent::Config
+  # @rbs return: Riffer::Agent
+  def restore: (Hash[Symbol, untyped] snapshot, String model, Riffer::Agent::Config config) -> Riffer::Agent
+
+  # @rbs saved: String?
+  # @rbs model: String
+  # @rbs return: String?
+  def restorable_model: (String? saved, String model) -> String?
+
+  # @rbs messages: Array[Riffer::Messages::Base]
+  # @rbs return: Riffer::Providers::TokenUsage?
+  def usage_of: (Array[Riffer::Messages::Base] messages) -> Riffer::Providers::TokenUsage?
+
+  # @rbs skills: Riffer::Skills::Context?
+  # @rbs names: Array[String]
+  # @rbs return: void
+  def reactivate: (Riffer::Skills::Context? skills, Array[String] names) -> void
+
+  # @rbs return: Array[String]
+  def activated_skills: () -> Array[String]
 
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs return: Array[Riffer::Rig::Registrar]
