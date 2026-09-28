@@ -72,8 +72,8 @@ Adds a hook for one event of the Runtime's lifecycle or loop. The block receives
 
 | Event              | Kind        | The event carries                                  | Fires                                                                 |
 | ------------------ | ----------- | -------------------------------------------------- | --------------------------------------------------------------------- |
-| `session_start`    | lifecycle   | `id`, `reason` (`:new`)                            | once, as the Runtime's first turn starts                              |
-| `session_end`      | lifecycle   | `reason` (`:close`)                                | on `close`, if a session started                                      |
+| `session_start`    | lifecycle   | `id`, `reason` (`:new`, `:restore`, `:reload`)     | as the Runtime's first turn starts (`:new`, or `:restore` after a snapshot), and after a `rebuild` swaps this extension in (`:reload`) |
+| `session_end`      | lifecycle   | `reason` (`:reload`, `:close`)                     | before a `rebuild` swaps this extension out (`:reload`), and on `close` (`:close`), if a session started |
 | `before_prompt`    | vetoable    | `text`                                             | as each `prompt` or `ask` starts, before the text reaches the session |
 | `before_request`   | vetoable    | `messages` (the whole request)                     | before every LLM call: at the start of the turn and again after each round of tool results |
 | `before_tool_call` | vetoable    | `tool` (the identifier), `args` (symbol keys)      | before each tool runs                                                 |
@@ -82,7 +82,7 @@ Adds a hook for one event of the Runtime's lifecycle or loop. The block receives
 | `turn_end`         | observe     | `stop_reason`, `usage`, `cost`                     | as each turn ends, `ask` included                                     |
 | `stream`           | passthrough | the riffer `StreamEvent` itself                    | for every riffer stream event of a turn, `ask` included               |
 
-Lifecycle hooks are where an extension acquires and releases process-wide state; `session_start` carries `:restore` on a Runtime built from a [snapshot](EMBEDDING.md#snapshots), and the `:reload` reasons arrive with the rebuild ticket.
+Lifecycle hooks are where an extension acquires and releases process-wide state; `session_start` carries `:restore` on a Runtime built from a [snapshot](EMBEDDING.md#snapshots).
 
 A vetoable hook may return:
 

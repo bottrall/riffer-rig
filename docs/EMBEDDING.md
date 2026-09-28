@@ -95,13 +95,13 @@ The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-
 | Rig event         | Carries                          | When                                                              |
 | ----------------- | -------------------------------- | ----------------------------------------------------------------- |
 | `session_start`   | `id`, `reason` (`:new`, `:restore`, `:reload`) | opens the first prompt after construction (or a restore, or a rebuild) |
-| `session_end`     | `reason` (`:reload`, `:close`)   | on `close` (queued — see the note below) |
+| `session_end`     | `reason` (`:reload`, `:close`)   | opens the first prompt after a [rebuild](#rebuilding-after-a-code-reload), ahead of its `session_start`; on `close` (hooks only — see the note below) |
 | `command_output`  | `command`, `text`                | a command called `ctx.say`                                        |
 | `skill_activated` | `name`                           | a skill was activated by command                                  |
 | `notify`          | `message`, `level`               | mirrors every `host.notify`, so a stream consumer sees extension errors too |
 | `turn_end`        | `stop_reason`, `usage`, `cost`   | the last event of every `prompt`; `stop_reason` is riffer's outcome reason, or `:cancelled` after a `cancel`; `usage` is riffer's `TokenUsage` and `cost` its USD figure, `nil` when unpriced |
 
-`session_start` carries `:new`, or `:restore` on a Runtime built from a [snapshot](#snapshots); `session_end` carries `:close`. The `:reload` reasons arrive with the rebuild ticket. `close` refuses further prompts and asks with `Riffer::Rig::Runtime::ClosedError`; `session_end` waits on the rebuild ticket, which owns the stream's session_end reasons.
+`session_start` carries `:new`, `:restore` on a Runtime built from a [snapshot](#snapshots), or `:reload` after a [rebuild](#rebuilding-after-a-code-reload); `session_end` carries `:reload` or `:close`. `close` refuses further prompts and asks with `Riffer::Rig::Runtime::ClosedError`; its `session_end` reaches extension hooks but not the stream, since no prompt follows it.
 
 Every `prompt` ends with `turn_end` — with a block or as an Enumerator — so a stream consumer never needs `ask` to learn how the turn ended and what it cost. The headless host prints this same stream as NDJSON; see [Headless mode](HEADLESS.md) for the wire shape.
 
@@ -155,6 +155,24 @@ runtime.model = 'openai/gpt-5'
 ```
 
 `model` is also a core command, listed in `commands` ahead of every extension's: `run_command('model', 'openai/gpt-5')` validates before it assigns. A bare name or an unknown provider gets a `command_output` listing the providers; a provider whose required fields are missing from the Runtime's `credentials:` is refused through `notify` at level `:error`, as is `--save`, which is not available yet. With no argument it reports the current model.
+
+## Rebuilding after a code reload
+
+`rebuild(extensions:, settings:)` replaces everything the Runtime's extensions registered — tools, commands, prompt sections, hooks and declared settings — with what the given extension list registers, run against a fresh registrar. It is the primitive behind hot reloading: an embedder without the Loader calls it after its own code reload (a Rails `to_prepare` block, say) with the re-created extension objects and the settings it wants now. The Runtime watches no files and has no `/reload` of its own, since it knows no filesystem conventions.
+
+```ruby
+Rails.application.reloader.to_prepare do
+  runtime.rebuild(extensions: [*Riffer::Rig.bundled, MyApp.rig_extension], settings: MyApp.rig_settings)
+end
+```
+
+The new registrations are built aside and swapped in only once every extension in the list has loaded. If any fails — its block raises, its `requires` is unmet, or its name collides with a core settings key — `rebuild` raises that error and nothing on the Runtime changes. This is stricter than construction, which skips a failing extension and records it on `errors`: a rebuild either swaps in the whole list or leaves the working one in place. After a successful rebuild `errors` is empty, and replacements across the new list are reported through `notify` as at construction.
+
+Kept across a rebuild: the message history, the [tally](#token-tally-and-cost), the model (including a [`model=`](#switching-the-model) override — a `model` key in the new settings does not clobber it), `id`, `host`, and every constructor keyword other than `extensions:` and `settings:` (`tools:` still filters the new tools). Providers are process-wide: riffer never unregisters one, so a provider registered before the rebuild stays registered, and an extension that registers it again just replaces the entry.
+
+Once the Runtime's session has started, the old hooks get `session_end(reason: :reload)` before the swap and the new ones `session_start(reason: :reload)` after it — where an extension releases and re-acquires process-wide state — and the next prompt's stream opens with those two events. Before the first turn a rebuild fires neither, and the first prompt opens with `session_start(reason: :new)` as usual.
+
+`rebuild` runs between turns only. Like `prompt`, it raises `Riffer::Rig::Runtime::BusyError` while a prompt or command is running — so from inside a hook or a command — and `Riffer::Rig::Runtime::ClosedError` after `close`. It returns `nil`.
 
 ## Capping the loop
 

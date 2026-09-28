@@ -57,6 +57,8 @@ class Riffer::Rig::Runtime
 
   @hooks: Riffer::Rig::Runtime::Hooks
 
+  @tool_allowlist: Array[String]?
+
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader agent: Riffer::Agent
 
@@ -116,6 +118,11 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def model=: (String model) -> void
 
+  # @rbs extensions: Array[Riffer::Rig::Extension]
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: nil
+  def rebuild: (extensions: Array[Riffer::Rig::Extension], settings: Hash[Symbol, untyped]) -> nil
+
   # @rbs return: Hash[Symbol, untyped]
   def to_h: () -> Hash[Symbol, untyped]
 
@@ -142,6 +149,31 @@ class Riffer::Rig::Runtime
   # @rbs session: Riffer::Agent::Session?
   # @rbs return: Riffer::Agent
   def build_agent: (String model, Riffer::Agent::Config config, ?session: Riffer::Agent::Session?) -> Riffer::Agent
+
+  # @rbs model: String
+  # @rbs config: Riffer::Agent::Config
+  # @rbs return: Riffer::Agent
+  def successor: (String model, Riffer::Agent::Config config) -> Riffer::Agent
+
+  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs max_steps: Numeric?
+  # @rbs return: Riffer::Agent::Config
+  def agent_config: (Array[Riffer::Rig::Registrar] registrars, Riffer::Rig::Runtime::Hooks hooks, Numeric? max_steps) -> Riffer::Agent::Config
+
+  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs agent: Riffer::Agent
+  # @rbs return: void
+  def install: (Array[Riffer::Rig::Registrar] registrars, Hash[Symbol, untyped] settings, Riffer::Rig::Runtime::Hooks hooks, Riffer::Agent agent) -> void
+
+  # A session that has not started yet opens with session_start(:new) on its
+  # first turn instead.
+  # @rbs name: Symbol
+  # @rbs event: Riffer::Rig::Events::Event
+  # @rbs return: void
+  def lifecycle: (Symbol name, Riffer::Rig::Events::Event event) -> void
 
   # @rbs text: String
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
@@ -214,8 +246,9 @@ class Riffer::Rig::Runtime
   def activated_skills: () -> Array[String]
 
   # @rbs extensions: Array[Riffer::Rig::Extension]
+  # @rbs &: (Riffer::Rig::Extension, StandardError) -> void
   # @rbs return: Array[Riffer::Rig::Registrar]
-  def build_registrars: (Array[Riffer::Rig::Extension] extensions) -> Array[Riffer::Rig::Registrar]
+  def build_registrars: (Array[Riffer::Rig::Extension] extensions) { (Riffer::Rig::Extension, StandardError) -> void } -> Array[Riffer::Rig::Registrar]
 
   # @rbs extension: Riffer::Rig::Extension
   # @rbs registrar: Riffer::Rig::Registrar

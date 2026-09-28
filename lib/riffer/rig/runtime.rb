@@ -48,6 +48,7 @@ class Riffer::Rig::Runtime
   # @rbs @declared_settings: Hash[String, Hash[Symbol, untyped]]
   # @rbs @errors: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
   # @rbs @hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs @tool_allowlist: Array[String]?
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader :agent #: Riffer::Agent
@@ -101,27 +102,12 @@ class Riffer::Rig::Runtime
     @message_observers = []
     Riffer::Rig::Settings::Pricing.register(pricing, riffer_config.pricing)
     @errors = []
-    registrars = build_registrars(extensions)
-    overrides(registrars).each { |message| @host.notify(message, level: :info) }
-    @declared_settings = registrars.to_h { |registrar| [registrar.extension, registrar.settings] }
-                                   .reject { |_extension, declared| declared.empty? }
-    @settings = with_declared_defaults(settings)
-    @prompts = registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h
-    commands = [Riffer::Rig::Commands::Model.command, *registrars.flat_map { |registrar| registrar.commands.values }]
-    @commands = commands.to_h { |command| [command.name, command] }
-    tool_classes = select_tools(registrars.flat_map { |registrar| registrar.tools.to_a }.to_h.values, tools)
-    @hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
+    @tool_allowlist = tools
     @base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
-
-    config = Riffer::Agent::Config.new(
-      model: ->(context) { context[:model] },
-      instructions: system_prompt([]),
-      tools_config: tool_classes,
-      max_steps: max_steps,
-      tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(@hooks)
-    )
-    config.add_guardrail(:before, klass: Riffer::Rig::Runtime::RequestGuardrail, options: { hooks: @hooks })
-    @agent = snapshot ? restore(snapshot, model, config) : build_agent(model, config)
+    registrars = build_registrars(extensions) { |extension, error| record_error(extension, error) }
+    hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
+    config = agent_config(registrars, hooks, max_steps)
+    install(registrars, settings, hooks, snapshot ? restore(snapshot, model, config) : build_agent(model, config))
     @agent.session.on_message { |message| observe_message(message) }
   end
 
@@ -189,10 +175,27 @@ class Riffer::Rig::Runtime
   def model=(model)
     # Upstream candidate: riffer resolves the model Proc once, in Agent.new, so
     # a switch rebuilds the agent over the same session and config.
-    agent = build_agent(model, @agent.config, session: @agent.session)
-    agent.context.token_usage = @agent.context.token_usage
-    @agent = agent
+    @agent = successor(model, @agent.config)
     @model_override = model
+  end
+
+  # @rbs extensions: Array[Riffer::Rig::Extension]
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: nil
+  def rebuild(extensions:, settings:)
+    claim
+    begin
+      registrars = build_registrars(extensions) { |_extension, error| raise error }
+      hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
+      agent = successor(model, agent_config(registrars, hooks, @agent.config.max_steps))
+      lifecycle(:session_end, Riffer::Rig::Events::SessionEnd.new(:reload))
+      @errors = []
+      install(registrars, settings, hooks, agent)
+      lifecycle(:session_start, Riffer::Rig::Events::SessionStart.new(@id, :reload))
+    ensure
+      @busy = false
+    end
+    nil
   end
 
   # @rbs return: Hash[Symbol, untyped]
@@ -244,6 +247,60 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Agent
   def build_agent(model, config, session: nil)
     Riffer::Agent.new(session: session, context: { cancel_flag: @cancel_flag, cwd: @cwd, model: model }, config: config)
+  end
+
+  # @rbs model: String
+  # @rbs config: Riffer::Agent::Config
+  # @rbs return: Riffer::Agent
+  def successor(model, config)
+    agent = build_agent(model, config, session: @agent.session)
+    agent.context.token_usage = @agent.context.token_usage
+    agent
+  end
+
+  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs max_steps: Numeric?
+  # @rbs return: Riffer::Agent::Config
+  def agent_config(registrars, hooks, max_steps)
+    config = Riffer::Agent::Config.new(
+      model: ->(context) { context[:model] },
+      instructions: system_prompt([]),
+      tools_config: select_tools(registrars.flat_map { |registrar| registrar.tools.to_a }.to_h.values, @tool_allowlist),
+      max_steps: max_steps,
+      tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(hooks)
+    )
+    config.add_guardrail(:before, klass: Riffer::Rig::Runtime::RequestGuardrail, options: { hooks: hooks })
+    config
+  end
+
+  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs agent: Riffer::Agent
+  # @rbs return: void
+  def install(registrars, settings, hooks, agent)
+    overrides(registrars).each { |message| @host.notify(message, level: :info) }
+    @declared_settings = registrars.to_h { |registrar| [registrar.extension, registrar.settings] }
+                                   .reject { |_extension, declared| declared.empty? }
+    @settings = with_declared_defaults(settings)
+    @prompts = registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h
+    commands = [Riffer::Rig::Commands::Model.command, *registrars.flat_map { |registrar| registrar.commands.values }]
+    @commands = commands.to_h { |command| [command.name, command] }
+    @hooks = hooks
+    @agent = agent
+  end
+
+  # A session that has not started yet opens with session_start(:new) on its
+  # first turn instead.
+  # @rbs name: Symbol
+  # @rbs event: Riffer::Rig::Events::Event
+  # @rbs return: void
+  def lifecycle(name, event)
+    return if @session_start_pending
+
+    @hooks.observe(name, event)
+    @host.queue(event)
   end
 
   # @rbs text: String
@@ -442,16 +499,15 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs extensions: Array[Riffer::Rig::Extension]
+  # @rbs &: (Riffer::Rig::Extension, StandardError) -> void
   # @rbs return: Array[Riffer::Rig::Registrar]
   def build_registrars(extensions)
-    raise BusyError, 'a prompt is already running on this Runtime' if @busy
-
     extensions.filter_map do |extension|
       registrar = Riffer::Rig::Registrar.new(extension.name)
       error = load_extension(extension, registrar)
       next registrar unless error
 
-      record_error(extension, error)
+      yield(extension, error)
       nil
     end
   end
