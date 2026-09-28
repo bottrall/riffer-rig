@@ -33,7 +33,13 @@ class Riffer::Rig::Command::Context
   # @rbs text: String
   # @rbs return: nil
   def say(text)
-    @emit.call(Riffer::Rig::Events::CommandOutput.new(@command, text))
+    emit(Riffer::Rig::Events::CommandOutput.new(@command, text))
+  end
+
+  # @rbs event: Riffer::Rig::Events::Event
+  # @rbs return: nil
+  def emit(event)
+    @emit.call(event)
     nil
   end
 

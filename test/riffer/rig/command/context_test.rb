@@ -45,6 +45,16 @@ describe Riffer::Rig::Command::Context do
     assert_nil context.say('three commits')
   end
 
+  it 'emits an event' do
+    context.emit(Riffer::Rig::Events::SkillActivated.new('review'))
+
+    assert_equal [Riffer::Rig::Events::SkillActivated.new('review')], @emitted
+  end
+
+  it 'returns nil from emit' do
+    assert_nil context.emit(Riffer::Rig::Events::SkillActivated.new('review'))
+  end
+
   it 'sends a user turn from prompt' do
     context.prompt('Review this diff')
 

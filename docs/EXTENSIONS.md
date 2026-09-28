@@ -52,6 +52,7 @@ The block receives a `ctx`:
 | `host`                                  | the Runtime's host (the [mirror](HOSTS.md#the-mirror))                                                 |
 | `settings`                              | this extension's namespace of the Runtime's settings — `settings[:git]` for an extension named `git`, with its [declared defaults](#the-rigsetting-seam) filled in — or `{}` when it has none |
 | `say(text)`                             | emits a `command_output` event carrying the command's name and `text`                                  |
+| `emit(event)`                           | emits a rig event, such as `Riffer::Rig::Events::SkillActivated`, to the caller of `run_command`       |
 | `prompt(text)`                          | sends `text` to the model as a user turn, so a prompt template is a command; the turn's events stream to the caller of `run_command` |
 | `ask(question, options: nil, secret: false)` | forwards to the host and returns its answer, or `nil` when the host does not support `:ask`       |
 | `confirm(question)`                     | forwards to the host and returns its answer, or `false` when the host does not support `:confirm`      |
@@ -95,9 +96,17 @@ Observe and passthrough hooks change nothing: their return values are ignored, a
 
 Hooks run on the thread running the turn, one at a time — tools run sequentially so their hooks never overlap.
 
+## The `rig.skills` seam
+
+```ruby
+rig.skills { |ctx| Riffer::Skills::FilesystemBackend.new(File.join(ctx.cwd, 'docs/skills')) }
+```
+
+Adds a source of [Agent Skills](SKILLS.md). The block receives the Runtime as `ctx`, as a prompt section's does, and returns a `Riffer::Skills::Backend`; it runs when the Runtime is built and again on every rebuild. Every source's skills join one catalog, the model's riffer skills catalog; when two sources have a skill of the same name, the earlier source wins. Each skill in the catalog gets a core [`skill:<name>` command](SKILLS.md#skillname). A Runtime with no source has no catalog.
+
 ## Bundled extensions and replacement
 
-The four tools ship as bundled extensions — `Riffer::Rig.bundled(:read)`, `:write`, `:edit`, `:bash` — and so does the `:agents_md` prompt section, `Riffer::Rig.bundled(:agents_md)`, all built on the same seams as any other extension; `Riffer::Rig.bundled` returns them all in load order. [Tools](TOOLS.md) describes the tools and [Instructions](INSTRUCTIONS.md#agentsmd) the AGENTS.md section.
+The four tools ship as bundled extensions — `Riffer::Rig.bundled(:read)`, `:write`, `:edit`, `:bash` — and so do the `:agents_md` prompt section, `Riffer::Rig.bundled(:agents_md)`, and the skills directories, `Riffer::Rig.bundled(:skills)`, all built on the same seams as any other extension; `Riffer::Rig.bundled` returns them all in load order. [Tools](TOOLS.md) describes the tools [Instructions](INSTRUCTIONS.md#agentsmd) the AGENTS.md section and [Skills](SKILLS.md) the skills.
 
 A later extension replaces anything an earlier one registered by registering under the same name: a tool with the same identifier, a command with the same name, a prompt section with the same name. Later wins, and the Runtime reports each replacement across extensions through the host's `notify` at level `:info`, as "Extension LATER replaces KIND NAME from EARLIER". Nothing is deregistered, so the original extension is still there to pass to another Runtime.
 

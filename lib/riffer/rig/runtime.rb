@@ -255,6 +255,7 @@ class Riffer::Rig::Runtime
   def successor(model, config)
     agent = build_agent(model, config, session: @agent.session)
     agent.context.token_usage = @agent.context.token_usage
+    reactivate(agent.context.skills, activated_skills)
     agent
   end
 
@@ -268,9 +269,20 @@ class Riffer::Rig::Runtime
       instructions: system_prompt([]),
       tools_config: select_tools(registrars.flat_map { |registrar| registrar.tools.to_a }.to_h.values, @tool_allowlist),
       max_steps: max_steps,
-      tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(hooks)
+      tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(hooks),
+      skills_config: skills_config(registrars.flat_map(&:skill_sources))
     )
     config.add_guardrail(:before, klass: Riffer::Rig::Runtime::RequestGuardrail, options: { hooks: hooks })
+    config
+  end
+
+  # @rbs sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
+  # @rbs return: Riffer::Skills::Config?
+  def skills_config(sources)
+    return if sources.empty?
+
+    config = Riffer::Skills::Config.new
+    config.backend(Riffer::Rig::Runtime::SkillSources.new(sources.map { |source| source.call(self) }))
     config
   end
 
@@ -285,7 +297,12 @@ class Riffer::Rig::Runtime
                                    .reject { |_extension, declared| declared.empty? }
     @settings = with_declared_defaults(settings)
     @prompts = registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h
-    commands = [Riffer::Rig::Commands::Model.command, *registrars.flat_map { |registrar| registrar.commands.values }]
+    skills = agent.context.skills&.skills&.values || []
+    commands = [
+      Riffer::Rig::Commands::Model.command,
+      *skills.map { |skill| Riffer::Rig::Commands::Skill.command(skill) },
+      *registrars.flat_map { |registrar| registrar.commands.values }
+    ]
     @commands = commands.to_h { |command| [command.name, command] }
     @hooks = hooks
     @agent = agent

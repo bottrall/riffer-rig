@@ -33,7 +33,7 @@ describe Riffer::Rig do
   end
 
   it 'returns the bundled extensions in load order' do
-    assert_equal %w[read write edit bash agents_md], Riffer::Rig.bundled.map(&:name)
+    assert_equal %w[read write edit bash agents_md skills], Riffer::Rig.bundled.map(&:name)
   end
 
   it 'returns one bundled extension by name' do

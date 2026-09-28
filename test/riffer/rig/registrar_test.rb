@@ -60,6 +60,24 @@ describe Riffer::Rig::Registrar do
     assert_equal %i[branch], registrar.prompts.keys
   end
 
+  it 'collects skills sources in registration order' do
+    registrar = Riffer::Rig::Registrar.new('git')
+    first = proc { Riffer::Skills::FilesystemBackend.new('/one') }
+    second = proc { Riffer::Skills::FilesystemBackend.new('/two') }
+    registrar.skills(&first)
+    registrar.skills(&second)
+
+    assert_equal [first, second], registrar.skill_sources
+  end
+
+  it 'returns a fresh array from skill_sources' do
+    registrar = Riffer::Rig::Registrar.new('git')
+    registrar.skills { Riffer::Skills::FilesystemBackend.new('/one') }
+    registrar.skill_sources.clear
+
+    assert_equal 1, registrar.skill_sources.length
+  end
+
   it 'collects commands in registration order' do
     registrar = Riffer::Rig::Registrar.new('git')
     registrar.command('log', description: 'Recent commits') { |_ctx| nil }

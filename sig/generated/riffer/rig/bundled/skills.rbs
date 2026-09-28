@@ -1,0 +1,5 @@
+# Generated from lib/riffer/rig/bundled/skills.rb with RBS::Inline
+
+module Riffer::Rig::Bundled
+  Skills: Riffer::Rig::Extension
+end

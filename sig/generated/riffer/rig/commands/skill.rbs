@@ -1,0 +1,12 @@
+# Generated from lib/riffer/rig/commands/skill.rb with RBS::Inline
+
+module Riffer::Rig::Commands::Skill
+  # @rbs skill: Riffer::Skills::Frontmatter
+  # @rbs return: Riffer::Rig::Command
+  def command: (Riffer::Skills::Frontmatter skill) -> Riffer::Rig::Command
+
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs skill: Riffer::Skills::Frontmatter
+  # @rbs return: void
+  def run: (Riffer::Rig::Command::Context ctx, Riffer::Skills::Frontmatter skill) -> void
+end

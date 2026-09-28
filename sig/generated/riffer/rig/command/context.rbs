@@ -30,6 +30,10 @@ class Riffer::Rig::Command::Context
   # @rbs return: nil
   def say: (String text) -> nil
 
+  # @rbs event: Riffer::Rig::Events::Event
+  # @rbs return: nil
+  def emit: (Riffer::Rig::Events::Event event) -> nil
+
   # @rbs text: String
   # @rbs return: nil
   def prompt: (String text) -> nil

@@ -4,7 +4,7 @@ require 'test_helper'
 
 describe Riffer::Rig::Bundled do
   it 'lists the bundled extensions by name in load order' do
-    assert_equal %i[read write edit bash agents_md], Riffer::Rig::Bundled::BY_NAME.keys
+    assert_equal %i[read write edit bash agents_md skills], Riffer::Rig::Bundled::BY_NAME.keys
   end
 
   it 'keys each bundled extension by its name' do
@@ -12,6 +12,6 @@ describe Riffer::Rig::Bundled do
   end
 
   it 'keeps the bundled extensions out of the process registry' do
-    assert_empty Riffer::Rig.extensions.keys & %w[read write edit bash agents_md]
+    assert_empty Riffer::Rig.extensions.keys & %w[read write edit bash agents_md skills]
   end
 end

@@ -12,6 +12,8 @@ class Riffer::Rig::Registrar
 
   @settings: Hash[Symbol, untyped]
 
+  @skill_sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
+
   @commands: Hash[String, Riffer::Rig::Command]
 
   @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
@@ -43,6 +45,10 @@ class Riffer::Rig::Registrar
   # @rbs return: void
   def command: (String name, description: String) { (Riffer::Rig::Command::Context) -> void } -> void
 
+  # @rbs &block: (Riffer::Rig::Runtime) -> Riffer::Skills::Backend
+  # @rbs return: void
+  def skills: () { (Riffer::Rig::Runtime) -> Riffer::Skills::Backend } -> void
+
   # @rbs key: Symbol
   # @rbs default: untyped
   # @rbs return: void
@@ -61,6 +67,9 @@ class Riffer::Rig::Registrar
 
   # @rbs return: Hash[String, Riffer::Rig::Command]
   def commands: () -> Hash[String, Riffer::Rig::Command]
+
+  # @rbs return: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
+  def skill_sources: () -> Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
 
   # @rbs return: Hash[Symbol, untyped]
   def settings: () -> Hash[Symbol, untyped]

@@ -15,6 +15,7 @@ class Riffer::Rig::Registrar
   # @rbs @tools: Hash[String, singleton(Riffer::Tool)]
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
+  # @rbs @skill_sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
   # @rbs @settings: Hash[Symbol, untyped]
   # @rbs @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
@@ -28,6 +29,7 @@ class Riffer::Rig::Registrar
     @tools = {}
     @prompts = {}
     @commands = {}
+    @skill_sources = []
     @settings = {}
     @hooks = EVENTS.to_h { |event| [event, []] }
   end
@@ -60,6 +62,12 @@ class Riffer::Rig::Registrar
     @commands[name] = Riffer::Rig::Command.new(name, description: description, extension: @extension, &)
   end
 
+  # @rbs &block: (Riffer::Rig::Runtime) -> Riffer::Skills::Backend
+  # @rbs return: void
+  def skills(&block)
+    @skill_sources << block
+  end
+
   # @rbs key: Symbol
   # @rbs default: untyped
   # @rbs return: void
@@ -90,6 +98,11 @@ class Riffer::Rig::Registrar
   # @rbs return: Hash[String, Riffer::Rig::Command]
   def commands
     @commands.dup
+  end
+
+  # @rbs return: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
+  def skill_sources
+    @skill_sources.dup
   end
 
   # @rbs return: Hash[Symbol, untyped]
