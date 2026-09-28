@@ -13,6 +13,10 @@ module Riffer::Rig::AgentsMd
 
   private
 
+  # @rbs dir: String
+  # @rbs return: Array[String]
+  def ancestors: (String dir) -> Array[String]
+
   # @rbs path: String
   # @rbs return: String
   def block: (String path) -> String

@@ -61,7 +61,7 @@ The flat `{"anthropic": "sk-…"}` shape earlier versions wrote is no longer rea
 
 ### Configuration
 
-- `AGENTS.md` — `~/.riffer/AGENTS.md` and an `AGENTS.md` in the current working directory, whichever exist, are re-read every turn as instructions that take precedence over the default norms ([Instructions](docs/INSTRUCTIONS.md#agentsmd)).
+- `AGENTS.md` — `~/.riffer/AGENTS.md` and an `AGENTS.md` in the current working directory or any directory above it, whichever exist, are re-read every turn as instructions that take precedence over the default norms ([Instructions](docs/INSTRUCTIONS.md#agentsmd)).
 - `~/.riffer/settings.json` — optional user settings. Every key is optional:
 
   ```json

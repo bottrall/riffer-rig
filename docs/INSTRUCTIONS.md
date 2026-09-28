@@ -23,12 +23,14 @@ The Runtime re-renders the three parts at the start of every turn: section block
 
 ## AGENTS.md
 
-The bundled `agents_md` extension (`Riffer::Rig.bundled(:agents_md)`) registers one prompt section, `:agents_md`. It reads two files, whichever exist, in this order:
+The bundled `agents_md` extension (`Riffer::Rig.bundled(:agents_md)`) registers one prompt section, `:agents_md`. It reads these files, whichever exist, in this order:
 
 1. `~/.riffer/AGENTS.md` — your instructions for every project.
-2. `<cwd>/AGENTS.md` — the project's, where `<cwd>` is the Runtime's `cwd:`.
+2. An `AGENTS.md` in every directory from the filesystem root down to `<cwd>`, outermost first, where `<cwd>` is the Runtime's `cwd:`. A monorepo can keep shared instructions at its root and a package's own in the package, and a run from inside the package reads both.
 
-The section opens with one sentence framing what follows as instructions the user wrote, which take precedence over the base prompt's norms where they conflict. Each file follows as its own block, tagged with its absolute path:
+A file is read once even when it sits on both paths, as `~/.riffer/AGENTS.md` does when `<cwd>` is `~/.riffer`.
+
+The section opens with one sentence framing what follows as instructions the user wrote, which take precedence over the base prompt's norms where they conflict, and among themselves the later file (the one closer to `<cwd>`) wins. Each file follows as its own block, tagged with its absolute path:
 
 ```
 <project_instructions path="/home/you/project/AGENTS.md">
@@ -36,7 +38,7 @@ The section opens with one sentence framing what follows as instructions the use
 </project_instructions>
 ```
 
-With neither file present the section renders nothing, so the system message does not mention AGENTS.md at all.
+With no file present the section renders nothing, so the system message does not mention AGENTS.md at all.
 
 The files are read at the start of every turn, so an edit takes effect on the next turn with no reload or rebuild.
 
