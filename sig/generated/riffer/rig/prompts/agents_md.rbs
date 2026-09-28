@@ -1,0 +1,23 @@
+# Generated from lib/riffer/rig/prompts/agents_md.rb with RBS::Inline
+
+module Riffer::Rig::Prompts::AgentsMd
+  FRAMING: String
+
+  # @rbs cwd: String
+  # @rbs return: Array[String]
+  def paths: (String cwd) -> Array[String]
+
+  # @rbs cwd: String
+  # @rbs return: String?
+  def section: (String cwd) -> String?
+
+  private
+
+  # @rbs dir: String
+  # @rbs return: Array[String]
+  def ancestors: (String dir) -> Array[String]
+
+  # @rbs path: String
+  # @rbs return: String
+  def block: (String path) -> String
+end
