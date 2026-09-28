@@ -390,6 +390,9 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Agent
   def restore(snapshot, model, config)
     @model_override = restorable_model(snapshot.fetch(:model), model)
+    # Upstream candidate: riffer's Serializer carries an agent's config, never
+    # its history, so this and to_h round-trip the session message by message;
+    # a Session.from_h could also heal orphaned tool calls on load.
     messages = snapshot.fetch(:messages).map { |message| Riffer::Messages::Base.from_hash(message) }
     session = Riffer::Agent::Session.new(messages: messages)
     session.discard_pending_tool_calls
@@ -415,7 +418,8 @@ class Riffer::Rig::Runtime
   # @rbs messages: Array[Riffer::Messages::Base]
   # @rbs return: Riffer::Providers::TokenUsage?
   def usage_of(messages)
-    # TokenUsage has no zero to seed sum with, and no usage at all must stay nil.
+    # Upstream candidate: TokenUsage has no zero to seed sum with, and no usage
+    # at all must stay nil; a loaded session could restore its own tally.
     messages.filter_map { |message| message.token_usage if message.is_a?(Riffer::Messages::Assistant) }
             .reduce { |total, usage| total + usage } # rubocop:disable Performance/Sum
   end
@@ -431,6 +435,8 @@ class Riffer::Rig::Runtime
 
   # @rbs return: Array[String]
   def activated_skills
+    # Upstream candidate: Skills::Context keeps its activated list private, so
+    # the catalog is filtered through activated? instead.
     skills = @agent.context.skills
     skills ? skills.skills.keys.select { |name| skills.activated?(name) } : []
   end
