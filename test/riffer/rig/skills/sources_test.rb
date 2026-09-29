@@ -2,14 +2,14 @@
 
 require 'test_helper'
 
-describe Riffer::Rig::Runtime::SkillSources do
+describe Riffer::Rig::Skills::Sources do
   before do
     @first = Dir.mktmpdir
     @second = Dir.mktmpdir
     write_skill(@first, 'a', 'first a')
     write_skill(@second, 'a', 'second a')
     write_skill(@second, 'b', 'second b')
-    @sources = Riffer::Rig::Runtime::SkillSources.new(
+    @sources = Riffer::Rig::Skills::Sources.new(
       [Riffer::Skills::FilesystemBackend.new(@first), Riffer::Skills::FilesystemBackend.new(@second)]
     )
   end

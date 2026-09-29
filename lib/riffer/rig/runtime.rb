@@ -282,7 +282,7 @@ class Riffer::Rig::Runtime
     return if sources.empty?
 
     config = Riffer::Skills::Config.new
-    config.backend(Riffer::Rig::Runtime::SkillSources.new(sources.map { |source| source.call(self) }))
+    config.backend(Riffer::Rig::Skills::Sources.new(sources.map { |source| source.call(self) }))
     config
   end
 

@@ -2,7 +2,7 @@
 
 # Upstream candidate: riffer's Skills::Config takes a single backend, so the
 # sources every extension registers are merged into one here.
-class Riffer::Rig::Runtime::SkillSources < Riffer::Skills::Backend
+class Riffer::Rig::Skills::Sources < Riffer::Skills::Backend
   # @rbs @backends: Array[Riffer::Skills::Backend]
 
   # @rbs backends: Array[Riffer::Skills::Backend]
