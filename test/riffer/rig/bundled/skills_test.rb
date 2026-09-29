@@ -81,7 +81,7 @@ describe 'Riffer::Rig::Bundled::Skills' do
   end
 
   it 'lists a command for a skill in the home directory' do
-    write_skill(File.join(@home, '.riffer', 'skills'), 'c')
+    write_skill(File.join(@home, '.agents', 'skills'), 'c')
 
     assert_includes runtime.commands.map(&:name), 'skill:c'
   end
@@ -104,7 +104,7 @@ describe 'Riffer::Rig::Bundled::Skills' do
   end
 
   it 'prefers a project skill over a home skill of the same name' do
-    write_skill(File.join(@home, '.riffer', 'skills'), 'a', 'Home.')
+    write_skill(File.join(@home, '.agents', 'skills'), 'a', 'Home.')
 
     assert_equal 'Skill a.', skill_description(runtime, 'a')
   end

@@ -496,7 +496,7 @@ describe Riffer::Rig::REPL do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         names.each do |name|
-          skill_dir = File.join(dir, '.skills', name)
+          skill_dir = File.join(dir, '.agents', 'skills', name)
           FileUtils.mkdir_p(skill_dir)
           File.write(File.join(skill_dir, 'SKILL.md'), <<~MD)
             ---
