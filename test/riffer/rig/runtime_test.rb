@@ -873,7 +873,8 @@ describe Riffer::Rig::Runtime do
     it 'lets a later extension replace a bundled tool by identifier' do
       sandbox = replaced_bash
       replacement = Riffer::Rig::Extension.new('sandbox') { |rig| rig.tool sandbox }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [*Riffer::Rig.bundled, replacement])
+      tools = %i[read write edit bash].map { |name| Riffer::Rig.bundled(name) }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [*tools, replacement])
 
       assert_equal [Riffer::Rig::Tools::Read, Riffer::Rig::Tools::Write, Riffer::Rig::Tools::Edit, sandbox],
                    runtime.agent.tools
@@ -1434,6 +1435,96 @@ describe Riffer::Rig::Runtime do
       runtime.ask('hello')
 
       assert_nil restored(runtime.to_h).tally
+    end
+  end
+
+  describe 'skills' do
+    before do
+      @skills_dir = Dir.mktmpdir
+      write_skill(@skills_dir, 'a')
+      @skills = Riffer::Rig::Extension.new('local_skills') do |rig|
+        rig.skills { |_runtime| Riffer::Skills::FilesystemBackend.new(@skills_dir) }
+      end
+    end
+
+    after do
+      FileUtils.remove_entry(@skills_dir)
+    end
+
+    def write_skill(root, name)
+      FileUtils.mkdir_p(File.join(root, name))
+      File.write(File.join(root, name, 'SKILL.md'), "---\nname: #{name}\ndescription: #{name}.\n---\nDo #{name}.\n")
+    end
+
+    def skilled_runtime(**)
+      Riffer::Rig::Runtime.new('mock/test', extensions: [@skills], **)
+    end
+
+    it 'passes the Runtime to a skills source' do
+      seen = nil
+      spy = Riffer::Rig::Extension.new('spy') do |rig|
+        rig.skills do |runtime|
+          seen = runtime
+          Riffer::Skills::FilesystemBackend.new(@skills_dir)
+        end
+      end
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [spy])
+
+      assert_same runtime, seen
+    end
+
+    it 'merges the skills of every source into the catalog' do
+      other = Dir.mktmpdir
+      write_skill(other, 'b')
+      more = Riffer::Rig::Extension.new('more') { |rig| rig.skills { |_runtime| Riffer::Skills::FilesystemBackend.new(other) } }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@skills, more])
+
+      assert_equal %w[a b], runtime.agent.context.skills.skills.keys
+    ensure
+      FileUtils.remove_entry(other)
+    end
+
+    it 'records a skill the model activated' do
+      runtime = skilled_runtime
+      runtime.agent.context.skills.activate('a')
+
+      assert_equal %w[a], runtime.to_h[:skills]
+    end
+
+    it 're-activates a snapshot skill by name on restore' do
+      runtime = skilled_runtime
+      runtime.agent.context.skills.activate('a')
+
+      assert skilled_runtime(snapshot: runtime.to_h).agent.context.skills.activated?('a')
+    end
+
+    it 'drops a snapshot skill that no longer exists' do
+      snapshot = skilled_runtime.to_h.merge(skills: %w[a gone])
+
+      assert_equal %w[a], skilled_runtime(snapshot: snapshot).to_h[:skills]
+    end
+
+    it 'keeps activated skills across a model switch' do
+      runtime = skilled_runtime
+      runtime.agent.context.skills.activate('a')
+      runtime.model = 'mock/other'
+
+      assert_equal %w[a], runtime.to_h[:skills]
+    end
+
+    it 'lists a skill added before a rebuild' do
+      runtime = skilled_runtime
+      write_skill(@skills_dir, 'b')
+      runtime.rebuild(extensions: [@skills], settings: {})
+
+      assert_includes runtime.commands.map(&:name), 'skill:b'
+    end
+
+    it 'lets a later extension replace a skill command by name' do
+      mine = Riffer::Rig::Extension.new('mine') { |rig| rig.command('skill:a', description: 'Mine') { |_ctx| nil } }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@skills, mine])
+
+      assert_equal 'Mine', runtime.commands.find { |command| command.name == 'skill:a' }.description
     end
   end
 

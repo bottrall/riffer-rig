@@ -161,6 +161,10 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Agent::Config
   def agent_config: (Array[Riffer::Rig::Registrar] registrars, Riffer::Rig::Runtime::Hooks hooks, Numeric? max_steps) -> Riffer::Agent::Config
 
+  # @rbs sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
+  # @rbs return: Riffer::Skills::Config?
+  def skills_config: (Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend] sources) -> Riffer::Skills::Config?
+
   # @rbs registrars: Array[Riffer::Rig::Registrar]
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks

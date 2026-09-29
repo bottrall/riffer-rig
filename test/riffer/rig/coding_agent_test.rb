@@ -54,7 +54,7 @@ describe Riffer::Rig::CodingAgent do
   it 'includes skill activate tool when skills are present' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        skill_dir = File.join(dir, '.skills', 'test-skill')
+        skill_dir = File.join(dir, '.agents', 'skills', 'test-skill')
         FileUtils.mkdir_p(skill_dir)
         File.write(File.join(skill_dir, 'SKILL.md'), <<~MD)
           ---
@@ -64,7 +64,7 @@ describe Riffer::Rig::CodingAgent do
           You are a test skill.
         MD
 
-        agent = isolated_agent(global_dir: dir, project_dir: File.join(dir, '.skills'))
+        agent = isolated_agent(global_dir: dir, project_dir: File.join(dir, '.agents', 'skills'))
 
         assert_includes agent.tools.map(&:name), 'skill_activate'
       end
@@ -74,7 +74,7 @@ describe Riffer::Rig::CodingAgent do
   it 'loads skills from project skills dir' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        skill_dir = File.join(dir, '.skills', 'refactor')
+        skill_dir = File.join(dir, '.agents', 'skills', 'refactor')
         FileUtils.mkdir_p(skill_dir)
         File.write(File.join(skill_dir, 'SKILL.md'), <<~MD)
           ---
@@ -97,7 +97,7 @@ describe Riffer::Rig::CodingAgent do
   it 'uses xml adapter for claude models' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        skill_dir = File.join(dir, '.skills', 'refactor')
+        skill_dir = File.join(dir, '.agents', 'skills', 'refactor')
         FileUtils.mkdir_p(skill_dir)
         File.write(File.join(skill_dir, 'SKILL.md'), <<~MD)
           ---

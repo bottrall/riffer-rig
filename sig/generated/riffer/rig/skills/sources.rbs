@@ -1,0 +1,18 @@
+# Generated from lib/riffer/rig/skills/sources.rb with RBS::Inline
+
+# Upstream candidate: riffer's Skills::Config takes a single backend, so the
+# sources every extension registers are merged into one here.
+class Riffer::Rig::Skills::Sources < Riffer::Skills::Backend
+  @backends: Array[Riffer::Skills::Backend]
+
+  # @rbs backends: Array[Riffer::Skills::Backend]
+  # @rbs return: void
+  def initialize: (Array[Riffer::Skills::Backend] backends) -> void
+
+  # @rbs return: Array[Riffer::Skills::Frontmatter]
+  def list_skills: () -> Array[Riffer::Skills::Frontmatter]
+
+  # @rbs name: String
+  # @rbs return: String
+  def read_skill: (String name) -> String
+end

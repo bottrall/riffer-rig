@@ -1,0 +1,7 @@
+# Generated from lib/riffer/rig/skills.rb with RBS::Inline
+
+module Riffer::Rig::Skills
+  # @rbs cwd: String
+  # @rbs return: Array[String]
+  def directories: (String cwd) -> Array[String]
+end

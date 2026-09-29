@@ -17,7 +17,7 @@ The system message is three parts joined by blank lines:
    Current working directory: <cwd>
    ```
 
-When skills exist, riffer follows it with a second system message of its own, the skills catalog. The Runtime does not touch it.
+When skills exist, riffer follows it with a second system message of its own, the skills catalog ([Skills](SKILLS.md#what-the-model-sees)). The Runtime does not touch it.
 
 The Runtime re-renders the three parts at the start of every turn: section blocks run again and the date is read again, so nothing needs a reload to stay current. The base prompt is fixed at construction. The cwd is the `cwd:` keyword; the Runtime itself performs no disk scanning — a section that reads a file does so in its extension.
 

@@ -11,7 +11,7 @@ A session is one conversation with a `Riffer::Rig::Runtime`: its id, its history
 | `:id`       | the Runtime's id, a UUIDv7 minted when the session began; a restored Runtime keeps it, so it names the session across restarts        |
 | `:messages` | the conversation as riffer message hashes (`Riffer::Messages::Base#to_h`), system message first, read back with `Riffer::Messages::Base.from_hash` |
 | `:model`    | the model the session switched to with `model=` or `/model`, or `nil` when it kept the model it was built with                          |
-| `:skills`   | the names of the skills activated in the session                                                                                       |
+| `:skills`   | the names of the skills the model activated in the session ([Skills](SKILLS.md#what-the-model-sees)); a skill run with `/skill:<name>` is not one |
 
 A snapshot survives a JSON round trip: generate it with `JSON.generate`, parse it back with `symbolize_names: true`, and pass the result as `snapshot:`.
 

@@ -135,10 +135,7 @@ class Riffer::Rig::REPL
       return
     end
 
-    # TODO: read the body without mutating activation state once riffer exposes
-    # a non-mutating Context#read. `activate` marks the skill model-activated as
-    # a side effect, which drops it from the model's catalog after manual use.
-    body = skills.activate(name)
+    body = skills.read(name)
     print_block { @theme.magenta("✦ skill: #{name}") }
     skill_block(name, body)
   rescue Riffer::ArgumentError

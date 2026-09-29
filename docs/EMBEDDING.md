@@ -17,7 +17,7 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
 | `model`         | `"provider/name"`; required, positional                                     | —                       |
-| `extensions:`   | ordered extension objects whose blocks run against this Runtime's registrar; `Riffer::Rig.bundled` gives the [bundled tools](TOOLS.md) and [AGENTS.md section](INSTRUCTIONS.md#agentsmd) | `[]`                    |
+| `extensions:`   | ordered extension objects whose blocks run against this Runtime's registrar; `Riffer::Rig.bundled` gives the [bundled tools](TOOLS.md), [AGENTS.md section](INSTRUCTIONS.md#agentsmd) and [skills](SKILLS.md) | `[]`                    |
 | `tools:`        | allowlist of tool identifiers; `nil` means every registered tool            | `nil`                   |
 | `settings:`     | merged settings hash (core keys top level, extension keys under their names); a command reads its extension's namespace as `ctx.settings` | `{}` |
 | `host:`         | a [`Riffer::Rig::Hosts::Base`](HOSTS.md) subclass instance                  | `Riffer::Rig::Hosts::Null.new` |
@@ -154,11 +154,11 @@ runtime.model # => "anthropic/claude-sonnet-4-6"
 runtime.model = 'openai/gpt-5'
 ```
 
-`model` is also a core command, listed in `commands` ahead of every extension's: `run_command('model', 'openai/gpt-5')` validates before it assigns. A bare name or an unknown provider gets a `command_output` listing the providers; a provider whose required fields are missing from the Runtime's `credentials:` is refused through `notify` at level `:error`, as is `--save`, which is not available yet. With no argument it reports the current model.
+`model` is also a core command, listed in `commands` first, ahead of the [`skill:<name>`](SKILLS.md#skillname) commands and every extension's: `run_command('model', 'openai/gpt-5')` validates before it assigns. A bare name or an unknown provider gets a `command_output` listing the providers; a provider whose required fields are missing from the Runtime's `credentials:` is refused through `notify` at level `:error`, as is `--save`, which is not available yet. With no argument it reports the current model.
 
 ## Rebuilding after a code reload
 
-`rebuild(extensions:, settings:)` replaces everything the Runtime's extensions registered — tools, commands, prompt sections, hooks and declared settings — with what the given extension list registers, run against a fresh registrar. It is the primitive behind hot reloading: an embedder without the Loader calls it after its own code reload (a Rails `to_prepare` block, say) with the re-created extension objects and the settings it wants now. The Runtime watches no files and has no `/reload` of its own, since it knows no filesystem conventions.
+`rebuild(extensions:, settings:)` replaces everything the Runtime's extensions registered — tools, commands, prompt sections, hooks, skills sources and declared settings — with what the given extension list registers, run against a fresh registrar. It is the primitive behind hot reloading: an embedder without the Loader calls it after its own code reload (a Rails `to_prepare` block, say) with the re-created extension objects and the settings it wants now. The Runtime watches no files and has no `/reload` of its own, since it knows no filesystem conventions.
 
 ```ruby
 Rails.application.reloader.to_prepare do
