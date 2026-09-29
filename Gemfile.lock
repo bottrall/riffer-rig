@@ -14,7 +14,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    anthropic (1.71.0)
+    anthropic (1.73.0)
       base64 (~> 0.1)
       connection_pool (>= 2, < 4)
       standardwebhooks (~> 1.0)
@@ -81,7 +81,7 @@ GEM
     notiffany (0.1.3)
       nenv (~> 0.1)
       shellany (~> 0.0)
-    openai (0.92.0)
+    openai (0.95.0)
       connection_pool (>= 2.2.3)
       logger
     parallel (2.2.0)
