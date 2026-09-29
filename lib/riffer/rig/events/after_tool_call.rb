@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Events::AfterToolCall < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::AfterToolCall
+  include Riffer::Rig::Events::Value
+
   # @dynamic tool, args, result
   attr_reader :tool #: String
   attr_reader :args #: Hash[Symbol, untyped]
@@ -11,7 +13,6 @@ class Riffer::Rig::Events::AfterToolCall < Riffer::Rig::Events::Event
   # @rbs result: ::Riffer::Tools::Response
   # @rbs return: void
   def initialize(tool, args, result)
-    super()
     @tool = tool
     @args = args.dup.freeze
     @result = result

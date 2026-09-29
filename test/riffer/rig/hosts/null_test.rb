@@ -3,10 +3,6 @@
 require 'test_helper'
 
 describe Riffer::Rig::Hosts::Null do
-  it 'implements every host method' do
-    assert_implements Riffer::Rig::Hosts::Base, Riffer::Rig::Hosts::Null
-  end
-
   it 'declines every capability' do
     assert_empty Riffer::Rig::Hosts::Null.new.capabilities
   end

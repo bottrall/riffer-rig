@@ -5,7 +5,7 @@ require 'test_helper'
 describe Riffer::Rig::Hosts::Mirror do
   before do
     @calls = calls = []
-    @wrapped = Class.new(Riffer::Rig::Hosts::Base) do
+    @wrapped = Class.new do
       define_method(:capabilities) { Set[:ask, :notify].freeze }
       define_method(:ask) do |question = nil, options: nil, secret: false|
         calls << [:ask, question, options, secret]
@@ -22,10 +22,6 @@ describe Riffer::Rig::Hosts::Mirror do
       end
     end.new
     @host = Riffer::Rig::Hosts::Mirror.new(@wrapped)
-  end
-
-  it 'implements every host method' do
-    assert_implements Riffer::Rig::Hosts::Base, Riffer::Rig::Hosts::Mirror
   end
 
   it 'reports the wrapped host capabilities' do

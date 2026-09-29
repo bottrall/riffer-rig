@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Hosts::Null < Riffer::Rig::Hosts::Base
+class Riffer::Rig::Hosts::Null
   # @rbs return: Set[Symbol]
   def capabilities
     Set.new.freeze

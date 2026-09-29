@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/events/before_request.rb with RBS::Inline
 
-class Riffer::Rig::Events::BeforeRequest < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::BeforeRequest
+  include Riffer::Rig::Events::Value
+
   # @dynamic messages
   attr_reader messages: Array[::Riffer::Messages::Base]
 

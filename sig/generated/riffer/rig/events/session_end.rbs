@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/events/session_end.rb with RBS::Inline
 
-class Riffer::Rig::Events::SessionEnd < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::SessionEnd
+  include Riffer::Rig::Events::Value
+
   # @dynamic reason
   attr_reader reason: Symbol
 

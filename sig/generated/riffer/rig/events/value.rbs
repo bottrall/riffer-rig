@@ -1,0 +1,15 @@
+# Generated from lib/riffer/rig/events/value.rb with RBS::Inline
+
+# @rbs module-self Riffer::Rig::Events::_Event
+module Riffer::Rig::Events::Value : Riffer::Rig::Events::_Event
+  # @rbs other: untyped
+  # @rbs return: bool
+  def ==: (untyped other) -> bool
+
+  # @rbs return: Integer
+  def hash: () -> Integer
+
+  # @rbs other: untyped
+  # @rbs return: bool
+  def eql?: (untyped other) -> bool
+end

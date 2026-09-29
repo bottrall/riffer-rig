@@ -1,16 +1,16 @@
 # Generated from lib/riffer/rig/hosts/mirror.rb with RBS::Inline
 
-class Riffer::Rig::Hosts::Mirror < Riffer::Rig::Hosts::Base
-  @host: Riffer::Rig::Hosts::Base
+class Riffer::Rig::Hosts::Mirror
+  @host: Riffer::Rig::Hosts::_Host
 
-  @queue: Array[Riffer::Rig::Events::Event]
+  @queue: Array[Riffer::Rig::Events::_Event]
 
   # @dynamic capabilities
   attr_reader capabilities: Set[Symbol]
 
-  # @rbs host: Riffer::Rig::Hosts::Base
+  # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs return: void
-  def initialize: (Riffer::Rig::Hosts::Base host) -> void
+  def initialize: (Riffer::Rig::Hosts::_Host host) -> void
 
   # @rbs question: String?
   # @rbs options: Array[String]?
@@ -32,10 +32,10 @@ class Riffer::Rig::Hosts::Mirror < Riffer::Rig::Hosts::Base
   # @rbs return: void
   def progress: (?String? label) ?{ () -> void } -> void
 
-  # @rbs event: Riffer::Rig::Events::Event
+  # @rbs event: Riffer::Rig::Events::_Event
   # @rbs return: void
-  def queue: (Riffer::Rig::Events::Event event) -> void
+  def queue: (Riffer::Rig::Events::_Event event) -> void
 
-  # @rbs return: Array[Riffer::Rig::Events::Event]
-  def drain: () -> Array[Riffer::Rig::Events::Event]
+  # @rbs return: Array[Riffer::Rig::Events::_Event]
+  def drain: () -> Array[Riffer::Rig::Events::_Event]
 end

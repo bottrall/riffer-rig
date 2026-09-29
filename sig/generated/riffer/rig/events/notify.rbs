@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/events/notify.rb with RBS::Inline
 
-class Riffer::Rig::Events::Notify < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::Notify
+  include Riffer::Rig::Events::Value
+
   # @dynamic message, level
   attr_reader message: String?
 

@@ -65,7 +65,7 @@ class Riffer::Rig::Runtime
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs tools: Array[String]?
   # @rbs settings: Hash[Symbol, untyped]
-  # @rbs host: Riffer::Rig::Hosts::Base
+  # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs cwd: String?
   # @rbs name: String
   # @rbs instructions: String?
@@ -120,8 +120,8 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs text: String
-  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
-  # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response])
+  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
+  # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
   def prompt(text, &block)
     claim
     begin
@@ -154,11 +154,11 @@ class Riffer::Rig::Runtime
 
   # @rbs name: String
   # @rbs args: String
-  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: nil
   def run_command(name, args = '', &block)
     claim
-    emit = block || ->(_event) {} #: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+    emit = block || ->(_event) {} #: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
     begin
       execute(name, args, emit)
     ensure
@@ -328,7 +328,7 @@ class Riffer::Rig::Runtime
   # A session that has not started yet opens with session_start(:new) on its
   # first turn instead.
   # @rbs name: Symbol
-  # @rbs event: Riffer::Rig::Events::Event
+  # @rbs event: Riffer::Rig::Events::_Event
   # @rbs return: void
   def lifecycle(name, event)
     return if @session_start_pending
@@ -365,7 +365,7 @@ class Riffer::Rig::Runtime
 
   # @rbs name: String
   # @rbs args: String
-  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: void
   def execute(name, args, emit)
     command = @commands.fetch(name, nil)
@@ -380,7 +380,7 @@ class Riffer::Rig::Runtime
 
   # @rbs command: Riffer::Rig::Command
   # @rbs args: String
-  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: Riffer::Rig::Command::Context
   def command_context(command, args, emit)
     settings = @settings[command.extension.to_sym] || {} #: Hash[Symbol, untyped]
@@ -396,7 +396,7 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs text: String
-  # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
+  # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
   def turn(text)
     Enumerator.new do |yielder|
       if @session_start_pending
@@ -591,7 +591,7 @@ class Riffer::Rig::Runtime
     settings.merge(namespaces)
   end
 
-  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
   def merge_hooks(registrars)
     Riffer::Rig::Registrar::EVENTS.to_h do |event|
       [event, registrars.flat_map { |registrar| registrar.hooks.fetch(event) }]

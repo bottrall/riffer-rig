@@ -1,15 +1,6 @@
 # frozen_string_literal: true
 
 module Riffer::Rig::Mcp
-  # @rbs!
-  #   type declaration = { url: String, headers: Hash[String, String] }
-  #   type server = { declaration: declaration, registration: Riffer::Mcp::Registration }
-  #
-  #   interface _Registry
-  #     def register: (Hash[Symbol, untyped]) -> Riffer::Mcp::Registration
-  #     def unregister: (String) -> void
-  #   end
-
   extend self
 
   # @rbs home: Hash[Symbol, untyped]

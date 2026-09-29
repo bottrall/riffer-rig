@@ -1,3 +1,6 @@
+require:
+  - ./rubocop/cop/rig/no_inline_rbs_declarations
+
 plugins:
   - rubocop-minitest
   - rubocop-performance
@@ -49,14 +52,22 @@ Minitest/MultipleAssertions:
 
 Naming/PredicateMethod:
   Exclude:
-    # Hosts::Base#confirm is a blocking prompt named by the host contract, not
-    # a predicate.
+    # Hosts::_Host#confirm is a blocking prompt named by the host contract,
+    # not a predicate.
     - "lib/riffer/rig/hosts/*.rb"
+
+Rig/NoInlineRbsDeclarations:
+  Enabled: true
+  Include:
+    - "lib/**/*.rb"
 
 Style/ClassAndModuleChildren:
   EnforcedStyle: compact
   Exclude:
     - "lib/riffer/rig/version.rb"
+    # The cop's file defines the `Rig` badge namespace itself, which the
+    # compact form can't open.
+    - "rubocop/**/*"
 
 Style/Documentation:
   Enabled: false

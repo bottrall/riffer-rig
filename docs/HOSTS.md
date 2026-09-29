@@ -1,6 +1,6 @@
 # Hosts
 
-A host receives questions and out-of-band messages from a `Riffer::Rig::Runtime`. `Riffer::Rig::Hosts::Base` is the contract: a host is a subclass that implements every method below.
+A host receives questions and out-of-band messages from a `Riffer::Rig::Runtime`. The contract is the RBS interface `Riffer::Rig::Hosts::_Host`: a host is any object that implements every method below.
 
 | Method                             | Purpose                                                     |
 | ---------------------------------- | ----------------------------------------------------------- |
@@ -10,10 +10,10 @@ A host receives questions and out-of-band messages from a `Riffer::Rig::Runtime`
 | `progress(label) { }`              | wraps slow work                                             |
 | `capabilities`                     | the `Set` of methods the host truly supports                |
 
-`Hosts::Base` is abstract: each of its methods raises `NotImplementedError`, so a host implements all five, including the ones it declines. `capabilities` is checked before asking, so a host that declines a capability is never asked and the caller takes the declined path.
+A host implements all five, including the ones it declines. `capabilities` is checked before asking, so a host that declines a capability is never asked and the caller takes the declined path.
 
 ```ruby
-class MyHost < Riffer::Rig::Hosts::Base
+class MyHost
   def capabilities = Set[:notify].freeze
   def ask(question = nil, options: nil, secret: false) = nil
   def confirm(question = nil) = false

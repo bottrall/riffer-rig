@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/events/session_start.rb with RBS::Inline
 
-class Riffer::Rig::Events::SessionStart < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::SessionStart
+  include Riffer::Rig::Events::Value
+
   # @dynamic id, reason
   attr_reader id: String
 

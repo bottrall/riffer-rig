@@ -2,21 +2,21 @@
 
 class Riffer::Rig::Command::Context
   # @rbs @command: String
-  # @rbs @emit: ^(Riffer::Rig::Events::Event) -> void
+  # @rbs @emit: ^(Riffer::Rig::Events::_Event) -> void
   # @rbs @turn: ^(String) -> void
 
   # @dynamic args, runtime, host, settings
   attr_reader :args #: String
   attr_reader :runtime #: Riffer::Rig::Runtime
-  attr_reader :host #: Riffer::Rig::Hosts::Base
+  attr_reader :host #: Riffer::Rig::Hosts::_Host
   attr_reader :settings #: Hash[Symbol, untyped]
 
   # @rbs command: String
   # @rbs args: String
   # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs host: Riffer::Rig::Hosts::Base
+  # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs settings: Hash[Symbol, untyped]
-  # @rbs emit: ^(Riffer::Rig::Events::Event) -> void
+  # @rbs emit: ^(Riffer::Rig::Events::_Event) -> void
   # @rbs turn: ^(String) -> void
   # @rbs return: void
   def initialize(command, args, runtime:, host:, settings:, emit:, turn:)
@@ -36,7 +36,7 @@ class Riffer::Rig::Command::Context
     emit(Riffer::Rig::Events::CommandOutput.new(@command, text))
   end
 
-  # @rbs event: Riffer::Rig::Events::Event
+  # @rbs event: Riffer::Rig::Events::_Event
   # @rbs return: nil
   def emit(event)
     @emit.call(event)

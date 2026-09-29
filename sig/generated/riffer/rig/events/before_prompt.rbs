@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/events/before_prompt.rb with RBS::Inline
 
-class Riffer::Rig::Events::BeforePrompt < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::BeforePrompt
+  include Riffer::Rig::Events::Value
+
   # @dynamic text
   attr_reader text: String
 

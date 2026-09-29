@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Events::BeforePrompt < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::BeforePrompt
+  include Riffer::Rig::Events::Value
+
   # @dynamic text
   attr_reader :text #: String
 
   # @rbs text: String
   # @rbs return: void
   def initialize(text)
-    super()
     @text = text
     freeze
   end

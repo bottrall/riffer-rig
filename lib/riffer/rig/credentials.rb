@@ -12,7 +12,7 @@ module Riffer::Rig::Credentials
   ENTRY_TYPE = 'api_key'
 
   # @rbs identifier: String | Symbol
-  # @rbs host: Riffer::Rig::Hosts::Base
+  # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs setup: Riffer::Rig::ProviderSetup
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
@@ -106,7 +106,7 @@ module Riffer::Rig::Credentials
 
   # @rbs fields: Array[Riffer::Rig::ProviderSetup::Field]
   # @rbs identifier: String | Symbol
-  # @rbs host: Riffer::Rig::Hosts::Base
+  # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs return: Hash[Symbol, String]
   def ask_for(fields, identifier, host)
     fields.to_h do |field|
