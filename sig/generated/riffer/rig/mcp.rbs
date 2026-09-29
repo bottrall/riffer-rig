@@ -1,0 +1,18 @@
+# Generated from lib/riffer/rig/mcp.rb with RBS::Inline
+
+module Riffer::Rig::Mcp
+  type declaration = { url: String, headers: Hash[String, String] }
+
+  type server = { declaration: declaration, registration: Riffer::Mcp::Registration }
+
+  interface _Registry
+    def register: (Hash[Symbol, untyped]) -> Riffer::Mcp::Registration
+
+    def unregister: (String) -> void
+  end
+
+  # @rbs home: Hash[Symbol, untyped]
+  # @rbs project: Hash[Symbol, untyped]
+  # @rbs return: Hash[Symbol, untyped]
+  def merge: (Hash[Symbol, untyped] home, Hash[Symbol, untyped] project) -> Hash[Symbol, untyped]
+end

@@ -3,7 +3,7 @@
 class Riffer::Rig::Registrar
   class NameCollisionError < StandardError; end
 
-  CORE_SETTINGS_KEYS = %w[model reasoning models reload extensions sessions providers mcp tools].freeze #: Array[String]
+  CORE_SETTINGS_KEYS = %w[model reasoning models reload extensions sessions providers tools].freeze #: Array[String]
 
   EVENTS = %i[
     session_start session_end
@@ -16,21 +16,26 @@ class Riffer::Rig::Registrar
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
   # @rbs @skill_sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
-  # @rbs @settings: Hash[Symbol, untyped]
+  # @rbs @declared_settings: Hash[Symbol, untyped]
+  # @rbs @given_settings: Hash[Symbol, untyped]
+  # @rbs @mcp_servers: Hash[String, Riffer::Rig::Mcp::declaration]
   # @rbs @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
   # @dynamic extension
   attr_reader :extension #: String
 
   # @rbs extension: String
+  # @rbs settings: Hash[Symbol, untyped]
   # @rbs return: void
-  def initialize(extension)
+  def initialize(extension, settings = {})
     @extension = extension
     @tools = {}
     @prompts = {}
     @commands = {}
     @skill_sources = []
-    @settings = {}
+    @declared_settings = {}
+    @given_settings = settings
+    @mcp_servers = {}
     @hooks = EVENTS.to_h { |event| [event, []] }
   end
 
@@ -72,7 +77,15 @@ class Riffer::Rig::Registrar
   # @rbs default: untyped
   # @rbs return: void
   def setting(key, default:)
-    @settings[key] = default
+    @declared_settings[key] = default
+  end
+
+  # @rbs name: String
+  # @rbs url: String
+  # @rbs headers: Hash[String, String]
+  # @rbs return: void
+  def mcp(name, url:, headers: {})
+    @mcp_servers[name] = { url: url, headers: headers }
   end
 
   # @rbs event: Symbol
@@ -107,7 +120,17 @@ class Riffer::Rig::Registrar
 
   # @rbs return: Hash[Symbol, untyped]
   def settings
-    @settings.dup
+    @declared_settings.merge(@given_settings)
+  end
+
+  # @rbs return: Hash[Symbol, untyped]
+  def declared_settings
+    @declared_settings.dup
+  end
+
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::declaration]
+  def mcp_servers
+    @mcp_servers.dup
   end
 
   # @rbs return: Array[String]
@@ -115,7 +138,8 @@ class Riffer::Rig::Registrar
     [
       *@tools.keys.map { |identifier| "tool #{identifier}" },
       *@prompts.keys.map { |name| "prompt section #{name}" },
-      *@commands.keys.map { |name| "command #{name}" }
+      *@commands.keys.map { |name| "command #{name}" },
+      *@mcp_servers.keys.map { |name| "MCP server #{name}" }
     ]
   end
 

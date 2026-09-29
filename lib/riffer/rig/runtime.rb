@@ -49,6 +49,8 @@ class Riffer::Rig::Runtime
   # @rbs @errors: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
   # @rbs @hooks: Riffer::Rig::Runtime::Hooks
   # @rbs @tool_allowlist: Array[String]?
+  # @rbs @mcp_registry: Riffer::Rig::Mcp::_Registry
+  # @rbs @mcp_servers: Hash[String, Riffer::Rig::Mcp::server]
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader :agent #: Riffer::Agent
@@ -70,6 +72,7 @@ class Riffer::Rig::Runtime
   # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs pricing: Hash[String, Riffer::Rig::Settings::Pricing]
   # @rbs riffer_config: Riffer::Config
+  # @rbs mcp_registry: Riffer::Rig::Mcp::_Registry
   # @rbs max_steps: Integer?
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
@@ -85,6 +88,7 @@ class Riffer::Rig::Runtime
     credentials: {},
     pricing: {},
     riffer_config: Riffer.config,
+    mcp_registry: Riffer::Mcp,
     max_steps: DEFAULT_MAX_STEPS,
     snapshot: nil
   )
@@ -104,10 +108,14 @@ class Riffer::Rig::Runtime
     @errors = []
     @tool_allowlist = tools
     @base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
-    registrars = build_registrars(extensions) { |extension, error| record_error(extension, error) }
+    @mcp_registry = mcp_registry
+    @mcp_servers = {}
+    registrars = build_registrars(extensions, settings) { |extension, error| record_error(extension, error) }
+    mcp_servers = register_mcp_servers(registrars)
     hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
     config = agent_config(registrars, hooks, max_steps)
-    install(registrars, settings, hooks, snapshot ? restore(snapshot, model, config) : build_agent(model, config))
+    agent = snapshot ? restore(snapshot, model, config) : build_agent(model, config)
+    install(registrars, mcp_servers, settings, hooks, agent)
     @agent.session.on_message { |message| observe_message(message) }
   end
 
@@ -185,12 +193,15 @@ class Riffer::Rig::Runtime
   def rebuild(extensions:, settings:)
     claim
     begin
-      registrars = build_registrars(extensions) { |_extension, error| raise error }
+      registrars = build_registrars(extensions, settings) { |_extension, error| raise error }
+      mcp_servers = register_mcp_servers(registrars)
       hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
       agent = successor(model, agent_config(registrars, hooks, @agent.config.max_steps))
       lifecycle(:session_end, Riffer::Rig::Events::SessionEnd.new(:reload))
       @errors = []
-      install(registrars, settings, hooks, agent)
+      dropped = @mcp_servers.except(*mcp_servers.keys)
+      install(registrars, mcp_servers, settings, hooks, agent)
+      unregister_mcp_servers(dropped)
       lifecycle(:session_start, Riffer::Rig::Events::SessionStart.new(@id, :reload))
     ensure
       @busy = false
@@ -228,6 +239,7 @@ class Riffer::Rig::Runtime
     # TODO: emit Riffer::Rig::Events::SessionEnd on the stream once the rebuild
     # ticket settles the stream's session_end reasons.
     @closed = true
+    unregister_mcp_servers(@mcp_servers)
     @hooks.observe(:session_end, Riffer::Rig::Events::SessionEnd.new(:close)) unless @session_start_pending
   end
 
@@ -273,6 +285,9 @@ class Riffer::Rig::Runtime
       skills_config: skills_config(registrars.flat_map(&:skill_sources))
     )
     config.add_guardrail(:before, klass: Riffer::Rig::Runtime::RequestGuardrail, options: { hooks: hooks })
+    # Upstream candidate: riffer resolves MCP tools inside the agent, after
+    # tools_config, so the tools: allowlist never sees them.
+    config.add_mcp(mcp_tag, progressive: false)
     config
   end
 
@@ -287,13 +302,15 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs mcp_servers: Hash[String, Riffer::Rig::Mcp::server]
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs agent: Riffer::Agent
   # @rbs return: void
-  def install(registrars, settings, hooks, agent)
+  def install(registrars, mcp_servers, settings, hooks, agent)
     overrides(registrars).each { |message| @host.notify(message, level: :info) }
-    @declared_settings = registrars.to_h { |registrar| [registrar.extension, registrar.settings] }
+    @mcp_servers = mcp_servers
+    @declared_settings = registrars.to_h { |registrar| [registrar.extension, registrar.declared_settings] }
                                    .reject { |_extension, declared| declared.empty? }
     @settings = with_declared_defaults(settings)
     @prompts = registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h
@@ -516,11 +533,12 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs extensions: Array[Riffer::Rig::Extension]
+  # @rbs settings: Hash[Symbol, untyped]
   # @rbs &: (Riffer::Rig::Extension, StandardError) -> void
   # @rbs return: Array[Riffer::Rig::Registrar]
-  def build_registrars(extensions)
+  def build_registrars(extensions, settings)
     extensions.filter_map do |extension|
-      registrar = Riffer::Rig::Registrar.new(extension.name)
+      registrar = Riffer::Rig::Registrar.new(extension.name, settings[extension.name.to_sym] || {})
       error = load_extension(extension, registrar)
       next registrar unless error
 
@@ -578,6 +596,46 @@ class Riffer::Rig::Runtime
     Riffer::Rig::Registrar::EVENTS.to_h do |event|
       [event, registrars.flat_map { |registrar| registrar.hooks.fetch(event) }]
     end
+  end
+
+  # Upstream candidate: riffer's MCP registry is process-wide and keyed by
+  # server name alone, so each Runtime tags its registrations, and two
+  # Runtimes declaring the same name replace each other's.
+  # @rbs return: Symbol
+  def mcp_tag
+    :"riffer_rig_#{@id}"
+  end
+
+  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::server]
+  def register_mcp_servers(registrars)
+    declarations = registrars.flat_map { |registrar| registrar.mcp_servers.to_a }.to_h
+    declarations.filter_map do |name, declaration|
+      live = @mcp_servers[name]
+      server = live && live[:declaration] == declaration ? live : register_mcp_server(name, declaration)
+      [name, server] if server
+    end.to_h
+  end
+
+  # @rbs name: String
+  # @rbs declaration: Riffer::Rig::Mcp::declaration
+  # @rbs return: Riffer::Rig::Mcp::server?
+  def register_mcp_server(name, declaration)
+    registration = @mcp_registry.register(
+      name: name, endpoint: declaration[:url], tags: [mcp_tag], discovery_headers: declaration[:headers]
+    )
+    { declaration: declaration, registration: registration }
+  rescue StandardError => e
+    @host.notify("MCP server #{name} failed to register: #{e.message}", level: :error)
+    nil
+  end
+
+  # A retired registration was replaced under the same name, by another
+  # Runtime or a later declaration, and is no longer this Runtime's to remove.
+  # @rbs servers: Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs return: void
+  def unregister_mcp_servers(servers)
+    servers.each { |name, server| @mcp_registry.unregister(name) unless server[:registration].retired? }
   end
 
   # @rbs registered: Array[singleton(Riffer::Tool)]

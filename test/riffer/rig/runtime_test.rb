@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'test_helper'
+require_relative '../../fixtures/mcp_https_server'
 
 describe Riffer::Rig::Runtime do
   before do
@@ -976,18 +977,18 @@ describe Riffer::Rig::Runtime do
     end
 
     it 'rejects extensions named after core settings keys' do
-      colliding = %w[mcp model].map { |name| Riffer::Rig::Extension.new(name) { |rig| rig.tool Riffer::Rig::Tools::Read } }
+      colliding = %w[reasoning model].map { |name| Riffer::Rig::Extension.new(name) { |rig| rig.tool Riffer::Rig::Tools::Read } }
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: colliding)
 
       assert_empty runtime.agent.tools
     end
 
     it 'records a colliding extension on errors' do
-      mcp = Riffer::Rig::Extension.new('mcp') { |rig| rig.setting :servers, default: [] }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [mcp])
+      reasoning = Riffer::Rig::Extension.new('reasoning') { |rig| rig.setting :level, default: 'low' }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [reasoning])
 
       assert_equal(
-        [[mcp, Riffer::Rig::Registrar::NameCollisionError]],
+        [[reasoning, Riffer::Rig::Registrar::NameCollisionError]],
         runtime.errors.map { |entry| [entry[:extension], entry[:error].class] }
       )
     end
@@ -1813,6 +1814,156 @@ describe Riffer::Rig::Runtime do
       it 're-registers a provider idempotently' do
         assert_equal 'rig_rebuild/fast', rebuilt(@on_provider, extensions: [@provider]).model
       end
+    end
+  end
+
+  describe 'MCP servers' do
+    before do
+      @server = McpHttpsServer.new
+      @ssl_cert_file = ENV.fetch('SSL_CERT_FILE', nil)
+      ENV['SSL_CERT_FILE'] = @server.ca_file
+      @runtimes = []
+    end
+
+    after do
+      @runtimes.each(&:close)
+      ENV['SSL_CERT_FILE'] = @ssl_cert_file
+      @server.stop
+    end
+
+    def serving(name = 'web', url: @server.url, headers: {})
+      Riffer::Rig::Extension.new("serves_#{name}") { |rig| rig.mcp(name, url: url, headers: headers) }
+    end
+
+    def runtime(extensions, **)
+      Riffer::Rig::Runtime.new('mock/test', extensions: extensions, **).tap { |built| @runtimes << built }
+    end
+
+    def tool_names(runtime)
+      runtime.agent.tools.map(&:name)
+    end
+
+    def notifies(runtime)
+      runtime.agent.provider.stub_response('Done.')
+      runtime.prompt('go').grep(Riffer::Rig::Events::Notify)
+    end
+
+    def registration(name = 'web')
+      Riffer::Mcp.registrations[name]
+    end
+
+    it 'adds each server tool under riffer MCP naming' do
+      assert_equal %w[web__echo web__token], tool_names(runtime([serving]))
+    end
+
+    it 'adds the server tools after the extension tools' do
+      assert_equal %w[read web__echo web__token], tool_names(runtime([@extension, serving], tools: %w[read]))
+    end
+
+    it 'does not filter the server tools by the tools: allowlist' do
+      assert_equal %w[web__echo web__token], tool_names(runtime([serving], tools: %w[web__echo]))
+    end
+
+    it 'runs a server tool the model calls' do
+      built = runtime([serving])
+      built.agent.provider.stub_response('', tool_calls: [{ name: 'web__echo', arguments: '{"text":"hi"}' }])
+      built.agent.provider.stub_response('Echoed.')
+
+      assert_equal 'hi', built.ask('echo hi').messages.grep(Riffer::Messages::Tool).first.content
+    end
+
+    it 'sends the declared headers' do
+      built = runtime([serving(headers: { 'X-Token' => 'secret' })])
+
+      assert_equal 'secret',
+                   built.agent.tools.find { |klass|
+                     klass.name == 'web__token'
+                   }.new.call(context: nil).content
+    end
+
+    it 'declares the servers in the mcp settings through the bundled extension' do
+      settings = { mcp: { servers: { web: { url: @server.url } } } }
+
+      assert_equal %w[web__echo web__token], tool_names(runtime([Riffer::Rig.bundled(:mcp)], settings: settings))
+    end
+
+    it 'tags each registration with its Runtime' do
+      built = runtime([serving])
+
+      assert_equal [:"riffer_rig_#{built.id}"], registration.manifest.tags
+    end
+
+    it "keeps one Runtime's servers from another Runtime's agent" do
+      runtime([serving])
+
+      assert_equal %w[alt__echo alt__token], tool_names(runtime([serving('alt', url: @server.url('alt'))]))
+    end
+
+    it 'reports a server with a non-HTTPS url through notify' do
+      notice = 'MCP server plain failed to register: MCP manifest endpoint must be a valid HTTPS URL'
+
+      assert_equal [Riffer::Rig::Events::Notify.new(notice, :error)],
+                   notifies(runtime([serving('plain', url: 'http://127.0.0.1/mcp')]))
+    end
+
+    it 'reports a server that cannot be reached through notify' do
+      notice = 'MCP server gone failed to register: Internal error handling tools/list request'
+
+      assert_equal [Riffer::Rig::Events::Notify.new(notice, :error)],
+                   notifies(runtime([serving('gone', url: 'https://127.0.0.1:1/mcp')]))
+    end
+
+    it 'reports a replaced server through notify at info level' do
+      later = Riffer::Rig::Extension.new('later') { |rig| rig.mcp('web', url: @server.url) }
+      notice = 'Extension later replaces MCP server web from serves_web'
+
+      assert_equal [Riffer::Rig::Events::Notify.new(notice, :info)], notifies(runtime([serving, later]))
+    end
+
+    it 'keeps the registration across a rebuild with the same declaration' do
+      built = runtime([serving])
+      before = registration
+      built.rebuild(extensions: [serving], settings: {})
+
+      assert_same before, registration
+    end
+
+    it 're-registers a server whose url changed on rebuild' do
+      built = runtime([serving])
+      before = registration
+      built.rebuild(extensions: [serving(url: @server.url('alt'))], settings: {})
+
+      refute_same before, registration
+    end
+
+    it 're-registers a server whose headers changed on rebuild' do
+      built = runtime([serving])
+      before = registration
+      built.rebuild(extensions: [serving(headers: { 'X-Token' => 'new' })], settings: {})
+
+      refute_same before, registration
+    end
+
+    it 'unregisters a server the rebuilt list no longer declares' do
+      built = runtime([serving])
+      built.rebuild(extensions: [], settings: {})
+
+      assert_nil registration
+    end
+
+    it 'unregisters every server on close' do
+      built = runtime([serving, serving('alt', url: @server.url('alt'))])
+      built.close
+
+      assert_empty Riffer::Mcp.registrations.keys & %w[web alt]
+    end
+
+    it 'leaves a server another Runtime has since registered under the same name' do
+      first = runtime([serving])
+      second = runtime([serving])
+      first.close
+
+      assert_equal [:"riffer_rig_#{second.id}"], registration.manifest.tags
     end
   end
 end

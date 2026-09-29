@@ -1,0 +1,5 @@
+# Generated from lib/riffer/rig/bundled/mcp.rb with RBS::Inline
+
+module Riffer::Rig::Bundled
+  Mcp: Riffer::Rig::Extension
+end

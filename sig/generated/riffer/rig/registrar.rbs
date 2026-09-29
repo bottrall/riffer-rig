@@ -10,7 +10,11 @@ class Riffer::Rig::Registrar
 
   @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
-  @settings: Hash[Symbol, untyped]
+  @mcp_servers: Hash[String, Riffer::Rig::Mcp::declaration]
+
+  @given_settings: Hash[Symbol, untyped]
+
+  @declared_settings: Hash[Symbol, untyped]
 
   @skill_sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
 
@@ -24,8 +28,9 @@ class Riffer::Rig::Registrar
   attr_reader extension: String
 
   # @rbs extension: String
+  # @rbs settings: Hash[Symbol, untyped]
   # @rbs return: void
-  def initialize: (String extension) -> void
+  def initialize: (String extension, ?Hash[Symbol, untyped] settings) -> void
 
   # @rbs return: NameCollisionError?
   def collision: () -> NameCollisionError?
@@ -54,6 +59,12 @@ class Riffer::Rig::Registrar
   # @rbs return: void
   def setting: (Symbol key, default: untyped) -> void
 
+  # @rbs name: String
+  # @rbs url: String
+  # @rbs headers: Hash[String, String]
+  # @rbs return: void
+  def mcp: (String name, url: String, ?headers: Hash[String, String]) -> void
+
   # @rbs event: Symbol
   # @rbs &block: (Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped
   # @rbs return: void
@@ -73,6 +84,12 @@ class Riffer::Rig::Registrar
 
   # @rbs return: Hash[Symbol, untyped]
   def settings: () -> Hash[Symbol, untyped]
+
+  # @rbs return: Hash[Symbol, untyped]
+  def declared_settings: () -> Hash[Symbol, untyped]
+
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::declaration]
+  def mcp_servers: () -> Hash[String, Riffer::Rig::Mcp::declaration]
 
   # @rbs return: Array[String]
   def registrations: () -> Array[String]
