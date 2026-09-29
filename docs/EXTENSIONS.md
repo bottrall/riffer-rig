@@ -135,7 +135,7 @@ Declares a key under the extension's namespace of the settings: `"git": { "depth
 - A later declaration of the same key replaces the earlier default.
 - While the block runs, `rig.settings` is the same namespace — the Runtime's `settings:` values over the defaults declared so far — so an extension can register according to its settings.
 
-Core settings keys stay top level, so an extension cannot take one as its name: an extension named `model`, `reasoning`, `models`, `reload`, `extensions`, `sessions`, `providers`, `mcp` or `tools` is rejected with a `Riffer::Rig::Registrar::NameCollisionError` before its block runs, and reported as a load error (see [Error isolation](#error-isolation)). The bundled `mcp` extension is the one exception: `mcp` is its namespace.
+Core settings keys stay top level, so an extension cannot take one as its name: an extension named `model`, `reasoning`, `models`, `reload`, `extensions`, `sessions`, `providers` or `tools` is rejected with a `Riffer::Rig::Registrar::NameCollisionError` before its block runs, and reported as a load error (see [Error isolation](#error-isolation)).
 
 ## Error isolation
 

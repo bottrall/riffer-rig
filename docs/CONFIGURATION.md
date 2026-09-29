@@ -44,7 +44,7 @@ A model without an entry has no cost: it is shown as missing, never as zero. An 
 
 ## `mcp`
 
-`mcp.servers` declares the HTTPS MCP servers whose tools the model gets, keyed by server name — a `url` with optional `headers`:
+`mcp` is the bundled `mcp` extension's namespace. `mcp.servers` declares the HTTPS MCP servers whose tools the model gets, keyed by server name — a `url` with optional `headers`:
 
 ```json
 {
@@ -61,7 +61,7 @@ Keep a server with a secret header in `~/.riffer/settings.json` rather than a co
 
 ## Extension namespaces
 
-Core keys — `model`, `reasoning`, `models`, `reload`, `extensions`, `sessions`, `providers`, `mcp` and `tools` — stay at the top level. Every other top-level key is an extension's namespace, named after the extension, holding the keys that extension declares with [`rig.setting`](EXTENSIONS.md#the-rigsetting-seam):
+Core keys — `model`, `reasoning`, `models`, `reload`, `extensions`, `sessions`, `providers` and `tools` — stay at the top level. Every other top-level key is an extension's namespace, named after the extension, holding the keys that extension declares with [`rig.setting`](EXTENSIONS.md#the-rigsetting-seam); `mcp` is one of these, the bundled `mcp` extension's own namespace:
 
 ```json
 {

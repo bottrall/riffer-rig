@@ -977,18 +977,18 @@ describe Riffer::Rig::Runtime do
     end
 
     it 'rejects extensions named after core settings keys' do
-      colliding = %w[mcp model].map { |name| Riffer::Rig::Extension.new(name) { |rig| rig.tool Riffer::Rig::Tools::Read } }
+      colliding = %w[reasoning model].map { |name| Riffer::Rig::Extension.new(name) { |rig| rig.tool Riffer::Rig::Tools::Read } }
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: colliding)
 
       assert_empty runtime.agent.tools
     end
 
     it 'records a colliding extension on errors' do
-      mcp = Riffer::Rig::Extension.new('mcp') { |rig| rig.setting :servers, default: [] }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [mcp])
+      reasoning = Riffer::Rig::Extension.new('reasoning') { |rig| rig.setting :level, default: 'low' }
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [reasoning])
 
       assert_equal(
-        [[mcp, Riffer::Rig::Registrar::NameCollisionError]],
+        [[reasoning, Riffer::Rig::Registrar::NameCollisionError]],
         runtime.errors.map { |entry| [entry[:extension], entry[:error].class] }
       )
     end
@@ -1885,10 +1885,6 @@ describe Riffer::Rig::Runtime do
       settings = { mcp: { servers: { web: { url: @server.url } } } }
 
       assert_equal %w[web__echo web__token], tool_names(runtime([Riffer::Rig.bundled(:mcp)], settings: settings))
-    end
-
-    it 'loads the bundled mcp extension despite its core-key name' do
-      assert_empty runtime([Riffer::Rig.bundled(:mcp)]).errors
     end
 
     it 'tags each registration with its Runtime' do

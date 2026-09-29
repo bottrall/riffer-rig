@@ -190,8 +190,8 @@ describe Riffer::Rig::Registrar do
   end
 
   it 'rejects an extension named after a core settings key' do
-    assert_equal 'extension name mcp collides with a core settings key',
-                 Riffer::Rig::Registrar.new('mcp').collision.message
+    assert_equal 'extension name model collides with a core settings key',
+                 Riffer::Rig::Registrar.new('model').collision.message
   end
 
   it 'collects hooks per event in registration order' do

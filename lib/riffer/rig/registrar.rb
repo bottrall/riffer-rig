@@ -3,7 +3,7 @@
 class Riffer::Rig::Registrar
   class NameCollisionError < StandardError; end
 
-  CORE_SETTINGS_KEYS = %w[model reasoning models reload extensions sessions providers mcp tools].freeze #: Array[String]
+  CORE_SETTINGS_KEYS = %w[model reasoning models reload extensions sessions providers tools].freeze #: Array[String]
 
   EVENTS = %i[
     session_start session_end

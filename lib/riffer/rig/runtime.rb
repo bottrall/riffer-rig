@@ -551,8 +551,7 @@ class Riffer::Rig::Runtime
   # @rbs registrar: Riffer::Rig::Registrar
   # @rbs return: StandardError?
   def load_extension(extension, registrar)
-    # The bundled mcp extension owns the core key it is named after.
-    rejection = extension.mismatch || (registrar.collision unless Riffer::Rig::Bundled::BY_NAME.value?(extension))
+    rejection = extension.mismatch || registrar.collision
     return rejection if rejection
 
     extension.run(registrar)

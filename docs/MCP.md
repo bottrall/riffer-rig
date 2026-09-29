@@ -4,7 +4,7 @@ A Runtime can hand the model the tools of [Model Context Protocol](https://model
 
 ## Declaring servers in settings
 
-The bundled `mcp` extension (`Riffer::Rig.bundled(:mcp)`) declares every server under the core settings key `mcp.servers`, keyed by the server's name:
+The bundled `mcp` extension (`Riffer::Rig.bundled(:mcp)`) declares every server under its own settings namespace, `mcp.servers`, keyed by the server's name:
 
 ```json
 {
@@ -32,7 +32,7 @@ Riffer::Rig::Mcp.merge(home_settings[:mcp] || {}, project_settings[:mcp] || {})
 
 The terminal does not use MCP servers yet; they reach the model in a Runtime built with the `mcp` extension.
 
-`mcp` is a core settings key, so a third-party extension cannot be named `mcp`. The bundled extension is the one exception: the key is its namespace. To run without it, leave it out of the Runtime's `extensions:`.
+`mcp` is an ordinary extension name, not a core settings key: `mcp.servers` is simply the bundled extension's own namespace, the same as any other extension's. To run without it, leave it out of the Runtime's `extensions:`.
 
 ## Declaring servers from an extension
 
