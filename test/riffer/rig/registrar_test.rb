@@ -129,20 +129,60 @@ describe Riffer::Rig::Registrar do
     assert_equal ['tool bash', 'prompt section branch', 'command log'], registrar.registrations
   end
 
+  it 'lists a declared MCP server among the registrations' do
+    registrar = Riffer::Rig::Registrar.new('docs')
+    registrar.mcp('docs', url: 'https://docs.example/mcp')
+
+    assert_equal ['MCP server docs'], registrar.registrations
+  end
+
   it 'collects declared settings with their defaults' do
     registrar = Riffer::Rig::Registrar.new('git')
     registrar.setting(:depth, default: 3)
     registrar.setting(:remote, default: 'origin')
 
-    assert_equal({ depth: 3, remote: 'origin' }, registrar.settings)
+    assert_equal({ depth: 3, remote: 'origin' }, registrar.declared_settings)
   end
 
-  it 'returns a fresh hash from settings' do
+  it 'returns a fresh hash from declared_settings' do
     registrar = Riffer::Rig::Registrar.new('git')
     registrar.setting(:depth, default: 3)
-    registrar.settings.clear
+    registrar.declared_settings.clear
 
-    assert_equal({ depth: 3 }, registrar.settings)
+    assert_equal({ depth: 3 }, registrar.declared_settings)
+  end
+
+  it 'reads the given settings namespace over the declared defaults' do
+    registrar = Riffer::Rig::Registrar.new('git', { depth: 10 })
+    registrar.setting(:depth, default: 3)
+    registrar.setting(:remote, default: 'origin')
+
+    assert_equal({ depth: 10, remote: 'origin' }, registrar.settings)
+  end
+
+  it 'collects MCP servers by name' do
+    registrar = Riffer::Rig::Registrar.new('docs')
+    registrar.mcp('docs', url: 'https://docs.example/mcp', headers: { 'Authorization' => 'Bearer t' })
+
+    assert_equal(
+      { 'docs' => { url: 'https://docs.example/mcp', headers: { 'Authorization' => 'Bearer t' } } },
+      registrar.mcp_servers
+    )
+  end
+
+  it 'gives an MCP server no headers by default' do
+    registrar = Riffer::Rig::Registrar.new('docs')
+    registrar.mcp('docs', url: 'https://docs.example/mcp')
+
+    assert_empty registrar.mcp_servers.fetch('docs')[:headers]
+  end
+
+  it 'lets a later declaration of an MCP server replace the earlier one' do
+    registrar = Riffer::Rig::Registrar.new('docs')
+    registrar.mcp('docs', url: 'https://docs.example/mcp')
+    registrar.mcp('docs', url: 'https://other.example/mcp')
+
+    assert_equal 'https://other.example/mcp', registrar.mcp_servers.fetch('docs')[:url]
   end
 
   it 'finds no collision for an extension name outside the core keys' do

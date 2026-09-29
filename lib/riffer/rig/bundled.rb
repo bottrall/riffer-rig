@@ -2,6 +2,6 @@
 
 module Riffer::Rig::Bundled
   BY_NAME = {
-    read: Read, write: Write, edit: Edit, bash: Bash, agents_md: AgentsMd, skills: Skills
+    read: Read, write: Write, edit: Edit, bash: Bash, agents_md: AgentsMd, skills: Skills, mcp: Mcp
   }.freeze #: Hash[Symbol, Riffer::Rig::Extension]
 end

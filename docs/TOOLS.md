@@ -25,9 +25,11 @@ A tool's name everywhere — in `tools:` on `Runtime.new`, and on `--tools` once
 Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', extensions: Riffer::Rig.bundled, tools: %w[read bash])
 ```
 
+The allowlist covers the tools extensions register. Tools from [MCP servers](MCP.md) are added by riffer inside the agent and are not filtered by it.
+
 ## The bundled extensions
 
-`Riffer::Rig.bundled(:read)` returns the bundled extension of that name — the same `Riffer::Rig::Extension` type `Riffer::Rig.extension` returns — and `Riffer::Rig.bundled` with no argument returns all of them in load order: `read`, `write`, `edit`, `bash`, then `agents_md` ([Instructions](INSTRUCTIONS.md#agentsmd)) and `skills` ([Skills](SKILLS.md)). An unknown name raises `KeyError`. An embedder composes them with its own:
+`Riffer::Rig.bundled(:read)` returns the bundled extension of that name — the same `Riffer::Rig::Extension` type `Riffer::Rig.extension` returns — and `Riffer::Rig.bundled` with no argument returns all of them in load order: `read`, `write`, `edit`, `bash`, then `agents_md` ([Instructions](INSTRUCTIONS.md#agentsmd)), `skills` ([Skills](SKILLS.md)) and `mcp` ([MCP](MCP.md)). An unknown name raises `KeyError`. An embedder composes them with its own:
 
 ```ruby
 Riffer::Rig::Runtime.new(

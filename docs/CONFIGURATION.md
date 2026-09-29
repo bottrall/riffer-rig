@@ -42,6 +42,23 @@ Each entry becomes a `Riffer::Rig::Settings::Pricing` and reaches the Runtime th
 
 A model without an entry has no cost: it is shown as missing, never as zero. An entry that is not an object is ignored.
 
+## `mcp`
+
+`mcp.servers` declares the HTTPS MCP servers whose tools the model gets, keyed by server name — a `url` with optional `headers`:
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "docs": { "url": "https://docs.example.com/mcp" },
+      "tracker": { "url": "https://tracker.example.com/mcp", "headers": { "Authorization": "Bearer <token>" } }
+    }
+  }
+}
+```
+
+Keep a server with a secret header in `~/.riffer/settings.json` rather than a committed project file. [MCP](MCP.md) has the format, how a project server overrides a home one, and what happens on reload.
+
 ## Extension namespaces
 
 Core keys — `model`, `reasoning`, `models`, `reload`, `extensions`, `sessions`, `providers`, `mcp` and `tools` — stay at the top level. Every other top-level key is an extension's namespace, named after the extension, holding the keys that extension declares with [`rig.setting`](EXTENSIONS.md#the-rigsetting-seam):

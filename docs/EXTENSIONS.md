@@ -104,11 +104,19 @@ rig.skills { |ctx| Riffer::Skills::FilesystemBackend.new(File.join(ctx.cwd, 'doc
 
 Adds a source of [Agent Skills](SKILLS.md). The block receives the Runtime as `ctx`, as a prompt section's does, and returns a `Riffer::Skills::Backend`; it runs when the Runtime is built and again on every rebuild. Every source's skills join one catalog, the model's riffer skills catalog; when two sources have a skill of the same name, the earlier source wins. Each skill in the catalog gets a core [`skill:<name>` command](SKILLS.md#skillname). A Runtime with no source has no catalog.
 
+## The `rig.mcp` seam
+
+```ruby
+rig.mcp 'tracker', url: 'https://tracker.example.com/mcp', headers: { 'Authorization' => 'Bearer …' }
+```
+
+Declares an HTTPS MCP server for the Runtime: `rig.mcp(name, url:, headers: {})`. The Runtime registers the server with riffer's MCP client, and the agent gets its tools as `<server>__<tool>`; a later declaration of the same name replaces the earlier one. [MCP](MCP.md) covers naming, why the `tools:` allowlist does not apply, failures, what a rebuild keeps and the same-name limit across Runtimes.
+
 ## Bundled extensions and replacement
 
-The four tools ship as bundled extensions — `Riffer::Rig.bundled(:read)`, `:write`, `:edit`, `:bash` — and so do the `:agents_md` prompt section, `Riffer::Rig.bundled(:agents_md)`, and the skills directories, `Riffer::Rig.bundled(:skills)`, all built on the same seams as any other extension; `Riffer::Rig.bundled` returns them all in load order. [Tools](TOOLS.md) describes the tools [Instructions](INSTRUCTIONS.md#agentsmd) the AGENTS.md section and [Skills](SKILLS.md) the skills.
+The four tools ship as bundled extensions — `Riffer::Rig.bundled(:read)`, `:write`, `:edit`, `:bash` — and so do the `:agents_md` prompt section, `Riffer::Rig.bundled(:agents_md)`, the skills directories, `Riffer::Rig.bundled(:skills)`, and the MCP client, `Riffer::Rig.bundled(:mcp)`, all built on the same seams as any other extension; `Riffer::Rig.bundled` returns them all in load order. [Tools](TOOLS.md) describes the tools, [Instructions](INSTRUCTIONS.md#agentsmd) the AGENTS.md section, [Skills](SKILLS.md) the skills and [MCP](MCP.md) the MCP client.
 
-A later extension replaces anything an earlier one registered by registering under the same name: a tool with the same identifier, a command with the same name, a prompt section with the same name. Later wins, and the Runtime reports each replacement across extensions through the host's `notify` at level `:info`, as "Extension LATER replaces KIND NAME from EARLIER". Nothing is deregistered, so the original extension is still there to pass to another Runtime.
+A later extension replaces anything an earlier one registered by registering under the same name: a tool with the same identifier, a command with the same name, a prompt section with the same name, an MCP server with the same name. Later wins, and the Runtime reports each replacement across extensions through the host's `notify` at level `:info`, as "Extension LATER replaces KIND NAME from EARLIER". Nothing is deregistered, so the original extension is still there to pass to another Runtime.
 
 ## The `rig.setting` seam
 
@@ -125,8 +133,9 @@ Declares a key under the extension's namespace of the settings: `"git": { "depth
 - A command's `ctx.settings` is its own extension's namespace only; core keys and other extensions' namespaces are not in it. Keys present in the namespace but never declared are passed through unchanged.
 - `runtime.declared_settings` lists what each extension declared, extension name → key → default, so a host can render a table of them. Nothing else in core reads it.
 - A later declaration of the same key replaces the earlier default.
+- While the block runs, `rig.settings` is the same namespace — the Runtime's `settings:` values over the defaults declared so far — so an extension can register according to its settings.
 
-Core settings keys stay top level, so an extension cannot take one as its name: an extension named `model`, `reasoning`, `models`, `reload`, `extensions`, `sessions`, `providers`, `mcp` or `tools` is rejected with a `Riffer::Rig::Registrar::NameCollisionError` before its block runs, and reported as a load error (see [Error isolation](#error-isolation)).
+Core settings keys stay top level, so an extension cannot take one as its name: an extension named `model`, `reasoning`, `models`, `reload`, `extensions`, `sessions`, `providers`, `mcp` or `tools` is rejected with a `Riffer::Rig::Registrar::NameCollisionError` before its block runs, and reported as a load error (see [Error isolation](#error-isolation)). The bundled `mcp` extension is the one exception: `mcp` is its namespace.
 
 ## Error isolation
 
