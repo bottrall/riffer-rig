@@ -1,7 +1,0 @@
-# Generated from lib/riffer/rig/skill_directories.rb with RBS::Inline
-
-module Riffer::Rig::SkillDirectories
-  # @rbs cwd: String
-  # @rbs return: Array[String]
-  def for: (String cwd) -> Array[String]
-end

@@ -119,7 +119,7 @@ module Riffer::Rig::CLI
 
   # @rbs return: String
   def count_skills
-    backend = Riffer::Skills::FilesystemBackend.new(*Riffer::Rig::SkillDirectories.for(Dir.pwd))
+    backend = Riffer::Skills::FilesystemBackend.new(*Riffer::Rig::Skills.directories(Dir.pwd))
     count   = backend.list_skills.length
     count.zero? ? 'none' : count.to_s
   rescue StandardError

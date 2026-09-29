@@ -9,7 +9,7 @@ class Riffer::Rig::CodingAgent < Riffer::Agent
   uses_tools [Riffer::Rig::Tools::Read, Riffer::Rig::Tools::Write, Riffer::Rig::Tools::Edit, Riffer::Rig::Tools::Bash]
 
   skills do
-    backend(->(_ctx) { Riffer::Skills::FilesystemBackend.new(*Riffer::Rig::SkillDirectories.for(Dir.pwd)) })
+    backend(->(_ctx) { Riffer::Skills::FilesystemBackend.new(*Riffer::Rig::Skills.directories(Dir.pwd)) })
   end
 
   max_steps nil
