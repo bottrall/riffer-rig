@@ -1,0 +1,11 @@
+# Generated from lib/riffer/rig/directories.rb with RBS::Inline
+
+module Riffer::Rig::Directories
+  # @rbs dir: String
+  # @rbs return: Array[String]
+  def ancestors: (String dir) -> Array[String]
+
+  # @rbs cwd: String
+  # @rbs return: Array[String]
+  def up_to_repo_root: (String cwd) -> Array[String]
+end

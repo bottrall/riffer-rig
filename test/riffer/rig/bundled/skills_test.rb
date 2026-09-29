@@ -8,8 +8,8 @@ describe 'Riffer::Rig::Bundled::Skills' do
     @cwd = Dir.mktmpdir
     @original_home = Dir.home
     ENV['HOME'] = @home
-    write_skill(File.join(@cwd, '.skills'), 'a')
-    write_skill(File.join(@cwd, '.skills'), 'b')
+    write_skill(File.join(@cwd, '.agents', 'skills'), 'a')
+    write_skill(File.join(@cwd, '.agents', 'skills'), 'b')
   end
 
   after do
@@ -18,19 +18,33 @@ describe 'Riffer::Rig::Bundled::Skills' do
     FileUtils.remove_entry(@cwd)
   end
 
-  def write_skill(root, name)
+  def write_skill(root, name, description = "Skill #{name}.")
     FileUtils.mkdir_p(File.join(root, name))
     File.write(File.join(root, name, 'SKILL.md'), <<~MD)
       ---
       name: #{name}
-      description: Skill #{name}.
+      description: #{description}
       ---
       Follow skill #{name}.
     MD
   end
 
-  def runtime(extensions = [Riffer::Rig::Bundled::Skills])
-    Riffer::Rig::Runtime.new('mock/test', extensions: extensions, cwd: @cwd)
+  def runtime(extensions = [Riffer::Rig::Bundled::Skills], cwd: @cwd)
+    Riffer::Rig::Runtime.new('mock/test', extensions: extensions, cwd: cwd)
+  end
+
+  def skill_description(runtime, name)
+    runtime.commands.find { |command| command.name == "skill:#{name}" }.description
+  end
+
+  def in_repo
+    outer = Dir.mktmpdir
+    repo = File.join(outer, 'repo')
+    nested = File.join(repo, 'pkg', 'app')
+    FileUtils.mkdir_p([nested, File.join(repo, '.git')])
+    yield outer, repo, nested
+  ensure
+    FileUtils.remove_entry(outer)
   end
 
   def run_skill(runtime, name, args = '')
@@ -72,12 +86,50 @@ describe 'Riffer::Rig::Bundled::Skills' do
     assert_includes runtime.commands.map(&:name), 'skill:c'
   end
 
+  it 'lists a command for a skill in the repo root from a nested cwd' do
+    in_repo do |_outer, repo, nested|
+      write_skill(File.join(repo, '.agents', 'skills'), 'c')
+
+      assert_includes runtime(cwd: nested).commands.map(&:name), 'skill:c'
+    end
+  end
+
+  it 'prefers the directory closest to the cwd for a name' do
+    in_repo do |_outer, repo, nested|
+      write_skill(File.join(repo, '.agents', 'skills'), 'c', 'Root.')
+      write_skill(File.join(repo, 'pkg', '.agents', 'skills'), 'c', 'Package.')
+
+      assert_equal 'Package.', skill_description(runtime(cwd: nested), 'c')
+    end
+  end
+
+  it 'prefers a project skill over a home skill of the same name' do
+    write_skill(File.join(@home, '.riffer', 'skills'), 'a', 'Home.')
+
+    assert_equal 'Skill a.', skill_description(runtime, 'a')
+  end
+
+  it 'ignores skills above the repo root' do
+    in_repo do |outer, _repo, nested|
+      write_skill(File.join(outer, '.agents', 'skills'), 'c')
+
+      refute_includes runtime(cwd: nested).commands.map(&:name), 'skill:c'
+    end
+  end
+
+  it 'reads only the cwd outside a repo' do
+    sub = File.join(@cwd, 'sub')
+    FileUtils.mkdir_p(sub)
+
+    assert_equal %w[model], runtime(cwd: sub).commands.map(&:name)
+  end
+
   it 'describes a skill command with the skill description' do
-    assert_equal 'Skill a.', runtime.commands.find { |command| command.name == 'skill:a' }.description
+    assert_equal 'Skill a.', skill_description(runtime, 'a')
   end
 
   it 'lists no skill commands without skills' do
-    FileUtils.remove_entry(File.join(@cwd, '.skills'))
+    FileUtils.remove_entry(File.join(@cwd, '.agents', 'skills'))
 
     assert_equal %w[model], runtime.commands.map(&:name)
   end

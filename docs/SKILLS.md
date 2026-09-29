@@ -4,15 +4,17 @@ riffer-rig reads [Agent Skills](https://agentskills.io): a directory per skill h
 
 ## Directories
 
-The bundled `skills` extension (`Riffer::Rig.bundled(:skills)`) reads skills from two directories, whichever exist:
+The bundled `skills` extension (`Riffer::Rig.bundled(:skills)`) reads skills from these directories, whichever exist:
 
-1. `~/.riffer/skills/` — your skills for every project.
-2. `<cwd>/.skills/` — the project's skills, where `<cwd>` is the Runtime's `cwd:`.
+1. `.agents/skills/` in each directory from `<cwd>` up to the repository root — the project's skills, where `<cwd>` is the Runtime's `cwd:` and the repository root is the nearest directory at or above it holding a `.git` directory or file. Outside a Git repository, only `<cwd>/.agents/skills/`.
+2. `~/.riffer/skills/` — your skills for every project.
+
+`.agents/skills/` is the location other coding agents such as Codex read too, so a repository's skills work across tools.
 
 Each skill is a directory named after the skill, with a `SKILL.md` inside:
 
 ```
-.skills/
+.agents/skills/
   review/
     SKILL.md
 ```
@@ -25,7 +27,7 @@ description: Review a diff for bugs and style. Use when asked to review changes.
 Read the diff, then…
 ```
 
-The directory name must match `name`, which is lowercase letters, digits and single hyphens. A skill in `~/.riffer/skills/` wins over one of the same name in `<cwd>/.skills/`. Frontmatter with `disable-model-invocation: true` keeps a skill out of the model's catalog; you can still run it with its command.
+The directory name must match `name`, which is lowercase letters, digits and single hyphens. When two directories hold a skill of the same name, the one closest to `<cwd>` wins, and any project skill wins over one in `~/.riffer/skills/`. Frontmatter with `disable-model-invocation: true` keeps a skill out of the model's catalog; you can still run it with its command.
 
 The directories are scanned when the Runtime is built and again on every rebuild, so a skill added mid-session appears after the next [rebuild](EMBEDDING.md#rebuilding-after-a-code-reload).
 

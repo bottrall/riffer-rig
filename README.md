@@ -62,7 +62,7 @@ The flat `{"anthropic": "sk-…"}` shape earlier versions wrote is no longer rea
 ### Configuration
 
 - `AGENTS.md` — `~/.riffer/AGENTS.md` and an `AGENTS.md` in the current working directory or any directory above it, whichever exist, are re-read every turn as instructions that take precedence over the default norms ([Instructions](docs/INSTRUCTIONS.md#agentsmd)).
-- Skills — Agent Skills in `~/.riffer/skills/` and `.skills/` in the current working directory are offered to the model, and each can be run with `/skill:<name>` ([Skills](docs/SKILLS.md)).
+- Skills — Agent Skills in `.agents/skills/` from the current working directory up to the repository root, and in `~/.riffer/skills/`, are offered to the model, and each can be run with `/skill:<name>` ([Skills](docs/SKILLS.md)).
 - `~/.riffer/settings.json` — optional user settings. Every key is optional:
 
   ```json
