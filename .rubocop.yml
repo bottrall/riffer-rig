@@ -53,8 +53,8 @@ Minitest/MultipleAssertions:
 Naming/PredicateMethod:
   Exclude:
     # Hosts::_Host#confirm is a blocking prompt named by the host contract,
-    # not a predicate.
-    - "lib/riffer/rig/hosts/*.rb"
+    # not a predicate; only the null host's literal `false` trips the cop.
+    - "lib/riffer/rig/hosts/null.rb"
 
 Rig/NoInlineRbsDeclarations:
   Enabled: true
