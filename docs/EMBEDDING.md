@@ -91,7 +91,7 @@ Missing pricing means `nil`, never zero: a model `Riffer.config.pricing` has no 
 
 ## Rig events
 
-The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-level events from `Riffer::Rig::Events`. A rig event is any object with `type` and `to_h` (the RBS interface `Riffer::Rig::Events::_Event`). Rig's own are frozen value objects that include `Riffer::Rig::Events::Value`, so they are equal when their class and `to_h` match; each has `to_h` — with the type folded in, so a headless host can print every record verbatim as NDJSON — and `type`, the snake_case form of its class name.
+The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-level events from `Riffer::Rig::Events`. A rig event is any object with `type` and `to_h` (the RBS interface `Riffer::Rig::Events::_Event`). Rig's own are frozen value objects that include `Riffer::Rig::Support::Equatable`, so they are equal when their class and `to_h` match; each has `to_h` — with the type folded in, so a headless host can print every record verbatim as NDJSON — and `type`, the snake_case form of its class name.
 
 | Rig event         | Carries                          | When                                                              |
 | ----------------- | -------------------------------- | ----------------------------------------------------------------- |

@@ -52,7 +52,7 @@ The block receives a `ctx`:
 | `host`                                  | the Runtime's host (the [mirror](HOSTS.md#the-mirror))                                                 |
 | `settings`                              | this extension's namespace of the Runtime's settings — `settings[:git]` for an extension named `git`, with its [declared defaults](#the-rigsetting-seam) filled in — or `{}` when it has none |
 | `say(text)`                             | emits a `command_output` event carrying the command's name and `text`                                  |
-| `emit(event)`                           | emits a [rig event](EMBEDDING.md#rig-events), such as `Riffer::Rig::Events::SkillActivated`, to the caller of `run_command`; any object with `type` and `to_h` (`Riffer::Rig::Events::_Event`) qualifies, and including `Riffer::Rig::Events::Value` gives it equality by class and `to_h` |
+| `emit(event)`                           | emits a [rig event](EMBEDDING.md#rig-events), such as `Riffer::Rig::Events::SkillActivated`, to the caller of `run_command`; any object with `type` and `to_h` (`Riffer::Rig::Events::_Event`) qualifies, and including `Riffer::Rig::Support::Equatable` gives it equality by class and `to_h` |
 | `prompt(text)`                          | sends `text` to the model as a user turn, so a prompt template is a command; the turn's events stream to the caller of `run_command` |
 | `ask(question, options: nil, secret: false)` | forwards to the host and returns its answer, or `nil` when the host does not support `:ask`       |
 | `confirm(question)`                     | forwards to the host and returns its answer, or `false` when the host does not support `:confirm`      |

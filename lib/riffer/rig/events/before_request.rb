@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Events::BeforeRequest
-  include Riffer::Rig::Events::Value
+  include Riffer::Rig::Support::Equatable
 
   # @dynamic messages
   attr_reader :messages #: Array[::Riffer::Messages::Base]

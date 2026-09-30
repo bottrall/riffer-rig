@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Events::AfterToolCall
-  include Riffer::Rig::Events::Value
+  include Riffer::Rig::Support::Equatable
 
   # @dynamic tool, args, result
   attr_reader :tool #: String

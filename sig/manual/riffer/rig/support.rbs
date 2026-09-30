@@ -1,0 +1,8 @@
+# Zeitwerk autovivifies this namespace module in Ruby; RBS needs it declared
+# explicitly so the compact `Riffer::Rig::Support::*` signatures resolve.
+
+module Riffer::Rig::Support
+  interface _ToH
+    def to_h: () -> Hash[Symbol, untyped]
+  end
+end

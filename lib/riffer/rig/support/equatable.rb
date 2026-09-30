@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-# @rbs module-self Riffer::Rig::Events::_Event
-module Riffer::Rig::Events::Value
+# @rbs module-self Riffer::Rig::Support::_ToH
+module Riffer::Rig::Support::Equatable
   # @rbs other: untyped
   # @rbs return: bool
   def ==(other)

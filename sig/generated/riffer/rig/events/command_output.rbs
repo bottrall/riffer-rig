@@ -1,7 +1,7 @@
 # Generated from lib/riffer/rig/events/command_output.rb with RBS::Inline
 
 class Riffer::Rig::Events::CommandOutput
-  include Riffer::Rig::Events::Value
+  include Riffer::Rig::Support::Equatable
 
   # @dynamic command, text
   attr_reader command: String

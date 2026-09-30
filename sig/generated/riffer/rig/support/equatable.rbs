@@ -1,7 +1,7 @@
-# Generated from lib/riffer/rig/events/value.rb with RBS::Inline
+# Generated from lib/riffer/rig/support/equatable.rb with RBS::Inline
 
-# @rbs module-self Riffer::Rig::Events::_Event
-module Riffer::Rig::Events::Value : Riffer::Rig::Events::_Event
+# @rbs module-self Riffer::Rig::Support::_ToH
+module Riffer::Rig::Support::Equatable : Riffer::Rig::Support::_ToH
   # @rbs other: untyped
   # @rbs return: bool
   def ==: (untyped other) -> bool

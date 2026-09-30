@@ -54,4 +54,4 @@ Steep runs `D::Ruby.all_error`: every diagnostic Steep can emit is an error, inc
 
 # Inheritance policy
 
-Contracts are RBS interfaces in `sig/manual/`, never abstract base classes. Rig defines no class for another class to inherit from: share code through a mixin (`Events::Value`) or a collaborator. In `lib/`, the only superclasses allowed are framework-mandated riffer parents (`Riffer::Tool`, `Riffer::Agent`, `Riffer::Guardrail`, `Riffer::Skills::Backend`, `Riffer::Tools::Runtime`) and `StandardError` subclasses; tooling outside `lib/` may subclass the parent its framework mandates (e.g. `RuboCop::Cop::Base`).
+Contracts are RBS interfaces in `sig/manual/`, never abstract base classes. Rig defines no class for another class to inherit from: share code through a mixin (`Support::Equatable`) or a collaborator. In `lib/`, the only superclasses allowed are framework-mandated riffer parents (`Riffer::Tool`, `Riffer::Agent`, `Riffer::Guardrail`, `Riffer::Skills::Backend`, `Riffer::Tools::Runtime`) and `StandardError` subclasses; tooling outside `lib/` may subclass the parent its framework mandates (e.g. `RuboCop::Cop::Base`).

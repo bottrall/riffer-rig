@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Events::CommandOutput
-  include Riffer::Rig::Events::Value
+  include Riffer::Rig::Support::Equatable
 
   # @dynamic command, text
   attr_reader :command #: String

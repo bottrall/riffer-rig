@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Events::BeforePrompt
-  include Riffer::Rig::Events::Value
+  include Riffer::Rig::Support::Equatable
 
   # @dynamic text
   attr_reader :text #: String

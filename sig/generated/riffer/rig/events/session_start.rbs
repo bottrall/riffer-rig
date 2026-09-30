@@ -1,7 +1,7 @@
 # Generated from lib/riffer/rig/events/session_start.rb with RBS::Inline
 
 class Riffer::Rig::Events::SessionStart
-  include Riffer::Rig::Events::Value
+  include Riffer::Rig::Support::Equatable
 
   # @dynamic id, reason
   attr_reader id: String
