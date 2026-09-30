@@ -1,0 +1,15 @@
+# Generated from lib/riffer/rig/support/equatable.rb with RBS::Inline
+
+# @rbs module-self Riffer::Rig::Support::_ToH
+module Riffer::Rig::Support::Equatable : Riffer::Rig::Support::_ToH
+  # @rbs other: untyped
+  # @rbs return: bool
+  def ==: (untyped other) -> bool
+
+  # @rbs return: Integer
+  def hash: () -> Integer
+
+  # @rbs other: untyped
+  # @rbs return: bool
+  def eql?: (untyped other) -> bool
+end

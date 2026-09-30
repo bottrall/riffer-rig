@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Events::CommandOutput < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::CommandOutput
+  include Riffer::Rig::Support::Equatable
+
   # @dynamic command, text
   attr_reader :command #: String
   attr_reader :text #: String
@@ -9,7 +11,6 @@ class Riffer::Rig::Events::CommandOutput < Riffer::Rig::Events::Event
   # @rbs text: String
   # @rbs return: void
   def initialize(command, text)
-    super()
     @command = command
     @text = text
     freeze

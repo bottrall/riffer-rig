@@ -1,0 +1,18 @@
+# Generated from lib/riffer/rig/mcp/declaration.rb with RBS::Inline
+
+class Riffer::Rig::Mcp::Declaration
+  include Riffer::Rig::Support::Equatable
+
+  # @dynamic url, headers
+  attr_reader url: String
+
+  attr_reader headers: Hash[String, String]
+
+  # @rbs url: String
+  # @rbs headers: Hash[String, String]
+  # @rbs return: void
+  def initialize: (url: String, headers: Hash[String, String]) -> void
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

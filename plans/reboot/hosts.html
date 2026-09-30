@@ -20,7 +20,7 @@
 </nav>
 
 <h1>Hosts</h1>
-<p class="lede">Three thin clients over the same Runtime: the terminal, the headless printer and the ACP adapter. Each supplies a <code>Hosts::Base</code> subclass and renders the one event stream.</p>
+<p class="lede">Three thin clients over the same Runtime: the terminal, the headless printer and the ACP adapter. Each supplies an object implementing <code>Hosts::_Host</code> and renders the one event stream.</p>
 
 <h2 id="scope">Scope</h2>
 <p><code>exe/riffer</code> and the three host namespaces <code>Riffer::Rig::Terminal</code>, <code>Riffer::Rig::Headless</code>, <code>Riffer::Rig::ACP</code>, plus the standalone <code>acp-sdk</code> gem. The existing <code>ui/</code> code (renderer, animator, banner, theme, palette, pixels, riffy) moves under <code>Terminal</code>. Files: <code>exe/riffer</code>, <code>lib/riffer/rig/cli.rb</code> (the dispatcher), <code>lib/riffer/rig/terminal.rb</code> and <code>terminal/</code>, <code>lib/riffer/rig/headless.rb</code>, <code>lib/riffer/rig/acp.rb</code>.</p>

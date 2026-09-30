@@ -3,7 +3,7 @@
 class Riffer::Rig::Command::Context
   @command: String
 
-  @emit: ^(Riffer::Rig::Events::Event) -> void
+  @emit: ^(Riffer::Rig::Events::_Event) -> void
 
   @turn: ^(String) -> void
 
@@ -12,27 +12,27 @@ class Riffer::Rig::Command::Context
 
   attr_reader runtime: Riffer::Rig::Runtime
 
-  attr_reader host: Riffer::Rig::Hosts::Base
+  attr_reader host: Riffer::Rig::Hosts::_Host
 
   attr_reader settings: Hash[Symbol, untyped]
 
   # @rbs command: String
   # @rbs args: String
   # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs host: Riffer::Rig::Hosts::Base
+  # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs settings: Hash[Symbol, untyped]
-  # @rbs emit: ^(Riffer::Rig::Events::Event) -> void
+  # @rbs emit: ^(Riffer::Rig::Events::_Event) -> void
   # @rbs turn: ^(String) -> void
   # @rbs return: void
-  def initialize: (String command, String args, runtime: Riffer::Rig::Runtime, host: Riffer::Rig::Hosts::Base, settings: Hash[Symbol, untyped], emit: ^(Riffer::Rig::Events::Event) -> void, turn: ^(String) -> void) -> void
+  def initialize: (String command, String args, runtime: Riffer::Rig::Runtime, host: Riffer::Rig::Hosts::_Host, settings: Hash[Symbol, untyped], emit: ^(Riffer::Rig::Events::_Event) -> void, turn: ^(String) -> void) -> void
 
   # @rbs text: String
   # @rbs return: nil
   def say: (String text) -> nil
 
-  # @rbs event: Riffer::Rig::Events::Event
+  # @rbs event: Riffer::Rig::Events::_Event
   # @rbs return: nil
-  def emit: (Riffer::Rig::Events::Event event) -> nil
+  def emit: (Riffer::Rig::Events::_Event event) -> nil
 
   # @rbs text: String
   # @rbs return: nil

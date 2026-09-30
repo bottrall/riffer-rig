@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Events::TurnEnd < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::TurnEnd
+  include Riffer::Rig::Support::Equatable
+
   # @dynamic stop_reason, usage
   attr_reader :stop_reason #: Symbol
   attr_reader :usage #: ::Riffer::Providers::TokenUsage?
@@ -9,7 +11,6 @@ class Riffer::Rig::Events::TurnEnd < Riffer::Rig::Events::Event
   # @rbs usage: ::Riffer::Providers::TokenUsage?
   # @rbs return: void
   def initialize(stop_reason, usage)
-    super()
     @stop_reason = stop_reason
     @usage = usage
     freeze

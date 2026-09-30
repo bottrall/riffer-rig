@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Runtime::Hooks
-  # @rbs @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
-  # @rbs @host: Riffer::Rig::Hosts::Base
+  # @rbs @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  # @rbs @host: Riffer::Rig::Hosts::_Host
 
-  # @rbs hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
-  # @rbs host: Riffer::Rig::Hosts::Base
+  # @rbs hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs return: void
   def initialize(hooks, host)
     @hooks = hooks
@@ -13,7 +13,7 @@ class Riffer::Rig::Runtime::Hooks
   end
 
   # @rbs name: Symbol
-  # @rbs event: Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base
+  # @rbs event: Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base
   # @rbs return: void
   def observe(name, event)
     @hooks.fetch(name).each { |hook| call(name, hook, event) }
@@ -46,7 +46,7 @@ class Riffer::Rig::Runtime::Hooks
   # @rbs name: Symbol
   # @rbs payload: untyped
   # @rbs accepts: ^(untyped) -> bool
-  # @rbs &: (untyped) -> Riffer::Rig::Events::Event
+  # @rbs &: (untyped) -> Riffer::Rig::Events::_Event
   # @rbs return: untyped
   def veto(name, payload, accepts)
     @hooks.fetch(name).reduce(payload) do |current, hook|
@@ -66,8 +66,8 @@ class Riffer::Rig::Runtime::Hooks
   end
 
   # @rbs name: Symbol
-  # @rbs hook: ^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped
-  # @rbs event: Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base
+  # @rbs hook: ^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped
+  # @rbs event: Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base
   # @rbs return: untyped
   def call(name, hook, event)
     hook.call(event)

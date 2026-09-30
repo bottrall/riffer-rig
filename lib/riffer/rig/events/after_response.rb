@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Events::AfterResponse < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::AfterResponse
+  include Riffer::Rig::Support::Equatable
+
   # @dynamic message
   attr_reader :message #: ::Riffer::Messages::Assistant
 
   # @rbs message: ::Riffer::Messages::Assistant
   # @rbs return: void
   def initialize(message)
-    super()
     @message = message
     freeze
   end

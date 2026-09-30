@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/events/before_tool_call.rb with RBS::Inline
 
-class Riffer::Rig::Events::BeforeToolCall < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::BeforeToolCall
+  include Riffer::Rig::Support::Equatable
+
   # @dynamic tool, args
   attr_reader tool: String
 

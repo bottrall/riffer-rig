@@ -1,3 +1,9 @@
+require:
+  - ./rubocop/cop/rig/no_inheritance
+  - ./rubocop/cop/rig/no_inline_rbs_declarations
+  - ./rubocop/cop/rig/no_mocking
+  - ./rubocop/cop/rig/require_disable_reason
+
 plugins:
   - rubocop-minitest
   - rubocop-performance
@@ -49,14 +55,36 @@ Minitest/MultipleAssertions:
 
 Naming/PredicateMethod:
   Exclude:
-    # Hosts::Base#confirm is a blocking prompt named by the host contract, not
-    # a predicate.
-    - "lib/riffer/rig/hosts/*.rb"
+    # Hosts::_Host#confirm is a blocking prompt named by the host contract,
+    # not a predicate; only the null host's literal `false` trips the cop.
+    - "lib/riffer/rig/hosts/null.rb"
+
+Rig/NoInheritance:
+  Enabled: true
+  Include:
+    - "lib/**/*.rb"
+    - "test/**/*.rb"
+
+Rig/NoInlineRbsDeclarations:
+  Enabled: true
+  Include:
+    - "lib/**/*.rb"
+
+Rig/NoMocking:
+  Enabled: true
+  Include:
+    - "test/**/*_test.rb"
+
+Rig/RequireDisableReason:
+  Enabled: true
 
 Style/ClassAndModuleChildren:
   EnforcedStyle: compact
   Exclude:
     - "lib/riffer/rig/version.rb"
+    # The cop's file defines the `Rig` badge namespace itself, which the
+    # compact form can't open.
+    - "rubocop/**/*"
 
 Style/Documentation:
   Enabled: false

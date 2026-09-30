@@ -1,6 +1,6 @@
 # Generated from lib/riffer/rig/hosts/null.rb with RBS::Inline
 
-class Riffer::Rig::Hosts::Null < Riffer::Rig::Hosts::Base
+class Riffer::Rig::Hosts::Null
   # @rbs return: Set[Symbol]
   def capabilities: () -> Set[Symbol]
 

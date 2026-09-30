@@ -1,16 +1,7 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Events::Event
-  # @rbs return: Symbol
-  def type
-    raise NotImplementedError, "#{self.class.name} must define type"
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    raise NotImplementedError, "#{self.class.name} must define to_h"
-  end
-
+# @rbs module-self Riffer::Rig::Support::_ToH
+module Riffer::Rig::Support::Equatable
   # @rbs other: untyped
   # @rbs return: bool
   def ==(other)

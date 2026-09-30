@@ -2,4 +2,11 @@
 # explicitly so the compact `Riffer::Rig::Hosts::*` signatures resolve.
 
 module Riffer::Rig::Hosts
+  interface _Host
+    def capabilities: () -> Set[Symbol]
+    def ask: (?String?, ?options: Array[String]?, ?secret: bool) -> String?
+    def confirm: (?String?) -> bool
+    def notify: (?String?, ?level: Symbol) -> void
+    def progress: (?String?) ?{ () -> void } -> void
+  end
 end

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Events::BeforeToolCall < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::BeforeToolCall
+  include Riffer::Rig::Support::Equatable
+
   # @dynamic tool, args
   attr_reader :tool #: String
   attr_reader :args #: Hash[Symbol, untyped]
@@ -9,7 +11,6 @@ class Riffer::Rig::Events::BeforeToolCall < Riffer::Rig::Events::Event
   # @rbs args: Hash[Symbol, untyped]
   # @rbs return: void
   def initialize(tool, args)
-    super()
     @tool = tool
     @args = args.dup.freeze
     freeze

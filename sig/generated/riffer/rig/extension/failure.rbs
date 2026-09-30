@@ -1,0 +1,13 @@
+# Generated from lib/riffer/rig/extension/failure.rb with RBS::Inline
+
+class Riffer::Rig::Extension::Failure
+  # @dynamic extension, error
+  attr_reader extension: Riffer::Rig::Extension
+
+  attr_reader error: StandardError
+
+  # @rbs extension: Riffer::Rig::Extension
+  # @rbs error: StandardError
+  # @rbs return: void
+  def initialize: (extension: Riffer::Rig::Extension, error: StandardError) -> void
+end

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Events::Notify < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::Notify
+  include Riffer::Rig::Support::Equatable
+
   # @dynamic message, level
   attr_reader :message #: String?
   attr_reader :level #: Symbol
@@ -9,7 +11,6 @@ class Riffer::Rig::Events::Notify < Riffer::Rig::Events::Event
   # @rbs level: Symbol
   # @rbs return: void
   def initialize(message, level)
-    super()
     @message = message
     @level = level
     freeze

@@ -53,7 +53,7 @@ class Riffer::Rig::Runtime
 
   @declared_settings: Hash[String, Hash[Symbol, untyped]]
 
-  @errors: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
+  @errors: Array[Riffer::Rig::Extension::Failure]
 
   @hooks: Riffer::Rig::Runtime::Hooks
 
@@ -61,7 +61,7 @@ class Riffer::Rig::Runtime
 
   @mcp_registry: Riffer::Rig::Mcp::_Registry
 
-  @mcp_servers: Hash[String, Riffer::Rig::Mcp::server]
+  @mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader agent: Riffer::Agent
@@ -82,7 +82,7 @@ class Riffer::Rig::Runtime
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs tools: Array[String]?
   # @rbs settings: Hash[Symbol, untyped]
-  # @rbs host: Riffer::Rig::Hosts::Base
+  # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs cwd: String?
   # @rbs name: String
   # @rbs instructions: String?
@@ -93,12 +93,12 @@ class Riffer::Rig::Runtime
   # @rbs max_steps: Integer?
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
-  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::Base, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?snapshot: Hash[Symbol, untyped]?) -> void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?snapshot: Hash[Symbol, untyped]?) -> void
 
   # @rbs text: String
-  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
-  # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response])
-  def prompt: (String text) ?{ (::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void } -> (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response])
+  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
+  # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
+  def prompt: (String text) ?{ (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void } -> (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
 
   # @rbs text: String
   # @rbs return: Riffer::Agent::Response
@@ -109,12 +109,12 @@ class Riffer::Rig::Runtime
 
   # @rbs name: String
   # @rbs args: String
-  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: nil
-  def run_command: (String name, ?String args) ?{ (::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void } -> nil
+  def run_command: (String name, ?String args) ?{ (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void } -> nil
 
-  # @rbs return: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
-  def errors: () -> Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
+  # @rbs return: Array[Riffer::Rig::Extension::Failure]
+  def errors: () -> Array[Riffer::Rig::Extension::Failure]
 
   # @rbs return: String
   def model: () -> String
@@ -171,19 +171,19 @@ class Riffer::Rig::Runtime
   def skills_config: (Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend] sources) -> Riffer::Skills::Config?
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs mcp_servers: Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs agent: Riffer::Agent
   # @rbs return: void
-  def install: (Array[Riffer::Rig::Registrar] registrars, Hash[String, Riffer::Rig::Mcp::server] mcp_servers, Hash[Symbol, untyped] settings, Riffer::Rig::Runtime::Hooks hooks, Riffer::Agent agent) -> void
+  def install: (Array[Riffer::Rig::Registrar] registrars, Hash[String, Riffer::Rig::Mcp::Server] mcp_servers, Hash[Symbol, untyped] settings, Riffer::Rig::Runtime::Hooks hooks, Riffer::Agent agent) -> void
 
   # A session that has not started yet opens with session_start(:new) on its
   # first turn instead.
   # @rbs name: Symbol
-  # @rbs event: Riffer::Rig::Events::Event
+  # @rbs event: Riffer::Rig::Events::_Event
   # @rbs return: void
-  def lifecycle: (Symbol name, Riffer::Rig::Events::Event event) -> void
+  def lifecycle: (Symbol name, Riffer::Rig::Events::_Event event) -> void
 
   # @rbs text: String
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
@@ -195,19 +195,19 @@ class Riffer::Rig::Runtime
 
   # @rbs name: String
   # @rbs args: String
-  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: void
-  def execute: (String name, String args, ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void emit) -> void
+  def execute: (String name, String args, ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void emit) -> void
 
   # @rbs command: Riffer::Rig::Command
   # @rbs args: String
-  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: Riffer::Rig::Command::Context
-  def command_context: (Riffer::Rig::Command command, String args, ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void emit) -> Riffer::Rig::Command::Context
+  def command_context: (Riffer::Rig::Command command, String args, ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void emit) -> Riffer::Rig::Command::Context
 
   # @rbs text: String
-  # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
-  def turn: (String text) -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
+  # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
+  def turn: (String text) -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
 
   # @rbs yielder: Enumerator::Yielder
   # @rbs event: ::Riffer::StreamEvents::Base
@@ -279,8 +279,8 @@ class Riffer::Rig::Runtime
   # @rbs return: Hash[Symbol, untyped]
   def with_declared_defaults: (Hash[Symbol, untyped] settings) -> Hash[Symbol, untyped]
 
-  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
-  def merge_hooks: (untyped registrars) -> Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  def merge_hooks: (untyped registrars) -> Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
   # Upstream candidate: riffer's MCP registry is process-wide and keyed by
   # server name alone, so each Runtime tags its registrations, and two
@@ -289,19 +289,19 @@ class Riffer::Rig::Runtime
   def mcp_tag: () -> Symbol
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Hash[String, Riffer::Rig::Mcp::server]
-  def register_mcp_servers: (Array[Riffer::Rig::Registrar] registrars) -> Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::Server]
+  def register_mcp_servers: (Array[Riffer::Rig::Registrar] registrars) -> Hash[String, Riffer::Rig::Mcp::Server]
 
   # @rbs name: String
-  # @rbs declaration: Riffer::Rig::Mcp::declaration
-  # @rbs return: Riffer::Rig::Mcp::server?
-  def register_mcp_server: (String name, Riffer::Rig::Mcp::declaration declaration) -> Riffer::Rig::Mcp::server?
+  # @rbs declaration: Riffer::Rig::Mcp::Declaration
+  # @rbs return: Riffer::Rig::Mcp::Server?
+  def register_mcp_server: (String name, Riffer::Rig::Mcp::Declaration declaration) -> Riffer::Rig::Mcp::Server?
 
   # A retired registration was replaced under the same name, by another
   # Runtime or a later declaration, and is no longer this Runtime's to remove.
-  # @rbs servers: Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs servers: Hash[String, Riffer::Rig::Mcp::Server]
   # @rbs return: void
-  def unregister_mcp_servers: (Hash[String, Riffer::Rig::Mcp::server] servers) -> void
+  def unregister_mcp_servers: (Hash[String, Riffer::Rig::Mcp::Server] servers) -> void
 
   # @rbs registered: Array[singleton(Riffer::Tool)]
   # @rbs allowlist: Array[String]?

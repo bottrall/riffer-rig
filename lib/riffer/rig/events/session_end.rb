@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Events::SessionEnd < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::SessionEnd
+  include Riffer::Rig::Support::Equatable
+
   # @dynamic reason
   attr_reader :reason #: Symbol
 
   # @rbs reason: Symbol
   # @rbs return: void
   def initialize(reason)
-    super()
     @reason = reason
     freeze
   end

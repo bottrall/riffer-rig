@@ -8,9 +8,9 @@ class Riffer::Rig::Registrar
 
   EVENTS: Array[Symbol]
 
-  @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
-  @mcp_servers: Hash[String, Riffer::Rig::Mcp::declaration]
+  @mcp_servers: Hash[String, Riffer::Rig::Mcp::Declaration]
 
   @given_settings: Hash[Symbol, untyped]
 
@@ -66,9 +66,9 @@ class Riffer::Rig::Registrar
   def mcp: (String name, url: String, ?headers: Hash[String, String]) -> void
 
   # @rbs event: Symbol
-  # @rbs &block: (Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped
+  # @rbs &block: (Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped
   # @rbs return: void
-  def on: (Symbol event) { (Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped } -> void
+  def on: (Symbol event) { (Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped } -> void
 
   # @rbs return: Hash[String, singleton(Riffer::Tool)]
   def tools: () -> Hash[String, singleton(Riffer::Tool)]
@@ -88,12 +88,12 @@ class Riffer::Rig::Registrar
   # @rbs return: Hash[Symbol, untyped]
   def declared_settings: () -> Hash[Symbol, untyped]
 
-  # @rbs return: Hash[String, Riffer::Rig::Mcp::declaration]
-  def mcp_servers: () -> Hash[String, Riffer::Rig::Mcp::declaration]
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::Declaration]
+  def mcp_servers: () -> Hash[String, Riffer::Rig::Mcp::Declaration]
 
   # @rbs return: Array[String]
   def registrations: () -> Array[String]
 
-  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
-  def hooks: () -> Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  def hooks: () -> Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
 end

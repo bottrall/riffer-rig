@@ -1,13 +1,18 @@
 # frozen_string_literal: true
 
 require 'test_helper'
+require 'forwardable'
 require 'json'
 
-class AnsweringHost < Riffer::Rig::Hosts::Null
+class AnsweringHost
+  extend Forwardable
+
+  def_delegators :@null, :capabilities, :confirm, :notify, :progress
+
   attr_reader :asked
 
   def initialize(answer)
-    super()
+    @null = Riffer::Rig::Hosts::Null.new
     @answer = answer
     @asked = []
   end

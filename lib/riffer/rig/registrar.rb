@@ -18,8 +18,8 @@ class Riffer::Rig::Registrar
   # @rbs @skill_sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
   # @rbs @declared_settings: Hash[Symbol, untyped]
   # @rbs @given_settings: Hash[Symbol, untyped]
-  # @rbs @mcp_servers: Hash[String, Riffer::Rig::Mcp::declaration]
-  # @rbs @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  # @rbs @mcp_servers: Hash[String, Riffer::Rig::Mcp::Declaration]
+  # @rbs @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
   # @dynamic extension
   attr_reader :extension #: String
@@ -85,11 +85,11 @@ class Riffer::Rig::Registrar
   # @rbs headers: Hash[String, String]
   # @rbs return: void
   def mcp(name, url:, headers: {})
-    @mcp_servers[name] = { url: url, headers: headers }
+    @mcp_servers[name] = Riffer::Rig::Mcp::Declaration.new(url: url, headers: headers)
   end
 
   # @rbs event: Symbol
-  # @rbs &block: (Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped
+  # @rbs &block: (Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped
   # @rbs return: void
   def on(event, &block)
     hooks = @hooks.fetch(event) do
@@ -128,7 +128,7 @@ class Riffer::Rig::Registrar
     @declared_settings.dup
   end
 
-  # @rbs return: Hash[String, Riffer::Rig::Mcp::declaration]
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::Declaration]
   def mcp_servers
     @mcp_servers.dup
   end
@@ -143,7 +143,7 @@ class Riffer::Rig::Registrar
     ]
   end
 
-  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
   def hooks
     @hooks.transform_values(&:dup)
   end

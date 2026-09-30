@@ -10,7 +10,7 @@ require 'webrick/https'
 # certificate for 127.0.0.1 that the client is made to trust through
 # SSL_CERT_FILE, which faraday's default certificate store reads.
 class McpHttpsServer
-  class Servlet < WEBrick::HTTPServlet::AbstractServlet
+  class Servlet < WEBrick::HTTPServlet::AbstractServlet # rubocop:disable Rig/NoInheritance -- WEBrick mounts servlet subclasses only
     def initialize(server, mcp)
       super(server)
       @mcp = mcp

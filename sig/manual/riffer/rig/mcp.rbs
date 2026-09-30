@@ -3,4 +3,9 @@
 
 module Riffer::Rig::Mcp
   extend ::Riffer::Rig::Mcp
+
+  interface _Registry
+    def register: (Hash[Symbol, untyped]) -> Riffer::Mcp::Registration
+    def unregister: (String) -> void
+  end
 end

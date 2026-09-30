@@ -1,0 +1,6 @@
+module Riffer::Rig::Events
+  interface _Event
+    def type: () -> Symbol
+    def to_h: () -> Hash[Symbol, untyped]
+  end
+end

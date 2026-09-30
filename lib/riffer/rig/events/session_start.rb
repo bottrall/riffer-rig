@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Events::SessionStart < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::SessionStart
+  include Riffer::Rig::Support::Equatable
+
   # @dynamic id, reason
   attr_reader :id #: String
   attr_reader :reason #: Symbol
@@ -9,7 +11,6 @@ class Riffer::Rig::Events::SessionStart < Riffer::Rig::Events::Event
   # @rbs reason: Symbol
   # @rbs return: void
   def initialize(id, reason)
-    super()
     @id = id
     @reason = reason
     freeze

@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/events/turn_end.rb with RBS::Inline
 
-class Riffer::Rig::Events::TurnEnd < Riffer::Rig::Events::Event
+class Riffer::Rig::Events::TurnEnd
+  include Riffer::Rig::Support::Equatable
+
   # @dynamic stop_reason, usage
   attr_reader stop_reason: Symbol
 

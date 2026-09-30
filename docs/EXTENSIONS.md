@@ -52,7 +52,7 @@ The block receives a `ctx`:
 | `host`                                  | the Runtime's host (the [mirror](HOSTS.md#the-mirror))                                                 |
 | `settings`                              | this extension's namespace of the Runtime's settings — `settings[:git]` for an extension named `git`, with its [declared defaults](#the-rigsetting-seam) filled in — or `{}` when it has none |
 | `say(text)`                             | emits a `command_output` event carrying the command's name and `text`                                  |
-| `emit(event)`                           | emits a rig event, such as `Riffer::Rig::Events::SkillActivated`, to the caller of `run_command`       |
+| `emit(event)`                           | emits a [rig event](EMBEDDING.md#rig-events), such as `Riffer::Rig::Events::SkillActivated`, to the caller of `run_command`; any object with `type` and `to_h` (`Riffer::Rig::Events::_Event`) qualifies, and including `Riffer::Rig::Support::Equatable` gives it equality by class and `to_h` |
 | `prompt(text)`                          | sends `text` to the model as a user turn, so a prompt template is a command; the turn's events stream to the caller of `run_command` |
 | `ask(question, options: nil, secret: false)` | forwards to the host and returns its answer, or `nil` when the host does not support `:ask`       |
 | `confirm(question)`                     | forwards to the host and returns its answer, or `false` when the host does not support `:confirm`      |
@@ -142,7 +142,7 @@ Core settings keys stay top level, so an extension cannot take one as its name: 
 The Runtime wraps each registrar block. A block that raises a `StandardError`, an extension whose `requires:` the running riffer-rig does not satisfy, or an extension named after a core settings key is a load error:
 
 - The extension is skipped, including anything its block registered before it raised; the rest load, in order.
-- `runtime.errors` records it as `{ extension:, error: }` — the extension object and the exception (a `Riffer::Rig::Extension::RequirementError` for an unmet `requires:`, a `Riffer::Rig::Registrar::NameCollisionError` for a core key taken as a name). An empty array means every extension loaded.
+- `runtime.errors` records it as a `Riffer::Rig::Extension::Failure`, whose `extension` is the extension object and `error` the exception (a `Riffer::Rig::Extension::RequirementError` for an unmet `requires:`, a `Riffer::Rig::Registrar::NameCollisionError` for a core key taken as a name). An empty array means every extension loaded.
 - The host gets one `notify` at level `:error`, `"Extension <name> failed to load: <message>"`, which the [mirror](HOSTS.md#the-mirror) also queues as a `notify` event for the next `prompt` or `run_command` to emit.
 
 Errors go to the host only, never into the model's context.

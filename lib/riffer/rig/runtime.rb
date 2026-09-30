@@ -46,11 +46,11 @@ class Riffer::Rig::Runtime
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
   # @rbs @declared_settings: Hash[String, Hash[Symbol, untyped]]
-  # @rbs @errors: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
+  # @rbs @errors: Array[Riffer::Rig::Extension::Failure]
   # @rbs @hooks: Riffer::Rig::Runtime::Hooks
   # @rbs @tool_allowlist: Array[String]?
   # @rbs @mcp_registry: Riffer::Rig::Mcp::_Registry
-  # @rbs @mcp_servers: Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs @mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader :agent #: Riffer::Agent
@@ -65,7 +65,7 @@ class Riffer::Rig::Runtime
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs tools: Array[String]?
   # @rbs settings: Hash[Symbol, untyped]
-  # @rbs host: Riffer::Rig::Hosts::Base
+  # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs cwd: String?
   # @rbs name: String
   # @rbs instructions: String?
@@ -120,8 +120,8 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs text: String
-  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
-  # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response])
+  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
+  # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
   def prompt(text, &block)
     claim
     begin
@@ -154,11 +154,11 @@ class Riffer::Rig::Runtime
 
   # @rbs name: String
   # @rbs args: String
-  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: nil
   def run_command(name, args = '', &block)
     claim
-    emit = block || ->(_event) {} #: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+    emit = block || ->(_event) {} #: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
     begin
       execute(name, args, emit)
     ensure
@@ -168,7 +168,7 @@ class Riffer::Rig::Runtime
     nil
   end
 
-  # @rbs return: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
+  # @rbs return: Array[Riffer::Rig::Extension::Failure]
   def errors
     @errors.dup
   end
@@ -302,7 +302,7 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs mcp_servers: Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs agent: Riffer::Agent
@@ -328,7 +328,7 @@ class Riffer::Rig::Runtime
   # A session that has not started yet opens with session_start(:new) on its
   # first turn instead.
   # @rbs name: Symbol
-  # @rbs event: Riffer::Rig::Events::Event
+  # @rbs event: Riffer::Rig::Events::_Event
   # @rbs return: void
   def lifecycle(name, event)
     return if @session_start_pending
@@ -365,7 +365,7 @@ class Riffer::Rig::Runtime
 
   # @rbs name: String
   # @rbs args: String
-  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: void
   def execute(name, args, emit)
     command = @commands.fetch(name, nil)
@@ -380,7 +380,7 @@ class Riffer::Rig::Runtime
 
   # @rbs command: Riffer::Rig::Command
   # @rbs args: String
-  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event) -> void
+  # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: Riffer::Rig::Command::Context
   def command_context(command, args, emit)
     settings = @settings[command.extension.to_sym] || {} #: Hash[Symbol, untyped]
@@ -396,7 +396,7 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs text: String
-  # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::Event, Riffer::Agent::Response]
+  # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
   def turn(text)
     Enumerator.new do |yielder|
       if @session_start_pending
@@ -509,10 +509,11 @@ class Riffer::Rig::Runtime
   # @rbs messages: Array[Riffer::Messages::Base]
   # @rbs return: Riffer::Providers::TokenUsage?
   def usage_of(messages)
-    # Upstream candidate: TokenUsage has no zero to seed sum with, and no usage
-    # at all must stay nil; a loaded session could restore its own tally.
+    # Upstream candidate: a nil-aware TokenUsage.sum, which riffer's own
+    # Agent::Run and evals also hand-roll; a loaded session could restore its
+    # own tally.
     messages.filter_map { |message| message.token_usage if message.is_a?(Riffer::Messages::Assistant) }
-            .reduce { |total, usage| total + usage } # rubocop:disable Performance/Sum
+            .reduce { |total, usage| total + usage } # rubocop:disable Performance/Sum -- TokenUsage has no zero, and no usage must stay nil
   end
 
   # @rbs skills: Riffer::Skills::Context?
@@ -564,7 +565,7 @@ class Riffer::Rig::Runtime
   # @rbs error: StandardError
   # @rbs return: void
   def record_error(extension, error)
-    @errors << { extension: extension, error: error }
+    @errors << Riffer::Rig::Extension::Failure.new(extension: extension, error: error)
     @host.notify("Extension #{extension.name} failed to load: #{error.message}", level: :error)
   end
 
@@ -591,7 +592,7 @@ class Riffer::Rig::Runtime
     settings.merge(namespaces)
   end
 
-  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
   def merge_hooks(registrars)
     Riffer::Rig::Registrar::EVENTS.to_h do |event|
       [event, registrars.flat_map { |registrar| registrar.hooks.fetch(event) }]
@@ -607,24 +608,24 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::Server]
   def register_mcp_servers(registrars)
     declarations = registrars.flat_map { |registrar| registrar.mcp_servers.to_a }.to_h
     declarations.filter_map do |name, declaration|
       live = @mcp_servers[name]
-      server = live && live[:declaration] == declaration ? live : register_mcp_server(name, declaration)
+      server = live && live.declaration == declaration ? live : register_mcp_server(name, declaration)
       [name, server] if server
     end.to_h
   end
 
   # @rbs name: String
-  # @rbs declaration: Riffer::Rig::Mcp::declaration
-  # @rbs return: Riffer::Rig::Mcp::server?
+  # @rbs declaration: Riffer::Rig::Mcp::Declaration
+  # @rbs return: Riffer::Rig::Mcp::Server?
   def register_mcp_server(name, declaration)
     registration = @mcp_registry.register(
-      name: name, endpoint: declaration[:url], tags: [mcp_tag], discovery_headers: declaration[:headers]
+      name: name, endpoint: declaration.url, tags: [mcp_tag], discovery_headers: declaration.headers
     )
-    { declaration: declaration, registration: registration }
+    Riffer::Rig::Mcp::Server.new(declaration: declaration, registration: registration)
   rescue StandardError => e
     @host.notify("MCP server #{name} failed to register: #{e.message}", level: :error)
     nil
@@ -632,10 +633,10 @@ class Riffer::Rig::Runtime
 
   # A retired registration was replaced under the same name, by another
   # Runtime or a later declaration, and is no longer this Runtime's to remove.
-  # @rbs servers: Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs servers: Hash[String, Riffer::Rig::Mcp::Server]
   # @rbs return: void
   def unregister_mcp_servers(servers)
-    servers.each { |name, server| @mcp_registry.unregister(name) unless server[:registration].retired? }
+    servers.each { |name, server| @mcp_registry.unregister(name) unless server.registration.retired? }
   end
 
   # @rbs registered: Array[singleton(Riffer::Tool)]
