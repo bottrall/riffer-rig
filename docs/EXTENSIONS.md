@@ -151,7 +151,7 @@ At run time a hook that raises is caught and reported through the host's `notify
 
 ## API versioning
 
-The registrar surface — `Riffer::Rig.extension` and the `rig.*` seams — is public API of riffer-rig and follows its release policy (see [Releasing](../README.md#releasing)); there is no separate API number. While riffer-rig is 0.x, a breaking change to the surface ships in a minor release with a BREAKING CHANGES section in the changelog, after one minor of deprecation where feasible.
+The registrar surface — `Riffer::Rig.extension` and the `rig.*` seams — is public API of riffer-rig and follows its release policy (see [Releasing](https://github.com/bottrall/riffer-rig#releasing)); there is no separate API number. While riffer-rig is 0.x, a breaking change to the surface ships in a minor release with a BREAKING CHANGES section in the changelog, after one minor of deprecation where feasible.
 
 Pin the riffer-rig versions an extension is written against with `requires:`:
 

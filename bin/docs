@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -e
+
+case "${1:-}" in
+  "")
+    exec bundle exec rake docs
+    ;;
+  serve | check | site)
+    exec bundle exec rake "docs:$1"
+    ;;
+  *)
+    exec bundle exec rake docs "$@"
+    ;;
+esac

@@ -27,7 +27,7 @@
 
 <h2 id="decisions">Decisions</h2>
 
-<section class="topic" id="targets">
+<section class="topic enshrined" id="targets">
 <h3>Enshrining targets</h3>
 <div class="table-wrap"><table>
   <tr><th>Target</th><th>What goes there</th></tr>
@@ -37,6 +37,7 @@
   <tr><td><code>docs-site/</code></td><td>A port of riffer's static generator with <code>manifest.yml</code> listing every guide in reading order.</td></tr>
   <tr><td>Site</td><td>GitHub Pages project site pushed to <code>gh-pages</code> from the publish workflow after a release; custom domain <code>riffer.bottrall.dev</code>.</td></tr>
 </table></div>
+<p class="note">Rows <code>docs/*.md</code> and <code>docs-site/</code> enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/125">#125</a>: <code>docs-site/manifest.yml</code> lists every guide under <code>docs/</code> in reading order (see <a href="#guides">Guides</a> and <a href="#generator">The docs-site generator</a>). One deviation on the <code>docs/*.md</code> row: there is no <code>providers/</code> subdirectory, per the note under <a href="#guides">Guides</a>. The rows Code, <code>README.md</code> and Site are not landed by this.</p>
 </section>
 
 <section class="topic" id="readme">
@@ -57,7 +58,7 @@
 </ol>
 </section>
 
-<section class="topic" id="guides">
+<section class="topic enshrined" id="guides">
 <h3>Guides</h3>
 <p>One file per topic under <code>docs/</code>, <code>UPPER_CASE.md</code>, first line an H1 that becomes the page title. Reading order is the manifest's. This is the full list the plan's Enshrines-into tables point at; a build PR that creates a guide creates the manifest entry with it.</p>
 <div class="table-wrap"><table>
@@ -86,9 +87,10 @@
   <tr><td><code>providers/CUSTOM_PROVIDERS.md</code></td><td><code>providers/custom</code></td><td>The provider seam and <code>recipe:</code></td></tr>
 </table></div>
 <p class="note">Providers group changed in <a href="https://github.com/bottrall/riffer-rig/issues/109">#109</a>: the group is two flat sources rather than eight under <code>providers/</code>. <code>PROVIDERS.md</code> shipped with the six per-provider pages folded into its table and sections, and <code>CUSTOM_PROVIDERS.md</code> comes later with the provider seam, whose keyword is <code>setup:</code> rather than <code>recipe:</code>. <code>docs/providers/</code> does not exist. Manifest slugs such as <code>providers/overview</code> are unaffected, because the manifest maps <code>source</code> to <code>slug</code>. The section is not enshrined by this.</p>
+<p class="note">The paragraph and the table enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/125">#125</a>: <code>docs-site/manifest.yml</code> lists the twelve guides that exist, in the table's groups and order with its slugs and descriptions, and <code>featured: true</code> on Getting Started; <code>PROVIDERS.md</code> is the flat <code>docs/PROVIDERS.md</code> with slug <code>providers/overview</code>, per the note above. <code>OVERVIEW.md</code>, <code>RELOADING.md</code>, <code>ACP.md</code> and <code>CUSTOM_PROVIDERS.md</code> do not exist yet and get their entries when their tickets create them, since the build fails on any mismatch between the manifest and <code>docs/**/*.md</code>. One deviation: the descriptions of Headless and Providers drop the code formatting on <code>riffer -p</code> and <code>/auth</code>, because the landing page and sidebar print a description as plain text.</p>
 </section>
 
-<section class="topic" id="generator">
+<section class="topic enshrined" id="generator">
 <h3>The docs-site generator</h3>
 <ul>
   <li>Port riffer's <code>docs-site/</code> (in the <code>janeapp/riffer</code> repo) as it stands: <code>build.rb</code>, <code>check.rb</code>, <code>layout.html.erb</code>, <code>index.html.erb</code>, <code>site.css</code>, <code>landing.css</code>, <code>copy.js</code>, <code>favicon.svg</code>, <code>404.html</code>, <code>manifest.yml</code>. Names, wording and the landing copy change to riffer-rig; the build logic does not. The build fails on any mismatch between <code>manifest.yml</code> and <code>docs/**/*.md</code>; <code>check.rb</code> validates every internal link and anchor.</li>
@@ -97,24 +99,27 @@
   <li>Rake tasks, defined once: <code>docs:site</code> (build into <code>_site/</code>), <code>docs:check</code> (build then check), <code>docs:serve</code> (build then <code>ruby -run -e httpd _site -p 8000</code>), <code>rdoc</code>, and <code>docs</code> = <code>docs:site</code> + <code>rdoc</code>. <code>bin/docs</code> delegates to <code>rake docs</code> and forwards arguments; the README Development table gains its row. <code>_site/</code> is git-ignored.</li>
   <li>A <code>CNAME</code> file containing <code>riffer.bottrall.dev</code> is added to the asset list so it lands in <code>_site/</code> on every build.</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/125">#125</a>, all five bullets, with the Interfaces rows Scripts and Files. Deviations from the bullets: the site is not a verbatim port — the generator's build logic, link checking, manifest, rake tasks and <code>bin/docs</code> are riffer's, but the design is our own: a serif editorial look ("Paper") on the Aubergine Deep dark palette (near-black plum paper, mauve accent, gold for code and small ornaments), with the landing's hero showing a first-session transcript and intro/scroll motion throughout, all collapsing under <code>prefers-reduced-motion</code>. Concretely: <code>site.css</code>, <code>landing.css</code>, <code>index.html.erb</code>, <code>layout.html.erb</code>, <code>404.html</code> and <code>favicon.svg</code> are new; the group <code>tone:</code> values in <code>manifest.yml</code> remain but the templates no longer use them; fonts are Newsreader, Inter and JetBrains Mono from Google Fonts; the gem wordmark is a small faceted-gem SVG rather than the ◆ glyph. Everything else in the bullets stands: deps, tasks, <code>bin/docs</code>, <code>CNAME</code>, CI's <code>docs:check</code>, and the build-fails-on-manifest-mismatch rule.</p>
 </section>
 
-<section class="topic" id="deploy">
+<section class="topic enshrined" id="deploy">
 <h3>Deploy</h3>
 <ul>
   <li>A <code>docs</code> job in <code>.github/workflows/publish.yml</code>, <code>needs: release-please</code> and gated on <code>release_created == 'true'</code> like the publish job (the same trigger riffer uses): checkout, <code>ruby/setup-ruby</code> with <code>bundler-cache</code>, <code>bin/docs</code>, then <code>JamesIves/github-pages-deploy-action</code> pinned by commit SHA with <code>branch: gh-pages</code> and <code>folder: ./_site</code>; permissions <code>contents: write</code>.</li>
   <li>The site therefore updates only on a release, so it always documents a published version. The version string in the layout comes from <code>Riffer::Rig::VERSION</code>.</li>
   <li>Repository settings (human, once): Pages source = <code>gh-pages</code> branch, root; custom domain <code>riffer.bottrall.dev</code>; enforce HTTPS. DNS (human, once): a CNAME record for <code>riffer</code> under <code>bottrall.dev</code> pointing at <code>bottrall.github.io</code>. Until the domain resolves, the site is reachable at the default project URL.</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/125">#125</a>, the first two bullets: the job landed in <code>publish.yml</code> alongside the gem-publish job, matching riffer's <code>release.yml</code> docs job, with the action pinned to the same commit SHA. The checkout keeps default persisted credentials (unlike the publish job's <code>persist-credentials: false</code>), because the deploy action needs them to push <code>gh-pages</code>. The third bullet's repository settings and DNS are human steps, still pending — until they happen the site deploys but is reachable only at the default project URL.</p>
 </section>
 
-<section class="topic" id="when">
+<section class="topic enshrined" id="when">
 <h3>When the docs are written</h3>
 <ul>
   <li>Each build PR moves its topic's user-facing text into README or the guide its Enshrines-into row names, creating the guide file (and its manifest entry, once the generator exists) if it does not exist yet. A guide may be short for a while; it is never absent.</li>
   <li>The docs PR itself (the last unit) ports the generator, writes <code>OVERVIEW.md</code> and <code>GETTING_STARTED.md</code>, rewrites the README top matter to the thesis, adds the workflow job and deletes this file. If it lands before every other unit, later build PRs still add to the guides as above.</li>
   <li>Both the plan PR and every docs PR are titled <code>docs: …</code> and never release.</li>
 </ul>
+<p class="note">Bullet 1's "manifest entry, once the generator exists" clause and bullet 2's "If it lands before every other unit, later build PRs still add to the guides" clause enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/125">#125</a>: the generator landed ahead of the other units, so a build PR that creates a guide now adds its <code>docs-site/manifest.yml</code> entry in the same PR, or the build fails, and CI's <code>docs:check</code> validates every guide link and anchor. The rest of bullet 2: the workflow job also landed with <a href="https://github.com/bottrall/riffer-rig/issues/125">#125</a> (see <a href="#deploy">Deploy</a>); <code>OVERVIEW.md</code>, the README top matter and deleting this file wait on the final docs PR.</p>
 </section>
 
 <h2 id="interfaces">Interfaces</h2>

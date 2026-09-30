@@ -2,6 +2,7 @@
 
 require 'bundler/gem_tasks'
 require 'rake/testtask'
+require 'rdoc/task'
 require 'rubocop/rake_task'
 require 'tmpdir'
 
@@ -70,6 +71,35 @@ namespace :steep do
   end
 end
 
+RDoc::Task.new do |rdoc|
+  rdoc.rdoc_dir = '_site/api'
+  rdoc.title = 'riffer-rig API Reference'
+  rdoc.main = 'README.md'
+  rdoc.rdoc_files.include('README.md', 'CHANGELOG.md', 'LICENSE.txt')
+  rdoc.rdoc_files.include('lib/**/*.rb')
+  rdoc.options << '--charset' << 'utf-8'
+end
+
+namespace :docs do
+  desc 'Build the docs site (landing, guides, 404, assets) into _site/'
+  task :site do
+    ruby 'docs-site/build.rb'
+  end
+
+  desc 'Build the docs site and validate all internal links and anchors'
+  task check: :site do
+    ruby 'docs-site/check.rb'
+  end
+
+  desc 'Build the docs site and serve it at http://localhost:8000'
+  task serve: :site do
+    ruby '-run -e httpd _site -p 8000'
+  end
+end
+
+desc 'Build the full deployable docs tree (site + API reference) into _site/'
+task docs: %w[docs:site rdoc]
+
 desc 'Serve the building plans in plans/ at http://localhost:8001'
 task :plans do
   ruby '-run -e httpd plans -p 8001'
@@ -79,6 +109,6 @@ desc 'Check RBS signatures are current, then type-check'
 task typecheck: %w[rbs:check rbs:collection_check rbs:lint_manual steep:check]
 
 desc 'Run everything CI runs'
-task ci: %i[test rubocop typecheck]
+task ci: %i[test rubocop typecheck docs:check]
 
 task default: :ci

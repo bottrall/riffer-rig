@@ -41,3 +41,20 @@ jobs:
       - uses: rubygems/configure-rubygems-credentials@v2.1.0
       - run: bin/build
       - run: gem push pkg/riffer-rig-*.gem
+
+  docs:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - run: bin/docs
+      - uses: JamesIves/github-pages-deploy-action@65b5dfd4f5bcd3a7403bbc2959c144256167464e
+        with:
+          branch: gh-pages
+          folder: ./_site

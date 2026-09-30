@@ -45,4 +45,4 @@ The banner shows the model, the working directory, how many skills were found an
 - each turn ends with a token line, and the session cost once the model is priced ([Configuration](CONFIGURATION.md#models));
 - Ctrl-C cancels a running turn; at the prompt, a second Ctrl-C exits, as do `/exit`, `/quit` and Ctrl-D.
 
-The [README](../README.md#usage) lists the flags and slash commands.
+The [README](https://github.com/bottrall/riffer-rig#usage) lists the flags and slash commands.
