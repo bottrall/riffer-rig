@@ -1,0 +1,68 @@
+# Generated from lib/riffer/rig/terminal/animator.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Animator
+  REVEAL_FRAME_SECONDS: Float
+
+  SPINNER_FRAME_SECONDS: Float
+
+  EQ_LEVELS: Array[String]
+
+  EQ_BARS: Integer
+
+  NEUTRAL_LABEL: String
+
+  REASONING_PHRASES: Array[String]
+
+  REASONING_TICK_RANGE: Range[Integer]
+
+  @stop: bool
+
+  @phrase: String?
+
+  @mode: Symbol
+
+  @thread: Thread?
+
+  @theme: Riffer::Rig::Terminal::Theme
+
+  @io: IO
+
+  # @rbs io: IO
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: void
+  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme) -> void
+
+  # @rbs frames: Array[Array[String]]
+  # @rbs return: void
+  def reveal: (Array[Array[String]] frames) -> void
+
+  # @rbs mode: Symbol
+  # @rbs return: void
+  def start: (?Symbol mode) -> void
+
+  # @rbs return: void
+  def stop: () -> void
+
+  # @rbs tick: Integer
+  # @rbs label: String
+  # @rbs return: String
+  def equalizer: (Integer tick, ?String label) -> String
+
+  private
+
+  # @rbs return: void
+  def animate: () -> void
+
+  # @rbs roll_at: Float
+  # @rbs return: Float
+  def roll_phrase: (Float roll_at) -> Float
+
+  # @rbs return: Integer
+  def roll_rand: () -> Integer
+
+  # @rbs return: String
+  def label: () -> String
+
+  # @rbs return: bool
+  def enabled?: () -> bool
+end

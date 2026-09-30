@@ -20,13 +20,38 @@ This provides a `riffer` executable.
 
 ## Usage
 
-Run the agent from any project directory, with a model chosen as `provider/name`:
+Run the agent from any project directory:
 
 ```bash
-RIFFER_MODEL=anthropic/claude-sonnet-4-6 riffer
+riffer
 ```
 
-There is no default model: set `RIFFER_MODEL` for one run, or `model` in `~/.riffer/settings.json` for every run ([Configuration](#configuration)). With neither, `riffer` says how to set one and exits.
+The first run asks which model to use, as `provider/name` (for example `anthropic/claude-sonnet-4-6`), and saves the answer as `model` in `~/.riffer/settings.json`; it then asks for any missing credential ([Authentication](#authentication)). After that, `riffer` opens straight into the prompt. [Getting started](docs/GETTING_STARTED.md) walks through a first session.
+
+The model is the first of these that is set: `--model`, `RIFFER_MODEL`, `model` in `<cwd>/.riffer/settings.json`, then in `~/.riffer/settings.json` ([Configuration](docs/CONFIGURATION.md#model)).
+
+### Flags
+
+| Flag                    | Effect                                                                     |
+| ----------------------- | -------------------------------------------------------------------------- |
+| `--model provider/name` | the model for this session, over `RIFFER_MODEL` and the settings            |
+| `--no-extensions`       | skips extension files; accepted now, with nothing to skip until they load   |
+| `--no-skills`           | leaves out [Agent Skills](docs/SKILLS.md)                                   |
+| `--no-agents-md`        | leaves out the [AGENTS.md](docs/INSTRUCTIONS.md#agentsmd) instructions      |
+| `--tools read,bash`     | only these tools, by identifier ([Tools](docs/TOOLS.md))                    |
+| `--max-steps N`         | stops a turn after `N` model calls                                          |
+| `-h`, `--help`          | prints the usage                                                            |
+
+`riffer -p` (one prompt, no terminal) and `riffer acp` (an editor's agent over stdio) are reserved: for now each prints the usage and exits with status 2.
+
+### In the session
+
+Type a prompt and press Enter; the reply streams in, with each tool call and the first line of its result, and every turn ends with a token line (`↑in · ↓out · session N tok`, plus the session cost when the model is [priced](docs/CONFIGURATION.md#models)).
+
+- Ctrl-C during a turn cancels it and returns to the prompt. Ctrl-C at the prompt asks for a second one, which exits.
+- `/exit` or `/quit` ends the session, as does Ctrl-D.
+- `/model provider/name` switches the model ([below](#switching-the-model)), and `/skill:<name> [text]` runs a skill ([Skills](docs/SKILLS.md)).
+- Any other `/name args` runs the Runtime command of that name, such as one an extension registers ([Extensions](docs/EXTENSIONS.md)); an unknown name is reported and nothing is sent to the model.
 
 ### Authentication
 
@@ -66,7 +91,7 @@ The flat `{"anthropic": "sk-…"}` shape earlier versions wrote is no longer rea
 - `AGENTS.md` — `~/.riffer/AGENTS.md` and an `AGENTS.md` in the current working directory or any directory above it, whichever exist, are re-read every turn as instructions that take precedence over the default norms ([Instructions](docs/INSTRUCTIONS.md#agentsmd)).
 - Skills — Agent Skills in `.agents/skills/` from the current working directory up to the repository root, and in `~/.agents/skills/`, are offered to the model, and each can be run with `/skill:<name>` ([Skills](docs/SKILLS.md)).
 - `RIFFER_MODEL` — the model for this run as `provider/name`, winning over the `model` setting. A bare name such as `sonnet` is rejected with the list of providers.
-- `~/.riffer/settings.json` — optional user settings, and `<cwd>/.riffer/settings.json` for one project, merged key by key with the project winning (the `riffer` terminal reads only the home file for now). Every key is optional:
+- `~/.riffer/settings.json` — optional user settings, and `<cwd>/.riffer/settings.json` for one project, merged key by key with the project winning. Every key is optional:
 
   ```json
   {

@@ -1,0 +1,85 @@
+# Generated from lib/riffer/rig/terminal.rb with RBS::Inline
+
+class Riffer::Rig::Terminal
+  EXIT_COMMANDS: Array[String]
+
+  SLASH_COMMAND: Regexp
+
+  SKILL_COMMAND_PREFIX: ::String
+
+  EXIT_HINT: ::String
+
+  FAREWELL: ::String
+
+  @version: String
+
+  @theme: Riffer::Rig::Terminal::Theme
+
+  @animator: Riffer::Rig::Terminal::Animator
+
+  @renderer: Riffer::Rig::Terminal::Renderer
+
+  @host: Riffer::Rig::Hosts::_Host
+
+  @input: IO
+
+  # @rbs input: IO
+  # @rbs output: IO
+  # @rbs version: String
+  # @rbs no_color: bool
+  # @rbs return: Riffer::Rig::Terminal
+  def self.for: (input: IO, output: IO, version: String, ?no_color: bool) -> Riffer::Rig::Terminal
+
+  # @rbs input: IO
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs renderer: Riffer::Rig::Terminal::Renderer
+  # @rbs animator: Riffer::Rig::Terminal::Animator
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs version: String
+  # @rbs return: void
+  def initialize: (input: IO, host: Riffer::Rig::Hosts::_Host, renderer: Riffer::Rig::Terminal::Renderer, animator: Riffer::Rig::Terminal::Animator, theme: Riffer::Rig::Terminal::Theme, version: String) -> void
+
+  # @rbs &build: (Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime
+  # @rbs return: Integer
+  def run: () { (Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime } -> Integer
+
+  private
+
+  # @rbs build: ^(Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime
+  # @rbs return: Riffer::Rig::Runtime?
+  def load: (^(Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime build) -> Riffer::Rig::Runtime?
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def reveal_banner: (Riffer::Rig::Runtime runtime) -> void
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def repl: (Riffer::Rig::Runtime runtime) -> void
+
+  # @rbs return: String | :interrupt | nil
+  def read_line: () -> (String | :interrupt | nil)
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs text: String
+  # @rbs return: void
+  def dispatch: (Riffer::Rig::Runtime runtime, String text) -> void
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs &block: (^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void) -> void
+  # @rbs return: void
+  def turn: (Riffer::Rig::Runtime runtime) { (^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void) -> void } -> void
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: void
+  def render: (Riffer::Rig::Runtime runtime, ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
+
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: void
+  def render_tool_result: (Riffer::Messages::Base message) -> void
+
+  # @rbs mode: Symbol
+  # @rbs return: void
+  def start_animator: (?Symbol mode) -> void
+end

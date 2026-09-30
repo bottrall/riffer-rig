@@ -5,33 +5,27 @@ require 'test_helper'
 describe Riffer::Rig::Tools::Bash do
   def setup
     @tool = Riffer::Rig::Tools::Bash.new
+    @context = Riffer::Agent::Context.new(cwd: Dir.pwd)
   end
 
   it 'captures command output' do
-    response = @tool.call(context: nil, command: 'echo hello')
+    response = @tool.call(context: @context, command: 'echo hello')
 
     assert_equal 'hello', response.content
   end
 
-  it 'runs in the working directory' do
-    Dir.mktmpdir do |dir|
-      Dir.chdir(dir) do
-        File.write('marker.txt', '')
-        response = @tool.call(context: nil, command: 'ls')
-
-        assert_includes response.content, 'marker.txt'
-      end
-    end
+  it 'is a tool error without a cwd in its context' do
+    assert_predicate @tool.call_with_validation(context: nil, command: 'pwd'), :error?
   end
 
   it 'non zero exit returns error' do
-    response = @tool.call(context: nil, command: 'exit 3')
+    response = @tool.call(context: @context, command: 'exit 3')
 
     assert_predicate response, :error?
   end
 
   it 'times out long running commands' do
-    response = @tool.call(context: nil, command: 'sleep 5', timeout_ms: 200)
+    response = @tool.call(context: @context, command: 'sleep 5', timeout_ms: 200)
 
     assert_includes response.content, 'timed out'
   end
@@ -42,7 +36,7 @@ describe Riffer::Rig::Tools::Bash do
       sleep seconds
       flag.set
     end
-    yield Riffer::Agent::Context.new(cancel_flag: flag)
+    yield Riffer::Agent::Context.new(cwd: Dir.pwd, cancel_flag: flag)
   ensure
     canceller.join
   end
@@ -67,7 +61,7 @@ describe Riffer::Rig::Tools::Bash do
   end
 
   it 'ignores a flag that is not set' do
-    context = Riffer::Agent::Context.new(cancel_flag: Riffer::Rig::Runtime::CancelFlag.new)
+    context = Riffer::Agent::Context.new(cwd: Dir.pwd, cancel_flag: Riffer::Rig::Runtime::CancelFlag.new)
     response = @tool.call(context: context, command: 'echo hello')
 
     assert_equal 'hello', response.content

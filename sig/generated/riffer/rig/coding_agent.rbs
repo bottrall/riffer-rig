@@ -1,4 +1,0 @@
-# Generated from lib/riffer/rig/coding_agent.rb with RBS::Inline
-
-class Riffer::Rig::CodingAgent < Riffer::Agent
-end

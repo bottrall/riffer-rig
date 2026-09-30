@@ -22,6 +22,7 @@ In order, it:
 | `cwd:`        | the working directory; its `.riffer/settings.json` is the project scope  | required |
 | `host:`       | the [host](HOSTS.md) the Runtime gets, and the one onboarding and credential prompts ask | required |
 | `model:`      | `"provider/name"`, winning over `RIFFER_MODEL` and the settings           | `nil` |
+| `extensions: false` | skips extension files and autoload; accepted but a no-op until extension files load, and the bundle loads either way | `true` |
 | `skills: false` | leaves out the bundled [`skills`](SKILLS.md) extension                 | `true` |
 | `agents_md: false` | leaves out the bundled [`agents_md`](INSTRUCTIONS.md#agentsmd) extension | `true` |
 | `tools:`      | the Runtime's tool allowlist                                              | `nil` |
@@ -30,7 +31,7 @@ In order, it:
 | `home:`       | the directory holding `.riffer/settings.json` and `.riffer/auth.json`    | `Dir.home` |
 | `riffer_config:` | the `Riffer::Config` that receives the credentials and pricing        | `Riffer.config` |
 
-`Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:)` takes the same setup and builds with `runtime(model:, skills:, agents_md:, tools:, max_steps:)`, for a host that keeps the Loader.
+`Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:)` takes the same setup and builds with `runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)`, for a host that keeps the Loader.
 
 The host is asked only when its `capabilities` include `:ask`. With no model set anywhere, the Loader asks it for a model string, listing the providers, and writes the answer to `~/.riffer/settings.json`; a required credential that does not resolve is asked for the same way and stored ([Providers](PROVIDERS.md#rifferrigcredentials)). Anything the Loader cannot settle raises `Riffer::Rig::Loader::ConfigurationError` with a message fit to show the user: no model and a host that cannot ask (the null host), a model string without a known provider prefix, a bare `RIFFER_MODEL`, or a required credential still missing. A headless host should map it to exit status 2.
 
@@ -129,7 +130,7 @@ runtime.tally.cost         # => every turn so far, in USD
 
 Each turn's usage is riffer's: on the `ask` response as `response.token_usage`, and on the stream as the closing `turn_end` event's `usage` and `cost` — the same values. Rates are USD per million tokens. riffer counts cache reads and writes inside `input_tokens`, so the cached share is priced at the `cache_read` and `cache_write` rates and only the rest at `input`.
 
-Missing pricing means `nil`, never zero: a model `Riffer.config.pricing` has no rates for reports no `cost`, and neither does the tally. Pricing is process-wide and keyed by model id, so two Runtimes that price the same model differently share whichever registered last. The terminal takes its pricing from the `models` block of `~/.riffer/settings.json` ([Configuration](CONFIGURATION.md#models)); an embedder passes its own, or registers rates itself with `Riffer.config.pricing.set`.
+Missing pricing means `nil`, never zero: a model `Riffer.config.pricing` has no rates for reports no `cost`, and neither does the tally. Pricing is process-wide and keyed by model id, so two Runtimes that price the same model differently share whichever registered last. The terminal takes its pricing from the merged `models` blocks of the two settings files ([Configuration](CONFIGURATION.md#models)); an embedder passes its own, or registers rates itself with `Riffer.config.pricing.set`.
 
 ## Rig events
 

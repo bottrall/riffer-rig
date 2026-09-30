@@ -1,0 +1,17 @@
+# Generated from lib/riffer/rig/terminal/palette.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Palette
+  PINK: Array[Integer]
+
+  MAGENTA: Array[Integer]
+
+  PURPLE: Array[Integer]
+
+  BLUE: Array[Integer]
+
+  CYAN: Array[Integer]
+
+  GREY: Array[Integer]
+
+  RED: Array[Integer]
+end
