@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.7.0](https://github.com/bottrall/riffer-rig/compare/v0.6.0...v0.7.0) (2026-09-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* Riffer::Rig::CodingAgent, REPL, TokenTally and the UI namespace are removed, and the old CLI is replaced by the dispatcher. Embed a Runtime through Riffer::Rig::Loader.runtime instead of CodingAgent; the terminal UI classes now live under Riffer::Rig::Terminal. The bash tool now errors when its context has no :cwd.
+* DEFAULT_MODEL is gone; with no model the Loader asks the host to onboard and the null host's refusal is a configuration error. The old Settings module API changes shape.
+* Riffer::Rig::Hosts::Base and Riffer::Rig::Events::Event are removed. A host is any object implementing the five host methods (Riffer::Rig::Hosts::_Host); drop the superclass. A custom event drops the superclass and super(), and includes Riffer::Rig::Events::Value for equality.
+
+### Features
+
+* /model switches the model for the current Runtime ([#193](https://github.com/bottrall/riffer-rig/issues/193)) ([f888972](https://github.com/bottrall/riffer-rig/commit/f8889722f62499f97ee34158826e9d00dd3d92ef))
+* bundle Agent Skills with /skill: commands over the skills seam ([#201](https://github.com/bottrall/riffer-rig/issues/201)) ([e14844d](https://github.com/bottrall/riffer-rig/commit/e14844d9c7c22dd85b3d4158892ec53bae736c6b))
+* bundle AGENTS.md as the agents_md prompt section ([#198](https://github.com/bottrall/riffer-rig/issues/198)) ([e2e9141](https://github.com/bottrall/riffer-rig/commit/e2e914195f7c15c75ee2ae6bb55d772d754a2f37))
+* bundle read, write, edit and bash as extensions ([#195](https://github.com/bottrall/riffer-rig/issues/195)) ([d5c9ffe](https://github.com/bottrall/riffer-rig/commit/d5c9ffe692abf5e5cab16af0686f96b040a6cbaa))
+* bundle the MCP client over the mcp seam ([#202](https://github.com/bottrall/riffer-rig/issues/202)) ([c2fc42f](https://github.com/bottrall/riffer-rig/commit/c2fc42ff873af8205f3a8042069a3dd5f27420e6))
+* isolate extension load errors and check requires ([#192](https://github.com/bottrall/riffer-rig/issues/192)) ([0aac3bf](https://github.com/bottrall/riffer-rig/commit/0aac3bf7d3b6ada84a4f38a40abc181f7d3f57c7)), closes [#114](https://github.com/bottrall/riffer-rig/issues/114)
+* lifecycle, vetoable and observe hooks plus the stream passthrough ([#194](https://github.com/bottrall/riffer-rig/issues/194)) ([206d349](https://github.com/bottrall/riffer-rig/commit/206d349a4967081961372d1692b0946663f32a10))
+* Loader builds a Runtime from settings, credentials and the bundle ([#205](https://github.com/bottrall/riffer-rig/issues/205)) ([01170fe](https://github.com/bottrall/riffer-rig/commit/01170fee282deae87aba1b8797cfe5cedc892deb)), closes [#123](https://github.com/bottrall/riffer-rig/issues/123)
+* namespaced extension settings ([#196](https://github.com/bottrall/riffer-rig/issues/196)) ([dc16a84](https://github.com/bottrall/riffer-rig/commit/dc16a8424ea00ea0b39323db97309c9c94224443)), closes [#117](https://github.com/bottrall/riffer-rig/issues/117)
+* rebuild the registrar in place ([#199](https://github.com/bottrall/riffer-rig/issues/199)) ([f4b742b](https://github.com/bottrall/riffer-rig/commit/f4b742b3f45a28f3c69d75a355c3a2880938de1b))
+* runtime commands with run_command and the command context ([#190](https://github.com/bottrall/riffer-rig/issues/190)) ([159d007](https://github.com/bottrall/riffer-rig/commit/159d0077b34773fadb2cc6f5f66622b12e4b7a0e)), closes [#111](https://github.com/bottrall/riffer-rig/issues/111)
+* snapshot and restore a Runtime ([#200](https://github.com/bottrall/riffer-rig/issues/200)) ([aaad579](https://github.com/bottrall/riffer-rig/commit/aaad5797e5e626b6f560b96a5f4cf1bf5bc379a3))
+* Terminal drives a Loader-built Runtime ([#206](https://github.com/bottrall/riffer-rig/issues/206)) ([f805db6](https://github.com/bottrall/riffer-rig/commit/f805db625e69f90c2dd343bbb7ca016aba7cecf0))
+* token tally and pricing behind the Runtime ([#189](https://github.com/bottrall/riffer-rig/issues/189)) ([1ccde0d](https://github.com/bottrall/riffer-rig/commit/1ccde0d1670feaa2a9b9c957bbe79fa80ca47d4f))
+
+
+### Bug Fixes
+
+* run steep check without attaching to a language server ([#197](https://github.com/bottrall/riffer-rig/issues/197)) ([4f0b92e](https://github.com/bottrall/riffer-rig/commit/4f0b92eeafcb4e4fb6d054c29d707fcfb39766d5))
+
+
+### Code Refactoring
+
+* interfaces over inheritance, POROs over hashes, new cops ([#204](https://github.com/bottrall/riffer-rig/issues/204)) ([7fda3e3](https://github.com/bottrall/riffer-rig/commit/7fda3e3ec79ea97479008127f0c153ce84b888d5))
+
 ## [0.6.0](https://github.com/bottrall/riffer-rig/compare/v0.5.0...v0.6.0) (2026-09-27)
 
 
