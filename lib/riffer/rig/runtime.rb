@@ -46,11 +46,11 @@ class Riffer::Rig::Runtime
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
   # @rbs @declared_settings: Hash[String, Hash[Symbol, untyped]]
-  # @rbs @errors: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
+  # @rbs @errors: Array[Riffer::Rig::Extension::Failure]
   # @rbs @hooks: Riffer::Rig::Runtime::Hooks
   # @rbs @tool_allowlist: Array[String]?
   # @rbs @mcp_registry: Riffer::Rig::Mcp::_Registry
-  # @rbs @mcp_servers: Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs @mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader :agent #: Riffer::Agent
@@ -168,7 +168,7 @@ class Riffer::Rig::Runtime
     nil
   end
 
-  # @rbs return: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
+  # @rbs return: Array[Riffer::Rig::Extension::Failure]
   def errors
     @errors.dup
   end
@@ -302,7 +302,7 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs mcp_servers: Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs agent: Riffer::Agent
@@ -564,7 +564,7 @@ class Riffer::Rig::Runtime
   # @rbs error: StandardError
   # @rbs return: void
   def record_error(extension, error)
-    @errors << { extension: extension, error: error }
+    @errors << Riffer::Rig::Extension::Failure.new(extension: extension, error: error)
     @host.notify("Extension #{extension.name} failed to load: #{error.message}", level: :error)
   end
 
@@ -607,24 +607,24 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::Server]
   def register_mcp_servers(registrars)
     declarations = registrars.flat_map { |registrar| registrar.mcp_servers.to_a }.to_h
     declarations.filter_map do |name, declaration|
       live = @mcp_servers[name]
-      server = live && live[:declaration] == declaration ? live : register_mcp_server(name, declaration)
+      server = live && live.declaration == declaration ? live : register_mcp_server(name, declaration)
       [name, server] if server
     end.to_h
   end
 
   # @rbs name: String
-  # @rbs declaration: Riffer::Rig::Mcp::declaration
-  # @rbs return: Riffer::Rig::Mcp::server?
+  # @rbs declaration: Riffer::Rig::Mcp::Declaration
+  # @rbs return: Riffer::Rig::Mcp::Server?
   def register_mcp_server(name, declaration)
     registration = @mcp_registry.register(
-      name: name, endpoint: declaration[:url], tags: [mcp_tag], discovery_headers: declaration[:headers]
+      name: name, endpoint: declaration.url, tags: [mcp_tag], discovery_headers: declaration.headers
     )
-    { declaration: declaration, registration: registration }
+    Riffer::Rig::Mcp::Server.new(declaration: declaration, registration: registration)
   rescue StandardError => e
     @host.notify("MCP server #{name} failed to register: #{e.message}", level: :error)
     nil
@@ -632,10 +632,10 @@ class Riffer::Rig::Runtime
 
   # A retired registration was replaced under the same name, by another
   # Runtime or a later declaration, and is no longer this Runtime's to remove.
-  # @rbs servers: Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs servers: Hash[String, Riffer::Rig::Mcp::Server]
   # @rbs return: void
   def unregister_mcp_servers(servers)
-    servers.each { |name, server| @mcp_registry.unregister(name) unless server[:registration].retired? }
+    servers.each { |name, server| @mcp_registry.unregister(name) unless server.registration.retired? }
   end
 
   # @rbs registered: Array[singleton(Riffer::Tool)]

@@ -23,13 +23,13 @@ describe 'Riffer::Rig::Bundled::Mcp' do
     settings = { servers: { web: { url: 'https://web.example/mcp', headers: { 'X-Token': 't' } } } }
 
     assert_equal(
-      { url: 'https://web.example/mcp', headers: { 'X-Token' => 't' } },
+      Riffer::Rig::Mcp::Declaration.new(url: 'https://web.example/mcp', headers: { 'X-Token' => 't' }),
       registered(settings).mcp_servers.fetch('web')
     )
   end
 
   it 'gives a server without headers none' do
-    assert_empty registered({ servers: { web: { url: 'https://web.example/mcp' } } }).mcp_servers.fetch('web')[:headers]
+    assert_empty registered({ servers: { web: { url: 'https://web.example/mcp' } } }).mcp_servers.fetch('web').headers
   end
 
   it 'declares nothing without servers' do

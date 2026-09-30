@@ -142,7 +142,7 @@ Core settings keys stay top level, so an extension cannot take one as its name: 
 The Runtime wraps each registrar block. A block that raises a `StandardError`, an extension whose `requires:` the running riffer-rig does not satisfy, or an extension named after a core settings key is a load error:
 
 - The extension is skipped, including anything its block registered before it raised; the rest load, in order.
-- `runtime.errors` records it as `{ extension:, error: }` — the extension object and the exception (a `Riffer::Rig::Extension::RequirementError` for an unmet `requires:`, a `Riffer::Rig::Registrar::NameCollisionError` for a core key taken as a name). An empty array means every extension loaded.
+- `runtime.errors` records it as a `Riffer::Rig::Extension::Failure`, whose `extension` is the extension object and `error` the exception (a `Riffer::Rig::Extension::RequirementError` for an unmet `requires:`, a `Riffer::Rig::Registrar::NameCollisionError` for a core key taken as a name). An empty array means every extension loaded.
 - The host gets one `notify` at level `:error`, `"Extension <name> failed to load: <message>"`, which the [mirror](HOSTS.md#the-mirror) also queues as a `notify` event for the next `prompt` or `run_command` to emit.
 
 Errors go to the host only, never into the model's context.

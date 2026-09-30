@@ -53,7 +53,7 @@ class Riffer::Rig::Runtime
 
   @declared_settings: Hash[String, Hash[Symbol, untyped]]
 
-  @errors: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
+  @errors: Array[Riffer::Rig::Extension::Failure]
 
   @hooks: Riffer::Rig::Runtime::Hooks
 
@@ -61,7 +61,7 @@ class Riffer::Rig::Runtime
 
   @mcp_registry: Riffer::Rig::Mcp::_Registry
 
-  @mcp_servers: Hash[String, Riffer::Rig::Mcp::server]
+  @mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader agent: Riffer::Agent
@@ -113,8 +113,8 @@ class Riffer::Rig::Runtime
   # @rbs return: nil
   def run_command: (String name, ?String args) ?{ (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void } -> nil
 
-  # @rbs return: Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
-  def errors: () -> Array[{ extension: Riffer::Rig::Extension, error: StandardError }]
+  # @rbs return: Array[Riffer::Rig::Extension::Failure]
+  def errors: () -> Array[Riffer::Rig::Extension::Failure]
 
   # @rbs return: String
   def model: () -> String
@@ -171,12 +171,12 @@ class Riffer::Rig::Runtime
   def skills_config: (Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend] sources) -> Riffer::Skills::Config?
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs mcp_servers: Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs agent: Riffer::Agent
   # @rbs return: void
-  def install: (Array[Riffer::Rig::Registrar] registrars, Hash[String, Riffer::Rig::Mcp::server] mcp_servers, Hash[Symbol, untyped] settings, Riffer::Rig::Runtime::Hooks hooks, Riffer::Agent agent) -> void
+  def install: (Array[Riffer::Rig::Registrar] registrars, Hash[String, Riffer::Rig::Mcp::Server] mcp_servers, Hash[Symbol, untyped] settings, Riffer::Rig::Runtime::Hooks hooks, Riffer::Agent agent) -> void
 
   # A session that has not started yet opens with session_start(:new) on its
   # first turn instead.
@@ -289,19 +289,19 @@ class Riffer::Rig::Runtime
   def mcp_tag: () -> Symbol
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Hash[String, Riffer::Rig::Mcp::server]
-  def register_mcp_servers: (Array[Riffer::Rig::Registrar] registrars) -> Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::Server]
+  def register_mcp_servers: (Array[Riffer::Rig::Registrar] registrars) -> Hash[String, Riffer::Rig::Mcp::Server]
 
   # @rbs name: String
-  # @rbs declaration: Riffer::Rig::Mcp::declaration
-  # @rbs return: Riffer::Rig::Mcp::server?
-  def register_mcp_server: (String name, Riffer::Rig::Mcp::declaration declaration) -> Riffer::Rig::Mcp::server?
+  # @rbs declaration: Riffer::Rig::Mcp::Declaration
+  # @rbs return: Riffer::Rig::Mcp::Server?
+  def register_mcp_server: (String name, Riffer::Rig::Mcp::Declaration declaration) -> Riffer::Rig::Mcp::Server?
 
   # A retired registration was replaced under the same name, by another
   # Runtime or a later declaration, and is no longer this Runtime's to remove.
-  # @rbs servers: Hash[String, Riffer::Rig::Mcp::server]
+  # @rbs servers: Hash[String, Riffer::Rig::Mcp::Server]
   # @rbs return: void
-  def unregister_mcp_servers: (Hash[String, Riffer::Rig::Mcp::server] servers) -> void
+  def unregister_mcp_servers: (Hash[String, Riffer::Rig::Mcp::Server] servers) -> void
 
   # @rbs registered: Array[singleton(Riffer::Tool)]
   # @rbs allowlist: Array[String]?

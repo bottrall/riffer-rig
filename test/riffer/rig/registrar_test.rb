@@ -165,7 +165,11 @@ describe Riffer::Rig::Registrar do
     registrar.mcp('docs', url: 'https://docs.example/mcp', headers: { 'Authorization' => 'Bearer t' })
 
     assert_equal(
-      { 'docs' => { url: 'https://docs.example/mcp', headers: { 'Authorization' => 'Bearer t' } } },
+      {
+        'docs' => Riffer::Rig::Mcp::Declaration.new(
+          url: 'https://docs.example/mcp', headers: { 'Authorization' => 'Bearer t' }
+        )
+      },
       registrar.mcp_servers
     )
   end
@@ -174,7 +178,7 @@ describe Riffer::Rig::Registrar do
     registrar = Riffer::Rig::Registrar.new('docs')
     registrar.mcp('docs', url: 'https://docs.example/mcp')
 
-    assert_empty registrar.mcp_servers.fetch('docs')[:headers]
+    assert_empty registrar.mcp_servers.fetch('docs').headers
   end
 
   it 'lets a later declaration of an MCP server replace the earlier one' do
@@ -182,7 +186,7 @@ describe Riffer::Rig::Registrar do
     registrar.mcp('docs', url: 'https://docs.example/mcp')
     registrar.mcp('docs', url: 'https://other.example/mcp')
 
-    assert_equal 'https://other.example/mcp', registrar.mcp_servers.fetch('docs')[:url]
+    assert_equal 'https://other.example/mcp', registrar.mcp_servers.fetch('docs').url
   end
 
   it 'finds no collision for an extension name outside the core keys' do

@@ -793,7 +793,7 @@ describe Riffer::Rig::Runtime do
     end
 
     it 'records the raising extension on errors' do
-      assert_equal([[@broken, 'kaboom']], @runtime.errors.map { |entry| [entry[:extension], entry[:error].message] })
+      assert_equal([[@broken, 'kaboom']], @runtime.errors.map { |failure| [failure.extension, failure.error.message] })
     end
 
     it 'reports the failure with one notify at error level' do
@@ -989,7 +989,7 @@ describe Riffer::Rig::Runtime do
 
       assert_equal(
         [[reasoning, Riffer::Rig::Registrar::NameCollisionError]],
-        runtime.errors.map { |entry| [entry[:extension], entry[:error].class] }
+        runtime.errors.map { |failure| [failure.extension, failure.error.class] }
       )
     end
 

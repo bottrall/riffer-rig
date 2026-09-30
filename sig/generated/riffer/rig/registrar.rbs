@@ -10,7 +10,7 @@ class Riffer::Rig::Registrar
 
   @hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
-  @mcp_servers: Hash[String, Riffer::Rig::Mcp::declaration]
+  @mcp_servers: Hash[String, Riffer::Rig::Mcp::Declaration]
 
   @given_settings: Hash[Symbol, untyped]
 
@@ -88,8 +88,8 @@ class Riffer::Rig::Registrar
   # @rbs return: Hash[Symbol, untyped]
   def declared_settings: () -> Hash[Symbol, untyped]
 
-  # @rbs return: Hash[String, Riffer::Rig::Mcp::declaration]
-  def mcp_servers: () -> Hash[String, Riffer::Rig::Mcp::declaration]
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::Declaration]
+  def mcp_servers: () -> Hash[String, Riffer::Rig::Mcp::Declaration]
 
   # @rbs return: Array[String]
   def registrations: () -> Array[String]
