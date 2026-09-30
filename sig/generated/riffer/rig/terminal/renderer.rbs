@@ -1,0 +1,126 @@
+# Generated from lib/riffer/rig/terminal/renderer.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Renderer
+  RESULT_PREVIEW_LIMIT: Integer
+
+  @prose_gap_pending: bool
+
+  @cursor: Riffer::Rig::Terminal::Cursor
+
+  @smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
+
+  @theme: Riffer::Rig::Terminal::Theme
+
+  @io: IO
+
+  # @rbs io: IO
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
+  # @rbs cursor: Riffer::Rig::Terminal::Cursor
+  # @rbs return: void
+  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme, ?smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother, ?cursor: Riffer::Rig::Terminal::Cursor) -> void
+
+  # @rbs event: Riffer::StreamEvents::TextDelta | Riffer::StreamEvents::ToolCallDone | Riffer::StreamEvents::Interrupt
+  # @rbs return: void
+  def render: (Riffer::StreamEvents::TextDelta | Riffer::StreamEvents::ToolCallDone | Riffer::StreamEvents::Interrupt event) -> void
+
+  # @rbs name: String
+  # @rbs return: void
+  def skill: (String name) -> void
+
+  # @rbs text: String
+  # @rbs return: void
+  def notice: (String text) -> void
+
+  # @rbs text: String
+  # @rbs return: void
+  def error: (String text) -> void
+
+  # @rbs message: String
+  # @rbs level: Symbol
+  # @rbs return: void
+  def notify: (String message, Symbol level) -> void
+
+  # @rbs usage: Riffer::Providers::TokenUsage?
+  # @rbs session: Riffer::Providers::TokenUsage?
+  # @rbs return: void
+  def usage: (Riffer::Providers::TokenUsage? usage, Riffer::Providers::TokenUsage? session) -> void
+
+  # @rbs return: void
+  def prompt: () -> void
+
+  # @rbs question: String?
+  # @rbs options: Array[String]?
+  # @rbs secret: bool
+  # @rbs return: void
+  def question: (String? question, Array[String]? options, bool secret) -> void
+
+  # @rbs return: void
+  def newline: () -> void
+
+  # @rbs return: void
+  def begin_turn: () -> void
+
+  # @rbs return: void
+  def end_turn: () -> void
+
+  # @rbs return: void
+  def drain: () -> void
+
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: void
+  def render_tool_result: (Riffer::Messages::Base message) -> void
+
+  class PassThroughSmoother
+    @io: IO
+
+    # @rbs io: IO
+    # @rbs return: void
+    def initialize: (IO io) -> void
+
+    # @rbs content: String
+    # @rbs return: self
+    def <<: (String content) -> self
+
+    # @rbs return: nil
+    def start: () -> nil
+
+    # @rbs return: nil
+    def drain: () -> nil
+
+    # @rbs return: nil
+    def finish: () -> nil
+  end
+
+  private
+
+  # @rbs indent: Integer
+  # @rbs &block: () -> String
+  # @rbs return: void
+  def render_block: (Integer indent) { () -> String } -> void
+
+  # @rbs content: String
+  # @rbs return: void
+  def render_prose: (String content) -> void
+
+  # @rbs indent: Integer
+  # @rbs &block: () -> String
+  # @rbs return: void
+  def render_tool_activity: (Integer indent) { () -> String } -> void
+
+  # @rbs return: void
+  def open_tool_activity: () -> void
+
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs session: Riffer::Providers::TokenUsage
+  # @rbs return: String
+  def usage_line: (Riffer::Providers::TokenUsage usage, Riffer::Providers::TokenUsage session) -> String
+
+  # @rbs arguments: String
+  # @rbs return: String
+  def format_arguments: (String arguments) -> String
+
+  # @rbs content: String
+  # @rbs return: String
+  def preview: (String content) -> String
+end

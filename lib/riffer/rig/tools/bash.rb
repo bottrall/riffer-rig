@@ -29,9 +29,7 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
   # @rbs return: Riffer::Tools::Response
   def call(context:, command:, timeout_ms: DEFAULT_TIMEOUT_MS)
     cancel_flag = context&.[](:cancel_flag) #: Riffer::Rig::Runtime::CancelFlag?
-    # The pre-#124 CLI runs CodingAgent outside a Runtime, so its tools get no
-    # :cwd; #124 removes this fallback.
-    cwd = context&.[](:cwd) || Dir.pwd #: String
+    cwd = context&.[](:cwd) #: String
     output, status = run(command, cwd, timeout_ms / 1000.0, cancel_flag)
     output = truncate(output.rstrip)
 

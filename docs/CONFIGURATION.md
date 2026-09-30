@@ -7,8 +7,6 @@ Settings live in two files with the same name and shape, both optional:
 
 `Riffer::Rig::Loader` reads home then project and merges them key by key, the project winning: a top-level key set in both takes the project's value, and an extension namespace merges the same way one level down, so a project can change one key of a namespace and keep the rest from home. Two keys merge differently: `extensions.disabled` lists add up across both scopes, and an [MCP server](MCP.md) declared in both is replaced whole by the project's. A file that is missing or is not valid JSON counts as empty.
 
-The `riffer` terminal still reads only `~/.riffer/settings.json` and `RIFFER_MODEL` until it moves onto the Loader; the project scope, `extensions.disabled` and onboarding apply to a Runtime built with [`Loader.runtime`](EMBEDDING.md#building-a-runtime-with-the-loader).
-
 ## Core keys
 
 Every core key is top level and optional:
@@ -36,7 +34,7 @@ The provider is one of `anthropic`, `openai`, `gemini`, `openrouter`, `azure_ope
 
 There is no built-in default. The model is the first of these that is set, highest first:
 
-1. the `model:` keyword on `Loader.runtime` (the `--model` flag, once the terminal passes it);
+1. the `model:` keyword on `Loader.runtime` (the `--model` flag);
 2. the `RIFFER_MODEL` environment variable, e.g. `RIFFER_MODEL=openai/gpt-5 riffer`;
 3. `model` in the project settings, then in the home settings;
 4. onboarding: the Loader asks the host for a model string, listing the providers, and writes the answer to `~/.riffer/settings.json`. A host that cannot ask (the null host, so headless and embedded use) declines, and the Loader raises `Riffer::Rig::Loader::ConfigurationError` instead.

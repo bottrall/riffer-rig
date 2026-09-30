@@ -16,6 +16,7 @@ target :lib do
   library 'json'
   library 'open3'
   library 'io-console'
+  library 'optparse'
 
   configure_code_diagnostics(D::Ruby.all_error)
 end

@@ -1,156 +1,92 @@
 # frozen_string_literal: true
 
-require 'io/console'
-
 module Riffer::Rig::CLI
   extend self
 
-  NO_MODEL = 'No model is set. Set RIFFER_MODEL, or "model" in ~/.riffer/settings.json, to provider/name, ' \
-             "with a provider from: #{Riffer::Rig::Settings::PROVIDERS.join(', ')}".freeze #: String
+  PRINT_FLAGS = %w[-p --print].freeze #: Array[String]
 
-  # @rbs output: IO
+  ACP_COMMAND = 'acp'
+
+  USAGE_ERROR = 2
+
+  # @rbs argv: Array[String]
   # @rbs input: IO
-  # @rbs model: String?
-  # @rbs env: Riffer::Rig::Env
+  # @rbs output: IO
+  # @rbs error: IO
+  # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  # @rbs cwd: String
+  # @rbs home: String
   # @rbs return: Integer
-  def start(output: $stdout, input: $stdin, model: nil, env: Riffer::Rig::Env.new)
-    theme = Riffer::Rig::UI::Theme.for(output, env:)
-    settings = Riffer::Rig::Settings::Document.new(Riffer::Rig::Settings.read(Riffer::Rig::Settings::PATH))
-    selected = model || env.model || settings.model
-    return refuse(NO_MODEL, theme, output) unless selected
+  def start(
+    argv = ARGV,
+    input: $stdin,
+    output: $stdout,
+    error: $stderr,
+    env: Riffer::Rig::Env.load,
+    cwd: Dir.pwd,
+    home: Dir.home
+  )
+    return unavailable("riffer #{ACP_COMMAND}", error) if argv.first == ACP_COMMAND
+    return unavailable('riffer -p', error) if argv.intersect?(PRINT_FLAGS)
 
-    rejection = Riffer::Rig::Settings.rejection(selected)
-    return refuse(rejection, theme, output) if rejection
+    flags = Flags.parse(argv)
+    return refuse(flags, error) if flags.is_a?(String)
+    return help(output) if flags.help
 
-    provider = Riffer::Rig::Settings.provider_for(selected)
-
-    if provider
-      values = credentials_for(provider, theme, output:, input:, env:)
-      return 1 if values.nil?
-
-      Riffer::Rig::Credentials.apply(provider, values)
-    end
-
-    agent    = Riffer::Rig::CodingAgent.new(config: agent_config(selected, settings.reasoning))
-    animator = Riffer::Rig::UI::Animator.new(io: output, theme:)
-
-    reveal_banner(theme, animator, selected)
-
-    tally    = Riffer::Rig::TokenTally.new(pricing: settings.models[selected])
-    smoother = Riffer::Rig::UI::Smoother.new(io: output, theme:)
-    renderer = Riffer::Rig::UI::Renderer.new(io: output, theme:, tally:, smoother:)
-    Riffer::Rig::REPL.new(agent:, renderer:, animator:, theme:, smoother:, input:, output:).run
-    0
+    terminal(flags, input:, output:, env:, cwd:, home:)
   end
 
   private
 
+  # @rbs flags: Riffer::Rig::CLI::Flags
+  # @rbs input: IO
+  # @rbs output: IO
+  # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  # @rbs cwd: String
+  # @rbs home: String
+  # @rbs return: Integer
+  def terminal(flags, input:, output:, env:, cwd:, home:)
+    Riffer::Rig::Terminal.for(
+      input: input,
+      output: output,
+      version: Riffer::Rig::VERSION,
+      no_color: env.is_a?(Riffer::Rig::Env) && env.no_color
+    ).run do |host|
+      Riffer::Rig::Loader.runtime(
+        cwd: cwd,
+        host: host,
+        env: env,
+        home: home,
+        model: flags.model,
+        extensions: flags.extensions,
+        skills: flags.skills,
+        agents_md: flags.agents_md,
+        tools: flags.tools,
+        max_steps: flags.max_steps
+      )
+    end
+  end
+
+  # @rbs name: String
+  # @rbs error: IO
+  # @rbs return: Integer
+  def unavailable(name, error)
+    refuse("#{name} is not available yet", error)
+  end
+
   # @rbs message: String
-  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs error: IO
+  # @rbs return: Integer
+  def refuse(message, error)
+    error.puts("riffer: #{message}")
+    error.puts(Flags.usage)
+    USAGE_ERROR
+  end
+
   # @rbs output: IO
   # @rbs return: Integer
-  def refuse(message, theme, output)
-    output.puts(theme.grey(message))
-    1
-  end
-
-  # @rbs model: String
-  # @rbs reasoning: String?
-  # @rbs return: Riffer::Agent::Config
-  def agent_config(model, reasoning)
-    config = Riffer::Rig::CodingAgent.config.dup
-    config.model = model
-    config.model_options = Riffer::Rig::Settings.model_options(model, reasoning)
-    config
-  end
-
-  # @rbs provider: String
-  # @rbs theme: Riffer::Rig::UI::Theme
-  # @rbs output: IO
-  # @rbs input: IO
-  # @rbs env: Riffer::Rig::Env
-  # @rbs return: Hash[Symbol, String]?
-  def credentials_for(provider, theme, output:, input:, env:)
-    resolution = Riffer::Rig::Credentials.resolve(provider, host: Riffer::Rig::Hosts::Null.new, env:)
-    return resolution.values if resolution.missing.empty?
-
-    onboard(provider, resolution, theme, output:, input:)
-  end
-
-  # @rbs provider: String
-  # @rbs resolution: Riffer::Rig::Credentials::Resolution
-  # @rbs theme: Riffer::Rig::UI::Theme
-  # @rbs output: IO
-  # @rbs input: IO
-  # @rbs return: Hash[Symbol, String]?
-  def onboard(provider, resolution, theme, output:, input:)
-    setup = Riffer::Rig::ProviderSetup.for(provider)
-    missing = setup.fields.select { |field| resolution.missing.include?(field.name) }
-
-    output.puts(theme.cyan('♪ welcome to riffer-rig ♪'))
-    output.puts(theme.grey("No #{provider} credentials found. Create them at #{setup.url || 'your provider'}"))
-
-    answers = missing.to_h { |field| [field.name, prompt(provider, field, theme, output:, input:)] }
-    if answers.values.any?(&:empty?)
-      env_vars = missing.flat_map(&:env).join(', ')
-      output.puts(theme.grey("Nothing entered. Set #{env_vars} or re-run riffer to try again."))
-      return nil
-    end
-
-    Riffer::Rig::Credentials.store(provider, answers)
-    output.puts(theme.grey("Saved under #{File.dirname(Riffer::Rig::Credentials::PATH)} (auth.json permissions 600)."))
-    resolution.values.merge(answers)
-  end
-
-  # @rbs provider: String
-  # @rbs field: Riffer::Rig::ProviderSetup::Field
-  # @rbs theme: Riffer::Rig::UI::Theme
-  # @rbs output: IO
-  # @rbs input: IO
-  # @rbs return: String
-  def prompt(provider, field, theme, output:, input:)
-    hint = field.secret ? " #{theme.grey('(hidden)')}" : ''
-    output.print("#{theme.pink('›')} Paste your #{provider} #{field.name}#{hint}: ")
-
-    answer = (field.secret ? read_secret(input) : input.gets).to_s.strip
-    output.puts
-    answer
-  end
-
-  # @rbs input: IO
-  # @rbs return: String?
-  def read_secret(input)
-    return input.noecho(&:gets) if input.respond_to?(:noecho) && input.tty?
-
-    input.gets
-  end
-
-  # @rbs theme: Riffer::Rig::UI::Theme
-  # @rbs animator: Riffer::Rig::UI::Animator
-  # @rbs model: String
-  # @rbs return: void
-  def reveal_banner(theme, animator, model)
-    loaded  = Riffer::Rig::Prompts::AgentsMd.paths(Dir.pwd)
-    context = loaded.empty? ? 'none' : loaded.join(', ')
-
-    animator.reveal(
-      [Riffer::Rig::UI::Banner.lines(
-        theme,
-        model: model,
-        cwd: Dir.pwd,
-        context: context,
-        skills: count_skills,
-        version: Riffer::Rig::VERSION
-      )]
-    )
-  end
-
-  # @rbs return: String
-  def count_skills
-    backend = Riffer::Skills::FilesystemBackend.new(*Riffer::Rig::Skills.directories(Dir.pwd))
-    count   = backend.list_skills.length
-    count.zero? ? 'none' : count.to_s
-  rescue StandardError
-    'none'
+  def help(output)
+    output.puts(Flags.usage)
+    0
   end
 end

@@ -25,6 +25,7 @@ class Riffer::Rig::Loader
   # @rbs home: String
   # @rbs riffer_config: Riffer::Config
   # @rbs model: String?
+  # @rbs extensions: bool
   # @rbs skills: bool
   # @rbs agents_md: bool
   # @rbs tools: Array[String]?
@@ -37,12 +38,13 @@ class Riffer::Rig::Loader
     home: Dir.home,
     riffer_config: Riffer.config,
     model: nil,
+    extensions: true,
     skills: true,
     agents_md: true,
     tools: nil,
     max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS
   )
-    new(cwd:, host:, env:, home:, riffer_config:).runtime(model:, skills:, agents_md:, tools:, max_steps:)
+    new(cwd:, host:, env:, home:, riffer_config:).runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)
   end
 
   # @rbs cwd: String
@@ -62,12 +64,20 @@ class Riffer::Rig::Loader
   end
 
   # @rbs model: String?
+  # @rbs extensions: bool
   # @rbs skills: bool
   # @rbs agents_md: bool
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
   # @rbs return: Riffer::Rig::Runtime
-  def runtime(model: nil, skills: true, agents_md: true, tools: nil, max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS)
+  def runtime(
+    model: nil,
+    extensions: true,
+    skills: true,
+    agents_md: true,
+    tools: nil,
+    max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS
+  )
     settings = Riffer::Rig::Settings.merge(
       Riffer::Rig::Settings.read(home_settings_path),
       Riffer::Rig::Settings.read(File.join(@cwd, '.riffer', 'settings.json'))

@@ -5,4 +5,4 @@ require "bundler/setup" if File.exist?(File.expand_path("../Gemfile", __dir__))
 
 require_relative "../lib/riffer/rig"
 
-exit(Riffer::Rig::CLI.start)
+exit(Riffer::Rig::CLI.start(ARGV))
