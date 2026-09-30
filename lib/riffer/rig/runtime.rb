@@ -512,7 +512,7 @@ class Riffer::Rig::Runtime
     # Upstream candidate: TokenUsage has no zero to seed sum with, and no usage
     # at all must stay nil; a loaded session could restore its own tally.
     messages.filter_map { |message| message.token_usage if message.is_a?(Riffer::Messages::Assistant) }
-            .reduce { |total, usage| total + usage } # rubocop:disable Performance/Sum
+            .reduce { |total, usage| total + usage } # rubocop:disable Performance/Sum -- sum needs a zero TokenUsage
   end
 
   # @rbs skills: Riffer::Skills::Context?

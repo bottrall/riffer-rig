@@ -1022,7 +1022,7 @@ describe Riffer::Rig::Runtime do
           required :text, String
         end
 
-        define_method(:call) { |context:, text:| text("echo: #{text}") } # rubocop:disable Lint/UnusedBlockArgument
+        define_method(:call) { |context:, text:| text("echo: #{text}") } # rubocop:disable Lint/UnusedBlockArgument -- riffer passes context: to every call
       end
       @echo = Riffer::Rig::Extension.new('echo') { |rig| rig.tool echo }
     end
