@@ -7,7 +7,7 @@ describe Riffer::Rig::CodingAgent do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         File.write('AGENTS.md', 'ALWAYS_SQUAWK')
-        agent = Riffer::Rig::CodingAgent.new
+        agent = mock_agent
 
         assert_includes agent.instruction_message.content, '<project_instructions'
       end
@@ -18,7 +18,7 @@ describe Riffer::Rig::CodingAgent do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         File.write('AGENTS.md', 'ALWAYS_SQUAWK')
-        agent = Riffer::Rig::CodingAgent.new
+        agent = mock_agent
 
         assert_includes agent.instruction_message.content, 'ALWAYS_SQUAWK'
       end
@@ -28,7 +28,7 @@ describe Riffer::Rig::CodingAgent do
   it 'skips a missing project agents file' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        agent = Riffer::Rig::CodingAgent.new
+        agent = mock_agent
 
         refute_includes agent.instruction_message.content, File.join(dir, 'AGENTS.md')
       end
@@ -128,6 +128,7 @@ describe Riffer::Rig::CodingAgent do
 
   def isolated_agent(global_dir:, project_dir:)
     config = Riffer::Rig::CodingAgent.config.dup
+    config.model = 'mock/claude-test'
     config.skills_config = Riffer::Skills::Config.new.tap do |sc|
       sc.backend(Riffer::Skills::FilesystemBackend.new(global_dir, project_dir))
     end

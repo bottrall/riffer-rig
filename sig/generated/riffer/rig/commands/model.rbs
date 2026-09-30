@@ -1,12 +1,6 @@
 # Generated from lib/riffer/rig/commands/model.rb with RBS::Inline
 
 module Riffer::Rig::Commands::Model
-  MODEL_STRING: Regexp
-
-  # Upstream candidate: riffer's Repository keeps extension registrations
-  # private and lists no identifiers, so the hint names riffer's built-ins.
-  PROVIDERS: Array[Symbol]
-
   HINT: String
 
   SAVE_UNAVAILABLE: ::String

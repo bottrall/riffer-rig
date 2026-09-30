@@ -11,397 +11,250 @@ describe Riffer::Rig::Settings do
     path
   end
 
-  it 'returns default model when file is absent' do
-    Dir.mktmpdir do |dir|
-      path = File.join(dir, 'settings.json')
+  describe '.read' do
+    it 'is empty when the file is absent' do
+      Dir.mktmpdir do |dir|
+        assert_empty Riffer::Rig::Settings.read(File.join(dir, 'settings.json'))
+      end
+    end
 
-      assert_equal Riffer::Rig::Settings::DEFAULT_MODEL, Riffer::Rig::Settings.model(path: path)
+    it 'is empty for malformed json' do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, 'settings.json')
+        File.write(path, 'not json {{{')
+
+        assert_empty Riffer::Rig::Settings.read(path)
+      end
+    end
+
+    it 'is empty for a document that is not an object' do
+      Dir.mktmpdir do |dir|
+        assert_empty Riffer::Rig::Settings.read(settings_file(dir, %w[model]))
+      end
+    end
+
+    it 'reads the document with symbol keys' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'git' => { 'depth' => 10 } })
+
+        assert_equal({ model: 'anthropic/claude-sonnet-4-6', git: { depth: 10 } }, Riffer::Rig::Settings.read(path))
+      end
     end
   end
 
-  it 'returns model from settings file' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6' })
+  describe '.merge' do
+    it 'lets the project override home key by key' do
+      merged = Riffer::Rig::Settings.merge({ model: 'anthropic/a', reasoning: 'low' }, { model: 'openai/b' })
 
-      assert_equal 'anthropic/claude-sonnet-4-6', Riffer::Rig::Settings.model(path: path)
+      assert_equal({ model: 'openai/b', reasoning: 'low' }, merged)
     end
-  end
 
-  it 'returns nil pricing when file is absent' do
-    Dir.mktmpdir do |dir|
-      path = File.join(dir, 'settings.json')
+    it 'merges nested extension namespaces key by key' do
+      merged = Riffer::Rig::Settings.merge({ git: { depth: 10, remote: 'origin' } }, { git: { depth: 3 } })
 
-      assert_nil Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
+      assert_equal({ depth: 3, remote: 'origin' }, merged[:git])
     end
-  end
 
-  it 'returns nil pricing for unconfigured model' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'models' => {} })
+    it 'replaces a project value that is not a namespace whole' do
+      merged = Riffer::Rig::Settings.merge({ git: { depth: 10 } }, { git: 'off' })
 
-      assert_nil Riffer::Rig::Settings.pricing_for('anthropic/claude-opus-4', path: path)
+      assert_equal 'off', merged[:git]
     end
-  end
 
-  it 'returns input pricing for configured model' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(
-        dir,
-        {
-          'models' => {
-            'anthropic/claude-sonnet-4-6' => {
-              'input' => 3.0, 'output' => 15.0, 'cache_write' => 3.75, 'cache_read' => 0.3
-            }
-          }
-        }
-      )
-
-      pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
-
-      assert_in_delta(3.0, pricing.input)
-    end
-  end
-
-  it 'returns output pricing for configured model' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(
-        dir,
-        {
-          'models' => {
-            'anthropic/claude-sonnet-4-6' => {
-              'input' => 3.0, 'output' => 15.0, 'cache_write' => 3.75, 'cache_read' => 0.3
-            }
-          }
-        }
-      )
-
-      pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
-
-      assert_in_delta(15.0, pricing.output)
-    end
-  end
-
-  it 'returns cache write pricing for configured model' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(
-        dir,
-        {
-          'models' => {
-            'anthropic/claude-sonnet-4-6' => {
-              'input' => 3.0, 'output' => 15.0, 'cache_write' => 3.75, 'cache_read' => 0.3
-            }
-          }
-        }
-      )
-
-      pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
-
-      assert_in_delta(3.75, pricing.cache_write)
-    end
-  end
-
-  it 'returns cache read pricing for configured model' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(
-        dir,
-        {
-          'models' => {
-            'anthropic/claude-sonnet-4-6' => {
-              'input' => 3.0, 'output' => 15.0, 'cache_write' => 3.75, 'cache_read' => 0.3
-            }
-          }
-        }
-      )
-
-      pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
-
-      assert_in_delta(0.3, pricing.cache_read)
-    end
-  end
-
-  it 'returns default model for malformed json' do
-    Dir.mktmpdir do |dir|
-      path = File.join(dir, 'settings.json')
-      File.write(path, 'not json {{{')
-
-      assert_equal Riffer::Rig::Settings::DEFAULT_MODEL, Riffer::Rig::Settings.model(path: path)
-    end
-  end
-
-  it 'returns nil pricing for malformed json' do
-    Dir.mktmpdir do |dir|
-      path = File.join(dir, 'settings.json')
-      File.write(path, 'not json {{{')
-
-      assert_nil Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
-    end
-  end
-
-  it 'coerces input pricing to float' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(
-        dir,
-        {
-          'models' => {
-            'anthropic/claude-sonnet-4-6' => {
-              'input' => 3, 'output' => 15, 'cache_write' => 4, 'cache_read' => 0
-            }
-          }
-        }
-      )
-
-      pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
-
-      assert_kind_of Float, pricing.input
-    end
-  end
-
-  it 'coerces cache read pricing to float' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(
-        dir,
-        {
-          'models' => {
-            'anthropic/claude-sonnet-4-6' => {
-              'input' => 3, 'output' => 15, 'cache_write' => 4, 'cache_read' => 0
-            }
-          }
-        }
-      )
-
-      pricing = Riffer::Rig::Settings.pricing_for('anthropic/claude-sonnet-4-6', path: path)
-
-      assert_kind_of Float, pricing.cache_read
-    end
-  end
-
-  it 'provider fields returns the providers block for one provider' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'providers' => { 'azure_openai' => { 'endpoint' => 'https://azure.test' } } })
+    it 'replaces a home MCP server of the same name whole' do
+      home = { mcp: { servers: { docs: { url: 'https://home.test', headers: { Authorization: 'secret' } } } } }
+      project = { mcp: { servers: { docs: { url: 'https://project.test' } } } }
 
       assert_equal(
-        { 'endpoint' => 'https://azure.test' },
-        Riffer::Rig::Settings.provider_fields('azure_openai', path: path)
+        { url: 'https://project.test' },
+        Riffer::Rig::Settings.merge(home, project).dig(:mcp, :servers, :docs)
       )
     end
-  end
 
-  it 'provider fields is empty for a provider without a block' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'providers' => 'not a hash' })
-
-      assert_empty Riffer::Rig::Settings.provider_fields('azure_openai', path: path)
-    end
-  end
-
-  it 'store provider merges fields into an existing block' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'providers' => { 'openai' => { 'base_url' => 'https://old.test' } } })
-
-      Riffer::Rig::Settings.store_provider('openai', { 'base_url' => 'https://new.test' }, path: path)
-
-      assert_equal({ 'base_url' => 'https://new.test' }, Riffer::Rig::Settings.provider_fields('openai', path: path))
-    end
-  end
-
-  it 'remove provider keeps the other blocks' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(
-        dir,
-        { 'providers' => { 'openai' => { 'base_url' => 'https://proxy.test' },
-                           'amazon_bedrock' => { 'region' => 'us-west-2' } } }
+    it 'adds up the disabled lists of both scopes' do
+      merged = Riffer::Rig::Settings.merge(
+        { extensions: { disabled: %w[mcp] } },
+        { extensions: { disabled: %w[skills mcp] } }
       )
 
-      Riffer::Rig::Settings.remove_provider('openai', path: path)
+      assert_equal %w[mcp skills], merged.dig(:extensions, :disabled)
+    end
 
-      assert_equal({ 'amazon_bedrock' => { 'region' => 'us-west-2' } }, JSON.parse(File.read(path))['providers'])
+    it 'leaves the other extensions keys alone when adding up the disabled lists' do
+      merged = Riffer::Rig::Settings.merge(
+        { extensions: { disabled: %w[mcp], autoload: true } },
+        { extensions: { disabled: %w[skills] } }
+      )
+
+      assert merged.dig(:extensions, :autoload)
     end
   end
 
-  it 'remove provider writes nothing when the provider has no block' do
-    Dir.mktmpdir do |dir|
-      path = File.join(dir, 'settings.json')
+  describe '.provider_for' do
+    it 'returns the prefix' do
+      assert_equal 'openai', Riffer::Rig::Settings.provider_for('openai/gpt-5-mini')
+    end
 
-      Riffer::Rig::Settings.remove_provider('openai', path: path)
+    it 'returns the first segment of a name with slashes of its own' do
+      assert_equal 'openrouter', Riffer::Rig::Settings.provider_for('openrouter/anthropic/claude-sonnet-4.6')
+    end
 
-      refute_path_exists path
+    it 'is nil for a model without a slash' do
+      assert_nil Riffer::Rig::Settings.provider_for('no-slash-model')
     end
   end
 
-  it 'provider for returns anthropic prefix' do
-    assert_equal 'anthropic', Riffer::Rig::Settings.provider_for('anthropic/claude-sonnet-4-6')
-  end
+  describe '.rejection' do
+    it 'is nil for a provider/name model string' do
+      assert_nil Riffer::Rig::Settings.rejection('anthropic/claude-sonnet-4-6')
+    end
 
-  it 'provider for returns openai prefix' do
-    assert_equal 'openai', Riffer::Rig::Settings.provider_for('openai/gpt-5-mini')
-  end
+    it 'rejects a bare model with the providers to choose from' do
+      assert_equal(
+        'sonnet is not a provider/name model string; the provider is one of: ' \
+        'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter',
+        Riffer::Rig::Settings.rejection('sonnet')
+      )
+    end
 
-  it 'provider for returns gemini prefix' do
-    assert_equal 'gemini', Riffer::Rig::Settings.provider_for('gemini/gemini-2.5-flash')
-  end
-
-  it 'provider for returns openrouter prefix' do
-    assert_equal 'openrouter', Riffer::Rig::Settings.provider_for('openrouter/anthropic/claude-sonnet-4.6')
-  end
-
-  it 'provider for returns nil for model without slash' do
-    assert_nil Riffer::Rig::Settings.provider_for('no-slash-model')
-  end
-
-  it 'model options includes cache control for anthropic model' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6' })
-
-      assert_equal({ type: :ephemeral }, Riffer::Rig::Settings.model_options(path: path)[:cache_control])
+    it 'rejects a provider the registry does not know' do
+      assert_match(%r{\Aacme/model is not a provider/name model string}, Riffer::Rig::Settings.rejection('acme/model'))
     end
   end
 
-  it 'model options returns empty hash for openai model without reasoning' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'openai/o3' })
+  describe '.model_options' do
+    it 'includes cache control for an anthropic model' do
+      assert_equal(
+        { type: :ephemeral },
+        Riffer::Rig::Settings.model_options('anthropic/claude-sonnet-4-6', nil)[:cache_control]
+      )
+    end
 
-      assert_equal({}, Riffer::Rig::Settings.model_options(path: path))
+    it 'is empty for an openai model without reasoning' do
+      assert_empty Riffer::Rig::Settings.model_options('openai/o3', nil)
+    end
+
+    it 'sets anthropic effort for low reasoning' do
+      assert_equal 'low',
+                   Riffer::Rig::Settings.model_options('anthropic/claude-sonnet-4-6', 'low')[:output_config][:effort]
+    end
+
+    it 'sets anthropic effort for max reasoning' do
+      assert_equal 'max',
+                   Riffer::Rig::Settings.model_options('anthropic/claude-sonnet-4-6', 'max')[:output_config][:effort]
+    end
+
+    it 'keeps cache control when anthropic reasoning is set' do
+      assert_equal(
+        { type: :ephemeral },
+        Riffer::Rig::Settings.model_options('anthropic/claude-sonnet-4-6', 'low')[:cache_control]
+      )
+    end
+
+    it 'sets reasoning effort for openai' do
+      assert_equal 'high', Riffer::Rig::Settings.model_options('openai/o3', 'high')[:reasoning]
+    end
+
+    it 'sets reasoning effort for openrouter' do
+      assert_equal 'xhigh',
+                   Riffer::Rig::Settings.model_options('openrouter/anthropic/claude-sonnet-4.6', 'xhigh')[:reasoning]
+    end
+
+    it 'ignores an unrecognised reasoning value' do
+      refute Riffer::Rig::Settings.model_options('openai/o3', 'turbo').key?(:reasoning)
+    end
+
+    it 'ignores max reasoning for openai' do
+      refute Riffer::Rig::Settings.model_options('openai/o3', 'max').key?(:reasoning)
+    end
+
+    it 'ignores reasoning for a provider without support' do
+      assert_empty Riffer::Rig::Settings.model_options('gemini/gemini-2.5-flash', 'high')
     end
   end
 
-  it 'model options returns empty hash when file is absent' do
-    Dir.mktmpdir do |dir|
-      path = File.join(dir, 'settings.json')
+  describe '.store_model' do
+    it 'writes the model' do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, '.riffer', 'settings.json')
+        Riffer::Rig::Settings.store_model('openai/gpt-5', path: path)
 
-      opts = Riffer::Rig::Settings.model_options(path: path)
+        assert_equal 'openai/gpt-5', JSON.parse(File.read(path))['model']
+      end
+    end
 
-      # Default model is Anthropic — expect cache_control only, no reasoning
-      assert_equal({ cache_control: { type: :ephemeral } }, opts)
+    it 'keeps the other keys' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(dir, { 'model' => 'anthropic/a', 'reasoning' => 'low' })
+        Riffer::Rig::Settings.store_model('openai/gpt-5', path: path)
+
+        assert_equal 'low', JSON.parse(File.read(path))['reasoning']
+      end
     end
   end
 
-  it 'model options sets anthropic effort for low reasoning' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'reasoning' => 'low' })
+  describe 'provider blocks' do
+    it 'provider fields returns the providers block for one provider' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(dir, { 'providers' => { 'azure_openai' => { 'endpoint' => 'https://azure.test' } } })
 
-      assert_equal 'low', Riffer::Rig::Settings.model_options(path: path)[:output_config][:effort]
+        assert_equal(
+          { 'endpoint' => 'https://azure.test' },
+          Riffer::Rig::Settings.provider_fields('azure_openai', path: path)
+        )
+      end
     end
-  end
 
-  it 'model options sets anthropic effort for medium reasoning' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'reasoning' => 'medium' })
+    it 'provider fields is empty for a provider without a block' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(dir, { 'providers' => 'not a hash' })
 
-      assert_equal 'medium', Riffer::Rig::Settings.model_options(path: path)[:output_config][:effort]
+        assert_empty Riffer::Rig::Settings.provider_fields('azure_openai', path: path)
+      end
     end
-  end
 
-  it 'model options sets anthropic effort for high reasoning' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'reasoning' => 'high' })
+    it 'store provider merges fields into an existing block' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(dir, { 'providers' => { 'openai' => { 'base_url' => 'https://old.test' } } })
 
-      assert_equal 'high', Riffer::Rig::Settings.model_options(path: path)[:output_config][:effort]
+        Riffer::Rig::Settings.store_provider('openai', { 'base_url' => 'https://new.test' }, path: path)
+
+        assert_equal({ 'base_url' => 'https://new.test' }, Riffer::Rig::Settings.provider_fields('openai', path: path))
+      end
     end
-  end
 
-  it 'model options retains cache control when anthropic reasoning is set' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'reasoning' => 'low' })
+    it 'store provider keeps the other keys' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(dir, { 'model' => 'openai/o3' })
 
-      opts = Riffer::Rig::Settings.model_options(path: path)
+        Riffer::Rig::Settings.store_provider('openai', { 'base_url' => 'https://new.test' }, path: path)
 
-      assert_equal({ type: :ephemeral }, opts[:cache_control])
+        assert_equal 'openai/o3', JSON.parse(File.read(path))['model']
+      end
     end
-  end
 
-  it 'model options sets reasoning effort for openai low' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'openai/o3', 'reasoning' => 'low' })
+    it 'remove provider keeps the other blocks' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(
+          dir,
+          { 'providers' => { 'openai' => { 'base_url' => 'https://proxy.test' },
+                             'amazon_bedrock' => { 'region' => 'us-west-2' } } }
+        )
 
-      assert_equal 'low', Riffer::Rig::Settings.model_options(path: path)[:reasoning]
+        Riffer::Rig::Settings.remove_provider('openai', path: path)
+
+        assert_equal({ 'amazon_bedrock' => { 'region' => 'us-west-2' } }, JSON.parse(File.read(path))['providers'])
+      end
     end
-  end
 
-  it 'model options sets reasoning effort for openai high' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'openai/o3', 'reasoning' => 'high' })
+    it 'remove provider writes nothing when the provider has no block' do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, 'settings.json')
 
-      assert_equal 'high', Riffer::Rig::Settings.model_options(path: path)[:reasoning]
-    end
-  end
+        Riffer::Rig::Settings.remove_provider('openai', path: path)
 
-  it 'model options sets reasoning effort for openrouter medium' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'openrouter/anthropic/claude-sonnet-4.6', 'reasoning' => 'medium' })
-
-      assert_equal 'medium', Riffer::Rig::Settings.model_options(path: path)[:reasoning]
-    end
-  end
-
-  it 'model options sets anthropic effort for xhigh reasoning' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'reasoning' => 'xhigh' })
-
-      assert_equal 'xhigh', Riffer::Rig::Settings.model_options(path: path)[:output_config][:effort]
-    end
-  end
-
-  it 'model options sets anthropic effort for max reasoning' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'reasoning' => 'max' })
-
-      assert_equal 'max', Riffer::Rig::Settings.model_options(path: path)[:output_config][:effort]
-    end
-  end
-
-  it 'model options sets reasoning effort for openai xhigh' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'openai/o3', 'reasoning' => 'xhigh' })
-
-      assert_equal 'xhigh', Riffer::Rig::Settings.model_options(path: path)[:reasoning]
-    end
-  end
-
-  it 'model options sets reasoning effort for openrouter xhigh' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'openrouter/anthropic/claude-sonnet-4.6', 'reasoning' => 'xhigh' })
-
-      assert_equal 'xhigh', Riffer::Rig::Settings.model_options(path: path)[:reasoning]
-    end
-  end
-
-  it 'model options ignores unrecognised reasoning value' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'openai/o3', 'reasoning' => 'turbo' })
-
-      refute Riffer::Rig::Settings.model_options(path: path).key?(:reasoning)
-    end
-  end
-
-  it 'model options ignores max reasoning for openai' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'openai/o3', 'reasoning' => 'max' })
-
-      refute Riffer::Rig::Settings.model_options(path: path).key?(:reasoning)
-    end
-  end
-
-  it 'model options ignores max reasoning for openrouter' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'openrouter/anthropic/claude-sonnet-4.6', 'reasoning' => 'max' })
-
-      refute Riffer::Rig::Settings.model_options(path: path).key?(:reasoning)
-    end
-  end
-
-  it 'model options ignores reasoning key for provider without support' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'gemini/gemini-2.5-flash', 'reasoning' => 'high' })
-
-      refute Riffer::Rig::Settings.model_options(path: path).key?(:reasoning)
-    end
-  end
-
-  it 'model options ignores output config for provider without support' do
-    Dir.mktmpdir do |dir|
-      path = settings_file(dir, { 'model' => 'gemini/gemini-2.5-flash', 'reasoning' => 'high' })
-
-      refute Riffer::Rig::Settings.model_options(path: path).key?(:output_config)
+        refute_path_exists path
+      end
     end
   end
 end

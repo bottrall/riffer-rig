@@ -2,6 +2,47 @@
 
 Host riffer-rig inside another Ruby process with `Riffer::Rig::Runtime` — a runtime that builds its own `Riffer::Agent` from a per-instance `Riffer::Agent::Config`, runs extension blocks against a per-Runtime registrar, and streams a prompt. It never renders, never prints, and never reads the filesystem; anything a host needs is a Runtime feature so embedders get it too.
 
+## Building a Runtime with the Loader
+
+`Riffer::Rig::Loader` knows riffer-rig's filesystem conventions, so the Runtime does not have to. `Loader.runtime` builds a Runtime for a working directory the way the shipped hosts do:
+
+```ruby
+runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: MyHost.new)
+```
+
+In order, it:
+
+1. reads `~/.riffer/settings.json` then `<cwd>/.riffer/settings.json` and merges them, the project winning key by key ([Configuration](CONFIGURATION.md)), and selects the model: the `model:` keyword, then `RIFFER_MODEL`, then the settings, then onboarding;
+2. resolves the model's provider credentials ([Providers](PROVIDERS.md#resolution-order)), assigns them to `Riffer.config` and keeps them for the Runtime's `credentials:`;
+3. takes the [bundled extensions](TOOLS.md), minus those named in `extensions.disabled` and the strip keywords;
+4. constructs the Runtime with the model, the credentials, the extensions, the merged settings, the `models` pricing table, the `reasoning` level as riffer `model_options`, and the keywords below.
+
+| Keyword       | Meaning                                                                  | Default |
+| ------------- | ------------------------------------------------------------------------ | ------- |
+| `cwd:`        | the working directory; its `.riffer/settings.json` is the project scope  | required |
+| `host:`       | the [host](HOSTS.md) the Runtime gets, and the one onboarding and credential prompts ask | required |
+| `model:`      | `"provider/name"`, winning over `RIFFER_MODEL` and the settings           | `nil` |
+| `skills: false` | leaves out the bundled [`skills`](SKILLS.md) extension                 | `true` |
+| `agents_md: false` | leaves out the bundled [`agents_md`](INSTRUCTIONS.md#agentsmd) extension | `true` |
+| `tools:`      | the Runtime's tool allowlist                                              | `nil` |
+| `max_steps:`  | the Runtime's step limit                                                  | `nil` |
+| `env:`        | a `Riffer::Rig::Env`, or what `Riffer::Rig::Env.load` returned            | `Riffer::Rig::Env.load` |
+| `home:`       | the directory holding `.riffer/settings.json` and `.riffer/auth.json`    | `Dir.home` |
+| `riffer_config:` | the `Riffer::Config` that receives the credentials and pricing        | `Riffer.config` |
+
+`Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:)` takes the same setup and builds with `runtime(model:, skills:, agents_md:, tools:, max_steps:)`, for a host that keeps the Loader.
+
+The host is asked only when its `capabilities` include `:ask`. With no model set anywhere, the Loader asks it for a model string, listing the providers, and writes the answer to `~/.riffer/settings.json`; a required credential that does not resolve is asked for the same way and stored ([Providers](PROVIDERS.md#rifferrigcredentials)). Anything the Loader cannot settle raises `Riffer::Rig::Loader::ConfigurationError` with a message fit to show the user: no model and a host that cannot ask (the null host), a model string without a known provider prefix, a bare `RIFFER_MODEL`, or a required credential still missing. A headless host should map it to exit status 2.
+
+```ruby
+begin
+  runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: Riffer::Rig::Hosts::Null.new)
+rescue Riffer::Rig::Loader::ConfigurationError => e
+  warn e.message
+  exit 2
+end
+```
+
 ## Constructing a Runtime
 
 ```ruby
@@ -12,7 +53,7 @@ runtime = Riffer::Rig::Runtime.new(
 )
 ```
 
-The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `credentials:`, `pricing:`, `riffer_config:`, `mcp_registry:`, `snapshot:`. All except the model are optional. `credentials:` is stored and exposed (`runtime.credentials`); only `/model` and a [restore](#snapshots) read it so far. `credentials:` already takes the shape the Loader will pass — each provider's resolved field values — so embedders building it today keep working when its ticket lands. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.resolve` finds a provider's values and `Riffer::Rig::Credentials.apply` assigns them (see [Providers](PROVIDERS.md)), or set them yourself with `Riffer.configure`.
+The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `model_options:`, `credentials:`, `pricing:`, `riffer_config:`, `mcp_registry:`, `snapshot:`. All except the model are optional. `credentials:` is stored and exposed (`runtime.credentials`); only `/model` and a [restore](#snapshots) read it so far. It takes the shape the [Loader](#building-a-runtime-with-the-loader) passes — each provider's resolved field values. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.resolve` finds a provider's values and `Riffer::Rig::Credentials.apply` assigns them (see [Providers](PROVIDERS.md)), or set them yourself with `Riffer.configure`.
 
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
@@ -25,6 +66,7 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `name:`         | the name interpolated into the [base prompt](INSTRUCTIONS.md)               | `"riffer"`              |
 | `instructions:` | replaces the base prompt; sections and the environment block still apply    | `nil` (use the base)    |
 | `max_steps:`    | agent-loop step limit; `nil` runs the loop without a limit                  | `nil`                   |
+| `model_options:` | riffer `model_options` sent with every model call (`{ reasoning: 'high' }`, `{ cache_control: { type: :ephemeral } }`); `Riffer::Rig::Settings.model_options(model, reasoning)` builds them from the settings | `{}` |
 | `credentials:`  | provider → resolved field values (`{ anthropic: { api_key: "…" } }`), stored as given and exposed; read by `/model` and a restore | `{}` |
 | `pricing:`      | model → `Riffer::Rig::Settings::Pricing` entries (USD per million tokens), registered into riffer's pricing when the Runtime is built; see [tally](#token-tally-and-cost) | `{}` |
 | `riffer_config:` | the `Riffer::Config` whose `pricing` receives the `pricing:` entries      | `Riffer.config`         |

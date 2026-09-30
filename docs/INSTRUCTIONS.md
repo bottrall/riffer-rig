@@ -44,7 +44,7 @@ The files are read at the start of every turn, so an edit takes effect on the ne
 
 Relative paths written inside an AGENTS.md are left as written; the extension does not resolve them. Reading what they point to is the model's business, with its tools, from the working directory.
 
-To leave AGENTS.md out, do not pass the extension to the Runtime. To change what it says, register your own `:agents_md` section from a later extension; the later registration replaces the bundled one ([Extensions](EXTENSIONS.md#bundled-extensions-and-replacement)).
+To leave AGENTS.md out, do not pass the extension to the Runtime: list `agents_md` in `extensions.disabled` ([Configuration](CONFIGURATION.md#extensions)), or pass `agents_md: false` to `Loader.runtime`. To change what it says, register your own `:agents_md` section from a later extension; the later registration replaces the bundled one ([Extensions](EXTENSIONS.md#bundled-extensions-and-replacement)).
 
 ## Overrides
 

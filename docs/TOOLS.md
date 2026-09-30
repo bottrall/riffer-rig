@@ -19,7 +19,7 @@ Relative paths resolve against the Runtime's `cwd:` (and `bash` runs there), not
 
 ## Identifiers
 
-A tool's name everywhere — in `tools:` on `Runtime.new`, and on `--tools` once the Loader lands — is its riffer `identifier`: `read`, `write`, `edit`, `bash`, and whatever identifier an extension tool declares.
+A tool's name everywhere — in `tools:` on `Runtime.new` and `Loader.runtime`, and on `--tools` once the terminal has the flag — is its riffer `identifier`: `read`, `write`, `edit`, `bash`, and whatever identifier an extension tool declares.
 
 ```ruby
 Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', extensions: Riffer::Rig.bundled, tools: %w[read bash])

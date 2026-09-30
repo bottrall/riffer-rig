@@ -20,15 +20,17 @@ This provides a `riffer` executable.
 
 ## Usage
 
-Run the agent from any project directory:
+Run the agent from any project directory, with a model chosen as `provider/name`:
 
 ```bash
-riffer
+RIFFER_MODEL=anthropic/claude-sonnet-4-6 riffer
 ```
+
+There is no default model: set `RIFFER_MODEL` for one run, or `model` in `~/.riffer/settings.json` for every run ([Configuration](#configuration)). With neither, `riffer` says how to set one and exits.
 
 ### Authentication
 
-`riffer-rig` talks to the provider named by the model's prefix — `anthropic/claude-sonnet-4-6`, the default, means Anthropic. Provide that provider's credentials in either of two ways:
+`riffer-rig` talks to the provider named by the model's prefix — `anthropic/claude-sonnet-4-6` means Anthropic. Provide that provider's credentials in either of two ways:
 
 - Set the provider's environment variables, or
 - Run `riffer` and paste each missing value when prompted on first launch. Secrets are saved to `~/.riffer/auth.json` (file permissions `600`); plain values such as an endpoint or region are saved to the `providers` block in `~/.riffer/settings.json`.
@@ -63,7 +65,8 @@ The flat `{"anthropic": "sk-…"}` shape earlier versions wrote is no longer rea
 
 - `AGENTS.md` — `~/.riffer/AGENTS.md` and an `AGENTS.md` in the current working directory or any directory above it, whichever exist, are re-read every turn as instructions that take precedence over the default norms ([Instructions](docs/INSTRUCTIONS.md#agentsmd)).
 - Skills — Agent Skills in `.agents/skills/` from the current working directory up to the repository root, and in `~/.agents/skills/`, are offered to the model, and each can be run with `/skill:<name>` ([Skills](docs/SKILLS.md)).
-- `~/.riffer/settings.json` — optional user settings. Every key is optional:
+- `RIFFER_MODEL` — the model for this run as `provider/name`, winning over the `model` setting. A bare name such as `sonnet` is rejected with the list of providers.
+- `~/.riffer/settings.json` — optional user settings, and `<cwd>/.riffer/settings.json` for one project, merged key by key with the project winning (the `riffer` terminal reads only the home file for now). Every key is optional:
 
   ```json
   {
@@ -80,7 +83,7 @@ The flat `{"anthropic": "sk-…"}` shape earlier versions wrote is no longer rea
   }
   ```
 
-  `models` prices each model in USD per million tokens; [Configuration](docs/CONFIGURATION.md#models) has the format. `reasoning` is translated to the provider's own parameter — Anthropic accepts `low`, `medium`, `high`, `xhigh` and `max`; OpenAI and OpenRouter accept `low`, `medium`, `high` and `xhigh`. Omitting it, or supplying an unrecognised value, leaves the model's default reasoning behaviour unchanged.
+  `model` is the model new sessions start with; a host built on the [Loader](docs/EMBEDDING.md#building-a-runtime-with-the-loader) asks for one when none is set and writes the answer here. `extensions.disabled` (for example `["mcp"]`) leaves bundled extensions out. `models` prices each model in USD per million tokens; [Configuration](docs/CONFIGURATION.md) has every key. `reasoning` is translated to the provider's own parameter — Anthropic accepts `low`, `medium`, `high`, `xhigh` and `max`; OpenAI and OpenRouter accept `low`, `medium`, `high` and `xhigh`. Omitting it, or supplying an unrecognised value, leaves the model's default reasoning behaviour unchanged.
 
 ## Development
 

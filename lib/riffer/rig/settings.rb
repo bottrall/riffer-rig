@@ -8,45 +8,85 @@ module Riffer::Rig::Settings
 
   PATH = File.expand_path('~/.riffer/settings.json') #: String
 
-  DEFAULT_MODEL = 'anthropic/claude-sonnet-4-6'
-
   REASONING_LEVELS_BY_PROVIDER = {
     'anthropic' => %w[low medium high xhigh max].freeze,
     'openai' => %w[low medium high xhigh].freeze,
     'openrouter' => %w[low medium high xhigh].freeze
   }.freeze #: Hash[String, Array[String]]
 
-  # @rbs path: String
-  # @rbs return: String
-  def model(path: PATH)
-    read(path).model || DEFAULT_MODEL
-  end
+  MODEL_STRING = %r{\A(?<provider>[^/\s]+)/\S+\z} #: Regexp
+
+  # Upstream candidate: riffer's Repository keeps extension registrations
+  # private and lists no identifiers, so the list names riffer's built-ins.
+  PROVIDERS = (Riffer::Providers::Repository::REPO.keys - [:mock]).freeze #: Array[Symbol]
 
   # @rbs path: String
   # @rbs return: Hash[Symbol, untyped]
-  def model_options(path: PATH)
-    provider = provider_for(model(path:))
-    base_options(provider).merge(reasoning_options(reasoning_for(path:, provider:), provider))
+  def read(path)
+    return {} unless File.file?(path)
+
+    source = JSON.parse(File.read(path), symbolize_names: true)
+    source.is_a?(Hash) ? source : {}
+  rescue JSON::ParserError
+    {}
   end
 
-  # @rbs model_string: String
+  # MCP servers merge by name, whole, so a home server's headers never reach a
+  # project server's url.
+  # @rbs home: Hash[Symbol, untyped]
+  # @rbs project: Hash[Symbol, untyped]
+  # @rbs return: Hash[Symbol, untyped]
+  def merge(home, project)
+    merged = deep_merge(home, project)
+    home_mcp = home[:mcp]
+    project_mcp = project[:mcp]
+    if home_mcp.is_a?(Hash) && project_mcp.is_a?(Hash)
+      merged = merged.merge(mcp: Riffer::Rig::Mcp.merge(home_mcp, project_mcp))
+    end
+    disabled = [home, project].flat_map { |scope| Document.new(scope).disabled }.uniq
+    return merged if disabled.empty?
+
+    extensions = merged[:extensions].is_a?(Hash) ? merged[:extensions] : {} #: Hash[Symbol, untyped]
+    merged.merge(extensions: extensions.merge(disabled: disabled))
+  end
+
+  # @rbs model: String
   # @rbs return: String?
-  def provider_for(model_string)
-    model_string.split('/', 2).first if model_string.include?('/')
+  def provider_for(model)
+    model[MODEL_STRING, :provider]
+  end
+
+  # @rbs model: String
+  # @rbs return: String?
+  def rejection(model)
+    provider = provider_for(model)
+    return if provider && Riffer::Providers::Repository.find(provider)
+
+    "#{model} is not a provider/name model string; the provider is one of: #{PROVIDERS.join(', ')}"
+  end
+
+  # @rbs model: String
+  # @rbs reasoning: String?
+  # @rbs return: Hash[Symbol, untyped]
+  def model_options(model, reasoning)
+    provider = provider_for(model)
+    levels = (provider && REASONING_LEVELS_BY_PROVIDER[provider]) || []
+    level = reasoning if levels.include?(reasoning)
+    base_options(provider).merge(reasoning_options(level, provider))
   end
 
   # @rbs model: String
   # @rbs path: String
-  # @rbs return: Pricing?
-  def pricing_for(model, path: PATH)
-    read(path).models[model]
+  # @rbs return: void
+  def store_model(model, path: PATH)
+    write(path, read(path).merge(model: model))
   end
 
   # @rbs identifier: String
   # @rbs path: String
   # @rbs return: Hash[String, String]
   def provider_fields(identifier, path: PATH)
-    read(path).providers[identifier] || {}
+    Document.new(read(path)).providers[identifier] || {}
   end
 
   # @rbs identifier: String
@@ -68,17 +108,32 @@ module Riffer::Rig::Settings
 
   private
 
+  # @rbs home: Hash[Symbol, untyped]
+  # @rbs project: Hash[Symbol, untyped]
+  # @rbs return: Hash[Symbol, untyped]
+  def deep_merge(home, project)
+    home.merge(project) do |_key, earlier, later|
+      earlier.is_a?(Hash) && later.is_a?(Hash) ? deep_merge(earlier, later) : later
+    end
+  end
+
   # @rbs path: String
   # @rbs &: (Hash[String, Hash[String, String]]) -> Hash[String, Hash[String, String]]
   # @rbs return: void
   def update_providers(path)
-    source = read_source(path)
+    source = read(path)
     current = Document.new(source).providers
     providers = yield current
     return if providers == current
 
+    write(path, providers.empty? ? source.except(:providers) : source.merge(providers: providers))
+  end
+
+  # @rbs path: String
+  # @rbs document: Hash[Symbol, untyped]
+  # @rbs return: void
+  def write(path, document)
     FileUtils.mkdir_p(File.dirname(path), mode: 0o700)
-    document = providers.empty? ? source.except('providers') : source.merge('providers' => providers)
     File.write(path, JSON.pretty_generate(document))
   end
 
@@ -88,15 +143,6 @@ module Riffer::Rig::Settings
     return { cache_control: { type: :ephemeral } } if provider == 'anthropic'
 
     {}
-  end
-
-  # @rbs path: String
-  # @rbs provider: String?
-  # @rbs return: String?
-  def reasoning_for(path: PATH, provider: nil)
-    level = read(path).reasoning
-    valid_levels = (provider && REASONING_LEVELS_BY_PROVIDER[provider]) || []
-    valid_levels.include?(level) ? level : nil
   end
 
   # @rbs level: String?
@@ -113,21 +159,5 @@ module Riffer::Rig::Settings
     else
       {}
     end
-  end
-
-  # @rbs path: String
-  # @rbs return: Document
-  def read(path)
-    Document.new(read_source(path))
-  end
-
-  # @rbs path: String
-  # @rbs return: Hash[String, untyped]
-  def read_source(path)
-    return {} unless File.file?(path)
-
-    JSON.parse(File.read(path))
-  rescue JSON::ParserError
-    {}
   end
 end

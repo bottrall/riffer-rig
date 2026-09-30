@@ -146,7 +146,7 @@ Riffer::Rig::Credentials.apply(:azure_openai, resolution.values)
 
 `resolve`, `store` and `remove` take `auth_path:` and `settings_path:` to point at other files, and `status` takes `auth_path:`. `resolve` and `status` take `env:`, a `Riffer::Rig::Env`; `resolve`, `store` and `status` take `setup:` in place of the `Riffer::Rig::ProviderSetup.for(identifier)` lookup; `apply` takes `config:` in place of `Riffer.config`.
 
-A `Riffer::Rig::Env` is a frozen snapshot of the process environment, and `riffer-rig` reads the process environment nowhere else. `Riffer::Rig::Env.new` snapshots the real one; `Riffer::Rig::Env.new('ANTHROPIC_API_KEY' => '…')` builds one from a hash, for an embedder or a test.
+A `Riffer::Rig::Env` is a frozen snapshot of the process environment, and `riffer-rig` reads the process environment nowhere else. `Riffer::Rig::Env.new` snapshots the real one; `Riffer::Rig::Env.new('ANTHROPIC_API_KEY' => '…')` builds one from a hash, for an embedder or a test. `env.model` is `RIFFER_MODEL`. `Riffer::Rig::Env.load` snapshots the same way but checks it: when `RIFFER_MODEL` is not a `provider/name` string it returns a `Riffer::Rig::Env::Invalid`, whose `message` names the variable and lists the providers, instead of an `Env`. `Loader.runtime` uses `Env.load` by default and raises its message as a `Riffer::Rig::Loader::ConfigurationError`.
 
 ## Riffer::Rig::ProviderSetup
 

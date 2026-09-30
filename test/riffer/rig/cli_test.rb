@@ -17,6 +17,16 @@ describe Riffer::Rig::CLI do
     end
   end
 
+  it 'refuses a bare RIFFER_MODEL' do
+    exit_code = Riffer::Rig::CLI.start(
+      output: StringIO.new,
+      input: StringIO.new(''),
+      env: Riffer::Rig::Env.new('RIFFER_MODEL' => 'sonnet')
+    )
+
+    assert_equal 1, exit_code
+  end
+
   private
 
   def with_clean_global_state

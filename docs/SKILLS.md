@@ -65,4 +65,4 @@ An extension adds skills from anywhere with the [`rig.skills`](EXTENSIONS.md#the
 
 ## Disabling
 
-To leave skills out, do not pass the extension to the Runtime: with no skills source there is no catalog, no `skill_activate` tool and no `skill:` commands.
+To leave skills out, do not pass the extension to the Runtime — list `skills` in `extensions.disabled` ([Configuration](CONFIGURATION.md#extensions)), or pass `skills: false` to `Loader.runtime`: with no skills source there is no catalog, no `skill_activate` tool and no `skill:` commands.

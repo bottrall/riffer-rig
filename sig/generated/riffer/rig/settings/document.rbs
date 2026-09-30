@@ -1,15 +1,7 @@
 # Generated from lib/riffer/rig/settings/document.rb with RBS::Inline
 
 class Riffer::Rig::Settings::Document
-  @model: String?
-
-  @reasoning: String?
-
-  @models: Hash[String, Riffer::Rig::Settings::Pricing]
-
-  @providers: Hash[String, Hash[String, String]]
-
-  # @dynamic model, reasoning, models, providers
+  # @dynamic model, reasoning, models, providers, disabled
   attr_reader model: String?
 
   attr_reader reasoning: String?
@@ -18,7 +10,15 @@ class Riffer::Rig::Settings::Document
 
   attr_reader providers: Hash[String, Hash[String, String]]
 
-  # @rbs source: untyped
+  attr_reader disabled: Array[String]
+
+  # @rbs source: Hash[Symbol, untyped]
   # @rbs return: void
-  def initialize: (untyped source) -> void
+  def initialize: (Hash[Symbol, untyped] source) -> void
+
+  private
+
+  # @rbs value: untyped
+  # @rbs return: Hash[Symbol, untyped]
+  def hash_or_empty: (untyped value) -> Hash[Symbol, untyped]
 end
