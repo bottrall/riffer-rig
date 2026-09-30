@@ -2,7 +2,7 @@
 
 require 'io/console'
 
-class Riffer::Rig::Hosts::Terminal
+class Riffer::Rig::Terminal::Host
   CAPABILITIES = Set[:ask, :confirm, :notify, :progress].freeze #: Set[Symbol]
 
   # @rbs @input: IO

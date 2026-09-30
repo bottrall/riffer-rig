@@ -58,7 +58,7 @@ Naming/PredicateMethod:
     # Hosts::_Host#confirm is a blocking prompt named by the host contract,
     # not a predicate.
     - "lib/riffer/rig/hosts/null.rb"
-    - "lib/riffer/rig/hosts/terminal.rb"
+    - "lib/riffer/rig/terminal/host.rb"
 
 Rig/NoInheritance:
   Enabled: true

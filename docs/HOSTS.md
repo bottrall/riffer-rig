@@ -32,7 +32,7 @@ The Runtime wraps the host it is given in a `Riffer::Rig::Hosts::Mirror`, which 
 
 ## Writing a host
 
-A host is two pieces: an object implementing `Riffer::Rig::Hosts::_Host`, which the Runtime asks and tells things out of band, and a loop that builds a Runtime and renders its event stream. The `riffer` terminal is the reference for both. Its loop is `Riffer::Rig::Terminal` (`lib/riffer/rig/terminal.rb`, with its presentation under `lib/riffer/rig/terminal/`), and its host object is `Riffer::Rig::Hosts::Terminal`, which the loop holds as a collaborator rather than being the host itself.
+A host is two pieces: an object implementing `Riffer::Rig::Hosts::_Host`, which the Runtime asks and tells things out of band, and a loop that builds a Runtime and renders its event stream. The `riffer` terminal is the reference for both. Its loop is `Riffer::Rig::Terminal` (`lib/riffer/rig/terminal.rb`, with its presentation under `lib/riffer/rig/terminal/`), and its host object is `Riffer::Rig::Terminal::Host` (`lib/riffer/rig/terminal/host.rb`), which the loop holds as a collaborator rather than being the host itself. Keep your host object inside your host's own namespace, as the terminal does; `Riffer::Rig::Hosts` holds only the contract and the reusable `Null` and `Mirror`.
 
 A host uses only the public API of the Runtime, the hosts, the Loader and the events. The terminal is held to that by a test: nothing under `Riffer::Rig::Terminal` names another `Riffer::Rig` constant. Anything a host needs beyond that becomes a Runtime or Loader feature, so embedders get it too.
 
@@ -59,7 +59,7 @@ The terminal renders `TextDelta` as streamed prose, `ToolCallDone` as the call, 
 
 ### The terminal's host
 
-`Riffer::Rig::Hosts::Terminal` reports all four capabilities:
+`Riffer::Rig::Terminal::Host` reports all four capabilities:
 
 | Method     | In the terminal                                                                           |
 | ---------- | ----------------------------------------------------------------------------------------- |

@@ -3,11 +3,11 @@
 require 'test_helper'
 require 'stringio'
 
-describe Riffer::Rig::Hosts::Terminal do
+describe Riffer::Rig::Terminal::Host do
   def host(input = '')
     @output = StringIO.new
     theme = Riffer::Rig::Terminal::Theme.new(enabled: false)
-    Riffer::Rig::Hosts::Terminal.new(
+    Riffer::Rig::Terminal::Host.new(
       input: StringIO.new(input),
       renderer: Riffer::Rig::Terminal::Renderer.new(io: @output, theme: theme),
       animator: Riffer::Rig::Terminal::Animator.new(io: @output, theme: theme)

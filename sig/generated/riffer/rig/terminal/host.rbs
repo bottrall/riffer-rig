@@ -1,0 +1,50 @@
+# Generated from lib/riffer/rig/terminal/host.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Host
+  CAPABILITIES: Set[Symbol]
+
+  @input: IO
+
+  @renderer: Riffer::Rig::Terminal::Renderer
+
+  @animator: Riffer::Rig::Terminal::Animator
+
+  # @rbs input: IO
+  # @rbs renderer: Riffer::Rig::Terminal::Renderer
+  # @rbs animator: Riffer::Rig::Terminal::Animator
+  # @rbs return: void
+  def initialize: (input: IO, renderer: Riffer::Rig::Terminal::Renderer, animator: Riffer::Rig::Terminal::Animator) -> void
+
+  # @rbs return: Set[Symbol]
+  def capabilities: () -> Set[Symbol]
+
+  # @rbs question: String?
+  # @rbs options: Array[String]?
+  # @rbs secret: bool
+  # @rbs return: String?
+  def ask: (?String? question, ?options: Array[String]?, ?secret: bool) -> String?
+
+  # @rbs question: String?
+  # @rbs return: bool
+  def confirm: (?String? question) -> bool
+
+  # @rbs message: String?
+  # @rbs level: Symbol
+  # @rbs return: void
+  def notify: (?String? message, ?level: Symbol) -> void
+
+  # @rbs label: String?
+  # @rbs &block: ? () -> void
+  # @rbs return: void
+  def progress: (?String? label) ?{ () -> void } -> void
+
+  private
+
+  # @rbs return: String?
+  def read_secret: () -> String?
+
+  # @rbs answer: String
+  # @rbs options: Array[String]?
+  # @rbs return: String
+  def choice: (String answer, Array[String]? options) -> String
+end

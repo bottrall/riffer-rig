@@ -28,7 +28,7 @@ class Riffer::Rig::Terminal
     smoother = Smoother.new(io: output, theme: theme)
     renderer = Renderer.new(io: output, theme: theme, smoother: smoother, cursor: Cursor.new(io: output, theme: theme))
     animator = Animator.new(io: output, theme: theme)
-    host = Riffer::Rig::Hosts::Terminal.new(input: input, renderer: renderer, animator: animator)
+    host = Riffer::Rig::Terminal::Host.new(input: input, renderer: renderer, animator: animator)
     new(input: input, host: host, renderer: renderer, animator: animator, theme: theme, version: version)
   end
 
