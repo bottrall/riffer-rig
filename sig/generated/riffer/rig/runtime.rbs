@@ -19,6 +19,8 @@ class Riffer::Rig::Runtime
 
   INTERRUPT_CANCELLED: Symbol
 
+  @session_start_reason: Symbol
+
   @session_start_pending: bool
 
   @closed: bool
@@ -41,8 +43,6 @@ class Riffer::Rig::Runtime
 
   @agent: Riffer::Agent
 
-  @session_start_reason: Symbol
-
   @model_override: String?
 
   @message_observers: Array[^(Riffer::Messages::Base) -> void]
@@ -62,6 +62,8 @@ class Riffer::Rig::Runtime
   @mcp_registry: Riffer::Rig::Mcp::_Registry
 
   @mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
+
+  @model_options: Hash[Symbol, untyped]
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader agent: Riffer::Agent
@@ -91,9 +93,10 @@ class Riffer::Rig::Runtime
   # @rbs riffer_config: Riffer::Config
   # @rbs mcp_registry: Riffer::Rig::Mcp::_Registry
   # @rbs max_steps: Integer?
+  # @rbs model_options: Hash[Symbol, untyped]
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
-  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?snapshot: Hash[Symbol, untyped]?) -> void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?snapshot: Hash[Symbol, untyped]?) -> void
 
   # @rbs text: String
   # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void

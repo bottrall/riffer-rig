@@ -3,14 +3,25 @@
 class Riffer::Rig::Env
   # @rbs @source: Hash[String, String]
 
-  # @dynamic no_color
+  # @dynamic no_color, model
   attr_reader :no_color #: bool
+  attr_reader :model #: String?
+
+  # @rbs source: Hash[String, String]
+  # @rbs return: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  def self.load(source = ENV.to_h)
+    env = new(source)
+    model = env.model
+    rejection = model && Riffer::Rig::Settings.rejection(model)
+    rejection ? Invalid.new("RIFFER_MODEL: #{rejection}") : env
+  end
 
   # @rbs source: Hash[String, String]
   # @rbs return: void
   def initialize(source = ENV.to_h)
     @source = source.freeze
     @no_color = @source.key?('NO_COLOR')
+    @model = self['RIFFER_MODEL']
     freeze
   end
 

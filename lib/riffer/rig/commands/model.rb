@@ -3,13 +3,8 @@
 module Riffer::Rig::Commands::Model
   extend self
 
-  MODEL_STRING = %r{\A(?<provider>[^/\s]+)/\S+\z} #: Regexp
-
-  # Upstream candidate: riffer's Repository keeps extension registrations
-  # private and lists no identifiers, so the hint names riffer's built-ins.
-  PROVIDERS = (Riffer::Providers::Repository::REPO.keys - [:mock]).freeze #: Array[Symbol]
-
-  HINT = "Use /model provider/name, with a provider from: #{PROVIDERS.join(', ')}".freeze #: String
+  HINT = 'Use /model provider/name, with a provider from: ' \
+         "#{Riffer::Rig::Settings::PROVIDERS.join(', ')}".freeze #: String
 
   SAVE_UNAVAILABLE = '/model --save is not available in this host'
 
@@ -29,7 +24,7 @@ module Riffer::Rig::Commands::Model
     return ctx.host.notify(SAVE_UNAVAILABLE, level: :error) if model.split.include?('--save')
     return ctx.say("Model: #{ctx.runtime.model}") if model.empty?
 
-    provider = model[MODEL_STRING, :provider]
+    provider = Riffer::Rig::Settings.provider_for(model)
     return ctx.say(HINT) unless provider && Riffer::Providers::Repository.find(provider)
 
     missing = missing_credentials(provider, ctx.runtime.credentials)

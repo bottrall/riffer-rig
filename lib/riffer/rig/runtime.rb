@@ -51,6 +51,7 @@ class Riffer::Rig::Runtime
   # @rbs @tool_allowlist: Array[String]?
   # @rbs @mcp_registry: Riffer::Rig::Mcp::_Registry
   # @rbs @mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
+  # @rbs @model_options: Hash[Symbol, untyped]
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader :agent #: Riffer::Agent
@@ -74,6 +75,7 @@ class Riffer::Rig::Runtime
   # @rbs riffer_config: Riffer::Config
   # @rbs mcp_registry: Riffer::Rig::Mcp::_Registry
   # @rbs max_steps: Integer?
+  # @rbs model_options: Hash[Symbol, untyped]
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
   def initialize(
@@ -90,6 +92,7 @@ class Riffer::Rig::Runtime
     riffer_config: Riffer.config,
     mcp_registry: Riffer::Mcp,
     max_steps: DEFAULT_MAX_STEPS,
+    model_options: {},
     snapshot: nil
   )
     # Doubles as the snapshot id and ACP sessionId.
@@ -107,6 +110,7 @@ class Riffer::Rig::Runtime
     Riffer::Rig::Settings::Pricing.register(pricing, riffer_config.pricing)
     @errors = []
     @tool_allowlist = tools
+    @model_options = model_options
     @base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
     @mcp_registry = mcp_registry
     @mcp_servers = {}
@@ -278,6 +282,7 @@ class Riffer::Rig::Runtime
   def agent_config(registrars, hooks, max_steps)
     config = Riffer::Agent::Config.new(
       model: ->(context) { context[:model] },
+      model_options: @model_options,
       instructions: system_prompt([]),
       tools_config: select_tools(registrars.flat_map { |registrar| registrar.tools.to_a }.to_h.values, @tool_allowlist),
       max_steps: max_steps,

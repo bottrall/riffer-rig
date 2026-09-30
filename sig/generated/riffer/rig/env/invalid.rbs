@@ -1,0 +1,10 @@
+# Generated from lib/riffer/rig/env/invalid.rb with RBS::Inline
+
+class Riffer::Rig::Env::Invalid
+  # @dynamic message
+  attr_reader message: String
+
+  # @rbs message: String
+  # @rbs return: void
+  def initialize: (String message) -> void
+end

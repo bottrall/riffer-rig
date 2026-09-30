@@ -1,0 +1,75 @@
+# Generated from lib/riffer/rig/loader.rb with RBS::Inline
+
+class Riffer::Rig::Loader
+  class ConfigurationError < StandardError
+  end
+
+  PROVIDER_LIST: String
+
+  ONBOARDING_QUESTION: String
+
+  NO_MODEL: String
+
+  @riffer_config: Riffer::Config
+
+  @home: String
+
+  @env: Riffer::Rig::Env
+
+  @host: Riffer::Rig::Hosts::_Host
+
+  @cwd: String
+
+  # @rbs cwd: String
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  # @rbs home: String
+  # @rbs riffer_config: Riffer::Config
+  # @rbs model: String?
+  # @rbs skills: bool
+  # @rbs agents_md: bool
+  # @rbs tools: Array[String]?
+  # @rbs max_steps: Integer?
+  # @rbs return: Riffer::Rig::Runtime
+  def self.runtime: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?model: String?, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?) -> Riffer::Rig::Runtime
+
+  # @rbs cwd: String
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  # @rbs home: String
+  # @rbs riffer_config: Riffer::Config
+  # @rbs return: void
+  def initialize: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config) -> void
+
+  # @rbs model: String?
+  # @rbs skills: bool
+  # @rbs agents_md: bool
+  # @rbs tools: Array[String]?
+  # @rbs max_steps: Integer?
+  # @rbs return: Riffer::Rig::Runtime
+  def runtime: (?model: String?, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?) -> Riffer::Rig::Runtime
+
+  private
+
+  # @rbs configured: String?
+  # @rbs return: String
+  def select_model: (String? configured) -> String
+
+  # @rbs return: String
+  def ask_for_model: () -> String
+
+  # @rbs provider: String
+  # @rbs return: Hash[Symbol, String]
+  def credentials_for: (String provider) -> Hash[Symbol, String]
+
+  # @rbs provider: String
+  # @rbs missing: Array[Symbol]
+  # @rbs return: String
+  def missing_credentials: (String provider, Array[Symbol] missing) -> String
+
+  # @rbs return: Riffer::Rig::Hosts::_Host
+  def asking_host: () -> Riffer::Rig::Hosts::_Host
+
+  # @rbs return: String
+  def home_settings_path: () -> String
+end

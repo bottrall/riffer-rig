@@ -9,7 +9,7 @@ describe Riffer::Rig::REPL do
     theme = Riffer::Rig::UI::Theme.new(enabled: false)
     renderer = Riffer::Rig::UI::Renderer.new(io: output, theme: theme)
     repl = Riffer::Rig::REPL.new(
-      agent: Riffer::Rig::CodingAgent.new,
+      agent: mock_agent,
       renderer: renderer,
       input: StringIO.new(''),
       output: output,
@@ -23,7 +23,7 @@ describe Riffer::Rig::REPL do
 
   it 'prompt prints after one blank line' do
     output = StringIO.new
-    repl = build_repl(Riffer::Rig::CodingAgent.new, output, "/exit\n")
+    repl = build_repl(mock_agent, output, "/exit\n")
 
     repl.run
 
@@ -32,7 +32,7 @@ describe Riffer::Rig::REPL do
 
   it 'exit line follows the prompt line directly on an exit-only session' do
     output = StringIO.new
-    repl = build_repl(Riffer::Rig::CodingAgent.new, output, "/exit\n")
+    repl = build_repl(mock_agent, output, "/exit\n")
 
     repl.run
 
@@ -190,7 +190,7 @@ describe Riffer::Rig::REPL do
 
   it 'exit command exits the repl' do
     output = StringIO.new
-    repl = build_repl(Riffer::Rig::CodingAgent.new, output, "/exit\n")
+    repl = build_repl(mock_agent, output, "/exit\n")
 
     repl.run
 
@@ -199,7 +199,7 @@ describe Riffer::Rig::REPL do
 
   it 'exit command is not treated as skill command' do
     output = StringIO.new
-    repl = build_repl(Riffer::Rig::CodingAgent.new, output, "/exit\n")
+    repl = build_repl(mock_agent, output, "/exit\n")
 
     repl.run
 
@@ -508,7 +508,7 @@ describe Riffer::Rig::REPL do
         end
 
         output = StringIO.new
-        agent = Riffer::Rig::CodingAgent.new
+        agent = mock_agent
         yield(agent, output)
       end
     end

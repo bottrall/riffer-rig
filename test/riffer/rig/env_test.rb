@@ -55,6 +55,38 @@ describe Riffer::Rig::Env do
     end
   end
 
+  describe '#model' do
+    it 'is RIFFER_MODEL' do
+      assert_equal 'openai/gpt-5', Riffer::Rig::Env.new('RIFFER_MODEL' => 'openai/gpt-5').model
+    end
+
+    it 'is nil when RIFFER_MODEL is blank' do
+      assert_nil Riffer::Rig::Env.new('RIFFER_MODEL' => ' ').model
+    end
+  end
+
+  describe '.load' do
+    it 'returns the environment when RIFFER_MODEL is a provider/name model string' do
+      assert_equal 'openai/gpt-5', Riffer::Rig::Env.load('RIFFER_MODEL' => 'openai/gpt-5').model
+    end
+
+    it 'returns the environment when RIFFER_MODEL is unset' do
+      assert_instance_of Riffer::Rig::Env, Riffer::Rig::Env.load({})
+    end
+
+    it 'rejects a bare RIFFER_MODEL' do
+      assert_instance_of Riffer::Rig::Env::Invalid, Riffer::Rig::Env.load('RIFFER_MODEL' => 'sonnet')
+    end
+
+    it 'names RIFFER_MODEL and the providers when rejecting a bare model' do
+      assert_equal(
+        'RIFFER_MODEL: sonnet is not a provider/name model string; the provider is one of: ' \
+        'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter',
+        Riffer::Rig::Env.load('RIFFER_MODEL' => 'sonnet').message
+      )
+    end
+  end
+
   it 'is frozen' do
     assert_predicate Riffer::Rig::Env.new({}), :frozen?
   end

@@ -5,15 +5,24 @@ require 'io/console'
 module Riffer::Rig::CLI
   extend self
 
+  NO_MODEL = 'No model is set. Set RIFFER_MODEL, or "model" in ~/.riffer/settings.json, to provider/name, ' \
+             "with a provider from: #{Riffer::Rig::Settings::PROVIDERS.join(', ')}".freeze #: String
+
   # @rbs output: IO
   # @rbs input: IO
-  # @rbs model: String
+  # @rbs model: String?
   # @rbs env: Riffer::Rig::Env
   # @rbs return: Integer
-  def start(output: $stdout, input: $stdin, model: Riffer::Rig::Settings.model, env: Riffer::Rig::Env.new)
+  def start(output: $stdout, input: $stdin, model: nil, env: Riffer::Rig::Env.new)
     theme = Riffer::Rig::UI::Theme.for(output, env:)
+    settings = Riffer::Rig::Settings::Document.new(Riffer::Rig::Settings.read(Riffer::Rig::Settings::PATH))
+    selected = model || env.model || settings.model
+    return refuse(NO_MODEL, theme, output) unless selected
 
-    provider = Riffer::Rig::Settings.provider_for(model)
+    rejection = Riffer::Rig::Settings.rejection(selected)
+    return refuse(rejection, theme, output) if rejection
+
+    provider = Riffer::Rig::Settings.provider_for(selected)
 
     if provider
       values = credentials_for(provider, theme, output:, input:, env:)
@@ -22,12 +31,12 @@ module Riffer::Rig::CLI
       Riffer::Rig::Credentials.apply(provider, values)
     end
 
-    agent    = Riffer::Rig::CodingAgent.new
+    agent    = Riffer::Rig::CodingAgent.new(config: agent_config(selected, settings.reasoning))
     animator = Riffer::Rig::UI::Animator.new(io: output, theme:)
 
-    reveal_banner(theme, animator, model)
+    reveal_banner(theme, animator, selected)
 
-    tally    = Riffer::Rig::TokenTally.new(pricing: Riffer::Rig::Settings.pricing_for(model))
+    tally    = Riffer::Rig::TokenTally.new(pricing: settings.models[selected])
     smoother = Riffer::Rig::UI::Smoother.new(io: output, theme:)
     renderer = Riffer::Rig::UI::Renderer.new(io: output, theme:, tally:, smoother:)
     Riffer::Rig::REPL.new(agent:, renderer:, animator:, theme:, smoother:, input:, output:).run
@@ -35,6 +44,25 @@ module Riffer::Rig::CLI
   end
 
   private
+
+  # @rbs message: String
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs output: IO
+  # @rbs return: Integer
+  def refuse(message, theme, output)
+    output.puts(theme.grey(message))
+    1
+  end
+
+  # @rbs model: String
+  # @rbs reasoning: String?
+  # @rbs return: Riffer::Agent::Config
+  def agent_config(model, reasoning)
+    config = Riffer::Rig::CodingAgent.config.dup
+    config.model = model
+    config.model_options = Riffer::Rig::Settings.model_options(model, reasoning)
+    config
+  end
 
   # @rbs provider: String
   # @rbs theme: Riffer::Rig::UI::Theme

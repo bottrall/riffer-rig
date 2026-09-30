@@ -13,9 +13,9 @@ class Riffer::Rig::Settings::Pricing
   # @dynamic input, output, cache_write, cache_read
   attr_reader cache_read: Float
 
-  # @rbs entry: Hash[String, untyped]
+  # @rbs entry: Hash[Symbol, untyped]
   # @rbs return: ::Riffer::Rig::Settings::Pricing
-  def self.from: (Hash[String, untyped] entry) -> ::Riffer::Rig::Settings::Pricing
+  def self.from: (Hash[Symbol, untyped] entry) -> ::Riffer::Rig::Settings::Pricing
 
   # @rbs table: Hash[String, ::Riffer::Rig::Settings::Pricing]
   # @rbs registry: ::Riffer::Config::Pricing

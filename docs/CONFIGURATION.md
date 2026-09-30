@@ -1,6 +1,28 @@
 # Configuration
 
-`~/.riffer/settings.json` holds optional user settings. Every key is optional; the [README](../README.md#configuration) lists them all.
+Settings live in two files with the same name and shape, both optional:
+
+- `~/.riffer/settings.json` — the home scope, for every project.
+- `<cwd>/.riffer/settings.json` — the project scope, for sessions started in that directory.
+
+`Riffer::Rig::Loader` reads home then project and merges them key by key, the project winning: a top-level key set in both takes the project's value, and an extension namespace merges the same way one level down, so a project can change one key of a namespace and keep the rest from home. Two keys merge differently: `extensions.disabled` lists add up across both scopes, and an [MCP server](MCP.md) declared in both is replaced whole by the project's. A file that is missing or is not valid JSON counts as empty.
+
+The `riffer` terminal still reads only `~/.riffer/settings.json` and `RIFFER_MODEL` until it moves onto the Loader; the project scope, `extensions.disabled` and onboarding apply to a Runtime built with [`Loader.runtime`](EMBEDDING.md#building-a-runtime-with-the-loader).
+
+## Core keys
+
+Every core key is top level and optional:
+
+| Key          | What it sets |
+| ------------ | ------------ |
+| `model`      | the model new sessions start with, as `"provider/name"` ([below](#model)) |
+| `reasoning`  | the reasoning effort, translated to the provider's own parameter ([below](#reasoning)) |
+| `models`     | the pricing table, model → USD per million tokens ([below](#models)) |
+| `providers`  | non-secret provider fields such as an endpoint or region ([Providers](PROVIDERS.md#the-providers-block-in-settings); read from the home file only) |
+| `extensions` | `disabled`, the bundled extensions to leave out ([below](#extensions)); `autoload` is reserved for gem extensions |
+| `reload`     | reserved for hot reloading |
+| `sessions`   | reserved for the session store (`save`) |
+| `tools`      | reserved for provider-native tools (`native`) |
 
 ## `model`
 
@@ -10,9 +32,26 @@
 { "model": "anthropic/claude-sonnet-4-6" }
 ```
 
-The provider is one of `anthropic`, `openai`, `gemini`, `openrouter`, `azure_openai` or `amazon_bedrock` ([Providers](PROVIDERS.md) has each one's setup). Everything after the first slash is passed to the provider unchanged, so a name with slashes of its own works as written: `openrouter/anthropic/claude-sonnet-4-6`. A string without a provider prefix is rejected, never inferred from the bare name; `/model` answers one with a hint listing the providers.
+The provider is one of `anthropic`, `openai`, `gemini`, `openrouter`, `azure_openai` or `amazon_bedrock` ([Providers](PROVIDERS.md) has each one's setup). Everything after the first slash is passed to the provider unchanged, so a name with slashes of its own works as written: `openrouter/anthropic/claude-sonnet-4-6`. A string without a provider prefix, or with a provider riffer does not know, is rejected with a hint listing the providers, never inferred from the bare name.
+
+There is no built-in default. The model is the first of these that is set, highest first:
+
+1. the `model:` keyword on `Loader.runtime` (the `--model` flag, once the terminal passes it);
+2. the `RIFFER_MODEL` environment variable, e.g. `RIFFER_MODEL=openai/gpt-5 riffer`;
+3. `model` in the project settings, then in the home settings;
+4. onboarding: the Loader asks the host for a model string, listing the providers, and writes the answer to `~/.riffer/settings.json`. A host that cannot ask (the null host, so headless and embedded use) declines, and the Loader raises `Riffer::Rig::Loader::ConfigurationError` instead.
+
+A bare `RIFFER_MODEL` is rejected even when a higher source wins, since it is a mistake in the environment either way.
 
 `/model provider/name` overrides this key for the current session only: the override wins until the session ends, and `settings.json` is left unchanged ([Switching the model](../README.md#switching-the-model)).
+
+## `reasoning`
+
+`reasoning` is the reasoning effort, translated to the provider's own parameter: Anthropic accepts `low`, `medium`, `high`, `xhigh` and `max`; OpenAI and OpenRouter accept `low`, `medium`, `high` and `xhigh`. Omitting it, or giving a level the provider does not accept, leaves the model's default. Anthropic models also get prompt caching (`cache_control`) whatever the level. The Loader passes the result to the Runtime as riffer `model_options`.
+
+```json
+{ "model": "anthropic/claude-sonnet-4-6", "reasoning": "high" }
+```
 
 ## `models`
 
@@ -58,6 +97,16 @@ A model without an entry has no cost: it is shown as missing, never as zero. An 
 ```
 
 Keep a server with a secret header in `~/.riffer/settings.json` rather than a committed project file. [MCP](MCP.md) has the format, how a project server overrides a home one, and what happens on reload.
+
+## `extensions`
+
+`extensions.disabled` names bundled extensions the Loader leaves out — any of `read`, `write`, `edit`, `bash`, `agents_md`, `skills` and `mcp`:
+
+```json
+{ "extensions": { "disabled": ["mcp", "bash"] } }
+```
+
+The lists in the two scopes add up, so a project can disable more but cannot re-enable what home disabled. A disabled extension is simply not passed to the Runtime; nothing it would register exists. An embedder calling `Loader.runtime` can also strip `skills: false` and `agents_md: false` for one Runtime.
 
 ## Extension namespaces
 

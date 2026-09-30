@@ -1,14 +1,27 @@
 # Generated from lib/riffer/rig/cli.rb with RBS::Inline
 
 module Riffer::Rig::CLI
+  NO_MODEL: String
+
   # @rbs output: IO
   # @rbs input: IO
-  # @rbs model: String
+  # @rbs model: String?
   # @rbs env: Riffer::Rig::Env
   # @rbs return: Integer
-  def start: (?output: IO, ?input: IO, ?model: String, ?env: Riffer::Rig::Env) -> Integer
+  def start: (?output: IO, ?input: IO, ?model: String?, ?env: Riffer::Rig::Env) -> Integer
 
   private
+
+  # @rbs message: String
+  # @rbs theme: Riffer::Rig::UI::Theme
+  # @rbs output: IO
+  # @rbs return: Integer
+  def refuse: (String message, Riffer::Rig::UI::Theme theme, IO output) -> Integer
+
+  # @rbs model: String
+  # @rbs reasoning: String?
+  # @rbs return: Riffer::Agent::Config
+  def agent_config: (String model, String? reasoning) -> Riffer::Agent::Config
 
   # @rbs provider: String
   # @rbs theme: Riffer::Rig::UI::Theme

@@ -30,9 +30,9 @@ Settings come in two scopes, `~/.riffer/settings.json` then the project's `.riff
 Riffer::Rig::Mcp.merge(home_settings[:mcp] || {}, project_settings[:mcp] || {})
 ```
 
-The terminal does not use MCP servers yet; they reach the model in a Runtime built with the `mcp` extension.
+[`Loader.runtime`](EMBEDDING.md#building-a-runtime-with-the-loader) merges the two scopes this way and passes the bundled `mcp` extension unless `extensions.disabled` names it. The terminal does not use MCP servers yet; they reach the model in a Runtime built with the `mcp` extension.
 
-`mcp` is an ordinary extension name, not a core settings key: `mcp.servers` is simply the bundled extension's own namespace, the same as any other extension's. To run without it, leave it out of the Runtime's `extensions:`.
+`mcp` is an ordinary extension name, not a core settings key: `mcp.servers` is simply the bundled extension's own namespace, the same as any other extension's. To run without it, leave it out of the Runtime's `extensions:`, or list it in `extensions.disabled` ([Configuration](CONFIGURATION.md#extensions)).
 
 ## Declaring servers from an extension
 

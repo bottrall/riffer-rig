@@ -182,7 +182,7 @@ end</code></pre>
 </ul>
 </section>
 
-<section class="topic" id="bundled-rules">
+<section class="topic enshrined" id="bundled-rules">
 <h3>Bundled items are extensions</h3>
 <ul>
   <li><code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, <code>skills</code>, <code>agents_md</code> and <code>mcp</code> are each a named extension in the gem, built only on the seams above, loaded by the Loader before any <code>rig.rb</code>. Their content is in <a href="bundled.html">Bundled</a>.</li>
@@ -191,6 +191,7 @@ end</code></pre>
   <li>Embedders reference them as <code>Riffer::Rig.bundled(:read)</code>; <code>Riffer::Rig.bundled</code> with no argument returns all seven in load order.</li>
 </ul>
 <p class="note">Bullets 1, 3 and 4 enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/115">#115</a>, with the Interfaces row <code>Riffer::Rig.bundled(name = nil)</code>. Bullet 1: <code>read</code>, <code>write</code>, <code>edit</code> and <code>bash</code> are named extensions in the gem built only on <code>rig.tool</code>; the other three follow with their tickets, and "loaded by the Loader before any <code>rig.rb</code>" waits on <a href="https://github.com/bottrall/riffer-rig/issues/123">#123</a>. Bullet 3: a later tool or command under the same identifier replaces the earlier one in its place, and the override is reported through <code>notify</code> at level <code>:info</code>; prompt sections follow the same rule. Bullet 4: <code>Riffer::Rig.bundled</code> with no argument returns the bundled extensions in load order, four until <code>agents_md</code>, <code>skills</code> and <code>mcp</code> land; an unknown name raises <code>KeyError</code>. Bullet 2 (Disable) waits on <a href="https://github.com/bottrall/riffer-rig/issues/123">#123</a>, so the section is not yet marked enshrined. Details and deviations are in the notes under <a href="bundled.html#toolkit">Bundled: toolkit</a> and <a href="bundled.html#disable-replace">Bundled: disable and replace</a>.</p>
+<p class="note">Bullet 2 and the "loaded by the Loader before any <code>rig.rb</code>" clause of bullet 1 enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/123">#123</a>, with the Interfaces row Settings keys for <code>extensions.disabled</code> (<code>extensions.autoload</code> is <a href="https://github.com/bottrall/riffer-rig/issues/126">#126</a>'s): the Loader passes the seven bundled extensions first, in load order, minus any named in <code>extensions.disabled</code> in either scope, the lists adding up. <code>rig.rb</code> loading itself is <a href="https://github.com/bottrall/riffer-rig/issues/126">#126</a>'s. Details are in the notes under <a href="bundled.html#why">Bundled: what is bundled</a> and <a href="bundled.html#disable-replace">Bundled: disable and replace</a>.</p>
 </section>
 
 <h2 id="interfaces">Interfaces</h2>

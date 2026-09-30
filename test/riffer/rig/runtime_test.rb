@@ -87,6 +87,27 @@ describe Riffer::Rig::Runtime do
     assert_equal :max_steps, response.outcome.reason
   end
 
+  it 'hands its model options to the agent' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', model_options: { reasoning: 'high' })
+
+    assert_equal({ reasoning: 'high' }, runtime.agent.config.model_options)
+  end
+
+  it 'sends its model options with each request' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', model_options: { reasoning: 'high' })
+    runtime.agent.provider.stub_response('All done.')
+    runtime.ask('hello')
+
+    assert_equal 'high', runtime.agent.provider.calls.last[:reasoning]
+  end
+
+  it 'keeps its model options through a rebuild' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', model_options: { reasoning: 'high' })
+    runtime.rebuild(extensions: [], settings: {})
+
+    assert_equal({ reasoning: 'high' }, runtime.agent.config.model_options)
+  end
+
   it 'refuses an ask while a prompt is running' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
     runtime.agent.provider.stub_response('first')
