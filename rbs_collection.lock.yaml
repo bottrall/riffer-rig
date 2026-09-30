@@ -2,7 +2,7 @@
 path: ".gem_rbs_collection"
 gems:
 - name: anthropic
-  version: 1.71.0
+  version: 1.73.0
   source:
     type: rubygems
 - name: base64
@@ -90,7 +90,7 @@ gems:
   source:
     type: stdlib
 - name: openai
-  version: 0.92.0
+  version: 0.95.0
   source:
     type: rubygems
 - name: prism
