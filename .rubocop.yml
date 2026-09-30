@@ -54,11 +54,11 @@ Minitest/MultipleAssertions:
   Max: 1
 
 Naming/PredicateMethod:
-  Exclude:
+  AllowedMethods:
+    - call
     # Hosts::_Host#confirm is a blocking prompt named by the host contract,
     # not a predicate.
-    - "lib/riffer/rig/hosts/null.rb"
-    - "lib/riffer/rig/terminal/host.rb"
+    - confirm
 
 Rig/NoInheritance:
   Enabled: true
