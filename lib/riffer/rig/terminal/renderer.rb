@@ -5,28 +5,34 @@ require 'json'
 class Riffer::Rig::Terminal::Renderer
   RESULT_PREVIEW_LIMIT = 200 #: Integer
 
+  ARGUMENT_PREVIEW_LIMIT = 60 #: Integer
+
   # @rbs @io: IO
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
   # @rbs @cursor: Riffer::Rig::Terminal::Cursor
   # @rbs @prose_gap_pending: bool
+  # @rbs @width: Integer?
 
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
   # @rbs cursor: Riffer::Rig::Terminal::Cursor
+  # @rbs width: Integer?
   # @rbs return: void
   def initialize(
     io: $stdout,
     theme: Riffer::Rig::Terminal::Theme.for(io),
     smoother: PassThroughSmoother.new(io),
-    cursor: Riffer::Rig::Terminal::Cursor.new(io: io, theme: theme)
+    cursor: Riffer::Rig::Terminal::Cursor.new(io: io, theme: theme),
+    width: nil
   )
     @io = io
     @theme = theme
     @smoother = smoother
     @cursor = cursor
     @prose_gap_pending = false
+    @width = width
   end
 
   # @rbs event: Riffer::StreamEvents::TextDelta | Riffer::StreamEvents::ToolCallDone | Riffer::StreamEvents::Interrupt
@@ -36,7 +42,7 @@ class Riffer::Rig::Terminal::Renderer
     when Riffer::StreamEvents::TextDelta
       render_prose(event.content)
     when Riffer::StreamEvents::ToolCallDone
-      render_tool_activity(2) { @theme.cyan("⚙ #{event.name}(#{format_arguments(event.arguments)})") }
+      render_tool_activity(2) { "⚙ #{event.name}(#{format_arguments(event.arguments)})" }
     when Riffer::StreamEvents::Interrupt
       render_block(0) { @theme.dim("[interrupted: #{event.reason}]") }
     end
@@ -130,7 +136,7 @@ class Riffer::Rig::Terminal::Renderer
     return unless message.is_a?(Riffer::Messages::Tool)
 
     open_tool_activity
-    line = "↳ #{preview(message.content)}"
+    line = fit("↳ #{preview(message.content)}", 4)
     styled = message.error? ? @theme.red(line) : @theme.dim(line)
     @io.print("    #{styled}\n")
     @io.flush
@@ -191,7 +197,7 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs return: void
   def render_tool_activity(indent, &)
     open_tool_activity
-    @io.puts((' ' * indent) + yield)
+    @io.puts((' ' * indent) + @theme.cyan(fit(yield, indent)))
     @io.flush
   end
 
@@ -224,7 +230,7 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs return: String
   def format_arguments(arguments)
     parsed = JSON.parse(arguments)
-    parsed.map { |key, value| "#{key}: #{value.inspect}" }.join(', ')
+    parsed.map { |key, value| "#{key}: #{elide(value.inspect, ARGUMENT_PREVIEW_LIMIT)}" }.join(', ')
   rescue JSON::ParserError
     arguments
   end
@@ -233,8 +239,28 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs return: String
   def preview(content)
     first_line = content.to_s.lines.first.to_s.chomp
-    return first_line if first_line.length <= RESULT_PREVIEW_LIMIT
+    elide(first_line, RESULT_PREVIEW_LIMIT)
+  end
 
-    "#{first_line[0, RESULT_PREVIEW_LIMIT]}…"
+  # @rbs text: String
+  # @rbs limit: Integer
+  # @rbs return: String
+  def elide(text, limit)
+    return text if text.length <= limit
+    return '…' if limit < 1
+
+    "#{text[0, limit - 1]}…"
+  end
+
+  # Truncation is what keeps an indented line from wrapping: a wrapped
+  # continuation starts at column zero and destroys the prose > tool nesting.
+  # @rbs text: String
+  # @rbs indent: Integer
+  # @rbs return: String
+  def fit(text, indent)
+    width = @width || (@io.tty? ? @io.winsize[1] : nil)
+    return text unless width
+
+    elide(text, width - indent)
   end
 end

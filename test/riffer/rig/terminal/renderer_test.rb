@@ -105,6 +105,69 @@ describe Riffer::Rig::Terminal::Renderer do
     assert_equal "\n  ⚙ read()\n", @io.string
   end
 
+  it 'truncates long tool call argument values' do
+    @renderer.render(
+      Riffer::StreamEvents::ToolCallDone.new(
+        item_id: 'i1',
+        call_id: 'c1',
+        name: 'read',
+        arguments: JSON.generate(path: 'a' * 200)
+      )
+    )
+
+    refute_includes @io.string, 'a' * 200
+  end
+
+  it 'fits tool call lines to the terminal width' do
+    renderer = Riffer::Rig::Terminal::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::Terminal::Theme.new(enabled: false),
+      width: 20
+    )
+
+    renderer.render(
+      Riffer::StreamEvents::ToolCallDone.new(
+        item_id: 'i1',
+        call_id: 'c1',
+        name: 'read',
+        arguments: JSON.generate(path: 'a' * 40)
+      )
+    )
+
+    assert_operator @io.string.lines.last.chomp.length, :<=, 20
+  end
+
+  it 'marks a fitted tool call line with an ellipsis' do
+    renderer = Riffer::Rig::Terminal::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::Terminal::Theme.new(enabled: false),
+      width: 20
+    )
+
+    renderer.render(
+      Riffer::StreamEvents::ToolCallDone.new(
+        item_id: 'i1',
+        call_id: 'c1',
+        name: 'read',
+        arguments: JSON.generate(path: 'a' * 40)
+      )
+    )
+
+    assert @io.string.lines.last.chomp.end_with?('…')
+  end
+
+  it 'fits tool result lines to the terminal width' do
+    renderer = Riffer::Rig::Terminal::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::Terminal::Theme.new(enabled: false),
+      width: 15
+    )
+
+    renderer.render_tool_result(Riffer::Messages::Tool.new('x' * 40, tool_call_id: 'c1', name: 'write'))
+
+    assert_operator @io.string.lines.last.chomp.length, :<=, 15
+  end
+
   it 'renders skill activation at column zero with a blank line above' do
     @renderer.skill('refactor')
 

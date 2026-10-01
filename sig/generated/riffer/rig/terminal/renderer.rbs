@@ -3,6 +3,10 @@
 class Riffer::Rig::Terminal::Renderer
   RESULT_PREVIEW_LIMIT: Integer
 
+  ARGUMENT_PREVIEW_LIMIT: Integer
+
+  @width: Integer?
+
   @prose_gap_pending: bool
 
   @cursor: Riffer::Rig::Terminal::Cursor
@@ -17,8 +21,9 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
   # @rbs cursor: Riffer::Rig::Terminal::Cursor
+  # @rbs width: Integer?
   # @rbs return: void
-  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme, ?smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother, ?cursor: Riffer::Rig::Terminal::Cursor) -> void
+  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme, ?smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother, ?cursor: Riffer::Rig::Terminal::Cursor, ?width: Integer?) -> void
 
   # @rbs event: Riffer::StreamEvents::TextDelta | Riffer::StreamEvents::ToolCallDone | Riffer::StreamEvents::Interrupt
   # @rbs return: void
@@ -123,4 +128,16 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs content: String
   # @rbs return: String
   def preview: (String content) -> String
+
+  # @rbs text: String
+  # @rbs limit: Integer
+  # @rbs return: String
+  def elide: (String text, Integer limit) -> String
+
+  # Truncation is what keeps an indented line from wrapping: a wrapped
+  # continuation starts at column zero and destroys the prose > tool nesting.
+  # @rbs text: String
+  # @rbs indent: Integer
+  # @rbs return: String
+  def fit: (String text, Integer indent) -> String
 end
