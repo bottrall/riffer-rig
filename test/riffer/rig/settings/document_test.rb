@@ -49,6 +49,18 @@ describe Riffer::Rig::Settings::Document do
     assert_empty Riffer::Rig::Settings::Document.new({ extensions: { disabled: 'mcp' } }).disabled
   end
 
+  it 'reads the autoload flag' do
+    assert Riffer::Rig::Settings::Document.new({ extensions: { autoload: true } }).autoload
+  end
+
+  it 'leaves autoload off unless it is exactly true' do
+    refute Riffer::Rig::Settings::Document.new({ extensions: { autoload: 'yes' } }).autoload
+  end
+
+  it 'has no autoload when the extensions block is not an object' do
+    refute Riffer::Rig::Settings::Document.new({ extensions: true }).autoload
+  end
+
   it 'is frozen' do
     assert_predicate Riffer::Rig::Settings::Document.new({}), :frozen?
   end

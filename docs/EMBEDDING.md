@@ -15,14 +15,15 @@ In order, it:
 1. reads `~/.riffer/settings.json` then `<cwd>/.riffer/settings.json` and merges them, the project winning key by key ([Configuration](CONFIGURATION.md)), and selects the model: the `model:` keyword, then `RIFFER_MODEL`, then the settings, then onboarding;
 2. resolves the model's provider credentials ([Providers](PROVIDERS.md#resolution-order)), assigns them to `Riffer.config` and keeps them for the Runtime's `credentials:`;
 3. takes the [bundled extensions](TOOLS.md), minus those named in `extensions.disabled` and the strip keywords;
-4. constructs the Runtime with the model, the credentials, the extensions, the merged settings, the `models` pricing table, the `reasoning` level as riffer `model_options`, and the keywords below.
+4. runs `riffer/rig/extension` from every gem when [`extensions.autoload`](CONFIGURATION.md#extensions) is set, then `~/.riffer/rig.rb` and, once [trusted](EXTENSIONS.md#the-rigrb-files), `<cwd>/.riffer/rig.rb`, and appends the extensions the loads record to the bundle ([Extensions](EXTENSIONS.md#the-rigrb-files));
+5. constructs the Runtime with the model, the credentials, the extensions, the merged settings, the `models` pricing table, the `reasoning` level as riffer `model_options`, and the keywords below.
 
 | Keyword       | Meaning                                                                  | Default |
 | ------------- | ------------------------------------------------------------------------ | ------- |
 | `cwd:`        | the working directory; its `.riffer/settings.json` is the project scope  | required |
 | `host:`       | the [host](HOSTS.md) the Runtime gets, and the one onboarding and credential prompts ask | required |
 | `model:`      | `"provider/name"`, winning over `RIFFER_MODEL` and the settings           | `nil` |
-| `extensions: false` | skips extension files and autoload; accepted but a no-op until extension files load, and the bundle loads either way | `true` |
+| `extensions: false` | skips the `rig.rb` files and the gem `riffer/rig/extension` autoload; the bundle still loads | `true` |
 | `skills: false` | leaves out the bundled [`skills`](SKILLS.md) extension                 | `true` |
 | `agents_md: false` | leaves out the bundled [`agents_md`](INSTRUCTIONS.md#agentsmd) extension | `true` |
 | `tools:`      | the Runtime's tool allowlist                                              | `nil` |

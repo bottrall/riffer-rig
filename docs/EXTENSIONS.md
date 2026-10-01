@@ -14,6 +14,33 @@ end
 
 `Runtime.new(extensions: [...])` runs each block, in order, against a fresh registrar of its own and merges what they register. Two Runtimes never share tools or commands; per-Runtime state lives in the block's locals, per-process state lives outside the block. Same process, no sandbox.
 
+## The `rig.rb` files
+
+The [Loader](EMBEDDING.md#building-a-runtime-with-the-loader) loads two extension files for a working directory, in this order:
+
+1. `~/.riffer/rig.rb` — the home file, for every project.
+2. `<cwd>/.riffer/rig.rb` — the project file.
+
+They are plain Ruby, and the Loader runs each with `load`: they `require` gems, `require_relative` local files, or call `Riffer::Rig.extension` inline. Ruby's require order is the load order, and a later registration under the same name replaces an earlier one. There is no directory scanning, no manifest, and no settings list of extensions: what is required is what loads.
+
+The home file is always trusted. The first time a project `.riffer/rig.rb` is seen, the Loader asks the host to confirm the path, stores the answer by absolute path in `~/.riffer/trust.json`, and never asks again:
+
+```json
+{ "/home/jake/project/.riffer/rig.rb": true }
+```
+
+A host whose `capabilities` leave out `:confirm` — the [null host](HOSTS.md), headless, ACP — is never asked: the file is skipped and nothing is stored, so a later terminal session can still ask. A host that answers no stores `false`, skips the file silently, and is not asked again until the entry is removed from `trust.json`.
+
+Each file is isolated the way an extension block is: a `rig.rb` that raises a `StandardError` is reported to the host through `notify` at level `:error`, and none of the extensions it recorded reach the Runtime, while the other file's extensions still load. A `ScriptError` — a bad `require`, say — propagates out of the build. Errors go to the host only, never into the model's context.
+
+## Gem extensions
+
+The convention for packaging an extension as a gem: the gem is named `riffer-rig-<name>`, its entry file is `lib/riffer/rig/<name>.rb`, and that file calls `Riffer::Rig.extension('<name>')`. A user adds it to every session with `require 'riffer/rig/<name>'` in a `rig.rb`.
+
+Setting `"extensions": { "autoload": true }` in [settings](CONFIGURATION.md#extensions) — off by default — makes the Loader run `riffer/rig/extension` from every gem `Gem.find_files` finds, before the two `rig.rb` files. A gem opts in by shipping `lib/riffer/rig/extension.rb`; the Loader appends the extensions it records after the bundle, in record order.
+
+Gem-packaged extensions never hot-reload: develop as a local file required from `rig.rb`, and package into a gem when the extension settles.
+
 ## The `rig.tool` seam
 
 ```ruby
