@@ -27,6 +27,7 @@ All wrappers delegate to the Rakefile under the hood.
 | `bin/rbs`       | Regenerate `sig/generated` from the inline annotations in `lib/`                      |
 | `bin/ci`        | Run everything CI runs, serially. Use before pushing                                  |
 | `bin/build`     | Build the gem into `pkg/`                                                             |
+| `bin/docs`      | Build the docs site and API reference into `_site/`; `bin/docs serve` serves it at http://localhost:8000 |
 | `bin/plans`     | Serve the building plans in `plans/` at http://localhost:8001                         |
 
 `bin/rake <task>` is the escape hatch for any rake task without a named wrapper.

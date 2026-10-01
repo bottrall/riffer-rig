@@ -41,7 +41,7 @@ There is no built-in default. The model is the first of these that is set, highe
 
 A bare `RIFFER_MODEL` is rejected even when a higher source wins, since it is a mistake in the environment either way.
 
-`/model provider/name` overrides this key for the current session only: the override wins until the session ends, and `settings.json` is left unchanged ([Switching the model](../README.md#switching-the-model)).
+`/model provider/name` overrides this key for the current session only: the override wins until the session ends, and `settings.json` is left unchanged ([Switching the model](https://github.com/bottrall/riffer-rig#switching-the-model)).
 
 ## `reasoning`
 

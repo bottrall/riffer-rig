@@ -124,6 +124,7 @@ Every project chore is a script in `bin/`. The Rakefile behind them is an implem
 | `bin/rbs-watch` | Regenerate `sig/generated` whenever `lib/` changes                                             |
 | `bin/ci`        | Run everything CI runs, serially. Use before pushing                                           |
 | `bin/build`     | Build the gem into `pkg/`; the publish workflow runs this before `gem push`                    |
+| `bin/docs`      | Build the docs site and API reference into `_site/`; `bin/docs serve` serves it at http://localhost:8000 |
 | `bin/plans`     | Serve the building plans in `plans/` at http://localhost:8001                                  |
 
 ## Releasing

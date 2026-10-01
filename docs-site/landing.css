@@ -1,0 +1,370 @@
+/* landing-only styles: hero, first-session card, features, the book TOC.
+   Loads after site.css, so its reduced-motion block wins by source order. */
+
+@keyframes line-focus {
+  0% { opacity: 0; filter: blur(7px); clip-path: inset(-15% 100% -15% 0); }
+  100% { opacity: 1; filter: blur(0); clip-path: inset(-15% -5% -15% 0); }
+}
+@keyframes cursor-blink { 50% { opacity: 0; } }
+@keyframes typing { to { width: calc(var(--chars) * 1ch); } }
+
+.rise { animation: rise-fade 0.65s var(--ease) both; }
+.focus-line {
+  display: block;
+  animation: line-focus 0.9s var(--ease) both;
+}
+
+/* hero — full-height stage: the intro plays here, the details are a scroll away */
+.hero {
+  position: relative;
+  min-height: calc(100vh - 61px);
+  min-height: calc(100svh - 61px);
+  display: flex;
+  align-items: center;
+  padding: 48px 0 72px;
+}
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 56px;
+  align-items: center;
+}
+.hero .kicker {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 24px;
+}
+.hero h1 {
+  font-weight: 500;
+  font-size: clamp(38px, 5.2vw, 60px);
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  margin-bottom: 18px;
+  text-wrap: balance;
+}
+.hero h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+.hero .sub {
+  display: block;
+  font-style: italic;
+  color: var(--muted);
+  font-size: 20px;
+  margin-bottom: 22px;
+}
+.hero .lede {
+  max-width: 42ch;
+  margin-bottom: 32px;
+  font-size: 17px;
+  color: var(--muted);
+}
+.install {
+  margin-top: 26px;
+  color: var(--muted);
+  font-size: 15px;
+  font-style: italic;
+}
+.install code {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 13px;
+  background: var(--faint);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 3px 10px;
+}
+
+/* the right side: a first session, typed and played out */
+.session {
+  border: 1px solid var(--rule);
+  background: var(--faint);
+  padding: 18px 22px 20px;
+  font-family: var(--mono);
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+.session .cap {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.session .line {
+  display: block;
+  white-space: pre-wrap;
+  animation: rise-fade 0.45s var(--ease) both;
+}
+.session .you { color: var(--ink); }
+.session .dim { color: var(--muted); }
+.session .rig { color: var(--accent); }
+.session .ok { color: var(--ink); }
+.session .rig::before { content: "◆ "; font-size: 0.8em; }
+.session .ps1 { color: var(--muted); }
+.session .prompt-row {
+  display: block;
+  margin-top: 14px;
+  color: var(--ink);
+}
+.session .prompt-row .ps1 { color: var(--accent); }
+.session .cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  background: var(--accent);
+  vertical-align: -0.12em;
+  margin-left: 0.15em;
+  animation: cursor-blink 1.1s steps(1) infinite;
+}
+.session .ok::before { content: "✔ "; color: var(--gold); }
+
+/* commands type themselves out */
+.session .type {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: bottom;
+  width: 0;
+  animation: typing 0.9s steps(var(--chars), end) forwards;
+}
+
+/* the beat sequence */
+.session .cap + .line { animation-delay: 0.55s; }
+.session .cap + .line .type { animation-delay: 0.7s; }
+.session .cap + .line + .line { animation-delay: 1.75s; }
+.session .line:nth-child(4) { animation-delay: 1.95s; }
+.session .line:nth-child(4) .type { animation-delay: 2.05s; animation-duration: 0.45s; }
+.session .line:nth-child(5) { animation-delay: 2.75s; }
+.session .line:nth-child(6) { animation-delay: 3.15s; }
+.session .line:nth-child(7) { animation-delay: 3.45s; }
+.session .line:nth-child(8) { animation-delay: 3.9s; }
+.session .line:nth-child(9) { animation-delay: 4.2s; }
+.session .line:nth-child(10) { animation-delay: 4.75s; }
+.session .prompt-row { animation: rise-fade 0.45s var(--ease) 5.15s both; }
+
+/* a quiet cue that the details are below */
+.scroll-cue {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  color: var(--accent);
+  font-size: 28px;
+  line-height: 1;
+  text-decoration: none;
+  animation: bob 2.6s ease-in-out infinite;
+}
+.scroll-cue:hover {
+  color: var(--accent);
+}
+@keyframes bob {
+  50% { transform: translateX(-50%) translateY(5px); }
+}
+
+/* ornament */
+.fleuron {
+  text-align: center;
+  color: var(--gold);
+  font-size: 1.4rem;
+  padding-top: 20px;
+}
+
+/* features as a numbered essay list */
+.feats {
+  padding: 40px 0 8px;
+}
+.feats h2,
+.docs-sec h2 {
+  font-weight: 500;
+  font-size: 30px;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+.sec-sub {
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 34px;
+}
+.feat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 56px;
+}
+.feat {
+  padding: 22px 0;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  gap: 18px;
+}
+.feat .n {
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--gold);
+  min-width: 2.2rem;
+  padding-top: 4px;
+}
+.feat h3 {
+  font-weight: 600;
+  font-size: 19px;
+  margin-bottom: 4px;
+}
+.feat h3 .tag {
+  display: block;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.feat p {
+  color: var(--muted);
+  font-size: 15.5px;
+}
+.feat code {
+  font-family: var(--mono);
+  font-size: 0.84em;
+  background: var(--faint);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0 5px;
+  color: var(--ink);
+}
+
+/* the guides — a book table of contents */
+.docs-sec {
+  padding: 56px 0 72px;
+}
+.group-label {
+  color: var(--accent);
+  margin: 34px 0 10px;
+}
+.toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.toc-list li {
+  border-bottom: 1px solid var(--rule);
+}
+.toc-list a {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 12px 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+.toc-list .num {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  color: var(--gold);
+  min-width: 1.6rem;
+}
+.toc-list .name {
+  font-size: 17.5px;
+  display: inline-block;
+  transition: transform 0.3s var(--ease), color 0.15s ease;
+}
+.toc-list a:hover .name {
+  color: var(--accent);
+  transform: translateX(4px);
+}
+.toc-list .featured .name::after {
+  content: " ✦";
+  color: var(--gold);
+  font-size: 0.8em;
+}
+.toc-list .leader {
+  flex: 1;
+  border-bottom: 1px dotted var(--leader);
+  transform: translateY(-4px);
+}
+.toc-list .desc {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 14.5px;
+  text-align: right;
+  transition: color 0.2s ease;
+}
+.toc-list a:hover .desc {
+  color: var(--ink);
+}
+
+/* as you scroll, the dotted leaders ink themselves across the page and the
+   details sections rise into place */
+@supports (animation-timeline: view()) {
+  .toc-list .leader {
+    transform: translateY(-4px) scaleX(0);
+    transform-origin: right;
+    animation: ink-line 1s linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 55%;
+  }
+  @keyframes ink-line { to { transform: translateY(-4px) scaleX(1); } }
+  .feats h2,
+  .docs-sec h2,
+  .sec-sub,
+  .feat,
+  .group-label,
+  .toc-list li {
+    animation: rise-fade 0.9s var(--ease) both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 55%;
+  }
+}
+
+@media (max-width: 860px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .scroll-cue {
+    display: none;
+  }
+  .feat-grid {
+    grid-template-columns: 1fr;
+  }
+  .toc-list .desc,
+  .toc-list .leader {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .focus-line,
+  .session .line,
+  .session .prompt-row,
+  .session .cursor,
+  .toc-list .leader,
+  .scroll-cue,
+  .feats h2,
+  .docs-sec h2,
+  .sec-sub,
+  .feat,
+  .group-label,
+  .toc-list li {
+    animation: none;
+  }
+  .session .type {
+    animation: none;
+    width: auto;
+  }
+  .btn,
+  .toc-list .name,
+  .toc-list .desc {
+    transition: none;
+  }
+}

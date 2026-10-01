@@ -1,0 +1,57 @@
+# Every guide page on the docs site, in reading order. `source` is relative to
+# docs/; `slug` becomes the page URL (/guides/<slug>/). Page titles come from
+# each file's first H1 at build time. Adding a page under docs/ requires an
+# entry here — the build fails on any mismatch.
+groups:
+  - label: Start here
+    tone: teal
+    pages:
+      - source: GETTING_STARTED.md
+        slug: getting-started
+        featured: true
+        description: Install, pick a model, first session
+
+  - label: Using the terminal
+    tone: rose
+    pages:
+      - source: CONFIGURATION.md
+        slug: configuration
+        description: Settings scopes and every core key
+      - source: INSTRUCTIONS.md
+        slug: instructions
+        description: How the system message is built; AGENTS.md
+      - source: TOOLS.md
+        slug: tools
+        description: The bundled toolkit and provider-native tools
+      - source: SKILLS.md
+        slug: skills
+        description: Agent Skills directories and activation
+      - source: MCP.md
+        slug: mcp
+        description: Declaring MCP servers
+      - source: SESSIONS.md
+        slug: sessions
+        description: Saving, resuming, the picker, the JSONL store
+      - source: HEADLESS.md
+        slug: headless
+        description: riffer -p, NDJSON, exit codes
+
+  - label: Extending and embedding
+    tone: gold
+    pages:
+      - source: EXTENSIONS.md
+        slug: extensions
+        description: rig.rb, the registrar, the eight seams, commands, handlers, gems
+      - source: EMBEDDING.md
+        slug: embedding
+        description: Runtime and Loader from Ruby; snapshots; rebuild
+      - source: HOSTS.md
+        slug: hosts
+        description: The Host interface and writing a host
+
+  - label: Providers
+    tone: teal
+    pages:
+      - source: PROVIDERS.md
+        slug: providers/overview
+        description: Model strings, precedence, credentials, /auth
