@@ -57,7 +57,7 @@ describe Riffer::Rig::Terminal::Renderer do
     renderer.render(Riffer::StreamEvents::TextDelta.new('one two three four five'))
     renderer.drain
 
-    assert @io.string.lines.all? { |line| line.chomp.length <= 20 }
+    assert(@io.string.lines.all? { |line| line.chomp.length <= 20 })
   end
 
   it 'indents prose on the left' do
