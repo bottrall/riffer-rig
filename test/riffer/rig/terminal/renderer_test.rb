@@ -11,8 +11,9 @@ describe Riffer::Rig::Terminal::Renderer do
 
   it 'renders text delta content to the io' do
     @renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
+    @renderer.drain
 
-    assert_equal 'hello', @io.string
+    assert_equal "  hello\n", @io.string
   end
 
   it 'separates prose after the prompt with a blank line' do
@@ -21,15 +22,17 @@ describe Riffer::Rig::Terminal::Renderer do
     @io.rewind
 
     @renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
+    @renderer.drain
 
-    assert_equal "\nhello", @io.string
+    assert_equal "\n  hello\n", @io.string
   end
 
   it 'does not stack blank lines between consecutive prose deltas' do
     @renderer.render(Riffer::StreamEvents::TextDelta.new('hello '))
     @renderer.render(Riffer::StreamEvents::TextDelta.new('world'))
+    @renderer.drain
 
-    assert_equal 'hello world', @io.string
+    assert_equal "  hello world\n", @io.string
   end
 
   it 'routes text deltas through the smoother when one is present' do
@@ -39,9 +42,29 @@ describe Riffer::Rig::Terminal::Renderer do
       smoother: recording_smoother
     )
 
-    renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
+    renderer.render(Riffer::StreamEvents::TextDelta.new("hello\n"))
 
-    assert_equal ['hello'], recording_smoother.written
+    assert_equal ["  hello\n"], recording_smoother.written
+  end
+
+  it 'wraps prose at the terminal width' do
+    renderer = Riffer::Rig::Terminal::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::Terminal::Theme.new(enabled: false),
+      width: 20
+    )
+
+    renderer.render(Riffer::StreamEvents::TextDelta.new('one two three four five'))
+    renderer.drain
+
+    assert @io.string.lines.all? { |line| line.chomp.length <= 20 }
+  end
+
+  it 'indents prose on the left' do
+    @renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
+    @renderer.drain
+
+    assert @io.string.lines.first.start_with?('  ')
   end
 
   it 'drains the smoother before rendering a tool call done event' do
@@ -102,7 +125,7 @@ describe Riffer::Rig::Terminal::Renderer do
       )
     )
 
-    assert_equal "\n  ⚙ read()\n", @io.string
+    assert_equal "\n    ⚙ read()\n", @io.string
   end
 
   it 'truncates long tool call argument values' do
@@ -181,13 +204,13 @@ describe Riffer::Rig::Terminal::Renderer do
     )
     @renderer.render_tool_result(message)
 
-    assert_equal "\n  ⚙ write()\n    ↳ done\n", @io.string
+    assert_equal "\n    ⚙ write()\n      ↳ done\n", @io.string
   end
 
   it 'renders the turn usage and session total as one stats block' do
     @renderer.usage(usage(100, 50, cache_read_tokens: 200), usage(300, 150))
 
-    assert_equal "\n↑100 · ↓50 · cache_read:200 · session 450 tok\n", @io.string
+    assert_equal "\n  ↑100 · ↓50 · cache_read:200 · session 450 tok\n", @io.string
   end
 
   it 'renders nothing when the turn reported no usage' do

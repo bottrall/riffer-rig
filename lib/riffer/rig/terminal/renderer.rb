@@ -7,12 +7,19 @@ class Riffer::Rig::Terminal::Renderer
 
   ARGUMENT_PREVIEW_LIMIT = 60 #: Integer
 
+  PROSE_INDENT = 2 #: Integer
+
+  TOOL_CALL_INDENT = 4 #: Integer
+
+  TOOL_RESULT_INDENT = 6 #: Integer
+
   # @rbs @io: IO
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
   # @rbs @cursor: Riffer::Rig::Terminal::Cursor
   # @rbs @prose_gap_pending: bool
   # @rbs @width: Integer?
+  # @rbs @wrapper: Riffer::Rig::Terminal::Wrapper
 
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -33,6 +40,7 @@ class Riffer::Rig::Terminal::Renderer
     @cursor = cursor
     @prose_gap_pending = false
     @width = width
+    @wrapper = new_wrapper
   end
 
   # @rbs event: Riffer::StreamEvents::TextDelta | Riffer::StreamEvents::ToolCallDone | Riffer::StreamEvents::Interrupt
@@ -42,7 +50,7 @@ class Riffer::Rig::Terminal::Renderer
     when Riffer::StreamEvents::TextDelta
       render_prose(event.content)
     when Riffer::StreamEvents::ToolCallDone
-      render_tool_activity(2) { "⚙ #{event.name}(#{format_arguments(event.arguments)})" }
+      render_tool_activity(TOOL_CALL_INDENT) { "⚙ #{event.name}(#{format_arguments(event.arguments)})" }
     when Riffer::StreamEvents::Interrupt
       render_block(0) { @theme.dim("[interrupted: #{event.reason}]") }
     end
@@ -79,7 +87,12 @@ class Riffer::Rig::Terminal::Renderer
   def usage(usage, session)
     return unless usage && session
 
-    render_block(0) { @theme.dim(usage_line(usage, session)) }
+    flush_prose
+    @prose_gap_pending = true
+    @io.puts
+    text = (@wrapper << usage_line(usage, session)) + @wrapper.flush
+    @io.print(@theme.dim(text)) unless text.empty?
+    @io.flush
   end
 
   # @rbs return: void
@@ -121,13 +134,14 @@ class Riffer::Rig::Terminal::Renderer
 
   # @rbs return: void
   def end_turn
+    flush_prose
     @smoother.finish
     @cursor.show
   end
 
   # @rbs return: void
   def drain
-    @smoother.drain
+    flush_prose
   end
 
   # @rbs message: Riffer::Messages::Base
@@ -136,9 +150,9 @@ class Riffer::Rig::Terminal::Renderer
     return unless message.is_a?(Riffer::Messages::Tool)
 
     open_tool_activity
-    line = fit("↳ #{preview(message.content)}", 4)
+    line = fit("↳ #{preview(message.content)}", TOOL_RESULT_INDENT)
     styled = message.error? ? @theme.red(line) : @theme.dim(line)
-    @io.print("    #{styled}\n")
+    @io.print("#{' ' * TOOL_RESULT_INDENT}#{styled}\n")
     @io.flush
   end
 
@@ -173,7 +187,7 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs &block: () -> String
   # @rbs return: void
   def render_block(indent, &)
-    drain
+    flush_prose
     @io.puts
     @prose_gap_pending = true
     @io.puts((' ' * indent) + yield)
@@ -188,8 +202,10 @@ class Riffer::Rig::Terminal::Renderer
     if @prose_gap_pending
       @prose_gap_pending = false
       @io.print("\n")
+      @wrapper = new_wrapper
     end
-    @smoother << content
+    emit = @wrapper << content
+    @smoother << emit unless emit.empty?
   end
 
   # @rbs indent: Integer
@@ -207,7 +223,7 @@ class Riffer::Rig::Terminal::Renderer
     # group; the group stays open so the prose after it pays the closing gap.
     return if @prose_gap_pending
 
-    drain
+    flush_prose
     @io.puts
     @prose_gap_pending = true
   end
@@ -258,9 +274,26 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs indent: Integer
   # @rbs return: String
   def fit(text, indent)
-    width = @width || (@io.tty? ? @io.winsize[1] : nil)
+    width = detect_width
     return text unless width
 
     elide(text, width - indent)
+  end
+
+  # @rbs return: void
+  def flush_prose
+    emit = @wrapper.flush
+    @smoother << emit unless emit.empty?
+    @smoother.drain
+  end
+
+  # @rbs return: Riffer::Rig::Terminal::Wrapper
+  def new_wrapper
+    Riffer::Rig::Terminal::Wrapper.new(width: detect_width, indent: PROSE_INDENT)
+  end
+
+  # @rbs return: Integer?
+  def detect_width
+    @width || (@io.tty? ? @io.winsize[1] : nil)
   end
 end

@@ -5,6 +5,14 @@ class Riffer::Rig::Terminal::Renderer
 
   ARGUMENT_PREVIEW_LIMIT: Integer
 
+  PROSE_INDENT: Integer
+
+  TOOL_CALL_INDENT: Integer
+
+  TOOL_RESULT_INDENT: Integer
+
+  @wrapper: Riffer::Rig::Terminal::Wrapper
+
   @width: Integer?
 
   @prose_gap_pending: bool
@@ -140,4 +148,13 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs indent: Integer
   # @rbs return: String
   def fit: (String text, Integer indent) -> String
+
+  # @rbs return: void
+  def flush_prose: () -> void
+
+  # @rbs return: Riffer::Rig::Terminal::Wrapper
+  def new_wrapper: () -> Riffer::Rig::Terminal::Wrapper
+
+  # @rbs return: Integer?
+  def detect_width: () -> Integer?
 end

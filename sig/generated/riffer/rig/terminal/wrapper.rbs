@@ -1,0 +1,43 @@
+# Generated from lib/riffer/rig/terminal/wrapper.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Wrapper
+  @width: Integer?
+
+  @indent: Integer
+
+  @line: String
+
+  # @rbs width: Integer?
+  # @rbs indent: Integer
+  # @rbs return: void
+  def initialize: (width: Integer?, indent: Integer) -> void
+
+  # @rbs text: String
+  # @rbs return: String
+  def <<: (String text) -> String
+
+  # @rbs return: String
+  def flush: () -> String
+
+  private
+
+  # @rbs return: String?
+  def take_line: () -> String?
+
+  # @rbs return: bool
+  def overfull?: () -> bool
+
+  # @rbs return: String
+  def take_overfull_head: () -> String
+
+  # @rbs logical: String
+  # @rbs return: String
+  def physical_lines: (String logical) -> String
+
+  # @rbs return: String
+  def indent: () -> String
+
+  # @rbs text: String
+  # @rbs return: Array[String]
+  def wrap_words: (String text) -> Array[String]
+end
