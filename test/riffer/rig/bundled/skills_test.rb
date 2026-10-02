@@ -77,7 +77,7 @@ describe 'Riffer::Rig::Bundled::Skills' do
   end
 
   it 'lists one command per skill in the project directory' do
-    assert_equal %w[model skill:a skill:b], runtime.commands.map(&:name)
+    assert_equal %w[auth model skill:a skill:b], runtime.commands.map(&:name)
   end
 
   it 'lists a command for a skill in the home directory' do
@@ -121,7 +121,7 @@ describe 'Riffer::Rig::Bundled::Skills' do
     sub = File.join(@cwd, 'sub')
     FileUtils.mkdir_p(sub)
 
-    assert_equal %w[model], runtime(cwd: sub).commands.map(&:name)
+    assert_equal %w[auth model], runtime(cwd: sub).commands.map(&:name)
   end
 
   it 'describes a skill command with the skill description' do
@@ -131,7 +131,7 @@ describe 'Riffer::Rig::Bundled::Skills' do
   it 'lists no skill commands without skills' do
     FileUtils.remove_entry(File.join(@cwd, '.agents', 'skills'))
 
-    assert_equal %w[model], runtime.commands.map(&:name)
+    assert_equal %w[auth model], runtime.commands.map(&:name)
   end
 
   it 'sends the wrapped body and the args as a user turn' do

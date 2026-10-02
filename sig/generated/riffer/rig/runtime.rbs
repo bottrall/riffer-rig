@@ -126,6 +126,11 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def model=: (String model) -> void
 
+  # @rbs provider: Symbol
+  # @rbs values: Hash[Symbol, String]
+  # @rbs return: void
+  def merge_credentials: (Symbol provider, Hash[Symbol, String] values) -> void
+
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs return: nil

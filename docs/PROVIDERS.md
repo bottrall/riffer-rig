@@ -74,6 +74,16 @@ Plain fields live in `~/.riffer/settings.json` under `providers`, keyed by provi
 }
 ```
 
+## /auth
+
+The `/auth` command manages credentials from inside a session:
+
+- `/auth` lists every provider with where its secret comes from: `env` when one of its env vars is set, `stored` when `auth.json` has it, `chain` when neither holds and the setup entry offers the SDK's own credential chain (Bedrock), otherwise `missing`.
+- `/auth <provider>` re-runs the provider's setup — it asks for each required field that does not resolve, and stores what you answer. This is how you rotate a key. The new values are applied to the current session, so the next request uses them; `/model` also accepts the provider once its credentials are complete.
+- `/auth remove <provider>` deletes the provider's `auth.json` entry and its `providers` block in settings. Credentials already loaded into the running session keep working until it ends.
+
+The provider name must be one the registry knows; an unknown name is rejected with the list of providers, the same hint `/model` gives.
+
 ## Provider notes
 
 ### Anthropic
