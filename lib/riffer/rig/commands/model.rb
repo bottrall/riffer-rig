@@ -6,13 +6,13 @@ module Riffer::Rig::Commands::Model
   HINT = 'Use /model provider/name, with a provider from: ' \
          "#{Riffer::Rig::Settings::PROVIDERS.join(', ')}".freeze #: String
 
-  SAVE_UNAVAILABLE = '/model --save is not available in this host'
+  SAVE = '--save' #: String
 
   # @rbs return: Riffer::Rig::Command
   def command
     Riffer::Rig::Command.new(
       'model',
-      description: 'Switch the model for this session: /model provider/name',
+      description: 'Switch the model for this session: /model provider/name, /model --save',
       extension: 'core'
     ) { |ctx| run(ctx) }
   end
@@ -20,35 +20,82 @@ module Riffer::Rig::Commands::Model
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs return: void
   def run(ctx)
-    model = ctx.args.strip
-    return ctx.host.notify(SAVE_UNAVAILABLE, level: :error) if model.split.include?('--save')
-    return ctx.say("Model: #{ctx.runtime.model}") if model.empty?
+    words = ctx.args.split
+    save = words.delete(SAVE)
+    model = words.join(' ')
+
+    if model.empty?
+      return ctx.say("Model: #{ctx.runtime.model}") unless save
+
+      Riffer::Rig::Settings.store_model(ctx.runtime.model)
+      return ctx.say("Saved #{ctx.runtime.model} to settings")
+    end
 
     provider = Riffer::Rig::Settings.provider_for(model)
     return ctx.say(HINT) unless provider && Riffer::Providers::Repository.find(provider)
-
-    missing = missing_credentials(provider, ctx.runtime.credentials)
-    return ctx.host.notify(refusal(model, provider, missing), level: :error) unless missing.empty?
+    return unless ready?(ctx, model, provider)
 
     ctx.runtime.model = model
+    Riffer::Rig::Settings.store_model(model) if save
     ctx.say("Model: #{model}")
   end
 
   private
 
+  # The same setup flows the Loader runs when it builds a Runtime: the
+  # provider's SDK gem, then its credentials, asked for when the host can ask.
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs model: String
+  # @rbs provider: String
+  # @rbs return: bool
+  def ready?(ctx, model, provider)
+    setup = Riffer::Rig::ProviderSetup[provider]
+    return true unless setup
+
+    sdk = setup.sdk
+    if sdk
+      message = Riffer::Rig::SDK.ensure(sdk[0], sdk[1], host: ctx.host)
+      if message
+        ctx.host.notify(message, level: :error)
+        return false
+      end
+    end
+
+    credentials_ready?(ctx, model, provider, setup)
+  end
+
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs model: String
+  # @rbs provider: String
+  # @rbs setup: Riffer::Rig::ProviderSetup
+  # @rbs return: bool
+  def credentials_ready?(ctx, model, provider, setup)
+    missing = setup.fields.select(&:required)
+                   .map(&:name)
+                   .reject { |name| ctx.runtime.credentials.dig(provider.to_sym, name) }
+    return true if missing.empty?
+
+    resolution = Riffer::Rig::Credentials.resolve(provider, host: ctx.host)
+    unfilled = missing & resolution.missing
+    if unfilled.empty?
+      Riffer::Rig::Credentials.apply(provider, resolution.values)
+      empty = {} #: Hash[Symbol, String]
+      values = ctx.runtime.credentials.fetch(provider.to_sym, empty).merge(resolution.values)
+      ctx.runtime.merge_credentials(provider.to_sym, values)
+      true
+    else
+      refuse(ctx, model, provider, unfilled)
+      false
+    end
+  end
+
+  # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs model: String
   # @rbs provider: String
   # @rbs missing: Array[Symbol]
-  # @rbs return: String
-  def refusal(model, provider, missing)
-    "Not switching to #{model}: #{provider} has no #{missing.join(', ')} in credentials"
-  end
-
-  # @rbs provider: String
-  # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
-  # @rbs return: Array[Symbol]
-  def missing_credentials(provider, credentials)
-    required = Riffer::Rig::ProviderSetup[provider]&.fields&.select(&:required) || []
-    required.map(&:name).reject { |name| credentials.dig(provider.to_sym, name) }
+  # @rbs return: void
+  def refuse(ctx, model, provider, missing)
+    wanted = Riffer::Rig::ProviderSetup.for(provider).missing_fields(missing)
+    ctx.host.notify("Not switching to #{model}: #{provider} has no #{wanted}", level: :error)
   end
 end

@@ -187,7 +187,9 @@ class Riffer::Rig::Runtime
   def model=(model)
     # Upstream candidate: riffer resolves the model Proc once, in Agent.new, so
     # a switch rebuilds the agent over the same session and config.
-    @agent = successor(model, @agent.config)
+    agent = successor(model, @agent.config)
+    rederive_options(model)
+    @agent = agent
     @model_override = model
   end
 
@@ -280,6 +282,19 @@ class Riffer::Rig::Runtime
     agent.context.token_usage = @agent.context.token_usage
     reactivate(agent.context.skills, activated_skills)
     agent
+  end
+
+  # The options the settings built for the starting model are provider-shaped
+  # (cache control, per-provider reasoning levels), so a switch re-derives them.
+  # Runs after the successor is built, so a failed build leaves the running
+  # agent's options alone; riffer reads config.model_options per request, so the
+  # swap still reaches the new agent through the shared config.
+  # @rbs model: String
+  # @rbs return: void
+  def rederive_options(model)
+    reasoning = Riffer::Rig::Settings::Document.new(@settings).reasoning
+    @model_options = Riffer::Rig::Settings.model_options(model, reasoning)
+    @agent.config.model_options = @model_options
   end
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]

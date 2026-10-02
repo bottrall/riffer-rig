@@ -168,6 +168,15 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Agent
   def successor: (String model, Riffer::Agent::Config config) -> Riffer::Agent
 
+  # The options the settings built for the starting model are provider-shaped
+  # (cache control, per-provider reasoning levels), so a switch re-derives them.
+  # Runs after the successor is built, so a failed build leaves the running
+  # agent's options alone; riffer reads config.model_options per request, so the
+  # swap still reaches the new agent through the shared config.
+  # @rbs model: String
+  # @rbs return: void
+  def rederive_options: (String model) -> void
+
   # @rbs registrars: Array[Riffer::Rig::Registrar]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs max_steps: Numeric?

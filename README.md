@@ -92,7 +92,7 @@ Inside a session, `/auth` lists every provider with where its secret comes from 
 
 ### Switching the model
 
-`/model provider/name` switches the model for the current session only, keeping the conversation so far — `/model openai/gpt-5`, say. The provider prefix is required: a bare name such as `/model sonnet` is rejected with the list of providers. `/model` alone shows the model in use. The switch is refused when the session has no credentials for the new provider, and it never changes `settings.json`; set `model` there to change the model new sessions start with ([Configuration](docs/CONFIGURATION.md#model)).
+`/model provider/name` switches the model for the current session only, keeping the conversation so far — `/model openai/gpt-5`, say. The provider prefix is required: a bare name such as `/model sonnet` is rejected with the list of providers. `/model` alone shows the model in use. Switching runs the same setup for the new provider as startup does: its SDK gem is offered for install (or refused with the exact Gemfile line), and missing credentials are resolved — you are prompted for them when the host can ask, and the values apply to the running session immediately. The switch is refused with one error when the host cannot supply what is missing, and the model is left unchanged. `/model --save` writes the model in effect to the home `settings.json`, so new sessions start with it; `/model provider/name --save` switches and saves in one step, and a refused switch saves nothing ([Configuration](docs/CONFIGURATION.md#model)).
 
 ### Configuration
 

@@ -77,6 +77,14 @@ class Riffer::Rig::ProviderSetup
     )
   }.freeze #: Hash[Symbol, Riffer::Rig::ProviderSetup]
 
+  # @rbs missing: Array[Symbol]
+  # @rbs return: String
+  def missing_fields(missing)
+    fields.select { |field| missing.include?(field.name) }
+          .map { |field| "#{field.name} (#{field.env.join(' or ')})" }
+          .join(', ')
+  end
+
   # @rbs identifier: String | Symbol
   # @rbs return: Riffer::Rig::ProviderSetup?
   def self.[](identifier)

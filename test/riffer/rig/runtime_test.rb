@@ -108,6 +108,15 @@ describe Riffer::Rig::Runtime do
     assert_equal({ reasoning: 'high' }, runtime.agent.config.model_options)
   end
 
+  it 're-derives its model options for the new provider on a switch' do
+    runtime = Riffer::Rig::Runtime.new(
+      'mock/test', model_options: { reasoning: 'high' }, settings: { reasoning: 'high' }
+    )
+    runtime.model = 'gemini/gem-2.5-pro'
+
+    assert_equal({}, runtime.agent.config.model_options)
+  end
+
   it 'refuses an ask while a prompt is running' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
     runtime.agent.provider.stub_response('first')
