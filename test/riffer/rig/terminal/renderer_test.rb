@@ -60,6 +60,10 @@ describe Riffer::Rig::Terminal::Renderer do
     assert(@io.string.lines.all? { |line| line.chomp.length <= 20 })
   end
 
+  it 'loads io-console so IO#winsize exists' do
+    assert_includes IO.instance_methods, :winsize
+  end
+
   it 'detects the width from a tty io' do
     io = StringIO.new
     def io.tty? = true

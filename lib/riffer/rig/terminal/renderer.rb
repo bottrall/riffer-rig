@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'io/console'
 require 'json'
 
 class Riffer::Rig::Terminal::Renderer
