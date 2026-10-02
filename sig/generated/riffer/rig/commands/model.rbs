@@ -3,7 +3,7 @@
 module Riffer::Rig::Commands::Model
   HINT: String
 
-  SAVE_UNAVAILABLE: ::String
+  SAVE: String
 
   # @rbs return: Riffer::Rig::Command
   def command: () -> Riffer::Rig::Command
@@ -14,14 +14,25 @@ module Riffer::Rig::Commands::Model
 
   private
 
+  # The same setup flows the Loader runs when it builds a Runtime: the
+  # provider's SDK gem, then its credentials, asked for when the host can ask.
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs model: String
+  # @rbs provider: String
+  # @rbs return: bool
+  def ready?: (Riffer::Rig::Command::Context ctx, String model, String provider) -> bool
+
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs model: String
+  # @rbs provider: String
+  # @rbs setup: Riffer::Rig::ProviderSetup
+  # @rbs return: bool
+  def credentials_ready?: (Riffer::Rig::Command::Context ctx, String model, String provider, Riffer::Rig::ProviderSetup setup) -> bool
+
+  # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs model: String
   # @rbs provider: String
   # @rbs missing: Array[Symbol]
-  # @rbs return: String
-  def refusal: (String model, String provider, Array[Symbol] missing) -> String
-
-  # @rbs provider: String
-  # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
-  # @rbs return: Array[Symbol]
-  def missing_credentials: (String provider, Hash[Symbol, Hash[Symbol, String]] credentials) -> Array[Symbol]
+  # @rbs return: void
+  def refuse: (Riffer::Rig::Command::Context ctx, String model, String provider, Array[Symbol] missing) -> void
 end

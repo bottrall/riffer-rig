@@ -23,6 +23,10 @@ class Riffer::Rig::ProviderSetup
   # credential fields, and this table would go.
   TABLE: Hash[Symbol, Riffer::Rig::ProviderSetup]
 
+  # @rbs missing: Array[Symbol]
+  # @rbs return: String
+  def missing_fields: (Array[Symbol] missing) -> String
+
   # @rbs identifier: String | Symbol
   # @rbs return: Riffer::Rig::ProviderSetup?
   def self.[]: (String | Symbol identifier) -> Riffer::Rig::ProviderSetup?

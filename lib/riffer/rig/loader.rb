@@ -234,9 +234,8 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def missing_credentials(provider, missing)
     setup = Riffer::Rig::ProviderSetup.for(provider)
-    fields = setup.fields.select { |field| missing.include?(field.name) }
-    wanted = fields.map { |field| "#{field.name} (#{field.env.join(' or ')})" }.join(', ')
-    "#{provider} has no #{wanted}; set it in the environment or run riffer interactively to paste it" \
+    "#{provider} has no #{setup.missing_fields(missing)}; " \
+      'set it in the environment or run riffer interactively to paste it' \
       "#{" (create one at #{setup.url})" if setup.url}"
   end
 
