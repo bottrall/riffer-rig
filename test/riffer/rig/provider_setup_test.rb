@@ -46,6 +46,27 @@ describe Riffer::Rig::ProviderSetup do
     refute Riffer::Rig::ProviderSetup.for(:acme).chain
   end
 
+  it 'maps each provider to its SDK gem and requirement' do
+    expected = {
+      anthropic: ['anthropic', '~> 1.69'],
+      openai: ['openai', '~> 0.80'],
+      openrouter: ['openai', '~> 0.80'],
+      azure_openai: ['openai', '~> 0.80'],
+      gemini: nil,
+      amazon_bedrock: ['aws-sdk-bedrockruntime', '~> 1.0']
+    }
+
+    assert_equal expected, Riffer::Rig::ProviderSetup::TABLE.transform_values(&:sdk)
+  end
+
+  it 'gives the generic fallback entry no SDK' do
+    assert_nil Riffer::Rig::ProviderSetup.for(:acme).sdk
+  end
+
+  it 'freezes the sdk pair' do
+    assert_predicate Riffer::Rig::ProviderSetup[:anthropic].sdk, :frozen?
+  end
+
   it 'freezes a setup' do
     assert_predicate Riffer::Rig::ProviderSetup.for(:acme), :frozen?
   end

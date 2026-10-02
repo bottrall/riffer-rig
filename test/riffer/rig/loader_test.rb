@@ -239,11 +239,12 @@ describe Riffer::Rig::Loader do
 
     it 'hands the model options to the Runtime' do
       write_settings(@home, { reasoning: 'high' })
+      options = Riffer::Rig::Settings.method(:model_options)
+      Riffer::Rig::Settings.define_singleton_method(:model_options) { |*_args| { reasoning: 'high' } }
+      model_options = build(model: 'mock/test').agent.config.model_options
+      Riffer::Rig::Settings.define_singleton_method(:model_options, options)
 
-      assert_equal(
-        { reasoning: 'high' },
-        build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' }).agent.config.model_options
-      )
+      assert_equal({ reasoning: 'high' }, model_options)
     end
   end
 
@@ -559,45 +560,72 @@ describe Riffer::Rig::Loader do
     end
   end
 
+  describe 'sdk' do
+    def with_sdk_absent_and_installable
+      gem_specs = Gem::Specification.method(:find_by_name)
+      bundler = Riffer::Rig::SDK.method(:bundler?)
+      Gem::Specification.define_singleton_method(:find_by_name) { |*_args| raise Gem::LoadError, 'not installed' }
+      Riffer::Rig::SDK.define_singleton_method(:bundler?) { false }
+      yield
+    ensure
+      Gem::Specification.define_singleton_method(:find_by_name, gem_specs)
+      Riffer::Rig::SDK.define_singleton_method(:bundler?, bundler)
+    end
+
+    it 'builds the Runtime for a provider that needs no SDK gem' do
+      with_sdk_absent_and_installable do
+        runtime = build(model: 'gemini/gem-2.5-pro', env: { 'GEMINI_API_KEY' => 'k' })
+
+        assert_equal 'gemini/gem-2.5-pro', runtime.model
+      end
+    end
+
+    it 'reports a declined install instead of building the Runtime' do
+      with_sdk_absent_and_installable do
+        assert_match(
+          /\Aopenai is not installed; install it with gem install openai/,
+          refusal { build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' }) }
+        )
+      end
+    end
+  end
+
   describe 'credentials' do
-    let(:anthropic) { build(model: 'anthropic/claude-sonnet-4-6', env: { 'ANTHROPIC_API_KEY' => 'sk-ant-env' }) }
+    let(:gemini) { build(model: 'gemini/gem-2.5-pro', env: { 'GEMINI_API_KEY' => 'sk-gem-env' }) }
 
     it 'assigns the resolved key to the riffer config' do
-      anthropic
+      gemini
 
-      assert_equal 'sk-ant-env', @config.anthropic.api_key
+      assert_equal 'sk-gem-env', @config.gemini.api_key
     end
 
     it 'hands the resolved values to the Runtime' do
-      assert_equal({ anthropic: { api_key: 'sk-ant-env' } }, anthropic.credentials)
+      assert_equal({ gemini: { api_key: 'sk-gem-env' } }, gemini.credentials)
     end
 
     it 'reads a key stored in the home auth.json' do
       FileUtils.mkdir_p(File.join(@home, '.riffer'))
       File.write(
         File.join(@home, '.riffer', 'auth.json'),
-        JSON.generate({ anthropic: { type: 'api_key', api_key: 'sk-ant-stored' } })
+        JSON.generate({ gemini: { type: 'api_key', api_key: 'sk-gem-stored' } })
       )
 
-      assert_equal(
-        { api_key: 'sk-ant-stored' },
-        build(model: 'anthropic/claude-sonnet-4-6', env: {}).credentials[:anthropic]
-      )
+      assert_equal({ api_key: 'sk-gem-stored' }, build(model: 'gemini/gem-2.5-pro', env: {}).credentials[:gemini])
     end
 
     it 'asks a host that can ask for a missing key' do
-      host = ScriptedHost.new('sk-ant-pasted')
+      host = ScriptedHost.new('sk-gem-pasted')
 
       assert_equal(
-        { api_key: 'sk-ant-pasted' },
-        build(host: host, model: 'anthropic/claude-sonnet-4-6', env: {}).credentials[:anthropic]
+        { api_key: 'sk-gem-pasted' },
+        build(host: host, model: 'gemini/gem-2.5-pro', env: {}).credentials[:gemini]
       )
     end
 
     it 'raises the configuration error naming a key the null host cannot supply' do
       assert_match(
-        /\Aanthropic has no api_key \(ANTHROPIC_API_KEY\)/,
-        refusal { build(model: 'anthropic/claude-sonnet-4-6', env: {}) }
+        /\Agemini has no api_key \(GEMINI_API_KEY\)/,
+        refusal { build(model: 'gemini/gem-2.5-pro', env: {}) }
       )
     end
   end

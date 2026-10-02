@@ -1,23 +1,26 @@
 # Generated from lib/riffer/rig/provider_setup.rb with RBS::Inline
 
 class Riffer::Rig::ProviderSetup
-  # @dynamic url, chain, fields
+  # @dynamic url, chain, sdk, fields
   attr_reader url: String?
 
   attr_reader chain: bool
+
+  attr_reader sdk: [ String, String ]?
 
   attr_reader fields: Array[Riffer::Rig::ProviderSetup::Field]
 
   # @rbs fields: Array[Riffer::Rig::ProviderSetup::Field]
   # @rbs url: String?
   # @rbs chain: bool
+  # @rbs sdk: [String, String]?
   # @rbs return: void
-  def initialize: (fields: Array[Riffer::Rig::ProviderSetup::Field], ?url: String?, ?chain: bool) -> void
+  def initialize: (fields: Array[Riffer::Rig::ProviderSetup::Field], ?url: String?, ?chain: bool, ?sdk: [ String, String ]?) -> void
 
   AWS_SHARED_CONFIG_REGION: ^() -> String?
 
-  # Upstream candidate: each riffer provider could declare its own credential
-  # fields, and this table would go.
+  # Upstream candidate: riffer's providers could declare their own SDK gem and
+  # credential fields, and this table would go.
   TABLE: Hash[Symbol, Riffer::Rig::ProviderSetup]
 
   # @rbs identifier: String | Symbol

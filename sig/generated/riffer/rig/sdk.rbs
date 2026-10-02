@@ -1,0 +1,33 @@
+# Generated from lib/riffer/rig/sdk.rb with RBS::Inline
+
+module Riffer::Rig::SDK
+  CONFIRM_QUESTION: String
+
+  PROGRESS_LABEL: String
+
+  BUNDLER_MESSAGE: String
+
+  DECLINED_MESSAGE: String
+
+  FAILED_MESSAGE: String
+
+  # @rbs gem: String
+  # @rbs requirement: String
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs return: String?
+  def ensure: (String gem, String requirement, host: Riffer::Rig::Hosts::_Host) -> String?
+
+  private
+
+  # @rbs gem: String
+  # @rbs requirement: String
+  # @rbs return: bool
+  def installed?: (String gem, String requirement) -> bool
+
+  # @rbs gem: String
+  # @rbs return: bool
+  def require_gem: (String gem) -> bool
+
+  # @rbs return: bool
+  def bundler?: () -> bool
+end
