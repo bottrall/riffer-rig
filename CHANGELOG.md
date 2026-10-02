@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/bottrall/riffer-rig/compare/v0.7.0...v0.8.0) (2026-10-02)
+
+
+### Features
+
+* discover rig.rb files with project trust and optional gem autoload ([#208](https://github.com/bottrall/riffer-rig/issues/208)) ([6ed818f](https://github.com/bottrall/riffer-rig/commit/6ed818f5b5d382b3a9c7d48ce667892b10190985))
+* truncate tool output and fit lines to the terminal width ([#209](https://github.com/bottrall/riffer-rig/issues/209)) ([3765de1](https://github.com/bottrall/riffer-rig/commit/3765de1f4392d903939c1458e843c2ca1e70112e))
+
 ## [0.7.0](https://github.com/bottrall/riffer-rig/compare/v0.6.0...v0.7.0) (2026-09-30)
 
 
