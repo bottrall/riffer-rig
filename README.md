@@ -35,7 +35,7 @@ The model is the first of these that is set: `--model`, `RIFFER_MODEL`, `model` 
 | Flag                    | Effect                                                                     |
 | ----------------------- | -------------------------------------------------------------------------- |
 | `--model provider/name` | the model for this session, over `RIFFER_MODEL` and the settings            |
-| `--no-extensions`       | skips extension files; accepted now, with nothing to skip until they load   |
+| `--no-extensions`       | skips the [`rig.rb` files](docs/EXTENSIONS.md#the-rigrb-files) and gem autoload; the bundle still loads |
 | `--no-skills`           | leaves out [Agent Skills](docs/SKILLS.md)                                   |
 | `--no-agents-md`        | leaves out the [AGENTS.md](docs/INSTRUCTIONS.md#agentsmd) instructions      |
 | `--tools read,bash`     | only these tools, by identifier ([Tools](docs/TOOLS.md))                    |

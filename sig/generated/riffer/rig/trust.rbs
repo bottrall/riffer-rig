@@ -1,0 +1,20 @@
+# Generated from lib/riffer/rig/trust.rb with RBS::Inline
+
+module Riffer::Rig::Trust
+  # @rbs path: String
+  # @rbs return: Hash[String, bool]
+  def read: (String path) -> Hash[String, bool]
+
+  # @rbs path: String
+  # @rbs file: String
+  # @rbs decision: bool
+  # @rbs return: void
+  def store: (String path, String file, bool decision) -> void
+
+  private
+
+  # @rbs path: String
+  # @rbs document: Hash[String, bool]
+  # @rbs return: void
+  def write: (String path, Hash[String, bool] document) -> void
+end

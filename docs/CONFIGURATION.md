@@ -17,7 +17,7 @@ Every core key is top level and optional:
 | `reasoning`  | the reasoning effort, translated to the provider's own parameter ([below](#reasoning)) |
 | `models`     | the pricing table, model → USD per million tokens ([below](#models)) |
 | `providers`  | non-secret provider fields such as an endpoint or region ([Providers](PROVIDERS.md#the-providers-block-in-settings); read from the home file only) |
-| `extensions` | `disabled`, the bundled extensions to leave out ([below](#extensions)); `autoload` is reserved for gem extensions |
+| `extensions` | `disabled`, the bundled extensions to leave out ([below](#extensions)); `autoload`, gem extension autoload ([below](#extensions)) |
 | `reload`     | reserved for hot reloading |
 | `sessions`   | reserved for the session store (`save`) |
 | `tools`      | reserved for provider-native tools (`native`) |
@@ -105,6 +105,8 @@ Keep a server with a secret header in `~/.riffer/settings.json` rather than a co
 ```
 
 The lists in the two scopes add up, so a project can disable more but cannot re-enable what home disabled. A disabled extension is simply not passed to the Runtime; nothing it would register exists. An embedder calling `Loader.runtime` can also strip `skills: false` and `agents_md: false` for one Runtime.
+
+`extensions.autoload` (default `false`) makes the Loader run `riffer/rig/extension` from every gem `Gem.find_files` finds, before the `rig.rb` files ([Gem extensions](EXTENSIONS.md#gem-extensions)). Set it in either scope; the project's value wins. The strip keyword `extensions: false` on `Loader.runtime` (the `--no-extensions` flag) skips both the autoload and the `rig.rb` files; the bundle still loads.
 
 ## Extension namespaces
 

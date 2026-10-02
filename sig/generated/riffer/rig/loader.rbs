@@ -10,6 +10,10 @@ class Riffer::Rig::Loader
 
   NO_MODEL: String
 
+  EXTENSION_FEATURE: String
+
+  @tracked_files: Array[String]
+
   @riffer_config: Riffer::Config
 
   @home: String
@@ -19,6 +23,9 @@ class Riffer::Rig::Loader
   @host: Riffer::Rig::Hosts::_Host
 
   @cwd: String
+
+  # @dynamic tracked_files
+  attr_reader tracked_files: Array[String]
 
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -52,6 +59,35 @@ class Riffer::Rig::Loader
   def runtime: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?) -> Riffer::Rig::Runtime
 
   private
+
+  # @rbs autoload: bool
+  # @rbs return: Array[Riffer::Rig::Extension]
+  def load_rig_files: (bool autoload) -> Array[Riffer::Rig::Extension]
+
+  # @rbs autoload: bool
+  # @rbs return: Array[String]
+  def gem_extension_files: (bool autoload) -> Array[String]
+
+  # @rbs path: String
+  # @rbs return: bool
+  def trusted?: (String path) -> bool
+
+  # @rbs return: String
+  def trust_path: () -> String
+
+  # @rbs path: String
+  # @rbs track: bool
+  # @rbs return: Array[Riffer::Rig::Extension]
+  def load_file: (String path, track: bool) -> Array[Riffer::Rig::Extension]
+
+  # @rbs before_features: Array[String]
+  # @rbs path: String
+  # @rbs return: void
+  def track_loaded: (Array[String] before_features, String path) -> void
+
+  # @rbs feature: String
+  # @rbs return: bool
+  def local?: (String feature) -> bool
 
   # @rbs configured: String?
   # @rbs return: String

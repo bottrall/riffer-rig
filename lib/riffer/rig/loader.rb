@@ -11,13 +11,19 @@ class Riffer::Rig::Loader
   NO_MODEL = 'No model is set: pass --model provider/name, set RIFFER_MODEL, or set "model" in ' \
              "~/.riffer/settings.json, with a provider from: #{PROVIDER_LIST}".freeze #: String
 
-  private_constant :PROVIDER_LIST, :ONBOARDING_QUESTION, :NO_MODEL
+  EXTENSION_FEATURE = 'riffer/rig/extension' #: String
+
+  private_constant :EXTENSION_FEATURE, :PROVIDER_LIST, :ONBOARDING_QUESTION, :NO_MODEL
 
   # @rbs @cwd: String
   # @rbs @host: Riffer::Rig::Hosts::_Host
   # @rbs @env: Riffer::Rig::Env
   # @rbs @home: String
   # @rbs @riffer_config: Riffer::Config
+  # @rbs @tracked_files: Array[String]
+
+  # @dynamic tracked_files
+  attr_reader :tracked_files #: Array[String]
 
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -61,6 +67,7 @@ class Riffer::Rig::Loader
     @env = env
     @home = home
     @riffer_config = riffer_config
+    @tracked_files = []
   end
 
   # @rbs model: String?
@@ -87,10 +94,12 @@ class Riffer::Rig::Loader
     provider = Riffer::Rig::Settings.provider_for(selected).to_s
     credentials = { provider.to_sym => credentials_for(provider) }
     stripped = { skills: skills, agents_md: agents_md }.reject { |_name, kept| kept }.keys
+    loaded = Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *stripped).values
+    loaded += load_rig_files(document.autoload) if extensions
 
     Riffer::Rig::Runtime.new(
       selected,
-      extensions: Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *stripped).values,
+      extensions: loaded,
       tools: tools,
       settings: settings,
       host: @host,
@@ -104,6 +113,74 @@ class Riffer::Rig::Loader
   end
 
   private
+
+  # @rbs autoload: bool
+  # @rbs return: Array[Riffer::Rig::Extension]
+  def load_rig_files(autoload)
+    recorded = gem_extension_files(autoload).flat_map { |file| load_file(File.expand_path(file), track: false) }
+    home = File.expand_path(File.join(@home, '.riffer', 'rig.rb'))
+    recorded.concat(load_file(home, track: true)) if File.file?(home)
+    project = File.expand_path(File.join(@cwd, '.riffer', 'rig.rb'))
+    recorded.concat(load_file(project, track: true)) if File.file?(project) && trusted?(project)
+    recorded
+  end
+
+  # @rbs autoload: bool
+  # @rbs return: Array[String]
+  def gem_extension_files(autoload)
+    return [] unless autoload
+
+    Gem.find_files(EXTENSION_FEATURE)
+  end
+
+  # @rbs path: String
+  # @rbs return: bool
+  def trusted?(path)
+    stored = Riffer::Rig::Trust.read(trust_path)[path]
+    return stored unless stored.nil?
+
+    asked = @host.capabilities.include?(:confirm)
+    decision = asked ? @host.confirm("Trust #{path}?") : false
+    Riffer::Rig::Trust.store(trust_path, path, decision) if asked
+    decision
+  end
+
+  # @rbs return: String
+  def trust_path
+    File.join(@home, '.riffer', 'trust.json')
+  end
+
+  # @rbs path: String
+  # @rbs track: bool
+  # @rbs return: Array[Riffer::Rig::Extension]
+  def load_file(path, track:)
+    before = Riffer::Rig.extensions
+    before_features = $LOADED_FEATURES.dup
+    begin
+      load path
+    rescue StandardError => e
+      track_loaded(before_features, path) if track
+      @host.notify("#{path} failed to load: #{e.message}", level: :error)
+      return []
+    end
+    track_loaded(before_features, path) if track
+    Riffer::Rig.extensions.values.reject { |extension| before[extension.name] == extension }
+  end
+
+  # @rbs before_features: Array[String]
+  # @rbs path: String
+  # @rbs return: void
+  def track_loaded(before_features, path)
+    recorded = ($LOADED_FEATURES - before_features) + [path] #: Array[String]
+    @tracked_files.concat(recorded.select { |feature| local?(feature) })
+  end
+
+  # @rbs feature: String
+  # @rbs return: bool
+  def local?(feature)
+    roots = [File.expand_path(File.join(@home, '.riffer')), File.expand_path(@cwd)] #: Array[String]
+    roots.any? { |root| feature.start_with?("#{root}#{File::SEPARATOR}") }
+  end
 
   # @rbs configured: String?
   # @rbs return: String
