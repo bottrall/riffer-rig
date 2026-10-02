@@ -97,6 +97,10 @@ class Riffer::Rig::Loader
   def ask_for_model: () -> String
 
   # @rbs provider: String
+  # @rbs return: void
+  def ensure_sdk: (String provider) -> void
+
+  # @rbs provider: String
   # @rbs return: Hash[Symbol, String]
   def credentials_for: (String provider) -> Hash[Symbol, String]
 

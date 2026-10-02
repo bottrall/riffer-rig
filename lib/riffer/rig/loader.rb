@@ -92,6 +92,7 @@ class Riffer::Rig::Loader
     document = Riffer::Rig::Settings::Document.new(settings)
     selected = select_model(model || @env.model || document.model)
     provider = Riffer::Rig::Settings.provider_for(selected).to_s
+    ensure_sdk(provider)
     credentials = { provider.to_sym => credentials_for(provider) }
     stripped = { skills: skills, agents_md: agents_md }.reject { |_name, kept| kept }.keys
     loaded = Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *stripped).values
@@ -199,6 +200,17 @@ class Riffer::Rig::Loader
     raise ConfigurationError, NO_MODEL if answer.empty?
 
     answer
+  end
+
+  # @rbs provider: String
+  # @rbs return: void
+  def ensure_sdk(provider)
+    sdk = Riffer::Rig::ProviderSetup.for(provider).sdk
+    return unless sdk
+
+    gem, requirement = sdk
+    message = Riffer::Rig::SDK.ensure(gem, requirement, host: asking_host)
+    raise ConfigurationError, message if message
   end
 
   # @rbs provider: String

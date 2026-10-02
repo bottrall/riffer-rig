@@ -16,7 +16,13 @@ Install the gem:
 gem install riffer-rig
 ```
 
-This provides a `riffer` executable.
+This provides a `riffer` executable. No provider SDK is installed with it: `gemini/…` models work out of the box, and every other provider's SDK gem is either installed on its first use — `riffer-rig` asks, then installs it in-process — or added to a Gemfile ahead of time:
+
+```ruby
+gem 'anthropic', '~> 1.69'
+```
+
+[Providers](docs/PROVIDERS.md#sdk-gems) lists each provider's gem and how the install offer works.
 
 ## Usage
 

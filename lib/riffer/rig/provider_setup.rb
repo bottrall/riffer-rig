@@ -1,18 +1,21 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::ProviderSetup
-  # @dynamic url, chain, fields
+  # @dynamic url, chain, sdk, fields
   attr_reader :url #: String?
   attr_reader :chain #: bool
+  attr_reader :sdk #: [String, String]?
   attr_reader :fields #: Array[Riffer::Rig::ProviderSetup::Field]
 
   # @rbs fields: Array[Riffer::Rig::ProviderSetup::Field]
   # @rbs url: String?
   # @rbs chain: bool
+  # @rbs sdk: [String, String]?
   # @rbs return: void
-  def initialize(fields:, url: nil, chain: false)
+  def initialize(fields:, url: nil, chain: false, sdk: nil)
     @url = url
     @chain = chain
+    @sdk = sdk&.freeze
     @fields = fields.freeze
     freeze
   end
@@ -24,15 +27,17 @@ class Riffer::Rig::ProviderSetup
     nil
   end #: ^() -> String?
 
-  # Upstream candidate: each riffer provider could declare its own credential
-  # fields, and this table would go.
+  # Upstream candidate: riffer's providers could declare their own SDK gem and
+  # credential fields, and this table would go.
   TABLE = {
     anthropic: new(
       url: 'https://console.anthropic.com/settings/keys',
+      sdk: ['anthropic', '~> 1.69'],
       fields: [Field.new(name: :api_key, env: ['ANTHROPIC_API_KEY'], secret: true, required: true)]
     ),
     openai: new(
       url: 'https://platform.openai.com/api-keys',
+      sdk: ['openai', '~> 0.80'],
       fields: [
         Field.new(name: :api_key, env: ['OPENAI_API_KEY'], secret: true, required: true),
         Field.new(name: :base_url, env: ['OPENAI_BASE_URL'], secret: false, required: false)
@@ -44,10 +49,12 @@ class Riffer::Rig::ProviderSetup
     ),
     openrouter: new(
       url: 'https://openrouter.ai/keys',
+      sdk: ['openai', '~> 0.80'],
       fields: [Field.new(name: :api_key, env: ['OPENROUTER_API_KEY'], secret: true, required: true)]
     ),
     azure_openai: new(
       url: 'https://portal.azure.com',
+      sdk: ['openai', '~> 0.80'],
       fields: [
         Field.new(name: :endpoint, env: ['AZURE_OPENAI_ENDPOINT'], secret: false, required: true),
         Field.new(name: :api_key, env: ['AZURE_OPENAI_API_KEY'], secret: true, required: true)
@@ -56,6 +63,7 @@ class Riffer::Rig::ProviderSetup
     amazon_bedrock: new(
       url: 'https://console.aws.amazon.com/bedrock',
       chain: true,
+      sdk: ['aws-sdk-bedrockruntime', '~> 1.0'],
       fields: [
         Field.new(
           name: :region,
