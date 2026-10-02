@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Providers — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/getting-started/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.8.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">01</span>Getting started</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">02</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">03</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">04</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">05</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">06</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">07</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">08</span>Headless mode</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">09</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">10</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">11</span>Hosts</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/" class="active" aria-current="page"
+                  ><span class="num">12</span>Providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Providers · 12</span></p>
+          <h1>Providers</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#resolution-order">Resolution order</a></li>
+              <li><a href="#authjson">auth.json</a></li>
+              <li><a href="#the-providers-block-in-settings">The providers block in settings</a></li>
+              <li><a href="#provider-notes">Provider notes</a></li>
+              <li><a href="#rifferrigcredentials">Riffer::Rig::Credentials</a></li>
+              <li><a href="#rifferrigprovidersetup">Riffer::Rig::ProviderSetup</a></li>
+            </ul>
+          </nav>
+          
+<p><code>riffer-rig</code> talks to the provider named by the model’s prefix: <code>anthropic/claude-sonnet-4-6</code> means Anthropic. Each provider has a setup entry in <code>Riffer::Rig::ProviderSetup</code>, a data-only record of what <code>riffer-rig</code> needs before it can use that provider: where to create a credential, whether the SDK’s own credential chain will do, and the fields to resolve. A field is either a secret (an API key or token) or a plain value (an endpoint, a region, a base URL), and is either required or optional.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Provider</th>
+      <th>Field</th>
+      <th>Kind</th>
+      <th>Environment variables</th>
+      <th>Stored in</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><a href="#anthropic"><code>anthropic</code></a></td>
+      <td><code>api_key</code></td>
+      <td>required, secret</td>
+      <td><code>ANTHROPIC_API_KEY</code></td>
+      <td><code>~/.riffer/auth.json</code></td>
+    </tr>
+    <tr>
+      <td><a href="#openai"><code>openai</code></a></td>
+      <td><code>api_key</code></td>
+      <td>required, secret</td>
+      <td><code>OPENAI_API_KEY</code></td>
+      <td><code>~/.riffer/auth.json</code></td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td><code>base_url</code></td>
+      <td>optional</td>
+      <td><code>OPENAI_BASE_URL</code></td>
+      <td><code>providers.openai</code> in <code>~/.riffer/settings.json</code></td>
+    </tr>
+    <tr>
+      <td><a href="#gemini"><code>gemini</code></a></td>
+      <td><code>api_key</code></td>
+      <td>required, secret</td>
+      <td><code>GEMINI_API_KEY</code></td>
+      <td><code>~/.riffer/auth.json</code></td>
+    </tr>
+    <tr>
+      <td><a href="#openrouter"><code>openrouter</code></a></td>
+      <td><code>api_key</code></td>
+      <td>required, secret</td>
+      <td><code>OPENROUTER_API_KEY</code></td>
+      <td><code>~/.riffer/auth.json</code></td>
+    </tr>
+    <tr>
+      <td><a href="#azure-openai"><code>azure_openai</code></a></td>
+      <td><code>endpoint</code></td>
+      <td>required</td>
+      <td><code>AZURE_OPENAI_ENDPOINT</code></td>
+      <td><code>providers.azure_openai</code> in <code>~/.riffer/settings.json</code></td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td><code>api_key</code></td>
+      <td>required, secret</td>
+      <td><code>AZURE_OPENAI_API_KEY</code></td>
+      <td><code>~/.riffer/auth.json</code></td>
+    </tr>
+    <tr>
+      <td><a href="#amazon-bedrock"><code>amazon_bedrock</code></a></td>
+      <td><code>region</code></td>
+      <td>required</td>
+      <td><code>AWS_REGION</code>, <code>AWS_DEFAULT_REGION</code></td>
+      <td><code>providers.amazon_bedrock</code> in <code>~/.riffer/settings.json</code></td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td><code>api_token</code></td>
+      <td>optional, secret</td>
+      <td><code>AWS_BEARER_TOKEN_BEDROCK</code></td>
+      <td><code>~/.riffer/auth.json</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>A provider without a setup entry gets the generic one: a single required secret <code>api_key</code> read from <code>&lt;IDENTIFIER&gt;_API_KEY</code>, so <code>acme</code> reads <code>ACME_API_KEY</code>.</p>
+
+<p>This guide covers credentials only. Installing a provider’s SDK gem, model options, streaming and tool calling are covered by riffer’s own provider guides, one per provider, starting from its <a href="https://riffer.ai/guides/providers/overview/">Providers overview</a>.</p>
+
+<h2 id="resolution-order">Resolution order</h2>
+
+<p>Every field resolves on its own, and the first hit wins:</p>
+
+<ol>
+  <li><strong>Environment variable.</strong> The field’s env vars, in the order the table above lists them. A blank value counts as unset.</li>
+  <li><strong>Stored value.</strong> A secret comes from <code>~/.riffer/auth.json</code>; a plain value comes from the <code>providers</code> block in <code>~/.riffer/settings.json</code>.</li>
+  <li><strong>Fallback.</strong> A few fields can find their value elsewhere on the machine. The Bedrock region falls back to the AWS shared config.</li>
+  <li><strong>Ask.</strong> A required field that is still unresolved is asked for, with hidden input for a secret, and the answer is stored. Optional fields are never asked for.</li>
+</ol>
+
+<p>The environment wins over the files, the same way the environment wins over settings everywhere else in <code>riffer-rig</code>.</p>
+
+<p>Nothing validates a value. A pasted key is saved as it is, and a bad key surfaces on the first request with the provider’s own error.</p>
+
+<h2 id="authjson">auth.json</h2>
+
+<p><code>~/.riffer/auth.json</code> holds secret fields only, one typed entry per provider. The file is written with permissions <code>600</code> and its directory with <code>700</code>.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"anthropic"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"api_key"</span><span class="p">,</span><span class="w"> </span><span class="nl">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sk-ant-…"</span><span class="w"> </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"amazon_bedrock"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"api_key"</span><span class="p">,</span><span class="w"> </span><span class="nl">"api_token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"…"</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p><code>"type": "api_key"</code> is the only type. An entry of any other shape is ignored, including the flat <code>{"anthropic": "sk-…"}</code> entries earlier versions wrote: paste the key again when prompted, or rewrite the entry in the typed shape.</p>
+
+<h3 id="var-and-command-values"><code>$VAR</code> and <code>!command</code> values</h3>
+
+<p>A secret in <code>auth.json</code> is a literal, a reference to an environment variable, or a shell command whose stdout is the secret:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"anthropic"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"api_key"</span><span class="p">,</span><span class="w"> </span><span class="nl">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"$WORK_ANTHROPIC_KEY"</span><span class="w"> </span><span class="p">},</span><span class="w">
+  </span><span class="nl">"openai"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"api_key"</span><span class="p">,</span><span class="w"> </span><span class="nl">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"!security find-generic-password -s openai -w"</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<ul>
+  <li><code>$NAME</code> reads the environment variable <code>NAME</code>.</li>
+  <li><code>!command</code> runs <code>command</code> through the shell and uses its stdout, stripped. This is how a keychain or password manager plugs in: <code>riffer-rig</code> has no keychain code of its own.</li>
+</ul>
+
+<p>An unset variable, a command that exits non-zero and empty output all count as unresolved, so resolution moves on to the fallback and then asks. Only <code>auth.json</code> values expand. A value in <code>settings.json</code> is always a literal, so a settings file never runs a command.</p>
+
+<h2 id="the-providers-block-in-settings">The <code>providers</code> block in settings</h2>
+
+<p>Plain fields live in <code>~/.riffer/settings.json</code> under <code>providers</code>, keyed by provider and then by field:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"providers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"azure_openai"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://my-resource.openai.azure.com"</span><span class="w"> </span><span class="p">},</span><span class="w">
+    </span><span class="nl">"amazon_bedrock"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"region"</span><span class="p">:</span><span class="w"> </span><span class="s2">"us-west-2"</span><span class="w"> </span><span class="p">},</span><span class="w">
+    </span><span class="nl">"openai"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"base_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://proxy.example.com/v1"</span><span class="w"> </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="provider-notes">Provider notes</h2>
+
+<h3 id="anthropic">Anthropic</h3>
+
+<p>Model prefix <code>anthropic/</code>, for example <code>anthropic/claude-sonnet-4-6</code>. Create a key at https://console.anthropic.com/settings/keys.</p>
+
+<h3 id="openai">OpenAI</h3>
+
+<p>Model prefix <code>openai/</code>. Create a key at https://platform.openai.com/api-keys. <code>base_url</code> points the client at an OpenAI-compatible endpoint.</p>
+
+<h3 id="gemini">Gemini</h3>
+
+<p>Model prefix <code>gemini/</code>. Create a key at https://aistudio.google.com/app/apikey.</p>
+
+<h3 id="openrouter">OpenRouter</h3>
+
+<p>Model prefix <code>openrouter/</code>, followed by OpenRouter’s own model id, for example <code>openrouter/z-ai/glm-5.3-flash</code>. Create a key at https://openrouter.ai/keys.</p>
+
+<h3 id="azure-openai">Azure OpenAI</h3>
+
+<p>Model prefix <code>azure_openai/</code>. The endpoint and key are on the resource’s Keys and Endpoint page in the Azure portal, https://portal.azure.com.</p>
+
+<p>Both fields are required, so both are asked for when unresolved. The endpoint goes to <a href="#the-providers-block-in-settings">settings</a> and the key to <a href="#authjson"><code>auth.json</code></a>:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"providers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"azure_openai"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://my-resource.openai.azure.com"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"azure_openai"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"api_key"</span><span class="p">,</span><span class="w"> </span><span class="nl">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"…"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="amazon-bedrock">Amazon Bedrock</h3>
+
+<p>Model prefix <code>amazon_bedrock/</code>. Bedrock authenticates in one of two ways: the AWS SDK’s own credential chain (environment, shared credentials file, SSO, instance role), which stores nothing in <code>riffer-rig</code>, or a Bedrock bearer token. Bedrock needs the <code>aws-sdk-bedrockruntime</code> gem, which <code>riffer-rig</code> does not install: <code>gem install aws-sdk-bedrockruntime</code>.</p>
+
+<p><code>region</code> falls back to the region of the active profile in the AWS shared config (<code>~/.aws/config</code>), read through the AWS SDK when it is installed, so it is asked for only when the environment, settings and the shared config all come up empty.</p>
+
+<p><code>api_token</code> is never asked for. With no token, the SDK’s credential chain is used and <code>Riffer::Rig::Credentials.status(:amazon_bedrock)</code> reports <code>:chain</code>. To use a bearer token, set <code>AWS_BEARER_TOKEN_BEDROCK</code> or store it:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"amazon_bedrock"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"api_key"</span><span class="p">,</span><span class="w"> </span><span class="nl">"api_token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"…"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="rifferrigcredentials">Riffer::Rig::Credentials</h2>
+
+<p>The module behind all of the above, for a host or an embedder:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Method</th>
+      <th>Does</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>resolve(identifier, host:)</code></td>
+      <td>resolves every field in the order above and returns a <code>Resolution</code></td>
+    </tr>
+    <tr>
+      <td><code>apply(identifier, values)</code></td>
+      <td>assigns each value to the <code>Riffer.config.&lt;provider&gt;</code> member its field names</td>
+    </tr>
+    <tr>
+      <td><code>store(identifier, values)</code></td>
+      <td>writes secret fields to <code>auth.json</code> and plain fields to the <code>providers</code> block</td>
+    </tr>
+    <tr>
+      <td><code>remove(identifier)</code></td>
+      <td>deletes the provider’s <code>auth.json</code> entry and its <code>providers</code> block</td>
+    </tr>
+    <tr>
+      <td><code>status(identifier)</code></td>
+      <td><code>:env</code>, <code>:stored</code>, <code>:chain</code> or <code>:missing</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">resolution</span> <span class="o">=</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Credentials</span><span class="p">.</span><span class="nf">resolve</span><span class="p">(</span><span class="ss">:azure_openai</span><span class="p">,</span> <span class="ss">host: </span><span class="n">host</span><span class="p">)</span>
+<span class="n">resolution</span><span class="p">.</span><span class="nf">values</span>  <span class="c1"># =&gt; { endpoint: "https://…", api_key: "…" }</span>
+<span class="n">resolution</span><span class="p">.</span><span class="nf">missing</span> <span class="c1"># =&gt; []</span>
+
+<span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Credentials</span><span class="p">.</span><span class="nf">apply</span><span class="p">(</span><span class="ss">:azure_openai</span><span class="p">,</span> <span class="n">resolution</span><span class="p">.</span><span class="nf">values</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><code>resolve</code> asks through the host’s <code>ask</code> (see <a href="/guides/hosts/">Hosts</a>) and stores what the host answers. A host that declines, as <code>Riffer::Rig::Hosts::Null</code> does, leaves <code>missing</code> listing the required fields that did not resolve, next to the values that did. A <code>!command</code> runs on every <code>resolve</code>, so resolve once and keep the result.</p>
+
+<p><code>apply</code> touches only the members it was given a value for, and does nothing for a provider <code>Riffer.config</code> has no section for.</p>
+
+<p><code>status</code> reports where a provider’s secret comes from: <code>:env</code> when one of its env vars is set, <code>:stored</code> when <code>auth.json</code> has it, <code>:chain</code> when neither holds and the setup entry offers the SDK’s own credential chain, otherwise <code>:missing</code>. It reads no plain fields and runs no command.</p>
+
+<p><code>resolve</code>, <code>store</code> and <code>remove</code> take <code>auth_path:</code> and <code>settings_path:</code> to point at other files, and <code>status</code> takes <code>auth_path:</code>. <code>resolve</code> and <code>status</code> take <code>env:</code>, a <code>Riffer::Rig::Env</code>; <code>resolve</code>, <code>store</code> and <code>status</code> take <code>setup:</code> in place of the <code>Riffer::Rig::ProviderSetup.for(identifier)</code> lookup; <code>apply</code> takes <code>config:</code> in place of <code>Riffer.config</code>.</p>
+
+<p>A <code>Riffer::Rig::Env</code> is a frozen snapshot of the process environment, and <code>riffer-rig</code> reads the process environment nowhere else. <code>Riffer::Rig::Env.new</code> snapshots the real one; <code>Riffer::Rig::Env.new('ANTHROPIC_API_KEY' =&gt; '…')</code> builds one from a hash, for an embedder or a test. <code>env.model</code> is <code>RIFFER_MODEL</code>. <code>Riffer::Rig::Env.load</code> snapshots the same way but checks it: when <code>RIFFER_MODEL</code> is not a <code>provider/name</code> string it returns a <code>Riffer::Rig::Env::Invalid</code>, whose <code>message</code> names the variable and lists the providers, instead of an <code>Env</code>. <code>Loader.runtime</code> uses <code>Env.load</code> by default and raises its message as a <code>Riffer::Rig::Loader::ConfigurationError</code>.</p>
+
+<h2 id="rifferrigprovidersetup">Riffer::Rig::ProviderSetup</h2>
+
+<p><code>Riffer::Rig::ProviderSetup[identifier]</code> returns a built-in setup entry or <code>nil</code>; <code>Riffer::Rig::ProviderSetup.for(identifier)</code> returns the generic entry instead of <code>nil</code>. A setup entry is a frozen <code>Riffer::Rig::ProviderSetup</code> holding a frozen list of <code>Riffer::Rig::ProviderSetup::Field</code>s.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th><code>ProviderSetup</code> reader</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>url</code></td>
+      <td>where to create the credential, or <code>nil</code></td>
+    </tr>
+    <tr>
+      <td><code>chain</code></td>
+      <td><code>true</code> when the SDK’s own credential chain is a valid way to authenticate; <code>false</code> if unset</td>
+    </tr>
+    <tr>
+      <td><code>fields</code></td>
+      <td>the list of <code>Field</code>s</td>
+    </tr>
+  </tbody>
+</table>
+
+<table>
+  <thead>
+    <tr>
+      <th><code>Field</code> reader</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>name</code></td>
+      <td>the member of <code>Riffer.config.&lt;provider&gt;</code> that receives the value</td>
+    </tr>
+    <tr>
+      <td><code>env</code></td>
+      <td>the env var names, tried in order</td>
+    </tr>
+    <tr>
+      <td><code>secret</code></td>
+      <td><code>true</code> hides the input and stores the value in <code>auth.json</code>; <code>false</code> stores it in settings</td>
+    </tr>
+    <tr>
+      <td><code>required</code></td>
+      <td>only required fields are asked for</td>
+    </tr>
+    <tr>
+      <td><code>fallback</code></td>
+      <td>a callable tried after the environment and the files, before asking, or <code>nil</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><code>Credentials.resolve</code>, <code>store</code> and <code>status</code> take a setup entry as <code>setup:</code>. Build one with the same keywords as the readers; <code>url:</code>, <code>chain:</code> and <code>fallback:</code> are optional:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">setup</span> <span class="o">=</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">ProviderSetup</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+  <span class="ss">url: </span><span class="s2">"https://acme.example/keys"</span><span class="p">,</span>
+  <span class="ss">fields: </span><span class="p">[</span>
+    <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">ProviderSetup</span><span class="o">::</span><span class="no">Field</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="ss">name: :api_key</span><span class="p">,</span> <span class="ss">env: </span><span class="p">[</span><span class="s2">"ACME_API_KEY"</span><span class="p">],</span> <span class="ss">secret: </span><span class="kp">true</span><span class="p">,</span> <span class="ss">required: </span><span class="kp">true</span><span class="p">),</span>
+    <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">ProviderSetup</span><span class="o">::</span><span class="no">Field</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+      <span class="ss">name: :region</span><span class="p">,</span> <span class="ss">env: </span><span class="p">[</span><span class="s2">"ACME_REGION"</span><span class="p">],</span> <span class="ss">secret: </span><span class="kp">false</span><span class="p">,</span> <span class="ss">required: </span><span class="kp">true</span><span class="p">,</span> <span class="ss">fallback: </span><span class="o">-&gt;</span> <span class="p">{</span> <span class="s2">"us-east-1"</span> <span class="p">}</span>
+    <span class="p">)</span>
+  <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Credentials</span><span class="p">.</span><span class="nf">resolve</span><span class="p">(</span><span class="ss">:acme</span><span class="p">,</span> <span class="ss">host: </span><span class="n">host</span><span class="p">,</span> <span class="ss">setup: </span><span class="n">setup</span><span class="p">)</span>
+</code></pre></div></div>
+
+        </article>
+
+        <nav class="pager">
+          <a class="doc" href="/guides/hosts/"
+            ><span class="go">←</span
+            ><span
+              ><span class="desc">Previous</span
+              ><span class="name">Hosts</span></span
+            ></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

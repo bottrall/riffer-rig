@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Configuration — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/getting-started/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.8.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">01</span>Getting started</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/configuration/" class="active" aria-current="page"
+                  ><span class="num">02</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">03</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">04</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">05</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">06</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">07</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">08</span>Headless mode</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">09</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">10</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">11</span>Hosts</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">12</span>Providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Using the terminal · 02</span></p>
+          <h1>Configuration</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#core-keys">Core keys</a></li>
+              <li><a href="#model">model</a></li>
+              <li><a href="#reasoning">reasoning</a></li>
+              <li><a href="#models">models</a></li>
+              <li><a href="#mcp">mcp</a></li>
+              <li><a href="#extensions">extensions</a></li>
+              <li><a href="#extension-namespaces">Extension namespaces</a></li>
+            </ul>
+          </nav>
+          
+<p>Settings live in two files with the same name and shape, both optional:</p>
+
+<ul>
+  <li><code>~/.riffer/settings.json</code> — the home scope, for every project.</li>
+  <li><code>&lt;cwd&gt;/.riffer/settings.json</code> — the project scope, for sessions started in that directory.</li>
+</ul>
+
+<p><code>Riffer::Rig::Loader</code> reads home then project and merges them key by key, the project winning: a top-level key set in both takes the project’s value, and an extension namespace merges the same way one level down, so a project can change one key of a namespace and keep the rest from home. Two keys merge differently: <code>extensions.disabled</code> lists add up across both scopes, and an <a href="/guides/mcp/">MCP server</a> declared in both is replaced whole by the project’s. A file that is missing or is not valid JSON counts as empty.</p>
+
+<h2 id="core-keys">Core keys</h2>
+
+<p>Every core key is top level and optional:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>What it sets</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>model</code></td>
+      <td>the model new sessions start with, as <code>"provider/name"</code> (<a href="#model">below</a>)</td>
+    </tr>
+    <tr>
+      <td><code>reasoning</code></td>
+      <td>the reasoning effort, translated to the provider’s own parameter (<a href="#reasoning">below</a>)</td>
+    </tr>
+    <tr>
+      <td><code>models</code></td>
+      <td>the pricing table, model → USD per million tokens (<a href="#models">below</a>)</td>
+    </tr>
+    <tr>
+      <td><code>providers</code></td>
+      <td>non-secret provider fields such as an endpoint or region (<a href="/guides/providers/overview/#the-providers-block-in-settings">Providers</a>; read from the home file only)</td>
+    </tr>
+    <tr>
+      <td><code>extensions</code></td>
+      <td><code>disabled</code>, the bundled extensions to leave out (<a href="#extensions">below</a>); <code>autoload</code>, gem extension autoload (<a href="#extensions">below</a>)</td>
+    </tr>
+    <tr>
+      <td><code>reload</code></td>
+      <td>reserved for hot reloading</td>
+    </tr>
+    <tr>
+      <td><code>sessions</code></td>
+      <td>reserved for the session store (<code>save</code>)</td>
+    </tr>
+    <tr>
+      <td><code>tools</code></td>
+      <td>reserved for provider-native tools (<code>native</code>)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="model"><code>model</code></h2>
+
+<p><code>model</code> is the model new sessions start with, as a <code>"provider/name"</code> string: the provider’s identifier, a slash, then the provider’s own model name.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"anthropic/claude-sonnet-4-6"</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The provider is one of <code>anthropic</code>, <code>openai</code>, <code>gemini</code>, <code>openrouter</code>, <code>azure_openai</code> or <code>amazon_bedrock</code> (<a href="/guides/providers/overview/">Providers</a> has each one’s setup). Everything after the first slash is passed to the provider unchanged, so a name with slashes of its own works as written: <code>openrouter/anthropic/claude-sonnet-4-6</code>. A string without a provider prefix, or with a provider riffer does not know, is rejected with a hint listing the providers, never inferred from the bare name.</p>
+
+<p>There is no built-in default. The model is the first of these that is set, highest first:</p>
+
+<ol>
+  <li>the <code>model:</code> keyword on <code>Loader.runtime</code> (the <code>--model</code> flag);</li>
+  <li>the <code>RIFFER_MODEL</code> environment variable, e.g. <code>RIFFER_MODEL=openai/gpt-5 riffer</code>;</li>
+  <li><code>model</code> in the project settings, then in the home settings;</li>
+  <li>onboarding: the Loader asks the host for a model string, listing the providers, and writes the answer to <code>~/.riffer/settings.json</code>. A host that cannot ask (the null host, so headless and embedded use) declines, and the Loader raises <code>Riffer::Rig::Loader::ConfigurationError</code> instead.</li>
+</ol>
+
+<p>A bare <code>RIFFER_MODEL</code> is rejected even when a higher source wins, since it is a mistake in the environment either way.</p>
+
+<p><code>/model provider/name</code> overrides this key for the current session only: the override wins until the session ends, and <code>settings.json</code> is left unchanged (<a href="https://github.com/bottrall/riffer-rig#switching-the-model">Switching the model</a>).</p>
+
+<h2 id="reasoning"><code>reasoning</code></h2>
+
+<p><code>reasoning</code> is the reasoning effort, translated to the provider’s own parameter: Anthropic accepts <code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code> and <code>max</code>; OpenAI and OpenRouter accept <code>low</code>, <code>medium</code>, <code>high</code> and <code>xhigh</code>. Omitting it, or giving a level the provider does not accept, leaves the model’s default. Anthropic models also get prompt caching (<code>cache_control</code>) whatever the level. The Loader passes the result to the Runtime as riffer <code>model_options</code>.</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"anthropic/claude-sonnet-4-6"</span><span class="p">,</span><span class="w"> </span><span class="nl">"reasoning"</span><span class="p">:</span><span class="w"> </span><span class="s2">"high"</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h2 id="models"><code>models</code></h2>
+
+<p><code>models</code> prices each model, keyed by its <code>"provider/name"</code> string. Rates are USD per million tokens:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"models"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"anthropic/claude-sonnet-4-6"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"input"</span><span class="p">:</span><span class="w"> </span><span class="mf">3.0</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"output"</span><span class="p">:</span><span class="w"> </span><span class="mf">15.0</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"cache_write"</span><span class="p">:</span><span class="w"> </span><span class="mf">3.75</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"cache_read"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.3</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Prices</th>
+      <th>When absent</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>input</code></td>
+      <td>input tokens not read from or written to the cache</td>
+      <td><code>0</code></td>
+    </tr>
+    <tr>
+      <td><code>output</code></td>
+      <td>output tokens, reasoning included</td>
+      <td><code>0</code></td>
+    </tr>
+    <tr>
+      <td><code>cache_write</code></td>
+      <td>input tokens written to the prompt cache</td>
+      <td><code>0</code></td>
+    </tr>
+    <tr>
+      <td><code>cache_read</code></td>
+      <td>input tokens read from the prompt cache</td>
+      <td><code>0</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Each entry becomes a <code>Riffer::Rig::Settings::Pricing</code> and reaches the Runtime through its <code>pricing:</code> keyword, which registers it into riffer’s <code>Riffer.config.pricing</code> so every turn and the running total carry a cost (see <a href="/guides/embedding/#token-tally-and-cost">Embedding</a>).</p>
+
+<p>A model without an entry has no cost: it is shown as missing, never as zero. An entry that is not an object is ignored.</p>
+
+<h2 id="mcp"><code>mcp</code></h2>
+
+<p><code>mcp</code> is the bundled <code>mcp</code> extension’s namespace. <code>mcp.servers</code> declares the HTTPS MCP servers whose tools the model gets, keyed by server name — a <code>url</code> with optional <code>headers</code>:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"mcp"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"docs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://docs.example.com/mcp"</span><span class="w"> </span><span class="p">},</span><span class="w">
+      </span><span class="nl">"tracker"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://tracker.example.com/mcp"</span><span class="p">,</span><span class="w"> </span><span class="nl">"headers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"Authorization"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Bearer &lt;token&gt;"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Keep a server with a secret header in <code>~/.riffer/settings.json</code> rather than a committed project file. <a href="/guides/mcp/">MCP</a> has the format, how a project server overrides a home one, and what happens on reload.</p>
+
+<h2 id="extensions"><code>extensions</code></h2>
+
+<p><code>extensions.disabled</code> names bundled extensions the Loader leaves out — any of <code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, <code>agents_md</code>, <code>skills</code> and <code>mcp</code>:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"disabled"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"mcp"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bash"</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The lists in the two scopes add up, so a project can disable more but cannot re-enable what home disabled. A disabled extension is simply not passed to the Runtime; nothing it would register exists. An embedder calling <code>Loader.runtime</code> can also strip <code>skills: false</code> and <code>agents_md: false</code> for one Runtime.</p>
+
+<p><code>extensions.autoload</code> (default <code>false</code>) makes the Loader run <code>riffer/rig/extension</code> from every gem <code>Gem.find_files</code> finds, before the <code>rig.rb</code> files (<a href="/guides/extensions/#gem-extensions">Gem extensions</a>). Set it in either scope; the project’s value wins. The strip keyword <code>extensions: false</code> on <code>Loader.runtime</code> (the <code>--no-extensions</code> flag) skips both the autoload and the <code>rig.rb</code> files; the bundle still loads.</p>
+
+<h2 id="extension-namespaces">Extension namespaces</h2>
+
+<p>Core keys — <code>model</code>, <code>reasoning</code>, <code>models</code>, <code>reload</code>, <code>extensions</code>, <code>sessions</code>, <code>providers</code> and <code>tools</code> — stay at the top level. Every other top-level key is an extension’s namespace, named after the extension, holding the keys that extension declares with <a href="/guides/extensions/#the-rigsetting-seam"><code>rig.setting</code></a>; <code>mcp</code> is one of these, the bundled <code>mcp</code> extension’s own namespace:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"anthropic/claude-sonnet-4-6"</span><span class="p">,</span><span class="w">
+  </span><span class="nl">"git"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"depth"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>A key left out takes the default the extension declared. An extension cannot be named after a core key; one that is fails to load and is reported.</p>
+
+<p>An embedder passes the same shape as the Runtime’s <code>settings:</code> hash, with symbol keys — <code>{ model: '…', git: { depth: 10 } }</code> (see <a href="/guides/embedding/#constructing-a-runtime">Embedding</a>).</p>
+
+        </article>
+
+        <nav class="pager">
+          <a class="doc" href="/guides/getting-started/"
+            ><span class="go">←</span
+            ><span
+              ><span class="desc">Previous</span
+              ><span class="name">Getting started</span></span
+            ></a
+          >
+          <a class="doc next" href="/guides/instructions/"
+            ><span
+              ><span class="desc">Next</span
+              ><span class="name">Instructions</span></span
+            ><span class="go">→</span></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

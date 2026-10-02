@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Extensions — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/getting-started/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.8.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">01</span>Getting started</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">02</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">03</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">04</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">05</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">06</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">07</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">08</span>Headless mode</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/" class="active" aria-current="page"
+                  ><span class="num">09</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">10</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">11</span>Hosts</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">12</span>Providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Extending and embedding · 09</span></p>
+          <h1>Extensions</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#the-unit-a-named-registrar-block">The unit: a named registrar block</a></li>
+              <li><a href="#the-rigrb-files">The rig.rb files</a></li>
+              <li><a href="#gem-extensions">Gem extensions</a></li>
+              <li><a href="#the-rigtool-seam">The rig.tool seam</a></li>
+              <li><a href="#the-rigprompt-seam">The rig.prompt seam</a></li>
+              <li><a href="#the-rigcommand-seam">The rig.command seam</a></li>
+              <li><a href="#the-rigon-seam">The rig.on seam</a></li>
+              <li><a href="#the-rigskills-seam">The rig.skills seam</a></li>
+              <li><a href="#the-rigmcp-seam">The rig.mcp seam</a></li>
+              <li><a href="#bundled-extensions-and-replacement">Bundled extensions and replacement</a></li>
+              <li><a href="#the-rigsetting-seam">The rig.setting seam</a></li>
+              <li><a href="#error-isolation">Error isolation</a></li>
+              <li><a href="#api-versioning">API versioning</a></li>
+            </ul>
+          </nav>
+          
+<p>An extension is a named registrar block. Requiring a file records it; <code>Runtime.new</code> runs it against a fresh registrar of its own.</p>
+
+<h2 id="the-unit-a-named-registrar-block">The unit: a named registrar block</h2>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">extension</span><span class="p">(</span><span class="s1">'git'</span><span class="p">,</span> <span class="ss">requires: </span><span class="s1">'&gt;= 0.3'</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">rig</span><span class="o">|</span>
+  <span class="n">rig</span><span class="p">.</span><span class="nf">tool</span> <span class="no">GitLog</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p><code>Riffer::Rig.extension(name, requires: nil) { |rig| }</code> records the block in a process-level registry keyed by name and returns the extension object. Re-executing the same file (a reload) replaces the block rather than appending a duplicate. <code>requires:</code> is a <code>Gem::Requirement</code> string checked against the riffer-rig version when the block is recorded; a mismatch does not raise but is a load error, reported when a Runtime loads the extension (see <a href="#error-isolation">Error isolation</a>).</p>
+
+<p><code>Runtime.new(extensions: [...])</code> runs each block, in order, against a fresh registrar of its own and merges what they register. Two Runtimes never share tools or commands; per-Runtime state lives in the block’s locals, per-process state lives outside the block. Same process, no sandbox.</p>
+
+<h2 id="the-rigrb-files">The <code>rig.rb</code> files</h2>
+
+<p>The <a href="/guides/embedding/#building-a-runtime-with-the-loader">Loader</a> loads two extension files for a working directory, in this order:</p>
+
+<ol>
+  <li><code>~/.riffer/rig.rb</code> — the home file, for every project.</li>
+  <li><code>&lt;cwd&gt;/.riffer/rig.rb</code> — the project file.</li>
+</ol>
+
+<p>They are plain Ruby, and the Loader runs each with <code>load</code>: they <code>require</code> gems, <code>require_relative</code> local files, or call <code>Riffer::Rig.extension</code> inline. Ruby’s require order is the load order, and a later registration under the same name replaces an earlier one. There is no directory scanning, no manifest, and no settings list of extensions: what is required is what loads.</p>
+
+<p>The home file is always trusted. The first time a project <code>.riffer/rig.rb</code> is seen, the Loader asks the host to confirm the path, stores the answer by absolute path in <code>~/.riffer/trust.json</code>, and never asks again:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"/home/jake/project/.riffer/rig.rb"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>A host whose <code>capabilities</code> leave out <code>:confirm</code> — the <a href="/guides/hosts/">null host</a>, headless, ACP — is never asked: the file is skipped and nothing is stored, so a later terminal session can still ask. A host that answers no stores <code>false</code>, skips the file silently, and is not asked again until the entry is removed from <code>trust.json</code>.</p>
+
+<p>Each file is isolated the way an extension block is: a <code>rig.rb</code> that raises a <code>StandardError</code> is reported to the host through <code>notify</code> at level <code>:error</code>, and none of the extensions it recorded reach the Runtime, while the other file’s extensions still load. A <code>ScriptError</code> — a bad <code>require</code>, say — propagates out of the build. Errors go to the host only, never into the model’s context.</p>
+
+<h2 id="gem-extensions">Gem extensions</h2>
+
+<p>The convention for packaging an extension as a gem: the gem is named <code>riffer-rig-&lt;name&gt;</code>, its entry file is <code>lib/riffer/rig/&lt;name&gt;.rb</code>, and that file calls <code>Riffer::Rig.extension('&lt;name&gt;')</code>. A user adds it to every session with <code>require 'riffer/rig/&lt;name&gt;'</code> in a <code>rig.rb</code>.</p>
+
+<p>Setting <code>"extensions": { "autoload": true }</code> in <a href="/guides/configuration/#extensions">settings</a> — off by default — makes the Loader run <code>riffer/rig/extension</code> from every gem <code>Gem.find_files</code> finds, before the two <code>rig.rb</code> files. A gem opts in by shipping <code>lib/riffer/rig/extension.rb</code>; the Loader appends the extensions it records after the bundle, in record order.</p>
+
+<p>Gem-packaged extensions never hot-reload: develop as a local file required from <code>rig.rb</code>, and package into a gem when the extension settles.</p>
+
+<h2 id="the-rigtool-seam">The <code>rig.tool</code> seam</h2>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">rig</span><span class="p">.</span><span class="nf">tool</span> <span class="n">klass</span>
+</code></pre></div></div>
+
+<p>Adds a <code>Riffer::Tool</code> to the Runtime; its identifier is its name everywhere. When the extension block runs, the registrar collects the tool classes and the Runtime passes them to its agent. <code>tools:</code> on <code>Runtime.new</code> is an allowlist of tool identifiers over what extensions registered — <code>nil</code> (the default) means every registered tool. A later registration of the same identifier replaces the earlier tool and keeps its place in the list; that is how a user replaces a <a href="/guides/tools/#replacing-a-tool">bundled tool</a>.</p>
+
+<h2 id="the-rigprompt-seam">The <code>rig.prompt</code> seam</h2>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">rig</span><span class="p">.</span><span class="nf">prompt</span><span class="p">(</span><span class="ss">:git_status</span><span class="p">)</span> <span class="p">{</span> <span class="o">|</span><span class="n">ctx</span><span class="o">|</span> <span class="s2">"Branch: </span><span class="si">#{</span><span class="sb">`git branch --show-current`</span><span class="si">}</span><span class="s2">"</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Adds a named section to the system message. Sections render after the base prompt, in load order, and before the environment block; <a href="/guides/instructions/">Instructions</a> shows the whole assembly.</p>
+
+<ul>
+  <li>The block is evaluated at the start of every turn — each <code>prompt</code> or <code>ask</code> — so its content is always current without a reload. It receives the Runtime as <code>ctx</code> (<code>ctx.cwd</code>, <code>ctx.settings</code>, <code>ctx.host</code>) and returns the section’s text.</li>
+  <li>A later registration of the same name replaces the earlier block and keeps the earlier one’s place in the order, so a user can swap a section an extension owns without disabling that extension.</li>
+  <li>The text is appended as-is. A section that needs framing — a heading, a sentence saying whose instructions these are — writes that framing itself; the base prompt names no contributor. A section that returns <code>nil</code> or an empty string is left out of that turn’s message.</li>
+</ul>
+
+<h2 id="the-rigcommand-seam">The <code>rig.command</code> seam</h2>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">rig</span><span class="p">.</span><span class="nf">command</span><span class="p">(</span><span class="s1">'log'</span><span class="p">,</span> <span class="ss">description: </span><span class="s1">'Recent commits'</span><span class="p">)</span> <span class="p">{</span> <span class="o">|</span><span class="n">ctx</span><span class="o">|</span> <span class="n">ctx</span><span class="p">.</span><span class="nf">say</span> <span class="sb">`git log -n </span><span class="si">#{</span><span class="n">ctx</span><span class="p">.</span><span class="nf">args</span><span class="si">}</span><span class="sb"> --oneline`</span> <span class="p">}</span>
+<span class="n">rig</span><span class="p">.</span><span class="nf">command</span><span class="p">(</span><span class="s1">'review'</span><span class="p">,</span> <span class="ss">description: </span><span class="s1">'Review the diff'</span><span class="p">)</span> <span class="p">{</span> <span class="o">|</span><span class="n">ctx</span><span class="o">|</span> <span class="n">ctx</span><span class="p">.</span><span class="nf">prompt</span> <span class="s2">"Review this diff:</span><span class="se">\n</span><span class="si">#{</span><span class="sb">`git diff`</span><span class="si">}</span><span class="s2">"</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Adds a slash command to the Runtime. Commands are runtime objects, not host features, so a command works the same in every host: the host lists them with <code>runtime.commands</code> and runs one with <code>runtime.run_command(name, args)</code> (see <a href="/guides/embedding/#commands">Embedding</a>). The name is given without the leading slash. A later registration of the same name — from the same extension or a later one — replaces the earlier command and keeps its place in the list.</p>
+
+<p>The block receives a <code>ctx</code>:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Member</th>
+      <th>Does</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>args</code></td>
+      <td>the text after the command name, as one string (<code>""</code> when there is none)</td>
+    </tr>
+    <tr>
+      <td><code>runtime</code></td>
+      <td>the Runtime running the command</td>
+    </tr>
+    <tr>
+      <td><code>host</code></td>
+      <td>the Runtime’s host (the <a href="/guides/hosts/#the-mirror">mirror</a>)</td>
+    </tr>
+    <tr>
+      <td><code>settings</code></td>
+      <td>this extension’s namespace of the Runtime’s settings — <code>settings[:git]</code> for an extension named <code>git</code>, with its <a href="#the-rigsetting-seam">declared defaults</a> filled in — or <code>{}</code> when it has none</td>
+    </tr>
+    <tr>
+      <td><code>say(text)</code></td>
+      <td>emits a <code>command_output</code> event carrying the command’s name and <code>text</code></td>
+    </tr>
+    <tr>
+      <td><code>emit(event)</code></td>
+      <td>emits a <a href="/guides/embedding/#rig-events">rig event</a>, such as <code>Riffer::Rig::Events::SkillActivated</code>, to the caller of <code>run_command</code>; any object with <code>type</code> and <code>to_h</code> (<code>Riffer::Rig::Events::_Event</code>) qualifies, and including <code>Riffer::Rig::Support::Equatable</code> gives it equality by class and <code>to_h</code></td>
+    </tr>
+    <tr>
+      <td><code>prompt(text)</code></td>
+      <td>sends <code>text</code> to the model as a user turn, so a prompt template is a command; the turn’s events stream to the caller of <code>run_command</code></td>
+    </tr>
+    <tr>
+      <td><code>ask(question, options: nil, secret: false)</code></td>
+      <td>forwards to the host and returns its answer, or <code>nil</code> when the host does not support <code>:ask</code></td>
+    </tr>
+    <tr>
+      <td><code>confirm(question)</code></td>
+      <td>forwards to the host and returns its answer, or <code>false</code> when the host does not support <code>:confirm</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><code>ask</code> and <code>confirm</code> check <code>host.capabilities</code> first, so a host that declines them — the null host, headless — is never asked and the command takes the declined path.</p>
+
+<p>A command runs synchronously, one at a time, under the same rule as <code>prompt</code>: <code>run_command</code> while a prompt or another command is running raises <code>Riffer::Rig::Runtime::BusyError</code>. A command that calls <code>ctx.runtime.prompt</code> or <code>ctx.runtime.ask</code> hits the same rule; <code>ctx.prompt</code> is the way to run a turn from a command. A command that raises is caught and reported through the host’s <code>notify</code> at level <code>:error</code>, and the Runtime stays usable.</p>
+
+<h2 id="the-rigon-seam">The <code>rig.on</code> seam</h2>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">rig</span><span class="p">.</span><span class="nf">on</span><span class="p">(</span><span class="ss">:before_tool_call</span><span class="p">)</span> <span class="p">{</span> <span class="o">|</span><span class="n">e</span><span class="o">|</span> <span class="k">next</span> <span class="ss">:block</span><span class="p">,</span> <span class="s1">'no force pushes'</span> <span class="k">if</span> <span class="n">e</span><span class="p">.</span><span class="nf">tool</span> <span class="o">==</span> <span class="s1">'bash'</span> <span class="o">&amp;&amp;</span> <span class="n">e</span><span class="p">.</span><span class="nf">args</span><span class="p">[</span><span class="ss">:command</span><span class="p">]</span> <span class="o">=~</span> <span class="sr">/push --force/</span> <span class="p">}</span>
+<span class="n">rig</span><span class="p">.</span><span class="nf">on</span><span class="p">(</span><span class="ss">:before_prompt</span><span class="p">)</span> <span class="p">{</span> <span class="o">|</span><span class="n">e</span><span class="o">|</span> <span class="s2">"</span><span class="si">#{</span><span class="n">e</span><span class="p">.</span><span class="nf">text</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">Answer in one paragraph."</span> <span class="p">}</span>
+<span class="n">rig</span><span class="p">.</span><span class="nf">on</span><span class="p">(</span><span class="ss">:turn_end</span><span class="p">)</span> <span class="p">{</span> <span class="o">|</span><span class="n">e</span><span class="o">|</span> <span class="nb">warn</span> <span class="s2">"turn cost $</span><span class="si">#{</span><span class="n">e</span><span class="p">.</span><span class="nf">cost</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">e</span><span class="p">.</span><span class="nf">cost</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Adds a hook for one event of the Runtime’s lifecycle or loop. The block receives the event object; every event is immutable, so a hook that wants to change something returns the change rather than mutating the event. Hooks for the same event run in load order — extension order, then registration order within an extension. An unknown event name raises <code>Riffer::ArgumentError</code> when the extension block runs.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Event</th>
+      <th>Kind</th>
+      <th>The event carries</th>
+      <th>Fires</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>session_start</code></td>
+      <td>lifecycle</td>
+      <td><code>id</code>, <code>reason</code> (<code>:new</code>, <code>:restore</code>, <code>:reload</code>)</td>
+      <td>as the Runtime’s first turn starts (<code>:new</code>, or <code>:restore</code> after a snapshot), and after a <code>rebuild</code> swaps this extension in (<code>:reload</code>)</td>
+    </tr>
+    <tr>
+      <td><code>session_end</code></td>
+      <td>lifecycle</td>
+      <td><code>reason</code> (<code>:reload</code>, <code>:close</code>)</td>
+      <td>before a <code>rebuild</code> swaps this extension out (<code>:reload</code>), and on <code>close</code> (<code>:close</code>), if a session started</td>
+    </tr>
+    <tr>
+      <td><code>before_prompt</code></td>
+      <td>vetoable</td>
+      <td><code>text</code></td>
+      <td>as each <code>prompt</code> or <code>ask</code> starts, before the text reaches the session</td>
+    </tr>
+    <tr>
+      <td><code>before_request</code></td>
+      <td>vetoable</td>
+      <td><code>messages</code> (the whole request)</td>
+      <td>before every LLM call: at the start of the turn and again after each round of tool results</td>
+    </tr>
+    <tr>
+      <td><code>before_tool_call</code></td>
+      <td>vetoable</td>
+      <td><code>tool</code> (the identifier), <code>args</code> (symbol keys)</td>
+      <td>before each tool runs</td>
+    </tr>
+    <tr>
+      <td><code>after_tool_call</code></td>
+      <td>observe</td>
+      <td><code>tool</code>, <code>args</code> (as run), <code>result</code> (the tool’s <code>Riffer::Tools::Response</code>)</td>
+      <td>after each tool runs</td>
+    </tr>
+    <tr>
+      <td><code>after_response</code></td>
+      <td>observe</td>
+      <td><code>message</code> (the <code>Riffer::Messages::Assistant</code>)</td>
+      <td>after each model response is added to the session</td>
+    </tr>
+    <tr>
+      <td><code>turn_end</code></td>
+      <td>observe</td>
+      <td><code>stop_reason</code>, <code>usage</code>, <code>cost</code></td>
+      <td>as each turn ends, <code>ask</code> included</td>
+    </tr>
+    <tr>
+      <td><code>stream</code></td>
+      <td>passthrough</td>
+      <td>the riffer <code>StreamEvent</code> itself</td>
+      <td>for every riffer stream event of a turn, <code>ask</code> included</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Lifecycle hooks are where an extension acquires and releases process-wide state; <code>session_start</code> carries <code>:restore</code> on a Runtime built from a <a href="/guides/embedding/#snapshots">snapshot</a>.</p>
+
+<p>A vetoable hook may return:</p>
+
+<ul>
+  <li>a replacement payload — a <code>String</code> for <code>before_prompt</code>, an args <code>Hash</code> for <code>before_tool_call</code>, an <code>Array</code> of <code>Riffer::Messages::Base</code> for <code>before_request</code>. The next hook receives an event built from it, and the last one wins. Any other return value (including <code>nil</code>) changes nothing.</li>
+  <li><code>:block</code>, or <code>[:block, reason]</code> (<code>next :block, 'reason'</code> inside the block). Later hooks do not run. A blocked tool call becomes a tool error carrying the reason (error type <code>:blocked</code>) that the model sees, and the turn carries on. A blocked prompt never reaches the model or the session, the host is told the reason through <code>notify</code> at level <code>:warning</code>, and the turn ends with stop reason <code>:guardrail_blocked</code>. A blocked request also notifies the host: at the start of the turn it ends the turn with <code>:guardrail_blocked</code>, and after tool results it interrupts the turn (<code>:interrupted</code>, the reason in the outcome’s <code>detail</code>).</li>
+</ul>
+
+<p>A replacement request is written back to the session, so later requests carry it too. A replacement tool payload changes what the tool runs with; the model’s own tool call in the history is left as it sent it.</p>
+
+<p>Observe and passthrough hooks change nothing: their return values are ignored, and a <code>stream</code> hook sees each riffer event unchanged, the same object the host receives.</p>
+
+<p>Hooks run on the thread running the turn, one at a time — tools run sequentially so their hooks never overlap.</p>
+
+<h2 id="the-rigskills-seam">The <code>rig.skills</code> seam</h2>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">rig</span><span class="p">.</span><span class="nf">skills</span> <span class="p">{</span> <span class="o">|</span><span class="n">ctx</span><span class="o">|</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Skills</span><span class="o">::</span><span class="no">FilesystemBackend</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="no">File</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">ctx</span><span class="p">.</span><span class="nf">cwd</span><span class="p">,</span> <span class="s1">'docs/skills'</span><span class="p">))</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Adds a source of <a href="/guides/skills/">Agent Skills</a>. The block receives the Runtime as <code>ctx</code>, as a prompt section’s does, and returns a <code>Riffer::Skills::Backend</code>; it runs when the Runtime is built and again on every rebuild. Every source’s skills join one catalog, the model’s riffer skills catalog; when two sources have a skill of the same name, the earlier source wins. Each skill in the catalog gets a core <a href="/guides/skills/#skillname"><code>skill:&lt;name&gt;</code> command</a>. A Runtime with no source has no catalog.</p>
+
+<h2 id="the-rigmcp-seam">The <code>rig.mcp</code> seam</h2>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">rig</span><span class="p">.</span><span class="nf">mcp</span> <span class="s1">'tracker'</span><span class="p">,</span> <span class="ss">url: </span><span class="s1">'https://tracker.example.com/mcp'</span><span class="p">,</span> <span class="ss">headers: </span><span class="p">{</span> <span class="s1">'Authorization'</span> <span class="o">=&gt;</span> <span class="s1">'Bearer …'</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Declares an HTTPS MCP server for the Runtime: <code>rig.mcp(name, url:, headers: {})</code>. The Runtime registers the server with riffer’s MCP client, and the agent gets its tools as <code>&lt;server&gt;__&lt;tool&gt;</code>; a later declaration of the same name replaces the earlier one. <a href="/guides/mcp/">MCP</a> covers naming, why the <code>tools:</code> allowlist does not apply, failures, what a rebuild keeps and the same-name limit across Runtimes.</p>
+
+<h2 id="bundled-extensions-and-replacement">Bundled extensions and replacement</h2>
+
+<p>The four tools ship as bundled extensions — <code>Riffer::Rig.bundled(:read)</code>, <code>:write</code>, <code>:edit</code>, <code>:bash</code> — and so do the <code>:agents_md</code> prompt section, <code>Riffer::Rig.bundled(:agents_md)</code>, the skills directories, <code>Riffer::Rig.bundled(:skills)</code>, and the MCP client, <code>Riffer::Rig.bundled(:mcp)</code>, all built on the same seams as any other extension; <code>Riffer::Rig.bundled</code> returns them all in load order. <a href="/guides/tools/">Tools</a> describes the tools, <a href="/guides/instructions/#agentsmd">Instructions</a> the AGENTS.md section, <a href="/guides/skills/">Skills</a> the skills and <a href="/guides/mcp/">MCP</a> the MCP client.</p>
+
+<p>A later extension replaces anything an earlier one registered by registering under the same name: a tool with the same identifier, a command with the same name, a prompt section with the same name, an MCP server with the same name. Later wins, and the Runtime reports each replacement across extensions through the host’s <code>notify</code> at level <code>:info</code>, as “Extension LATER replaces KIND NAME from EARLIER”. Nothing is deregistered, so the original extension is still there to pass to another Runtime.</p>
+
+<h2 id="the-rigsetting-seam">The <code>rig.setting</code> seam</h2>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">extension</span><span class="p">(</span><span class="s1">'git'</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">rig</span><span class="o">|</span>
+  <span class="n">rig</span><span class="p">.</span><span class="nf">setting</span> <span class="ss">:depth</span><span class="p">,</span> <span class="ss">default: </span><span class="mi">3</span>
+  <span class="n">rig</span><span class="p">.</span><span class="nf">command</span><span class="p">(</span><span class="s1">'log'</span><span class="p">,</span> <span class="ss">description: </span><span class="s1">'Recent commits'</span><span class="p">)</span> <span class="p">{</span> <span class="o">|</span><span class="n">ctx</span><span class="o">|</span> <span class="n">ctx</span><span class="p">.</span><span class="nf">say</span> <span class="sb">`git log -n </span><span class="si">#{</span><span class="n">ctx</span><span class="p">.</span><span class="nf">settings</span><span class="p">[</span><span class="ss">:depth</span><span class="p">]</span><span class="si">}</span><span class="sb"> --oneline`</span> <span class="p">}</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>Declares a key under the extension’s namespace of the settings: <code>"git": { "depth": 10 }</code> in <code>settings.json</code> (see <a href="/guides/configuration/#extension-namespaces">Configuration</a>), read as <code>ctx.settings[:depth]</code>.</p>
+
+<ul>
+  <li>When the Runtime’s <code>settings:</code> hash lacks the key, the declared default applies; a provided value overrides it. <code>runtime.settings</code> holds the result, so a prompt section reads the same values through <code>ctx.settings[:git]</code>.</li>
+  <li>A command’s <code>ctx.settings</code> is its own extension’s namespace only; core keys and other extensions’ namespaces are not in it. Keys present in the namespace but never declared are passed through unchanged.</li>
+  <li><code>runtime.declared_settings</code> lists what each extension declared, extension name → key → default, so a host can render a table of them. Nothing else in core reads it.</li>
+  <li>A later declaration of the same key replaces the earlier default.</li>
+  <li>While the block runs, <code>rig.settings</code> is the same namespace — the Runtime’s <code>settings:</code> values over the defaults declared so far — so an extension can register according to its settings.</li>
+</ul>
+
+<p>Core settings keys stay top level, so an extension cannot take one as its name: an extension named <code>model</code>, <code>reasoning</code>, <code>models</code>, <code>reload</code>, <code>extensions</code>, <code>sessions</code>, <code>providers</code> or <code>tools</code> is rejected with a <code>Riffer::Rig::Registrar::NameCollisionError</code> before its block runs, and reported as a load error (see <a href="#error-isolation">Error isolation</a>).</p>
+
+<h2 id="error-isolation">Error isolation</h2>
+
+<p>The Runtime wraps each registrar block. A block that raises a <code>StandardError</code>, an extension whose <code>requires:</code> the running riffer-rig does not satisfy, or an extension named after a core settings key is a load error:</p>
+
+<ul>
+  <li>The extension is skipped, including anything its block registered before it raised; the rest load, in order.</li>
+  <li><code>runtime.errors</code> records it as a <code>Riffer::Rig::Extension::Failure</code>, whose <code>extension</code> is the extension object and <code>error</code> the exception (a <code>Riffer::Rig::Extension::RequirementError</code> for an unmet <code>requires:</code>, a <code>Riffer::Rig::Registrar::NameCollisionError</code> for a core key taken as a name). An empty array means every extension loaded.</li>
+  <li>The host gets one <code>notify</code> at level <code>:error</code>, <code>"Extension &lt;name&gt; failed to load: &lt;message&gt;"</code>, which the <a href="/guides/hosts/#the-mirror">mirror</a> also queues as a <code>notify</code> event for the next <code>prompt</code> or <code>run_command</code> to emit.</li>
+</ul>
+
+<p>Errors go to the host only, never into the model’s context.</p>
+
+<p>At run time a hook that raises is caught and reported through the host’s <code>notify</code> at level <code>:error</code> (<code>"before_tool_call hook failed: …"</code>), and the turn continues: the remaining hooks run, and a raising vetoable hook counts as no veto. Unlike a load error it is not recorded on <code>runtime.errors</code>. The <code>notify</code> event reaches the stream next to the event being handled.</p>
+
+<h2 id="api-versioning">API versioning</h2>
+
+<p>The registrar surface — <code>Riffer::Rig.extension</code> and the <code>rig.*</code> seams — is public API of riffer-rig and follows its release policy (see <a href="https://github.com/bottrall/riffer-rig#releasing">Releasing</a>); there is no separate API number. While riffer-rig is 0.x, a breaking change to the surface ships in a minor release with a BREAKING CHANGES section in the changelog, after one minor of deprecation where feasible.</p>
+
+<p>Pin the riffer-rig versions an extension is written against with <code>requires:</code>:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">extension</span><span class="p">(</span><span class="s1">'git'</span><span class="p">,</span> <span class="ss">requires: </span><span class="s1">'~&gt; 0.7'</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">rig</span><span class="o">|</span>
+  <span class="c1"># ...</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>A riffer-rig outside the requirement reports the extension as a load error rather than running its block.</p>
+
+        </article>
+
+        <nav class="pager">
+          <a class="doc" href="/guides/headless/"
+            ><span class="go">←</span
+            ><span
+              ><span class="desc">Previous</span
+              ><span class="name">Headless mode</span></span
+            ></a
+          >
+          <a class="doc next" href="/guides/embedding/"
+            ><span
+              ><span class="desc">Next</span
+              ><span class="name">Embedding riffer-rig</span></span
+            ><span class="go">→</span></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

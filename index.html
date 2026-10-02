@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>riffer rig — riffer, in your terminal and in your process</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="stylesheet" href="/landing.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/getting-started/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.8.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="kicker rise" style="animation-delay: 0.05s">The documentation</p>
+          <h1><span class="focus-line" style="animation-delay: 0.12s">riffer,</span>
+              <span class="focus-line" style="animation-delay: 0.26s"><em>in your terminal</em></span>
+              <span class="focus-line" style="animation-delay: 0.4s">and in your process.</span></h1>
+          <span class="sub rise" style="animation-delay: 0.55s">Own your harness.</span>
+          <p class="lede rise" style="animation-delay: 0.65s">
+            riffer rig is a general-purpose agent for Ruby developers who want
+            to own their harness. It runs in the terminal and inside any Ruby
+            process, you extend it in Ruby, and it ships a coding toolkit as
+            its default bundle.
+          </p>
+          <div class="cta-row rise" style="animation-delay: 0.75s">
+            <a class="btn btn-primary" href="/guides/getting-started/">Get started</a>
+            <a class="btn" href="/api/">API reference</a>
+          </div>
+        </div>
+
+        <div class="session rise" style="animation-delay: 0.35s">
+          <span class="cap">A first session<span>my-app · 40 seconds in</span></span>
+          <span class="line you"><span class="ps1">$ </span><span class="type" style="--chars: 22">gem install riffer-rig</span></span>
+          <span class="line dim">Successfully installed riffer-rig-0.8.0</span>
+          <span class="line you"><span class="ps1">$ </span><span class="type" style="--chars: 6">riffer</span></span>
+          <span class="line you">› Fix the failing test in test_helper.rb</span>
+          <span class="line rig">rig</span>
+          <span class="line dim">  read test/test_helper.rb
+  ran bundle exec rake test</span>
+          <span class="line rig">rig</span>
+          <span class="line dim">  The helper loads riffer twice — once via the
+  Gemfile, once by hand. Dropped the manual
+  require.</span>
+          <span class="line ok">12 tests, 0 failures</span>
+          <span class="prompt-row"><span class="ps1">› </span><span class="cursor"></span></span>
+        </div>
+      </div>
+      <a class="scroll-cue" href="#details" aria-label="Scroll down to the details">↓</a>
+    </div>
+
+    <section id="details">
+      <div class="wrap feats">
+        <h2>A harness you own</h2>
+        <p class="sec-sub">
+          One small agent, two ways in — the terminal or your own Ruby code —
+          and every seam open to a Ruby class.
+        </p>
+        <div class="feat-grid">
+          <div class="feat"><span class="n">i</span><div><h3><span class="tag">Terminal</span>The REPL</h3><p>Run <code>riffer</code> in any project and chat with it, with slash commands and skills.</p></div></div>
+          <div class="feat"><span class="n">ii</span><div><h3><span class="tag">Terminal</span>Providers</h3><p>Anthropic, OpenAI, Gemini, OpenRouter, Azure OpenAI and Amazon Bedrock, picked with one <code>provider/name</code> string.</p></div></div>
+          <div class="feat"><span class="n">iii</span><div><h3><span class="tag">Ruby</span>Embedding</h3><p>The runtime is separate from the terminal, so a Rails app, a script or a job can drive it in-process.</p></div></div>
+          <div class="feat"><span class="n">iv</span><div><h3><span class="tag">Ruby</span>Extensions</h3><p>Tools, commands, prompt sections and hooks are ordinary Ruby, registered from a <code>rig.rb</code>.</p></div></div>
+          <div class="feat"><span class="n">v</span><div><h3><span class="tag">Bundled</span>Coding toolkit</h3><p>Read, write, edit and bash ship as the default bundle, and any of them can be replaced.</p></div></div>
+          <div class="feat"><span class="n">vi</span><div><h3><span class="tag">Bundled</span>Skills &amp; MCP</h3><p>Agent Skills directories and MCP servers plug in through settings, on riffer's own clients.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="docs">
+      <div class="wrap docs-sec">
+        <h2>The guides</h2>
+        <p class="sec-sub">Read them in order, or jump straight to your topic.</p>
+
+        <span class="group-label">Start here</span>
+        <ul class="toc-list">
+          <li class="featured"><a href="/guides/getting-started/"><span class="num">01</span><span class="name">Getting started</span><span class="leader"></span><span class="desc">Install, pick a model, first session</span></a></li>
+        </ul>
+
+        <span class="group-label">Using the terminal</span>
+        <ul class="toc-list">
+          <li><a href="/guides/configuration/"><span class="num">02</span><span class="name">Configuration</span><span class="leader"></span><span class="desc">Settings scopes and every core key</span></a></li>
+          <li><a href="/guides/instructions/"><span class="num">03</span><span class="name">Instructions</span><span class="leader"></span><span class="desc">How the system message is built; AGENTS.md</span></a></li>
+          <li><a href="/guides/tools/"><span class="num">04</span><span class="name">Tools</span><span class="leader"></span><span class="desc">The bundled toolkit and provider-native tools</span></a></li>
+          <li><a href="/guides/skills/"><span class="num">05</span><span class="name">Skills</span><span class="leader"></span><span class="desc">Agent Skills directories and activation</span></a></li>
+          <li><a href="/guides/mcp/"><span class="num">06</span><span class="name">MCP</span><span class="leader"></span><span class="desc">Declaring MCP servers</span></a></li>
+          <li><a href="/guides/sessions/"><span class="num">07</span><span class="name">Sessions</span><span class="leader"></span><span class="desc">Saving, resuming, the picker, the JSONL store</span></a></li>
+          <li><a href="/guides/headless/"><span class="num">08</span><span class="name">Headless mode</span><span class="leader"></span><span class="desc">riffer -p, NDJSON, exit codes</span></a></li>
+        </ul>
+
+        <span class="group-label">Extending and embedding</span>
+        <ul class="toc-list">
+          <li><a href="/guides/extensions/"><span class="num">09</span><span class="name">Extensions</span><span class="leader"></span><span class="desc">rig.rb, the registrar, the eight seams, commands, handlers, gems</span></a></li>
+          <li><a href="/guides/embedding/"><span class="num">10</span><span class="name">Embedding riffer-rig</span><span class="leader"></span><span class="desc">Runtime and Loader from Ruby; snapshots; rebuild</span></a></li>
+          <li><a href="/guides/hosts/"><span class="num">11</span><span class="name">Hosts</span><span class="leader"></span><span class="desc">The Host interface and writing a host</span></a></li>
+        </ul>
+
+        <span class="group-label">Providers</span>
+        <ul class="toc-list">
+          <li><a href="/guides/providers/overview/"><span class="num">12</span><span class="name">Providers</span><span class="leader"></span><span class="desc">Model strings, precedence, credentials, /auth</span></a></li>
+        </ul>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

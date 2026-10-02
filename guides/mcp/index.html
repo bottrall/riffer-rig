@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MCP — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/getting-started/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.8.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">01</span>Getting started</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">02</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">03</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">04</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">05</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/" class="active" aria-current="page"
+                  ><span class="num">06</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">07</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">08</span>Headless mode</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">09</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">10</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">11</span>Hosts</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">12</span>Providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Using the terminal · 06</span></p>
+          <h1>MCP</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#declaring-servers-in-settings">Declaring servers in settings</a></li>
+              <li><a href="#declaring-servers-from-an-extension">Declaring servers from an extension</a></li>
+              <li><a href="#tool-names">Tool names</a></li>
+              <li><a href="#reload-and-close">Reload and close</a></li>
+              <li><a href="#servers-in-more-than-one-runtime">Servers in more than one Runtime</a></li>
+            </ul>
+          </nav>
+          
+<p>A Runtime can hand the model the tools of <a href="https://modelcontextprotocol.io">Model Context Protocol</a> servers. A server is reached over HTTPS: the Runtime registers it with riffer’s MCP client, which lists the server’s tools over MCP’s Streamable HTTP transport and calls them the same way, sending any headers you give it (an <code>Authorization</code> token, say) with every request. Servers that run as a local command over stdio are not supported, and neither are plain <code>http://</code> URLs.</p>
+
+<h2 id="declaring-servers-in-settings">Declaring servers in settings</h2>
+
+<p>The bundled <code>mcp</code> extension (<code>Riffer::Rig.bundled(:mcp)</code>) declares every server under its own settings namespace, <code>mcp.servers</code>, keyed by the server’s name:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"mcp"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"docs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://docs.example.com/mcp"</span><span class="w"> </span><span class="p">},</span><span class="w">
+      </span><span class="nl">"tracker"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://tracker.example.com/mcp"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"headers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"Authorization"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Bearer &lt;token&gt;"</span><span class="w"> </span><span class="p">}</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p><code>url</code> is required and must be <code>https://</code>; <code>headers</code> is optional and defaults to none. Header values are sent exactly as written; nothing in them is expanded from the environment. An embedder passes the same shape in the Runtime’s <code>settings:</code> hash, with symbol keys: <code>{ mcp: { servers: { docs: { url: 'https://docs.example.com/mcp' } } } }</code> (see <a href="/guides/embedding/#constructing-a-runtime">Embedding</a>). An entry without a <code>url</code> fails the whole <code>mcp</code> extension, which is reported as a load error (see <a href="/guides/extensions/#error-isolation">Extensions</a>).</p>
+
+<p>Put a server that needs a secret header in your home <code>~/.riffer/settings.json</code>, not the project’s <code>.riffer/settings.json</code>, which is usually committed with the project.</p>
+
+<p>Settings come in two scopes, <code>~/.riffer/settings.json</code> then the project’s <code>.riffer/settings.json</code>. <code>Riffer::Rig::Mcp.merge(home, project)</code> merges the two <code>mcp</code> hashes by server name: a server declared in only one scope is kept, and a project server replaces the home server of the same name whole — its <code>headers</code> are not merged with the home server’s.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Mcp</span><span class="p">.</span><span class="nf">merge</span><span class="p">(</span><span class="n">home_settings</span><span class="p">[</span><span class="ss">:mcp</span><span class="p">]</span> <span class="o">||</span> <span class="p">{},</span> <span class="n">project_settings</span><span class="p">[</span><span class="ss">:mcp</span><span class="p">]</span> <span class="o">||</span> <span class="p">{})</span>
+</code></pre></div></div>
+
+<p><a href="/guides/embedding/#building-a-runtime-with-the-loader"><code>Loader.runtime</code></a> merges the two scopes this way and passes the bundled <code>mcp</code> extension unless <code>extensions.disabled</code> names it. The <code>riffer</code> terminal builds its Runtime this way, so servers declared in either settings file reach its model.</p>
+
+<p><code>mcp</code> is an ordinary extension name, not a core settings key: <code>mcp.servers</code> is simply the bundled extension’s own namespace, the same as any other extension’s. To run without it, leave it out of the Runtime’s <code>extensions:</code>, or list it in <code>extensions.disabled</code> (<a href="/guides/configuration/#extensions">Configuration</a>).</p>
+
+<h2 id="declaring-servers-from-an-extension">Declaring servers from an extension</h2>
+
+<p>Any extension declares a server of its own with the <code>rig.mcp</code> seam; the bundled extension is only the settings-driven convention on top of it.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">extension</span><span class="p">(</span><span class="s1">'tracker'</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">rig</span><span class="o">|</span>
+  <span class="n">rig</span><span class="p">.</span><span class="nf">mcp</span> <span class="s1">'tracker'</span><span class="p">,</span> <span class="ss">url: </span><span class="s1">'https://tracker.example.com/mcp'</span><span class="p">,</span> <span class="ss">headers: </span><span class="p">{</span> <span class="s1">'Authorization'</span> <span class="o">=&gt;</span> <span class="s2">"Bearer </span><span class="si">#{</span><span class="no">ENV</span><span class="p">.</span><span class="nf">fetch</span><span class="p">(</span><span class="s1">'TRACKER_TOKEN'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span> <span class="p">}</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p><code>rig.mcp(name, url:, headers: {})</code> declares one server. Server names are shared across extensions: a later declaration of the same name, from the same extension or a later one, replaces the earlier one, and a replacement across extensions is reported through <code>notify</code> at level <code>:info</code> as “Extension LATER replaces MCP server NAME from EARLIER”.</p>
+
+<p>An extension block can read its own settings namespace as <code>rig.settings</code> while it runs, with the defaults it declared with <a href="/guides/extensions/#the-rigsetting-seam"><code>rig.setting</code></a> filled in. That is how the bundled extension reads <code>mcp.servers</code>.</p>
+
+<h2 id="tool-names">Tool names</h2>
+
+<p>When the Runtime is built it registers each server with riffer, which lists the server’s tools there and then; the agent gets them after the tools extensions registered. A tool is named with riffer’s MCP naming, <code>&lt;server&gt;__&lt;tool&gt;</code>, each part with every character outside <code>a-z</code>, <code>A-Z</code>, <code>0-9</code>, <code>_</code> and <code>-</code> replaced by <code>_</code>: the <code>search</code> tool of the <code>docs</code> server is <code>docs__search</code>. Each tool keeps the server’s description and input schema; the server validates the arguments. A tool call that fails on the server is a tool error the model sees.</p>
+
+<p>The <code>tools:</code> allowlist does not apply to MCP tools: riffer adds them inside the agent, after the allowlist has filtered the extension tools, so a Runtime built with <code>tools: %w[read]</code> still gets every MCP tool. Leave a server out of the declarations to keep its tools from the model.</p>
+
+<p>A server that cannot be registered — its URL is not <code>https://</code>, or listing its tools fails — is reported through <code>notify</code> at level <code>:error</code> as “MCP server NAME failed to register: …”, and the Runtime runs without its tools.</p>
+
+<p>riffer’s client sends each request on its own, without MCP’s <code>initialize</code> handshake, so a server that insists on a session before <code>tools/list</code> cannot be registered.</p>
+
+<h2 id="reload-and-close">Reload and close</h2>
+
+<p>On a <a href="/guides/embedding/#rebuilding-after-a-code-reload">rebuild</a>, a server whose name, url and headers are unchanged is not registered again: its tools stay as they were listed. A server whose url or headers changed is registered again, which replaces its earlier registration and lists its tools afresh, and a server the new extension list no longer declares is unregistered.</p>
+
+<p><code>close</code> unregisters every server the Runtime registered.</p>
+
+<h2 id="servers-in-more-than-one-runtime">Servers in more than one Runtime</h2>
+
+<p>riffer keeps one MCP registry per process, keyed by server name. Each Runtime tags its registrations with its own <code>id</code>, so its agent sees only the servers it declared, even when other Runtimes in the process declare servers of their own.</p>
+
+<p>Two Runtimes in one process must not declare servers of the same name: the later registration replaces the earlier one, so the first Runtime loses that server’s tools. A Runtime never unregisters a server another Runtime has since registered under the same name.</p>
+
+        </article>
+
+        <nav class="pager">
+          <a class="doc" href="/guides/skills/"
+            ><span class="go">←</span
+            ><span
+              ><span class="desc">Previous</span
+              ><span class="name">Skills</span></span
+            ></a
+          >
+          <a class="doc next" href="/guides/sessions/"
+            ><span
+              ><span class="desc">Next</span
+              ><span class="name">Sessions</span></span
+            ><span class="go">→</span></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Embedding riffer-rig — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/getting-started/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.8.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">01</span>Getting started</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">02</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">03</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">04</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">05</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">06</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">07</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">08</span>Headless mode</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">09</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/" class="active" aria-current="page"
+                  ><span class="num">10</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">11</span>Hosts</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">12</span>Providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Extending and embedding · 10</span></p>
+          <h1>Embedding riffer-rig</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#building-a-runtime-with-the-loader">Building a Runtime with the Loader</a></li>
+              <li><a href="#constructing-a-runtime">Constructing a Runtime</a></li>
+              <li><a href="#prompting">Prompting</a></li>
+              <li><a href="#asking-for-a-turn">Asking for a turn</a></li>
+              <li><a href="#token-tally-and-cost">Token tally and cost</a></li>
+              <li><a href="#rig-events">Rig events</a></li>
+              <li><a href="#cancelling-a-turn">Cancelling a turn</a></li>
+              <li><a href="#commands">Commands</a></li>
+              <li><a href="#switching-the-model">Switching the model</a></li>
+              <li><a href="#rebuilding-after-a-code-reload">Rebuilding after a code reload</a></li>
+              <li><a href="#capping-the-loop">Capping the loop</a></li>
+              <li><a href="#snapshots">Snapshots</a></li>
+              <li><a href="#observing-messages">Observing messages</a></li>
+            </ul>
+          </nav>
+          
+<p>Host riffer-rig inside another Ruby process with <code>Riffer::Rig::Runtime</code> — a runtime that builds its own <code>Riffer::Agent</code> from a per-instance <code>Riffer::Agent::Config</code>, runs extension blocks against a per-Runtime registrar, and streams a prompt. It never renders, never prints, and never reads the filesystem; anything a host needs is a Runtime feature so embedders get it too.</p>
+
+<h2 id="building-a-runtime-with-the-loader">Building a Runtime with the Loader</h2>
+
+<p><code>Riffer::Rig::Loader</code> knows riffer-rig’s filesystem conventions, so the Runtime does not have to. <code>Loader.runtime</code> builds a Runtime for a working directory the way the shipped hosts do:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">runtime</span> <span class="o">=</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Loader</span><span class="p">.</span><span class="nf">runtime</span><span class="p">(</span><span class="ss">cwd: </span><span class="no">Dir</span><span class="p">.</span><span class="nf">pwd</span><span class="p">,</span> <span class="ss">host: </span><span class="no">MyHost</span><span class="p">.</span><span class="nf">new</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>In order, it:</p>
+
+<ol>
+  <li>reads <code>~/.riffer/settings.json</code> then <code>&lt;cwd&gt;/.riffer/settings.json</code> and merges them, the project winning key by key (<a href="/guides/configuration/">Configuration</a>), and selects the model: the <code>model:</code> keyword, then <code>RIFFER_MODEL</code>, then the settings, then onboarding;</li>
+  <li>resolves the model’s provider credentials (<a href="/guides/providers/overview/#resolution-order">Providers</a>), assigns them to <code>Riffer.config</code> and keeps them for the Runtime’s <code>credentials:</code>;</li>
+  <li>takes the <a href="/guides/tools/">bundled extensions</a>, minus those named in <code>extensions.disabled</code> and the strip keywords;</li>
+  <li>runs <code>riffer/rig/extension</code> from every gem when <a href="/guides/configuration/#extensions"><code>extensions.autoload</code></a> is set, then <code>~/.riffer/rig.rb</code> and, once <a href="/guides/extensions/#the-rigrb-files">trusted</a>, <code>&lt;cwd&gt;/.riffer/rig.rb</code>, and appends the extensions the loads record to the bundle (<a href="/guides/extensions/#the-rigrb-files">Extensions</a>);</li>
+  <li>constructs the Runtime with the model, the credentials, the extensions, the merged settings, the <code>models</code> pricing table, the <code>reasoning</code> level as riffer <code>model_options</code>, and the keywords below.</li>
+</ol>
+
+<table>
+  <thead>
+    <tr>
+      <th>Keyword</th>
+      <th>Meaning</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>cwd:</code></td>
+      <td>the working directory; its <code>.riffer/settings.json</code> is the project scope</td>
+      <td>required</td>
+    </tr>
+    <tr>
+      <td><code>host:</code></td>
+      <td>the <a href="/guides/hosts/">host</a> the Runtime gets, and the one onboarding and credential prompts ask</td>
+      <td>required</td>
+    </tr>
+    <tr>
+      <td><code>model:</code></td>
+      <td><code>"provider/name"</code>, winning over <code>RIFFER_MODEL</code> and the settings</td>
+      <td><code>nil</code></td>
+    </tr>
+    <tr>
+      <td><code>extensions: false</code></td>
+      <td>skips the <code>rig.rb</code> files and the gem <code>riffer/rig/extension</code> autoload; the bundle still loads</td>
+      <td><code>true</code></td>
+    </tr>
+    <tr>
+      <td><code>skills: false</code></td>
+      <td>leaves out the bundled <a href="/guides/skills/"><code>skills</code></a> extension</td>
+      <td><code>true</code></td>
+    </tr>
+    <tr>
+      <td><code>agents_md: false</code></td>
+      <td>leaves out the bundled <a href="/guides/instructions/#agentsmd"><code>agents_md</code></a> extension</td>
+      <td><code>true</code></td>
+    </tr>
+    <tr>
+      <td><code>tools:</code></td>
+      <td>the Runtime’s tool allowlist</td>
+      <td><code>nil</code></td>
+    </tr>
+    <tr>
+      <td><code>max_steps:</code></td>
+      <td>the Runtime’s step limit</td>
+      <td><code>nil</code></td>
+    </tr>
+    <tr>
+      <td><code>env:</code></td>
+      <td>a <code>Riffer::Rig::Env</code>, or what <code>Riffer::Rig::Env.load</code> returned</td>
+      <td><code>Riffer::Rig::Env.load</code></td>
+    </tr>
+    <tr>
+      <td><code>home:</code></td>
+      <td>the directory holding <code>.riffer/settings.json</code> and <code>.riffer/auth.json</code></td>
+      <td><code>Dir.home</code></td>
+    </tr>
+    <tr>
+      <td><code>riffer_config:</code></td>
+      <td>the <code>Riffer::Config</code> that receives the credentials and pricing</td>
+      <td><code>Riffer.config</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><code>Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:)</code> takes the same setup and builds with <code>runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)</code>, for a host that keeps the Loader.</p>
+
+<p>The host is asked only when its <code>capabilities</code> include <code>:ask</code>. With no model set anywhere, the Loader asks it for a model string, listing the providers, and writes the answer to <code>~/.riffer/settings.json</code>; a required credential that does not resolve is asked for the same way and stored (<a href="/guides/providers/overview/#rifferrigcredentials">Providers</a>). Anything the Loader cannot settle raises <code>Riffer::Rig::Loader::ConfigurationError</code> with a message fit to show the user: no model and a host that cannot ask (the null host), a model string without a known provider prefix, a bare <code>RIFFER_MODEL</code>, or a required credential still missing. A headless host should map it to exit status 2.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">begin</span>
+  <span class="n">runtime</span> <span class="o">=</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Loader</span><span class="p">.</span><span class="nf">runtime</span><span class="p">(</span><span class="ss">cwd: </span><span class="no">Dir</span><span class="p">.</span><span class="nf">pwd</span><span class="p">,</span> <span class="ss">host: </span><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Hosts</span><span class="o">::</span><span class="no">Null</span><span class="p">.</span><span class="nf">new</span><span class="p">)</span>
+<span class="k">rescue</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Loader</span><span class="o">::</span><span class="no">ConfigurationError</span> <span class="o">=&gt;</span> <span class="n">e</span>
+  <span class="nb">warn</span> <span class="n">e</span><span class="p">.</span><span class="nf">message</span>
+  <span class="nb">exit</span> <span class="mi">2</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<h2 id="constructing-a-runtime">Constructing a Runtime</h2>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">runtime</span> <span class="o">=</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Runtime</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+  <span class="s1">'anthropic/claude-sonnet-4-6'</span><span class="p">,</span>
+  <span class="ss">extensions: </span><span class="p">[</span><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">extension</span><span class="p">(</span><span class="s1">'my_ext'</span><span class="p">)</span> <span class="p">{</span> <span class="o">|</span><span class="n">rig</span><span class="o">|</span> <span class="n">rig</span><span class="p">.</span><span class="nf">tool</span> <span class="no">MyTool</span> <span class="p">}],</span>
+  <span class="ss">host: </span><span class="no">MyHost</span><span class="p">.</span><span class="nf">new</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div></div>
+
+<p>The constructor takes everything as keywords — <code>model:</code> (positional, required), <code>extensions:</code>, <code>tools:</code>, <code>settings:</code>, <code>host:</code>, <code>cwd:</code>, <code>name:</code>, <code>instructions:</code>, <code>max_steps:</code>, <code>model_options:</code>, <code>credentials:</code>, <code>pricing:</code>, <code>riffer_config:</code>, <code>mcp_registry:</code>, <code>snapshot:</code>. All except the model are optional. <code>credentials:</code> is stored and exposed (<code>runtime.credentials</code>); only <code>/model</code> and a <a href="#snapshots">restore</a> read it so far. It takes the shape the <a href="#building-a-runtime-with-the-loader">Loader</a> passes — each provider’s resolved field values. Provider credentials reach riffer through <code>Riffer.config</code>, one set per process: <code>Riffer::Rig::Credentials.resolve</code> finds a provider’s values and <code>Riffer::Rig::Credentials.apply</code> assigns them (see <a href="/guides/providers/overview/">Providers</a>), or set them yourself with <code>Riffer.configure</code>.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Keyword</th>
+      <th>Meaning</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>model</code></td>
+      <td><code>"provider/name"</code>; required, positional</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><code>extensions:</code></td>
+      <td>ordered extension objects whose blocks run against this Runtime’s registrar; <code>Riffer::Rig.bundled</code> gives the <a href="/guides/tools/">bundled tools</a>, <a href="/guides/instructions/#agentsmd">AGENTS.md section</a>, <a href="/guides/skills/">skills</a> and <a href="/guides/mcp/">MCP client</a></td>
+      <td><code>[]</code></td>
+    </tr>
+    <tr>
+      <td><code>tools:</code></td>
+      <td>allowlist of tool identifiers; <code>nil</code> means every registered tool. <a href="/guides/mcp/#tool-names">MCP tools</a> are not filtered</td>
+      <td><code>nil</code></td>
+    </tr>
+    <tr>
+      <td><code>settings:</code></td>
+      <td>merged settings hash (core keys top level, extension keys under their names); a command reads its extension’s namespace as <code>ctx.settings</code></td>
+      <td><code>{}</code></td>
+    </tr>
+    <tr>
+      <td><code>host:</code></td>
+      <td>an object implementing <a href="/guides/hosts/"><code>Riffer::Rig::Hosts::_Host</code></a></td>
+      <td><code>Riffer::Rig::Hosts::Null.new</code></td>
+    </tr>
+    <tr>
+      <td><code>cwd:</code></td>
+      <td>working directory for the environment block, and the directory tools resolve relative paths against</td>
+      <td><code>Dir.pwd</code></td>
+    </tr>
+    <tr>
+      <td><code>name:</code></td>
+      <td>the name interpolated into the <a href="/guides/instructions/">base prompt</a></td>
+      <td><code>"riffer"</code></td>
+    </tr>
+    <tr>
+      <td><code>instructions:</code></td>
+      <td>replaces the base prompt; sections and the environment block still apply</td>
+      <td><code>nil</code> (use the base)</td>
+    </tr>
+    <tr>
+      <td><code>max_steps:</code></td>
+      <td>agent-loop step limit; <code>nil</code> runs the loop without a limit</td>
+      <td><code>nil</code></td>
+    </tr>
+    <tr>
+      <td><code>model_options:</code></td>
+      <td>riffer <code>model_options</code> sent with every model call (<code>{ reasoning: 'high' }</code>, <code>{ cache_control: { type: :ephemeral } }</code>); <code>Riffer::Rig::Settings.model_options(model, reasoning)</code> builds them from the settings</td>
+      <td><code>{}</code></td>
+    </tr>
+    <tr>
+      <td><code>credentials:</code></td>
+      <td>provider → resolved field values (<code>{ anthropic: { api_key: "…" } }</code>), stored as given and exposed; read by <code>/model</code> and a restore</td>
+      <td><code>{}</code></td>
+    </tr>
+    <tr>
+      <td><code>pricing:</code></td>
+      <td>model → <code>Riffer::Rig::Settings::Pricing</code> entries (USD per million tokens), registered into riffer’s pricing when the Runtime is built; see <a href="#token-tally-and-cost">tally</a></td>
+      <td><code>{}</code></td>
+    </tr>
+    <tr>
+      <td><code>riffer_config:</code></td>
+      <td>the <code>Riffer::Config</code> whose <code>pricing</code> receives the <code>pricing:</code> entries</td>
+      <td><code>Riffer.config</code></td>
+    </tr>
+    <tr>
+      <td><code>mcp_registry:</code></td>
+      <td>where declared <a href="/guides/mcp/">MCP servers</a> are registered and unregistered: an object with riffer’s <code>register(name:, endpoint:, tags:, discovery_headers:)</code> and <code>unregister(name)</code></td>
+      <td><code>Riffer::Mcp</code></td>
+    </tr>
+    <tr>
+      <td><code>snapshot:</code></td>
+      <td>a hash from <code>to_h</code> to restore; see <a href="#snapshots">Snapshots</a></td>
+      <td><code>nil</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><code>runtime.settings</code> is the <code>settings:</code> hash with each extension’s <a href="/guides/extensions/#the-rigsetting-seam">declared defaults</a> filled into its namespace; core reads it only to hand each <a href="#commands">command</a> its extension’s namespace. <code>runtime.declared_settings</code> is the table of what extensions declared, extension name → key → default, for a host to render.</p>
+
+<p>Two Runtimes in one process share nothing but the process-wide extension registry, riffer’s provider repository and riffer’s config, which holds the process’s one set of provider credentials.</p>
+
+<h2 id="prompting">Prompting</h2>
+
+<p><code>prompt(text)</code> runs one turn on the calling thread. With a block it yields every riffer <code>StreamEvent</code> as it happens; without one it returns an <code>Enumerator</code>:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">runtime</span><span class="p">.</span><span class="nf">prompt</span><span class="p">(</span><span class="s1">'Explain this repository'</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">event</span><span class="o">|</span>
+  <span class="k">case</span> <span class="n">event</span>
+  <span class="k">when</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">StreamEvents</span><span class="o">::</span><span class="no">TextDelta</span> <span class="k">then</span> <span class="nb">print</span> <span class="n">event</span><span class="p">.</span><span class="nf">content</span>
+  <span class="k">when</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">StreamEvents</span><span class="o">::</span><span class="no">ToolCallDone</span> <span class="k">then</span> <span class="nb">puts</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">[tool: </span><span class="si">#{</span><span class="n">event</span><span class="p">.</span><span class="nf">name</span><span class="si">}</span><span class="s2">]"</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="n">runtime</span><span class="p">.</span><span class="nf">prompt</span><span class="p">(</span><span class="s1">'and this one?'</span><span class="p">).</span><span class="nf">each</span> <span class="p">{</span> <span class="o">|</span><span class="n">event</span><span class="o">|</span> <span class="o">...</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>One prompt runs at a time per Runtime; a second <code>prompt</code> or <code>ask</code> while one is running raises <code>Riffer::Rig::Runtime::BusyError</code>. Parallelism means more Runtimes, in more threads.</p>
+
+<h2 id="asking-for-a-turn">Asking for a turn</h2>
+
+<p><code>ask(text)</code> runs one turn to completion and returns riffer’s <code>Riffer::Agent::Response</code> — the same loop <code>prompt</code> streams, gathered into the single value riffer already builds. The headless host and embedders build on it; the terminal builds on the stream.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">response</span> <span class="o">=</span> <span class="n">runtime</span><span class="p">.</span><span class="nf">ask</span><span class="p">(</span><span class="s1">'Fix the failing test'</span><span class="p">)</span>
+<span class="nb">puts</span> <span class="n">response</span><span class="p">.</span><span class="nf">content</span>
+<span class="nb">puts</span> <span class="s2">"outcome: </span><span class="si">#{</span><span class="n">response</span><span class="p">.</span><span class="nf">outcome</span><span class="p">.</span><span class="nf">reason</span><span class="si">}</span><span class="s2">"</span>
+<span class="n">response</span><span class="p">.</span><span class="nf">messages</span><span class="p">.</span><span class="nf">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">message</span><span class="o">|</span>
+  <span class="k">next</span> <span class="k">unless</span> <span class="n">message</span><span class="p">.</span><span class="nf">is_a?</span><span class="p">(</span><span class="no">Riffer</span><span class="o">::</span><span class="no">Messages</span><span class="o">::</span><span class="no">Assistant</span><span class="p">)</span>
+  <span class="n">message</span><span class="p">.</span><span class="nf">tool_calls</span><span class="p">.</span><span class="nf">each</span> <span class="p">{</span> <span class="o">|</span><span class="n">call</span><span class="o">|</span> <span class="nb">puts</span> <span class="s2">"  </span><span class="si">#{</span><span class="n">call</span><span class="p">.</span><span class="nf">name</span><span class="si">}</span><span class="s2">(</span><span class="si">#{</span><span class="n">call</span><span class="p">.</span><span class="nf">arguments</span><span class="si">}</span><span class="s2">)"</span> <span class="p">}</span>
+<span class="k">end</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">usage</span> <span class="o">=</span> <span class="n">response</span><span class="p">.</span><span class="nf">token_usage</span><span class="p">)</span>
+  <span class="nb">puts</span> <span class="s2">"usage: </span><span class="si">#{</span><span class="n">usage</span><span class="p">.</span><span class="nf">input_tokens</span><span class="si">}</span><span class="s2"> in / </span><span class="si">#{</span><span class="n">usage</span><span class="p">.</span><span class="nf">output_tokens</span><span class="si">}</span><span class="s2"> out"</span>
+  <span class="nb">puts</span> <span class="nb">format</span><span class="p">(</span><span class="s1">'cost: $%.4f'</span><span class="p">,</span> <span class="n">usage</span><span class="p">.</span><span class="nf">cost</span><span class="p">)</span> <span class="k">if</span> <span class="n">usage</span><span class="p">.</span><span class="nf">cost</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>How the run ended is riffer’s <code>response.outcome</code> — <code>reason</code> is one of riffer’s vocabulary (<code>completed</code>, provider finish reasons like <code>length</code> and <code>content_filter</code>, <code>max_steps</code>, <code>guardrail_blocked</code>, <code>interrupted</code>, …) and <code>detail</code> carries the specifics, such as the interrupt reason behind <code>:interrupted</code>. A <a href="#cancelling-a-turn">cancelled</a> run ends the same way — <code>reason: :interrupted</code>, <code>detail: "cancelled"</code> — because riffer’s outcome vocabulary has no <code>cancelled</code> entry yet. Hosts map <code>outcome.reason</code> to exit codes or UI.</p>
+
+<h2 id="token-tally-and-cost">Token tally and cost</h2>
+
+<p>riffer prices usage at source: each provider looks its model up in <code>Riffer.config.pricing</code> and sets <code>cost</code> on the usage it reports. The Runtime registers every <code>pricing:</code> entry there when it is built, and <code>tally</code> returns riffer’s running total for the Runtime’s agent — <code>agent.context.token_usage</code>, a <code>Riffer::Providers::TokenUsage</code> summed over every model call of every <code>prompt</code> and <code>ask</code>, or <code>nil</code> before the first turn.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">pricing</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">'anthropic/claude-sonnet-4-6'</span> <span class="o">=&gt;</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Settings</span><span class="o">::</span><span class="no">Pricing</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="ss">input: </span><span class="mf">3.0</span><span class="p">,</span> <span class="ss">output: </span><span class="mf">15.0</span><span class="p">,</span> <span class="ss">cache_write: </span><span class="mf">3.75</span><span class="p">,</span> <span class="ss">cache_read: </span><span class="mf">0.3</span><span class="p">)</span> <span class="p">}</span>
+<span class="n">runtime</span> <span class="o">=</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Runtime</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s1">'anthropic/claude-sonnet-4-6'</span><span class="p">,</span> <span class="ss">pricing: </span><span class="n">pricing</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">runtime</span><span class="p">.</span><span class="nf">ask</span><span class="p">(</span><span class="s1">'Fix the failing test'</span><span class="p">)</span>
+<span class="n">response</span><span class="p">.</span><span class="nf">token_usage</span><span class="p">.</span><span class="nf">cost</span> <span class="c1"># =&gt; this turn, in USD</span>
+<span class="n">runtime</span><span class="p">.</span><span class="nf">tally</span><span class="p">.</span><span class="nf">input_tokens</span> <span class="c1"># =&gt; every turn so far</span>
+<span class="n">runtime</span><span class="p">.</span><span class="nf">tally</span><span class="p">.</span><span class="nf">cost</span>         <span class="c1"># =&gt; every turn so far, in USD</span>
+</code></pre></div></div>
+
+<p>Each turn’s usage is riffer’s: on the <code>ask</code> response as <code>response.token_usage</code>, and on the stream as the closing <code>turn_end</code> event’s <code>usage</code> and <code>cost</code> — the same values. Rates are USD per million tokens. riffer counts cache reads and writes inside <code>input_tokens</code>, so the cached share is priced at the <code>cache_read</code> and <code>cache_write</code> rates and only the rest at <code>input</code>.</p>
+
+<p>Missing pricing means <code>nil</code>, never zero: a model <code>Riffer.config.pricing</code> has no rates for reports no <code>cost</code>, and neither does the tally. Pricing is process-wide and keyed by model id, so two Runtimes that price the same model differently share whichever registered last. The terminal takes its pricing from the merged <code>models</code> blocks of the two settings files (<a href="/guides/configuration/#models">Configuration</a>); an embedder passes its own, or registers rates itself with <code>Riffer.config.pricing.set</code>.</p>
+
+<h2 id="rig-events">Rig events</h2>
+
+<p>The stream a host consumes is riffer’s <code>StreamEvents</code> unchanged, plus a few rig-level events from <code>Riffer::Rig::Events</code>. A rig event is any object with <code>type</code> and <code>to_h</code> (the RBS interface <code>Riffer::Rig::Events::_Event</code>). Rig’s own are frozen value objects that include <code>Riffer::Rig::Support::Equatable</code>, so they are equal when their class and <code>to_h</code> match; each has <code>to_h</code> — with the type folded in, so a headless host can print every record verbatim as NDJSON — and <code>type</code>, the snake_case form of its class name.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Rig event</th>
+      <th>Carries</th>
+      <th>When</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>session_start</code></td>
+      <td><code>id</code>, <code>reason</code> (<code>:new</code>, <code>:restore</code>, <code>:reload</code>)</td>
+      <td>opens the first prompt after construction (or a restore, or a rebuild)</td>
+    </tr>
+    <tr>
+      <td><code>session_end</code></td>
+      <td><code>reason</code> (<code>:reload</code>, <code>:close</code>)</td>
+      <td>opens the first prompt after a <a href="#rebuilding-after-a-code-reload">rebuild</a>, ahead of its <code>session_start</code>; on <code>close</code> (hooks only — see the note below)</td>
+    </tr>
+    <tr>
+      <td><code>command_output</code></td>
+      <td><code>command</code>, <code>text</code></td>
+      <td>a command called <code>ctx.say</code></td>
+    </tr>
+    <tr>
+      <td><code>skill_activated</code></td>
+      <td><code>name</code></td>
+      <td>a skill was activated by command</td>
+    </tr>
+    <tr>
+      <td><code>notify</code></td>
+      <td><code>message</code>, <code>level</code></td>
+      <td>mirrors every <code>host.notify</code>, so a stream consumer sees extension errors too</td>
+    </tr>
+    <tr>
+      <td><code>turn_end</code></td>
+      <td><code>stop_reason</code>, <code>usage</code>, <code>cost</code></td>
+      <td>the last event of every <code>prompt</code>; <code>stop_reason</code> is riffer’s outcome reason, or <code>:cancelled</code> after a <code>cancel</code>; <code>usage</code> is riffer’s <code>TokenUsage</code> and <code>cost</code> its USD figure, <code>nil</code> when unpriced</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><code>session_start</code> carries <code>:new</code>, <code>:restore</code> on a Runtime built from a <a href="#snapshots">snapshot</a>, or <code>:reload</code> after a <a href="#rebuilding-after-a-code-reload">rebuild</a>; <code>session_end</code> carries <code>:reload</code> or <code>:close</code>. <code>close</code> refuses further prompts and asks with <code>Riffer::Rig::Runtime::ClosedError</code> and unregisters every <a href="/guides/mcp/">MCP server</a> the Runtime registered; its <code>session_end</code> reaches extension hooks but not the stream, since no prompt follows it.</p>
+
+<p>Every <code>prompt</code> ends with <code>turn_end</code> — with a block or as an Enumerator — so a stream consumer never needs <code>ask</code> to learn how the turn ended and what it cost. The headless host prints this same stream as NDJSON; see <a href="/guides/headless/">Headless mode</a> for the wire shape.</p>
+
+<h2 id="cancelling-a-turn">Cancelling a turn</h2>
+
+<p><code>cancel</code> stops the running turn. It is thread-safe and meant to be called from another thread — a signal handler’s worker, a UI thread, a request handler — while <code>prompt</code> or <code>ask</code> blocks the thread that started the turn. It returns <code>nil</code> immediately; the turn ends on its own thread.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">turn</span> <span class="o">=</span> <span class="no">Thread</span><span class="p">.</span><span class="nf">new</span> <span class="p">{</span> <span class="n">runtime</span><span class="p">.</span><span class="nf">prompt</span><span class="p">(</span><span class="s1">'refactor everything'</span><span class="p">)</span> <span class="p">{</span> <span class="o">|</span><span class="n">event</span><span class="o">|</span> <span class="n">render</span><span class="p">(</span><span class="n">event</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+<span class="n">runtime</span><span class="p">.</span><span class="nf">cancel</span>
+<span class="n">turn</span><span class="p">.</span><span class="nf">join</span>
+</code></pre></div></div>
+
+<p>The turn stops at the next message boundary — after the assistant message being streamed completes, or after the tool calls in flight return — not mid-token. The bundled <code>bash</code> tool does not wait that long: it polls the cancel flag, kills its command’s process group and returns a tool error ending in <code>[cancelled]</code>. A tool of your own can do the same through <code>context[:cancel_flag].set?</code>.</p>
+
+<p>A cancelled turn leaves the conversation usable. Tool calls that never got a result are filled with an “interrupted” tool error, riffer emits its <code>Riffer::StreamEvents::Interrupt</code> event with reason <code>:cancelled</code>, and the stream closes with <code>turn_end</code> carrying <code>stop_reason: :cancelled</code>. From <code>ask</code>, the response’s outcome is <code>reason: :interrupted</code> with <code>detail: "cancelled"</code>. The next <code>prompt</code> or <code>ask</code> carries on from there.</p>
+
+<p><code>cancel</code> with no turn running is a no-op: the flag is cleared when the next turn starts.</p>
+
+<h2 id="commands">Commands</h2>
+
+<p>Slash commands are runtime objects: extensions register them with <a href="/guides/extensions/#the-rigcommand-seam"><code>rig.command</code></a>, and every host drives them through the Runtime, so a command works the same in the terminal, headless and over ACP. Commands that end or replace the Runtime itself — <code>/exit</code>, <code>/new</code>, <code>/resume</code> — belong to the host, not here.</p>
+
+<p><code>commands</code> lists the registered commands in load order. Each is a <code>Riffer::Rig::Command</code> with a <code>name</code> (without the leading slash) and a <code>description</code>:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">runtime</span><span class="p">.</span><span class="nf">commands</span><span class="p">.</span><span class="nf">each</span> <span class="p">{</span> <span class="o">|</span><span class="n">command</span><span class="o">|</span> <span class="nb">puts</span> <span class="s2">"/</span><span class="si">#{</span><span class="n">command</span><span class="p">.</span><span class="nf">name</span><span class="si">}</span><span class="s2">  </span><span class="si">#{</span><span class="n">command</span><span class="p">.</span><span class="nf">description</span><span class="si">}</span><span class="s2">"</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p><code>run_command(name, args)</code> runs one on the calling thread and returns <code>nil</code>; its output arrives as events. With a block it yields each one as it happens — <code>command_output</code> for every <code>ctx.say</code>, the whole stream of a turn the command starts with <code>ctx.prompt</code> (from <code>session_start</code>, if it is the Runtime’s first turn, to <code>turn_end</code>), and a <code>notify</code> for anything the host was told. Without a block the events are discarded, as <code>ask</code> discards the stream.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">runtime</span><span class="p">.</span><span class="nf">run_command</span><span class="p">(</span><span class="s1">'log'</span><span class="p">,</span> <span class="s1">'5'</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">event</span><span class="o">|</span>
+  <span class="k">case</span> <span class="n">event</span>
+  <span class="k">when</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Events</span><span class="o">::</span><span class="no">CommandOutput</span> <span class="k">then</span> <span class="nb">puts</span> <span class="n">event</span><span class="p">.</span><span class="nf">text</span>
+  <span class="k">when</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">StreamEvents</span><span class="o">::</span><span class="no">TextDelta</span> <span class="k">then</span> <span class="nb">print</span> <span class="n">event</span><span class="p">.</span><span class="nf">content</span>
+  <span class="k">when</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Events</span><span class="o">::</span><span class="no">Notify</span> <span class="k">then</span> <span class="nb">warn</span> <span class="n">event</span><span class="p">.</span><span class="nf">message</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>A command runs under the same rule as <code>prompt</code>: one at a time per Runtime, so <code>run_command</code> while a prompt or command is running raises <code>Riffer::Rig::Runtime::BusyError</code>, and after <code>close</code> it raises <code>Riffer::Rig::Runtime::ClosedError</code>. A command that raises never escapes <code>run_command</code>: it is reported through <code>host.notify</code> at level <code>:error</code> (and so as a <code>notify</code> event), and the Runtime stays usable. An unknown name is reported the same way. <code>cancel</code> stops a turn a command started, as it stops any other.</p>
+
+<h2 id="switching-the-model">Switching the model</h2>
+
+<p><code>model</code> is the effective <code>"provider/name"</code> string. Assigning <code>model=</code> switches it for this Runtime only: history, the tally, tools and the host all carry over, and the next model call goes to the new model. A string without a provider prefix, or with a provider riffer’s registry does not know, raises <code>Riffer::ArgumentError</code> and leaves the model unchanged.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">runtime</span><span class="p">.</span><span class="nf">model</span> <span class="c1"># =&gt; "anthropic/claude-sonnet-4-6"</span>
+<span class="n">runtime</span><span class="p">.</span><span class="nf">model</span> <span class="o">=</span> <span class="s1">'openai/gpt-5'</span>
+</code></pre></div></div>
+
+<p><code>model</code> is also a core command, listed in <code>commands</code> first, ahead of the <a href="/guides/skills/#skillname"><code>skill:&lt;name&gt;</code></a> commands and every extension’s: <code>run_command('model', 'openai/gpt-5')</code> validates before it assigns. A bare name or an unknown provider gets a <code>command_output</code> listing the providers; a provider whose required fields are missing from the Runtime’s <code>credentials:</code> is refused through <code>notify</code> at level <code>:error</code>, as is <code>--save</code>, which is not available yet. With no argument it reports the current model.</p>
+
+<h2 id="rebuilding-after-a-code-reload">Rebuilding after a code reload</h2>
+
+<p><code>rebuild(extensions:, settings:)</code> replaces everything the Runtime’s extensions registered — tools, commands, prompt sections, hooks, skills sources, declared settings and MCP servers — with what the given extension list registers, run against a fresh registrar. It is the primitive behind hot reloading: an embedder without the Loader calls it after its own code reload (a Rails <code>to_prepare</code> block, say) with the re-created extension objects and the settings it wants now. The Runtime watches no files and has no <code>/reload</code> of its own, since it knows no filesystem conventions.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">Rails</span><span class="p">.</span><span class="nf">application</span><span class="p">.</span><span class="nf">reloader</span><span class="p">.</span><span class="nf">to_prepare</span> <span class="k">do</span>
+  <span class="n">runtime</span><span class="p">.</span><span class="nf">rebuild</span><span class="p">(</span><span class="ss">extensions: </span><span class="p">[</span><span class="o">*</span><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">bundled</span><span class="p">,</span> <span class="no">MyApp</span><span class="p">.</span><span class="nf">rig_extension</span><span class="p">],</span> <span class="ss">settings: </span><span class="no">MyApp</span><span class="p">.</span><span class="nf">rig_settings</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>The new registrations are built aside and swapped in only once every extension in the list has loaded. If any fails — its block raises, its <code>requires</code> is unmet, or its name collides with a core settings key — <code>rebuild</code> raises that error and nothing on the Runtime changes. This is stricter than construction, which skips a failing extension and records it on <code>errors</code>: a rebuild either swaps in the whole list or leaves the working one in place. After a successful rebuild <code>errors</code> is empty, and replacements across the new list are reported through <code>notify</code> as at construction.</p>
+
+<p>Kept across a rebuild: the message history, the <a href="#token-tally-and-cost">tally</a>, the model (including a <a href="#switching-the-model"><code>model=</code></a> override — a <code>model</code> key in the new settings does not clobber it), <code>id</code>, <code>host</code>, and every constructor keyword other than <code>extensions:</code> and <code>settings:</code> (<code>tools:</code> still filters the new tools). An MCP server whose name, url and headers are unchanged is not registered again; a changed one is re-registered and a dropped one unregistered (<a href="/guides/mcp/#reload-and-close">MCP</a>). Providers are process-wide: riffer never unregisters one, so a provider registered before the rebuild stays registered, and an extension that registers it again just replaces the entry.</p>
+
+<p>Once the Runtime’s session has started, the old hooks get <code>session_end(reason: :reload)</code> before the swap and the new ones <code>session_start(reason: :reload)</code> after it — where an extension releases and re-acquires process-wide state — and the next prompt’s stream opens with those two events. Before the first turn a rebuild fires neither, and the first prompt opens with <code>session_start(reason: :new)</code> as usual.</p>
+
+<p><code>rebuild</code> runs between turns only. Like <code>prompt</code>, it raises <code>Riffer::Rig::Runtime::BusyError</code> while a prompt or command is running — so from inside a hook or a command — and <code>Riffer::Rig::Runtime::ClosedError</code> after <code>close</code>. It returns <code>nil</code>.</p>
+
+<h2 id="capping-the-loop">Capping the loop</h2>
+
+<p><code>max_steps:</code> caps how many LLM steps one run may take (<code>nil</code> — the default — runs the loop without a limit). A run that hits the cap ends with <code>outcome.reason: :max_steps</code>; the model’s partial output is still on the response.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">runtime</span> <span class="o">=</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Runtime</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s1">'anthropic/claude-sonnet-4-6'</span><span class="p">,</span> <span class="ss">max_steps: </span><span class="mi">8</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">runtime</span><span class="p">.</span><span class="nf">ask</span><span class="p">(</span><span class="s1">'do the thing'</span><span class="p">)</span>
+<span class="nb">puts</span> <span class="n">response</span><span class="p">.</span><span class="nf">outcome</span><span class="p">.</span><span class="nf">reason</span> <span class="c1"># =&gt; :max_steps if the cap stopped the loop</span>
+</code></pre></div></div>
+
+<h2 id="snapshots">Snapshots</h2>
+
+<p>A Runtime saves and restores as a plain hash. <code>to_h</code> returns the snapshot; <code>Riffer::Rig::Runtime.new(model, snapshot: hash, ...)</code> builds a Runtime that carries on from it. The Runtime never touches disk: keeping the hash — as JSON, in a database, anywhere — is the embedder’s job. <a href="/guides/sessions/">Sessions</a> describes what a snapshot holds.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">snapshot</span> <span class="o">=</span> <span class="n">runtime</span><span class="p">.</span><span class="nf">to_h</span>
+<span class="no">File</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="s1">'session.json'</span><span class="p">,</span> <span class="no">JSON</span><span class="p">.</span><span class="nf">generate</span><span class="p">(</span><span class="n">snapshot</span><span class="p">))</span>
+
+<span class="n">snapshot</span> <span class="o">=</span> <span class="no">JSON</span><span class="p">.</span><span class="nf">parse</span><span class="p">(</span><span class="no">File</span><span class="p">.</span><span class="nf">read</span><span class="p">(</span><span class="s1">'session.json'</span><span class="p">),</span> <span class="ss">symbolize_names: </span><span class="kp">true</span><span class="p">)</span>
+<span class="n">runtime</span> <span class="o">=</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Runtime</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+  <span class="s1">'anthropic/claude-sonnet-4-6'</span><span class="p">,</span>
+  <span class="ss">extensions: </span><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">bundled</span><span class="p">,</span>
+  <span class="ss">credentials: </span><span class="n">credentials</span><span class="p">,</span>
+  <span class="ss">snapshot: </span><span class="n">snapshot</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">runtime</span><span class="p">.</span><span class="nf">ask</span><span class="p">(</span><span class="s1">'where were we?'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The snapshot’s keys are symbols; parse JSON with <code>symbolize_names: true</code>. A snapshot holds history, not registrations: tools, commands, hooks, prompt sections and declared settings come from the <code>extensions:</code> and <code>settings:</code> given at restore time, through the same path a fresh Runtime takes. The tally is not stored either — the restored Runtime’s <code>tally</code> is the sum of its messages’ <code>token_usage</code>.</p>
+
+<p>History is data, and the present wins, so nothing in a snapshot blocks a restore:</p>
+
+<ul>
+  <li>A tool call for a tool that no longer exists is just history the model reads.</li>
+  <li>Tool calls at the tail with no result — a process killed mid-turn — are filled with an “interrupted” tool error on load, as a <a href="#cancelling-a-turn">cancel</a> does, and are never run.</li>
+  <li>The saved model (a <code>model=</code> or <code>/model</code> switch) applies only if its provider has an entry in <code>credentials:</code>; otherwise the given model is used and the host gets one <code>notify</code> at level <code>:warning</code>. A Runtime restored with its saved model keeps it as its own override, so its next <code>to_h</code> saves it again.</li>
+  <li>Activated skills re-apply by name; a skill that no longer exists is dropped.</li>
+</ul>
+
+<p>The first prompt of a restored Runtime opens with <code>session_start</code> carrying the snapshot’s <code>id</code> and reason <code>:restore</code>, and extensions’ <code>session_start</code> hooks see the same reason.</p>
+
+<h2 id="observing-messages">Observing messages</h2>
+
+<p><code>on_message { |message| }</code> registers an observer called with each message the conversation gains, in order: the user’s prompt, each assistant message and each tool result, as riffer’s <code>Riffer::Messages</code> objects. It is how a store appends to a session as it happens rather than snapshotting at the end:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">runtime</span><span class="p">.</span><span class="nf">on_message</span> <span class="p">{</span> <span class="o">|</span><span class="n">message</span><span class="o">|</span> <span class="n">log</span><span class="p">.</span><span class="nf">puts</span><span class="p">(</span><span class="no">JSON</span><span class="p">.</span><span class="nf">generate</span><span class="p">(</span><span class="n">message</span><span class="p">.</span><span class="nf">to_h</span><span class="p">))</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Observers run on the prompting thread, inside the turn, once per message; they survive a model switch. The system message is not delivered — it is rebuilt every turn — nor are the “interrupted” results filled in after a cancel or on restore.</p>
+
+        </article>
+
+        <nav class="pager">
+          <a class="doc" href="/guides/extensions/"
+            ><span class="go">←</span
+            ><span
+              ><span class="desc">Previous</span
+              ><span class="name">Extensions</span></span
+            ></a
+          >
+          <a class="doc next" href="/guides/hosts/"
+            ><span
+              ><span class="desc">Next</span
+              ><span class="name">Hosts</span></span
+            ><span class="go">→</span></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

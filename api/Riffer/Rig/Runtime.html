@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>class Riffer::Rig::Runtime - riffer-rig API Reference</title>
+
+
+  <meta
+    name="keywords"
+    content="ruby,class,Riffer::Rig::Runtime"
+  >
+
+    <meta
+      name="description"
+      content="class Riffer::Rig::Runtime: anything a host needs is a Runtime feature, so embedders get it too."
+    >
+
+
+
+
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="class Riffer::Rig::Runtime - riffer-rig API Reference">
+
+
+
+    <meta property="og:description" content="anything a host needs is a Runtime feature, so embedders get it too.">
+
+
+
+
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="class Riffer::Rig::Runtime - riffer-rig API Reference">
+
+
+
+    <meta name="twitter:description" content="anything a host needs is a Runtime feature, so embedders get it too.">
+
+
+
+<script type="text/javascript">
+  var rdoc_rel_prefix = "../../";
+  var index_rel_prefix = "../../";
+</script>
+
+<script
+  src="../../js/theme-toggle.js?v=8.1.0"
+></script>
+
+<script
+  src="../../js/search_navigation.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="../../js/search_data.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="../../js/search_ranker.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="../../js/search_controller.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="../../js/c_highlighter.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="../../js/bash_highlighter.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="../../js/aliki.js?v=8.1.0"
+  defer
+></script>
+
+<link
+  href="../../css/rdoc.css?v=8.1.0"
+  rel="stylesheet"
+>
+
+
+
+
+<body role="document" class="class has-toc">
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <!-- Chevron (right arrow) - used for expand/collapse -->
+  <symbol
+    id="icon-chevron"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </symbol>
+
+  <!-- File/Document - Pages section -->
+  <symbol
+    id="icon-file"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path
+      d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+    ></path>
+
+    <polyline points="14 2 14 8 20 8"></polyline>
+  </symbol>
+
+  <!-- Layers/Stack - Classes and Modules section -->
+  <symbol
+    id="icon-layers"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+    <polyline points="2 17 12 22 22 17"></polyline>
+    <polyline points="2 12 12 17 22 12"></polyline>
+  </symbol>
+
+  <!-- Curly braces with C - Class Methods section -->
+  <symbol
+    id="icon-class-methods"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M6 3C3.5 3 2 4.5 2 7v3c0 1.5-1 2-1 2s1 .5 1 2v5c0 2.5 1.5 4 4 4"></path>
+    <path d="M18 3c2.5 0 4 1.5 4 4v3c0 1.5 1 2 1 2s-1 .5-1 2v5c0 2.5-1.5 4-4 4"></path>
+
+    <text
+      x="12"
+      y="17"
+      text-anchor="middle"
+      font-size="13"
+      font-weight="bold"
+      fill="currentColor"
+      stroke="none"
+    >
+      C
+    </text>
+  </symbol>
+
+  <!-- Curly braces with I - Instance Methods section -->
+  <symbol
+    id="icon-instance-methods"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M6 3C3.5 3 2 4.5 2 7v3c0 1.5-1 2-1 2s1 .5 1 2v5c0 2.5 1.5 4 4 4"></path>
+    <path d="M18 3c2.5 0 4 1.5 4 4v3c0 1.5 1 2 1 2s-1 .5-1 2v5c0 2.5-1.5 4-4 4"></path>
+
+    <text
+      x="12"
+      y="17"
+      text-anchor="middle"
+      font-size="13"
+      font-weight="bold"
+      fill="currentColor"
+      stroke="none"
+    >
+      I
+    </text>
+  </symbol>
+
+  <!-- Double chevrons up - Ancestors section -->
+  <symbol
+    id="icon-ancestors"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polyline points="17 11 12 6 7 11"></polyline>
+    <polyline points="17 18 12 13 7 18"></polyline>
+  </symbol>
+
+  <!-- User with plus - Included Modules section -->
+  <symbol
+    id="icon-includes"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+    <circle cx="8.5" cy="7" r="4"></circle>
+
+    <line
+      x1="20"
+      y1="8"
+      x2="20"
+      y2="14"
+    ></line>
+
+    <line
+      x1="23"
+      y1="11"
+      x2="17"
+      y2="11"
+    ></line>
+  </symbol>
+
+  <!-- User with check - Extended Modules section -->
+  <symbol
+    id="icon-extends"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+    <circle cx="8.5" cy="7" r="4"></circle>
+    <polyline points="17 11 19 13 23 9"></polyline>
+  </symbol>
+
+  <!-- List - Sections section -->
+  <symbol
+    id="icon-list"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <line
+      x1="8"
+      y1="6"
+      x2="21"
+      y2="6"
+    ></line>
+
+    <line
+      x1="8"
+      y1="12"
+      x2="21"
+      y2="12"
+    ></line>
+
+    <line
+      x1="8"
+      y1="18"
+      x2="21"
+      y2="18"
+    ></line>
+
+    <line
+      x1="3"
+      y1="6"
+      x2="3.01"
+      y2="6"
+    ></line>
+
+    <line
+      x1="3"
+      y1="12"
+      x2="3.01"
+      y2="12"
+    ></line>
+
+    <line
+      x1="3"
+      y1="18"
+      x2="3.01"
+      y2="18"
+    ></line>
+  </symbol>
+</svg>
+
+<header class="top-navbar">
+  <a href="../../index.html" class="navbar-brand">
+    riffer-rig API Reference
+  </a>
+
+  <div class="navbar-search" data-search-container>
+    <button id="search-toggle" class="navbar-search-mobile" aria-label="Open search"
+            aria-controls="search-surface" aria-expanded="false" type="button">
+      <span aria-hidden="true">🔍</span>
+    </button>
+
+    <div class="search-backdrop" data-search-close></div>
+    <div id="search-surface" class="search-surface">
+      <form class="search-form" role="search" action="#" method="get" accept-charset="utf-8">
+        <span class="search-icon" aria-hidden="true">🔍</span>
+        <input id="search-field" role="combobox" aria-label="Search"
+               aria-autocomplete="list" aria-controls="search-results"
+               type="text" name="search" placeholder="Search (/) for a class, method..."
+               spellcheck="false" autocomplete="off"
+               title="Type to search, Up and Down to navigate, Enter to load">
+        <button type="button" class="search-close" aria-label="Close search" data-search-close>
+          <span aria-hidden="true">esc</span>
+        </button>
+      </form>
+
+      <div class="search-body">
+        <ul id="search-results" aria-label="Search Results"
+            aria-busy="false" aria-expanded="false"
+            aria-atomic="false" class="initially-hidden search-results"></ul>
+        <div class="search-empty">
+          <p>No recent searches</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme toggle button -->
+  <button id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode" type="button">
+    <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+  </button>
+</header>
+
+<div id="sidebar-navigation-toggle" role="button" tabindex="0" aria-label="Toggle sidebar" aria-expanded="false" aria-controls="sidebar-navigation">
+  <span aria-hidden="true">&#9776;</span>
+</div>
+
+
+<nav id="sidebar-navigation" role="navigation" hidden>
+  
+
+
+
+
+  <div id="fileindex-section" class="nav-section">
+    <details class="nav-section-collapsible" >
+      <summary class="nav-section-header">
+        <span class="nav-section-icon">
+          <svg>
+            <use href="#icon-file"></use>
+          </svg>
+        </span>
+
+        <span class="nav-section-title">Pages</span>
+
+        <span class="nav-section-chevron">
+          <svg>
+            <use href="#icon-chevron"></use>
+          </svg>
+        </span>
+      </summary>
+
+      <ul class="nav-list">
+
+
+
+
+
+
+            <li>
+              <a href="../../CHANGELOG_md.html">
+                CHANGELOG
+              </a>
+            </li>
+
+
+
+
+            <li>
+              <a href="../../LICENSE_txt.html">
+                LICENSE
+              </a>
+            </li>
+
+      </ul>
+    </details>
+  </div>
+
+
+  
+
+  
+<div id="parent-class-section" class="nav-section">
+  <details class="nav-section-collapsible" open>
+    <summary class="nav-section-header">
+      <span class="nav-section-icon">
+        <svg><use href="#icon-ancestors"></use></svg>
+      </span>
+      <span class="nav-section-title">Ancestors</span>
+      <span class="nav-section-chevron">
+        <svg><use href="#icon-chevron"></use></svg>
+      </span>
+    </summary>
+    <ul><li>Object</li></ul>
+  </details>
+</div>
+
+
+  
+
+  
+
+  
+  <div class="nav-section">
+    <details class="nav-section-collapsible" open>
+      <summary class="nav-section-header">
+        <span class="nav-section-icon">
+          <svg><use href="#icon-class-methods"></use></svg>
+        </span>
+        <span class="nav-section-title">Class Methods</span>
+        <span class="nav-section-chevron">
+          <svg><use href="#icon-chevron"></use></svg>
+        </span>
+      </summary>
+      <ul class="nav-list" role="directory">
+
+        <li ><a href="#method-c-new">new</a></li>
+
+      </ul>
+    </details>
+  </div>
+
+
+
+  <div class="nav-section">
+    <details class="nav-section-collapsible" open>
+      <summary class="nav-section-header">
+        <span class="nav-section-icon">
+          <svg><use href="#icon-instance-methods"></use></svg>
+        </span>
+        <span class="nav-section-title">Instance Methods</span>
+        <span class="nav-section-chevron">
+          <svg><use href="#icon-chevron"></use></svg>
+        </span>
+      </summary>
+      <ul class="nav-list" role="directory">
+
+        <li ><a href="#method-i-ask">ask</a></li>
+
+        <li ><a href="#method-i-cancel">cancel</a></li>
+
+        <li ><a href="#method-i-close">close</a></li>
+
+        <li ><a href="#method-i-commands">commands</a></li>
+
+        <li ><a href="#method-i-errors">errors</a></li>
+
+        <li ><a href="#method-i-model">model</a></li>
+
+        <li ><a href="#method-i-model-3D">model=</a></li>
+
+        <li ><a href="#method-i-on_message">on_message</a></li>
+
+        <li ><a href="#method-i-prompt">prompt</a></li>
+
+        <li ><a href="#method-i-rebuild">rebuild</a></li>
+
+        <li ><a href="#method-i-run_command">run_command</a></li>
+
+        <li ><a href="#method-i-tally">tally</a></li>
+
+        <li ><a href="#method-i-to_h">to_h</a></li>
+
+      </ul>
+    </details>
+  </div>
+
+
+  <div id="classindex-section" class="nav-section">
+  <details class="nav-section-collapsible" open>
+    <summary class="nav-section-header">
+      <span class="nav-section-icon">
+        <svg><use href="#icon-layers"></use></svg>
+      </span>
+      <span class="nav-section-title">Classes and Modules</span>
+      <span class="nav-section-chevron">
+        <svg><use href="#icon-chevron"></use></svg>
+      </span>
+    </summary>
+
+    <ul class="link-list nav-list"><li><details open><summary><code><a href="../../Riffer.html">Riffer</a></code></summary><ul class="link-list nav-list"><li><details><summary><code><a href="../../Riffer/Rig.html">Rig</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Bundled.html">Bundled</a></code></li><li><details><summary><code><a href="../../Riffer/Rig/CLI.html">CLI</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/CLI/Flags.html">Flags</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Command.html">Command</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Command/Context.html">Context</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Commands.html">Commands</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Commands/Model.html">Model</a></code></li><li><code><a href="../../Riffer/Rig/Commands/Skill.html">Skill</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Credentials.html">Credentials</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Credentials/Resolution.html">Resolution</a></code></li></ul></details></li><li><code><a href="../../Riffer/Rig/Directories.html">Directories</a></code></li><li><details><summary><code><a href="../../Riffer/Rig/Env.html">Env</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Env/Invalid.html">Invalid</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Events.html">Events</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Events/AfterResponse.html">AfterResponse</a></code></li><li><code><a href="../../Riffer/Rig/Events/AfterToolCall.html">AfterToolCall</a></code></li><li><code><a href="../../Riffer/Rig/Events/BeforePrompt.html">BeforePrompt</a></code></li><li><code><a href="../../Riffer/Rig/Events/BeforeRequest.html">BeforeRequest</a></code></li><li><code><a href="../../Riffer/Rig/Events/BeforeToolCall.html">BeforeToolCall</a></code></li><li><code><a href="../../Riffer/Rig/Events/CommandOutput.html">CommandOutput</a></code></li><li><code><a href="../../Riffer/Rig/Events/Notify.html">Notify</a></code></li><li><code><a href="../../Riffer/Rig/Events/SessionEnd.html">SessionEnd</a></code></li><li><code><a href="../../Riffer/Rig/Events/SessionStart.html">SessionStart</a></code></li><li><code><a href="../../Riffer/Rig/Events/SkillActivated.html">SkillActivated</a></code></li><li><code><a href="../../Riffer/Rig/Events/TurnEnd.html">TurnEnd</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Extension.html">Extension</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Extension/Failure.html">Failure</a></code></li><li><code><a href="../../Riffer/Rig/Extension/RequirementError.html">RequirementError</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Hosts.html">Hosts</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Hosts/Mirror.html">Mirror</a></code></li><li><code><a href="../../Riffer/Rig/Hosts/Null.html">Null</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Loader.html">Loader</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Loader/ConfigurationError.html">ConfigurationError</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Mcp.html">Mcp</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Mcp/Declaration.html">Declaration</a></code></li><li><code><a href="../../Riffer/Rig/Mcp/Server.html">Server</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Prompts.html">Prompts</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Prompts/AgentsMd.html">AgentsMd</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/ProviderSetup.html">ProviderSetup</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/ProviderSetup/Field.html">Field</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Registrar.html">Registrar</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Registrar/NameCollisionError.html">NameCollisionError</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Runtime.html">Runtime</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Runtime/Blocked.html">Blocked</a></code></li><li><code><a href="../../Riffer/Rig/Runtime/BusyError.html">BusyError</a></code></li><li><code><a href="../../Riffer/Rig/Runtime/CancelFlag.html">CancelFlag</a></code></li><li><code><a href="../../Riffer/Rig/Runtime/ClosedError.html">ClosedError</a></code></li><li><code><a href="../../Riffer/Rig/Runtime/Hooks.html">Hooks</a></code></li><li><code><a href="../../Riffer/Rig/Runtime/RequestGuardrail.html">RequestGuardrail</a></code></li><li><code><a href="../../Riffer/Rig/Runtime/ToolRuntime.html">ToolRuntime</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Settings.html">Settings</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Settings/Document.html">Document</a></code></li><li><code><a href="../../Riffer/Rig/Settings/Pricing.html">Pricing</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Skills.html">Skills</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Skills/Sources.html">Sources</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Support.html">Support</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Support/Equatable.html">Equatable</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Terminal.html">Terminal</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Terminal/Animator.html">Animator</a></code></li><li><code><a href="../../Riffer/Rig/Terminal/Banner.html">Banner</a></code></li><li><code><a href="../../Riffer/Rig/Terminal/Cursor.html">Cursor</a></code></li><li><code><a href="../../Riffer/Rig/Terminal/Host.html">Host</a></code></li><li><code><a href="../../Riffer/Rig/Terminal/Palette.html">Palette</a></code></li><li><details><summary><code><a href="../../Riffer/Rig/Terminal/Renderer.html">Renderer</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Terminal/Renderer/PassThroughSmoother.html">PassThroughSmoother</a></code></li></ul></details></li><li><code><a href="../../Riffer/Rig/Terminal/Smoother.html">Smoother</a></code></li><li><code><a href="../../Riffer/Rig/Terminal/Theme.html">Theme</a></code></li><li><code><a href="../../Riffer/Rig/Terminal/Wrapper.html">Wrapper</a></code></li></ul></details></li><li><details><summary><code><a href="../../Riffer/Rig/Tools.html">Tools</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Riffer/Rig/Tools/Bash.html">Bash</a></code></li><li><code><a href="../../Riffer/Rig/Tools/Edit.html">Edit</a></code></li><li><code><a href="../../Riffer/Rig/Tools/Read.html">Read</a></code></li><li><code><a href="../../Riffer/Rig/Tools/Write.html">Write</a></code></li></ul></details></li><li><code><a href="../../Riffer/Rig/Trust.html">Trust</a></code></li></ul></details></li></ul></details></li></ul>
+  </details>
+</div>
+
+</nav>
+
+<main role="main" aria-labelledby="class-riffer-rig-runtime">
+  
+  
+    <ol role="navigation" aria-label="Breadcrumb navigation" class="breadcrumb">
+      
+      <li>
+        
+        <a href="../../Riffer.html">Riffer</a><span class="separator">::</span>
+        
+      </li>
+      
+      <li>
+        
+        <a href="../../Riffer/Rig.html">Rig</a><span class="separator">::</span>
+        
+      </li>
+      
+      <li>
+        
+        <span>Runtime</span>
+        
+      </li>
+      
+    </ol>
+  
+
+  <span id="class-Riffer::Rig::Runtime" class="legacy-anchor"></span>
+  <h1 id="class-riffer-rig-runtime" class="anchor-link class page-title">
+    <span class="page-title-kind">class</span>
+    <span class="page-title-name">Riffer::Rig::Runtime</span>
+  </h1>
+
+  <section class="description">
+    
+<p>Never renders, prints or reads the filesystem: anything a host needs is a <a href="Runtime.html"><code>Runtime</code></a> feature, so embedders get it too.</p>
+
+  </section>
+
+
+  <span id="5Buntitled-5D" class="legacy-anchor"></span>
+  <section class="documentation-section anchor-link">
+
+
+
+
+
+    <section class="constants-list">
+      <header>
+        <h3 id="untitled-constants"><a href="#untitled-constants">Constants</a></h3>
+      </header>
+      <dl>
+
+        <dt id="BASE_PROMPT_TEMPLATE">BASE_PROMPT_TEMPLATE</dt>
+
+        <dd>
+
+          
+        </dd>
+
+
+        <dt id="DEFAULT_MAX_STEPS">DEFAULT_MAX_STEPS</dt>
+
+        <dd>
+
+          <p>Unlimited: riffer’s own default (16) is too small for a general-purpose harness.</p>
+        </dd>
+
+
+        <dt id="DEFAULT_NAME">DEFAULT_NAME</dt>
+
+        <dd>
+
+          
+        </dd>
+
+
+        <dt id="INTERRUPT_CANCELLED">INTERRUPT_CANCELLED</dt>
+
+        <dd>
+
+          
+        </dd>
+
+
+      </dl>
+    </section>
+
+
+
+    <section class="attribute-method-details method-section">
+      <header>
+        <h3 id="untitled-attributes"><a href="#untitled-attributes">Attributes</a></h3>
+      </header>
+
+
+      <div id="attribute-i-agent" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-agent" title="Link to this attribute">
+            <span class="method-name">agent</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+          <span class="method-type-signature"><code>Riffer::Agent</code></span>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>@dynamic agent, credentials, cwd, host, id, settings, <a href="Runtime.html#attribute-i-declared_settings"><code>declared_settings</code></a></p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-credentials" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-credentials" title="Link to this attribute">
+            <span class="method-name">credentials</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+          <span class="method-type-signature"><code>Hash[Symbol, Hash[Symbol, String]]</code></span>
+
+        </div>
+
+        <div class="method-description">
+
+
+        
+
+        </div>
+      </div>
+
+      <div id="attribute-i-cwd" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-cwd" title="Link to this attribute">
+            <span class="method-name">cwd</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+          <span class="method-type-signature"><code>String</code></span>
+
+        </div>
+
+        <div class="method-description">
+
+
+        
+
+        </div>
+      </div>
+
+      <div id="attribute-i-declared_settings" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-declared_settings" title="Link to this attribute">
+            <span class="method-name">declared_settings</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+          <span class="method-type-signature"><code>Hash[String, Hash[Symbol, untyped]]</code></span>
+
+        </div>
+
+        <div class="method-description">
+
+
+        
+
+        </div>
+      </div>
+
+      <div id="attribute-i-host" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-host" title="Link to this attribute">
+            <span class="method-name">host</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+          <span class="method-type-signature"><code><a href="Hosts/Mirror.html" class="rbs-type">Riffer::Rig::Hosts::Mirror</a></code></span>
+
+        </div>
+
+        <div class="method-description">
+
+
+        
+
+        </div>
+      </div>
+
+      <div id="attribute-i-id" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-id" title="Link to this attribute">
+            <span class="method-name">id</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+          <span class="method-type-signature"><code>String</code></span>
+
+        </div>
+
+        <div class="method-description">
+
+
+        
+
+        </div>
+      </div>
+
+      <div id="attribute-i-settings" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-settings" title="Link to this attribute">
+            <span class="method-name">settings</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+          <span class="method-type-signature"><code>Hash[Symbol, untyped]</code></span>
+
+        </div>
+
+        <div class="method-description">
+
+
+        
+
+        </div>
+      </div>
+
+    </section>
+
+
+
+
+
+
+     <section id="public-class-untitled-method-details" class="method-section anchor-link">
+       <header>
+         <h3 id="public-class-untitled-methods"><a href="#public-class-untitled-methods">Public Class Methods</a></h3>
+       </header>
+
+
+      <div id="method-c-new" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-c-new" title="Link to this method">
+                  <span class="method-name">new</span>
+                  <span class="method-args">(model, extensions: [], tools: nil, settings: {}, host: Riffer::Rig::Hosts::Null.new, cwd: nil, name: DEFAULT_NAME, instructions: nil, credentials: {}, pricing: {}, riffer_config: Riffer.config, mcp_registry: Riffer::Mcp, max_steps: DEFAULT_MAX_STEPS, model_options: {}, snapshot: nil)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(String model, ?extensions: Array[<a href="Extension.html" class="rbs-type">Riffer::Rig::Extension</a>], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?pricing: Hash[String, <a href="Settings/Pricing.html" class="rbs-type">Riffer::Rig::Settings::Pricing</a>], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?snapshot: Hash[Symbol, untyped]?) &rarr; void</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="new-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 81</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(
+  <span class="ruby-identifier">model</span>,
+  <span class="ruby-value">extensions:</span> [],
+  <span class="ruby-value">tools:</span> <span class="ruby-keyword">nil</span>,
+  <span class="ruby-value">settings:</span> {},
+  <span class="ruby-value">host:</span> <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Hosts</span><span class="ruby-operator">::</span><span class="ruby-constant">Null</span>.<span class="ruby-identifier">new</span>,
+  <span class="ruby-value">cwd:</span> <span class="ruby-keyword">nil</span>,
+  <span class="ruby-value">name:</span> <span class="ruby-constant">DEFAULT_NAME</span>,
+  <span class="ruby-value">instructions:</span> <span class="ruby-keyword">nil</span>,
+  <span class="ruby-value">credentials:</span> {},
+  <span class="ruby-value">pricing:</span> {},
+  <span class="ruby-value">riffer_config:</span> <span class="ruby-constant">Riffer</span>.<span class="ruby-identifier">config</span>,
+  <span class="ruby-value">mcp_registry:</span> <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Mcp</span>,
+  <span class="ruby-value">max_steps:</span> <span class="ruby-constant">DEFAULT_MAX_STEPS</span>,
+  <span class="ruby-value">model_options:</span> {},
+  <span class="ruby-value">snapshot:</span> <span class="ruby-keyword">nil</span>
+)
+  <span class="ruby-comment"># Doubles as the snapshot id and ACP sessionId.</span>
+  <span class="ruby-ivar">@id</span> = <span class="ruby-identifier">snapshot</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">snapshot</span>.<span class="ruby-identifier">fetch</span>(<span class="ruby-value">:</span><span class="ruby-value">id</span>) <span class="ruby-operator">:</span> ::<span class="ruby-constant">SecureRandom</span>.<span class="ruby-identifier">uuid_v7</span>
+  <span class="ruby-ivar">@host</span> = <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Hosts</span><span class="ruby-operator">::</span><span class="ruby-constant">Mirror</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">host</span>)
+  <span class="ruby-ivar">@cwd</span> = <span class="ruby-identifier">cwd</span> <span class="ruby-operator">||</span> <span class="ruby-constant">Dir</span>.<span class="ruby-identifier">pwd</span>
+  <span class="ruby-ivar">@credentials</span> = <span class="ruby-identifier">credentials</span>
+
+  <span class="ruby-ivar">@busy</span> = <span class="ruby-keyword">false</span>
+  <span class="ruby-ivar">@closed</span> = <span class="ruby-keyword">false</span>
+  <span class="ruby-ivar">@cancel_flag</span> = <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Runtime</span><span class="ruby-operator">::</span><span class="ruby-constant">CancelFlag</span>.<span class="ruby-identifier">new</span>
+  <span class="ruby-ivar">@session_start_pending</span> = <span class="ruby-keyword">true</span>
+  <span class="ruby-ivar">@session_start_reason</span> = <span class="ruby-identifier">snapshot</span> <span class="ruby-operator">?</span> <span class="ruby-value">:</span><span class="ruby-value">restore</span> <span class="ruby-operator">:</span> <span class="ruby-value">:</span><span class="ruby-value">new</span>
+  <span class="ruby-ivar">@message_observers</span> = []
+  <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Settings</span><span class="ruby-operator">::</span><span class="ruby-constant">Pricing</span>.<span class="ruby-identifier">register</span>(<span class="ruby-identifier">pricing</span>, <span class="ruby-identifier">riffer_config</span>.<span class="ruby-identifier">pricing</span>)
+  <span class="ruby-ivar">@errors</span> = []
+  <span class="ruby-ivar">@tool_allowlist</span> = <span class="ruby-identifier">tools</span>
+  <span class="ruby-ivar">@model_options</span> = <span class="ruby-identifier">model_options</span>
+  <span class="ruby-ivar">@base_prompt</span> = <span class="ruby-identifier">instructions</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">format</span>(<span class="ruby-constant">BASE_PROMPT_TEMPLATE</span>, <span class="ruby-value">name</span><span class="ruby-value">:</span> <span class="ruby-identifier">name</span>)
+  <span class="ruby-ivar">@mcp_registry</span> = <span class="ruby-identifier">mcp_registry</span>
+  <span class="ruby-ivar">@mcp_servers</span> = {}
+  <span class="ruby-identifier">registrars</span> = <span class="ruby-identifier">build_registrars</span>(<span class="ruby-identifier">extensions</span>, <span class="ruby-identifier">settings</span>) { <span class="ruby-operator">|</span><span class="ruby-identifier">extension</span>, <span class="ruby-identifier">error</span><span class="ruby-operator">|</span> <span class="ruby-identifier">record_error</span>(<span class="ruby-identifier">extension</span>, <span class="ruby-identifier">error</span>) }
+  <span class="ruby-identifier">mcp_servers</span> = <span class="ruby-identifier">register_mcp_servers</span>(<span class="ruby-identifier">registrars</span>)
+  <span class="ruby-identifier">hooks</span> = <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Runtime</span><span class="ruby-operator">::</span><span class="ruby-constant">Hooks</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">merge_hooks</span>(<span class="ruby-identifier">registrars</span>), <span class="ruby-ivar">@host</span>)
+  <span class="ruby-identifier">config</span> = <span class="ruby-identifier">agent_config</span>(<span class="ruby-identifier">registrars</span>, <span class="ruby-identifier">hooks</span>, <span class="ruby-identifier">max_steps</span>)
+  <span class="ruby-identifier">agent</span> = <span class="ruby-identifier">snapshot</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">restore</span>(<span class="ruby-identifier">snapshot</span>, <span class="ruby-identifier">model</span>, <span class="ruby-identifier">config</span>) <span class="ruby-operator">:</span> <span class="ruby-identifier">build_agent</span>(<span class="ruby-identifier">model</span>, <span class="ruby-identifier">config</span>)
+  <span class="ruby-identifier">install</span>(<span class="ruby-identifier">registrars</span>, <span class="ruby-identifier">mcp_servers</span>, <span class="ruby-identifier">settings</span>, <span class="ruby-identifier">hooks</span>, <span class="ruby-identifier">agent</span>)
+  <span class="ruby-ivar">@agent</span>.<span class="ruby-identifier">session</span>.<span class="ruby-identifier">on_message</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">message</span><span class="ruby-operator">|</span> <span class="ruby-identifier">observe_message</span>(<span class="ruby-identifier">message</span>) }
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs model: String @rbs extensions: <a href="Riffer::Rig::Extension">Array</a> @rbs tools: <a href="String">Array</a>? @rbs settings: Hash[Symbol, untyped] @rbs host: Riffer::Rig::Hosts::_Host @rbs cwd: String? @rbs name: String @rbs instructions: String? @rbs credentials: Hash[Symbol, Hash[Symbol, String]] @rbs pricing: Hash[String, <a href="Settings/Pricing.html"><code>Riffer::Rig::Settings::Pricing</code></a>] @rbs riffer_config: Riffer::Config @rbs mcp_registry: Riffer::Rig::Mcp::_Registry @rbs max_steps: Integer? @rbs model_options: Hash[Symbol, untyped] @rbs snapshot: Hash[Symbol, untyped]? @rbs return: void</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+    </section>
+
+
+
+
+
+
+
+     <section id="public-instance-untitled-method-details" class="method-section anchor-link">
+       <header>
+         <h3 id="public-instance-untitled-methods"><a href="#public-instance-untitled-methods">Public Instance Methods</a></h3>
+       </header>
+
+
+      <div id="method-i-ask" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-ask" title="Link to this method">
+                  <span class="method-name">ask</span>
+                  <span class="method-args">(text)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(String text) &rarr; Riffer::Agent::Response</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="ask-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 145</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">ask</span>(<span class="ruby-identifier">text</span>)
+  <span class="ruby-identifier">claim</span>
+  <span class="ruby-keyword">begin</span>
+    <span class="ruby-identifier">turn</span>(<span class="ruby-identifier">text</span>).<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">event</span><span class="ruby-operator">|</span> <span class="ruby-identifier">event</span> }
+  <span class="ruby-keyword">ensure</span>
+    <span class="ruby-ivar">@busy</span> = <span class="ruby-keyword">false</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs text: String @rbs return: Riffer::Agent::Response</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-cancel" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-cancel" title="Link to this method">
+                  <span class="method-name">cancel</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>() &rarr; nil</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="cancel-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 229</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">cancel</span>
+  <span class="ruby-ivar">@cancel_flag</span>.<span class="ruby-identifier">set</span>
+  <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs return: nil</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-close" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-close" title="Link to this method">
+                  <span class="method-name">close</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>() &rarr; void</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="close-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 240</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">close</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-ivar">@closed</span>
+
+  <span class="ruby-comment"># TODO: emit Riffer::Rig::Events::SessionEnd on the stream once the rebuild</span>
+  <span class="ruby-comment"># ticket settles the stream&#39;s session_end reasons.</span>
+  <span class="ruby-ivar">@closed</span> = <span class="ruby-keyword">true</span>
+  <span class="ruby-identifier">unregister_mcp_servers</span>(<span class="ruby-ivar">@mcp_servers</span>)
+  <span class="ruby-ivar">@hooks</span>.<span class="ruby-identifier">observe</span>(<span class="ruby-value">:</span><span class="ruby-value">session_end</span>, <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Events</span><span class="ruby-operator">::</span><span class="ruby-constant">SessionEnd</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">:</span><span class="ruby-value">close</span>)) <span class="ruby-keyword">unless</span> <span class="ruby-ivar">@session_start_pending</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs return: void</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-commands" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-commands" title="Link to this method">
+                  <span class="method-name">commands</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>() &rarr; Array[<a href="Command.html" class="rbs-type">Riffer::Rig::Command</a>]</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="commands-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 155</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">commands</span>
+  <span class="ruby-ivar">@commands</span>.<span class="ruby-identifier">values</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs return: <a href="Riffer::Rig::Command">Array</a></p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-errors" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-errors" title="Link to this method">
+                  <span class="method-name">errors</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>() &rarr; Array[<a href="Extension/Failure.html" class="rbs-type">Riffer::Rig::Extension::Failure</a>]</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="errors-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 176</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">errors</span>
+  <span class="ruby-ivar">@errors</span>.<span class="ruby-identifier">dup</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs return: <a href="Riffer::Rig::Extension::Failure">Array</a></p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-model" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-model" title="Link to this method">
+                  <span class="method-name">model</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>() &rarr; String</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="model-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 181</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">model</span>
+  <span class="ruby-string">&quot;</span><span class="ruby-string">#{</span><span class="ruby-ivar">@agent</span>.<span class="ruby-identifier">provider_name</span><span class="ruby-string">}</span><span class="ruby-string">/</span><span class="ruby-string">#{</span><span class="ruby-ivar">@agent</span>.<span class="ruby-identifier">model_name</span><span class="ruby-string">}</span><span class="ruby-string">&quot;</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs return: String</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-model-3D" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-model-3D" title="Link to this method">
+                  <span class="method-name">model=</span>
+                  <span class="method-args">(model)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(String model) &rarr; void</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="model-3D-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 187</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">model=</span>(<span class="ruby-identifier">model</span>)
+  <span class="ruby-comment"># Upstream candidate: riffer resolves the model Proc once, in Agent.new, so</span>
+  <span class="ruby-comment"># a switch rebuilds the agent over the same session and config.</span>
+  <span class="ruby-ivar">@agent</span> = <span class="ruby-identifier">successor</span>(<span class="ruby-identifier">model</span>, <span class="ruby-ivar">@agent</span>.<span class="ruby-identifier">config</span>)
+  <span class="ruby-ivar">@model_override</span> = <span class="ruby-identifier">model</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs model: String @rbs return: void</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-on_message" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-on_message" title="Link to this method">
+                  <span class="method-name">on_message</span>
+                  <span class="method-args">(&amp;block)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>() { (Riffer::Messages::Base) &rarr; void } &rarr; nil</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="on_message-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 223</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">on_message</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-ivar">@message_observers</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">block</span>
+  <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs &amp;block: (Riffer::Messages::Base) -&gt; void @rbs return: nil</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-prompt" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-prompt" title="Link to this method">
+                  <span class="method-name">prompt</span>
+                  <span class="method-args">(text, &amp;block)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(String text) ?{ (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) &rarr; void } &rarr; (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="prompt-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 129</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">prompt</span>(<span class="ruby-identifier">text</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">claim</span>
+  <span class="ruby-keyword">begin</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">block</span>
+      <span class="ruby-identifier">turn</span>(<span class="ruby-identifier">text</span>).<span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+      <span class="ruby-keyword">nil</span>
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-identifier">turn</span>(<span class="ruby-identifier">text</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">ensure</span>
+    <span class="ruby-ivar">@busy</span> = <span class="ruby-keyword">false</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs text: String @rbs &amp;block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -&gt; void @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-rebuild" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-rebuild" title="Link to this method">
+                  <span class="method-name">rebuild</span>
+                  <span class="method-args">(extensions:, settings:)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(extensions: Array[<a href="Extension.html" class="rbs-type">Riffer::Rig::Extension</a>], settings: Hash[Symbol, untyped]) &rarr; nil</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="rebuild-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 197</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">rebuild</span>(<span class="ruby-value">extensions:</span>, <span class="ruby-value">settings:</span>)
+  <span class="ruby-identifier">claim</span>
+  <span class="ruby-keyword">begin</span>
+    <span class="ruby-identifier">registrars</span> = <span class="ruby-identifier">build_registrars</span>(<span class="ruby-identifier">extensions</span>, <span class="ruby-identifier">settings</span>) { <span class="ruby-operator">|</span><span class="ruby-identifier">_extension</span>, <span class="ruby-identifier">error</span><span class="ruby-operator">|</span> <span class="ruby-identifier">raise</span> <span class="ruby-identifier">error</span> }
+    <span class="ruby-identifier">mcp_servers</span> = <span class="ruby-identifier">register_mcp_servers</span>(<span class="ruby-identifier">registrars</span>)
+    <span class="ruby-identifier">hooks</span> = <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Runtime</span><span class="ruby-operator">::</span><span class="ruby-constant">Hooks</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">merge_hooks</span>(<span class="ruby-identifier">registrars</span>), <span class="ruby-ivar">@host</span>)
+    <span class="ruby-identifier">agent</span> = <span class="ruby-identifier">successor</span>(<span class="ruby-identifier">model</span>, <span class="ruby-identifier">agent_config</span>(<span class="ruby-identifier">registrars</span>, <span class="ruby-identifier">hooks</span>, <span class="ruby-ivar">@agent</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">max_steps</span>))
+    <span class="ruby-identifier">lifecycle</span>(<span class="ruby-value">:</span><span class="ruby-value">session_end</span>, <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Events</span><span class="ruby-operator">::</span><span class="ruby-constant">SessionEnd</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">:</span><span class="ruby-value">reload</span>))
+    <span class="ruby-ivar">@errors</span> = []
+    <span class="ruby-identifier">dropped</span> = <span class="ruby-ivar">@mcp_servers</span>.<span class="ruby-identifier">except</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">mcp_servers</span>.<span class="ruby-identifier">keys</span>)
+    <span class="ruby-identifier">install</span>(<span class="ruby-identifier">registrars</span>, <span class="ruby-identifier">mcp_servers</span>, <span class="ruby-identifier">settings</span>, <span class="ruby-identifier">hooks</span>, <span class="ruby-identifier">agent</span>)
+    <span class="ruby-identifier">unregister_mcp_servers</span>(<span class="ruby-identifier">dropped</span>)
+    <span class="ruby-identifier">lifecycle</span>(<span class="ruby-value">:</span><span class="ruby-value">session_start</span>, <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Events</span><span class="ruby-operator">::</span><span class="ruby-constant">SessionStart</span>.<span class="ruby-identifier">new</span>(<span class="ruby-ivar">@id</span>, <span class="ruby-value">:</span><span class="ruby-value">reload</span>))
+  <span class="ruby-keyword">ensure</span>
+    <span class="ruby-ivar">@busy</span> = <span class="ruby-keyword">false</span>
+  <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs extensions: <a href="Riffer::Rig::Extension">Array</a> @rbs settings: Hash[Symbol, untyped] @rbs return: nil</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-run_command" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-run_command" title="Link to this method">
+                  <span class="method-name">run_command</span>
+                  <span class="method-args">(name, args = &#39;&#39;, &amp;block)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(String name, ?String args) ?{ (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) &rarr; void } &rarr; nil</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="run_command-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 163</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">run_command</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">args</span> = <span class="ruby-string">&#39;</span><span class="ruby-string">&#39;</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">claim</span>
+  <span class="ruby-identifier">emit</span> = <span class="ruby-identifier">block</span> <span class="ruby-operator">||</span> <span class="ruby-operator">-&gt;</span>(<span class="ruby-identifier">_event</span>) {} <span class="ruby-comment">#: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -&gt; void</span>
+  <span class="ruby-keyword">begin</span>
+    <span class="ruby-identifier">execute</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">args</span>, <span class="ruby-identifier">emit</span>)
+  <span class="ruby-keyword">ensure</span>
+    <span class="ruby-ivar">@busy</span> = <span class="ruby-keyword">false</span>
+  <span class="ruby-keyword">end</span>
+  <span class="ruby-ivar">@host</span>.<span class="ruby-identifier">drain</span>.<span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">emit</span>)
+  <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs name: String @rbs args: String @rbs &amp;block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -&gt; void @rbs return: nil</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-tally" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-tally" title="Link to this method">
+                  <span class="method-name">tally</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>() &rarr; Riffer::Providers::TokenUsage?</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="tally-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 235</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">tally</span>
+  <span class="ruby-ivar">@agent</span>.<span class="ruby-identifier">context</span>.<span class="ruby-identifier">token_usage</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs return: Riffer::Providers::TokenUsage?</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-to_h" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-to_h" title="Link to this method">
+                  <span class="method-name">to_h</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>() &rarr; Hash[Symbol, untyped]</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="to_h-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/runtime.rb, line 217</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">to_h</span>
+  { <span class="ruby-value">id</span><span class="ruby-value">:</span> <span class="ruby-ivar">@id</span>, <span class="ruby-value">messages</span><span class="ruby-value">:</span> <span class="ruby-ivar">@agent</span>.<span class="ruby-identifier">session</span>.<span class="ruby-identifier">messages</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:</span><span class="ruby-value">to_h</span>), <span class="ruby-value">model</span><span class="ruby-value">:</span> <span class="ruby-ivar">@model_override</span>, <span class="ruby-value">skills</span><span class="ruby-value">:</span> <span class="ruby-identifier">activated_skills</span> }
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs return: Hash[Symbol, untyped]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+    </section>
+
+
+
+
+  </section>
+
+</main>
+
+<aside id="table-of-contents" class="table-of-contents" role="complementary" aria-label="Table of Contents">
+  <div class="toc-sticky">
+    <h3 class="toc-heading">On This Page</h3>
+    <nav class="toc-nav" id="toc-nav" aria-label="Page sections">
+      <!-- Generated by JavaScript based on page headings -->
+    </nav>
+  </div>
+</aside>
+
+
+<footer class="site-footer">
+  
+
+  <div class="footer-bottom">
+    <p>
+      Generated by <a href="https://ruby.github.io/rdoc/">RDoc 8.1.0</a>
+      using the Aliki theme by <a href="http://st0012.dev">Stan Lo</a>
+    </p>
+  </div>
+</footer>
+
+</body>
+

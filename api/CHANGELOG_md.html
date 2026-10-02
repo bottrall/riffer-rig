@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>CHANGELOG - riffer-rig API Reference</title>
+
+
+  <meta name="keywords" content="ruby,documentation,CHANGELOG">
+  <meta
+    name="description"
+    content="CHANGELOG: Changelog ## [0. github."
+  >
+
+
+
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="CHANGELOG - riffer-rig API Reference">
+
+
+
+    <meta property="og:description" content="Changelog ## [0. github.">
+
+
+
+
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CHANGELOG - riffer-rig API Reference">
+
+
+
+    <meta name="twitter:description" content="Changelog ## [0. github.">
+
+
+
+<script type="text/javascript">
+  var rdoc_rel_prefix = "./";
+  var index_rel_prefix = "./";
+</script>
+
+<script
+  src="./js/theme-toggle.js?v=8.1.0"
+></script>
+
+<script
+  src="./js/search_navigation.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="./js/search_data.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="./js/search_ranker.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="./js/search_controller.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="./js/c_highlighter.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="./js/bash_highlighter.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="./js/aliki.js?v=8.1.0"
+  defer
+></script>
+
+<link
+  href="./css/rdoc.css?v=8.1.0"
+  rel="stylesheet"
+>
+
+
+
+
+<body role="document" class="file has-toc">
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <!-- Chevron (right arrow) - used for expand/collapse -->
+  <symbol
+    id="icon-chevron"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </symbol>
+
+  <!-- File/Document - Pages section -->
+  <symbol
+    id="icon-file"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path
+      d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+    ></path>
+
+    <polyline points="14 2 14 8 20 8"></polyline>
+  </symbol>
+
+  <!-- Layers/Stack - Classes and Modules section -->
+  <symbol
+    id="icon-layers"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+    <polyline points="2 17 12 22 22 17"></polyline>
+    <polyline points="2 12 12 17 22 12"></polyline>
+  </symbol>
+
+  <!-- Curly braces with C - Class Methods section -->
+  <symbol
+    id="icon-class-methods"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M6 3C3.5 3 2 4.5 2 7v3c0 1.5-1 2-1 2s1 .5 1 2v5c0 2.5 1.5 4 4 4"></path>
+    <path d="M18 3c2.5 0 4 1.5 4 4v3c0 1.5 1 2 1 2s-1 .5-1 2v5c0 2.5-1.5 4-4 4"></path>
+
+    <text
+      x="12"
+      y="17"
+      text-anchor="middle"
+      font-size="13"
+      font-weight="bold"
+      fill="currentColor"
+      stroke="none"
+    >
+      C
+    </text>
+  </symbol>
+
+  <!-- Curly braces with I - Instance Methods section -->
+  <symbol
+    id="icon-instance-methods"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M6 3C3.5 3 2 4.5 2 7v3c0 1.5-1 2-1 2s1 .5 1 2v5c0 2.5 1.5 4 4 4"></path>
+    <path d="M18 3c2.5 0 4 1.5 4 4v3c0 1.5 1 2 1 2s-1 .5-1 2v5c0 2.5-1.5 4-4 4"></path>
+
+    <text
+      x="12"
+      y="17"
+      text-anchor="middle"
+      font-size="13"
+      font-weight="bold"
+      fill="currentColor"
+      stroke="none"
+    >
+      I
+    </text>
+  </symbol>
+
+  <!-- Double chevrons up - Ancestors section -->
+  <symbol
+    id="icon-ancestors"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polyline points="17 11 12 6 7 11"></polyline>
+    <polyline points="17 18 12 13 7 18"></polyline>
+  </symbol>
+
+  <!-- User with plus - Included Modules section -->
+  <symbol
+    id="icon-includes"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+    <circle cx="8.5" cy="7" r="4"></circle>
+
+    <line
+      x1="20"
+      y1="8"
+      x2="20"
+      y2="14"
+    ></line>
+
+    <line
+      x1="23"
+      y1="11"
+      x2="17"
+      y2="11"
+    ></line>
+  </symbol>
+
+  <!-- User with check - Extended Modules section -->
+  <symbol
+    id="icon-extends"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+    <circle cx="8.5" cy="7" r="4"></circle>
+    <polyline points="17 11 19 13 23 9"></polyline>
+  </symbol>
+
+  <!-- List - Sections section -->
+  <symbol
+    id="icon-list"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <line
+      x1="8"
+      y1="6"
+      x2="21"
+      y2="6"
+    ></line>
+
+    <line
+      x1="8"
+      y1="12"
+      x2="21"
+      y2="12"
+    ></line>
+
+    <line
+      x1="8"
+      y1="18"
+      x2="21"
+      y2="18"
+    ></line>
+
+    <line
+      x1="3"
+      y1="6"
+      x2="3.01"
+      y2="6"
+    ></line>
+
+    <line
+      x1="3"
+      y1="12"
+      x2="3.01"
+      y2="12"
+    ></line>
+
+    <line
+      x1="3"
+      y1="18"
+      x2="3.01"
+      y2="18"
+    ></line>
+  </symbol>
+</svg>
+
+<header class="top-navbar">
+  <a href="./index.html" class="navbar-brand">
+    riffer-rig API Reference
+  </a>
+
+  <div class="navbar-search" data-search-container>
+    <button id="search-toggle" class="navbar-search-mobile" aria-label="Open search"
+            aria-controls="search-surface" aria-expanded="false" type="button">
+      <span aria-hidden="true">🔍</span>
+    </button>
+
+    <div class="search-backdrop" data-search-close></div>
+    <div id="search-surface" class="search-surface">
+      <form class="search-form" role="search" action="#" method="get" accept-charset="utf-8">
+        <span class="search-icon" aria-hidden="true">🔍</span>
+        <input id="search-field" role="combobox" aria-label="Search"
+               aria-autocomplete="list" aria-controls="search-results"
+               type="text" name="search" placeholder="Search (/) for a class, method..."
+               spellcheck="false" autocomplete="off"
+               title="Type to search, Up and Down to navigate, Enter to load">
+        <button type="button" class="search-close" aria-label="Close search" data-search-close>
+          <span aria-hidden="true">esc</span>
+        </button>
+      </form>
+
+      <div class="search-body">
+        <ul id="search-results" aria-label="Search Results"
+            aria-busy="false" aria-expanded="false"
+            aria-atomic="false" class="initially-hidden search-results"></ul>
+        <div class="search-empty">
+          <p>No recent searches</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme toggle button -->
+  <button id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode" type="button">
+    <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+  </button>
+</header>
+
+<div id="sidebar-navigation-toggle" role="button" tabindex="0" aria-label="Toggle sidebar" aria-expanded="false" aria-controls="sidebar-navigation">
+  <span aria-hidden="true">&#9776;</span>
+</div>
+
+
+<nav id="sidebar-navigation" role="navigation" hidden>
+  
+
+
+
+
+
+
+  <div id="fileindex-section" class="nav-section">
+    <details class="nav-section-collapsible" open>
+      <summary class="nav-section-header">
+        <span class="nav-section-icon">
+          <svg>
+            <use href="#icon-file"></use>
+          </svg>
+        </span>
+
+        <span class="nav-section-title">Pages</span>
+
+        <span class="nav-section-chevron">
+          <svg>
+            <use href="#icon-chevron"></use>
+          </svg>
+        </span>
+      </summary>
+
+      <ul class="nav-list">
+
+
+
+
+
+
+            <li>
+              <a href="./CHANGELOG_md.html">
+                CHANGELOG
+              </a>
+            </li>
+
+
+
+
+            <li>
+              <a href="./LICENSE_txt.html">
+                LICENSE
+              </a>
+            </li>
+
+      </ul>
+    </details>
+  </div>
+
+
+  <div id="classindex-section" class="nav-section">
+  <details class="nav-section-collapsible" open>
+    <summary class="nav-section-header">
+      <span class="nav-section-icon">
+        <svg><use href="#icon-layers"></use></svg>
+      </span>
+      <span class="nav-section-title">Classes and Modules</span>
+      <span class="nav-section-chevron">
+        <svg><use href="#icon-chevron"></use></svg>
+      </span>
+    </summary>
+
+    <ul class="link-list nav-list"><li><details open><summary><code><a href="./Riffer.html">Riffer</a></code></summary><ul class="link-list nav-list"><li><details><summary><code><a href="./Riffer/Rig.html">Rig</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Bundled.html">Bundled</a></code></li><li><details><summary><code><a href="./Riffer/Rig/CLI.html">CLI</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/CLI/Flags.html">Flags</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Command.html">Command</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Command/Context.html">Context</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Commands.html">Commands</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Commands/Model.html">Model</a></code></li><li><code><a href="./Riffer/Rig/Commands/Skill.html">Skill</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Credentials.html">Credentials</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Credentials/Resolution.html">Resolution</a></code></li></ul></details></li><li><code><a href="./Riffer/Rig/Directories.html">Directories</a></code></li><li><details><summary><code><a href="./Riffer/Rig/Env.html">Env</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Env/Invalid.html">Invalid</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Events.html">Events</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Events/AfterResponse.html">AfterResponse</a></code></li><li><code><a href="./Riffer/Rig/Events/AfterToolCall.html">AfterToolCall</a></code></li><li><code><a href="./Riffer/Rig/Events/BeforePrompt.html">BeforePrompt</a></code></li><li><code><a href="./Riffer/Rig/Events/BeforeRequest.html">BeforeRequest</a></code></li><li><code><a href="./Riffer/Rig/Events/BeforeToolCall.html">BeforeToolCall</a></code></li><li><code><a href="./Riffer/Rig/Events/CommandOutput.html">CommandOutput</a></code></li><li><code><a href="./Riffer/Rig/Events/Notify.html">Notify</a></code></li><li><code><a href="./Riffer/Rig/Events/SessionEnd.html">SessionEnd</a></code></li><li><code><a href="./Riffer/Rig/Events/SessionStart.html">SessionStart</a></code></li><li><code><a href="./Riffer/Rig/Events/SkillActivated.html">SkillActivated</a></code></li><li><code><a href="./Riffer/Rig/Events/TurnEnd.html">TurnEnd</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Extension.html">Extension</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Extension/Failure.html">Failure</a></code></li><li><code><a href="./Riffer/Rig/Extension/RequirementError.html">RequirementError</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Hosts.html">Hosts</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Hosts/Mirror.html">Mirror</a></code></li><li><code><a href="./Riffer/Rig/Hosts/Null.html">Null</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Loader.html">Loader</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Loader/ConfigurationError.html">ConfigurationError</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Mcp.html">Mcp</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Mcp/Declaration.html">Declaration</a></code></li><li><code><a href="./Riffer/Rig/Mcp/Server.html">Server</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Prompts.html">Prompts</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Prompts/AgentsMd.html">AgentsMd</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/ProviderSetup.html">ProviderSetup</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/ProviderSetup/Field.html">Field</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Registrar.html">Registrar</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Registrar/NameCollisionError.html">NameCollisionError</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Runtime.html">Runtime</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Runtime/Blocked.html">Blocked</a></code></li><li><code><a href="./Riffer/Rig/Runtime/BusyError.html">BusyError</a></code></li><li><code><a href="./Riffer/Rig/Runtime/CancelFlag.html">CancelFlag</a></code></li><li><code><a href="./Riffer/Rig/Runtime/ClosedError.html">ClosedError</a></code></li><li><code><a href="./Riffer/Rig/Runtime/Hooks.html">Hooks</a></code></li><li><code><a href="./Riffer/Rig/Runtime/RequestGuardrail.html">RequestGuardrail</a></code></li><li><code><a href="./Riffer/Rig/Runtime/ToolRuntime.html">ToolRuntime</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Settings.html">Settings</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Settings/Document.html">Document</a></code></li><li><code><a href="./Riffer/Rig/Settings/Pricing.html">Pricing</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Skills.html">Skills</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Skills/Sources.html">Sources</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Support.html">Support</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Support/Equatable.html">Equatable</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Terminal.html">Terminal</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Terminal/Animator.html">Animator</a></code></li><li><code><a href="./Riffer/Rig/Terminal/Banner.html">Banner</a></code></li><li><code><a href="./Riffer/Rig/Terminal/Cursor.html">Cursor</a></code></li><li><code><a href="./Riffer/Rig/Terminal/Host.html">Host</a></code></li><li><code><a href="./Riffer/Rig/Terminal/Palette.html">Palette</a></code></li><li><details><summary><code><a href="./Riffer/Rig/Terminal/Renderer.html">Renderer</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Terminal/Renderer/PassThroughSmoother.html">PassThroughSmoother</a></code></li></ul></details></li><li><code><a href="./Riffer/Rig/Terminal/Smoother.html">Smoother</a></code></li><li><code><a href="./Riffer/Rig/Terminal/Theme.html">Theme</a></code></li><li><code><a href="./Riffer/Rig/Terminal/Wrapper.html">Wrapper</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Tools.html">Tools</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Tools/Bash.html">Bash</a></code></li><li><code><a href="./Riffer/Rig/Tools/Edit.html">Edit</a></code></li><li><code><a href="./Riffer/Rig/Tools/Read.html">Read</a></code></li><li><code><a href="./Riffer/Rig/Tools/Write.html">Write</a></code></li></ul></details></li><li><code><a href="./Riffer/Rig/Trust.html">Trust</a></code></li></ul></details></li></ul></details></li></ul>
+  </details>
+</div>
+
+</nav>
+
+<main role="main" aria-label="Page CHANGELOG.md">
+
+<span id="label-Changelog" class="legacy-anchor"></span>
+<h1 id="changelog"><a href="#changelog">Changelog</a></h1>
+
+<span id="label-0.8.0+-282026-10-02-29" class="legacy-anchor"></span>
+<h2 id="080-2026-10-02"><a href="#080-2026-10-02"><a href="https://github.com/bottrall/riffer-rig/compare/v0.7.0...v0.8.0">0.8.0</a> (2026-10-02)</a></h2>
+
+<span id="label-Features" class="legacy-anchor"></span>
+<h3 id="features"><a href="#features">Features</a></h3>
+<ul><li>
+<p>discover rig.rb files with project trust and optional gem autoload (<a href="https://github.com/bottrall/riffer-rig/issues/208">#208</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/6ed818f5b5d382b3a9c7d48ce667892b10190985">6ed818f</a>)</p>
+</li><li>
+<p>truncate tool output and fit lines to the terminal width (<a href="https://github.com/bottrall/riffer-rig/issues/209">#209</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/3765de1f4392d903939c1458e843c2ca1e70112e">3765de1</a>)</p>
+</li></ul>
+
+<span id="label-0.7.0+-282026-09-30-29" class="legacy-anchor"></span>
+<h2 id="070-2026-09-30"><a href="#070-2026-09-30"><a href="https://github.com/bottrall/riffer-rig/compare/v0.6.0...v0.7.0">0.7.0</a> (2026-09-30)</a></h2>
+
+<span id="label-E2-9A-A0+BREAKING+CHANGES" class="legacy-anchor"></span>
+<h3 id="-breaking-changes"><a href="#-breaking-changes">⚠ BREAKING CHANGES</a></h3>
+<ul><li>
+<p>Riffer::Rig::CodingAgent, REPL, TokenTally and the UI namespace are removed, and the old CLI is replaced by the dispatcher. Embed a Runtime through <a href="Riffer/Rig/Loader.html#method-c-runtime"><code>Riffer::Rig::Loader.runtime</code></a> instead of CodingAgent; the terminal UI classes now live under <a href="Riffer/Rig/Terminal.html"><code>Riffer::Rig::Terminal</code></a>. The bash tool now errors when its context has no :cwd.</p>
+</li><li>
+<p>DEFAULT_MODEL is gone; with no model the Loader asks the host to onboard and the null host’s refusal is a configuration error. The old Settings module API changes shape.</p>
+</li><li>
+<p>Riffer::Rig::Hosts::Base and Riffer::Rig::Events::Event are removed. A host is any object implementing the five host methods (Riffer::Rig::Hosts::_Host); drop the superclass. A custom event drops the superclass and super(), and includes Riffer::Rig::Events::Value for equality.</p>
+</li></ul>
+
+<span id="label-Features-1" class="legacy-anchor"></span>
+<h3 id="features-1"><a href="#features-1">Features</a></h3>
+<ul><li>
+<p>/model switches the model for the current Runtime (<a href="https://github.com/bottrall/riffer-rig/issues/193">#193</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/f8889722f62499f97ee34158826e9d00dd3d92ef">f888972</a>)</p>
+</li><li>
+<p>bundle Agent Skills with /skill: commands over the skills seam (<a href="https://github.com/bottrall/riffer-rig/issues/201">#201</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/e14844d9c7c22dd85b3d4158892ec53bae736c6b">e14844d</a>)</p>
+</li><li>
+<p>bundle AGENTS.md as the agents_md prompt section (<a href="https://github.com/bottrall/riffer-rig/issues/198">#198</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/e2e914195f7c15c75ee2ae6bb55d772d754a2f37">e2e9141</a>)</p>
+</li><li>
+<p>bundle read, write, edit and bash as extensions (<a href="https://github.com/bottrall/riffer-rig/issues/195">#195</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/d5c9ffe692abf5e5cab16af0686f96b040a6cbaa">d5c9ffe</a>)</p>
+</li><li>
+<p>bundle the MCP client over the mcp seam (<a href="https://github.com/bottrall/riffer-rig/issues/202">#202</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/c2fc42ff873af8205f3a8042069a3dd5f27420e6">c2fc42f</a>)</p>
+</li><li>
+<p>isolate extension load errors and check requires (<a href="https://github.com/bottrall/riffer-rig/issues/192">#192</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/0aac3bf7d3b6ada84a4f38a40abc181f7d3f57c7">0aac3bf</a>), closes <a href="https://github.com/bottrall/riffer-rig/issues/114">#114</a></p>
+</li><li>
+<p>lifecycle, vetoable and observe hooks plus the stream passthrough (<a href="https://github.com/bottrall/riffer-rig/issues/194">#194</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/206d349a4967081961372d1692b0946663f32a10">206d349</a>)</p>
+</li><li>
+<p>Loader builds a Runtime from settings, credentials and the bundle (<a href="https://github.com/bottrall/riffer-rig/issues/205">#205</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/01170fee282deae87aba1b8797cfe5cedc892deb">01170fe</a>), closes <a href="https://github.com/bottrall/riffer-rig/issues/123">#123</a></p>
+</li><li>
+<p>namespaced extension settings (<a href="https://github.com/bottrall/riffer-rig/issues/196">#196</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/dc16a8424ea00ea0b39323db97309c9c94224443">dc16a84</a>), closes <a href="https://github.com/bottrall/riffer-rig/issues/117">#117</a></p>
+</li><li>
+<p>rebuild the registrar in place (<a href="https://github.com/bottrall/riffer-rig/issues/199">#199</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/f4b742b3f45a28f3c69d75a355c3a2880938de1b">f4b742b</a>)</p>
+</li><li>
+<p>runtime commands with run_command and the command context (<a href="https://github.com/bottrall/riffer-rig/issues/190">#190</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/159d0077b34773fadb2cc6f5f66622b12e4b7a0e">159d007</a>), closes <a href="https://github.com/bottrall/riffer-rig/issues/111">#111</a></p>
+</li><li>
+<p>snapshot and restore a Runtime (<a href="https://github.com/bottrall/riffer-rig/issues/200">#200</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/aaad5797e5e626b6f560b96a5f4cf1bf5bc379a3">aaad579</a>)</p>
+</li><li>
+<p>Terminal drives a Loader-built Runtime (<a href="https://github.com/bottrall/riffer-rig/issues/206">#206</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/f805db625e69f90c2dd343bbb7ca016aba7cecf0">f805db6</a>)</p>
+</li><li>
+<p>token tally and pricing behind the Runtime (<a href="https://github.com/bottrall/riffer-rig/issues/189">#189</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/1ccde0d1670feaa2a9b9c957bbe79fa80ca47d4f">1ccde0d</a>)</p>
+</li></ul>
+
+<span id="label-Bug+Fixes" class="legacy-anchor"></span>
+<h3 id="bug-fixes"><a href="#bug-fixes">Bug Fixes</a></h3>
+<ul><li>
+<p>run steep check without attaching to a language server (<a href="https://github.com/bottrall/riffer-rig/issues/197">#197</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/4f0b92eeafcb4e4fb6d054c29d707fcfb39766d5">4f0b92e</a>)</p>
+</li></ul>
+
+<span id="label-Code+Refactoring" class="legacy-anchor"></span>
+<h3 id="code-refactoring"><a href="#code-refactoring">Code Refactoring</a></h3>
+<ul><li>
+<p>interfaces over inheritance, POROs over hashes, new cops (<a href="https://github.com/bottrall/riffer-rig/issues/204">#204</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/7fda3e3ec79ea97479008127f0c153ce84b888d5">7fda3e3</a>)</p>
+</li></ul>
+
+<span id="label-0.6.0+-282026-09-27-29" class="legacy-anchor"></span>
+<h2 id="060-2026-09-27"><a href="#060-2026-09-27"><a href="https://github.com/bottrall/riffer-rig/compare/v0.5.0...v0.6.0">0.6.0</a> (2026-09-27)</a></h2>
+
+<span id="label-E2-9A-A0+BREAKING+CHANGES-1" class="legacy-anchor"></span>
+<h3 id="-breaking-changes-1"><a href="#-breaking-changes-1">⚠ BREAKING CHANGES</a></h3>
+<ul><li>
+<p>the flat <code>{&quot;anthropic&quot;: &quot;sk-...&quot;}</code> auth.json shape is no longer read, with no migration. Stored keys must be re-entered or rewritten as <code>{&quot;anthropic&quot;: {&quot;type&quot;: &quot;api_key&quot;, &quot;api_key&quot;: &quot;sk-...&quot;}}</code>.</p>
+</li><li>
+<p>Riffer::Rig::Host is removed. A host subclasses Riffer::Rig::Hosts::Base and implements all five methods; the null host is <a href="Riffer/Rig/Hosts/Null.html"><code>Riffer::Rig::Hosts::Null</code></a>.</p>
+</li></ul>
+
+<span id="label-Features-2" class="legacy-anchor"></span>
+<h3 id="features-2"><a href="#features-2">Features</a></h3>
+<ul><li>
+<p>add the rig event vocabulary and close (<a href="https://github.com/bottrall/riffer-rig/issues/179">#179</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/35bfa6e5dc1dc9825fd03843a4e69ec24e675b66">35bfa6e</a>)</p>
+</li><li>
+<p>cancel a running turn from any thread (<a href="https://github.com/bottrall/riffer-rig/issues/186">#186</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/ec68188cc7dbcaf0cd56dd41d83cda216661fbe7">ec68188</a>)</p>
+</li><li>
+<p><strong>deps:</strong> upgrade riffer to 0.49.0 (<a href="https://github.com/bottrall/riffer-rig/issues/188">#188</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/821413f5af65bfcb159ddad532deb3c15779112d">821413f</a>)</p>
+</li><li>
+<p>named prompt sections rendered every turn (<a href="https://github.com/bottrall/riffer-rig/issues/184">#184</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/d190a07dfa99764b82bba00745a07e7738c3532a">d190a07</a>)</p>
+</li><li>
+<p>provider setup table and typed auth.json credentials (<a href="https://github.com/bottrall/riffer-rig/issues/185">#185</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/0a30c357793716acfabcd1ddd41ea9f98c8a6a8f">0a30c35</a>)</p>
+</li><li>
+<p>store credentials on the Runtime (<a href="https://github.com/bottrall/riffer-rig/issues/181">#181</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/474a51586011e413482f0275a7abd3a542e91914">474a515</a>)</p>
+</li></ul>
+
+<span id="label-Code+Refactoring-1" class="legacy-anchor"></span>
+<h3 id="code-refactoring-1"><a href="#code-refactoring-1">Code Refactoring</a></h3>
+<ul><li>
+<p>make the host contract the abstract Hosts::Base (<a href="https://github.com/bottrall/riffer-rig/issues/183">#183</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/3fd4f14a193d546ae06e00776f209a52c0593854">3fd4f14</a>)</p>
+</li></ul>
+
+<span id="label-0.5.0+-282026-09-19-29" class="legacy-anchor"></span>
+<h2 id="050-2026-09-19"><a href="#050-2026-09-19"><a href="https://github.com/bottrall/riffer-rig/compare/v0.4.0...v0.5.0">0.5.0</a> (2026-09-19)</a></h2>
+
+<span id="label-Features-3" class="legacy-anchor"></span>
+<h3 id="features-3"><a href="#features-3">Features</a></h3>
+<ul><li>
+<p>add ask, max_steps and riffer response (<a href="https://github.com/bottrall/riffer-rig/issues/178">#178</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/948d75354a7d0a5a9d35055b7d890dea9e51f1a1">948d753</a>)</p>
+</li><li>
+<p>add Runtime with a per-instance agent, base prompt and tool seam (<a href="https://github.com/bottrall/riffer-rig/issues/160">#160</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/97019ca6f80c95bcf22e443652f1d90d453d02de">97019ca</a>)</p>
+</li><li>
+<p>type IO streams and JSON boundaries, dropping explicit untyped (<a href="https://github.com/bottrall/riffer-rig/issues/174">#174</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/22407befc471d1fbbe14188456ee1ce248ddc4c7">22407be</a>)</p>
+</li></ul>
+
+<span id="label-Bug+Fixes-1" class="legacy-anchor"></span>
+<h3 id="bug-fixes-1"><a href="#bug-fixes-1">Bug Fixes</a></h3>
+<ul><li>
+<p>drain smoother backlog before every animator restart (<a href="https://github.com/bottrall/riffer-rig/issues/177">#177</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/3126155fdeba3de2ab2b9905b7e7de55593de834">3126155</a>)</p>
+</li><li>
+<p>drop invalid ? optional markers from rbs-inline annotations (<a href="https://github.com/bottrall/riffer-rig/issues/171">#171</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/60030bf7ca930e9d35cbd8c2e3a8ae8ae1692830">60030bf</a>)</p>
+</li></ul>
+
+<span id="label-0.4.0+-282026-09-13-29" class="legacy-anchor"></span>
+<h2 id="040-2026-09-13"><a href="#040-2026-09-13"><a href="https://github.com/bottrall/riffer-rig/compare/v0.3.0...v0.4.0">0.4.0</a> (2026-09-13)</a></h2>
+
+<span id="label-Features-4" class="legacy-anchor"></span>
+<h3 id="features-4"><a href="#features-4">Features</a></h3>
+<ul><li>
+<p><strong>ui:</strong> one blank line between blocks, prompt-owned gaps (<a href="https://github.com/bottrall/riffer-rig/issues/170">#170</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/636e4d82a069f158775043037a43e2aa494f56dc">636e4d8</a>)</p>
+</li></ul>
+
+<span id="label-Bug+Fixes-2" class="legacy-anchor"></span>
+<h3 id="bug-fixes-2"><a href="#bug-fixes-2">Bug Fixes</a></h3>
+<ul><li>
+<p><strong>lint:</strong> adjust rubocop rules and reformat to match (<a href="https://github.com/bottrall/riffer-rig/issues/168">#168</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/56b81aa904609f246340c8b8135ee7e57791abdd">56b81aa</a>)</p>
+</li></ul>
+
+<span id="label-0.3.0+-282026-09-10-29" class="legacy-anchor"></span>
+<h2 id="030-2026-09-10"><a href="#030-2026-09-10"><a href="https://github.com/bottrall/riffer-rig/compare/v0.2.1...v0.3.0">0.3.0</a> (2026-09-10)</a></h2>
+
+<span id="label-Features-5" class="legacy-anchor"></span>
+<h3 id="features-5"><a href="#features-5">Features</a></h3>
+<ul><li>
+<p><strong>types:</strong> strict rbs-inline typing with collection-managed third-party RBS (<a href="https://github.com/bottrall/riffer-rig/issues/164">#164</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/be59fb9102d9c6f9bae2a5f456650cc68131924f">be59fb9</a>)</p>
+</li></ul>
+
+<span id="label-Bug+Fixes-3" class="legacy-anchor"></span>
+<h3 id="bug-fixes-3"><a href="#bug-fixes-3">Bug Fixes</a></h3>
+<ul><li>
+<p>print tool call lines after the round’s stats line (<a href="https://github.com/bottrall/riffer-rig/issues/166">#166</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/dcc4e8093ffaec0bc93bb3eaafb47acd72292710">dcc4e80</a>)</p>
+</li></ul>
+
+<span id="label-0.2.1+-282026-09-08-29" class="legacy-anchor"></span>
+<h2 id="021-2026-09-08"><a href="#021-2026-09-08"><a href="https://github.com/bottrall/riffer-rig/compare/v0.2.0...v0.2.1">0.2.1</a> (2026-09-08)</a></h2>
+
+<span id="label-Bug+Fixes-4" class="legacy-anchor"></span>
+<h3 id="bug-fixes-4"><a href="#bug-fixes-4">Bug Fixes</a></h3>
+<ul><li>
+<p><strong>ui:</strong> hide the cursor while a turn is in flight (<a href="https://github.com/bottrall/riffer-rig/issues/161">#161</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/0d18fe06c51bb75a8f3002d22d64bda23671bad6">0d18fe0</a>)</p>
+</li><li>
+<p><strong>ui:</strong> stop the equalizer before the end-of-turn newline (<a href="https://github.com/bottrall/riffer-rig/issues/158">#158</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/00edaa3bbf35a7d797ca3596820d11bd8c62789a">00edaa3</a>)</p>
+</li></ul>
+
+<span id="label-0.2.0+-282026-09-08-29" class="legacy-anchor"></span>
+<h2 id="020-2026-09-08"><a href="#020-2026-09-08"><a href="https://github.com/bottrall/riffer-rig/compare/v0.1.2...v0.2.0">0.2.0</a> (2026-09-08)</a></h2>
+
+<span id="label-E2-9A-A0+BREAKING+CHANGES-2" class="legacy-anchor"></span>
+<h3 id="-breaking-changes-2"><a href="#-breaking-changes-2">⚠ BREAKING CHANGES</a></h3>
+<ul><li>
+<p>remove the Riffy mascot entirely (<a href="https://github.com/bottrall/riffer-rig/issues/151">#151</a>)</p>
+</li></ul>
+
+<span id="label-Features-6" class="legacy-anchor"></span>
+<h3 id="features-6"><a href="#features-6">Features</a></h3>
+<ul><li>
+<p>remove the Riffy mascot entirely (<a href="https://github.com/bottrall/riffer-rig/issues/151">#151</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/af17f9907e8d43a01f966e1a0979f868a8d50466">af17f99</a>)</p>
+</li><li>
+<p><strong>ui:</strong> keep the thinking indicator alive during reasoning (<a href="https://github.com/bottrall/riffer-rig/issues/156">#156</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/4ff67cc6a2e133324b98dbdf40f63c500ee00a4c">4ff67cc</a>)</p>
+</li><li>
+<p><strong>ui:</strong> smooth streamed text output at 60fps (<a href="https://github.com/bottrall/riffer-rig/issues/153">#153</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/42dc781b3fc4a942e0eaca755b9e0b4180659506">42dc781</a>)</p>
+</li></ul>
+
+<span id="label-Bug+Fixes-5" class="legacy-anchor"></span>
+<h3 id="bug-fixes-5"><a href="#bug-fixes-5">Bug Fixes</a></h3>
+<ul><li>
+<p><strong>ui:</strong> drop ‘code’ subtitle from banner (<a href="https://github.com/bottrall/riffer-rig/issues/157">#157</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/dfd2e73d6b71f10adbf1dfa2ae659aad85ed547e">dfd2e73</a>)</p>
+</li></ul>
+
+<span id="label-0.1.2+-282026-09-07-29" class="legacy-anchor"></span>
+<h2 id="012-2026-09-07"><a href="#012-2026-09-07"><a href="https://github.com/bottrall/riffer-rig/compare/v0.1.1...v0.1.2">0.1.2</a> (2026-09-07)</a></h2>
+
+<span id="label-Bug+Fixes-6" class="legacy-anchor"></span>
+<h3 id="bug-fixes-6"><a href="#bug-fixes-6">Bug Fixes</a></h3>
+<ul><li>
+<p><strong>ci:</strong> build and push the gem directly instead of rake release (<a href="https://github.com/bottrall/riffer-rig/issues/148">#148</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/74109151a8275561dc1fac3bd6ec5b997a08e004">7410915</a>)</p>
+</li></ul>
+
+<span id="label-0.1.1+-282026-09-07-29" class="legacy-anchor"></span>
+<h2 id="011-2026-09-07"><a href="#011-2026-09-07"><a href="https://github.com/bottrall/riffer-rig/compare/v0.1.0...v0.1.1">0.1.1</a> (2026-09-07)</a></h2>
+
+<span id="label-Bug+Fixes-7" class="legacy-anchor"></span>
+<h3 id="bug-fixes-7"><a href="#bug-fixes-7">Bug Fixes</a></h3>
+<ul><li>
+<p>ship the openai SDK so OpenAI and OpenRouter models work (<a href="https://github.com/bottrall/riffer-rig/issues/145">#145</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/92aba9bb3b8fe097e90bb9375465636fac37afef">92aba9b</a>)</p>
+</li></ul>
+
+<span id="label-0.1.0+-282026-09-05-29" class="legacy-anchor"></span>
+<h2 id="010-2026-09-05"><a href="#010-2026-09-05">0.1.0 (2026-09-05)</a></h2>
+
+<span id="label-E2-9A-A0+BREAKING+CHANGES-3" class="legacy-anchor"></span>
+<h3 id="-breaking-changes-3"><a href="#-breaking-changes-3">⚠ BREAKING CHANGES</a></h3>
+<ul><li>
+<p>the gem, executable, namespace, config directory and environment variable are all renamed; nothing reads the old names.</p>
+</li></ul>
+
+<span id="label-Features-7" class="legacy-anchor"></span>
+<h3 id="features-7"><a href="#features-7">Features</a></h3>
+<ul><li>
+<p>add prompt caching, token tally, and settings (<a href="https://github.com/bottrall/riffer-rig/issues/7">#7</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/bb02a954c2fffa13ad8e564513c82681ab02d1e4">bb02a95</a>)</p>
+</li><li>
+<p>add skills support to CLI, REPL, and banner (<a href="https://github.com/bottrall/riffer-rig/issues/5">#5</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/5ac1dd186c3f05adb342e1dead6102f2544d3b2b">5ac1dd1</a>)</p>
+</li><li>
+<p>configurable reasoning levels (<a href="https://github.com/bottrall/riffer-rig/issues/34">#34</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/a9604f3994fc2cef5888c653fd1f07b82ac662f8">a9604f3</a>)</p>
+</li><li>
+<p>multi-provider support (Anthropic, OpenAI, Gemini, OpenRouter) (<a href="https://github.com/bottrall/riffer-rig/issues/32">#32</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/30b5ccf92ea43182953f1b5da089fe9e4550c9c9">30b5ccf</a>)</p>
+</li><li>
+<p>rename to riffer-rig (<a href="https://github.com/bottrall/riffer-rig/issues/95">#95</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/d036d57f6fd48c3171383708caa0f22a34f7343d">d036d57</a>)</p>
+</li></ul>
+
+<span id="label-Bug+Fixes-8" class="legacy-anchor"></span>
+<h3 id="bug-fixes-8"><a href="#bug-fixes-8">Bug Fixes</a></h3>
+<ul><li>
+<p>point riffer dependency to janeapp/riffer (<a href="https://github.com/bottrall/riffer-rig/issues/2">#2</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/00602835baf9759d4a012b4506605f2b6ed7c250">0060283</a>)</p>
+</li><li>
+<p>rename Riffer::Boolean to Riffer::Params::Boolean (<a href="https://github.com/bottrall/riffer-rig/issues/3">#3</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/8996d0114a69b4db212cc9b0cbd2ec796f35a779">8996d01</a>)</p>
+</li><li>
+<p>require /skill: prefix to activate skills (<a href="https://github.com/bottrall/riffer-rig/issues/37">#37</a>) (<a href="https://github.com/bottrall/riffer-rig/commit/ac6313d7622e3483271cacef8b7bfe60ed33503a">ac6313d</a>)</p>
+</li></ul>
+
+</main>
+
+<aside id="table-of-contents" class="table-of-contents" role="complementary" aria-label="Table of Contents">
+  <div class="toc-sticky">
+    <h3 class="toc-heading">On This Page</h3>
+    <nav class="toc-nav" id="toc-nav" aria-label="Page sections">
+      <!-- Generated by JavaScript based on page headings -->
+    </nav>
+  </div>
+</aside>
+
+
+<footer class="site-footer">
+  
+
+  <div class="footer-bottom">
+    <p>
+      Generated by <a href="https://ruby.github.io/rdoc/">RDoc 8.1.0</a>
+      using the Aliki theme by <a href="http://st0012.dev">Stan Lo</a>
+    </p>
+  </div>
+</footer>
+
+</body>
+

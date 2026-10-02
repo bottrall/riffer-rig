@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>riffer-rig API Reference</title>
+
+
+  <meta name="keywords" content="ruby,documentation,riffer-rig API Reference">
+
+    <meta
+      name="description"
+      content="riffer-rig API Reference: github. riffer)."
+    >
+
+
+
+
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="riffer-rig API Reference">
+
+
+  <meta
+    property="og:description"
+    content="API documentation for riffer-rig API Reference - Browse classes, modules, and methods"
+  >
+
+
+
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="riffer-rig API Reference">
+
+
+  <meta
+    name="twitter:description"
+    content="API documentation for riffer-rig API Reference - Browse classes, modules, and methods"
+  >
+
+
+<script type="text/javascript">
+  var rdoc_rel_prefix = "./";
+  var index_rel_prefix = "./";
+</script>
+
+<script
+  src="./js/theme-toggle.js?v=8.1.0"
+></script>
+
+<script
+  src="./js/search_navigation.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="./js/search_data.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="./js/search_ranker.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="./js/search_controller.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="./js/c_highlighter.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="./js/bash_highlighter.js?v=8.1.0"
+  defer
+></script>
+
+<script
+  src="./js/aliki.js?v=8.1.0"
+  defer
+></script>
+
+<link
+  href="./css/rdoc.css?v=8.1.0"
+  rel="stylesheet"
+>
+
+
+
+
+<body role="document" class="file has-toc">
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <!-- Chevron (right arrow) - used for expand/collapse -->
+  <symbol
+    id="icon-chevron"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </symbol>
+
+  <!-- File/Document - Pages section -->
+  <symbol
+    id="icon-file"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path
+      d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+    ></path>
+
+    <polyline points="14 2 14 8 20 8"></polyline>
+  </symbol>
+
+  <!-- Layers/Stack - Classes and Modules section -->
+  <symbol
+    id="icon-layers"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+    <polyline points="2 17 12 22 22 17"></polyline>
+    <polyline points="2 12 12 17 22 12"></polyline>
+  </symbol>
+
+  <!-- Curly braces with C - Class Methods section -->
+  <symbol
+    id="icon-class-methods"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M6 3C3.5 3 2 4.5 2 7v3c0 1.5-1 2-1 2s1 .5 1 2v5c0 2.5 1.5 4 4 4"></path>
+    <path d="M18 3c2.5 0 4 1.5 4 4v3c0 1.5 1 2 1 2s-1 .5-1 2v5c0 2.5-1.5 4-4 4"></path>
+
+    <text
+      x="12"
+      y="17"
+      text-anchor="middle"
+      font-size="13"
+      font-weight="bold"
+      fill="currentColor"
+      stroke="none"
+    >
+      C
+    </text>
+  </symbol>
+
+  <!-- Curly braces with I - Instance Methods section -->
+  <symbol
+    id="icon-instance-methods"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M6 3C3.5 3 2 4.5 2 7v3c0 1.5-1 2-1 2s1 .5 1 2v5c0 2.5 1.5 4 4 4"></path>
+    <path d="M18 3c2.5 0 4 1.5 4 4v3c0 1.5 1 2 1 2s-1 .5-1 2v5c0 2.5-1.5 4-4 4"></path>
+
+    <text
+      x="12"
+      y="17"
+      text-anchor="middle"
+      font-size="13"
+      font-weight="bold"
+      fill="currentColor"
+      stroke="none"
+    >
+      I
+    </text>
+  </symbol>
+
+  <!-- Double chevrons up - Ancestors section -->
+  <symbol
+    id="icon-ancestors"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polyline points="17 11 12 6 7 11"></polyline>
+    <polyline points="17 18 12 13 7 18"></polyline>
+  </symbol>
+
+  <!-- User with plus - Included Modules section -->
+  <symbol
+    id="icon-includes"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+    <circle cx="8.5" cy="7" r="4"></circle>
+
+    <line
+      x1="20"
+      y1="8"
+      x2="20"
+      y2="14"
+    ></line>
+
+    <line
+      x1="23"
+      y1="11"
+      x2="17"
+      y2="11"
+    ></line>
+  </symbol>
+
+  <!-- User with check - Extended Modules section -->
+  <symbol
+    id="icon-extends"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+    <circle cx="8.5" cy="7" r="4"></circle>
+    <polyline points="17 11 19 13 23 9"></polyline>
+  </symbol>
+
+  <!-- List - Sections section -->
+  <symbol
+    id="icon-list"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <line
+      x1="8"
+      y1="6"
+      x2="21"
+      y2="6"
+    ></line>
+
+    <line
+      x1="8"
+      y1="12"
+      x2="21"
+      y2="12"
+    ></line>
+
+    <line
+      x1="8"
+      y1="18"
+      x2="21"
+      y2="18"
+    ></line>
+
+    <line
+      x1="3"
+      y1="6"
+      x2="3.01"
+      y2="6"
+    ></line>
+
+    <line
+      x1="3"
+      y1="12"
+      x2="3.01"
+      y2="12"
+    ></line>
+
+    <line
+      x1="3"
+      y1="18"
+      x2="3.01"
+      y2="18"
+    ></line>
+  </symbol>
+</svg>
+
+<header class="top-navbar">
+  <a href="./index.html" class="navbar-brand">
+    riffer-rig API Reference
+  </a>
+
+  <div class="navbar-search" data-search-container>
+    <button id="search-toggle" class="navbar-search-mobile" aria-label="Open search"
+            aria-controls="search-surface" aria-expanded="false" type="button">
+      <span aria-hidden="true">🔍</span>
+    </button>
+
+    <div class="search-backdrop" data-search-close></div>
+    <div id="search-surface" class="search-surface">
+      <form class="search-form" role="search" action="#" method="get" accept-charset="utf-8">
+        <span class="search-icon" aria-hidden="true">🔍</span>
+        <input id="search-field" role="combobox" aria-label="Search"
+               aria-autocomplete="list" aria-controls="search-results"
+               type="text" name="search" placeholder="Search (/) for a class, method..."
+               spellcheck="false" autocomplete="off"
+               title="Type to search, Up and Down to navigate, Enter to load">
+        <button type="button" class="search-close" aria-label="Close search" data-search-close>
+          <span aria-hidden="true">esc</span>
+        </button>
+      </form>
+
+      <div class="search-body">
+        <ul id="search-results" aria-label="Search Results"
+            aria-busy="false" aria-expanded="false"
+            aria-atomic="false" class="initially-hidden search-results"></ul>
+        <div class="search-empty">
+          <p>No recent searches</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme toggle button -->
+  <button id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode" type="button">
+    <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+  </button>
+</header>
+
+<div id="sidebar-navigation-toggle" role="button" tabindex="0" aria-label="Toggle sidebar" aria-expanded="false" aria-controls="sidebar-navigation">
+  <span aria-hidden="true">&#9776;</span>
+</div>
+
+
+<nav id="sidebar-navigation" role="navigation" hidden>
+  
+
+
+
+
+
+
+  <div id="fileindex-section" class="nav-section">
+    <details class="nav-section-collapsible" open>
+      <summary class="nav-section-header">
+        <span class="nav-section-icon">
+          <svg>
+            <use href="#icon-file"></use>
+          </svg>
+        </span>
+
+        <span class="nav-section-title">Pages</span>
+
+        <span class="nav-section-chevron">
+          <svg>
+            <use href="#icon-chevron"></use>
+          </svg>
+        </span>
+      </summary>
+
+      <ul class="nav-list">
+
+
+
+
+
+
+            <li>
+              <a href="./CHANGELOG_md.html">
+                CHANGELOG
+              </a>
+            </li>
+
+
+
+
+            <li>
+              <a href="./LICENSE_txt.html">
+                LICENSE
+              </a>
+            </li>
+
+      </ul>
+    </details>
+  </div>
+
+
+  <div id="classindex-section" class="nav-section">
+  <details class="nav-section-collapsible" open>
+    <summary class="nav-section-header">
+      <span class="nav-section-icon">
+        <svg><use href="#icon-layers"></use></svg>
+      </span>
+      <span class="nav-section-title">Classes and Modules</span>
+      <span class="nav-section-chevron">
+        <svg><use href="#icon-chevron"></use></svg>
+      </span>
+    </summary>
+
+    <ul class="link-list nav-list"><li><details open><summary><code><a href="./Riffer.html">Riffer</a></code></summary><ul class="link-list nav-list"><li><details><summary><code><a href="./Riffer/Rig.html">Rig</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Bundled.html">Bundled</a></code></li><li><details><summary><code><a href="./Riffer/Rig/CLI.html">CLI</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/CLI/Flags.html">Flags</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Command.html">Command</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Command/Context.html">Context</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Commands.html">Commands</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Commands/Model.html">Model</a></code></li><li><code><a href="./Riffer/Rig/Commands/Skill.html">Skill</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Credentials.html">Credentials</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Credentials/Resolution.html">Resolution</a></code></li></ul></details></li><li><code><a href="./Riffer/Rig/Directories.html">Directories</a></code></li><li><details><summary><code><a href="./Riffer/Rig/Env.html">Env</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Env/Invalid.html">Invalid</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Events.html">Events</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Events/AfterResponse.html">AfterResponse</a></code></li><li><code><a href="./Riffer/Rig/Events/AfterToolCall.html">AfterToolCall</a></code></li><li><code><a href="./Riffer/Rig/Events/BeforePrompt.html">BeforePrompt</a></code></li><li><code><a href="./Riffer/Rig/Events/BeforeRequest.html">BeforeRequest</a></code></li><li><code><a href="./Riffer/Rig/Events/BeforeToolCall.html">BeforeToolCall</a></code></li><li><code><a href="./Riffer/Rig/Events/CommandOutput.html">CommandOutput</a></code></li><li><code><a href="./Riffer/Rig/Events/Notify.html">Notify</a></code></li><li><code><a href="./Riffer/Rig/Events/SessionEnd.html">SessionEnd</a></code></li><li><code><a href="./Riffer/Rig/Events/SessionStart.html">SessionStart</a></code></li><li><code><a href="./Riffer/Rig/Events/SkillActivated.html">SkillActivated</a></code></li><li><code><a href="./Riffer/Rig/Events/TurnEnd.html">TurnEnd</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Extension.html">Extension</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Extension/Failure.html">Failure</a></code></li><li><code><a href="./Riffer/Rig/Extension/RequirementError.html">RequirementError</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Hosts.html">Hosts</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Hosts/Mirror.html">Mirror</a></code></li><li><code><a href="./Riffer/Rig/Hosts/Null.html">Null</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Loader.html">Loader</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Loader/ConfigurationError.html">ConfigurationError</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Mcp.html">Mcp</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Mcp/Declaration.html">Declaration</a></code></li><li><code><a href="./Riffer/Rig/Mcp/Server.html">Server</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Prompts.html">Prompts</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Prompts/AgentsMd.html">AgentsMd</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/ProviderSetup.html">ProviderSetup</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/ProviderSetup/Field.html">Field</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Registrar.html">Registrar</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Registrar/NameCollisionError.html">NameCollisionError</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Runtime.html">Runtime</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Runtime/Blocked.html">Blocked</a></code></li><li><code><a href="./Riffer/Rig/Runtime/BusyError.html">BusyError</a></code></li><li><code><a href="./Riffer/Rig/Runtime/CancelFlag.html">CancelFlag</a></code></li><li><code><a href="./Riffer/Rig/Runtime/ClosedError.html">ClosedError</a></code></li><li><code><a href="./Riffer/Rig/Runtime/Hooks.html">Hooks</a></code></li><li><code><a href="./Riffer/Rig/Runtime/RequestGuardrail.html">RequestGuardrail</a></code></li><li><code><a href="./Riffer/Rig/Runtime/ToolRuntime.html">ToolRuntime</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Settings.html">Settings</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Settings/Document.html">Document</a></code></li><li><code><a href="./Riffer/Rig/Settings/Pricing.html">Pricing</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Skills.html">Skills</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Skills/Sources.html">Sources</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Support.html">Support</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Support/Equatable.html">Equatable</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Terminal.html">Terminal</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Terminal/Animator.html">Animator</a></code></li><li><code><a href="./Riffer/Rig/Terminal/Banner.html">Banner</a></code></li><li><code><a href="./Riffer/Rig/Terminal/Cursor.html">Cursor</a></code></li><li><code><a href="./Riffer/Rig/Terminal/Host.html">Host</a></code></li><li><code><a href="./Riffer/Rig/Terminal/Palette.html">Palette</a></code></li><li><details><summary><code><a href="./Riffer/Rig/Terminal/Renderer.html">Renderer</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Terminal/Renderer/PassThroughSmoother.html">PassThroughSmoother</a></code></li></ul></details></li><li><code><a href="./Riffer/Rig/Terminal/Smoother.html">Smoother</a></code></li><li><code><a href="./Riffer/Rig/Terminal/Theme.html">Theme</a></code></li><li><code><a href="./Riffer/Rig/Terminal/Wrapper.html">Wrapper</a></code></li></ul></details></li><li><details><summary><code><a href="./Riffer/Rig/Tools.html">Tools</a></code></summary><ul class="link-list nav-list"><li><code><a href="./Riffer/Rig/Tools/Bash.html">Bash</a></code></li><li><code><a href="./Riffer/Rig/Tools/Edit.html">Edit</a></code></li><li><code><a href="./Riffer/Rig/Tools/Read.html">Read</a></code></li><li><code><a href="./Riffer/Rig/Tools/Write.html">Write</a></code></li></ul></details></li><li><code><a href="./Riffer/Rig/Trust.html">Trust</a></code></li></ul></details></li></ul></details></li></ul>
+  </details>
+</div>
+
+</nav>
+
+<main role="main">
+
+  
+<span id="label-riffer-rig" class="legacy-anchor"></span>
+<h1 id="riffer-rig"><a href="#riffer-rig">riffer-rig</a></h1>
+
+<p>A dead-simple terminal coding agent built on <a href="https://github.com/janeapp/riffer">riffer</a>.</p>
+
+<p><code>riffer-rig</code> is an interactive terminal coding agent with read, write, edit, and bash tools — point it at your project and chat with it from the command line.</p>
+
+<span id="label-Requirements" class="legacy-anchor"></span>
+<h2 id="requirements"><a href="#requirements">Requirements</a></h2>
+<ul><li>
+<p>Ruby &gt;= 4.0</p>
+</li></ul>
+
+<span id="label-Installation" class="legacy-anchor"></span>
+<h2 id="installation"><a href="#installation">Installation</a></h2>
+
+<p>Install the gem:</p>
+
+<pre class="bash">gem install riffer-rig</pre>
+
+<p>This provides a <code>riffer</code> executable.</p>
+
+<span id="label-Usage" class="legacy-anchor"></span>
+<h2 id="usage"><a href="#usage">Usage</a></h2>
+
+<p>Run the agent from any project directory:</p>
+
+<pre class="bash">riffer</pre>
+
+<p>The first run asks which model to use, as <code>provider/name</code> (for example <code>anthropic/claude-sonnet-4-6</code>), and saves the answer as <code>model</code> in <code>~/.riffer/settings.json</code>; it then asks for any missing credential (<a href="#authentication">Authentication</a>). After that, <code>riffer</code> opens straight into the prompt. <a href="docs/GETTING_STARTED_md.html">Getting started</a> walks through a first session.</p>
+
+<p>The model is the first of these that is set: <code>--model</code>, <code>RIFFER_MODEL</code>, <code>model</code> in <code>&lt;cwd&gt;/.riffer/settings.json</code>, then in <code>~/.riffer/settings.json</code> (<a href="docs/CONFIGURATION_md.html#model">Configuration</a>).</p>
+
+<span id="label-Flags" class="legacy-anchor"></span>
+<h3 id="flags"><a href="#flags">Flags</a></h3>
+
+<table role="table">
+<thead>
+<tr>
+<th>Flag</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--model provider/name</code></td>
+<td>the model for this session, over <code>RIFFER_MODEL</code> and the settings</td>
+</tr>
+<tr>
+<td><code>--no-extensions</code></td>
+<td>skips the <a href="docs/EXTENSIONS_md.html#the-rigrb-files"><code>rig.rb</code> files</a> and gem autoload; the bundle still loads</td>
+</tr>
+<tr>
+<td><code>--no-skills</code></td>
+<td>leaves out <a href="docs/SKILLS_md.html">Agent Skills</a></td>
+</tr>
+<tr>
+<td><code>--no-agents-md</code></td>
+<td>leaves out the <a href="docs/INSTRUCTIONS_md.html#agentsmd">AGENTS.md</a> instructions</td>
+</tr>
+<tr>
+<td><code>--tools read,bash</code></td>
+<td>only these tools, by identifier (<a href="docs/TOOLS_md.html">Tools</a>)</td>
+</tr>
+<tr>
+<td><code>--max-steps N</code></td>
+<td>stops a turn after <code>N</code> model calls</td>
+</tr>
+<tr>
+<td><code>-h</code>, <code>--help</code></td>
+<td>prints the usage</td>
+</tr>
+</tbody>
+</table>
+
+<p><code>riffer -p</code> (one prompt, no terminal) and <code>riffer acp</code> (an editor’s agent over stdio) are reserved: for now each prints the usage and exits with status 2.</p>
+
+<span id="label-In+the+session" class="legacy-anchor"></span>
+<h3 id="in-the-session"><a href="#in-the-session">In the session</a></h3>
+
+<p>Type a prompt and press Enter; the reply streams in, with each tool call and the first line of its result, and every turn ends with a token line (<code>↑in · ↓out · session N tok</code>, plus the session cost when the model is <a href="docs/CONFIGURATION_md.html#models">priced</a>).</p>
+<ul><li>
+<p>Ctrl-C during a turn cancels it and returns to the prompt. Ctrl-C at the prompt asks for a second one, which exits.</p>
+</li><li>
+<p><code>/exit</code> or <code>/quit</code> ends the session, as does Ctrl-D.</p>
+</li><li>
+<p><code>/model provider/name</code> switches the model (<a href="#switching-the-model">below</a>), and <code>/skill:&lt;name&gt; [text]</code> runs a skill (<a href="docs/SKILLS_md.html">Skills</a>).</p>
+</li><li>
+<p>Any other <code>/name args</code> runs the Runtime command of that name, such as one an extension registers (<a href="docs/EXTENSIONS_md.html">Extensions</a>); an unknown name is reported and nothing is sent to the model.</p>
+</li></ul>
+
+<span id="label-Authentication" class="legacy-anchor"></span>
+<h3 id="authentication"><a href="#authentication">Authentication</a></h3>
+
+<p><code>riffer-rig</code> talks to the provider named by the model’s prefix — <code>anthropic/claude-sonnet-4-6</code> means Anthropic. Provide that provider’s credentials in either of two ways:</p>
+<ul><li>
+<p>Set the provider’s environment variables, or</p>
+</li><li>
+<p>Run <code>riffer</code> and paste each missing value when prompted on first launch. Secrets are saved to <code>~/.riffer/auth.json</code> (file permissions <code>600</code>); plain values such as an endpoint or region are saved to the <code>providers</code> block in <code>~/.riffer/settings.json</code>.</p>
+</li></ul>
+
+<p>Each value resolves on its own: environment variable first, then the stored value, then a provider-specific fallback (the AWS shared config for the Bedrock region), then the prompt. Optional values are never prompted for.</p>
+
+<table role="table">
+<thead>
+<tr>
+<th>Provider</th>
+<th>Environment variables</th>
+<th>Guide</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>anthropic</code></td>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td><a href="docs/PROVIDERS_md.html#anthropic">Anthropic</a></td>
+</tr>
+<tr>
+<td><code>openai</code></td>
+<td><code>OPENAI_API_KEY</code>; optional <code>OPENAI_BASE_URL</code></td>
+<td><a href="docs/PROVIDERS_md.html#openai">OpenAI</a></td>
+</tr>
+<tr>
+<td><code>gemini</code></td>
+<td><code>GEMINI_API_KEY</code></td>
+<td><a href="docs/PROVIDERS_md.html#gemini">Gemini</a></td>
+</tr>
+<tr>
+<td><code>openrouter</code></td>
+<td><code>OPENROUTER_API_KEY</code></td>
+<td><a href="docs/PROVIDERS_md.html#openrouter">OpenRouter</a></td>
+</tr>
+<tr>
+<td><code>azure_openai</code></td>
+<td><code>AZURE_OPENAI_ENDPOINT</code>, <code>AZURE_OPENAI_API_KEY</code></td>
+<td><a href="docs/PROVIDERS_md.html#azure-openai">Azure OpenAI</a></td>
+</tr>
+<tr>
+<td><code>amazon_bedrock</code></td>
+<td><code>AWS_REGION</code> or <code>AWS_DEFAULT_REGION</code>; optional <code>AWS_BEARER_TOKEN_BEDROCK</code></td>
+<td><a href="docs/PROVIDERS_md.html#amazon-bedrock">Amazon Bedrock</a></td>
+</tr>
+</tbody>
+</table>
+
+<p><code>auth.json</code> holds one typed entry per provider, and a stored secret may be a literal, a <code>$ENV_VAR</code> reference or a <code>!shell command</code> whose stdout is the secret:</p>
+
+<pre class="json">{
+  &quot;anthropic&quot;: { &quot;type&quot;: &quot;api_key&quot;, &quot;api_key&quot;: &quot;sk-ant-…&quot; },
+  &quot;openai&quot;: { &quot;type&quot;: &quot;api_key&quot;, &quot;api_key&quot;: &quot;!security find-generic-password -s openai -w&quot; }
+}</pre>
+
+<p>The flat <code>{&quot;anthropic&quot;: &quot;sk-…&quot;}</code> shape earlier versions wrote is no longer read; paste the key again when prompted. <a href="docs/PROVIDERS_md.html">Providers</a> has the full format.</p>
+
+<span id="label-Switching+the+model" class="legacy-anchor"></span>
+<h3 id="switching-the-model"><a href="#switching-the-model">Switching the model</a></h3>
+
+<p><code>/model provider/name</code> switches the model for the current session only, keeping the conversation so far — <code>/model openai/gpt-5</code>, say. The provider prefix is required: a bare name such as <code>/model sonnet</code> is rejected with the list of providers. <code>/model</code> alone shows the model in use. The switch is refused when the session has no credentials for the new provider, and it never changes <code>settings.json</code>; set <code>model</code> there to change the model new sessions start with (<a href="docs/CONFIGURATION_md.html#model">Configuration</a>).</p>
+
+<span id="label-Configuration" class="legacy-anchor"></span>
+<h3 id="configuration"><a href="#configuration">Configuration</a></h3>
+<ul><li>
+<p><code>AGENTS.md</code> — <code>~/.riffer/AGENTS.md</code> and an <code>AGENTS.md</code> in the current working directory or any directory above it, whichever exist, are re-read every turn as instructions that take precedence over the default norms (<a href="docs/INSTRUCTIONS_md.html#agentsmd">Instructions</a>).</p>
+</li><li>
+<p>Skills — Agent Skills in <code>.agents/skills/</code> from the current working directory up to the repository root, and in <code>~/.agents/skills/</code>, are offered to the model, and each can be run with <code>/skill:&lt;name&gt;</code> (<a href="docs/SKILLS_md.html">Skills</a>).</p>
+</li><li>
+<p><code>RIFFER_MODEL</code> — the model for this run as <code>provider/name</code>, winning over the <code>model</code> setting. A bare name such as <code>sonnet</code> is rejected with the list of providers.</p>
+</li><li>
+<p><code>~/.riffer/settings.json</code> — optional user settings, and <code>&lt;cwd&gt;/.riffer/settings.json</code> for one project, merged key by key with the project winning. Every key is optional:</p>
+</li></ul>
+
+<p><code>json  {    &quot;model&quot;: &quot;anthropic/claude-sonnet-4-6&quot;,    &quot;reasoning&quot;: &quot;low&quot;,    &quot;models&quot;: {      &quot;anthropic/claude-sonnet-4-6&quot;: {        &quot;input&quot;: 3.0,        &quot;output&quot;: 15.0,        &quot;cache_write&quot;: 3.75,        &quot;cache_read&quot;: 0.3      }    }  }  </code></p>
+
+<p><code>model</code> is the model new sessions start with; a host built on the <a href="docs/EMBEDDING_md.html#building-a-runtime-with-the-loader">Loader</a> asks for one when none is set and writes the answer here. <code>extensions.disabled</code> (for example <code>[&quot;mcp&quot;]</code>) leaves bundled extensions out. <code>models</code> prices each model in USD per million tokens; <a href="docs/CONFIGURATION_md.html">Configuration</a> has every key. <code>reasoning</code> is translated to the provider’s own parameter — Anthropic accepts <code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code> and <code>max</code>; OpenAI and OpenRouter accept <code>low</code>, <code>medium</code>, <code>high</code> and <code>xhigh</code>. Omitting it, or supplying an unrecognised value, leaves the model’s default reasoning behaviour unchanged.</p>
+
+<span id="label-Development" class="legacy-anchor"></span>
+<h2 id="development"><a href="#development">Development</a></h2>
+
+<p>Every project chore is a script in <code>bin/</code>. The Rakefile behind them is an implementation detail; you never need to call rake directly.</p>
+
+<table role="table">
+<thead>
+<tr>
+<th>Script</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bin/setup</code></td>
+<td>Install dependencies on a fresh checkout (gems + rbs collection)</td>
+</tr>
+<tr>
+<td><code>bin/test</code></td>
+<td>Run the test suite. Pass files and/or Minitest flags: <code>bin/test test/foo_test.rb -n /pattern/</code></td>
+</tr>
+<tr>
+<td><code>bin/lint</code></td>
+<td>Run RuboCop. Arguments are forwarded, e.g. <code>bin/lint -a</code></td>
+</tr>
+<tr>
+<td><code>bin/typecheck</code></td>
+<td>Check the rbs collection lockfile and <code>sig/generated</code> are current, then type-check with Steep</td>
+</tr>
+<tr>
+<td><code>bin/rbs</code></td>
+<td>Regenerate <code>sig/generated</code> from the inline annotations in <code>lib/</code></td>
+</tr>
+<tr>
+<td><code>bin/rbs-watch</code></td>
+<td>Regenerate <code>sig/generated</code> whenever <code>lib/</code> changes</td>
+</tr>
+<tr>
+<td><code>bin/ci</code></td>
+<td>Run everything CI runs, serially. Use before pushing</td>
+</tr>
+<tr>
+<td><code>bin/build</code></td>
+<td>Build the gem into <code>pkg/</code>; the publish workflow runs this before <code>gem push</code></td>
+</tr>
+<tr>
+<td><code>bin/docs</code></td>
+<td>Build the docs site and API reference into <code>_site/</code>; <code>bin/docs serve</code> serves it at <a href="http://localhost:8000">localhost:8000</a></td>
+</tr>
+<tr>
+<td><code>bin/plans</code></td>
+<td>Serve the building plans in <code>plans/</code> at <a href="http://localhost:8001">localhost:8001</a></td>
+</tr>
+</tbody>
+</table>
+
+<span id="label-Releasing" class="legacy-anchor"></span>
+<h2 id="releasing"><a href="#releasing">Releasing</a></h2>
+
+<p>PR titles are <a href="https://www.conventionalcommits.org/">conventional commits</a> and are linted in CI: <code>feat:</code> bumps the minor version, <code>fix:</code> bumps the patch, and <code>feat!:</code> marks a breaking change (also a minor bump while we are on 0.x). <code>chore:</code>, <code>docs:</code>, <code>ci:</code>, <code>refactor:</code> and <code>test:</code> never release. Squash-merging makes the title the commit on <code>main</code>.</p>
+
+<p><a href="https://github.com/googleapis/release-please">release-please</a> keeps a release PR open that bumps <code>lib/riffer/rig/version.rb</code> and writes <code>CHANGELOG.md</code>. Merging that PR tags <code>vX.Y.Z</code>, creates the GitHub Release and publishes the gem to RubyGems.org through Trusted Publishing; nothing is pushed by hand.</p>
+
+<p>riffer is pinned to one minor (<code>~&gt; 0.49.0</code>) because its 0.x minors may break. When Dependabot opens the riffer bump, retitle it <code>feat(deps):</code> or <code>fix(deps):</code> before merging so it releases and appears in the changelog.</p>
+
+<span id="label-Contributing" class="legacy-anchor"></span>
+<h2 id="contributing"><a href="#contributing">Contributing</a></h2>
+<ol><li>
+<p>Fork the repository and create your branch: <code>git checkout -b feature/foo</code></p>
+</li><li>
+<p>Run the tests and linters locally.</p>
+</li><li>
+<p>Submit a pull request with a clear description of the change.</p>
+</li></ol>
+
+<p>Please follow the <a href="CODE_OF_CONDUCT_md.html">Code of Conduct</a>.</p>
+
+<span id="label-License" class="legacy-anchor"></span>
+<h2 id="license"><a href="#license">License</a></h2>
+
+<p>Licensed under the MIT License. See <a href="LICENSE.txt"><code>LICENSE.txt</code></a> for details.</p>
+
+<span id="label-Maintainer" class="legacy-anchor"></span>
+<h2 id="maintainer"><a href="#maintainer">Maintainer</a></h2>
+<ul><li>
+<p>Jake Bottrall - <a href="https://github.com/bottrall">github.com/bottrall</a></p>
+</li></ul>
+
+
+</main>
+
+<aside id="table-of-contents" class="table-of-contents" role="complementary" aria-label="Table of Contents">
+  <div class="toc-sticky">
+    <h3 class="toc-heading">On This Page</h3>
+    <nav class="toc-nav" id="toc-nav" aria-label="Page sections">
+      <!-- Generated by JavaScript based on page headings -->
+    </nav>
+  </div>
+</aside>
+
+
+<footer class="site-footer">
+  
+
+  <div class="footer-bottom">
+    <p>
+      Generated by <a href="https://ruby.github.io/rdoc/">RDoc 8.1.0</a>
+      using the Aliki theme by <a href="http://st0012.dev">Stan Lo</a>
+    </p>
+  </div>
+</footer>
+
+</body>
+

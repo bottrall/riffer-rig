@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hosts — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/getting-started/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.8.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">01</span>Getting started</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">02</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">03</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">04</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">05</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">06</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">07</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">08</span>Headless mode</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">09</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">10</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/" class="active" aria-current="page"
+                  ><span class="num">11</span>Hosts</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">12</span>Providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Extending and embedding · 11</span></p>
+          <h1>Hosts</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#the-null-host">The null host</a></li>
+              <li><a href="#the-mirror">The mirror</a></li>
+              <li><a href="#writing-a-host">Writing a host</a></li>
+            </ul>
+          </nav>
+          
+<p>A host receives questions and out-of-band messages from a <code>Riffer::Rig::Runtime</code>. The contract is the RBS interface <code>Riffer::Rig::Hosts::_Host</code>: a host is any object that implements every method below.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Method</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>ask(question, options:, secret:)</code></td>
+      <td>free text or a choice from <code>options</code>; <code>secret:</code> hides input</td>
+    </tr>
+    <tr>
+      <td><code>confirm(question)</code></td>
+      <td>yes or no</td>
+    </tr>
+    <tr>
+      <td><code>notify(message, level:)</code></td>
+      <td>out-of-band message; never enters the model’s context</td>
+    </tr>
+    <tr>
+      <td><code>progress(label) { }</code></td>
+      <td>wraps slow work</td>
+    </tr>
+    <tr>
+      <td><code>capabilities</code></td>
+      <td>the <code>Set</code> of methods the host truly supports</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>A host implements all five, including the ones it declines. <code>capabilities</code> is checked before asking, so a host that declines a capability is never asked and the caller takes the declined path.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">MyHost</span>
+  <span class="k">def</span> <span class="nf">capabilities</span> <span class="o">=</span> <span class="no">Set</span><span class="p">[</span><span class="ss">:notify</span><span class="p">].</span><span class="nf">freeze</span>
+  <span class="k">def</span> <span class="nf">ask</span><span class="p">(</span><span class="n">question</span> <span class="o">=</span> <span class="kp">nil</span><span class="p">,</span> <span class="ss">options: </span><span class="kp">nil</span><span class="p">,</span> <span class="ss">secret: </span><span class="kp">false</span><span class="p">)</span> <span class="o">=</span> <span class="kp">nil</span>
+  <span class="k">def</span> <span class="nf">confirm</span><span class="p">(</span><span class="n">question</span> <span class="o">=</span> <span class="kp">nil</span><span class="p">)</span> <span class="o">=</span> <span class="kp">false</span>
+  <span class="k">def</span> <span class="nf">notify</span><span class="p">(</span><span class="n">message</span> <span class="o">=</span> <span class="kp">nil</span><span class="p">,</span> <span class="ss">level: :info</span><span class="p">)</span> <span class="o">=</span> <span class="nb">warn</span><span class="p">(</span><span class="s2">"[</span><span class="si">#{</span><span class="n">level</span><span class="si">}</span><span class="s2">] </span><span class="si">#{</span><span class="n">message</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">progress</span><span class="p">(</span><span class="n">label</span> <span class="o">=</span> <span class="kp">nil</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">block</span><span class="p">)</span> <span class="o">=</span> <span class="n">block</span><span class="o">&amp;</span><span class="p">.</span><span class="nf">call</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<h2 id="the-null-host">The null host</h2>
+
+<p><code>Riffer::Rig::Hosts::Null</code> is the do-nothing host and the Runtime’s default: every capability is declined (<code>ask</code> returns <code>nil</code>, <code>confirm</code> returns <code>false</code>, <code>notify</code> is a no-op, <code>progress</code> yields).</p>
+
+<h2 id="the-mirror">The mirror</h2>
+
+<p>The Runtime wraps the host it is given in a <code>Riffer::Rig::Hosts::Mirror</code>, which is what <code>runtime.host</code> returns. The mirror forwards every call to the wrapped host and queues a <code>notify</code> event for each <code>notify</code>, so a consumer of the event stream sees what the host saw.</p>
+
+<h2 id="writing-a-host">Writing a host</h2>
+
+<p>A host is two pieces: an object implementing <code>Riffer::Rig::Hosts::_Host</code>, which the Runtime asks and tells things out of band, and a loop that builds a Runtime and renders its event stream. The <code>riffer</code> terminal is the reference for both. Its loop is <code>Riffer::Rig::Terminal</code> (<code>lib/riffer/rig/terminal.rb</code>, with its presentation under <code>lib/riffer/rig/terminal/</code>), and its host object is <code>Riffer::Rig::Terminal::Host</code> (<code>lib/riffer/rig/terminal/host.rb</code>), which the loop holds as a collaborator rather than being the host itself. Keep your host object inside your host’s own namespace, as the terminal does; <code>Riffer::Rig::Hosts</code> holds only the contract and the reusable <code>Null</code> and <code>Mirror</code>.</p>
+
+<p>A host uses only the public API of the Runtime, the hosts, the Loader and the events. The terminal is held to that by a test: nothing under <code>Riffer::Rig::Terminal</code> names another <code>Riffer::Rig</code> constant. Anything a host needs beyond that becomes a Runtime or Loader feature, so embedders get it too.</p>
+
+<h3 id="building-the-runtime">Building the Runtime</h3>
+
+<p>Build the Runtime with <a href="/guides/embedding/#building-a-runtime-with-the-loader"><code>Loader.runtime</code></a>, passing your host object as <code>host:</code>. Command-line flags are Loader keywords (<code>model:</code>, <code>extensions:</code>, <code>skills:</code>, <code>agents_md:</code>, <code>tools:</code>, <code>max_steps:</code>); a host translates its arguments into them and does nothing else with configuration. Onboarding and credential prompts reach the host through <code>ask</code> (with <code>secret: true</code> for a key), and only when <code>capabilities</code> includes <code>:ask</code>. <code>Riffer::Rig::Loader::ConfigurationError</code> carries a message written for the user: the terminal prints it and exits with status 1.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">host</span> <span class="o">=</span> <span class="no">MyHost</span><span class="p">.</span><span class="nf">new</span>
+<span class="n">runtime</span> <span class="o">=</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Loader</span><span class="p">.</span><span class="nf">runtime</span><span class="p">(</span><span class="ss">cwd: </span><span class="no">Dir</span><span class="p">.</span><span class="nf">pwd</span><span class="p">,</span> <span class="ss">host: </span><span class="n">host</span><span class="p">,</span> <span class="ss">model: </span><span class="s1">'anthropic/claude-sonnet-4-6'</span><span class="p">,</span> <span class="ss">skills: </span><span class="kp">false</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="driving-it">Driving it</h3>
+
+<ul>
+  <li>A line of text is <code>runtime.prompt(text) { |event| ... }</code>, which yields riffer’s <code>StreamEvents</code> and rig’s events as the turn runs.</li>
+  <li>A line starting with <code>/</code> is <code>runtime.run_command(name, args) { |event| ... }</code>; the names come from <code>runtime.commands</code>. An unknown name is reported through the host’s <code>notify</code>, so a host needs no list of its own. Only commands that end or replace the Runtime stay in the host: the terminal’s are <code>/exit</code> and <code>/quit</code>.</li>
+  <li><code>runtime.cancel</code> stops the running turn at the next message boundary; the terminal calls it on Ctrl-C (from a thread, since the cancel flag takes a lock that Ruby refuses inside a signal handler). The turn ends with riffer’s <code>Interrupt</code> event and a <code>turn_end</code> whose <code>stop_reason</code> is <code>:cancelled</code>.</li>
+  <li><code>runtime.on_message</code> delivers each message as the session records it; the terminal renders tool results from it.</li>
+  <li><code>runtime.close</code> when the session ends.</li>
+</ul>
+
+<h3 id="rendering-the-stream">Rendering the stream</h3>
+
+<p>The terminal renders <code>TextDelta</code> as streamed prose, <code>ToolCallDone</code> as the call, <code>SkillActivation</code> and the rig <code>skill_activated</code> event as a skill line, <code>command_output</code> as a line of its own, and <code>Interrupt</code> as a note. <code>turn_end</code> carries the turn’s <code>usage</code>, which the terminal prints with <code>runtime.tally</code> (every turn so far) and its <code>cost</code>. It skips the stream’s <code>notify</code> events: the mirror queues one for each <code>host.notify</code>, which the terminal’s host has already printed.</p>
+
+<h3 id="the-terminals-host">The terminal’s host</h3>
+
+<p><code>Riffer::Rig::Terminal::Host</code> reports all four capabilities:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Method</th>
+      <th>In the terminal</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>ask</code></td>
+      <td>prints the question and reads a line; <code>secret:</code> reads without echo; <code>options:</code> are numbered and a number picks one</td>
+    </tr>
+    <tr>
+      <td><code>confirm</code></td>
+      <td>asks <code>[y/N]</code>; only an answer starting with <code>y</code> confirms</td>
+    </tr>
+    <tr>
+      <td><code>notify</code></td>
+      <td>prints the message as a line of its own, red for <code>level: :error</code></td>
+    </tr>
+    <tr>
+      <td><code>progress</code></td>
+      <td>prints the label and runs the block under the spinner</td>
+    </tr>
+  </tbody>
+</table>
+
+        </article>
+
+        <nav class="pager">
+          <a class="doc" href="/guides/embedding/"
+            ><span class="go">←</span
+            ><span
+              ><span class="desc">Previous</span
+              ><span class="name">Embedding riffer-rig</span></span
+            ></a
+          >
+          <a class="doc next" href="/guides/providers/overview/"
+            ><span
+              ><span class="desc">Next</span
+              ><span class="name">Providers</span></span
+            ><span class="go">→</span></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

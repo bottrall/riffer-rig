@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Getting started — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/getting-started/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.8.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/getting-started/" class="active" aria-current="page"
+                  ><span class="num">01</span>Getting started</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">02</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">03</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">04</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">05</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">06</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">07</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">08</span>Headless mode</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">09</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">10</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">11</span>Hosts</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">12</span>Providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Start here · 01</span></p>
+          <h1>Getting started</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#install">Install</a></li>
+              <li><a href="#first-run">First run</a></li>
+              <li><a href="#the-session">The session</a></li>
+            </ul>
+          </nav>
+          
+<h2 id="install">Install</h2>
+
+<p>riffer-rig needs Ruby 4.0 or later.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gem <span class="nb">install </span>riffer-rig
+</code></pre></div></div>
+
+<p>This installs the <code>riffer</code> executable.</p>
+
+<h2 id="first-run">First run</h2>
+
+<p>Run <code>riffer</code> from the project you want to work on:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd </span>my-project
+riffer
+</code></pre></div></div>
+
+<p>With no model configured, it asks for one:</p>
+
+<pre><code class="language-text">Which model should riffer use? Enter provider/name, with a provider from: amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter
+› anthropic/claude-sonnet-4-6
+</code></pre>
+
+<p>The answer is saved as <code>model</code> in <code>~/.riffer/settings.json</code>, so later runs skip the question. A model already set by <code>--model</code>, <code>RIFFER_MODEL</code> or either settings file is used without asking (<a href="/guides/configuration/#model">Configuration</a>).</p>
+
+<p>Next it looks for the provider’s credentials in the environment and in <code>~/.riffer/auth.json</code>. When one is missing it asks for it, reading a key without echo:</p>
+
+<pre><code class="language-text">anthropic api_key
+› (hidden)
+</code></pre>
+
+<p>A pasted key is saved to <code>~/.riffer/auth.json</code> (permissions <code>600</code>) and reused from then on. Leaving the answer empty stops with a message naming the environment variable to set instead. <a href="/guides/providers/overview/">Providers</a> lists each provider’s variables and where to create a key.</p>
+
+<h2 id="the-session">The session</h2>
+
+<p>The banner shows the model, the working directory, how many skills were found and the version. Type a prompt and press Enter:</p>
+
+<ul>
+  <li>the reply streams in, with each tool call (<code>⚙ read(path: "lib/app.rb")</code>) and the first line of its result;</li>
+  <li>each turn ends with a token line, and the session cost once the model is priced (<a href="/guides/configuration/#models">Configuration</a>);</li>
+  <li>Ctrl-C cancels a running turn; at the prompt, a second Ctrl-C exits, as do <code>/exit</code>, <code>/quit</code> and Ctrl-D.</li>
+</ul>
+
+<p>The <a href="https://github.com/bottrall/riffer-rig#usage">README</a> lists the flags and slash commands.</p>
+
+        </article>
+
+        <nav class="pager">
+          <span></span>
+          <a class="doc next" href="/guides/configuration/"
+            ><span
+              ><span class="desc">Next</span
+              ><span class="name">Configuration</span></span
+            ><span class="go">→</span></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

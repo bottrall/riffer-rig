@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tools — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/getting-started/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.8.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">01</span>Getting started</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">02</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">03</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/" class="active" aria-current="page"
+                  ><span class="num">04</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">05</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">06</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">07</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">08</span>Headless mode</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">09</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">10</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">11</span>Hosts</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">12</span>Providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Using the terminal · 04</span></p>
+          <h1>Tools</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#the-four-tools">The four tools</a></li>
+              <li><a href="#identifiers">Identifiers</a></li>
+              <li><a href="#the-bundled-extensions">The bundled extensions</a></li>
+              <li><a href="#replacing-a-tool">Replacing a tool</a></li>
+            </ul>
+          </nav>
+          
+<p>riffer-rig ships four tools — <code>read</code>, <code>write</code>, <code>edit</code> and <code>bash</code> — each registered by its own bundled extension, so a host can pass any subset of them and a later extension can replace any one.</p>
+
+<h2 id="the-four-tools">The four tools</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Tool</th>
+      <th>Does</th>
+      <th>Guidance in its description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>read</code></td>
+      <td>returns a file with line numbers; <code>offset</code> (1-based) and <code>limit</code> (default 2000 lines) slice a large file; a missing file is a tool error</td>
+      <td>“Read a file before editing it, and read rather than guess what a file contains.”</td>
+    </tr>
+    <tr>
+      <td><code>write</code></td>
+      <td>creates or overwrites a file, making any parent directories</td>
+      <td>“Use this for new files or full rewrites; prefer edit for changes to an existing file.”</td>
+    </tr>
+    <tr>
+      <td><code>edit</code></td>
+      <td>replaces an exact string, which must be unique unless <code>replace_all</code> is set; a missing or ambiguous match is a tool error</td>
+      <td>“Prefer this over write for existing files; pass enough surrounding text to make old_string unique.”</td>
+    </tr>
+    <tr>
+      <td><code>bash</code></td>
+      <td>runs a command in the working directory in its own process group and returns combined stdout/stderr; a non-zero exit is a tool error; <code>timeout_ms</code> (default 120000) caps each call; output is truncated at 30,000 bytes; a Runtime <code>cancel</code> kills the process group</td>
+      <td>“Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers.”</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The guidance sentence ends each tool’s description. It is the only coding guidance the model gets: the base prompt names no tools, so the guidance travels with the tool and disappears when the tool is left out.</p>
+
+<p>Tools never raise. A bad argument, a missing file or a failing command comes back to the model as a tool error it can read and act on.</p>
+
+<p>Relative paths resolve against the Runtime’s <code>cwd:</code> (and <code>bash</code> runs there), not the process directory, so two Runtimes in one process can work in different directories. A tool called outside a Runtime falls back to <code>Dir.pwd</code>.</p>
+
+<h2 id="identifiers">Identifiers</h2>
+
+<p>A tool’s name everywhere — in <code>tools:</code> on <code>Runtime.new</code> and <code>Loader.runtime</code>, and on <code>--tools</code> — is its riffer <code>identifier</code>: <code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, and whatever identifier an extension tool declares.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Runtime</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s1">'anthropic/claude-sonnet-4-6'</span><span class="p">,</span> <span class="ss">extensions: </span><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">bundled</span><span class="p">,</span> <span class="ss">tools: </span><span class="sx">%w[read bash]</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>The allowlist covers the tools extensions register. Tools from <a href="/guides/mcp/">MCP servers</a> are added by riffer inside the agent and are not filtered by it.</p>
+
+<h2 id="the-bundled-extensions">The bundled extensions</h2>
+
+<p><code>Riffer::Rig.bundled(:read)</code> returns the bundled extension of that name — the same <code>Riffer::Rig::Extension</code> type <code>Riffer::Rig.extension</code> returns — and <code>Riffer::Rig.bundled</code> with no argument returns all of them in load order: <code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, then <code>agents_md</code> (<a href="/guides/instructions/#agentsmd">Instructions</a>), <code>skills</code> (<a href="/guides/skills/">Skills</a>) and <code>mcp</code> (<a href="/guides/mcp/">MCP</a>). An unknown name raises <code>KeyError</code>. An embedder composes them with its own:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Runtime</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+  <span class="s1">'anthropic/claude-sonnet-4-6'</span><span class="p">,</span>
+  <span class="ss">extensions: </span><span class="p">[</span><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">bundled</span><span class="p">(</span><span class="ss">:read</span><span class="p">),</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">bundled</span><span class="p">(</span><span class="ss">:bash</span><span class="p">),</span> <span class="no">MyExt</span><span class="p">]</span>
+<span class="p">)</span>
+</code></pre></div></div>
+
+<p>The bundled extensions are not recorded in the <code>Riffer::Rig.extensions</code> registry, so a user extension that happens to share a name never overwrites one.</p>
+
+<h2 id="replacing-a-tool">Replacing a tool</h2>
+
+<p>Register a tool with the same identifier from a later extension:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">SandboxedBash</span> <span class="o">&lt;</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Tool</span>
+  <span class="n">identifier</span> <span class="s1">'bash'</span>
+  <span class="n">description</span> <span class="s1">'Run a shell command inside the sandbox.'</span>
+  <span class="c1"># params and call as for any riffer tool</span>
+<span class="k">end</span>
+
+<span class="n">sandbox</span> <span class="o">=</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">extension</span><span class="p">(</span><span class="s1">'sandbox'</span><span class="p">)</span> <span class="p">{</span> <span class="o">|</span><span class="n">rig</span><span class="o">|</span> <span class="n">rig</span><span class="p">.</span><span class="nf">tool</span> <span class="no">SandboxedBash</span> <span class="p">}</span>
+<span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Runtime</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s1">'anthropic/claude-sonnet-4-6'</span><span class="p">,</span> <span class="ss">extensions: </span><span class="p">[</span><span class="o">*</span><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">bundled</span><span class="p">,</span> <span class="n">sandbox</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>The later registration wins and takes the earlier tool’s place in the list. The Runtime reports each replacement through the host’s <code>notify</code> at level <code>:info</code> — “Extension sandbox replaces tool bash from bash” — which also reaches the stream as a <code>notify</code> event. Nothing is deregistered: <code>Riffer::Rig.bundled(:bash)</code> still returns the original. Commands and prompt sections follow the same rule; see <a href="/guides/extensions/">Extensions</a>.</p>
+
+        </article>
+
+        <nav class="pager">
+          <a class="doc" href="/guides/instructions/"
+            ><span class="go">←</span
+            ><span
+              ><span class="desc">Previous</span
+              ><span class="name">Instructions</span></span
+            ></a
+          >
+          <a class="doc next" href="/guides/skills/"
+            ><span
+              ><span class="desc">Next</span
+              ><span class="name">Skills</span></span
+            ><span class="go">→</span></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>
