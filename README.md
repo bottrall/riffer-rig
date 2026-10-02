@@ -88,6 +88,8 @@ Each value resolves on its own: environment variable first, then the stored valu
 
 The flat `{"anthropic": "sk-…"}` shape earlier versions wrote is no longer read; paste the key again when prompted. [Providers](docs/PROVIDERS.md) has the full format.
 
+Inside a session, `/auth` lists every provider with where its secret comes from — `env`, `stored`, `chain` (the SDK's own credential chain, for Bedrock) or `missing`. `/auth <provider>` re-runs that provider's setup, which is how you rotate a key, and applies the new values to the current session, so the next request uses them. `/auth remove <provider>` deletes the provider's `auth.json` entry and its `providers` block in settings.
+
 ### Switching the model
 
 `/model provider/name` switches the model for the current session only, keeping the conversation so far — `/model openai/gpt-5`, say. The provider prefix is required: a bare name such as `/model sonnet` is rejected with the list of providers. `/model` alone shows the model in use. The switch is refused when the session has no credentials for the new provider, and it never changes `settings.json`; set `model` there to change the model new sessions start with ([Configuration](docs/CONFIGURATION.md#model)).

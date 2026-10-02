@@ -135,7 +135,7 @@
 <p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/109">#109</a>, with the Interfaces row Files. Deviations: only entries typed <code>api_key</code> are read, so the old flat shape is ignored rather than rejected; <code>$VAR</code> and <code>!command</code> expand on every <code>resolve</code>, which makes once per process the Loader's single call; a value in <code>settings.json</code> is never expanded, so a settings file cannot run a command; and the <code>providers</code> block is written to the home <code>settings.json</code>, the only scope settings has so far.</p>
 </section>
 
-<section class="topic" id="auth-command">
+<section class="topic enshrined" id="auth-command">
 <h3><code>/auth</code></h3>
 <ul>
   <li><code>/auth</code> lists every registry provider with a status: <code>env</code>, <code>stored</code>, <code>chain</code> or <code>missing</code>.</li>
@@ -143,6 +143,7 @@
   <li><code>/auth remove &lt;provider&gt;</code> deletes the <code>auth.json</code> entry and the <code>providers</code> block in settings.</li>
   <li>Runtime-owned, so terminal and ACP share it. Not named <code>/login</code>, which implies OAuth.</li>
 </ul>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/128">#128</a> as <code>Riffer::Rig::Commands::Auth</code> in <code>lib/riffer/rig/commands/auth.rb</code>, with the Interfaces row Commands (<code>/model</code> is <a href="https://github.com/bottrall/riffer-rig/issues/116">#116</a>'s). Bullet 4: the command is registered in <code>Runtime#install</code> next to <code>/model</code>, so terminal and ACP share it, and it is not named <code>/login</code>. The re-run of bullet 2 goes through <code>Credentials.resolve</code> with the session's host, then <code>Credentials.apply</code> re-applies the values to <code>Riffer.config</code> and <code>Runtime#merge_credentials</code> updates the Runtime's <code>credentials:</code> in place, so the next request uses them and a later <code>/model</code> accepts the provider; a provider whose required fields still do not resolve is refused through <code>host.notify</code> instead of updated. Deviations: the listing of bullet 1 is riffer's built-ins minus Mock rather than every registry provider, because <code>Repository</code> lists no registrations (an upstream candidate; <a href="https://github.com/bottrall/riffer-rig/issues/130">#130</a> widens it), and an unknown provider is rejected with the same hint <code>/model</code> uses rather than being resolved through the generic setup.</p>
 </section>
 
 <section class="topic enshrined" id="extension-providers">

@@ -1636,7 +1636,7 @@ describe Riffer::Rig::Runtime do
     end
 
     it 'swaps in the commands of the new list' do
-      assert_equal %w[model new], rebuilt.commands.map(&:name)
+      assert_equal %w[auth model new], rebuilt.commands.map(&:name)
     end
 
     it 'renders the prompt sections of the new list' do
@@ -1760,7 +1760,7 @@ describe Riffer::Rig::Runtime do
       it 'keeps the old commands' do
         attempt
 
-        assert_equal %w[model old], @runtime.commands.map(&:name)
+        assert_equal %w[auth model old], @runtime.commands.map(&:name)
       end
 
       it 'keeps the old settings' do

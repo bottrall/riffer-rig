@@ -1,0 +1,34 @@
+# Generated from lib/riffer/rig/commands/auth.rb with RBS::Inline
+
+module Riffer::Rig::Commands::Auth
+  HINT: String
+
+  USAGE: String
+
+  # @rbs return: Riffer::Rig::Command
+  def command: () -> Riffer::Rig::Command
+
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs return: void
+  def run: (Riffer::Rig::Command::Context ctx) -> void
+
+  private
+
+  # @rbs return: String
+  def list: () -> String
+
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs identifier: String
+  # @rbs return: void
+  def rerun: (Riffer::Rig::Command::Context ctx, String identifier) -> void
+
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs identifier: String
+  # @rbs return: void
+  def remove: (Riffer::Rig::Command::Context ctx, String identifier) -> void
+
+  # @rbs provider: Symbol
+  # @rbs missing: Array[Symbol]
+  # @rbs return: String
+  def refusal: (Symbol provider, Array[Symbol] missing) -> String
+end

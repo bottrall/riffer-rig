@@ -191,6 +191,13 @@ class Riffer::Rig::Runtime
     @model_override = model
   end
 
+  # @rbs provider: Symbol
+  # @rbs values: Hash[Symbol, String]
+  # @rbs return: void
+  def merge_credentials(provider, values)
+    @credentials = @credentials.merge(provider => values)
+  end
+
   # @rbs extensions: Array[Riffer::Rig::Extension]
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs return: nil
@@ -321,6 +328,7 @@ class Riffer::Rig::Runtime
     @prompts = registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h
     skills = agent.context.skills&.skills&.values || []
     commands = [
+      Riffer::Rig::Commands::Auth.command,
       Riffer::Rig::Commands::Model.command,
       *skills.map { |skill| Riffer::Rig::Commands::Skill.command(skill) },
       *registrars.flat_map { |registrar| registrar.commands.values }
