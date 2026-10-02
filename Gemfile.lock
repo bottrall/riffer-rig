@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    riffer-rig (0.7.0)
+    riffer-rig (0.8.0)
       anthropic (~> 1.69)
       base64 (~> 0.2)
       event_stream_parser (~> 1.0)
