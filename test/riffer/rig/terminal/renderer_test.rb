@@ -60,6 +60,45 @@ describe Riffer::Rig::Terminal::Renderer do
     assert(@io.string.lines.all? { |line| line.chomp.length <= 20 })
   end
 
+  it 'detects the width from a tty io' do
+    io = StringIO.new
+    def io.tty? = true
+
+    def io.winsize = [24, 20]
+    renderer = Riffer::Rig::Terminal::Renderer.new(io: io, theme: Riffer::Rig::Terminal::Theme.new(enabled: false))
+
+    renderer.render(Riffer::StreamEvents::TextDelta.new('one two three four five'))
+    renderer.drain
+
+    assert(io.string.lines.all? { |line| line.chomp.length <= 20 })
+  end
+
+  it 'ignores an io whose winsize raises' do
+    io = StringIO.new
+    def io.tty? = true
+
+    def io.winsize = raise Errno::ENOTTY
+    renderer = Riffer::Rig::Terminal::Renderer.new(io: io, theme: Riffer::Rig::Terminal::Theme.new(enabled: false))
+
+    renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
+    renderer.drain
+
+    assert_equal "  hello\n", io.string
+  end
+
+  it 'ignores an io reporting zero columns' do
+    io = StringIO.new
+    def io.tty? = true
+
+    def io.winsize = [24, 0]
+    renderer = Riffer::Rig::Terminal::Renderer.new(io: io, theme: Riffer::Rig::Terminal::Theme.new(enabled: false))
+
+    renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
+    renderer.drain
+
+    assert_equal "  hello\n", io.string
+  end
+
   it 'indents prose on the left' do
     @renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
     @renderer.drain

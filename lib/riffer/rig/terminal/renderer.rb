@@ -294,6 +294,19 @@ class Riffer::Rig::Terminal::Renderer
 
   # @rbs return: Integer?
   def detect_width
-    @width || (@io.tty? ? @io.winsize[1] : nil)
+    @width || detected_width
+  end
+
+  # winsize raises on ttys with no queryable window size and some pty
+  # wrappers report zero columns; either way the real width is unknowable,
+  # and nil leaves every consumer un-fitted rather than mis-fitted.
+  # @rbs return: Integer?
+  def detected_width
+    return nil unless @io.tty?
+
+    width = @io.winsize[1]
+    width.positive? ? width : nil
+  rescue SystemCallError
+    nil
   end
 end
