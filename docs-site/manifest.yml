@@ -55,3 +55,6 @@ groups:
       - source: PROVIDERS.md
         slug: providers/overview
         description: Model strings, precedence, credentials, /auth
+      - source: CUSTOM_PROVIDERS.md
+        slug: providers/custom
+        description: Registering a provider from an extension; the setup, credentials, listings

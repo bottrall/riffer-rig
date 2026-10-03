@@ -4,6 +4,7 @@ require 'test_helper'
 require 'forwardable'
 require 'fileutils'
 require 'json'
+class AcmeAuthProvider < Riffer::Providers::Mock; end # rubocop:disable Rig/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
 
 class AnsweringAuthHost
   extend Forwardable
@@ -195,6 +196,31 @@ describe Riffer::Rig::Commands::Auth do
         )],
         command_events(Riffer::Rig::Runtime.new('mock/test'), 'remove')
       )
+    end
+  end
+
+  describe 'with a registered extension provider' do
+    before do
+      @saved = ENV.fetch('ACME_API_KEY', nil)
+      ENV['ACME_API_KEY'] = nil
+      Riffer::Rig::Registrar.new('acme').provider(:acme) { AcmeAuthProvider }
+    end
+
+    after do
+      ENV['ACME_API_KEY'] = @saved
+      Riffer::Rig::Providers.unregister(:acme)
+    end
+
+    it 'lists the registered provider with its status' do
+      text = command_events(Riffer::Rig::Runtime.new('mock/test'), '').first.text
+
+      assert_match(/^acme\s+missing$/, text)
+    end
+
+    it 'names the registered provider in the hint' do
+      text = command_events(Riffer::Rig::Runtime.new('mock/test'), 'remove bogus').first.text
+
+      assert_match(/with a provider from: .*acme/, text)
     end
   end
 end

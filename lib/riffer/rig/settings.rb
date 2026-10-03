@@ -16,9 +16,10 @@ module Riffer::Rig::Settings
 
   MODEL_STRING = %r{\A(?<provider>[^/\s]+)/\S+\z} #: Regexp
 
-  # Upstream candidate: riffer's Repository keeps extension registrations
-  # private and lists no identifiers, so the list names riffer's built-ins.
-  PROVIDERS = (Riffer::Providers::Repository::REPO.keys - [:mock]).freeze #: Array[Symbol]
+  # @rbs return: Array[Symbol]
+  def providers
+    Riffer::Rig::Providers.identifiers
+  end
 
   # @rbs path: String
   # @rbs return: Hash[Symbol, untyped]
@@ -62,7 +63,7 @@ module Riffer::Rig::Settings
     provider = provider_for(model)
     return if provider && Riffer::Providers::Repository.find(provider)
 
-    "#{model} is not a provider/name model string; the provider is one of: #{PROVIDERS.join(', ')}"
+    "#{model} is not a provider/name model string; the provider is one of: #{providers.join(', ')}"
   end
 
   # @rbs model: String

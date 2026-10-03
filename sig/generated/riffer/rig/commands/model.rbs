@@ -1,8 +1,6 @@
 # Generated from lib/riffer/rig/commands/model.rb with RBS::Inline
 
 module Riffer::Rig::Commands::Model
-  HINT: String
-
   SAVE: String
 
   # @rbs return: Riffer::Rig::Command
@@ -13,6 +11,9 @@ module Riffer::Rig::Commands::Model
   def run: (Riffer::Rig::Command::Context ctx) -> void
 
   private
+
+  # @rbs return: String
+  def hint: () -> String
 
   # The same setup flows the Loader runs when it builds a Runtime: the
   # provider's SDK gem, then its credentials, asked for when the host can ask.

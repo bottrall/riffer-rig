@@ -88,6 +88,14 @@ class Riffer::Rig::Registrar
     @mcp_servers[name] = Riffer::Rig::Mcp::Declaration.new(url: url, headers: headers)
   end
 
+  # @rbs prefix: String | Symbol
+  # @rbs setup: Riffer::Rig::ProviderSetup | Hash[Symbol, untyped]?
+  # @rbs &block: () -> singleton(::Riffer::Providers::Base)
+  # @rbs return: void
+  def provider(prefix, setup: nil, &)
+    Riffer::Rig::Providers.register(prefix, setup:, &)
+  end
+
   # @rbs event: Symbol
   # @rbs &block: (Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped
   # @rbs return: void

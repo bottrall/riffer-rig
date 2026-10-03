@@ -3,9 +3,6 @@
 module Riffer::Rig::Commands::Model
   extend self
 
-  HINT = 'Use /model provider/name, with a provider from: ' \
-         "#{Riffer::Rig::Settings::PROVIDERS.join(', ')}".freeze #: String
-
   SAVE = '--save' #: String
 
   # @rbs return: Riffer::Rig::Command
@@ -32,7 +29,7 @@ module Riffer::Rig::Commands::Model
     end
 
     provider = Riffer::Rig::Settings.provider_for(model)
-    return ctx.say(HINT) unless provider && Riffer::Providers::Repository.find(provider)
+    return ctx.say(hint) unless provider && Riffer::Providers::Repository.find(provider)
     return unless ready?(ctx, model, provider)
 
     ctx.runtime.model = model
@@ -41,6 +38,11 @@ module Riffer::Rig::Commands::Model
   end
 
   private
+
+  # @rbs return: String
+  def hint
+    "Use /model provider/name, with a provider from: #{Riffer::Rig::Settings.providers.join(', ')}"
+  end
 
   # The same setup flows the Loader runs when it builds a Runtime: the
   # provider's SDK gem, then its credentials, asked for when the host can ask.

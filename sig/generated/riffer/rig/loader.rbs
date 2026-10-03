@@ -4,12 +4,6 @@ class Riffer::Rig::Loader
   class ConfigurationError < StandardError
   end
 
-  PROVIDER_LIST: String
-
-  ONBOARDING_QUESTION: String
-
-  NO_MODEL: String
-
   EXTENSION_FEATURE: String
 
   @tracked_files: Array[String]
@@ -95,6 +89,15 @@ class Riffer::Rig::Loader
 
   # @rbs return: String
   def ask_for_model: () -> String
+
+  # @rbs return: String
+  def onboarding_question: () -> String
+
+  # @rbs return: String
+  def no_model: () -> String
+
+  # @rbs return: String
+  def provider_list: () -> String
 
   # @rbs provider: String
   # @rbs return: void

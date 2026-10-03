@@ -3,17 +3,9 @@
 class Riffer::Rig::Loader
   class ConfigurationError < StandardError; end
 
-  PROVIDER_LIST = Riffer::Rig::Settings::PROVIDERS.join(', ') #: String
-
-  ONBOARDING_QUESTION = 'Which model should riffer use? Enter provider/name, ' \
-                        "with a provider from: #{PROVIDER_LIST}".freeze #: String
-
-  NO_MODEL = 'No model is set: pass --model provider/name, set RIFFER_MODEL, or set "model" in ' \
-             "~/.riffer/settings.json, with a provider from: #{PROVIDER_LIST}".freeze #: String
-
   EXTENSION_FEATURE = 'riffer/rig/extension' #: String
 
-  private_constant :EXTENSION_FEATURE, :PROVIDER_LIST, :ONBOARDING_QUESTION, :NO_MODEL
+  private_constant :EXTENSION_FEATURE
 
   # @rbs @cwd: String
   # @rbs @host: Riffer::Rig::Hosts::_Host
@@ -196,10 +188,27 @@ class Riffer::Rig::Loader
 
   # @rbs return: String
   def ask_for_model
-    answer = asking_host.ask(ONBOARDING_QUESTION).to_s.strip
-    raise ConfigurationError, NO_MODEL if answer.empty?
+    answer = asking_host.ask(onboarding_question).to_s.strip
+    raise ConfigurationError, no_model if answer.empty?
 
     answer
+  end
+
+  # @rbs return: String
+  def onboarding_question
+    'Which model should riffer use? Enter provider/name, ' \
+      "with a provider from: #{provider_list}"
+  end
+
+  # @rbs return: String
+  def no_model
+    'No model is set: pass --model provider/name, set RIFFER_MODEL, or set "model" in ' \
+      "~/.riffer/settings.json, with a provider from: #{provider_list}"
+  end
+
+  # @rbs return: String
+  def provider_list
+    Riffer::Rig::Settings.providers.join(', ')
   end
 
   # @rbs provider: String

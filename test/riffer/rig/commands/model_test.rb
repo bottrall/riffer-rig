@@ -4,6 +4,7 @@ require 'test_helper'
 require 'forwardable'
 require 'fileutils'
 require 'json'
+class AcmeModelProvider < Riffer::Providers::Mock; end # rubocop:disable Rig/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
 
 class AnsweringModelHost
   extend Forwardable
@@ -307,6 +308,37 @@ describe Riffer::Rig::Commands::Model do
         [output('Saved mock/test to settings')],
         command_events(Riffer::Rig::Runtime.new('mock/test'), '--save')
       )
+    end
+  end
+
+  describe 'with a registered extension provider' do
+    before do
+      @saved = ENV.fetch('ACME_API_KEY', nil)
+      Riffer::Rig::Registrar.new('acme').provider(:acme) { AcmeModelProvider }
+    end
+
+    after do
+      ENV['ACME_API_KEY'] = @saved
+      Riffer::Rig::Providers.unregister(:acme)
+    end
+
+    it 'names the registered provider in the bare-name hint' do
+      text = command_events(Riffer::Rig::Runtime.new('mock/test'), 'sonnet').first.text
+
+      assert_match(/with a provider from: .*acme/, text)
+    end
+
+    it 'switches to a registered provider whose setup field resolves' do
+      ENV['ACME_API_KEY'] = 'sk-acme'
+      Riffer::Rig::Registrar.new('acme').provider(
+        :acme,
+        setup: { fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }
+      ) { AcmeModelProvider }
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+
+      command_events(runtime, 'acme/foo')
+
+      assert_equal 'acme/foo', runtime.model
     end
   end
 end

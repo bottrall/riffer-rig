@@ -139,6 +139,15 @@ rig.mcp 'tracker', url: 'https://tracker.example.com/mcp', headers: { 'Authoriza
 
 Declares an HTTPS MCP server for the Runtime: `rig.mcp(name, url:, headers: {})`. The Runtime registers the server with riffer's MCP client, and the agent gets its tools as `<server>__<tool>`; a later declaration of the same name replaces the earlier one. [MCP](MCP.md) covers naming, why the `tools:` allowlist does not apply, failures, what a rebuild keeps and the same-name limit across Runtimes.
 
+## The `rig.provider` seam
+
+```ruby
+rig.provider(:acme, setup: { url: 'https://acme.example.com/keys',
+                             fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }) { AcmeProvider }
+```
+
+Registers a custom provider under a new prefix — the one **process-wide** seam: `rig.provider` registers the class with riffer's provider repository (`Riffer::Providers::Repository.register`) and the registration never goes away. Re-registering the same prefix is idempotent, so a reload or a second Runtime leaves one entry, and two Runtimes see the same prefix. [Custom providers](CUSTOM_PROVIDERS.md) covers the `setup:` hash, the generic fallback without one, and reading the resolved values through `Riffer::Rig.credentials(:identifier)`.
+
 ## Bundled extensions and replacement
 
 The four tools ship as bundled extensions — `Riffer::Rig.bundled(:read)`, `:write`, `:edit`, `:bash` — and so do the `:agents_md` prompt section, `Riffer::Rig.bundled(:agents_md)`, the skills directories, `Riffer::Rig.bundled(:skills)`, and the MCP client, `Riffer::Rig.bundled(:mcp)`, all built on the same seams as any other extension; `Riffer::Rig.bundled` returns them all in load order. [Tools](TOOLS.md) describes the tools, [Instructions](INSTRUCTIONS.md#agentsmd) the AGENTS.md section, [Skills](SKILLS.md) the skills and [MCP](MCP.md) the MCP client.

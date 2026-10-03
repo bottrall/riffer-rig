@@ -3,9 +3,6 @@
 module Riffer::Rig::Commands::Auth
   extend self
 
-  HINT = 'Use /auth <provider> or /auth remove <provider>, with a provider from: ' \
-         "#{Riffer::Rig::Settings::PROVIDERS.join(', ')}".freeze #: String
-
   USAGE = 'Use /auth, /auth <provider> or /auth remove <provider>' #: String
 
   # @rbs return: Riffer::Rig::Command
@@ -31,8 +28,14 @@ module Riffer::Rig::Commands::Auth
   private
 
   # @rbs return: String
+  def hint
+    'Use /auth <provider> or /auth remove <provider>, with a provider from: ' \
+      "#{Riffer::Rig::Settings.providers.join(', ')}"
+  end
+
+  # @rbs return: String
   def list
-    statuses = Riffer::Rig::Settings::PROVIDERS.to_h do |identifier|
+    statuses = Riffer::Rig::Settings.providers.to_h do |identifier|
       [identifier, Riffer::Rig::Credentials.status(identifier)]
     end
     width = statuses.keys.map { |identifier| identifier.to_s.length }.max || 0
@@ -43,7 +46,7 @@ module Riffer::Rig::Commands::Auth
   # @rbs identifier: String
   # @rbs return: void
   def rerun(ctx, identifier)
-    return ctx.say(HINT) unless Riffer::Providers::Repository.find(identifier)
+    return ctx.say(hint) unless Riffer::Providers::Repository.find(identifier)
 
     provider = identifier.to_sym
     resolution = Riffer::Rig::Credentials.resolve(provider, host: ctx.host)
@@ -58,7 +61,7 @@ module Riffer::Rig::Commands::Auth
   # @rbs identifier: String
   # @rbs return: void
   def remove(ctx, identifier)
-    return ctx.say(HINT) unless Riffer::Providers::Repository.find(identifier)
+    return ctx.say(hint) unless Riffer::Providers::Repository.find(identifier)
 
     Riffer::Rig::Credentials.remove(identifier)
     ctx.say("Removed stored #{identifier} credentials")

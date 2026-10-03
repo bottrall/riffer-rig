@@ -65,6 +65,12 @@ class Riffer::Rig::Registrar
   # @rbs return: void
   def mcp: (String name, url: String, ?headers: Hash[String, String]) -> void
 
+  # @rbs prefix: String | Symbol
+  # @rbs setup: Riffer::Rig::ProviderSetup | Hash[Symbol, untyped]?
+  # @rbs &block: () -> singleton(::Riffer::Providers::Base)
+  # @rbs return: void
+  def provider: (String | Symbol prefix, ?setup: Riffer::Rig::ProviderSetup | Hash[Symbol, untyped]?) { () -> singleton(::Riffer::Providers::Base) } -> void
+
   # @rbs event: Symbol
   # @rbs &block: (Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped
   # @rbs return: void

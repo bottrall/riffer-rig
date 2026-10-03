@@ -3,6 +3,7 @@
 require 'test_helper'
 require 'forwardable'
 require 'json'
+class AcmeCredentialProvider < Riffer::Providers::Mock; end # rubocop:disable Rig/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
 
 class AnsweringHost
   extend Forwardable
@@ -390,6 +391,50 @@ describe Riffer::Rig::Credentials do
       in_tmp_home do |paths|
         assert_equal :missing, Riffer::Rig::Credentials.status(:anthropic, env:, auth_path: paths[:auth_path])
       end
+    end
+  end
+
+  describe '.apply and Riffer::Rig.credentials' do
+    let(:config) { Riffer::Config.new }
+
+    before do
+      Riffer::Rig::Providers.register(
+        :acme,
+        setup: { fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }
+      ) { AcmeCredentialProvider }
+    end
+
+    after do
+      Riffer::Rig::Providers.unregister(:acme)
+    end
+
+    it 'reads nil before anything is applied for a provider' do
+      assert_nil Riffer::Rig.credentials(:untouched)
+    end
+
+    it 'keeps the values it receives' do
+      Riffer::Rig::Credentials.apply(:acme, { api_key: 'sk-acme' }, config: config)
+
+      assert_equal({ api_key: 'sk-acme' }, Riffer::Rig.credentials(:acme))
+    end
+
+    it 'keeps the values of the latest apply' do
+      Riffer::Rig::Credentials.apply(:acme, { api_key: 'sk-earlier' }, config: config)
+      Riffer::Rig::Credentials.apply(:acme, { api_key: 'sk-later' }, config: config)
+
+      assert_equal({ api_key: 'sk-later' }, Riffer::Rig.credentials(:acme))
+    end
+
+    it 'freezes the values it keeps' do
+      Riffer::Rig::Credentials.apply(:acme, { api_key: 'sk-acme' }, config: config)
+
+      assert_predicate Riffer::Rig.credentials(:acme), :frozen?
+    end
+
+    it 'assigns nothing to the riffer config for a registered extension provider' do
+      Riffer::Rig::Credentials.apply(:acme, { api_key: 'sk-acme' }, config: config)
+
+      refute_respond_to config, :acme
     end
   end
 

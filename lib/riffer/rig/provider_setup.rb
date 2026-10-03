@@ -85,10 +85,25 @@ class Riffer::Rig::ProviderSetup
           .join(', ')
   end
 
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs return: Riffer::Rig::ProviderSetup
+  def self.from(hash)
+    fields = hash.fetch(:fields).map do |field|
+      Field.new(
+        name: field.fetch(:name),
+        env: field.fetch(:env),
+        secret: field.fetch(:secret, false),
+        required: field.fetch(:required, false),
+        fallback: field[:fallback]
+      )
+    end
+    new(fields: fields, url: hash[:url], chain: hash.fetch(:chain, false), sdk: hash[:sdk])
+  end
+
   # @rbs identifier: String | Symbol
   # @rbs return: Riffer::Rig::ProviderSetup?
   def self.[](identifier)
-    TABLE[identifier.to_sym]
+    Riffer::Rig::Providers.setup(identifier) || TABLE[identifier.to_sym]
   end
 
   # @rbs identifier: String | Symbol
