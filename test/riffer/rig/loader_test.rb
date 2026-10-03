@@ -246,6 +246,12 @@ describe Riffer::Rig::Loader do
 
       assert_equal({ reasoning: 'high' }, model_options)
     end
+
+    it 'hands the native tool switches to the Runtime' do
+      write_settings(@home, { tools: { native: { web_search: true } } })
+
+      assert_equal({ web_search: true }, build(model: 'mock/test').agent.config.model_options)
+    end
   end
 
   describe 'model selection' do

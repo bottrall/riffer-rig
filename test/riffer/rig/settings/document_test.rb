@@ -61,6 +61,23 @@ describe Riffer::Rig::Settings::Document do
     refute Riffer::Rig::Settings::Document.new({ extensions: true }).autoload
   end
 
+  it 'reads the native tool switches' do
+    switches = { web_search: true, code_execution: false, junk: 'yes' }
+    document = Riffer::Rig::Settings::Document.new({ tools: { native: switches } })
+
+    assert_equal({ web_search: true }, document.native_tools)
+  end
+
+  it 'keeps a switch object' do
+    document = Riffer::Rig::Settings::Document.new({ tools: { native: { web_search: { max_uses: 3 } } } })
+
+    assert_equal({ web_search: { max_uses: 3 } }, document.native_tools)
+  end
+
+  it 'reads no switches when the tools block is not an object' do
+    assert_empty Riffer::Rig::Settings::Document.new({ tools: 'web_search' }).native_tools
+  end
+
   it 'is frozen' do
     assert_predicate Riffer::Rig::Settings::Document.new({}), :frozen?
   end

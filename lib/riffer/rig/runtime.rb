@@ -29,6 +29,15 @@ class Riffer::Rig::Runtime
 
   INTERRUPT_CANCELLED = :cancelled #: Symbol
 
+  # Upstream candidate: riffer's Anthropic, OpenAI and Azure OpenAI classes read
+  # the web_search option and OpenRouter passes unknown options through to its
+  # API, but the provider seam cannot yet answer which provider takes which
+  # option, so rig keeps the mapping until it can. Mock consumes web_search, so
+  # tests and embedders can exercise the switches.
+  NATIVE_TOOLS_BY_PROVIDER = {
+    web_search: { anthropic: true, openai: true, azure_openai: true, mock: true }.freeze
+  }.freeze #: Hash[Symbol, Hash[Symbol, bool]]
+
   # @rbs @agent: Riffer::Agent
   # @rbs @base_prompt: String
   # @rbs @cancel_flag: Riffer::Rig::Runtime::CancelFlag
@@ -52,6 +61,7 @@ class Riffer::Rig::Runtime
   # @rbs @mcp_registry: Riffer::Rig::Mcp::_Registry
   # @rbs @mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
   # @rbs @model_options: Hash[Symbol, untyped]
+  # @rbs @native_tools: Hash[Symbol, untyped]
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader :agent #: Riffer::Agent
@@ -76,6 +86,7 @@ class Riffer::Rig::Runtime
   # @rbs mcp_registry: Riffer::Rig::Mcp::_Registry
   # @rbs max_steps: Integer?
   # @rbs model_options: Hash[Symbol, untyped]
+  # @rbs native_tools: Hash[Symbol, untyped]
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
   def initialize(
@@ -93,6 +104,7 @@ class Riffer::Rig::Runtime
     mcp_registry: Riffer::Mcp,
     max_steps: DEFAULT_MAX_STEPS,
     model_options: {},
+    native_tools: {},
     snapshot: nil
   )
     # Doubles as the snapshot id and ACP sessionId.
@@ -110,7 +122,8 @@ class Riffer::Rig::Runtime
     Riffer::Rig::Settings::Pricing.register(pricing, riffer_config.pricing)
     @errors = []
     @tool_allowlist = tools
-    @model_options = model_options
+    @native_tools = native_tools
+    @model_options = model_options.merge(native_options(model))
     @base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
     @mcp_registry = mcp_registry
     @mcp_servers = {}
@@ -293,8 +306,22 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def rederive_options(model)
     reasoning = Riffer::Rig::Settings::Document.new(@settings).reasoning
-    @model_options = Riffer::Rig::Settings.model_options(model, reasoning)
+    @model_options = Riffer::Rig::Settings.model_options(model, reasoning).merge(native_options(model))
     @agent.config.model_options = @model_options
+  end
+
+  # The switches are on/off settings, so what the agent can do stays a function
+  # of the current provider: a switch whose provider cannot take the option
+  # contributes nothing, and a switch to such a provider drops it, both silently.
+  # @rbs model: String
+  # @rbs return: Hash[Symbol, untyped]
+  def native_options(model)
+    provider = Riffer::Rig::Settings.provider_for(model)&.to_sym
+    @native_tools.filter_map do |tool, switch|
+      next unless provider && NATIVE_TOOLS_BY_PROVIDER[tool]&.key?(provider)
+
+      [tool, switch]
+    end.to_h
   end
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]

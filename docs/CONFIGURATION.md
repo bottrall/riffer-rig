@@ -20,7 +20,7 @@ Every core key is top level and optional:
 | `extensions` | `disabled`, the bundled extensions to leave out ([below](#extensions)); `autoload`, gem extension autoload ([below](#extensions)) |
 | `reload`     | reserved for hot reloading |
 | `sessions`   | reserved for the session store (`save`) |
-| `tools`      | reserved for provider-native tools (`native`) |
+| `tools`      | the provider-native tool switches (`native`) ([below](#toolsnative)) |
 
 ## `model`
 
@@ -107,6 +107,16 @@ Keep a server with a secret header in `~/.riffer/settings.json` rather than a co
 The lists in the two scopes add up, so a project can disable more but cannot re-enable what home disabled. A disabled extension is simply not passed to the Runtime; nothing it would register exists. An embedder calling `Loader.runtime` can also strip `skills: false` and `agents_md: false` for one Runtime.
 
 `extensions.autoload` (default `false`) makes the Loader run `riffer/rig/extension` from every gem `Gem.find_files` finds, before the `rig.rb` files ([Gem extensions](EXTENSIONS.md#gem-extensions)). Set it in either scope; the project's value wins. The strip keyword `extensions: false` on `Loader.runtime` (the `--no-extensions` flag) skips both the autoload and the `rig.rb` files; the bundle still loads.
+
+## `tools.native`
+
+`tools.native` switches the provider-native tools on, per tool. They are off by default; a switch the current provider cannot honour does nothing and raises nothing ([Tools](TOOLS.md#provider-native-tools)):
+
+```json
+{ "tools": { "native": { "web_search": true } } }
+```
+
+A switch value can be an object, passed through to the provider as the tool's options. The Loader hands the switches to the Runtime at build, and a `/model` switch re-derives them for the new provider, so the tool is there exactly when the provider supports it.
 
 ## Extension namespaces
 
