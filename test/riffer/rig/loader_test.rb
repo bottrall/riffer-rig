@@ -629,4 +629,82 @@ describe Riffer::Rig::Loader do
       )
     end
   end
+
+  describe 'extension providers' do
+    after do
+      Riffer::Rig::Providers.unregister(:acme)
+      Riffer::Rig::Providers.unregister(:globex)
+    end
+
+    def write_provider_rig(identifier, class_name, setup)
+      fields = setup ? ", setup: #{setup}" : ''
+      write_rig(:home, <<~RUBY)
+        class #{class_name} < Riffer::Providers::Mock
+          attr_reader :credentials
+
+          private
+
+          def build_request_params(messages, model, options)
+            @credentials = Riffer::Rig.credentials(#{identifier.to_s.inspect})
+            super
+          end
+        end
+        Riffer::Rig.extension('#{identifier}') { |rig| rig.provider(#{identifier.to_s.inspect}#{fields}) { #{class_name} } }
+      RUBY
+    end
+
+    it 'resolves a registered provider\'s setup field from its env var' do
+      write_provider_rig(
+        :acme,
+        'AcmeRigProvider',
+        "{ fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }"
+      )
+      build(model: 'mock/test')
+
+      assert_equal(
+        { acme: { api_key: 'sk-acme' } },
+        build(model: 'acme/foo', env: { 'ACME_API_KEY' => 'sk-acme' }).credentials
+      )
+    end
+
+    it 'reads the credentials through Riffer::Rig.credentials during a request' do
+      write_provider_rig(
+        :acme,
+        'AcmeRigProvider',
+        "{ fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }"
+      )
+      build(model: 'mock/test')
+      runtime = build(model: 'acme/foo', env: { 'ACME_API_KEY' => 'sk-acme' })
+      runtime.agent.provider.stub_response('All done.')
+      runtime.ask('hello')
+
+      assert_equal({ api_key: 'sk-acme' }, runtime.agent.provider.credentials)
+    end
+
+    it 'resolves a setup-less provider through the generic fallback' do
+      write_provider_rig(:globex, 'GlobexRigProvider', nil)
+      build(model: 'mock/test')
+
+      assert_equal(
+        { api_key: 'sk-globex' },
+        build(model: 'globex/foo', env: { 'GLOBEX_API_KEY' => 'sk-globex' }).credentials[:globex]
+      )
+    end
+
+    it 'keeps one entry when a reload registers the provider again' do
+      write_provider_rig(:acme, 'AcmeRigProvider', nil)
+      build(model: 'mock/test')
+      second = build(model: 'acme/foo', env: { 'ACME_API_KEY' => 'sk-acme' })
+
+      assert_same second.agent.provider.class, Riffer::Providers::Repository.find(:acme)
+    end
+
+    it 'lists extension providers in the onboarding question' do
+      Riffer::Rig::Registrar.new('acme').provider(:acme) { Riffer::Providers::Mock }
+      host = ScriptedHost.new('mock/test')
+      build(host: host)
+
+      assert_match(/with a provider from: .*acme/, host.questions.first)
+    end
+  end
 end

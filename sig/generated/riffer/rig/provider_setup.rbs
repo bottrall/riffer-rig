@@ -27,6 +27,10 @@ class Riffer::Rig::ProviderSetup
   # @rbs return: String
   def missing_fields: (Array[Symbol] missing) -> String
 
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs return: Riffer::Rig::ProviderSetup
+  def self.from: (Hash[Symbol, untyped] hash) -> Riffer::Rig::ProviderSetup
+
   # @rbs identifier: String | Symbol
   # @rbs return: Riffer::Rig::ProviderSetup?
   def self.[]: (String | Symbol identifier) -> Riffer::Rig::ProviderSetup?

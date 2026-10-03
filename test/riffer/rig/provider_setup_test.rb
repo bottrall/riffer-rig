@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'test_helper'
+class GlobexSetupProvider < Riffer::Providers::Mock; end # rubocop:disable Rig/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
 
 describe Riffer::Rig::ProviderSetup do
   it "covers riffer's six providers" do
@@ -95,5 +96,85 @@ describe Riffer::Rig::ProviderSetup do
     region = Riffer::Rig::ProviderSetup[:amazon_bedrock].fields.find { |field| field.name == :region }
 
     assert_respond_to region.fallback, :call
+  end
+
+  describe 'a registered setup' do
+    let(:registered_setup) do
+      Riffer::Rig::ProviderSetup.new(
+        fields: [Riffer::Rig::ProviderSetup::Field.new(
+          name: :api_key,
+          env: ['GLOBEX_SETUP_API_KEY'],
+          secret: true,
+          required: true
+        )]
+      )
+    end
+
+    after do
+      Riffer::Rig::Providers.unregister(:globex_setup)
+    end
+
+    it 'wins the [] lookup over the table' do
+      Riffer::Rig::Providers.register(:globex_setup, setup: registered_setup) { GlobexSetupProvider }
+
+      assert_same registered_setup, Riffer::Rig::ProviderSetup[:globex_setup]
+    end
+
+    it 'wins the for lookup over the generic fallback' do
+      Riffer::Rig::Providers.register(:globex_setup, setup: registered_setup) { GlobexSetupProvider }
+
+      assert_same registered_setup, Riffer::Rig::ProviderSetup.for(:globex_setup)
+    end
+
+    it 'leaves a registered provider without a setup on the generic fallback' do
+      Riffer::Rig::Providers.register(:globex_setup) { GlobexSetupProvider }
+
+      assert_equal [['GLOBEX_SETUP_API_KEY']], Riffer::Rig::ProviderSetup.for(:globex_setup).fields.map(&:env)
+    end
+  end
+
+  describe '.from' do
+    def from(**hash)
+      Riffer::Rig::ProviderSetup.from(**hash)
+    end
+
+    it 'builds the fields' do
+      setup = from(fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }])
+
+      assert_equal(
+        [[:api_key, ['ACME_API_KEY'], true, true, nil]],
+        setup.fields.map { |field| [field.name, field.env, field.secret, field.required, field.fallback] }
+      )
+    end
+
+    it 'defaults the field flags' do
+      setup = from(fields: [{ name: :endpoint, env: ['ACME_ENDPOINT'] }])
+
+      assert_equal([[false, false, nil]], setup.fields.map { |field| [field.secret, field.required, field.fallback] })
+    end
+
+    it 'reads the url' do
+      setup = from(url: 'https://example.com/keys', fields: [])
+
+      assert_equal 'https://example.com/keys', setup.url
+    end
+
+    it 'defaults the chain flag' do
+      setup = from(fields: [])
+
+      refute setup.chain
+    end
+
+    it 'reads the sdk pair' do
+      setup = from(sdk: ['acme-sdk', '~> 1.0'], fields: [])
+
+      assert_equal ['acme-sdk', '~> 1.0'], setup.sdk
+    end
+
+    it 'freezes the setup' do
+      setup = from(fields: [{ name: :api_key, env: ['ACME_API_KEY'] }])
+
+      assert_predicate setup, :frozen?
+    end
   end
 end

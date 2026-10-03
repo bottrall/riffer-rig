@@ -7,9 +7,8 @@ module Riffer::Rig::Settings
 
   MODEL_STRING: Regexp
 
-  # Upstream candidate: riffer's Repository keeps extension registrations
-  # private and lists no identifiers, so the list names riffer's built-ins.
-  PROVIDERS: Array[Symbol]
+  # @rbs return: Array[Symbol]
+  def providers: () -> Array[Symbol]
 
   # @rbs path: String
   # @rbs return: Hash[Symbol, untyped]

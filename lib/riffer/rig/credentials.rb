@@ -11,6 +11,9 @@ module Riffer::Rig::Credentials
 
   ENTRY_TYPE = 'api_key'
 
+  # @rbs @applied: Hash[Symbol, Hash[Symbol, String]]
+  @applied = {} #: Hash[Symbol, Hash[Symbol, String]]
+
   # @rbs identifier: String | Symbol
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs setup: Riffer::Rig::ProviderSetup
@@ -39,15 +42,24 @@ module Riffer::Rig::Credentials
     Resolution.new(values:, missing: required.map(&:name) - values.keys)
   end
 
+  # A registered extension provider has no Riffer::Config member, so the
+  # assignment stays built-ins-only.
   # @rbs identifier: String | Symbol
   # @rbs values: Hash[Symbol, String]
   # @rbs config: Riffer::Config
   # @rbs return: void
   def apply(identifier, values, config: Riffer.config)
-    return unless Riffer::Rig::ProviderSetup[identifier]
+    @applied[identifier.to_sym] = values.dup.freeze
+    return unless Riffer::Rig::ProviderSetup::TABLE.key?(identifier.to_sym)
 
     provider_config = config.public_send(identifier)
     values.each { |name, value| provider_config.public_send(:"#{name}=", value) }
+  end
+
+  # @rbs identifier: String | Symbol
+  # @rbs return: Hash[Symbol, String]?
+  def read(identifier)
+    @applied[identifier.to_sym]
   end
 
   # @rbs identifier: String | Symbol

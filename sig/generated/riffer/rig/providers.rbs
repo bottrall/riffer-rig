@@ -1,0 +1,28 @@
+# Generated from lib/riffer/rig/providers.rb with RBS::Inline
+
+module Riffer::Rig::Providers
+  @setups: Hash[Symbol, Riffer::Rig::ProviderSetup?]
+
+  # @rbs identifier: String | Symbol
+  # @rbs setup: Riffer::Rig::ProviderSetup | Hash[Symbol, untyped]?
+  # @rbs &block: () -> singleton(::Riffer::Providers::Base)
+  # @rbs return: void
+  def register: (String | Symbol identifier, ?setup: Riffer::Rig::ProviderSetup | Hash[Symbol, untyped]?) { () -> singleton(::Riffer::Providers::Base) } -> void
+
+  # @rbs identifier: String | Symbol
+  # @rbs return: void
+  def unregister: (String | Symbol identifier) -> void
+
+  # @rbs identifier: String | Symbol
+  # @rbs return: Riffer::Rig::ProviderSetup?
+  def setup: (String | Symbol identifier) -> Riffer::Rig::ProviderSetup?
+
+  # @rbs return: Array[Symbol]
+  def identifiers: () -> Array[Symbol]
+
+  private
+
+  # @rbs setup: Riffer::Rig::ProviderSetup | Hash[Symbol, untyped]
+  # @rbs return: Riffer::Rig::ProviderSetup
+  def normalize: (Riffer::Rig::ProviderSetup | Hash[Symbol, untyped] setup) -> Riffer::Rig::ProviderSetup
+end

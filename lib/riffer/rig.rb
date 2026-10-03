@@ -28,6 +28,12 @@ module Riffer::Rig
     @extensions.dup
   end
 
+  # @rbs identifier: String | Symbol
+  # @rbs return: Hash[Symbol, String]?
+  def self.credentials(identifier)
+    Credentials.read(identifier)
+  end
+
   # @rbs name: Symbol?
   # @rbs return: Riffer::Rig::Extension | Array[Riffer::Rig::Extension]
   def self.bundled(name = nil)

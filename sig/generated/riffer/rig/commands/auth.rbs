@@ -1,8 +1,6 @@
 # Generated from lib/riffer/rig/commands/auth.rb with RBS::Inline
 
 module Riffer::Rig::Commands::Auth
-  HINT: String
-
   USAGE: String
 
   # @rbs return: Riffer::Rig::Command
@@ -13,6 +11,9 @@ module Riffer::Rig::Commands::Auth
   def run: (Riffer::Rig::Command::Context ctx) -> void
 
   private
+
+  # @rbs return: String
+  def hint: () -> String
 
   # @rbs return: String
   def list: () -> String
