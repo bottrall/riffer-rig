@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Settings::Document
-  # @dynamic model, reasoning, models, providers, disabled, autoload
+  # @dynamic model, reasoning, models, providers, disabled, autoload, native_tools
   attr_reader :model #: String?
   attr_reader :reasoning #: String?
   attr_reader :models #: Hash[String, Riffer::Rig::Settings::Pricing]
   attr_reader :providers #: Hash[String, Hash[String, String]]
   attr_reader :disabled #: Array[String]
   attr_reader :autoload #: bool
+  attr_reader :native_tools #: Hash[Symbol, bool | Hash[Symbol, untyped]]
 
   # @rbs source: Hash[Symbol, untyped]
   # @rbs return: void
@@ -28,6 +29,9 @@ class Riffer::Rig::Settings::Document
     names = disabled.is_a?(Array) ? disabled.grep(String) : [] #: Array[String]
     @disabled = names.freeze
     @autoload = hash_or_empty(source[:extensions])[:autoload] == true
+    @native_tools = hash_or_empty(hash_or_empty(source[:tools])[:native])
+                    .select { |_tool, switch| switch == true || switch.is_a?(Hash) }
+                    .transform_keys(&:to_sym).freeze
     freeze
   end
 

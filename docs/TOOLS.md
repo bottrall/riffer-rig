@@ -40,6 +40,20 @@ Riffer::Rig::Runtime.new(
 
 The bundled extensions are not recorded in the `Riffer::Rig.extensions` registry, so a user extension that happens to share a name never overwrites one.
 
+## Provider-native tools
+
+Web search — and, later, code execution and file search — is a provider-native tool: the model runs it inside the provider's own request, so it is core, not something an extension could add. It is off by default and switched on per tool in the `tools.native` block of settings ([Configuration](CONFIGURATION.md#toolsnative)):
+
+```json
+{ "tools": { "native": { "web_search": true } } }
+```
+
+The Loader passes the switches to the Runtime, which adds the provider option to every request only when the current provider supports the tool; otherwise nothing happens and no error is raised. `web_search` is supported by `anthropic`, `openai` and `azure_openai`. On a provider without native search — `gemini`, `openrouter`, `amazon_bedrock` — the switch does nothing, and the user brings a third-party tool. An embedder building a Runtime directly passes the switches itself as the `native_tools:` keyword.
+
+A switch value can be an object instead of `true`, passed through to the provider as the tool's options, e.g. `{"web_search": {"max_uses": 3}}`.
+
+`/model provider/name` re-derives the options for the new provider along with the rest of the model options: the tool turns on and off as the provider supports it, so a switch never errors and never leaves an option the new provider would reject.
+
 ## Replacing a tool
 
 Register a tool with the same identifier from a later extension:

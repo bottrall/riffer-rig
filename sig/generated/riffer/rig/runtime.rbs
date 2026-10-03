@@ -19,6 +19,13 @@ class Riffer::Rig::Runtime
 
   INTERRUPT_CANCELLED: Symbol
 
+  # Upstream candidate: riffer's Anthropic, OpenAI and Azure OpenAI classes read
+  # the web_search option and OpenRouter passes unknown options through to its
+  # API, but the provider seam cannot yet answer which provider takes which
+  # option, so rig keeps the mapping until it can. Mock consumes web_search, so
+  # tests and embedders can exercise the switches.
+  NATIVE_TOOLS_BY_PROVIDER: Hash[Symbol, Hash[Symbol, bool]]
+
   @session_start_reason: Symbol
 
   @session_start_pending: bool
@@ -65,6 +72,8 @@ class Riffer::Rig::Runtime
 
   @model_options: Hash[Symbol, untyped]
 
+  @native_tools: Hash[Symbol, untyped]
+
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader agent: Riffer::Agent
 
@@ -94,9 +103,10 @@ class Riffer::Rig::Runtime
   # @rbs mcp_registry: Riffer::Rig::Mcp::_Registry
   # @rbs max_steps: Integer?
   # @rbs model_options: Hash[Symbol, untyped]
+  # @rbs native_tools: Hash[Symbol, untyped]
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
-  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?snapshot: Hash[Symbol, untyped]?) -> void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?native_tools: Hash[Symbol, untyped], ?snapshot: Hash[Symbol, untyped]?) -> void
 
   # @rbs text: String
   # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
@@ -176,6 +186,13 @@ class Riffer::Rig::Runtime
   # @rbs model: String
   # @rbs return: void
   def rederive_options: (String model) -> void
+
+  # The switches are on/off settings, so what the agent can do stays a function
+  # of the current provider: a switch whose provider cannot take the option
+  # contributes nothing, and a switch to such a provider drops it, both silently.
+  # @rbs model: String
+  # @rbs return: Hash[Symbol, untyped]
+  def native_options: (String model) -> Hash[Symbol, untyped]
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks

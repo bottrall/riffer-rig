@@ -117,6 +117,46 @@ describe Riffer::Rig::Runtime do
     assert_equal({}, runtime.agent.config.model_options)
   end
 
+  it 'enables the provider option of a native tool the provider supports' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', native_tools: { web_search: true })
+
+    assert_equal({ web_search: true }, runtime.agent.config.model_options)
+  end
+
+  it 'passes a switch object through as the option value' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', native_tools: { web_search: { max_uses: 3 } })
+
+    assert_equal({ web_search: { max_uses: 3 } }, runtime.agent.config.model_options)
+  end
+
+  it 'carries the provider option on the request' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', native_tools: { web_search: true })
+    runtime.agent.provider.stub_response('All done.')
+    events = []
+    runtime.prompt('search') { |event| events << event }
+
+    assert(events.any?(Riffer::StreamEvents::WebSearchDone))
+  end
+
+  it 'drops the switch of a native tool the provider does not support' do
+    runtime = Riffer::Rig::Runtime.new('gemini/gem-2.5-pro', native_tools: { web_search: true })
+
+    assert_equal({}, runtime.agent.config.model_options)
+  end
+
+  it 'adds no provider options without a switch' do
+    runtime = Riffer::Rig::Runtime.new('mock/test')
+
+    assert_equal({}, runtime.agent.config.model_options)
+  end
+
+  it 're-derives the provider option for the new provider on a switch' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', native_tools: { web_search: true })
+    runtime.model = 'gemini/gem-2.5-pro'
+
+    assert_equal({}, runtime.agent.config.model_options)
+  end
+
   it 'refuses an ask while a prompt is running' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
     runtime.agent.provider.stub_response('first')

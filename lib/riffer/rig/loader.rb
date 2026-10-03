@@ -101,7 +101,8 @@ class Riffer::Rig::Loader
       credentials: credentials,
       pricing: document.models,
       riffer_config: @riffer_config,
-      model_options: Riffer::Rig::Settings.model_options(selected, document.reasoning)
+      model_options: Riffer::Rig::Settings.model_options(selected, document.reasoning),
+      native_tools: document.native_tools
     )
   end
 
