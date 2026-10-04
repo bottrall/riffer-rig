@@ -29,6 +29,9 @@ groups:
       - source: MCP.md
         slug: mcp
         description: Declaring MCP servers
+      - source: RELOADING.md
+        slug: reloading
+        description: The /reload command, what reloads and what does not
       - source: SESSIONS.md
         slug: sessions
         description: Saving, resuming, the picker, the JSONL store

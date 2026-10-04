@@ -30,6 +30,18 @@ class Riffer::Rig::Extension
     @block.call(registrar)
   end
 
+  # @rbs registrar: Riffer::Rig::Registrar
+  # @rbs return: StandardError?
+  def load_into(registrar)
+    rejection = mismatch || registrar.collision
+    return rejection if rejection
+
+    run(registrar)
+    nil
+  rescue StandardError => e
+    e
+  end
+
   private
 
   # @rbs requirement: Gem::Requirement?
