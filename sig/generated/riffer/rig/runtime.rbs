@@ -26,6 +26,8 @@ class Riffer::Rig::Runtime
   # tests and embedders can exercise the switches.
   NATIVE_TOOLS_BY_PROVIDER: Hash[Symbol, Hash[Symbol, bool]]
 
+  @model_observers: Array[^(String) -> void]
+
   @message_observers: Array[^(Riffer::Messages::Base) -> void]
 
   @model_override: String?
@@ -54,8 +56,6 @@ class Riffer::Rig::Runtime
 
   @agent: Riffer::Agent
 
-  @model_observers: Array[^(String) -> void]
-
   @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
 
   @commands: Hash[String, Riffer::Rig::Command]
@@ -81,6 +81,8 @@ class Riffer::Rig::Runtime
   @model_options: Hash[Symbol, untyped]
 
   @native_tools: Hash[Symbol, untyped]
+
+  @reload_check: (^(::Riffer::Rig::Runtime) -> void)?
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader agent: Riffer::Agent
@@ -133,6 +135,13 @@ class Riffer::Rig::Runtime
   # @rbs command: Riffer::Rig::Command
   # @rbs return: nil
   def install_command: (Riffer::Rig::Command command) -> nil
+
+  # Installs a host-of-the-runtime check (the Loader's automatic reload) so it
+  # survives every rebuild. The Runtime calls it at both before_request
+  # boundaries, before any handler runs, and ignores the result.
+  # @rbs check: ^(::Riffer::Rig::Runtime) -> void
+  # @rbs return: nil
+  def install_reload_check: (^(::Riffer::Rig::Runtime) -> void check) -> nil
 
   # @rbs name: String
   # @rbs args: String

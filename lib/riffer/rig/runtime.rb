@@ -66,6 +66,7 @@ class Riffer::Rig::Runtime
   # @rbs @mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
   # @rbs @model_options: Hash[Symbol, untyped]
   # @rbs @native_tools: Hash[Symbol, untyped]
+  # @rbs @reload_check: (^(::Riffer::Rig::Runtime) -> void)?
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader :agent #: Riffer::Agent
@@ -122,6 +123,7 @@ class Riffer::Rig::Runtime
     @claim_depth = 0
     @claim_thread = nil
     @core_commands = []
+    @reload_check = nil
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
     @session_start_pending = true
     @session_start_reason = snapshot ? :restore : :new
@@ -184,6 +186,16 @@ class Riffer::Rig::Runtime
   def install_command(command)
     @core_commands << command
     @commands[command.name] = command
+    nil
+  end
+
+  # Installs a host-of-the-runtime check (the Loader's automatic reload) so it
+  # survives every rebuild. The Runtime calls it at both before_request
+  # boundaries, before any handler runs, and ignores the result.
+  # @rbs check: ^(::Riffer::Rig::Runtime) -> void
+  # @rbs return: nil
+  def install_reload_check(check)
+    @reload_check = check
     nil
   end
 
@@ -448,6 +460,7 @@ class Riffer::Rig::Runtime
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
   def start_turn(text)
     @cancel_flag.clear
+    @reload_check&.call(self)
     refresh_system_message
     prompt = @hooks.before_prompt(text)
     return blocked_turn(prompt.reason) if prompt.is_a?(Riffer::Rig::Runtime::Blocked)
@@ -554,6 +567,7 @@ class Riffer::Rig::Runtime
 
   # @rbs return: void
   def before_next_request
+    @reload_check&.call(self)
     messages = @agent.session.messages
     # Upstream candidate: riffer has no hook between tool results and the next
     # request, so the last tool result's on_message stands in for one.

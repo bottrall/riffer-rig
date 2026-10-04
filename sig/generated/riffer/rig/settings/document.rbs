@@ -1,7 +1,7 @@
 # Generated from lib/riffer/rig/settings/document.rb with RBS::Inline
 
 class Riffer::Rig::Settings::Document
-  # @dynamic model, reasoning, models, providers, disabled, autoload, native_tools, save
+  # @dynamic model, reasoning, models, providers, disabled, autoload, native_tools, save, reload
   attr_reader model: String?
 
   attr_reader reasoning: String?
@@ -17,6 +17,8 @@ class Riffer::Rig::Settings::Document
   attr_reader native_tools: Hash[Symbol, bool | Hash[Symbol, untyped]]
 
   attr_reader save: bool
+
+  attr_reader reload: :auto | :manual
 
   # @rbs source: Hash[Symbol, untyped]
   # @rbs return: void

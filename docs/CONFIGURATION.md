@@ -18,7 +18,7 @@ Every core key is top level and optional:
 | `models`     | the pricing table, model → USD per million tokens ([below](#models)) |
 | `providers`  | non-secret provider fields such as an endpoint or region ([Providers](PROVIDERS.md#the-providers-block-in-settings); read from the home file only) |
 | `extensions` | `disabled`, the bundled extensions to leave out ([below](#extensions)); `autoload`, gem extension autoload ([below](#extensions)) |
-| `reload`     | reserved for hot reloading |
+| `reload`     | `"auto"` (default) or `"manual"`, the hot-reload trigger ([Reloading](RELOADING.md#triggers)) |
 | `sessions`   | `save`, set it to `false` to stop saving sessions to the store ([Sessions](SESSIONS.md)) |
 | `tools`      | the provider-native tool switches (`native`) ([below](#toolsnative)) |
 
@@ -117,6 +117,14 @@ The lists in the two scopes add up, so a project can disable more but cannot re-
 ```
 
 A switch value can be an object, passed through to the provider as the tool's options. The Loader hands the switches to the Runtime at build, and a `/model` switch re-derives them for the new provider, so the tool is there exactly when the provider supports it.
+
+## `reload`
+
+`reload` picks the hot-reload trigger: `"auto"` (the default) reloads the `rig.rb` files, settings, credentials and trust automatically at every `before_request` boundary, `"manual"` drops that check and leaves [`/reload`](RELOADING.md#triggers) and [`Runtime#rebuild`](EMBEDDING.md#rebuilding-after-a-code-reload). The mode is read when the Runtime is built; an automatic session honours a later flip to `manual` at its next boundary, while a manual session picks up `auto` on the next build. The Loader keyword `reload: :manual` on `Loader.runtime` overrides the setting for one build ([Reloading](RELOADING.md#triggers)):
+
+```json
+{ "reload": "manual" }
+```
 
 ## Extension namespaces
 

@@ -21,6 +21,7 @@ class Riffer::Rig::Loader
   # @rbs @extensions_enabled: bool
   # @rbs @gem_extensions: Array[Riffer::Rig::Extension]
   # @rbs @file_state: Hash[String, Time?]?
+  # @rbs @reload_mode: (:auto | :manual | nil)
 
   # @dynamic tracked_files
   attr_reader :tracked_files #: Array[String]
@@ -37,6 +38,7 @@ class Riffer::Rig::Loader
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
   # @rbs store: Riffer::Rig::Stores::_Store | nil
+  # @rbs reload: (:auto | :manual | nil)
   # @rbs return: Riffer::Rig::Runtime
   def self.runtime(
     cwd:,
@@ -50,10 +52,18 @@ class Riffer::Rig::Loader
     agents_md: true,
     tools: nil,
     max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS,
-    store: Riffer::Rig::Stores::JSONL.new
+    store: Riffer::Rig::Stores::JSONL.new,
+    reload: nil
   )
-    new(cwd:, host:, env:, home:, riffer_config:, store:)
-      .runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)
+    new(cwd:, host:, env:, home:, riffer_config:, store:).runtime(
+      model:,
+      extensions:,
+      skills:,
+      agents_md:,
+      tools:,
+      max_steps:,
+      reload:
+    )
   end
 
   # @rbs cwd: String
@@ -84,6 +94,7 @@ class Riffer::Rig::Loader
     @extensions_enabled = true
     @gem_extensions = []
     @file_state = nil
+    @reload_mode = nil
   end
 
   # @rbs model: String?
@@ -92,6 +103,7 @@ class Riffer::Rig::Loader
   # @rbs agents_md: bool
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
+  # @rbs reload: (:auto | :manual | nil)
   # @rbs return: Riffer::Rig::Runtime
   def runtime(
     model: nil,
@@ -99,7 +111,8 @@ class Riffer::Rig::Loader
     skills: true,
     agents_md: true,
     tools: nil,
-    max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS
+    max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS,
+    reload: nil
   )
     settings = merged_settings
     document = Riffer::Rig::Settings::Document.new(settings)
@@ -108,6 +121,7 @@ class Riffer::Rig::Loader
     ensure_sdk(provider)
     credentials = { provider.to_sym => credentials_for(provider) }
     @extensions_enabled = extensions
+    @reload_mode = reload
     @stripped = { skills: skills, agents_md: agents_md }.reject { |_name, kept| kept }.keys
     loaded = Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *@stripped).values
     @tracked_files = []
@@ -132,22 +146,24 @@ class Riffer::Rig::Loader
       native_tools: document.native_tools
     )
     built.install_command(Riffer::Rig::Commands::Reload.command(self))
+    built.install_reload_check(->(runtime) { automatic_reload(runtime) }) unless reload_mode(document) == :manual
     @file_state = file_state
     recorder&.attach(built)
     built
   end
 
   # Without force, a no-op while the tracked file set and the two rig.rb paths
-  # look as the last discovery left them — the entry point the automatic
-  # trigger (#133) calls. The snapshot advances on every attempt, failed ones
-  # included, so a failure does not retry every request. Failures are notified
-  # once and reported as the message, the way Settings.rejection reports a
-  # rejection; the Runtime is the success value.
+  # look as the last discovery left them and the reload mode is not manual —
+  # the entry point the automatic trigger (#133) calls. The snapshot advances
+  # on every attempt, failed ones included, so a failure does not retry every
+  # request. Failures are notified once and reported as the message, the way
+  # Settings.rejection reports a rejection; the Runtime is the success value.
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs force: bool
   # @rbs return: (Riffer::Rig::Runtime | String)
   def reload(runtime, force: false)
     return runtime if !force && file_state == @file_state
+    return runtime if !force && manual_reload?
 
     outcome = perform_reload(runtime)
     @file_state = file_state
@@ -155,6 +171,27 @@ class Riffer::Rig::Loader
   end
 
   private
+
+  # The reload mode a build runs under: the keyword wins over the setting,
+  # the setting over the default.
+  # @rbs document: Riffer::Rig::Settings::Document
+  # @rbs return: (:auto | :manual)
+  def reload_mode(document)
+    @reload_mode || document.reload
+  end
+
+  # @rbs return: bool
+  def manual_reload?
+    reload_mode(Riffer::Rig::Settings::Document.new(merged_settings)) == :manual
+  end
+
+  # The automatic trigger: runs at every before_request boundary, so the
+  # change check decides and a no-op costs the stat alone.
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def automatic_reload(runtime)
+    _ = reload(runtime)
+  end
 
   # @rbs return: Hash[Symbol, untyped]
   def merged_settings
@@ -164,28 +201,24 @@ class Riffer::Rig::Loader
     )
   end
 
-  # Notifies every failure once and reports its message; a rebuilt Runtime is
-  # the success value.
+  # Notifies every failure once and reports its message, unexpected raises
+  # included — the automatic check runs mid-turn with no other isolation, and a
+  # raised attempt must still advance the snapshot in reload. A rebuilt Runtime
+  # is the success value.
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: (Riffer::Rig::Runtime | String)
   def perform_reload(runtime)
     settings = merged_settings
     document = Riffer::Rig::Settings::Document.new(settings)
-    begin
-      extensions = reload_extensions(document, settings)
-    rescue AbandonedError => e
-      return notify_failure(e.message)
-    end
+    extensions = reload_extensions(document, settings)
 
     failure = reload_credentials(runtime)
     return notify_failure(failure) if failure
 
-    begin
-      runtime.rebuild(extensions: validated(extensions, settings), settings: settings)
-    rescue StandardError => e
-      return notify_failure(e.message)
-    end
+    runtime.rebuild(extensions: validated(extensions, settings), settings: settings)
     runtime
+  rescue StandardError => e
+    notify_failure(e.message)
   end
 
   # @rbs message: String

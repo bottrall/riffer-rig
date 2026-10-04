@@ -73,6 +73,18 @@ describe Riffer::Rig::Settings::Document do
     refute Riffer::Rig::Settings::Document.new({ extensions: true }).autoload
   end
 
+  it 'reads the reload mode' do
+    assert_equal :manual, Riffer::Rig::Settings::Document.new({ reload: 'manual' }).reload
+  end
+
+  it 'defaults the reload mode to auto' do
+    assert_equal :auto, Riffer::Rig::Settings::Document.new({}).reload
+  end
+
+  it 'leaves the reload mode auto unless it is exactly manual' do
+    assert_equal :auto, Riffer::Rig::Settings::Document.new({ reload: 'MANUAL' }).reload
+  end
+
   it 'reads the native tool switches' do
     switches = { web_search: true, code_execution: false, junk: 'yes' }
     document = Riffer::Rig::Settings::Document.new({ tools: { native: switches } })

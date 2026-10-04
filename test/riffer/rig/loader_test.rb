@@ -753,6 +753,13 @@ describe Riffer::Rig::Loader do
       [loader, runtime, host]
     end
 
+    def with_raising_credentials
+      Riffer::Rig::Credentials.define_singleton_method(:resolve) { |*_args, **_kwargs| raise 'credential boom' }
+      yield
+    ensure
+      Riffer::Rig::Credentials.singleton_class.remove_method(:resolve)
+    end
+
     it 'is installed as a command' do
       assert_includes build(model: 'mock/test').commands.map(&:name), 'reload'
     end
@@ -894,6 +901,194 @@ describe Riffer::Rig::Loader do
       runtime.run_command('reload') { |event| events << event }
 
       assert_equal [Riffer::Rig::Events::CommandOutput.new('reload', 'Reloaded')], events
+    end
+
+    it 'reports a raise during the reload instead of propagating it' do
+      write_rig(:project, probe_rig('probe'))
+      loader = new_loader(host: ConfirmingHost.new([true]))
+      runtime = loader.runtime(model: 'mock/test')
+      File.write(project_rig_path, probe_rig('probe_next'))
+      with_raising_credentials do
+        reloaded = loader.reload(runtime, force: true)
+
+        assert_match(/credential boom\z/, reloaded)
+      end
+    end
+
+    it 'advances the snapshot when a reload raises' do
+      write_rig(:project, probe_rig('probe'))
+      loader = new_loader(host: ConfirmingHost.new([true]))
+      runtime = loader.runtime(model: 'mock/test')
+      marker = File.join(@cwd, 'reload_marker')
+      File.write(project_rig_path, probe_rig('probe_next') + "File.write(#{marker.inspect}, 'executed')\n")
+      with_raising_credentials { loader.reload(runtime, force: true) }
+      FileUtils.rm_f(marker)
+      loader.reload(runtime)
+
+      refute_path_exists marker
+    end
+  end
+
+  describe 'automatic reload' do
+    def probe_rig(identifier)
+      <<~RUBY
+        class ProbeTool < Riffer::Tool
+          identifier '#{identifier}'
+          description 'probe'
+          def call(context:) = text('probe')
+        end
+        Riffer::Rig.extension('probe') { |rig| rig.tool ProbeTool }
+      RUBY
+    end
+
+    def editor_rig
+      <<~RUBY
+        class EditorTool < Riffer::Tool
+          identifier 'editor'
+          description 'edits the rig'
+          def call(context:)
+            File.write(#{project_rig_path.inspect}, <<~INNER)
+              class ProbeNextTool < Riffer::Tool
+                identifier 'probe_next'
+                description 'probe'
+                def call(context:) = text('probe')
+              end
+              Riffer::Rig.extension('probe') { |rig| rig.tool ProbeNextTool }
+            INNER
+            text('edited')
+          end
+        end
+        Riffer::Rig.extension('probe') { |rig| rig.tool EditorTool }
+      RUBY
+    end
+
+    def built_with(host, **keywords)
+      write_rig(:project, probe_rig('probe'))
+      loader = new_loader(host: host)
+      runtime = loader.runtime(model: 'mock/test', **keywords)
+      [loader, runtime]
+    end
+
+    def turn(runtime)
+      runtime.agent.provider.stub_response('All done.')
+      runtime.ask('hello')
+    end
+
+    it 'registers a tool added to a tracked file mid-turn' do
+      write_rig(:project, editor_rig)
+      loader = new_loader(host: ConfirmingHost.new([true]))
+      runtime = loader.runtime(model: 'mock/test')
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'editor', arguments: '{}' }])
+      runtime.agent.provider.stub_response('done')
+      runtime.ask('add a tool')
+
+      assert_includes tool_names(runtime), 'probe_next'
+    end
+
+    it 'serves the next request with the reloaded tools' do
+      write_rig(:project, editor_rig)
+      loader = new_loader(host: ConfirmingHost.new([true]))
+      runtime = loader.runtime(model: 'mock/test')
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'editor', arguments: '{}' }])
+      runtime.agent.provider.stub_response('done')
+      runtime.ask('add a tool')
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'probe_next', arguments: '{}' }])
+      runtime.agent.provider.stub_response('done')
+      response = runtime.ask('use it')
+
+      tool = response.messages.rfind { |message| message.is_a?(Riffer::Messages::Tool) }
+
+      assert_equal 'probe', tool.content
+    end
+
+    it 'reloads a tracked file changed before a turn' do
+      _loader, runtime = built_with(ConfirmingHost.new([true]))
+      File.write(project_rig_path, probe_rig('probe_next'))
+      turn(runtime)
+
+      assert_includes tool_names(runtime), 'probe_next'
+    end
+
+    it 'confirms a project rig.rb appearing mid-session' do
+      host = ConfirmingHost.new([true])
+      _loader, runtime = built_with(host)
+      write_rig(:project, probe_rig('probe'))
+      turn(runtime)
+
+      assert_equal ["Trust #{project_rig_path}?"], host.questions
+    end
+
+    it 'drops the extensions of a rig.rb deleted mid-session' do
+      _loader, runtime = built_with(ConfirmingHost.new([true]))
+      FileUtils.rm(project_rig_path)
+      turn(runtime)
+
+      assert_empty tool_names(runtime).grep(/\Aprobe/)
+    end
+
+    it 'does not retry a failed reload on the next request' do
+      _loader, runtime = built_with(ConfirmingHost.new([true]))
+      File.write(project_rig_path, "raise 'boom'")
+      stamp = File.mtime(project_rig_path)
+      turn(runtime)
+      File.write(project_rig_path, probe_rig('probe_next'))
+      File.utime(stamp, stamp, project_rig_path)
+      turn(runtime)
+
+      assert_empty tool_names(runtime).grep(/\Aprobe_next/)
+    end
+
+    it 'skips the check under a manual reload keyword' do
+      _loader, runtime = built_with(ConfirmingHost.new([true]), reload: :manual)
+      File.write(project_rig_path, probe_rig('probe_next'))
+      turn(runtime)
+
+      assert_empty tool_names(runtime).grep(/\Aprobe_next/)
+    end
+
+    it 'keeps /reload under a manual reload keyword' do
+      _loader, runtime = built_with(ConfirmingHost.new([true]), reload: :manual)
+      File.write(project_rig_path, probe_rig('probe_next'))
+      runtime.run_command('reload')
+
+      assert_includes tool_names(runtime), 'probe_next'
+    end
+
+    it 'skips the check when the setting says manual' do
+      write_settings(@home, { reload: 'manual' })
+      _loader, runtime = built_with(ConfirmingHost.new([true]))
+      File.write(project_rig_path, probe_rig('probe_next'))
+      turn(runtime)
+
+      assert_empty tool_names(runtime).grep(/\Aprobe_next/)
+    end
+
+    it 'lets the project setting override home' do
+      write_settings(@home, { reload: 'manual' })
+      write_settings(@cwd, { reload: 'auto' })
+      _loader, runtime = built_with(ConfirmingHost.new([true]))
+      File.write(project_rig_path, probe_rig('probe_next'))
+      turn(runtime)
+
+      assert_includes tool_names(runtime), 'probe_next'
+    end
+
+    it 'lets the keyword override the setting' do
+      write_settings(@home, { reload: 'manual' })
+      _loader, runtime = built_with(ConfirmingHost.new([true]), reload: :auto)
+      File.write(project_rig_path, probe_rig('probe_next'))
+      turn(runtime)
+
+      assert_includes tool_names(runtime), 'probe_next'
+    end
+
+    it 'stops reloading when the setting flips to manual mid-session' do
+      _loader, runtime = built_with(ConfirmingHost.new([true]))
+      write_settings(@home, { reload: 'manual' })
+      File.write(project_rig_path, probe_rig('probe_next'))
+      turn(runtime)
+
+      assert_empty tool_names(runtime).grep(/\Aprobe_next/)
     end
   end
 end
