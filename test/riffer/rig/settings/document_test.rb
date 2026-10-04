@@ -57,6 +57,18 @@ describe Riffer::Rig::Settings::Document do
     refute Riffer::Rig::Settings::Document.new({ extensions: { autoload: 'yes' } }).autoload
   end
 
+  it 'saves sessions by default' do
+    assert Riffer::Rig::Settings::Document.new({}).save
+  end
+
+  it 'leaves the saving off when sessions.save is false' do
+    refute Riffer::Rig::Settings::Document.new({ sessions: { save: false } }).save
+  end
+
+  it 'saves sessions when the sessions block is not an object' do
+    assert Riffer::Rig::Settings::Document.new({ sessions: 'no' }).save
+  end
+
   it 'has no autoload when the extensions block is not an object' do
     refute Riffer::Rig::Settings::Document.new({ extensions: true }).autoload
   end

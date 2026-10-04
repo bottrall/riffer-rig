@@ -62,7 +62,8 @@ module Riffer::Rig::CLI
         skills: flags.skills,
         agents_md: flags.agents_md,
         tools: flags.tools,
-        max_steps: flags.max_steps
+        max_steps: flags.max_steps,
+        store: flags.save ? Riffer::Rig::Stores::JSONL.new : nil
       )
     end
   end

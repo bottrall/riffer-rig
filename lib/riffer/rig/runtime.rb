@@ -52,6 +52,7 @@ class Riffer::Rig::Runtime
   # @rbs @session_start_reason: Symbol
   # @rbs @model_override: String?
   # @rbs @message_observers: Array[^(Riffer::Messages::Base) -> void]
+  # @rbs @model_observers: Array[^(String) -> void]
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
   # @rbs @core_commands: Array[Riffer::Rig::Command]
@@ -125,6 +126,7 @@ class Riffer::Rig::Runtime
     @session_start_pending = true
     @session_start_reason = snapshot ? :restore : :new
     @message_observers = []
+    @model_observers = []
     Riffer::Rig::Settings::Pricing.register(pricing, riffer_config.pricing)
     @errors = []
     @tool_allowlist = tools
@@ -220,6 +222,7 @@ class Riffer::Rig::Runtime
     rederive_options(model)
     @agent = agent
     @model_override = model
+    @model_observers.each { |observer| observer.call(model) }
   end
 
   # @rbs provider: Symbol
@@ -260,6 +263,13 @@ class Riffer::Rig::Runtime
   # @rbs return: nil
   def on_message(&block)
     @message_observers << block
+    nil
+  end
+
+  # @rbs &block: (String) -> void
+  # @rbs return: nil
+  def on_model_change(&block)
+    @model_observers << block
     nil
   end
 
