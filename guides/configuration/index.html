@@ -23,7 +23,7 @@
             <a href="/guides/getting-started/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.8.0</span>
+            <span class="version">v0.9.0</span>
           </div>
         </nav>
       </div>
@@ -70,13 +70,18 @@
                 >
               </li>
               <li>
+                <a href="/guides/reloading/"
+                  ><span class="num">07</span>Reloading</a
+                >
+              </li>
+              <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">07</span>Sessions</a
+                  ><span class="num">08</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">08</span>Headless mode</a
+                  ><span class="num">09</span>Headless mode</a
                 >
               </li>
             </ul>
@@ -84,17 +89,17 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">09</span>Extensions</a
+                  ><span class="num">10</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">10</span>Embedding riffer-rig</a
+                  ><span class="num">11</span>Embedding riffer-rig</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">11</span>Hosts</a
+                  ><span class="num">12</span>Hosts</a
                 >
               </li>
             </ul>
@@ -102,7 +107,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">12</span>Providers</a
+                  ><span class="num">13</span>Providers</a
+                >
+              </li>
+              <li>
+                <a href="/guides/providers/custom/"
+                  ><span class="num">14</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -123,6 +133,7 @@
               <li><a href="#models">models</a></li>
               <li><a href="#mcp">mcp</a></li>
               <li><a href="#extensions">extensions</a></li>
+              <li><a href="#toolsnative">tools.native</a></li>
               <li><a href="#extension-namespaces">Extension namespaces</a></li>
             </ul>
           </nav>
@@ -174,11 +185,11 @@
     </tr>
     <tr>
       <td><code>sessions</code></td>
-      <td>reserved for the session store (<code>save</code>)</td>
+      <td><code>save</code>, set it to <code>false</code> to stop saving sessions to the store (<a href="/guides/sessions/">Sessions</a>)</td>
     </tr>
     <tr>
       <td><code>tools</code></td>
-      <td>reserved for provider-native tools (<code>native</code>)</td>
+      <td>the provider-native tool switches (<code>native</code>) (<a href="#toolsnative">below</a>)</td>
     </tr>
   </tbody>
 </table>
@@ -203,7 +214,7 @@
 
 <p>A bare <code>RIFFER_MODEL</code> is rejected even when a higher source wins, since it is a mistake in the environment either way.</p>
 
-<p><code>/model provider/name</code> overrides this key for the current session only: the override wins until the session ends, and <code>settings.json</code> is left unchanged (<a href="https://github.com/bottrall/riffer-rig#switching-the-model">Switching the model</a>).</p>
+<p><code>/model provider/name</code> overrides this key for the current session only: the override wins until the session ends. Switching resolves the new provider’s missing credentials and missing SDK gem the same way startup does, and <code>/model --save</code> writes the model in effect to this key in the home settings, leaving every other key unchanged (<a href="https://github.com/bottrall/riffer-rig#switching-the-model">Switching the model</a>).</p>
 
 <h2 id="reasoning"><code>reasoning</code></h2>
 
@@ -290,6 +301,15 @@
 <p>The lists in the two scopes add up, so a project can disable more but cannot re-enable what home disabled. A disabled extension is simply not passed to the Runtime; nothing it would register exists. An embedder calling <code>Loader.runtime</code> can also strip <code>skills: false</code> and <code>agents_md: false</code> for one Runtime.</p>
 
 <p><code>extensions.autoload</code> (default <code>false</code>) makes the Loader run <code>riffer/rig/extension</code> from every gem <code>Gem.find_files</code> finds, before the <code>rig.rb</code> files (<a href="/guides/extensions/#gem-extensions">Gem extensions</a>). Set it in either scope; the project’s value wins. The strip keyword <code>extensions: false</code> on <code>Loader.runtime</code> (the <code>--no-extensions</code> flag) skips both the autoload and the <code>rig.rb</code> files; the bundle still loads.</p>
+
+<h2 id="toolsnative"><code>tools.native</code></h2>
+
+<p><code>tools.native</code> switches the provider-native tools on, per tool. They are off by default; a switch the current provider cannot honour does nothing and raises nothing (<a href="/guides/tools/#provider-native-tools">Tools</a>):</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"tools"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"native"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"web_search"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>A switch value can be an object, passed through to the provider as the tool’s options. The Loader hands the switches to the Runtime at build, and a <code>/model</code> switch re-derives them for the new provider, so the tool is there exactly when the provider supports it.</p>
 
 <h2 id="extension-namespaces">Extension namespaces</h2>
 

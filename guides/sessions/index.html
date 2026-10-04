@@ -23,7 +23,7 @@
             <a href="/guides/getting-started/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.8.0</span>
+            <span class="version">v0.9.0</span>
           </div>
         </nav>
       </div>
@@ -70,13 +70,18 @@
                 >
               </li>
               <li>
+                <a href="/guides/reloading/"
+                  ><span class="num">07</span>Reloading</a
+                >
+              </li>
+              <li>
                 <a href="/guides/sessions/" class="active" aria-current="page"
-                  ><span class="num">07</span>Sessions</a
+                  ><span class="num">08</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">08</span>Headless mode</a
+                  ><span class="num">09</span>Headless mode</a
                 >
               </li>
             </ul>
@@ -84,17 +89,17 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">09</span>Extensions</a
+                  ><span class="num">10</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">10</span>Embedding riffer-rig</a
+                  ><span class="num">11</span>Embedding riffer-rig</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">11</span>Hosts</a
+                  ><span class="num">12</span>Hosts</a
                 >
               </li>
             </ul>
@@ -102,7 +107,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">12</span>Providers</a
+                  ><span class="num">13</span>Providers</a
+                >
+              </li>
+              <li>
+                <a href="/guides/providers/custom/"
+                  ><span class="num">14</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -112,18 +122,65 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Using the terminal · 07</span></p>
+          <p class="kicker"><span class="chapter">Using the terminal · 08</span></p>
           <h1>Sessions</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
             <ul>
+              <li><a href="#the-session-store">The session store</a></li>
+              <li><a href="#where-sessions-live">Where sessions live</a></li>
+              <li><a href="#what-an-entry-holds">What an entry holds</a></li>
+              <li><a href="#opting-out">Opting out</a></li>
               <li><a href="#what-a-snapshot-holds">What a snapshot holds</a></li>
               <li><a href="#what-it-leaves-out">What it leaves out</a></li>
               <li><a href="#restoring">Restoring</a></li>
             </ul>
           </nav>
           
-<p>A session is one conversation with a <code>Riffer::Rig::Runtime</code>: its id, its history and the choices made during it. The Runtime can save a session as a plain hash and carry on from one; storing those hashes, listing them and picking one to resume belong to the session store, which is not here yet. Until it is, an embedder keeps snapshots itself (<a href="/guides/embedding/#snapshots">Embedding</a>).</p>
+<p>A session is one conversation with a <code>Riffer::Rig::Runtime</code>: its id, its history and the choices made during it. The Runtime can save a session as a plain hash and carry on from one (<a href="#what-a-snapshot-holds">below</a>); the Loader stores every session it builds as it runs, one JSONL file per session under <code>~/.riffer/sessions/</code>. Picking a stored session to resume from is not here yet; until it is, an embedder reads the entries directly or keeps snapshots itself (<a href="/guides/embedding/#snapshots">Embedding</a>).</p>
+
+<h2 id="the-session-store">The session store</h2>
+
+<p>The Loader appends to a store: any object implementing the four <code>Riffer::Rig::Stores::_Store</code> methods — <code>append(id, entry)</code>, <code>read(id)</code>, <code>list(cwd: nil)</code> and <code>delete(id)</code>. It defaults to <code>Stores::JSONL</code> and takes <code>store:</code> per build; a Rails host implements the four over its own tables and passes its own. Hosts never see the store — they only choose which session to drive.</p>
+
+<h2 id="where-sessions-live">Where sessions live</h2>
+
+<p><code>Stores::JSONL</code> writes one file per session at <code>~/.riffer/sessions/&lt;cwd-slug&gt;/&lt;session id&gt;.jsonl</code>, one entry per line, so <code>cat</code> and <code>jq</code> work and a crash loses at most one line. The slug is the cwd with every run of characters outside alphanumerics, <code>.</code>, <code>_</code> and <code>-</code> collapsed to a single hyphen; it groups a project’s sessions so listing is a directory read, but the <code>cwd</code> in the header entry is the truth, not the directory name.</p>
+
+<h2 id="what-an-entry-holds">What an entry holds</h2>
+
+<p>Each line is a JSON object with a <code>type</code>:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th><code>type</code></th>
+      <th>Holds</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>header</code></td>
+      <td>written on the first message: <code>schema_version</code>, <code>id</code>, <code>cwd</code>, <code>created_at</code>, <code>model</code>, <code>riffer_rig_version</code>, <code>riffer_version</code>, <code>title</code> (the first prompt truncated to one line)</td>
+    </tr>
+    <tr>
+      <td><code>message</code></td>
+      <td>one conversation message as a riffer message hash under <code>message</code>, appended as it lands; the system message is not among them</td>
+    </tr>
+    <tr>
+      <td><code>model</code></td>
+      <td>one per <code>/model</code> switch, holding the new <code>model</code> string</td>
+    </tr>
+    <tr>
+      <td><code>skill</code></td>
+      <td>one per skill the model activated, holding the skill name; a <code>/skill:&lt;name&gt;</code> run is not one</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="opting-out">Opting out</h2>
+
+<p>Every Loader-built session is saved, one-shots included. Skip one run with <code>store: nil</code> — <code>--no-save</code> on the command line — or all of them with <code>"sessions": {"save": false}</code> in settings (<a href="/guides/configuration/">Configuration</a>).</p>
 
 <h2 id="what-a-snapshot-holds">What a snapshot holds</h2>
 
@@ -176,11 +233,11 @@
         </article>
 
         <nav class="pager">
-          <a class="doc" href="/guides/mcp/"
+          <a class="doc" href="/guides/reloading/"
             ><span class="go">←</span
             ><span
               ><span class="desc">Previous</span
-              ><span class="name">MCP</span></span
+              ><span class="name">Reloading</span></span
             ></a
           >
           <a class="doc next" href="/guides/headless/"

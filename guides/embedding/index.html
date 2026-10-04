@@ -23,7 +23,7 @@
             <a href="/guides/getting-started/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.8.0</span>
+            <span class="version">v0.9.0</span>
           </div>
         </nav>
       </div>
@@ -70,13 +70,18 @@
                 >
               </li>
               <li>
+                <a href="/guides/reloading/"
+                  ><span class="num">07</span>Reloading</a
+                >
+              </li>
+              <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">07</span>Sessions</a
+                  ><span class="num">08</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">08</span>Headless mode</a
+                  ><span class="num">09</span>Headless mode</a
                 >
               </li>
             </ul>
@@ -84,17 +89,17 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">09</span>Extensions</a
+                  ><span class="num">10</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/" class="active" aria-current="page"
-                  ><span class="num">10</span>Embedding riffer-rig</a
+                  ><span class="num">11</span>Embedding riffer-rig</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">11</span>Hosts</a
+                  ><span class="num">12</span>Hosts</a
                 >
               </li>
             </ul>
@@ -102,7 +107,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">12</span>Providers</a
+                  ><span class="num">13</span>Providers</a
+                >
+              </li>
+              <li>
+                <a href="/guides/providers/custom/"
+                  ><span class="num">14</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -112,7 +122,7 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Extending and embedding · 10</span></p>
+          <p class="kicker"><span class="chapter">Extending and embedding · 11</span></p>
           <h1>Embedding riffer-rig</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
@@ -151,6 +161,8 @@
   <li>runs <code>riffer/rig/extension</code> from every gem when <a href="/guides/configuration/#extensions"><code>extensions.autoload</code></a> is set, then <code>~/.riffer/rig.rb</code> and, once <a href="/guides/extensions/#the-rigrb-files">trusted</a>, <code>&lt;cwd&gt;/.riffer/rig.rb</code>, and appends the extensions the loads record to the bundle (<a href="/guides/extensions/#the-rigrb-files">Extensions</a>);</li>
   <li>constructs the Runtime with the model, the credentials, the extensions, the merged settings, the <code>models</code> pricing table, the <code>reasoning</code> level as riffer <code>model_options</code>, and the keywords below.</li>
 </ol>
+
+<p>Whatever <code>store:</code> records the build: the <a href="/guides/sessions/#what-an-entry-holds">header</a> lands on the first message, then one entry per message, per <code>/model</code> switch and per model skill activation; <code>store: nil</code>, or <code>"sessions": {"save": false}</code> in settings (<a href="/guides/configuration/">Configuration</a>), writes nothing (<a href="/guides/sessions/">Sessions</a>).</p>
 
 <table>
   <thead>
@@ -216,10 +228,15 @@
       <td>the <code>Riffer::Config</code> that receives the credentials and pricing</td>
       <td><code>Riffer.config</code></td>
     </tr>
+    <tr>
+      <td><code>store:</code></td>
+      <td>the <a href="/guides/sessions/#the-session-store">session store</a> that records the build; <code>nil</code> opts one run out</td>
+      <td><code>Stores::JSONL.new</code></td>
+    </tr>
   </tbody>
 </table>
 
-<p><code>Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:)</code> takes the same setup and builds with <code>runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)</code>, for a host that keeps the Loader.</p>
+<p><code>Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)</code> takes the same setup and builds with <code>runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)</code>, for a host that keeps the Loader.</p>
 
 <p>The host is asked only when its <code>capabilities</code> include <code>:ask</code>. With no model set anywhere, the Loader asks it for a model string, listing the providers, and writes the answer to <code>~/.riffer/settings.json</code>; a required credential that does not resolve is asked for the same way and stored (<a href="/guides/providers/overview/#rifferrigcredentials">Providers</a>). Anything the Loader cannot settle raises <code>Riffer::Rig::Loader::ConfigurationError</code> with a message fit to show the user: no model and a host that cannot ask (the null host), a model string without a known provider prefix, a bare <code>RIFFER_MODEL</code>, or a required credential still missing. A headless host should map it to exit status 2.</p>
 
@@ -483,7 +500,7 @@
 
 <h2 id="rebuilding-after-a-code-reload">Rebuilding after a code reload</h2>
 
-<p><code>rebuild(extensions:, settings:)</code> replaces everything the Runtime’s extensions registered — tools, commands, prompt sections, hooks, skills sources, declared settings and MCP servers — with what the given extension list registers, run against a fresh registrar. It is the primitive behind hot reloading: an embedder without the Loader calls it after its own code reload (a Rails <code>to_prepare</code> block, say) with the re-created extension objects and the settings it wants now. The Runtime watches no files and has no <code>/reload</code> of its own, since it knows no filesystem conventions.</p>
+<p><code>rebuild(extensions:, settings:)</code> replaces everything the Runtime’s extensions registered — tools, commands, prompt sections, hooks, skills sources, declared settings and MCP servers — with what the given extension list registers, run against a fresh registrar. It is the primitive behind hot reloading: an embedder without the Loader calls it after its own code reload (a Rails <code>to_prepare</code> block, say) with the re-created extension objects and the settings it wants now, and a Loader-built Runtime gets it through <code>/reload</code> (<a href="/guides/reloading/">Reloading</a>). The Runtime watches no files and has no <code>/reload</code> of its own, since it knows no filesystem conventions.</p>
 
 <div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">Rails</span><span class="p">.</span><span class="nf">application</span><span class="p">.</span><span class="nf">reloader</span><span class="p">.</span><span class="nf">to_prepare</span> <span class="k">do</span>
   <span class="n">runtime</span><span class="p">.</span><span class="nf">rebuild</span><span class="p">(</span><span class="ss">extensions: </span><span class="p">[</span><span class="o">*</span><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">bundled</span><span class="p">,</span> <span class="no">MyApp</span><span class="p">.</span><span class="nf">rig_extension</span><span class="p">],</span> <span class="ss">settings: </span><span class="no">MyApp</span><span class="p">.</span><span class="nf">rig_settings</span><span class="p">)</span>
@@ -496,7 +513,7 @@
 
 <p>Once the Runtime’s session has started, the old hooks get <code>session_end(reason: :reload)</code> before the swap and the new ones <code>session_start(reason: :reload)</code> after it — where an extension releases and re-acquires process-wide state — and the next prompt’s stream opens with those two events. Before the first turn a rebuild fires neither, and the first prompt opens with <code>session_start(reason: :new)</code> as usual.</p>
 
-<p><code>rebuild</code> runs between turns only. Like <code>prompt</code>, it raises <code>Riffer::Rig::Runtime::BusyError</code> while a prompt or command is running — so from inside a hook or a command — and <code>Riffer::Rig::Runtime::ClosedError</code> after <code>close</code>. It returns <code>nil</code>.</p>
+<p><code>rebuild</code> runs between turns only. Like <code>prompt</code>, it raises <code>Riffer::Rig::Runtime::BusyError</code> while another thread holds the Runtime mid-prompt, command or hook, and <code>Riffer::Rig::Runtime::ClosedError</code> after <code>close</code>. A nested rebuild from the thread that already holds it — a command such as the Loader’s <code>/reload</code>, or a hook at a quiet boundary — proceeds, since a rebuild swaps configuration rather than entering the turn. It returns <code>nil</code>.</p>
 
 <h2 id="capping-the-loop">Capping the loop</h2>
 

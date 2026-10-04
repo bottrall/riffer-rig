@@ -23,7 +23,7 @@
             <a href="/guides/getting-started/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.8.0</span>
+            <span class="version">v0.9.0</span>
           </div>
         </nav>
       </div>
@@ -70,13 +70,18 @@
                 >
               </li>
               <li>
+                <a href="/guides/reloading/"
+                  ><span class="num">07</span>Reloading</a
+                >
+              </li>
+              <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">07</span>Sessions</a
+                  ><span class="num">08</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">08</span>Headless mode</a
+                  ><span class="num">09</span>Headless mode</a
                 >
               </li>
             </ul>
@@ -84,17 +89,17 @@
             <ul>
               <li>
                 <a href="/guides/extensions/" class="active" aria-current="page"
-                  ><span class="num">09</span>Extensions</a
+                  ><span class="num">10</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">10</span>Embedding riffer-rig</a
+                  ><span class="num">11</span>Embedding riffer-rig</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">11</span>Hosts</a
+                  ><span class="num">12</span>Hosts</a
                 >
               </li>
             </ul>
@@ -102,7 +107,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">12</span>Providers</a
+                  ><span class="num">13</span>Providers</a
+                >
+              </li>
+              <li>
+                <a href="/guides/providers/custom/"
+                  ><span class="num">14</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -112,7 +122,7 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Extending and embedding · 09</span></p>
+          <p class="kicker"><span class="chapter">Extending and embedding · 10</span></p>
           <h1>Extensions</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
@@ -126,6 +136,7 @@
               <li><a href="#the-rigon-seam">The rig.on seam</a></li>
               <li><a href="#the-rigskills-seam">The rig.skills seam</a></li>
               <li><a href="#the-rigmcp-seam">The rig.mcp seam</a></li>
+              <li><a href="#the-rigprovider-seam">The rig.provider seam</a></li>
               <li><a href="#bundled-extensions-and-replacement">Bundled extensions and replacement</a></li>
               <li><a href="#the-rigsetting-seam">The rig.setting seam</a></li>
               <li><a href="#error-isolation">Error isolation</a></li>
@@ -359,6 +370,14 @@
 </code></pre></div></div>
 
 <p>Declares an HTTPS MCP server for the Runtime: <code>rig.mcp(name, url:, headers: {})</code>. The Runtime registers the server with riffer’s MCP client, and the agent gets its tools as <code>&lt;server&gt;__&lt;tool&gt;</code>; a later declaration of the same name replaces the earlier one. <a href="/guides/mcp/">MCP</a> covers naming, why the <code>tools:</code> allowlist does not apply, failures, what a rebuild keeps and the same-name limit across Runtimes.</p>
+
+<h2 id="the-rigprovider-seam">The <code>rig.provider</code> seam</h2>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">rig</span><span class="p">.</span><span class="nf">provider</span><span class="p">(</span><span class="ss">:acme</span><span class="p">,</span> <span class="ss">setup: </span><span class="p">{</span> <span class="ss">url: </span><span class="s1">'https://acme.example.com/keys'</span><span class="p">,</span>
+                             <span class="ss">fields: </span><span class="p">[{</span> <span class="ss">name: :api_key</span><span class="p">,</span> <span class="ss">env: </span><span class="p">[</span><span class="s1">'ACME_API_KEY'</span><span class="p">],</span> <span class="ss">secret: </span><span class="kp">true</span><span class="p">,</span> <span class="ss">required: </span><span class="kp">true</span> <span class="p">}]</span> <span class="p">})</span> <span class="p">{</span> <span class="no">AcmeProvider</span> <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Registers a custom provider under a new prefix — the one <strong>process-wide</strong> seam: <code>rig.provider</code> registers the class with riffer’s provider repository (<code>Riffer::Providers::Repository.register</code>) and the registration never goes away. Re-registering the same prefix is idempotent, so a reload or a second Runtime leaves one entry, and two Runtimes see the same prefix. <a href="/guides/providers/custom/">Custom providers</a> covers the <code>setup:</code> hash, the generic fallback without one, and reading the resolved values through <code>Riffer::Rig.credentials(:identifier)</code>.</p>
 
 <h2 id="bundled-extensions-and-replacement">Bundled extensions and replacement</h2>
 

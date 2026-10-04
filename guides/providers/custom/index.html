@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Custom providers — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/getting-started/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.9.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">01</span>Getting started</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">02</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">03</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">04</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">05</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">06</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/reloading/"
+                  ><span class="num">07</span>Reloading</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">08</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">09</span>Headless mode</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">10</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">11</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">12</span>Hosts</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">13</span>Providers</a
+                >
+              </li>
+              <li>
+                <a href="/guides/providers/custom/" class="active" aria-current="page"
+                  ><span class="num">14</span>Custom providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Providers · 14</span></p>
+          <h1>Custom providers</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#registering-a-provider">Registering a provider</a></li>
+              <li><a href="#the-setup">The setup</a></li>
+              <li><a href="#reading-the-credentials">Reading the credentials</a></li>
+            </ul>
+          </nav>
+          
+<p>An extension registers a provider class under a new prefix, and the Loader then treats it like a built-in: onboarding, <code>/model</code> hints and <code>/auth</code> list it, and its credentials resolve the same way. See <a href="/guides/providers/overview/">Providers</a> for how resolution and storage work.</p>
+
+<h2 id="registering-a-provider">Registering a provider</h2>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># .riffer/rig.rb</span>
+<span class="nb">require</span> <span class="s1">'acme_sdk'</span>
+
+<span class="k">class</span> <span class="nc">AcmeProvider</span> <span class="o">&lt;</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Providers</span><span class="o">::</span><span class="no">Base</span>
+  <span class="c1"># ... the provider hooks (see riffer's custom-provider guide)</span>
+<span class="k">end</span>
+
+<span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">extension</span><span class="p">(</span><span class="s1">'acme'</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">rig</span><span class="o">|</span>
+  <span class="n">rig</span><span class="p">.</span><span class="nf">provider</span><span class="p">(</span><span class="ss">:acme</span><span class="p">,</span> <span class="ss">setup: </span><span class="p">{</span>
+    <span class="ss">url: </span><span class="s1">'https://acme.example.com/keys'</span><span class="p">,</span>
+    <span class="ss">fields: </span><span class="p">[{</span> <span class="ss">name: :api_key</span><span class="p">,</span> <span class="ss">env: </span><span class="p">[</span><span class="s1">'ACME_API_KEY'</span><span class="p">],</span> <span class="ss">secret: </span><span class="kp">true</span><span class="p">,</span> <span class="ss">required: </span><span class="kp">true</span> <span class="p">}]</span>
+  <span class="p">})</span> <span class="p">{</span> <span class="no">AcmeProvider</span> <span class="p">}</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p><code>rig.provider(prefix, setup: nil) { klass }</code> is process-wide: it registers the class with riffer’s provider repository (<code>Riffer::Providers::Repository.register</code>) the first time an extension runs it, and the registration never goes away. Re-registering the same prefix — a reload, or a second Runtime building the extension — replaces the entry with the same class and is idempotent. Providers are stateless, so the one repository and one set of credentials per process is by design.</p>
+
+<h2 id="the-setup">The setup</h2>
+
+<p>The <code>setup:</code> hash describes what rig needs before it can use the provider, the same way the built-in table does. Rig converts it to a frozen <code>Riffer::Rig::ProviderSetup</code> (with <code>ProviderSetup::Field</code> entries) when the extension registers and stores it, so <code>ProviderSetup.for(:acme)</code> returns it and the Loader resolves the provider like a built-in.</p>
+
+<ul>
+  <li><code>url</code> (optional) — where to create a key, shown in credential messages.</li>
+  <li><code>fields</code> — each field has <code>name</code> (the value’s key), <code>env</code> (one or more env var names, tried in order), <code>secret</code> (hidden input, stored in <code>auth.json</code>; default false), <code>required</code> (only required fields are prompted; default false), and an optional <code>fallback:</code> Proc tried after env and disk, before prompting. The full field behaviour is in <a href="/guides/providers/overview/#resolution-order">Providers</a>.</li>
+  <li><code>chain</code> (optional, default false) — offers the SDK’s own credential chain.</li>
+  <li><code>sdk</code> (optional) — a <code>[gem, requirement]</code> pair the Loader or <code>/model</code> installs on demand, exactly like a built-in provider’s.</li>
+</ul>
+
+<p>Without a <code>setup:</code>, the generic fallback applies: one required secret <code>api_key</code> read from <code>&lt;IDENTIFIER&gt;_API_KEY</code> — for <code>:acme</code>, <code>ACME_API_KEY</code>.</p>
+
+<h2 id="reading-the-credentials">Reading the credentials</h2>
+
+<p>The provider class reads the resolved values through <code>Riffer::Rig.credentials(:acme)</code> when it builds its client:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">AcmeProvider</span> <span class="o">&lt;</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Providers</span><span class="o">::</span><span class="no">Base</span>
+  <span class="kp">private</span>
+
+  <span class="k">def</span> <span class="nf">build_client</span>
+    <span class="no">AcmeSdk</span><span class="o">::</span><span class="no">Client</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="ss">api_key: </span><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">credentials</span><span class="p">(</span><span class="ss">:acme</span><span class="p">)[</span><span class="ss">:api_key</span><span class="p">])</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p><code>Riffer::Rig.credentials(identifier)</code> is a process-wide read of the values <code>Riffer::Rig::Credentials.apply</code> last received for that provider; it is nil before anything is applied. Built-in providers get the same lookup plus the assignment onto <code>Riffer.config</code>; a custom provider has no config member, so the process-wide read is its delivery path. Both stay current across <code>/model</code> switches and <code>/auth</code> re-runs, which re-apply the values.</p>
+
+<p>A Loader-built Runtime resolves the provider’s required fields at build time: it reads the env vars, the stored <code>auth.json</code> entry and the <code>providers</code> block of the home settings, prompts for what is still missing when the host can ask, and raises the configuration error naming the missing fields and their env vars otherwise — the same flow a built-in provider goes through.</p>
+
+        </article>
+
+        <nav class="pager">
+          <a class="doc" href="/guides/providers/overview/"
+            ><span class="go">←</span
+            ><span
+              ><span class="desc">Previous</span
+              ><span class="name">Providers</span></span
+            ></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

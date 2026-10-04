@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reloading — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/getting-started/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.9.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">01</span>Getting started</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">02</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">03</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">04</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">05</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">06</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/reloading/" class="active" aria-current="page"
+                  ><span class="num">07</span>Reloading</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">08</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">09</span>Headless mode</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">10</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">11</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">12</span>Hosts</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">13</span>Providers</a
+                >
+              </li>
+              <li>
+                <a href="/guides/providers/custom/"
+                  ><span class="num">14</span>Custom providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Using the terminal · 07</span></p>
+          <h1>Reloading</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#what-reloads">What reloads</a></li>
+              <li><a href="#what-does-not">What does not</a></li>
+              <li><a href="#the-mechanism">The mechanism</a></li>
+              <li><a href="#triggers">Triggers</a></li>
+              <li><a href="#failure">Failure</a></li>
+              <li><a href="#known-limits">Known limits</a></li>
+            </ul>
+          </nav>
+          
+<p>A reload rebuilds the registrar from the extension files re-executed as they are on disk: <code>/reload</code>, the runtime command the Loader installs, scrubs the tracked files from Ruby’s <code>$LOADED_FEATURES</code>, loads both <code>rig.rb</code> files again (<a href="/guides/extensions/#the-rigrb-files">Extensions</a>), re-reads the settings, credentials and trust, and swaps a freshly built registrar in atomically. History, the tally, the <code>/model</code> override and the session id survive the swap; the tools, commands, prompt sections and handlers are whatever the files say now.</p>
+
+<h2 id="what-reloads">What reloads</h2>
+
+<p>Both <code>rig.rb</code> files, every local file they <code>require</code> or <code>require_relative</code> (anything under <code>~/.riffer</code> or the project), <code>settings.json</code> in both scopes, <code>auth.json</code>, and trust status — a project <code>rig.rb</code> that first appears mid-session goes through the same trust confirm as at startup. Settings are re-read whole, so <code>extensions.disabled</code> re-applies too; the settings’ <code>model</code> key is not read, and the model in effect is kept.</p>
+
+<h2 id="what-does-not">What does not</h2>
+
+<p>Extension gems (<code>riffer-rig-*</code>), riffer-rig’s own code and riffer stay as loaded. Skills and AGENTS.md need no reload: their sections are evaluated per turn (<a href="/guides/skills/">Skills</a>, <a href="/guides/instructions/">Instructions</a>).</p>
+
+<h2 id="the-mechanism">The mechanism</h2>
+
+<p>On first load the Loader diffs <code>$LOADED_FEATURES</code> around loading each <code>rig.rb</code>; the new entries under <code>~/.riffer</code> or the project are the tracked files, gem paths dropped, and the <code>rig.rb</code> files themselves are tracked too. A reload deletes those entries from <code>$LOADED_FEATURES</code> and loads each <code>rig.rb</code> again, so plain <code>require</code> and <code>require_relative</code> re-execute with no author-side convention, and a <code>require</code> added since the last load is picked up from that reload on.</p>
+
+<p>Classes are reopened in place, not removed: edited and added methods take effect. <code>Riffer::Rig.extension("name")</code> records into the process registry keyed by name, so re-execution replaces the block rather than duplicating it.</p>
+
+<h2 id="triggers">Triggers</h2>
+
+<p><code>/reload</code> always reloads and re-discovers the file set. Embedders call <code>Loader#reload(runtime, force: false)</code> themselves (<a href="/guides/embedding/#building-a-runtime-with-the-loader">Embedding</a>): without <code>force</code> it is a no-op while the tracked file set and the two <code>rig.rb</code> paths look exactly as the last discovery left them, which is the entry point the automatic check at the <code>before_request</code> boundary will use. That check is not built yet.</p>
+
+<h2 id="failure">Failure</h2>
+
+<p>The new registrar is built aside; nothing on the Runtime changes until it is complete. If a <code>rig.rb</code> itself raises, the reload is abandoned: the live registrar stays, the host gets one <code>notify</code>, and the mtime snapshot advances so a failing reload is not retried on every request. A single extension block failing follows the standard rule: skipped and reported, the rest swap in (<a href="/guides/extensions/#error-isolation">Extensions</a>). Errors go to the host only, never into the model’s context.</p>
+
+<h2 id="known-limits">Known limits</h2>
+
+<ul>
+  <li>Reopened classes keep deleted methods and renamed constants until restart.</li>
+  <li>Gem-packaged extensions do not reload.</li>
+  <li>Two Runtimes in one process share the process-level extension registry and providers; a reload in one does not rebuild the other.</li>
+</ul>
+
+        </article>
+
+        <nav class="pager">
+          <a class="doc" href="/guides/mcp/"
+            ><span class="go">←</span
+            ><span
+              ><span class="desc">Previous</span
+              ><span class="name">MCP</span></span
+            ></a
+          >
+          <a class="doc next" href="/guides/sessions/"
+            ><span
+              ><span class="desc">Next</span
+              ><span class="name">Sessions</span></span
+            ><span class="go">→</span></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>
