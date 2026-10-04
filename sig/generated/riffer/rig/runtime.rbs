@@ -19,6 +19,8 @@ class Riffer::Rig::Runtime
 
   INTERRUPT_CANCELLED: Symbol
 
+  @model_override: String?
+
   @session_start_reason: Symbol
 
   @session_start_pending: bool
@@ -43,13 +45,17 @@ class Riffer::Rig::Runtime
 
   @agent: Riffer::Agent
 
-  @model_override: String?
-
   @message_observers: Array[^(Riffer::Messages::Base) -> void]
 
   @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
 
   @commands: Hash[String, Riffer::Rig::Command]
+
+  @core_commands: Array[Riffer::Rig::Command]
+
+  @claim_depth: Integer
+
+  @claim_thread: Thread?
 
   @declared_settings: Hash[String, Hash[Symbol, untyped]]
 
@@ -110,6 +116,12 @@ class Riffer::Rig::Runtime
   # @rbs return: Array[Riffer::Rig::Command]
   def commands: () -> Array[Riffer::Rig::Command]
 
+  # Installs a host-of-the-runtime command (the Loader's /reload) so it
+  # survives every rebuild; an extension command of the same name replaces it.
+  # @rbs command: Riffer::Rig::Command
+  # @rbs return: nil
+  def install_command: (Riffer::Rig::Command command) -> nil
+
   # @rbs name: String
   # @rbs args: String
   # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
@@ -156,6 +168,16 @@ class Riffer::Rig::Runtime
 
   # @rbs return: void
   def claim: () -> void
+
+  # Rebuild is a configuration swap at a quiet boundary, not a turn entry, so
+  # it may run nested under the thread that holds the Runtime — the /reload
+  # command and the automatic reload check both do. Another thread is still
+  # refused while work runs.
+  # @rbs return: void
+  def claim_rebuild: () -> void
+
+  # @rbs return: void
+  def release: () -> void
 
   # @rbs model: String
   # @rbs config: Riffer::Agent::Config
@@ -277,11 +299,6 @@ class Riffer::Rig::Runtime
   # @rbs &: (Riffer::Rig::Extension, StandardError) -> void
   # @rbs return: Array[Riffer::Rig::Registrar]
   def build_registrars: (Array[Riffer::Rig::Extension] extensions, Hash[Symbol, untyped] settings) { (Riffer::Rig::Extension, StandardError) -> void } -> Array[Riffer::Rig::Registrar]
-
-  # @rbs extension: Riffer::Rig::Extension
-  # @rbs registrar: Riffer::Rig::Registrar
-  # @rbs return: StandardError?
-  def load_extension: (Riffer::Rig::Extension extension, Riffer::Rig::Registrar registrar) -> StandardError?
 
   # @rbs extension: Riffer::Rig::Extension
   # @rbs error: StandardError

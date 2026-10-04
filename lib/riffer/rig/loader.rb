@@ -3,6 +3,9 @@
 class Riffer::Rig::Loader
   class ConfigurationError < StandardError; end
 
+  # Raised by a strict load: the reload abandons instead of continuing.
+  class AbandonedError < StandardError; end
+
   EXTENSION_FEATURE = 'riffer/rig/extension' #: String
 
   private_constant :EXTENSION_FEATURE
@@ -13,6 +16,10 @@ class Riffer::Rig::Loader
   # @rbs @home: String
   # @rbs @riffer_config: Riffer::Config
   # @rbs @tracked_files: Array[String]
+  # @rbs @stripped: Array[Symbol]
+  # @rbs @extensions_enabled: bool
+  # @rbs @gem_extensions: Array[Riffer::Rig::Extension]
+  # @rbs @file_state: Hash[String, Time?]?
 
   # @dynamic tracked_files
   attr_reader :tracked_files #: Array[String]
@@ -60,6 +67,10 @@ class Riffer::Rig::Loader
     @home = home
     @riffer_config = riffer_config
     @tracked_files = []
+    @stripped = []
+    @extensions_enabled = true
+    @gem_extensions = []
+    @file_state = nil
   end
 
   # @rbs model: String?
@@ -77,20 +88,20 @@ class Riffer::Rig::Loader
     tools: nil,
     max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS
   )
-    settings = Riffer::Rig::Settings.merge(
-      Riffer::Rig::Settings.read(home_settings_path),
-      Riffer::Rig::Settings.read(File.join(@cwd, '.riffer', 'settings.json'))
-    )
+    settings = merged_settings
     document = Riffer::Rig::Settings::Document.new(settings)
     selected = select_model(model || @env.model || document.model)
     provider = Riffer::Rig::Settings.provider_for(selected).to_s
     ensure_sdk(provider)
     credentials = { provider.to_sym => credentials_for(provider) }
-    stripped = { skills: skills, agents_md: agents_md }.reject { |_name, kept| kept }.keys
-    loaded = Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *stripped).values
+    @extensions_enabled = extensions
+    @stripped = { skills: skills, agents_md: agents_md }.reject { |_name, kept| kept }.keys
+    loaded = Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *@stripped).values
+    @tracked_files = []
+    @gem_extensions = []
     loaded += load_rig_files(document.autoload) if extensions
 
-    Riffer::Rig::Runtime.new(
+    built = Riffer::Rig::Runtime.new(
       selected,
       extensions: loaded,
       tools: tools,
@@ -103,18 +114,176 @@ class Riffer::Rig::Loader
       riffer_config: @riffer_config,
       model_options: Riffer::Rig::Settings.model_options(selected, document.reasoning)
     )
+    built.install_command(Riffer::Rig::Commands::Reload.command(self))
+    @file_state = file_state
+    built
+  end
+
+  # Without force, a no-op while the tracked file set and the two rig.rb paths
+  # look as the last discovery left them — the entry point the automatic
+  # trigger (#133) calls. The snapshot advances on every attempt, failed ones
+  # included, so a failure does not retry every request.
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs force: bool
+  # @rbs return: [:ok, Riffer::Rig::Runtime] | [:error, String]
+  def reload(runtime, force: false)
+    return [:ok, runtime] if !force && file_state == @file_state
+
+    outcome = perform_reload(runtime)
+    @file_state = file_state
+    return [:error, outcome] if outcome.is_a?(String)
+
+    [:ok, outcome]
   end
 
   private
 
+  # @rbs return: Hash[Symbol, untyped]
+  def merged_settings
+    Riffer::Rig::Settings.merge(
+      Riffer::Rig::Settings.read(home_settings_path),
+      Riffer::Rig::Settings.read(File.join(@cwd, '.riffer', 'settings.json'))
+    )
+  end
+
+  # Notifies every failure once and reports its message; a rebuilt Runtime is
+  # the success value.
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: (Riffer::Rig::Runtime | String)
+  def perform_reload(runtime)
+    settings = merged_settings
+    document = Riffer::Rig::Settings::Document.new(settings)
+    begin
+      extensions = reload_extensions(document, settings)
+    rescue AbandonedError => e
+      return notify_failure(e.message)
+    end
+
+    failure = reload_credentials(runtime)
+    return notify_failure(failure) if failure
+
+    begin
+      runtime.rebuild(extensions: validated(extensions, settings), settings: settings)
+    rescue StandardError => e
+      return notify_failure(e.message)
+    end
+    runtime
+  end
+
+  # @rbs message: String
+  # @rbs return: String
+  def notify_failure(message)
+    @host.notify(message, level: :error)
+    message
+  end
+
+  # @rbs document: Riffer::Rig::Settings::Document
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: Array[Riffer::Rig::Extension]
+  def reload_extensions(document, settings)
+    candidates = Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *@stripped).values
+    return validated(candidates, settings) unless @extensions_enabled
+
+    scrub_tracked_features
+    @tracked_files = []
+    candidates.concat(@gem_extensions, rig_recordings)
+    validated(candidates, settings)
+  end
+
+  # @rbs return: Array[Riffer::Rig::Extension]
+  def rig_recordings
+    recorded = [] #: Array[Riffer::Rig::Extension]
+    recorded.concat(load_rig_file(home_rig_path, confirm_trust: false))
+    recorded.concat(load_rig_file(project_rig_path, confirm_trust: true))
+    recorded
+  end
+
+  # @rbs path: String
+  # @rbs confirm_trust: bool
+  # @rbs return: Array[Riffer::Rig::Extension]
+  def load_rig_file(path, confirm_trust:)
+    return [] unless File.file?(path)
+    return [] if confirm_trust && !trusted?(path)
+
+    load_file(path, track: true, strict: true)
+  end
+
+  # @rbs return: void
+  def scrub_tracked_features
+    @tracked_files.each { |path| $LOADED_FEATURES.delete(path) }
+  end
+
+  # Runs each extension against a throwaway registrar so that a failing block
+  # is skipped and reported instead of aborting the rebuild.
+  # @rbs extensions: Array[Riffer::Rig::Extension]
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: Array[Riffer::Rig::Extension]
+  def validated(extensions, settings)
+    extensions.select do |extension|
+      registrar = Riffer::Rig::Registrar.new(extension.name, settings[extension.name.to_sym] || {})
+      error = extension.load_into(registrar)
+      next true unless error
+
+      @host.notify("Extension #{extension.name} failed to load: #{error.message}", level: :error)
+      false
+    end
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: String?
+  def reload_credentials(runtime)
+    provider = runtime.model.partition('/').first
+    resolution = Riffer::Rig::Credentials.resolve(
+      provider,
+      host: asking_host,
+      env: @env,
+      auth_path: File.join(@home, '.riffer', 'auth.json'),
+      settings_path: home_settings_path
+    )
+    return missing_credentials(provider, resolution.missing) unless resolution.missing.empty?
+
+    Riffer::Rig::Credentials.apply(provider, resolution.values, config: @riffer_config)
+    runtime.merge_credentials(provider.to_sym, resolution.values)
+    nil
+  end
+
+  # @rbs return: Hash[String, Time?]
+  def file_state
+    (@tracked_files + rig_paths).uniq.to_h { |path| [path, stamp(path)] }
+  end
+
+  # @rbs return: Array[String]
+  def rig_paths
+    return [] unless @extensions_enabled
+
+    [home_rig_path, project_rig_path]
+  end
+
+  # @rbs path: String
+  # @rbs return: Time?
+  def stamp(path)
+    File.file?(path) ? File.mtime(path) : nil
+  end
+
+  # @rbs return: String
+  def home_rig_path
+    File.expand_path(File.join(@home, '.riffer', 'rig.rb'))
+  end
+
+  # @rbs return: String
+  def project_rig_path
+    File.expand_path(File.join(@cwd, '.riffer', 'rig.rb'))
+  end
+
   # @rbs autoload: bool
   # @rbs return: Array[Riffer::Rig::Extension]
   def load_rig_files(autoload)
-    recorded = gem_extension_files(autoload).flat_map { |file| load_file(File.expand_path(file), track: false) }
-    home = File.expand_path(File.join(@home, '.riffer', 'rig.rb'))
-    recorded.concat(load_file(home, track: true)) if File.file?(home)
-    project = File.expand_path(File.join(@cwd, '.riffer', 'rig.rb'))
-    recorded.concat(load_file(project, track: true)) if File.file?(project) && trusted?(project)
+    @gem_extensions = gem_extension_files(autoload).flat_map { |file| load_file(File.expand_path(file), track: false) }
+    recorded = @gem_extensions.dup
+    recorded.concat(load_file(home_rig_path, track: true)) if File.file?(home_rig_path)
+    if File.file?(project_rig_path) && trusted?(project_rig_path)
+      recorded.concat(load_file(project_rig_path, track: true))
+    end
     recorded
   end
 
@@ -143,17 +312,25 @@ class Riffer::Rig::Loader
     File.join(@home, '.riffer', 'trust.json')
   end
 
+  # Loads one file and returns the extensions it recorded. A tracked load adds
+  # the features the load added to the tracked file set. A failure is reported
+  # to the host and yields nothing, unless strict: then it propagates as
+  # AbandonedError for the reload to abandon on.
   # @rbs path: String
   # @rbs track: bool
+  # @rbs strict: bool
   # @rbs return: Array[Riffer::Rig::Extension]
-  def load_file(path, track:)
+  def load_file(path, track:, strict: false)
     before = Riffer::Rig.extensions
     before_features = $LOADED_FEATURES.dup
     begin
       load path
     rescue StandardError => e
       track_loaded(before_features, path) if track
-      @host.notify("#{path} failed to load: #{e.message}", level: :error)
+      message = "#{path} failed to load: #{e.message}"
+      raise AbandonedError, message if strict
+
+      @host.notify(message, level: :error)
       return []
     end
     track_loaded(before_features, path) if track

@@ -1,0 +1,12 @@
+# Generated from lib/riffer/rig/commands/reload.rb with RBS::Inline
+
+module Riffer::Rig::Commands::Reload
+  # @rbs loader: Riffer::Rig::Loader
+  # @rbs return: Riffer::Rig::Command
+  def command: (Riffer::Rig::Loader loader) -> Riffer::Rig::Command
+
+  # @rbs loader: Riffer::Rig::Loader
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs return: void
+  def run: (Riffer::Rig::Loader loader, Riffer::Rig::Command::Context ctx) -> void
+end

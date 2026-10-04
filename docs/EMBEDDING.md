@@ -203,7 +203,7 @@ runtime.model = 'openai/gpt-5'
 
 ## Rebuilding after a code reload
 
-`rebuild(extensions:, settings:)` replaces everything the Runtime's extensions registered — tools, commands, prompt sections, hooks, skills sources, declared settings and MCP servers — with what the given extension list registers, run against a fresh registrar. It is the primitive behind hot reloading: an embedder without the Loader calls it after its own code reload (a Rails `to_prepare` block, say) with the re-created extension objects and the settings it wants now. The Runtime watches no files and has no `/reload` of its own, since it knows no filesystem conventions.
+`rebuild(extensions:, settings:)` replaces everything the Runtime's extensions registered — tools, commands, prompt sections, hooks, skills sources, declared settings and MCP servers — with what the given extension list registers, run against a fresh registrar. It is the primitive behind hot reloading: an embedder without the Loader calls it after its own code reload (a Rails `to_prepare` block, say) with the re-created extension objects and the settings it wants now, and a Loader-built Runtime gets it through `/reload` ([Reloading](RELOADING.md)). The Runtime watches no files and has no `/reload` of its own, since it knows no filesystem conventions.
 
 ```ruby
 Rails.application.reloader.to_prepare do
@@ -217,7 +217,7 @@ Kept across a rebuild: the message history, the [tally](#token-tally-and-cost), 
 
 Once the Runtime's session has started, the old hooks get `session_end(reason: :reload)` before the swap and the new ones `session_start(reason: :reload)` after it — where an extension releases and re-acquires process-wide state — and the next prompt's stream opens with those two events. Before the first turn a rebuild fires neither, and the first prompt opens with `session_start(reason: :new)` as usual.
 
-`rebuild` runs between turns only. Like `prompt`, it raises `Riffer::Rig::Runtime::BusyError` while a prompt or command is running — so from inside a hook or a command — and `Riffer::Rig::Runtime::ClosedError` after `close`. It returns `nil`.
+`rebuild` runs between turns only. Like `prompt`, it raises `Riffer::Rig::Runtime::BusyError` while another thread holds the Runtime mid-prompt, command or hook, and `Riffer::Rig::Runtime::ClosedError` after `close`. A nested rebuild from the thread that already holds it — a command such as the Loader's `/reload`, or a hook at a quiet boundary — proceeds, since a rebuild swaps configuration rather than entering the turn. It returns `nil`.
 
 ## Capping the loop
 
