@@ -54,6 +54,9 @@ class Riffer::Rig::Runtime
   # @rbs @message_observers: Array[^(Riffer::Messages::Base) -> void]
   # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
+  # @rbs @core_commands: Array[Riffer::Rig::Command]
+  # @rbs @claim_depth: Integer
+  # @rbs @claim_thread: Thread?
   # @rbs @declared_settings: Hash[String, Hash[Symbol, untyped]]
   # @rbs @errors: Array[Riffer::Rig::Extension::Failure]
   # @rbs @hooks: Riffer::Rig::Runtime::Hooks
@@ -115,6 +118,9 @@ class Riffer::Rig::Runtime
 
     @busy = false
     @closed = false
+    @claim_depth = 0
+    @claim_thread = nil
+    @core_commands = []
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
     @session_start_pending = true
     @session_start_reason = snapshot ? :restore : :new
@@ -149,7 +155,7 @@ class Riffer::Rig::Runtime
         turn(text)
       end
     ensure
-      @busy = false
+      release
     end
   end
 
@@ -160,13 +166,23 @@ class Riffer::Rig::Runtime
     begin
       turn(text).each { |event| event }
     ensure
-      @busy = false
+      release
     end
   end
 
   # @rbs return: Array[Riffer::Rig::Command]
   def commands
     @commands.values
+  end
+
+  # Installs a host-of-the-runtime command (the Loader's /reload) so it
+  # survives every rebuild; an extension command of the same name replaces it.
+  # @rbs command: Riffer::Rig::Command
+  # @rbs return: nil
+  def install_command(command)
+    @core_commands << command
+    @commands[command.name] = command
+    nil
   end
 
   # @rbs name: String
@@ -179,7 +195,7 @@ class Riffer::Rig::Runtime
     begin
       execute(name, args, emit)
     ensure
-      @busy = false
+      release
     end
     @host.drain.each(&emit)
     nil
@@ -217,7 +233,7 @@ class Riffer::Rig::Runtime
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs return: nil
   def rebuild(extensions:, settings:)
-    claim
+    claim_rebuild
     begin
       registrars = build_registrars(extensions, settings) { |_extension, error| raise error }
       mcp_servers = register_mcp_servers(registrars)
@@ -230,7 +246,7 @@ class Riffer::Rig::Runtime
       unregister_mcp_servers(dropped)
       lifecycle(:session_start, Riffer::Rig::Events::SessionStart.new(@id, :reload))
     ensure
-      @busy = false
+      release
     end
     nil
   end
@@ -277,6 +293,31 @@ class Riffer::Rig::Runtime
     raise ClosedError, 'this Runtime is closed' if @closed
 
     @busy = true
+    @claim_depth += 1
+    @claim_thread = Thread.current
+  end
+
+  # Rebuild is a configuration swap at a quiet boundary, not a turn entry, so
+  # it may run nested under the thread that holds the Runtime — the /reload
+  # command and the automatic reload check both do. Another thread is still
+  # refused while work runs.
+  # @rbs return: void
+  def claim_rebuild
+    raise BusyError, 'a prompt is already running on this Runtime' if @busy && @claim_thread != Thread.current
+    raise ClosedError, 'this Runtime is closed' if @closed
+
+    @busy = true
+    @claim_depth += 1
+    @claim_thread = Thread.current
+  end
+
+  # @rbs return: void
+  def release
+    @claim_depth -= 1
+    return if @claim_depth.positive?
+
+    @busy = false
+    @claim_thread = nil
   end
 
   # @rbs model: String
@@ -370,6 +411,7 @@ class Riffer::Rig::Runtime
     @prompts = registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h
     skills = agent.context.skills&.skills&.values || []
     commands = [
+      *@core_commands,
       Riffer::Rig::Commands::Auth.command,
       Riffer::Rig::Commands::Model.command,
       *skills.map { |skill| Riffer::Rig::Commands::Skill.command(skill) },
@@ -595,25 +637,12 @@ class Riffer::Rig::Runtime
   def build_registrars(extensions, settings)
     extensions.filter_map do |extension|
       registrar = Riffer::Rig::Registrar.new(extension.name, settings[extension.name.to_sym] || {})
-      error = load_extension(extension, registrar)
+      error = extension.load_into(registrar)
       next registrar unless error
 
       yield(extension, error)
       nil
     end
-  end
-
-  # @rbs extension: Riffer::Rig::Extension
-  # @rbs registrar: Riffer::Rig::Registrar
-  # @rbs return: StandardError?
-  def load_extension(extension, registrar)
-    rejection = extension.mismatch || registrar.collision
-    return rejection if rejection
-
-    extension.run(registrar)
-    nil
-  rescue StandardError => e
-    e
   end
 
   # @rbs extension: Riffer::Rig::Extension

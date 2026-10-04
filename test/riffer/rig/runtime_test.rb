@@ -845,6 +845,26 @@ describe Riffer::Rig::Runtime do
 
       assert_raises(Riffer::Rig::Runtime::ClosedError) { runtime.run_command('log', '') }
     end
+
+    describe '#install_command' do
+      it 'keeps an installed command through a rebuild' do
+        runtime = Riffer::Rig::Runtime.new('mock/test')
+        command = Riffer::Rig::Command.new('reload', description: 'Reload', extension: 'core') { |_ctx| nil }
+        runtime.install_command(command)
+        runtime.rebuild(extensions: [], settings: {})
+
+        assert_equal(command, runtime.commands.find { |candidate| candidate.name == 'reload' })
+      end
+
+      it 'lets an extension command replace an installed one' do
+        runtime = Riffer::Rig::Runtime.new('mock/test')
+        command = Riffer::Rig::Command.new('log', description: 'Installed log', extension: 'core') { |_ctx| nil }
+        runtime.install_command(command)
+        runtime.rebuild(extensions: [@git], settings: {})
+
+        assert_equal 'Recent commits', runtime.commands.find { |candidate| candidate.name == 'log' }.description
+      end
+    end
   end
 
   describe 'extension load errors' do
@@ -1832,31 +1852,26 @@ describe Riffer::Rig::Runtime do
       end
     end
 
-    it 'raises from inside a hook' do
+    it 'rebuilds from inside a hook' do
       runtime = nil
       reloading = Riffer::Rig::Extension.new('reloading') do |rig|
         rig.on(:turn_end) { |_e| runtime.rebuild(extensions: [], settings: {}) }
       end
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [reloading])
       runtime.agent.provider.stub_response('All done.')
-      notifies = []
-      runtime.prompt('go') { |event| notifies << event if event.is_a?(Riffer::Rig::Events::Notify) }
-      notice = 'turn_end hook failed: a prompt is already running on this Runtime'
+      runtime.prompt('go') { |event| event }
 
-      assert_equal [Riffer::Rig::Events::Notify.new(notice, :error)], notifies
+      assert_empty runtime.agent.tools
     end
 
-    it 'raises from inside a command' do
+    it 'rebuilds from inside a command' do
       reloading = Riffer::Rig::Extension.new('reloading') do |rig|
         rig.command('reload', description: 'Rebuild') { |ctx| ctx.runtime.rebuild(extensions: [], settings: {}) }
       end
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [reloading])
-      events = []
-      runtime.run_command('reload') { |event| events << event }
+      runtime.run_command('reload')
 
-      notice = 'Command reload failed: a prompt is already running on this Runtime'
-
-      assert_equal [Riffer::Rig::Events::Notify.new(notice, :error)], events
+      assert_empty runtime.agent.tools
     end
 
     it 'raises on a closed Runtime' do

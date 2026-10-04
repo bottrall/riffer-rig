@@ -713,4 +713,187 @@ describe Riffer::Rig::Loader do
       assert_match(/with a provider from: .*acme/, host.questions.first)
     end
   end
+
+  describe '#reload' do
+    def probe_rig(identifier)
+      <<~RUBY
+        class ProbeTool < Riffer::Tool
+          identifier '#{identifier}'
+          description 'probe'
+          def call(context:) = text('probe')
+        end
+        Riffer::Rig.extension('probe') { |rig| rig.tool ProbeTool }
+      RUBY
+    end
+
+    def bump(path)
+      stamp = File.mtime(path) + 10
+      File.utime(stamp, stamp, path)
+    end
+
+    def tool_added
+      write_rig(:project, probe_rig('probe'))
+      host = ConfirmingHost.new([true])
+      loader = new_loader(host: host)
+      runtime = loader.runtime(model: 'mock/test')
+      usage = Riffer::Providers::TokenUsage.new(input_tokens: 7, output_tokens: 3)
+      runtime.agent.provider.stub_response('Before.', token_usage: usage)
+      runtime.ask('before')
+      runtime.model = 'mock/other'
+      File.write(project_rig_path, probe_rig('probe_next'))
+      [loader, runtime, host]
+    end
+
+    def raising_rig
+      write_rig(:project, probe_rig('probe'))
+      host = ConfirmingHost.new([true])
+      loader = new_loader(host: host)
+      runtime = loader.runtime(model: 'mock/test')
+      File.write(project_rig_path, 'raise "boom"')
+      [loader, runtime, host]
+    end
+
+    it 'is installed as a command' do
+      assert_includes build(model: 'mock/test').commands.map(&:name), 'reload'
+    end
+
+    it 'registers a tool added to a tracked file' do
+      loader, runtime, = tool_added
+      loader.reload(runtime, force: true)
+
+      assert_includes tool_names(runtime), 'probe_next'
+    end
+
+    it 'keeps the message history' do
+      loader, runtime, = tool_added
+      history = runtime.agent.session.messages.drop(1)
+      loader.reload(runtime, force: true)
+
+      assert_equal history, runtime.agent.session.messages.drop(1)
+    end
+
+    it 'keeps the tally' do
+      loader, runtime, = tool_added
+      loader.reload(runtime, force: true)
+
+      assert_equal 10, runtime.tally.total_tokens
+    end
+
+    it 'keeps the /model override' do
+      loader, runtime, = tool_added
+      loader.reload(runtime, force: true)
+
+      assert_equal 'mock/other', runtime.model
+    end
+
+    it 'reports the rebuilt runtime' do
+      loader, runtime, = tool_added
+      reloaded = loader.reload(runtime, force: true)
+
+      assert_same runtime, reloaded
+    end
+
+    it 'replaces a re-recorded extension rather than duplicating it' do
+      loader, runtime, = tool_added
+      loader.reload(runtime, force: true)
+
+      assert_equal ['probe_next'], tool_names(runtime).grep(/\Aprobe/)
+    end
+
+    it 'reloads without force when a tracked file changed' do
+      loader, runtime, = tool_added
+      bump(project_rig_path)
+      loader.reload(runtime)
+
+      assert_includes tool_names(runtime), 'probe_next'
+    end
+
+    it 'skips the reload when no tracked file changed' do
+      write_rig(:project, probe_rig('probe'))
+      host = ConfirmingHost.new([true])
+      loader = new_loader(host: host)
+      runtime = loader.runtime(model: 'mock/test')
+      marker = File.join(@cwd, 'reload_marker')
+      File.write(project_rig_path, "File.write(#{marker.inspect}, 'attempted')\nraise 'boom'")
+      bump(project_rig_path)
+      loader.reload(runtime)
+      FileUtils.rm_f(marker)
+      loader.reload(runtime)
+
+      refute_path_exists marker
+    end
+
+    it 'abandons the reload when a rig.rb raises' do
+      loader, runtime, = raising_rig
+      reloaded = loader.reload(runtime, force: true)
+
+      assert_match(/failed to load: boom\z/, reloaded)
+    end
+
+    it 'keeps the live registrar when a rig.rb raises on reload' do
+      loader, runtime, = raising_rig
+      loader.reload(runtime, force: true)
+
+      assert_equal ['probe'], tool_names(runtime).grep(/\Aprobe/)
+    end
+
+    it 'notifies once when a rig.rb raises on reload' do
+      loader, runtime, host = raising_rig
+      loader.reload(runtime, force: true)
+
+      assert_equal [[:error, "#{project_rig_path} failed to load: boom"]], host.notifications
+    end
+
+    it 're-reads settings changed on disk' do
+      write_settings(@home, { git: { depth: 10 } })
+      loader = new_loader
+      runtime = loader.runtime(model: 'mock/test')
+      write_settings(@home, { git: { depth: 3 } })
+      loader.reload(runtime, force: true)
+
+      assert_equal({ depth: 3 }, runtime.settings[:git])
+    end
+
+    it 'drops the extensions of a deleted rig.rb' do
+      write_rig(:project, probe_rig('probe'))
+      loader = new_loader(host: ConfirmingHost.new([true]))
+      runtime = loader.runtime(model: 'mock/test')
+      FileUtils.rm(project_rig_path)
+      loader.reload(runtime, force: true)
+
+      assert_empty tool_names(runtime).grep(/\Aprobe/)
+    end
+
+    it 'confirms a project rig.rb appearing mid-session' do
+      host = ConfirmingHost.new([true])
+      loader = new_loader(host: host)
+      runtime = loader.runtime(model: 'mock/test')
+      write_rig(:project, probe_rig('probe'))
+      loader.reload(runtime, force: true)
+
+      assert_equal ["Trust #{project_rig_path}?"], host.questions
+    end
+
+    it 'reports Reloaded from /reload' do
+      write_rig(:project, probe_rig('probe'))
+      loader = new_loader(host: ConfirmingHost.new([true]))
+      runtime = loader.runtime(model: 'mock/test')
+      File.write(project_rig_path, probe_rig('probe_next'))
+      events = []
+      runtime.run_command('reload') { |event| events << event }
+
+      assert_equal [Riffer::Rig::Events::CommandOutput.new('reload', 'Reloaded')], events
+    end
+
+    it 'stays installed after the rebuild it triggers' do
+      write_rig(:project, probe_rig('probe'))
+      loader = new_loader(host: ConfirmingHost.new([true]))
+      runtime = loader.runtime(model: 'mock/test')
+      runtime.run_command('reload')
+      events = []
+      runtime.run_command('reload') { |event| events << event }
+
+      assert_equal [Riffer::Rig::Events::CommandOutput.new('reload', 'Reloaded')], events
+    end
+  end
 end

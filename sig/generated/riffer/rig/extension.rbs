@@ -29,6 +29,10 @@ class Riffer::Rig::Extension
   # @rbs return: void
   def run: (Riffer::Rig::Registrar registrar) -> void
 
+  # @rbs registrar: Riffer::Rig::Registrar
+  # @rbs return: StandardError?
+  def load_into: (Riffer::Rig::Registrar registrar) -> StandardError?
+
   private
 
   # @rbs requirement: Gem::Requirement?
