@@ -1,0 +1,64 @@
+# Generated from lib/riffer/rig/stores/jsonl.rb with RBS::Inline
+
+class Riffer::Rig::Stores::JSONL
+  HEADER_VERSION: Integer
+
+  @home: String
+
+  @paths: Hash[String, String]
+
+  # @rbs home: String
+  # @rbs return: void
+  def initialize: (?home: String) -> void
+
+  # @rbs id: String
+  # @rbs entry: Hash[Symbol, untyped]
+  # @rbs return: void
+  def append: (String id, Hash[Symbol, untyped] entry) -> void
+
+  # @rbs id: String
+  # @rbs return: Array[Hash[Symbol, untyped]]
+  def read: (String id) -> Array[Hash[Symbol, untyped]]
+
+  # @rbs cwd: String?
+  # @rbs return: Array[Hash[Symbol, untyped]]
+  def list: (?cwd: String?) -> Array[Hash[Symbol, untyped]]
+
+  # @rbs id: String
+  # @rbs return: void
+  def delete: (String id) -> void
+
+  private
+
+  # @rbs return: String
+  def root: () -> String
+
+  # @rbs id: String
+  # @rbs entry: Hash[Symbol, untyped]
+  # @rbs return: String
+  def path_for: (String id, Hash[Symbol, untyped] entry) -> String
+
+  # @rbs id: String
+  # @rbs cwd: String
+  # @rbs return: String
+  def new_path: (String id, String cwd) -> String
+
+  # @rbs path: String
+  # @rbs return: Hash[Symbol, untyped]?
+  def header_of: (String path) -> Hash[Symbol, untyped]?
+
+  # @rbs id: String
+  # @rbs return: String?
+  def find: (String id) -> String?
+
+  # The slug groups a cwd's sessions for listing; it is not the truth — the
+  # header's cwd is, so two cwd strings that slug alike share a directory. A
+  # bare "." or ".." is collapsed so the file stays inside the sessions tree.
+  # @rbs cwd: String
+  # @rbs return: String
+  def slug: (String cwd) -> String
+
+  # @rbs line: String
+  # @rbs return: Hash[Symbol, untyped]?
+  def parse: (String line) -> Hash[Symbol, untyped]?
+end

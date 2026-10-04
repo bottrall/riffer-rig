@@ -15,6 +15,7 @@ class Riffer::Rig::Loader
   # @rbs @env: Riffer::Rig::Env
   # @rbs @home: String
   # @rbs @riffer_config: Riffer::Config
+  # @rbs @store: Riffer::Rig::Stores::_Store | nil
   # @rbs @tracked_files: Array[String]
   # @rbs @stripped: Array[Symbol]
   # @rbs @extensions_enabled: bool
@@ -35,6 +36,7 @@ class Riffer::Rig::Loader
   # @rbs agents_md: bool
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
+  # @rbs store: Riffer::Rig::Stores::_Store | nil
   # @rbs return: Riffer::Rig::Runtime
   def self.runtime(
     cwd:,
@@ -47,9 +49,11 @@ class Riffer::Rig::Loader
     skills: true,
     agents_md: true,
     tools: nil,
-    max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS
+    max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS,
+    store: Riffer::Rig::Stores::JSONL.new
   )
-    new(cwd:, host:, env:, home:, riffer_config:).runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)
+    new(cwd:, host:, env:, home:, riffer_config:, store:)
+      .runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)
   end
 
   # @rbs cwd: String
@@ -57,8 +61,16 @@ class Riffer::Rig::Loader
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
   # @rbs riffer_config: Riffer::Config
+  # @rbs store: Riffer::Rig::Stores::_Store | nil
   # @rbs return: void
-  def initialize(cwd:, host:, env: Riffer::Rig::Env.load, home: Dir.home, riffer_config: Riffer.config)
+  def initialize(
+    cwd:,
+    host:,
+    store: Riffer::Rig::Stores::JSONL.new,
+    env: Riffer::Rig::Env.load,
+    home: Dir.home,
+    riffer_config: Riffer.config
+  )
     raise ConfigurationError, env.message if env.is_a?(Riffer::Rig::Env::Invalid)
 
     @cwd = cwd
@@ -66,6 +78,7 @@ class Riffer::Rig::Loader
     @env = env
     @home = home
     @riffer_config = riffer_config
+    @store = store
     @tracked_files = []
     @stripped = []
     @extensions_enabled = true
@@ -101,6 +114,9 @@ class Riffer::Rig::Loader
     @gem_extensions = []
     loaded += load_rig_files(document.autoload) if extensions
 
+    recorder = recorder_for(document)
+    loaded << Riffer::Rig::Stores::Recorder.extension(recorder) if recorder
+
     built = Riffer::Rig::Runtime.new(
       selected,
       extensions: loaded,
@@ -117,6 +133,7 @@ class Riffer::Rig::Loader
     )
     built.install_command(Riffer::Rig::Commands::Reload.command(self))
     @file_state = file_state
+    recorder&.attach(built)
     built
   end
 
@@ -434,5 +451,17 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def home_settings_path
     File.join(@home, '.riffer', 'settings.json')
+  end
+
+  # The store records unless it was declined with store: nil or globally with
+  # "sessions": {"save": false}.
+  # @rbs document: Riffer::Rig::Settings::Document
+  # @rbs return: Riffer::Rig::Stores::Recorder?
+  def recorder_for(document)
+    store = @store
+    return nil unless document.save
+    return nil unless store
+
+    Riffer::Rig::Stores::Recorder.new(store: store)
   end
 end

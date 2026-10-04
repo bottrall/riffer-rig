@@ -524,6 +524,25 @@ describe Riffer::Rig::Runtime do
     end
   end
 
+  describe '#on_model_change' do
+    it 'notifies its observers on a switch' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      seen = []
+      runtime.on_model_change { |model| seen << model }
+      runtime.model = 'mock/other'
+
+      assert_equal ['mock/other'], seen
+    end
+
+    it 'does not notify for the model the Runtime was built with' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      seen = []
+      runtime.on_model_change { |model| seen << model }
+
+      assert_empty seen
+    end
+  end
+
   describe '#tally' do
     before do
       @riffer_config = Riffer.config

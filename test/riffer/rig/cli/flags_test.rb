@@ -33,6 +33,14 @@ describe Riffer::Rig::CLI::Flags do
     refute parse('--no-agents-md').agents_md
   end
 
+  it 'saves the session by default' do
+    assert parse.save
+  end
+
+  it 'reads --no-save' do
+    refute parse('--no-save').save
+  end
+
   it 'reads --tools as identifiers' do
     assert_equal %w[read bash], parse('--tools', 'read,bash').tools
   end

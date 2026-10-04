@@ -46,6 +46,7 @@ The model is the first of these that is set: `--model`, `RIFFER_MODEL`, `model` 
 | `--no-agents-md`        | leaves out the [AGENTS.md](docs/INSTRUCTIONS.md#agentsmd) instructions      |
 | `--tools read,bash`     | only these tools, by identifier ([Tools](docs/TOOLS.md))                    |
 | `--max-steps N`         | stops a turn after `N` model calls                                          |
+| `--no-save`             | does not save this session to the [store](docs/SESSIONS.md)                 |
 | `-h`, `--help`          | prints the usage                                                            |
 
 `riffer -p` (one prompt, no terminal) and `riffer acp` (an editor's agent over stdio) are reserved: for now each prints the usage and exits with status 2.

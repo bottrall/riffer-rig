@@ -20,6 +20,8 @@ class Riffer::Rig::Loader
 
   @tracked_files: Array[String]
 
+  @store: Riffer::Rig::Stores::_Store | nil
+
   @riffer_config: Riffer::Config
 
   @home: String
@@ -44,16 +46,18 @@ class Riffer::Rig::Loader
   # @rbs agents_md: bool
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
+  # @rbs store: Riffer::Rig::Stores::_Store | nil
   # @rbs return: Riffer::Rig::Runtime
-  def self.runtime: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?) -> Riffer::Rig::Runtime
+  def self.runtime: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?store: Riffer::Rig::Stores::_Store | nil) -> Riffer::Rig::Runtime
 
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
   # @rbs riffer_config: Riffer::Config
+  # @rbs store: Riffer::Rig::Stores::_Store | nil
   # @rbs return: void
-  def initialize: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config) -> void
+  def initialize: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?store: Riffer::Rig::Stores::_Store | nil, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config) -> void
 
   # @rbs model: String?
   # @rbs extensions: bool
@@ -201,4 +205,10 @@ class Riffer::Rig::Loader
 
   # @rbs return: String
   def home_settings_path: () -> String
+
+  # The store records unless it was declined with store: nil or globally with
+  # "sessions": {"save": false}.
+  # @rbs document: Riffer::Rig::Settings::Document
+  # @rbs return: Riffer::Rig::Stores::Recorder?
+  def recorder_for: (Riffer::Rig::Settings::Document document) -> Riffer::Rig::Stores::Recorder?
 end
