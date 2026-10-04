@@ -9,11 +9,12 @@ class Riffer::Rig::CLI::Flags
            riffer acp           (not available yet)
   TEXT
 
-  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help
+  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save
   attr_reader :model #: String?
   attr_reader :extensions, :skills, :agents_md, :help #: bool
   attr_reader :tools #: Array[String]?
   attr_reader :max_steps #: Integer?
+  attr_reader :save #: bool
 
   # @rbs argv: Array[String]
   # @rbs return: Riffer::Rig::CLI::Flags | String
@@ -29,6 +30,7 @@ class Riffer::Rig::CLI::Flags
       agents_md: !values.key?(:'no-agents-md'),
       tools: values[:tools],
       max_steps: values[:'max-steps'],
+      save: !values.key?(:'no-save'),
       help: values.key?(:help)
     )
   rescue OptionParser::ParseError => e
@@ -51,6 +53,7 @@ class Riffer::Rig::CLI::Flags
       parser.on('--no-agents-md', 'Leave out AGENTS.md instructions')
       parser.on('--tools NAME,NAME', Array, 'Only these tools, by identifier')
       parser.on('--max-steps N', Integer, 'Stop a turn after N model calls')
+      parser.on('--no-save', 'Do not save this session')
       parser.on('-h', '--help', 'Show this help')
     end
   end
@@ -62,15 +65,26 @@ class Riffer::Rig::CLI::Flags
   # @rbs agents_md: bool
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
+  # @rbs save: bool
   # @rbs help: bool
   # @rbs return: void
-  def initialize(model: nil, extensions: true, skills: true, agents_md: true, tools: nil, max_steps: nil, help: false)
+  def initialize(
+    model: nil,
+    extensions: true,
+    skills: true,
+    agents_md: true,
+    tools: nil,
+    max_steps: nil,
+    save: true,
+    help: false
+  )
     @model = model
     @extensions = extensions
     @skills = skills
     @agents_md = agents_md
     @tools = tools&.freeze
     @max_steps = max_steps
+    @save = save
     @help = help
     freeze
   end

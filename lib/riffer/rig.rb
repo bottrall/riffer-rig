@@ -6,7 +6,7 @@ require_relative 'rig/version'
 
 loader = Zeitwerk::Loader.for_gem_extension(Riffer)
 loader.ignore("#{__dir__}/rig/version.rb")
-loader.inflector.inflect('cli' => 'CLI', 'sdk' => 'SDK')
+loader.inflector.inflect('cli' => 'CLI', 'sdk' => 'SDK', 'jsonl' => 'JSONL')
 loader.setup
 
 module Riffer::Rig

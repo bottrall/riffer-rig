@@ -1,17 +1,22 @@
 # frozen_string_literal: true
 
+require 'time'
+
 class Riffer::Rig::Loader
   class ConfigurationError < StandardError; end
 
   EXTENSION_FEATURE = 'riffer/rig/extension' #: String
 
-  private_constant :EXTENSION_FEATURE
+  STORE_EXTENSION_NAME = 'session-store' #: String
+
+  private_constant :EXTENSION_FEATURE, :STORE_EXTENSION_NAME
 
   # @rbs @cwd: String
   # @rbs @host: Riffer::Rig::Hosts::_Host
   # @rbs @env: Riffer::Rig::Env
   # @rbs @home: String
   # @rbs @riffer_config: Riffer::Config
+  # @rbs @store: Riffer::Rig::Stores::_Store | nil
   # @rbs @tracked_files: Array[String]
 
   # @dynamic tracked_files
@@ -28,6 +33,7 @@ class Riffer::Rig::Loader
   # @rbs agents_md: bool
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
+  # @rbs store: Riffer::Rig::Stores::_Store | nil
   # @rbs return: Riffer::Rig::Runtime
   def self.runtime(
     cwd:,
@@ -40,9 +46,11 @@ class Riffer::Rig::Loader
     skills: true,
     agents_md: true,
     tools: nil,
-    max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS
+    max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS,
+    store: Riffer::Rig::Stores::JSONL.new
   )
-    new(cwd:, host:, env:, home:, riffer_config:).runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)
+    new(cwd:, host:, env:, home:, riffer_config:, store:)
+      .runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)
   end
 
   # @rbs cwd: String
@@ -50,8 +58,16 @@ class Riffer::Rig::Loader
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
   # @rbs riffer_config: Riffer::Config
+  # @rbs store: Riffer::Rig::Stores::_Store | nil
   # @rbs return: void
-  def initialize(cwd:, host:, env: Riffer::Rig::Env.load, home: Dir.home, riffer_config: Riffer.config)
+  def initialize(
+    cwd:,
+    host:,
+    store: Riffer::Rig::Stores::JSONL.new,
+    env: Riffer::Rig::Env.load,
+    home: Dir.home,
+    riffer_config: Riffer.config
+  )
     raise ConfigurationError, env.message if env.is_a?(Riffer::Rig::Env::Invalid)
 
     @cwd = cwd
@@ -59,6 +75,7 @@ class Riffer::Rig::Loader
     @env = env
     @home = home
     @riffer_config = riffer_config
+    @store = store
     @tracked_files = []
   end
 
@@ -90,7 +107,10 @@ class Riffer::Rig::Loader
     loaded = Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *stripped).values
     loaded += load_rig_files(document.autoload) if extensions
 
-    Riffer::Rig::Runtime.new(
+    recorder = recorder_for(document)
+    loaded << store_extension(recorder) if recorder
+
+    built = Riffer::Rig::Runtime.new(
       selected,
       extensions: loaded,
       tools: tools,
@@ -104,6 +124,8 @@ class Riffer::Rig::Loader
       model_options: Riffer::Rig::Settings.model_options(selected, document.reasoning),
       native_tools: document.native_tools
     )
+    recorder&.attach(built)
+    built
   end
 
   private
@@ -257,5 +279,130 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def home_settings_path
     File.join(@home, '.riffer', 'settings.json')
+  end
+
+  # The store extension rides every recorded build as its last extension, so
+  # its stream hook sees the model's skill activations.
+  # @rbs recorder: Recorder
+  # @rbs return: Riffer::Rig::Extension
+  def store_extension(recorder)
+    Riffer::Rig::Extension.new(STORE_EXTENSION_NAME) do |registrar|
+      registrar.on(:stream) do |event|
+        case event
+        when Riffer::StreamEvents::SkillActivation then recorder.skill(event)
+        end
+      end
+    end
+  end
+
+  # The store records unless it was declined with store: nil or globally with
+  # "sessions": {"save": false}.
+  # @rbs document: Riffer::Rig::Settings::Document
+  # @rbs return: Recorder?
+  def recorder_for(document)
+    store = @store
+    return nil unless document.save
+    return nil unless store
+
+    Recorder.new(store: store)
+  end
+
+  # Records one Loader-built session into the store: the header on the first
+  # message (its title needs the first prompt), one entry per message, one per
+  # model switch and one per skill activation. Entries that land before the
+  # first message (a /model before the first prompt) wait for the header.
+  class Recorder
+    # @rbs @store: Riffer::Rig::Stores::_Store
+    # @rbs @runtime: Riffer::Rig::Runtime?
+    # @rbs @header_written: bool
+    # @rbs @pending: Array[Hash[Symbol, untyped]]
+    # @rbs @title: String?
+
+    # @rbs store: Riffer::Rig::Stores::_Store
+    # @rbs return: void
+    def initialize(store:)
+      @store = store
+      @runtime = nil
+      @header_written = false
+      @pending = []
+      @title = nil
+    end
+
+    # @rbs runtime: Riffer::Rig::Runtime
+    # @rbs return: void
+    def attach(runtime)
+      @runtime = runtime
+      runtime.on_message { |message| message(message) }
+      runtime.on_model_change { |model| switched(model) }
+    end
+
+    # @rbs event: Riffer::StreamEvents::SkillActivation
+    # @rbs return: void
+    def skill(event)
+      record(type: 'skill', skill: event.name)
+    end
+
+    # @rbs message: Riffer::Messages::Base
+    # @rbs return: void
+    def message(message)
+      @title ||= one_line(message.content) if message.is_a?(Riffer::Messages::User)
+      write_header unless @header_written
+      record(type: 'message', message: message.to_h)
+    end
+
+    # @rbs model: String
+    # @rbs return: void
+    def switched(model)
+      record(type: 'model', model: model)
+    end
+
+    private
+
+    # @rbs entry: Hash[Symbol, untyped]
+    # @rbs return: void
+    def record(entry)
+      unless @header_written
+        @pending << entry
+        return
+      end
+
+      @store.append(runtime.id, entry)
+    end
+
+    # @rbs return: void
+    def write_header
+      @header_written = true
+      @store.append(runtime.id, header_entry)
+      @pending.each { |entry| @store.append(runtime.id, entry) }
+      @pending.clear
+    end
+
+    # @rbs return: Hash[Symbol, untyped]
+    def header_entry
+      {
+        type: 'header',
+        schema_version: Riffer::Rig::Stores::JSONL::HEADER_VERSION,
+        id: runtime.id,
+        cwd: runtime.cwd,
+        created_at: Time.now.utc.iso8601,
+        model: runtime.model,
+        riffer_rig_version: Riffer::Rig::VERSION,
+        riffer_version: Riffer::VERSION,
+        title: @title.to_s
+      }
+    end
+
+    # @rbs content: String
+    # @rbs return: String
+    def one_line(content)
+      content.lines.first.to_s.strip
+    end
+
+    # The recorder is built before the Runtime it records; every entry arrives
+    # after attach, so the runtime is always there by then.
+    # @rbs return: Riffer::Rig::Runtime
+    def runtime
+      @runtime || raise(StandardError, 'Recorder used before attach')
+    end
   end
 end

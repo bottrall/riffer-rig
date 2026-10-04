@@ -1,0 +1,11 @@
+# Zeitwerk autovivifies this namespace module in Ruby; RBS needs it declared
+# explicitly so the compact `Riffer::Rig::Stores::*` signatures resolve.
+
+module Riffer::Rig::Stores
+  interface _Store
+    def append: (String id, Hash[Symbol, untyped] entry) -> void
+    def read: (String id) -> Array[Hash[Symbol, untyped]]
+    def list: (?cwd: String?) -> Array[Hash[Symbol, untyped]]
+    def delete: (String id) -> void
+  end
+end
