@@ -714,3 +714,180 @@ describe Riffer::Rig::Loader do
     end
   end
 end
+
+class RecordingStore
+  attr_reader :appended #: Array[[String, Hash[Symbol, untyped]]]
+
+  def initialize
+    @appended = [] #: Array[[String, Hash[Symbol, untyped]]]
+  end
+
+  def append(id, entry)
+    @appended << [id, entry]
+  end
+
+  def read(_id)
+    []
+  end
+
+  def list(_cwd: nil)
+    []
+  end
+
+  def delete(_id)
+    nil
+  end
+end
+
+describe 'Loader session store' do
+  before do
+    @home = Dir.mktmpdir
+    @cwd = Dir.mktmpdir
+    @config = Riffer::Config.new
+    @store = RecordingStore.new
+  end
+
+  after do
+    FileUtils.remove_entry(@home)
+    FileUtils.remove_entry(@cwd)
+  end
+
+  def build(host: Riffer::Rig::Hosts::Null.new, **keywords)
+    Riffer::Rig::Loader.runtime(
+      cwd: @cwd,
+      host: host,
+      env: Riffer::Rig::Env.new({ 'MOCK_API_KEY' => 'mock-key' }),
+      home: @home,
+      riffer_config: @config,
+      **keywords
+    )
+  end
+
+  def types(store)
+    store.appended.map { |_id, entry| entry[:type] }
+  end
+
+  def entries
+    @store.appended.map { |_id, entry| entry }
+  end
+
+  def write_skill(name)
+    dir = File.join(@cwd, '.agents', 'skills', name)
+    FileUtils.mkdir_p(dir)
+    File.write(File.join(dir, 'SKILL.md'), "---\nname: #{name}\ndescription: Skill #{name}.\n---\nDo #{name}.\n")
+  end
+
+  def turn(runtime, text = 'hello')
+    runtime.agent.provider.stub_response('All done.')
+    runtime.ask(text)
+  end
+
+  it 'appends the header then one entry per message' do
+    runtime = build(store: @store, model: 'mock/test')
+    turn(runtime)
+    turn(runtime, 'again')
+
+    assert_equal %w[header message message message message], types(@store)
+  end
+
+  it 'keys every entry by the runtime id' do
+    runtime = build(store: @store, model: 'mock/test')
+    turn(runtime)
+
+    assert(@store.appended.all? { |(id, _entry)| id == runtime.id })
+  end
+
+  it 'writes the header first' do
+    runtime = build(store: @store, model: 'mock/test')
+    turn(runtime)
+
+    assert_equal 'header', @store.appended.first[1][:type]
+  end
+
+  it 'titles the header with the first prompt, one line' do
+    runtime = build(store: @store, model: 'mock/test')
+    turn(runtime, "first line\nsecond line")
+
+    assert_equal 'first line', @store.appended.first[1][:title]
+  end
+
+  it 'names the session cwd in the header' do
+    runtime = build(store: @store, model: 'mock/test')
+    turn(runtime)
+
+    assert_equal @cwd, @store.appended.first[1][:cwd]
+  end
+
+  it 'carries the model entries of a /model switch, after the header' do
+    runtime = build(store: @store, model: 'mock/test')
+    runtime.run_command('model', 'mock/other')
+    turn(runtime)
+
+    assert_equal %w[header model message message], types(@store)
+  end
+
+  it 'records a model switch with the new model string' do
+    runtime = build(store: @store, model: 'mock/test')
+    runtime.run_command('model', 'mock/other')
+    turn(runtime)
+
+    assert_equal 'mock/other', entries.find { |entry| entry[:type] == 'model' }[:model]
+  end
+
+  it 'records the model skill activations' do
+    write_skill('a')
+    runtime = build(store: @store, model: 'mock/test')
+    runtime.agent.provider.stub_response('', tool_calls: [{ name: 'skill_activate', arguments: '{"name":"a"}' }])
+    runtime.agent.provider.stub_response('Done.')
+    runtime.ask('use skill a')
+
+    assert_equal(['a'], entries.select { |entry| entry[:type] == 'skill' }.map { |entry| entry[:skill] })
+  end
+
+  it 'leaves a user-run /skill: out of the entries' do
+    write_skill('a')
+    runtime = build(store: @store, model: 'mock/test')
+    runtime.agent.provider.stub_response('On it.')
+    runtime.run_command('skill:a')
+    turn(runtime)
+
+    assert_empty(entries.select { |entry| entry[:type] == 'skill' })
+  end
+
+  it 'writes a default-store file whose lines all parse' do
+    runtime = build(model: 'mock/test')
+    turn(runtime)
+    path = File.join(Dir.home, '.riffer', 'sessions', '*', "#{runtime.id}.jsonl")
+
+    assert_equal(
+      %w[header message message],
+      File.readlines(Dir.glob(path).first).map do |line|
+        JSON.parse(line, symbolize_names: true)[:type]
+      end
+    )
+  end
+
+  it 'names the default-store file after the runtime id' do
+    runtime = build(model: 'mock/test')
+    turn(runtime)
+    path = File.join(Dir.home, '.riffer', 'sessions', '*', "#{runtime.id}.jsonl")
+
+    refute_empty Dir.glob(path)
+  end
+
+  it 'writes nothing with store: nil' do
+    runtime = build(store: nil, model: 'mock/test')
+    turn(runtime)
+
+    assert_empty Dir.glob(File.join(@home, '.riffer', 'sessions', '**', '*'))
+  end
+
+  it 'writes nothing when sessions.save is false' do
+    FileUtils.mkdir_p(File.join(@home, '.riffer'))
+    File.write(File.join(@home, '.riffer', 'settings.json'), JSON.generate({ sessions: { save: false } }))
+    runtime = build(store: @store, model: 'mock/test')
+    turn(runtime)
+
+    assert_empty @store.appended
+  end
+end

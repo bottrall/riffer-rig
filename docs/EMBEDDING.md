@@ -18,6 +18,8 @@ In order, it:
 4. runs `riffer/rig/extension` from every gem when [`extensions.autoload`](CONFIGURATION.md#extensions) is set, then `~/.riffer/rig.rb` and, once [trusted](EXTENSIONS.md#the-rigrb-files), `<cwd>/.riffer/rig.rb`, and appends the extensions the loads record to the bundle ([Extensions](EXTENSIONS.md#the-rigrb-files));
 5. constructs the Runtime with the model, the credentials, the extensions, the merged settings, the `models` pricing table, the `reasoning` level as riffer `model_options`, and the keywords below.
 
+Whatever `store:` records the build: the [header](SESSIONS.md#what-an-entry-holds) lands on the first message, then one entry per message, per `/model` switch and per model skill activation; `store: nil`, or `"sessions": {"save": false}` in settings ([Configuration](CONFIGURATION.md)), writes nothing ([Sessions](SESSIONS.md)).
+
 | Keyword       | Meaning                                                                  | Default |
 | ------------- | ------------------------------------------------------------------------ | ------- |
 | `cwd:`        | the working directory; its `.riffer/settings.json` is the project scope  | required |
@@ -31,8 +33,9 @@ In order, it:
 | `env:`        | a `Riffer::Rig::Env`, or what `Riffer::Rig::Env.load` returned            | `Riffer::Rig::Env.load` |
 | `home:`       | the directory holding `.riffer/settings.json` and `.riffer/auth.json`    | `Dir.home` |
 | `riffer_config:` | the `Riffer::Config` that receives the credentials and pricing        | `Riffer.config` |
+| `store:`      | the [session store](SESSIONS.md#the-session-store) that records the build; `nil` opts one run out | `Stores::JSONL.new` |
 
-`Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:)` takes the same setup and builds with `runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)`, for a host that keeps the Loader.
+`Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)` takes the same setup and builds with `runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)`, for a host that keeps the Loader.
 
 The host is asked only when its `capabilities` include `:ask`. With no model set anywhere, the Loader asks it for a model string, listing the providers, and writes the answer to `~/.riffer/settings.json`; a required credential that does not resolve is asked for the same way and stored ([Providers](PROVIDERS.md#rifferrigcredentials)). Anything the Loader cannot settle raises `Riffer::Rig::Loader::ConfigurationError` with a message fit to show the user: no model and a host that cannot ask (the null host), a model string without a known provider prefix, a bare `RIFFER_MODEL`, or a required credential still missing. A headless host should map it to exit status 2.
 

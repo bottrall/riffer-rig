@@ -1,6 +1,29 @@
 # Sessions
 
-A session is one conversation with a `Riffer::Rig::Runtime`: its id, its history and the choices made during it. The Runtime can save a session as a plain hash and carry on from one; storing those hashes, listing them and picking one to resume belong to the session store, which is not here yet. Until it is, an embedder keeps snapshots itself ([Embedding](EMBEDDING.md#snapshots)).
+A session is one conversation with a `Riffer::Rig::Runtime`: its id, its history and the choices made during it. The Runtime can save a session as a plain hash and carry on from one ([below](#what-a-snapshot-holds)); the Loader stores every session it builds as it runs, one JSONL file per session under `~/.riffer/sessions/`. Picking a stored session to resume from is not here yet; until it is, an embedder reads the entries directly or keeps snapshots itself ([Embedding](EMBEDDING.md#snapshots)).
+
+## The session store
+
+The Loader appends to a store: any object implementing the four `Riffer::Rig::Stores::_Store` methods — `append(id, entry)`, `read(id)`, `list(cwd: nil)` and `delete(id)`. It defaults to `Stores::JSONL` and takes `store:` per build; a Rails host implements the four over its own tables and passes its own. Hosts never see the store — they only choose which session to drive.
+
+## Where sessions live
+
+`Stores::JSONL` writes one file per session at `~/.riffer/sessions/<cwd-slug>/<session id>.jsonl`, one entry per line, so `cat` and `jq` work and a crash loses at most one line. The slug is the cwd with every run of characters outside alphanumerics, `.`, `_` and `-` collapsed to a single hyphen; it groups a project's sessions so listing is a directory read, but the `cwd` in the header entry is the truth, not the directory name.
+
+## What an entry holds
+
+Each line is a JSON object with a `type`:
+
+| `type`    | Holds                                                                                                                                               |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `header`  | written on the first message: `schema_version`, `id`, `cwd`, `created_at`, `model`, `riffer_rig_version`, `riffer_version`, `title` (the first prompt truncated to one line) |
+| `message` | one conversation message as a riffer message hash under `message`, appended as it lands; the system message is not among them                        |
+| `model`   | one per `/model` switch, holding the new `model` string                                                                                              |
+| `skill`   | one per skill the model activated, holding the skill name; a `/skill:<name>` run is not one                                                          |
+
+## Opting out
+
+Every Loader-built session is saved, one-shots included. Skip one run with `store: nil` — `--no-save` on the command line — or all of them with `"sessions": {"save": false}` in settings ([Configuration](CONFIGURATION.md)).
 
 ## What a snapshot holds
 

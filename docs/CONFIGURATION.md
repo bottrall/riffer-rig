@@ -19,7 +19,7 @@ Every core key is top level and optional:
 | `providers`  | non-secret provider fields such as an endpoint or region ([Providers](PROVIDERS.md#the-providers-block-in-settings); read from the home file only) |
 | `extensions` | `disabled`, the bundled extensions to leave out ([below](#extensions)); `autoload`, gem extension autoload ([below](#extensions)) |
 | `reload`     | reserved for hot reloading |
-| `sessions`   | reserved for the session store (`save`) |
+| `sessions`   | `save`, set it to `false` to stop saving sessions to the store ([Sessions](SESSIONS.md)) |
 | `tools`      | the provider-native tool switches (`native`) ([below](#toolsnative)) |
 
 ## `model`

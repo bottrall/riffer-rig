@@ -26,6 +26,8 @@ class Riffer::Rig::Runtime
   # tests and embedders can exercise the switches.
   NATIVE_TOOLS_BY_PROVIDER: Hash[Symbol, Hash[Symbol, bool]]
 
+  @model_override: String?
+
   @session_start_reason: Symbol
 
   @session_start_pending: bool
@@ -50,9 +52,9 @@ class Riffer::Rig::Runtime
 
   @agent: Riffer::Agent
 
-  @model_override: String?
-
   @message_observers: Array[^(Riffer::Messages::Base) -> void]
+
+  @model_observers: Array[^(String) -> void]
 
   @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
 
@@ -152,6 +154,10 @@ class Riffer::Rig::Runtime
   # @rbs &block: (Riffer::Messages::Base) -> void
   # @rbs return: nil
   def on_message: () { (Riffer::Messages::Base) -> void } -> nil
+
+  # @rbs &block: (String) -> void
+  # @rbs return: nil
+  def on_model_change: () { (String) -> void } -> nil
 
   # @rbs return: nil
   def cancel: () -> nil
