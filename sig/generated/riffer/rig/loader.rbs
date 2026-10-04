@@ -10,8 +10,6 @@ class Riffer::Rig::Loader
 
   EXTENSION_FEATURE: String
 
-  STORE_EXTENSION_NAME: String
-
   @file_state: Hash[String, Time?]?
 
   @gem_extensions: Array[Riffer::Rig::Extension]
@@ -208,72 +206,9 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def home_settings_path: () -> String
 
-  # The store extension rides every recorded build as its last extension, so
-  # its stream hook sees the model's skill activations.
-  # @rbs recorder: Recorder
-  # @rbs return: Riffer::Rig::Extension
-  def store_extension: (Recorder recorder) -> Riffer::Rig::Extension
-
   # The store records unless it was declined with store: nil or globally with
   # "sessions": {"save": false}.
   # @rbs document: Riffer::Rig::Settings::Document
-  # @rbs return: Recorder?
-  def recorder_for: (Riffer::Rig::Settings::Document document) -> Recorder?
-
-  # Records one Loader-built session into the store: the header on the first
-  # message (its title needs the first prompt), one entry per message, one per
-  # model switch and one per skill activation. Entries that land before the
-  # first message (a /model before the first prompt) wait for the header.
-  class Recorder
-    @store: Riffer::Rig::Stores::_Store
-
-    @runtime: Riffer::Rig::Runtime?
-
-    @header_written: bool
-
-    @pending: Array[Hash[Symbol, untyped]]
-
-    @title: String?
-
-    # @rbs store: Riffer::Rig::Stores::_Store
-    # @rbs return: void
-    def initialize: (store: Riffer::Rig::Stores::_Store) -> void
-
-    # @rbs runtime: Riffer::Rig::Runtime
-    # @rbs return: void
-    def attach: (Riffer::Rig::Runtime runtime) -> void
-
-    # @rbs event: Riffer::StreamEvents::SkillActivation
-    # @rbs return: void
-    def skill: (Riffer::StreamEvents::SkillActivation event) -> void
-
-    # @rbs message: Riffer::Messages::Base
-    # @rbs return: void
-    def message: (Riffer::Messages::Base message) -> void
-
-    # @rbs model: String
-    # @rbs return: void
-    def switched: (String model) -> void
-
-    private
-
-    # @rbs entry: Hash[Symbol, untyped]
-    # @rbs return: void
-    def record: (Hash[Symbol, untyped] entry) -> void
-
-    # @rbs return: void
-    def write_header: () -> void
-
-    # @rbs return: Hash[Symbol, untyped]
-    def header_entry: () -> Hash[Symbol, untyped]
-
-    # @rbs content: String
-    # @rbs return: String
-    def one_line: (String content) -> String
-
-    # The recorder is built before the Runtime it records; every entry arrives
-    # after attach, so the runtime is always there by then.
-    # @rbs return: Riffer::Rig::Runtime
-    def runtime: () -> Riffer::Rig::Runtime
-  end
+  # @rbs return: Riffer::Rig::Stores::Recorder?
+  def recorder_for: (Riffer::Rig::Settings::Document document) -> Riffer::Rig::Stores::Recorder?
 end
