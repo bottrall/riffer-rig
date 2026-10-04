@@ -1269,3 +1269,202 @@ describe 'Loader session store' do
     assert_empty @store.appended
   end
 end
+
+# A store whose listing order is the reverse of the wrapped store's, proving
+# the Loader picks by `updated` and not by position.
+class ReversedStore
+  def initialize(store)
+    @store = store
+  end
+
+  def append(id, entry)
+    @store.append(id, entry)
+  end
+
+  def read(id)
+    @store.read(id)
+  end
+
+  def list(cwd: nil)
+    @store.list(cwd: cwd).reverse
+  end
+
+  def updated(id)
+    @store.updated(id)
+  end
+
+  def delete(id)
+    @store.delete(id)
+  end
+end
+
+describe 'Loader resume' do
+  before do
+    @home = Dir.mktmpdir
+    @cwd = Dir.mktmpdir
+    @config = Riffer::Config.new
+  end
+
+  after do
+    FileUtils.remove_entry(@home)
+    FileUtils.remove_entry(@cwd)
+  end
+
+  def loader(store: Riffer::Rig::Stores::JSONL.new(home: @home), host: Riffer::Rig::Hosts::Null.new)
+    Riffer::Rig::Loader.new(
+      cwd: @cwd,
+      host: host,
+      env: Riffer::Rig::Env.new({ 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test' }),
+      home: @home,
+      riffer_config: @config,
+      store: store
+    )
+  end
+
+  def turn(runtime, text = 'hello')
+    runtime.agent.provider.stub_response('All done.')
+    runtime.ask(text)
+  end
+
+  def save_session(text = 'hello')
+    runtime = loader.runtime(model: 'mock/test')
+    turn(runtime, text)
+    runtime
+  end
+
+  def write_skill(name)
+    dir = File.join(@cwd, '.agents', 'skills', name)
+    FileUtils.mkdir_p(dir)
+    File.write(File.join(dir, 'SKILL.md'), "---\nname: #{name}\ndescription: Skill #{name}.\n---\nDo #{name}.\n")
+  end
+
+  def save_entries(id, entries)
+    store = Riffer::Rig::Stores::JSONL.new(home: @home)
+    entries.each { |entry| store.append(id, entry) }
+  end
+
+  def header(id, model = 'mock/test')
+    {
+      type: 'header', schema_version: 1, id: id, cwd: @cwd, created_at: '2026-01-01T00:00:00Z',
+      model: model, riffer_rig_version: '0.9.0', riffer_version: '0.49.0', title: 'hello'
+    }
+  end
+
+  def session_path(id)
+    Dir.glob(File.join(@home, '.riffer', 'sessions', '*', "#{id}.jsonl")).first
+  end
+
+  def age(path, seconds)
+    time = Time.at(seconds)
+    File.utime(time, time, path)
+  end
+
+  it 'continues the most recently updated session' do
+    first = save_session('first')
+    second = save_session('second')
+    age(session_path(first.id), 1000)
+
+    assert_equal second.id, loader.continue.id
+  end
+
+  it 'continues the most recently updated even when list is unordered' do
+    first = save_session('first')
+    second = save_session('second')
+    age(session_path(first.id), 1000)
+
+    assert_equal second.id, loader(store: ReversedStore.new(Riffer::Rig::Stores::JSONL.new(home: @home))).continue.id
+  end
+
+  it 'continues with the session history' do
+    save_session('welcome back')
+    resumed = loader.continue
+    contents = resumed.agent.session.messages.map(&:content)
+
+    assert_equal ['welcome back', 'All done.'], contents
+  end
+
+  it 'resumes a session by id' do
+    saved = save_session
+
+    assert_equal saved.id, loader.resume(saved.id).id
+  end
+
+  it 'resumes with the recorded model switch' do
+    saved = save_session
+    saved.run_command('model', 'mock/other')
+    turn(saved, 'again')
+
+    assert_equal 'mock/other', loader.resume(saved.id).to_h[:model]
+  end
+
+  it 'returns nil for an unknown id' do
+    assert_nil loader.resume('nope')
+  end
+
+  it 'continues nothing when no session matches the cwd' do
+    save_entries('other', [header('other').merge(cwd: '/other')])
+
+    assert_nil loader.continue
+  end
+
+  it 'continues nothing with a nil store' do
+    assert_nil loader(store: nil).continue
+  end
+
+  it 'lists the sessions of this cwd' do
+    save_session
+
+    assert_equal([@cwd], loader.list.map { |header| header[:cwd] })
+  end
+
+  it 'escapes the cwd scope with all: true' do
+    save_session
+    save_entries('elsewhere', [header('elsewhere').merge(cwd: '/elsewhere')])
+
+    assert_equal ['/elsewhere', @cwd], loader.list(all: true).map { |header| header[:cwd] }.sort
+  end
+
+  it 'deletes a session' do
+    saved = save_session
+    loader.delete(saved.id)
+
+    assert_nil session_path(saved.id)
+  end
+
+  it 'rewrites no header when resuming' do
+    saved = save_session
+    resumed = loader.resume(saved.id)
+    turn(resumed, 'again')
+
+    types = File.readlines(session_path(saved.id)).map { |line| JSON.parse(line, symbolize_names: true)[:type] }
+
+    assert_equal 1, types.count('header')
+  end
+
+  it 'lets the last model entry win' do
+    save_entries('aaa', [header('aaa'), { type: 'model', model: 'mock/one' }, { type: 'model', model: 'mock/two' }])
+
+    assert_equal 'mock/two', loader.resume('aaa').to_h[:model]
+  end
+
+  it 're-applies every recorded skill activation' do
+    write_skill('a')
+    write_skill('b')
+    save_entries(
+      'aaa',
+      [header('aaa'), { type: 'skill', skill: 'a' }, { type: 'skill', skill: 'b' },
+       { type: 'message', message: { role: 'user', content: 'hi' } }]
+    )
+
+    assert_equal %w[a b], loader.resume('aaa').to_h[:skills]
+  end
+
+  it 'heals a file cut mid-turn' do
+    saved = save_session
+    call = Riffer::Messages::Assistant::ToolCall.new(call_id: 'orphan', name: 'read', arguments: '{"path":"/tmp/x"}')
+    save_entries(saved.id, [{ type: 'message', message: Riffer::Messages::Assistant.new('', tool_calls: [call]).to_h }])
+    healed = loader.resume(saved.id).agent.session.messages.last
+
+    assert_equal ['orphan', :interrupted], [healed.tool_call_id, healed.error_type]
+  end
+end

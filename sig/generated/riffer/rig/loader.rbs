@@ -50,8 +50,9 @@ class Riffer::Rig::Loader
   # @rbs max_steps: Integer?
   # @rbs store: Riffer::Rig::Stores::_Store | nil
   # @rbs reload: (:auto | :manual | nil)
+  # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: Riffer::Rig::Runtime
-  def self.runtime: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?store: Riffer::Rig::Stores::_Store | nil, ?reload: :auto | :manual | nil) -> Riffer::Rig::Runtime
+  def self.runtime: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?store: Riffer::Rig::Stores::_Store | nil, ?reload: :auto | :manual | nil, ?snapshot: Hash[Symbol, untyped]?) -> Riffer::Rig::Runtime
 
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -69,8 +70,38 @@ class Riffer::Rig::Loader
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
   # @rbs reload: (:auto | :manual | nil)
+  # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: Riffer::Rig::Runtime
-  def runtime: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?reload: :auto | :manual | nil) -> Riffer::Rig::Runtime
+  def runtime: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?reload: :auto | :manual | nil, ?snapshot: Hash[Symbol, untyped]?) -> Riffer::Rig::Runtime
+
+  # @rbs model: String?
+  # @rbs extensions: bool
+  # @rbs skills: bool
+  # @rbs agents_md: bool
+  # @rbs tools: Array[String]?
+  # @rbs max_steps: Integer?
+  # @rbs return: Riffer::Rig::Runtime?
+  def continue: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?) -> Riffer::Rig::Runtime?
+
+  # A resume carries the history over and nothing else: the settings,
+  # credentials, extensions and tools are today's.
+  # @rbs id: String
+  # @rbs model: String?
+  # @rbs extensions: bool
+  # @rbs skills: bool
+  # @rbs agents_md: bool
+  # @rbs tools: Array[String]?
+  # @rbs max_steps: Integer?
+  # @rbs return: Riffer::Rig::Runtime?
+  def resume: (String id, ?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?) -> Riffer::Rig::Runtime?
+
+  # @rbs all: bool
+  # @rbs return: Array[Hash[Symbol, untyped]]
+  def list: (?all: bool) -> Array[Hash[Symbol, untyped]]
+
+  # @rbs id: String
+  # @rbs return: void
+  def delete: (String id) -> void
 
   # Without force, a no-op while the tracked file set and the two rig.rb paths
   # look as the last discovery left them and the reload mode is not manual —
@@ -227,9 +258,15 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def home_settings_path: () -> String
 
+  # @rbs entries: Array[Hash[Symbol, untyped]]
+  # @rbs id: String
+  # @rbs return: Hash[Symbol, untyped]
+  def snapshot_of: (Array[Hash[Symbol, untyped]] entries, String id) -> Hash[Symbol, untyped]
+
   # The store records unless it was declined with store: nil or globally with
   # "sessions": {"save": false}.
   # @rbs document: Riffer::Rig::Settings::Document
+  # @rbs resumed: bool
   # @rbs return: Riffer::Rig::Stores::Recorder?
-  def recorder_for: (Riffer::Rig::Settings::Document document) -> Riffer::Rig::Stores::Recorder?
+  def recorder_for: (Riffer::Rig::Settings::Document document, resumed: bool) -> Riffer::Rig::Stores::Recorder?
 end

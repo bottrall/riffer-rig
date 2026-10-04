@@ -1,6 +1,6 @@
 # Sessions
 
-A session is one conversation with a `Riffer::Rig::Runtime`: its id, its history and the choices made during it. The Runtime can save a session as a plain hash and carry on from one ([below](#what-a-snapshot-holds)); the Loader stores every session it builds as it runs, one JSONL file per session under `~/.riffer/sessions/`. Picking a stored session to resume from is not here yet; until it is, an embedder reads the entries directly or keeps snapshots itself ([Embedding](EMBEDDING.md#snapshots)).
+A session is one conversation with a `Riffer::Rig::Runtime`: its id, its history and the choices made during it. The Runtime can save a session as a plain hash and carry on from one ([below](#what-a-snapshot-holds)); the Loader stores every session it builds as it runs, one JSONL file per session under `~/.riffer/sessions/`, and picks one to resume ([below](#resuming)). An embedder without the Loader reads the entries directly or keeps snapshots itself ([Embedding](EMBEDDING.md#snapshots)).
 
 ## The session store
 
@@ -24,6 +24,23 @@ Each line is a JSON object with a `type`:
 ## Opting out
 
 Every Loader-built session is saved, one-shots included. Skip one run with `store: nil` — `--no-save` on the command line — or all of them with `"sessions": {"save": false}` in settings ([Configuration](CONFIGURATION.md)).
+
+## Resuming
+
+The Loader picks the session to drive; hosts never see the store:
+
+| Method           | Picks                                                                          |
+| ---------------- | ------------------------------------------------------------------------------ |
+| `continue`       | the most recently updated session whose header cwd matches the build's, or nil |
+| `resume(id)`     | the session with that id, or nil when the store has none                        |
+| `list(all: false)` | the header entries, the build's cwd only unless `all: true` escapes the scope |
+| `delete(id)`     | removes the session; an unknown id is a no-op                                   |
+
+`Stores::JSONL` dates a session by its file's mtime, which its last append set; `continue` picks the most recently `updated` session wherever `list` happens to place it.
+
+On the command line, `riffer -c` continues the most recent session in the directory and `riffer -r <id>` resumes by id. With no match the REPL tells you and starts fresh.
+
+Resuming folds the session's entries back into a snapshot and builds a Runtime over it: the last `model` entry wins, skill activations accumulate, and the `message` entries are the history. Everything else is today's — the settings, credentials, extensions and tools of the new build, and its model selection, unless the session recorded a `/model` switch, which is restored when its provider still has credentials ([Restoring](#restoring) has the rules, including the healed tail of a file cut mid-turn). A resumed session keeps its id and appends to the same file.
 
 ## What a snapshot holds
 

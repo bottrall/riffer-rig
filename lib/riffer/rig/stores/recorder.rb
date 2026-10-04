@@ -6,6 +6,7 @@ class Riffer::Rig::Stores::Recorder
   EXTENSION_NAME = 'session-store' #: String
 
   # @rbs @store: Riffer::Rig::Stores::_Store
+  # @rbs @resumed: bool
   # @rbs @runtime: Riffer::Rig::Runtime?
   # @rbs @header_written: bool
   # @rbs @pending: Array[Hash[Symbol, untyped]]
@@ -14,11 +15,15 @@ class Riffer::Rig::Stores::Recorder
   # Records one Loader-built session into the store: the header on the first
   # message (its title needs the first prompt), one entry per message, one per
   # model switch and one per skill activation. Entries that land before the
-  # first message (a /model before the first prompt) wait for the header.
+  # first message (a /model before the first prompt) wait for the header. A
+  # resumed session appends to the file its first run wrote, so it rewrites
+  # no header.
   # @rbs store: Riffer::Rig::Stores::_Store
+  # @rbs resumed: bool
   # @rbs return: void
-  def initialize(store:)
+  def initialize(store:, resumed: false)
     @store = store
+    @resumed = resumed
     @runtime = nil
     @header_written = false
     @pending = []
@@ -84,7 +89,7 @@ class Riffer::Rig::Stores::Recorder
   # @rbs return: void
   def write_header
     @header_written = true
-    @store.append(runtime.id, header_entry)
+    @store.append(runtime.id, header_entry) unless @resumed
     @pending.each { |entry| @store.append(runtime.id, entry) }
     @pending.clear
   end

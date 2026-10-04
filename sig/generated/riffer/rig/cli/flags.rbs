@@ -3,7 +3,7 @@
 class Riffer::Rig::CLI::Flags
   BANNER: String
 
-  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save
+  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save, continue, resume
   attr_reader model: String?
 
   attr_reader extensions: bool
@@ -19,6 +19,10 @@ class Riffer::Rig::CLI::Flags
   attr_reader max_steps: Integer?
 
   attr_reader save: bool
+
+  attr_reader continue: bool
+
+  attr_reader resume: String?
 
   # @rbs argv: Array[String]
   # @rbs return: Riffer::Rig::CLI::Flags | String
@@ -37,7 +41,9 @@ class Riffer::Rig::CLI::Flags
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
   # @rbs save: bool
+  # @rbs continue: bool
+  # @rbs resume: String?
   # @rbs help: bool
   # @rbs return: void
-  def initialize: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?help: bool) -> void
+  def initialize: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?continue: bool, ?resume: String?, ?help: bool) -> void
 end

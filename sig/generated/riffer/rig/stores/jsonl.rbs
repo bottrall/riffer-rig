@@ -3,9 +3,9 @@
 class Riffer::Rig::Stores::JSONL
   HEADER_VERSION: Integer
 
-  @home: String
-
   @paths: Hash[String, String]
+
+  @home: String
 
   # @rbs home: String
   # @rbs return: void
@@ -23,6 +23,11 @@ class Riffer::Rig::Stores::JSONL
   # @rbs cwd: String?
   # @rbs return: Array[Hash[Symbol, untyped]]
   def list: (?cwd: String?) -> Array[Hash[Symbol, untyped]]
+
+  # A session's last update is its file's mtime: appends are the only writes.
+  # @rbs id: String
+  # @rbs return: Time?
+  def updated: (String id) -> Time?
 
   # @rbs id: String
   # @rbs return: void
