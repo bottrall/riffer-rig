@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.9.0](https://github.com/bottrall/riffer-rig/compare/v0.8.0...v0.9.0) (2026-10-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* optional provider SDKs and the missing-SDK flow ([#211](https://github.com/bottrall/riffer-rig/issues/211))
+
+### Features
+
+* /auth lists, re-runs and removes provider credentials ([#213](https://github.com/bottrall/riffer-rig/issues/213)) ([ce17f15](https://github.com/bottrall/riffer-rig/commit/ce17f15286f5bc776775e1cbff4fb6db673379f7))
+* /model --save and provider switching through the Loader ([#214](https://github.com/bottrall/riffer-rig/issues/214)) ([f033caa](https://github.com/bottrall/riffer-rig/commit/f033caa6fc4b02b8a4429174f7d5256e4e7ece5b))
+* extension providers with a setup on the provider seam ([#216](https://github.com/bottrall/riffer-rig/issues/216)) ([f24f632](https://github.com/bottrall/riffer-rig/commit/f24f632f7f6a1a9903e1bdd0985076a1d03f12d3))
+* JSONL session store appends every Loader-built Runtime ([#219](https://github.com/bottrall/riffer-rig/issues/219)) ([67c5e80](https://github.com/bottrall/riffer-rig/commit/67c5e80efcea07b421b2c8512e576593d7a826d3))
+* optional provider SDKs and the missing-SDK flow ([#211](https://github.com/bottrall/riffer-rig/issues/211)) ([334c94b](https://github.com/bottrall/riffer-rig/commit/334c94bc4954f87846ead17a936690a40d847c75)), closes [#127](https://github.com/bottrall/riffer-rig/issues/127)
+* provider-native tools switched on in settings ([#217](https://github.com/bottrall/riffer-rig/issues/217)) ([6ba2a6a](https://github.com/bottrall/riffer-rig/commit/6ba2a6ad7ca0885af3e5c853786a0f3e22e0373a))
+* reload tracked files with /reload ([#218](https://github.com/bottrall/riffer-rig/issues/218)) ([403de96](https://github.com/bottrall/riffer-rig/commit/403de9645afd91082551a966d04cc18beeb8f194)), closes [#132](https://github.com/bottrall/riffer-rig/issues/132)
+
+
+### Bug Fixes
+
+* bundle provider SDKs for the checkout's bundler/setup ([#215](https://github.com/bottrall/riffer-rig/issues/215)) ([f0cc9e6](https://github.com/bottrall/riffer-rig/commit/f0cc9e6afcf82d1f006ab09679a4be38be846af2))
+
 ## [0.8.0](https://github.com/bottrall/riffer-rig/compare/v0.7.0...v0.8.0) (2026-10-02)
 
 
