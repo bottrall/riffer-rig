@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Settings::Document
-  # @dynamic model, reasoning, models, providers, disabled, autoload, native_tools, save
+  # @dynamic model, reasoning, models, providers, disabled, autoload, native_tools, save, reload
   attr_reader :model #: String?
   attr_reader :reasoning #: String?
   attr_reader :models #: Hash[String, Riffer::Rig::Settings::Pricing]
@@ -10,6 +10,7 @@ class Riffer::Rig::Settings::Document
   attr_reader :autoload #: bool
   attr_reader :native_tools #: Hash[Symbol, bool | Hash[Symbol, untyped]]
   attr_reader :save #: bool
+  attr_reader :reload #: (:auto | :manual)
 
   # @rbs source: Hash[Symbol, untyped]
   # @rbs return: void
@@ -31,6 +32,7 @@ class Riffer::Rig::Settings::Document
     @disabled = names.freeze
     @autoload = hash_or_empty(source[:extensions])[:autoload] == true
     @save = hash_or_empty(source[:sessions])[:save] != false
+    @reload = source[:reload] == 'manual' ? :manual : :auto
     @native_tools = hash_or_empty(hash_or_empty(source[:tools])[:native])
                     .select { |_tool, switch| switch == true || switch.is_a?(Hash) }
                     .transform_keys(&:to_sym).freeze

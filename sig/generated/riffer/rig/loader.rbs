@@ -10,6 +10,8 @@ class Riffer::Rig::Loader
 
   EXTENSION_FEATURE: String
 
+  @reload_mode: :auto | :manual | nil
+
   @file_state: Hash[String, Time?]?
 
   @gem_extensions: Array[Riffer::Rig::Extension]
@@ -47,8 +49,9 @@ class Riffer::Rig::Loader
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
   # @rbs store: Riffer::Rig::Stores::_Store | nil
+  # @rbs reload: (:auto | :manual | nil)
   # @rbs return: Riffer::Rig::Runtime
-  def self.runtime: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?store: Riffer::Rig::Stores::_Store | nil) -> Riffer::Rig::Runtime
+  def self.runtime: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?store: Riffer::Rig::Stores::_Store | nil, ?reload: :auto | :manual | nil) -> Riffer::Rig::Runtime
 
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -65,15 +68,16 @@ class Riffer::Rig::Loader
   # @rbs agents_md: bool
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
+  # @rbs reload: (:auto | :manual | nil)
   # @rbs return: Riffer::Rig::Runtime
-  def runtime: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?) -> Riffer::Rig::Runtime
+  def runtime: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?reload: :auto | :manual | nil) -> Riffer::Rig::Runtime
 
   # Without force, a no-op while the tracked file set and the two rig.rb paths
-  # look as the last discovery left them — the entry point the automatic
-  # trigger (#133) calls. The snapshot advances on every attempt, failed ones
-  # included, so a failure does not retry every request. Failures are notified
-  # once and reported as the message, the way Settings.rejection reports a
-  # rejection; the Runtime is the success value.
+  # look as the last discovery left them and the reload mode is not manual —
+  # the entry point the automatic trigger (#133) calls. The snapshot advances
+  # on every attempt, failed ones included, so a failure does not retry every
+  # request. Failures are notified once and reported as the message, the way
+  # Settings.rejection reports a rejection; the Runtime is the success value.
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs force: bool
   # @rbs return: (Riffer::Rig::Runtime | String)
@@ -81,11 +85,28 @@ class Riffer::Rig::Loader
 
   private
 
+  # The reload mode a build runs under: the keyword wins over the setting,
+  # the setting over the default.
+  # @rbs document: Riffer::Rig::Settings::Document
+  # @rbs return: (:auto | :manual)
+  def reload_mode: (Riffer::Rig::Settings::Document document) -> (:auto | :manual)
+
+  # @rbs return: bool
+  def manual_reload?: () -> bool
+
+  # The automatic trigger: runs at every before_request boundary, so the
+  # change check decides and a no-op costs the stat alone.
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def automatic_reload: (Riffer::Rig::Runtime runtime) -> void
+
   # @rbs return: Hash[Symbol, untyped]
   def merged_settings: () -> Hash[Symbol, untyped]
 
-  # Notifies every failure once and reports its message; a rebuilt Runtime is
-  # the success value.
+  # Notifies every failure once and reports its message, unexpected raises
+  # included — the automatic check runs mid-turn with no other isolation, and a
+  # raised attempt must still advance the snapshot in reload. A rebuilt Runtime
+  # is the success value.
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: (Riffer::Rig::Runtime | String)
   def perform_reload: (Riffer::Rig::Runtime runtime) -> (Riffer::Rig::Runtime | String)

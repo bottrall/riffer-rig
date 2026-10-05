@@ -18,7 +18,11 @@ Classes are reopened in place, not removed: edited and added methods take effect
 
 ## Triggers
 
-`/reload` always reloads and re-discovers the file set. Embedders call `Loader#reload(runtime, force: false)` themselves ([Embedding](EMBEDDING.md#building-a-runtime-with-the-loader)): without `force` it is a no-op while the tracked file set and the two `rig.rb` paths look exactly as the last discovery left them, which is the entry point the automatic check at the `before_request` boundary will use. That check is not built yet.
+The automatic check runs at every `before_request` boundary — at the start of a turn and again between tool results and the next LLM call — with no watcher thread: the Loader stats the tracked file set, and any mtime change, or a tracked `rig.rb` appearing or disappearing, reloads. A turn that starts with a change waiting is served entirely by the reloaded registrar; a reload that fires mid-turn swaps the registrar at once, and the turn's remaining requests keep the agent the turn started with, so an edit lands on the model's next request from the following turn.
+
+`/reload` always reloads and re-discovers the file set. Embedders call `Loader#reload(runtime, force: false)` themselves ([Embedding](EMBEDDING.md#building-a-runtime-with-the-loader)): without `force` it is the same check the automatic trigger runs, a no-op while nothing changed; `force: true` is what `/reload` passes.
+
+The check is dropped when the reload mode is `manual` — the core setting `"reload": "manual"`, in either scope with the project winning ([Configuration](CONFIGURATION.md#reload)), or the Loader keyword `reload: :manual`. A session built automatic honours a later flip to `manual` at its next boundary; a session built manual has no check to flip back, so it picks up `auto` on the next build. Manual keeps `/reload` and `Runtime#rebuild`.
 
 ## Failure
 

@@ -30,12 +30,13 @@ Whatever `store:` records the build: the [header](SESSIONS.md#what-an-entry-hold
 | `agents_md: false` | leaves out the bundled [`agents_md`](INSTRUCTIONS.md#agentsmd) extension | `true` |
 | `tools:`      | the Runtime's tool allowlist                                              | `nil` |
 | `max_steps:`  | the Runtime's step limit                                                  | `nil` |
+| `reload: :manual` | drops the automatic reload check for this build ([Reloading](RELOADING.md#triggers)) | follows the `reload` setting |
 | `env:`        | a `Riffer::Rig::Env`, or what `Riffer::Rig::Env.load` returned            | `Riffer::Rig::Env.load` |
 | `home:`       | the directory holding `.riffer/settings.json` and `.riffer/auth.json`    | `Dir.home` |
 | `riffer_config:` | the `Riffer::Config` that receives the credentials and pricing        | `Riffer.config` |
 | `store:`      | the [session store](SESSIONS.md#the-session-store) that records the build; `nil` opts one run out | `Stores::JSONL.new` |
 
-`Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)` takes the same setup and builds with `runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)`, for a host that keeps the Loader.
+`Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)` takes the same setup and builds with `runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:, reload:)`, for a host that keeps the Loader.
 
 The host is asked only when its `capabilities` include `:ask`. With no model set anywhere, the Loader asks it for a model string, listing the providers, and writes the answer to `~/.riffer/settings.json`; a required credential that does not resolve is asked for the same way and stored ([Providers](PROVIDERS.md#rifferrigcredentials)). Anything the Loader cannot settle raises `Riffer::Rig::Loader::ConfigurationError` with a message fit to show the user: no model and a host that cannot ask (the null host), a model string without a known provider prefix, a bare `RIFFER_MODEL`, or a required credential still missing. A headless host should map it to exit status 2.
 
