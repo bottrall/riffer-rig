@@ -23,7 +23,7 @@
             <a href="/guides/getting-started/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.9.0</span>
+            <span class="version">v0.10.0</span>
           </div>
         </nav>
       </div>
@@ -214,6 +214,11 @@
       <td><code>nil</code></td>
     </tr>
     <tr>
+      <td><code>reload: :manual</code></td>
+      <td>drops the automatic reload check for this build (<a href="/guides/reloading/#triggers">Reloading</a>)</td>
+      <td>follows the <code>reload</code> setting</td>
+    </tr>
+    <tr>
       <td><code>env:</code></td>
       <td>a <code>Riffer::Rig::Env</code>, or what <code>Riffer::Rig::Env.load</code> returned</td>
       <td><code>Riffer::Rig::Env.load</code></td>
@@ -236,7 +241,7 @@
   </tbody>
 </table>
 
-<p><code>Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)</code> takes the same setup and builds with <code>runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:)</code>, for a host that keeps the Loader.</p>
+<p><code>Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)</code> takes the same setup and builds with <code>runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:, reload:)</code>, for a host that keeps the Loader.</p>
 
 <p>The host is asked only when its <code>capabilities</code> include <code>:ask</code>. With no model set anywhere, the Loader asks it for a model string, listing the providers, and writes the answer to <code>~/.riffer/settings.json</code>; a required credential that does not resolve is asked for the same way and stored (<a href="/guides/providers/overview/#rifferrigcredentials">Providers</a>). Anything the Loader cannot settle raises <code>Riffer::Rig::Loader::ConfigurationError</code> with a message fit to show the user: no model and a host that cannot ask (the null host), a model string without a known provider prefix, a bare <code>RIFFER_MODEL</code>, or a required credential still missing. A headless host should map it to exit status 2.</p>
 

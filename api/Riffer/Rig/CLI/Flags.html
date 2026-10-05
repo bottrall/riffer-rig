@@ -572,6 +572,25 @@
         </div>
       </div>
 
+      <div id="attribute-i-continue" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-continue" title="Link to this attribute">
+            <span class="method-name">continue</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+          <span class="method-type-signature"><code>bool</code></span>
+
+        </div>
+
+        <div class="method-description">
+
+
+        
+
+        </div>
+      </div>
+
       <div id="attribute-i-extensions" class="method-detail anchor-link">
         <div class="method-heading attribute-method-heading">
           <a href="#attribute-i-extensions" title="Link to this attribute">
@@ -643,7 +662,26 @@
         <div class="method-description">
 
 
-        <p>@dynamic model, extensions, skills, <a href="Flags.html#attribute-i-agents_md"><code>agents_md</code></a>, tools, <a href="Flags.html#attribute-i-max_steps"><code>max_steps</code></a>, help, save</p>
+        <p>@dynamic model, extensions, skills, <a href="Flags.html#attribute-i-agents_md"><code>agents_md</code></a>, tools, <a href="Flags.html#attribute-i-max_steps"><code>max_steps</code></a>, help, save, continue, resume</p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-resume" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-resume" title="Link to this attribute">
+            <span class="method-name">resume</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+          <span class="method-type-signature"><code>String?</code></span>
+
+        </div>
+
+        <div class="method-description">
+
+
+        
 
         </div>
       </div>
@@ -725,13 +763,13 @@
               <div class="method-heading">
                 <a href="#method-c-new" title="Link to this method">
                   <span class="method-name">new</span>
-                  <span class="method-args">(model: nil, extensions: true, skills: true, agents_md: true, tools: nil, max_steps: nil, save: true, help: false)</span>
+                  <span class="method-args">(model: nil, extensions: true, skills: true, agents_md: true, tools: nil, max_steps: nil, save: true, continue: false, resume: nil, help: false)</span>
                 </a>
               </div>
 
 
 
-            <pre class="method-type-signature"><code>(?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?help: bool) &rarr; void</code></pre>
+            <pre class="method-type-signature"><code>(?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?continue: bool, ?resume: String?, ?help: bool) &rarr; void</code></pre>
 
           </div>
 
@@ -746,7 +784,7 @@
 
 
           <div class="method-source-code" id="new-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/cli/flags.rb, line 71</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/cli/flags.rb, line 79</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(
   <span class="ruby-value">model:</span> <span class="ruby-keyword">nil</span>,
   <span class="ruby-value">extensions:</span> <span class="ruby-keyword">true</span>,
@@ -755,6 +793,8 @@
   <span class="ruby-value">tools:</span> <span class="ruby-keyword">nil</span>,
   <span class="ruby-value">max_steps:</span> <span class="ruby-keyword">nil</span>,
   <span class="ruby-value">save:</span> <span class="ruby-keyword">true</span>,
+  <span class="ruby-value">continue:</span> <span class="ruby-keyword">false</span>,
+  <span class="ruby-value">resume:</span> <span class="ruby-keyword">nil</span>,
   <span class="ruby-value">help:</span> <span class="ruby-keyword">false</span>
 )
   <span class="ruby-ivar">@model</span> = <span class="ruby-identifier">model</span>
@@ -764,6 +804,8 @@
   <span class="ruby-ivar">@tools</span> = <span class="ruby-identifier">tools</span>&amp;.<span class="ruby-identifier">freeze</span>
   <span class="ruby-ivar">@max_steps</span> = <span class="ruby-identifier">max_steps</span>
   <span class="ruby-ivar">@save</span> = <span class="ruby-identifier">save</span>
+  <span class="ruby-ivar">@continue</span> = <span class="ruby-identifier">continue</span>
+  <span class="ruby-ivar">@resume</span> = <span class="ruby-identifier">resume</span>
   <span class="ruby-ivar">@help</span> = <span class="ruby-identifier">help</span>
   <span class="ruby-identifier">freeze</span>
 <span class="ruby-keyword">end</span></pre>
@@ -774,7 +816,7 @@
         <div class="method-description">
 
 
-          <p>@rbs model: String? @rbs extensions: bool @rbs skills: bool @rbs <a href="Flags.html#attribute-i-agents_md"><code>agents_md</code></a>: bool @rbs tools: <a href="String">Array</a>? @rbs <a href="Flags.html#attribute-i-max_steps"><code>max_steps</code></a>: Integer? @rbs save: bool @rbs help: bool @rbs return: void</p>
+          <p>@rbs model: String? @rbs extensions: bool @rbs skills: bool @rbs <a href="Flags.html#attribute-i-agents_md"><code>agents_md</code></a>: bool @rbs tools: <a href="String">Array</a>? @rbs <a href="Flags.html#attribute-i-max_steps"><code>max_steps</code></a>: Integer? @rbs save: bool @rbs continue: bool @rbs resume: String? @rbs help: bool @rbs return: void</p>
 
 
         </div>
@@ -814,7 +856,7 @@
 
 
           <div class="method-source-code" id="parse-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/cli/flags.rb, line 21</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/cli/flags.rb, line 23</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">parse</span>(<span class="ruby-identifier">argv</span>)
   <span class="ruby-identifier">values</span> = {} <span class="ruby-comment">#: Hash[Symbol, untyped]</span>
   <span class="ruby-identifier">rest</span> = <span class="ruby-identifier">parser</span>.<span class="ruby-identifier">parse</span>(<span class="ruby-identifier">argv</span>, <span class="ruby-value">into</span><span class="ruby-value">:</span> <span class="ruby-identifier">values</span>)
@@ -828,6 +870,8 @@
     <span class="ruby-value">tools</span><span class="ruby-value">:</span> <span class="ruby-identifier">values</span>[<span class="ruby-value">:</span><span class="ruby-value">tools</span>],
     <span class="ruby-value">max_steps</span><span class="ruby-value">:</span> <span class="ruby-identifier">values</span>[<span class="ruby-value">:&#39;</span><span class="ruby-value">max-steps</span><span class="ruby-value">&#39;</span>],
     <span class="ruby-value">save</span><span class="ruby-value">:</span> <span class="ruby-operator">!</span><span class="ruby-identifier">values</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-value">:&#39;</span><span class="ruby-value">no-save</span><span class="ruby-value">&#39;</span>),
+    <span class="ruby-value">continue</span><span class="ruby-value">:</span> <span class="ruby-identifier">values</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-value">:</span><span class="ruby-value">continue</span>),
+    <span class="ruby-value">resume</span><span class="ruby-value">:</span> <span class="ruby-identifier">values</span>[<span class="ruby-value">:</span><span class="ruby-value">resume</span>],
     <span class="ruby-value">help</span><span class="ruby-value">:</span> <span class="ruby-identifier">values</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-value">:</span><span class="ruby-value">help</span>)
   )
 <span class="ruby-keyword">rescue</span> <span class="ruby-constant">OptionParser</span><span class="ruby-operator">::</span><span class="ruby-constant">ParseError</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">e</span>
@@ -880,7 +924,7 @@
 
 
           <div class="method-source-code" id="usage-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/cli/flags.rb, line 41</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/cli/flags.rb, line 45</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">usage</span>
   <span class="ruby-identifier">parser</span>.<span class="ruby-identifier">help</span>
 <span class="ruby-keyword">end</span></pre>

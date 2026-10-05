@@ -23,7 +23,7 @@
             <a href="/guides/getting-started/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.9.0</span>
+            <span class="version">v0.10.0</span>
           </div>
         </nav>
       </div>
@@ -131,13 +131,14 @@
               <li><a href="#where-sessions-live">Where sessions live</a></li>
               <li><a href="#what-an-entry-holds">What an entry holds</a></li>
               <li><a href="#opting-out">Opting out</a></li>
+              <li><a href="#resuming">Resuming</a></li>
               <li><a href="#what-a-snapshot-holds">What a snapshot holds</a></li>
               <li><a href="#what-it-leaves-out">What it leaves out</a></li>
               <li><a href="#restoring">Restoring</a></li>
             </ul>
           </nav>
           
-<p>A session is one conversation with a <code>Riffer::Rig::Runtime</code>: its id, its history and the choices made during it. The Runtime can save a session as a plain hash and carry on from one (<a href="#what-a-snapshot-holds">below</a>); the Loader stores every session it builds as it runs, one JSONL file per session under <code>~/.riffer/sessions/</code>. Picking a stored session to resume from is not here yet; until it is, an embedder reads the entries directly or keeps snapshots itself (<a href="/guides/embedding/#snapshots">Embedding</a>).</p>
+<p>A session is one conversation with a <code>Riffer::Rig::Runtime</code>: its id, its history and the choices made during it. The Runtime can save a session as a plain hash and carry on from one (<a href="#what-a-snapshot-holds">below</a>); the Loader stores every session it builds as it runs, one JSONL file per session under <code>~/.riffer/sessions/</code>, and picks one to resume (<a href="#resuming">below</a>). An embedder without the Loader reads the entries directly or keeps snapshots itself (<a href="/guides/embedding/#snapshots">Embedding</a>).</p>
 
 <h2 id="the-session-store">The session store</h2>
 
@@ -181,6 +182,43 @@
 <h2 id="opting-out">Opting out</h2>
 
 <p>Every Loader-built session is saved, one-shots included. Skip one run with <code>store: nil</code> — <code>--no-save</code> on the command line — or all of them with <code>"sessions": {"save": false}</code> in settings (<a href="/guides/configuration/">Configuration</a>).</p>
+
+<h2 id="resuming">Resuming</h2>
+
+<p>The Loader picks the session to drive; hosts never see the store:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Method</th>
+      <th>Picks</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>continue</code></td>
+      <td>the most recently updated session whose header cwd matches the build’s, or nil</td>
+    </tr>
+    <tr>
+      <td><code>resume(id)</code></td>
+      <td>the session with that id, or nil when the store has none</td>
+    </tr>
+    <tr>
+      <td><code>list(all: false)</code></td>
+      <td>the header entries, the build’s cwd only unless <code>all: true</code> escapes the scope</td>
+    </tr>
+    <tr>
+      <td><code>delete(id)</code></td>
+      <td>removes the session; an unknown id is a no-op</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><code>Stores::JSONL</code> dates a session by its file’s mtime, which its last append set; <code>continue</code> picks the most recently <code>updated</code> session wherever <code>list</code> happens to place it.</p>
+
+<p>On the command line, <code>riffer -c</code> continues the most recent session in the directory and <code>riffer -r &lt;id&gt;</code> resumes by id. With no match the REPL tells you and starts fresh.</p>
+
+<p>Resuming folds the session’s entries back into a snapshot and builds a Runtime over it: the last <code>model</code> entry wins, skill activations accumulate, and the <code>message</code> entries are the history. Everything else is today’s — the settings, credentials, extensions and tools of the new build, and its model selection, unless the session recorded a <code>/model</code> switch, which is restored when its provider still has credentials (<a href="#restoring">Restoring</a> has the rules, including the healed tail of a file cut mid-turn). A resumed session keeps its id and appends to the same file.</p>
 
 <h2 id="what-a-snapshot-holds">What a snapshot holds</h2>
 

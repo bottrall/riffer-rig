@@ -476,6 +476,8 @@
 
         <li ><a href="#method-i-read">read</a></li>
 
+        <li ><a href="#method-i-updated">updated</a></li>
+
       </ul>
     </details>
   </div>
@@ -724,7 +726,7 @@
 
 
           <div class="method-source-code" id="delete-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/jsonl.rb, line 44</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/jsonl.rb, line 57</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">delete</span>(<span class="ruby-identifier">id</span>)
   <span class="ruby-identifier">path</span> = <span class="ruby-identifier">find</span>(<span class="ruby-identifier">id</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">path</span>
@@ -781,7 +783,12 @@
           <div class="method-source-code" id="list-source">
             <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/jsonl.rb, line 37</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">list</span>(<span class="ruby-value">cwd:</span> <span class="ruby-keyword">nil</span>)
-  <span class="ruby-identifier">headers</span> = <span class="ruby-constant">Dir</span>.<span class="ruby-identifier">glob</span>(<span class="ruby-constant">File</span>.<span class="ruby-identifier">join</span>(<span class="ruby-identifier">root</span>, <span class="ruby-string">&#39;</span><span class="ruby-string">*</span><span class="ruby-string">&#39;</span>, <span class="ruby-string">&#39;</span><span class="ruby-string">*.jsonl</span><span class="ruby-string">&#39;</span>)).<span class="ruby-identifier">filter_map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">path</span><span class="ruby-operator">|</span> <span class="ruby-identifier">header_of</span>(<span class="ruby-identifier">path</span>) }
+  <span class="ruby-identifier">headers</span> = <span class="ruby-constant">Dir</span>.<span class="ruby-identifier">glob</span>(<span class="ruby-constant">File</span>.<span class="ruby-identifier">join</span>(<span class="ruby-identifier">root</span>, <span class="ruby-string">&#39;</span><span class="ruby-string">*</span><span class="ruby-string">&#39;</span>, <span class="ruby-string">&#39;</span><span class="ruby-string">*.jsonl</span><span class="ruby-string">&#39;</span>)).<span class="ruby-identifier">filter_map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">path</span><span class="ruby-operator">|</span>
+    <span class="ruby-comment"># Seeding the path cache here keeps picking the most recently updated</span>
+    <span class="ruby-comment"># session one mtime per header instead of one glob.</span>
+    <span class="ruby-ivar">@paths</span>[<span class="ruby-constant">File</span>.<span class="ruby-identifier">basename</span>(<span class="ruby-identifier">path</span>, <span class="ruby-string">&#39;</span><span class="ruby-string">.jsonl</span><span class="ruby-string">&#39;</span>)] = <span class="ruby-identifier">path</span>
+    <span class="ruby-identifier">header_of</span>(<span class="ruby-identifier">path</span>)
+  <span class="ruby-keyword">end</span>
   <span class="ruby-identifier">cwd</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">headers</span>.<span class="ruby-identifier">select</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">header</span><span class="ruby-operator">|</span> <span class="ruby-identifier">header</span>[<span class="ruby-value">:</span><span class="ruby-value">cwd</span>] <span class="ruby-operator">==</span> <span class="ruby-identifier">cwd</span> } <span class="ruby-operator">:</span> <span class="ruby-identifier">headers</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
@@ -846,6 +853,58 @@
 
 
           <p>@rbs id: String @rbs return: Array[Hash[Symbol, untyped]]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-updated" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-updated" title="Link to this method">
+                  <span class="method-name">updated</span>
+                  <span class="method-args">(id)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(String id) &rarr; Time?</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="updated-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/jsonl.rb, line 50</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">updated</span>(<span class="ruby-identifier">id</span>)
+  <span class="ruby-identifier">path</span> = <span class="ruby-identifier">find</span>(<span class="ruby-identifier">id</span>)
+  <span class="ruby-identifier">path</span> <span class="ruby-operator">?</span> <span class="ruby-constant">File</span>.<span class="ruby-identifier">mtime</span>(<span class="ruby-identifier">path</span>) <span class="ruby-operator">:</span> <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>A session’s last update is its file’s mtime: appends are the only writes. @rbs id: String @rbs return: Time?</p>
 
 
         </div>

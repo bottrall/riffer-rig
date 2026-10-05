@@ -23,7 +23,7 @@
             <a href="/guides/getting-started/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.9.0</span>
+            <span class="version">v0.10.0</span>
           </div>
         </nav>
       </div>
@@ -154,7 +154,11 @@
 
 <h2 id="triggers">Triggers</h2>
 
-<p><code>/reload</code> always reloads and re-discovers the file set. Embedders call <code>Loader#reload(runtime, force: false)</code> themselves (<a href="/guides/embedding/#building-a-runtime-with-the-loader">Embedding</a>): without <code>force</code> it is a no-op while the tracked file set and the two <code>rig.rb</code> paths look exactly as the last discovery left them, which is the entry point the automatic check at the <code>before_request</code> boundary will use. That check is not built yet.</p>
+<p>The automatic check runs at every <code>before_request</code> boundary — at the start of a turn and again between tool results and the next LLM call — with no watcher thread: the Loader stats the tracked file set, and any mtime change, or a tracked <code>rig.rb</code> appearing or disappearing, reloads. A turn that starts with a change waiting is served entirely by the reloaded registrar; a reload that fires mid-turn swaps the registrar at once, and the turn’s remaining requests keep the agent the turn started with, so an edit lands on the model’s next request from the following turn.</p>
+
+<p><code>/reload</code> always reloads and re-discovers the file set. Embedders call <code>Loader#reload(runtime, force: false)</code> themselves (<a href="/guides/embedding/#building-a-runtime-with-the-loader">Embedding</a>): without <code>force</code> it is the same check the automatic trigger runs, a no-op while nothing changed; <code>force: true</code> is what <code>/reload</code> passes.</p>
+
+<p>The check is dropped when the reload mode is <code>manual</code> — the core setting <code>"reload": "manual"</code>, in either scope with the project winning (<a href="/guides/configuration/#reload">Configuration</a>), or the Loader keyword <code>reload: :manual</code>. A session built automatic honours a later flip to <code>manual</code> at its next boundary; a session built manual has no check to flip back, so it picks up <code>auto</code> on the next build. Manual keeps <code>/reload</code> and <code>Runtime#rebuild</code>.</p>
 
 <h2 id="failure">Failure</h2>
 

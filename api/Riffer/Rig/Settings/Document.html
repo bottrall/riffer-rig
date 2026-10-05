@@ -584,7 +584,7 @@
         <div class="method-description">
 
 
-        <p>@dynamic model, reasoning, models, providers, disabled, autoload, <a href="Document.html#attribute-i-native_tools"><code>native_tools</code></a>, save</p>
+        <p>@dynamic model, reasoning, models, providers, disabled, autoload, <a href="Document.html#attribute-i-native_tools"><code>native_tools</code></a>, save, reload</p>
 
         </div>
       </div>
@@ -665,6 +665,25 @@
         </div>
       </div>
 
+      <div id="attribute-i-reload" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-reload" title="Link to this attribute">
+            <span class="method-name">reload</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+          <span class="method-type-signature"><code>:auto | :manual</code></span>
+
+        </div>
+
+        <div class="method-description">
+
+
+        
+
+        </div>
+      </div>
+
       <div id="attribute-i-save" class="method-detail anchor-link">
         <div class="method-heading attribute-method-heading">
           <a href="#attribute-i-save" title="Link to this attribute">
@@ -725,7 +744,7 @@
 
 
           <div class="method-source-code" id="new-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/document.rb, line 16</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/document.rb, line 17</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">source</span>)
   <span class="ruby-ivar">@model</span> = <span class="ruby-identifier">source</span>[<span class="ruby-value">:</span><span class="ruby-value">model</span>].<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">String</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">source</span>[<span class="ruby-value">:</span><span class="ruby-value">model</span>] <span class="ruby-operator">:</span> <span class="ruby-keyword">nil</span>
   <span class="ruby-ivar">@reasoning</span> = <span class="ruby-identifier">source</span>[<span class="ruby-value">:</span><span class="ruby-value">reasoning</span>].<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">String</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">source</span>[<span class="ruby-value">:</span><span class="ruby-value">reasoning</span>] <span class="ruby-operator">:</span> <span class="ruby-keyword">nil</span>
@@ -744,6 +763,7 @@
   <span class="ruby-ivar">@disabled</span> = <span class="ruby-identifier">names</span>.<span class="ruby-identifier">freeze</span>
   <span class="ruby-ivar">@autoload</span> = <span class="ruby-identifier">hash_or_empty</span>(<span class="ruby-identifier">source</span>[<span class="ruby-value">:</span><span class="ruby-value">extensions</span>])[<span class="ruby-value">:</span><span class="ruby-value">autoload</span>] <span class="ruby-operator">==</span> <span class="ruby-keyword">true</span>
   <span class="ruby-ivar">@save</span> = <span class="ruby-identifier">hash_or_empty</span>(<span class="ruby-identifier">source</span>[<span class="ruby-value">:</span><span class="ruby-value">sessions</span>])[<span class="ruby-value">:</span><span class="ruby-value">save</span>] <span class="ruby-operator">!=</span> <span class="ruby-keyword">false</span>
+  <span class="ruby-ivar">@reload</span> = <span class="ruby-identifier">source</span>[<span class="ruby-value">:</span><span class="ruby-value">reload</span>] <span class="ruby-operator">==</span> <span class="ruby-string">&#39;</span><span class="ruby-string">manual</span><span class="ruby-string">&#39;</span> <span class="ruby-operator">?</span> <span class="ruby-value">:</span><span class="ruby-value">manual</span> <span class="ruby-operator">:</span> <span class="ruby-value">:</span><span class="ruby-value">auto</span>
   <span class="ruby-ivar">@native_tools</span> = <span class="ruby-identifier">hash_or_empty</span>(<span class="ruby-identifier">hash_or_empty</span>(<span class="ruby-identifier">source</span>[<span class="ruby-value">:</span><span class="ruby-value">tools</span>])[<span class="ruby-value">:</span><span class="ruby-value">native</span>])
                   .<span class="ruby-identifier">select</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">_tool</span>, <span class="ruby-identifier">switch</span><span class="ruby-operator">|</span> <span class="ruby-identifier">switch</span> <span class="ruby-operator">==</span> <span class="ruby-keyword">true</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">switch</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Hash</span>) }
                   .<span class="ruby-identifier">transform_keys</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:</span><span class="ruby-value">to_sym</span>).<span class="ruby-identifier">freeze</span>

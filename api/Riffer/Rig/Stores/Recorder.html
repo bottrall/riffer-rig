@@ -609,7 +609,7 @@
 
 
           <div class="method-source-code" id="extension-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/recorder.rb, line 61</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/recorder.rb, line 66</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">extension</span>(<span class="ruby-identifier">recorder</span>)
   <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Extension</span>.<span class="ruby-identifier">new</span>(<span class="ruby-constant">EXTENSION_NAME</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">registrar</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">registrar</span>.<span class="ruby-identifier">on</span>(<span class="ruby-value">:</span><span class="ruby-value">stream</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">event</span><span class="ruby-operator">|</span>
@@ -645,13 +645,13 @@
               <div class="method-heading">
                 <a href="#method-c-new" title="Link to this method">
                   <span class="method-name">new</span>
-                  <span class="method-args">(store:)</span>
+                  <span class="method-args">(store:, resumed: false)</span>
                 </a>
               </div>
 
 
 
-            <pre class="method-type-signature"><code>(store: Riffer::Rig::Stores::_Store) &rarr; void</code></pre>
+            <pre class="method-type-signature"><code>(store: Riffer::Rig::Stores::_Store, ?resumed: bool) &rarr; void</code></pre>
 
           </div>
 
@@ -666,9 +666,10 @@
 
 
           <div class="method-source-code" id="new-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/recorder.rb, line 20</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-value">store:</span>)
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/recorder.rb, line 24</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-value">store:</span>, <span class="ruby-value">resumed:</span> <span class="ruby-keyword">false</span>)
   <span class="ruby-ivar">@store</span> = <span class="ruby-identifier">store</span>
+  <span class="ruby-ivar">@resumed</span> = <span class="ruby-identifier">resumed</span>
   <span class="ruby-ivar">@runtime</span> = <span class="ruby-keyword">nil</span>
   <span class="ruby-ivar">@header_written</span> = <span class="ruby-keyword">false</span>
   <span class="ruby-ivar">@pending</span> = []
@@ -681,7 +682,7 @@
         <div class="method-description">
 
 
-          <p>Records one Loader-built session into the store: the header on the first message (its title needs the first prompt), one entry per message, one per model switch and one per skill activation. Entries that land before the first message (a /model before the first prompt) wait for the header. @rbs store: Riffer::Rig::Stores::_Store @rbs return: void</p>
+          <p>Records one Loader-built session into the store: the header on the first message (its title needs the first prompt), one entry per message, one per model switch and one per skill activation. Entries that land before the first message (a /model before the first prompt) wait for the header. A resumed session appends to the file its first run wrote, so it rewrites no header. @rbs store: Riffer::Rig::Stores::_Store @rbs resumed: bool @rbs return: void</p>
 
 
         </div>
@@ -735,7 +736,7 @@
 
 
           <div class="method-source-code" id="attach-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/recorder.rb, line 30</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/recorder.rb, line 35</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">attach</span>(<span class="ruby-identifier">runtime</span>)
   <span class="ruby-ivar">@runtime</span> = <span class="ruby-identifier">runtime</span>
   <span class="ruby-identifier">runtime</span>.<span class="ruby-identifier">on_message</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">message</span><span class="ruby-operator">|</span> <span class="ruby-identifier">message</span>(<span class="ruby-identifier">message</span>) }
@@ -788,7 +789,7 @@
 
 
           <div class="method-source-code" id="message-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/recorder.rb, line 44</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/recorder.rb, line 49</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">message</span>(<span class="ruby-identifier">message</span>)
   <span class="ruby-ivar">@title</span> ||= <span class="ruby-identifier">one_line</span>(<span class="ruby-identifier">message</span>.<span class="ruby-identifier">content</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">message</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Messages</span><span class="ruby-operator">::</span><span class="ruby-constant">User</span>)
   <span class="ruby-identifier">write_header</span> <span class="ruby-keyword">unless</span> <span class="ruby-ivar">@header_written</span>
@@ -841,7 +842,7 @@
 
 
           <div class="method-source-code" id="skill-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/recorder.rb, line 38</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/recorder.rb, line 43</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">skill</span>(<span class="ruby-identifier">event</span>)
   <span class="ruby-identifier">record</span>(<span class="ruby-value">type</span><span class="ruby-value">:</span> <span class="ruby-string">&#39;</span><span class="ruby-string">skill</span><span class="ruby-string">&#39;</span>, <span class="ruby-value">skill</span><span class="ruby-value">:</span> <span class="ruby-identifier">event</span>.<span class="ruby-identifier">name</span>)
 <span class="ruby-keyword">end</span></pre>
@@ -892,7 +893,7 @@
 
 
           <div class="method-source-code" id="switched-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/recorder.rb, line 52</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/recorder.rb, line 57</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">switched</span>(<span class="ruby-identifier">model</span>)
   <span class="ruby-identifier">record</span>(<span class="ruby-value">type</span><span class="ruby-value">:</span> <span class="ruby-string">&#39;</span><span class="ruby-string">model</span><span class="ruby-string">&#39;</span>, <span class="ruby-value">model</span><span class="ruby-value">:</span> <span class="ruby-identifier">model</span>)
 <span class="ruby-keyword">end</span></pre>
