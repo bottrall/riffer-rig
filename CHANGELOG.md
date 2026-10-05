@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0](https://github.com/bottrall/riffer-rig/compare/v0.9.0...v0.10.0) (2026-10-05)
+
+
+### Features
+
+* continue and resume sessions with -c and -r ([#220](https://github.com/bottrall/riffer-rig/issues/220)) ([e43d3ac](https://github.com/bottrall/riffer-rig/commit/e43d3ac44678e56016791545ea241779569687c9))
+* reload automatically before each request ([#222](https://github.com/bottrall/riffer-rig/issues/222)) ([fe96aa4](https://github.com/bottrall/riffer-rig/commit/fe96aa4476b0765e58824a8eb59301f0986e397c))
+
 ## [0.9.0](https://github.com/bottrall/riffer-rig/compare/v0.8.0...v0.9.0) (2026-10-04)
 
 
