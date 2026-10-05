@@ -96,8 +96,8 @@ class Riffer::Rig::Loader
   def resume: (String id, ?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?) -> Riffer::Rig::Runtime?
 
   # @rbs all: bool
-  # @rbs return: Array[Hash[Symbol, untyped]]
-  def list: (?all: bool) -> Array[Hash[Symbol, untyped]]
+  # @rbs return: Array[::Riffer::Rig::Stores::Header]
+  def list: (?all: bool) -> Array[::Riffer::Rig::Stores::Header]
 
   # @rbs id: String
   # @rbs return: void
@@ -258,10 +258,10 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def home_settings_path: () -> String
 
-  # @rbs entries: Array[Hash[Symbol, untyped]]
+  # @rbs entries: Array[Riffer::Rig::Stores::entry]
   # @rbs id: String
   # @rbs return: Hash[Symbol, untyped]
-  def snapshot_of: (Array[Hash[Symbol, untyped]] entries, String id) -> Hash[Symbol, untyped]
+  def snapshot_of: (Array[Riffer::Rig::Stores::entry] entries, String id) -> Hash[Symbol, untyped]
 
   # The store records unless it was declined with store: nil or globally with
   # "sessions": {"save": false}.

@@ -1,0 +1,21 @@
+# Generated from lib/riffer/rig/stores/skill_entry.rb with RBS::Inline
+
+class Riffer::Rig::Stores::SkillEntry
+  TYPE: String
+
+  include Riffer::Rig::Support::Equatable
+
+  # @dynamic skill
+  attr_reader skill: String
+
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs return: ::Riffer::Rig::Stores::SkillEntry?
+  def self.from_hash: (Hash[Symbol, untyped] hash) -> ::Riffer::Rig::Stores::SkillEntry?
+
+  # @rbs skill: String
+  # @rbs return: void
+  def initialize: (skill: String) -> void
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

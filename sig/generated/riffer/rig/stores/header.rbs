@@ -1,0 +1,67 @@
+# Generated from lib/riffer/rig/stores/header.rb with RBS::Inline
+
+class Riffer::Rig::Stores::Header
+  TYPE: String
+
+  include Riffer::Rig::Support::Equatable
+
+  @updated: Time?
+
+  @title: String
+
+  @riffer_version: String
+
+  @riffer_rig_version: String
+
+  @model: String
+
+  @created_at: String
+
+  @cwd: String
+
+  @id: String
+
+  @schema_version: Integer
+
+  # @dynamic schema_version, id, cwd, created_at, model, riffer_rig_version, riffer_version, title, updated
+  attr_reader schema_version: Integer
+
+  attr_reader id: String
+
+  attr_reader cwd: String
+
+  attr_reader created_at: String
+
+  attr_reader model: String
+
+  attr_reader riffer_rig_version: String
+
+  attr_reader riffer_version: String
+
+  attr_reader title: String
+
+  # Store-derived metadata, not entry data: stamped by the store while it
+  # holds the physical artifact (the JSONL file's mtime), so it is excluded
+  # from to_h.
+  attr_reader updated: Time?
+
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs updated: Time?
+  # @rbs return: ::Riffer::Rig::Stores::Header?
+  def self.from_hash: (Hash[Symbol, untyped] hash, ?updated: Time?) -> ::Riffer::Rig::Stores::Header?
+
+  # @rbs schema_version: Integer
+  # @rbs id: String
+  # @rbs cwd: String
+  # @rbs created_at: String
+  # @rbs model: String
+  # @rbs riffer_rig_version: String
+  # @rbs riffer_version: String
+  # @rbs title: String
+  # @rbs updated: Time?
+  # @rbs return: void
+  def initialize: (schema_version: Integer, id: String, cwd: String, created_at: String, model: String, riffer_rig_version: String, riffer_version: String, title: String, ?updated: Time?) -> void
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

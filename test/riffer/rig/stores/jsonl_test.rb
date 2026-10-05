@@ -14,14 +14,20 @@ describe Riffer::Rig::Stores::JSONL do
   end
 
   def header(id, cwd = '/project')
-    {
-      type: 'header', schema_version: 1, id: id, cwd: cwd, created_at: '2026-01-01T00:00:00Z',
-      model: 'mock/test', riffer_rig_version: '0.8.0', riffer_version: '0.49.0', title: 'hello'
-    }
+    Riffer::Rig::Stores::Header.new(
+      schema_version: 1,
+      id: id,
+      cwd: cwd,
+      created_at: '2026-01-01T00:00:00Z',
+      model: 'mock/test',
+      riffer_rig_version: '0.8.0',
+      riffer_version: '0.49.0',
+      title: 'hello'
+    )
   end
 
   def message_entry(content)
-    { type: 'message', message: { role: 'user', content: content } }
+    Riffer::Rig::Stores::MessageEntry.new(message: { role: 'user', content: content })
   end
 
   def sessions
@@ -31,7 +37,11 @@ describe Riffer::Rig::Stores::JSONL do
   def write_elsewhere(slug, id, entry)
     dir = File.join(sessions, slug)
     FileUtils.mkdir_p(dir)
-    File.write(File.join(dir, "#{id}.jsonl"), "#{JSON.generate(entry)}\n")
+    File.write(File.join(dir, "#{id}.jsonl"), "#{JSON.generate(entry.to_h)}\n")
+  end
+
+  def append_line(entry_hash)
+    File.open(File.join(sessions, 'project', 'aaa.jsonl'), 'a') { |file| file.write("#{JSON.generate(entry_hash)}\n") }
   end
 
   it 'appends one JSON line per entry under the cwd slug' do
@@ -41,19 +51,23 @@ describe Riffer::Rig::Stores::JSONL do
     lines = File.readlines(File.join(sessions, 'home-jake-My-Work', 'aaa.jsonl'))
 
     assert_equal(
-      [header('aaa', '/home/jake/My Work'), message_entry('hello')],
+      [header('aaa', '/home/jake/My Work').to_h, message_entry('hello').to_h],
       lines.map do |line|
         JSON.parse(line, symbolize_names: true)
       end
     )
   end
 
-  it 'reads the entries in order' do
-    @store.append('aaa', header('aaa'))
-    @store.append('aaa', message_entry('first'))
-    @store.append('aaa', message_entry('second'))
+  it 'round-trips every entry type' do
+    entries = [
+      header('aaa'),
+      message_entry('hello'),
+      Riffer::Rig::Stores::ModelEntry.new(model: 'mock/one'),
+      Riffer::Rig::Stores::SkillEntry.new(skill: 'a')
+    ]
+    entries.each { |entry| @store.append('aaa', entry) }
 
-    assert_equal [header('aaa'), message_entry('first'), message_entry('second')], @store.read('aaa')
+    assert_equal entries, @store.read('aaa')
   end
 
   it 'reads an unknown session as empty' do
@@ -67,6 +81,13 @@ describe Riffer::Rig::Stores::JSONL do
     assert_equal [header('aaa')], @store.read('aaa')
   end
 
+  it 'skips an unknown entry type when reading' do
+    @store.append('aaa', header('aaa'))
+    append_line({ type: 'weird', payload: {} })
+
+    assert_equal [header('aaa')], @store.read('aaa')
+  end
+
   it 'lists the header entries of every session' do
     @store.append('aaa', header('aaa', '/one'))
     @store.append('aaa', message_entry('hello'))
@@ -75,16 +96,12 @@ describe Riffer::Rig::Stores::JSONL do
     assert_equal [header('aaa', '/one'), header('bbb', '/two')], @store.list
   end
 
-  it 'dates a session by its file mtime' do
+  it 'stamps the listed header with the file mtime' do
     @store.append('aaa', header('aaa'))
     time = Time.at(1000)
     File.utime(time, time, File.join(sessions, 'project', 'aaa.jsonl'))
 
-    assert_equal time, @store.updated('aaa')
-  end
-
-  it 'dates an unknown session as nil' do
-    assert_nil @store.updated('nope')
+    assert_equal time, @store.list.first.updated
   end
 
   it 'filters the listing by the header cwd, not the slug directory' do

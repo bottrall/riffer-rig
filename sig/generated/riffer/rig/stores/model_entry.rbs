@@ -1,0 +1,21 @@
+# Generated from lib/riffer/rig/stores/model_entry.rb with RBS::Inline
+
+class Riffer::Rig::Stores::ModelEntry
+  TYPE: String
+
+  include Riffer::Rig::Support::Equatable
+
+  # @dynamic model
+  attr_reader model: String
+
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs return: ::Riffer::Rig::Stores::ModelEntry?
+  def self.from_hash: (Hash[Symbol, untyped] hash) -> ::Riffer::Rig::Stores::ModelEntry?
+
+  # @rbs model: String
+  # @rbs return: void
+  def initialize: (model: String) -> void
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

@@ -1,0 +1,21 @@
+# Generated from lib/riffer/rig/stores/message_entry.rb with RBS::Inline
+
+class Riffer::Rig::Stores::MessageEntry
+  TYPE: String
+
+  include Riffer::Rig::Support::Equatable
+
+  # @dynamic message
+  attr_reader message: Hash[Symbol, untyped]
+
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs return: ::Riffer::Rig::Stores::MessageEntry?
+  def self.from_hash: (Hash[Symbol, untyped] hash) -> ::Riffer::Rig::Stores::MessageEntry?
+
+  # @rbs message: Hash[Symbol, untyped]
+  # @rbs return: void
+  def initialize: (message: Hash[Symbol, untyped]) -> void
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end
