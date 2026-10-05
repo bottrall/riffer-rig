@@ -2,8 +2,6 @@
 # explicitly so the compact `Riffer::Rig::Stores::*` signatures resolve.
 
 module Riffer::Rig::Stores
-  # A store is any object implementing the five methods. `continue` picks the
-  # most recently `updated`, so nothing rides on `list`'s order.
   interface _Store
     def append: (String id, Hash[Symbol, untyped] entry) -> void
     def read: (String id) -> Array[Hash[Symbol, untyped]]
