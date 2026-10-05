@@ -75,6 +75,18 @@ describe Riffer::Rig::Stores::JSONL do
     assert_equal [header('aaa', '/one'), header('bbb', '/two')], @store.list
   end
 
+  it 'dates a session by its file mtime' do
+    @store.append('aaa', header('aaa'))
+    time = Time.at(1000)
+    File.utime(time, time, File.join(sessions, 'project', 'aaa.jsonl'))
+
+    assert_equal time, @store.updated('aaa')
+  end
+
+  it 'dates an unknown session as nil' do
+    assert_nil @store.updated('nope')
+  end
+
   it 'filters the listing by the header cwd, not the slug directory' do
     write_elsewhere('misleading', 'aaa', header('aaa', '/project'))
     @store.append('bbb', header('bbb', '/other'))

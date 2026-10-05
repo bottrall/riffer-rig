@@ -11,15 +11,20 @@ class Riffer::Rig::Stores::Recorder
 
   @runtime: Riffer::Rig::Runtime?
 
+  @resumed: bool
+
   @store: Riffer::Rig::Stores::_Store
 
   # Records one Loader-built session into the store: the header on the first
   # message (its title needs the first prompt), one entry per message, one per
   # model switch and one per skill activation. Entries that land before the
-  # first message (a /model before the first prompt) wait for the header.
+  # first message (a /model before the first prompt) wait for the header. A
+  # resumed session appends to the file its first run wrote, so it rewrites
+  # no header.
   # @rbs store: Riffer::Rig::Stores::_Store
+  # @rbs resumed: bool
   # @rbs return: void
-  def initialize: (store: Riffer::Rig::Stores::_Store) -> void
+  def initialize: (store: Riffer::Rig::Stores::_Store, ?resumed: bool) -> void
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void

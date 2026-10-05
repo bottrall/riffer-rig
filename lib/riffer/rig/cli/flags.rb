@@ -9,12 +9,14 @@ class Riffer::Rig::CLI::Flags
            riffer acp           (not available yet)
   TEXT
 
-  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save
+  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save, continue, resume
   attr_reader :model #: String?
   attr_reader :extensions, :skills, :agents_md, :help #: bool
   attr_reader :tools #: Array[String]?
   attr_reader :max_steps #: Integer?
   attr_reader :save #: bool
+  attr_reader :continue #: bool
+  attr_reader :resume #: String?
 
   # @rbs argv: Array[String]
   # @rbs return: Riffer::Rig::CLI::Flags | String
@@ -31,6 +33,8 @@ class Riffer::Rig::CLI::Flags
       tools: values[:tools],
       max_steps: values[:'max-steps'],
       save: !values.key?(:'no-save'),
+      continue: values.key?(:continue),
+      resume: values[:resume],
       help: values.key?(:help)
     )
   rescue OptionParser::ParseError => e
@@ -54,6 +58,8 @@ class Riffer::Rig::CLI::Flags
       parser.on('--tools NAME,NAME', Array, 'Only these tools, by identifier')
       parser.on('--max-steps N', Integer, 'Stop a turn after N model calls')
       parser.on('--no-save', 'Do not save this session')
+      parser.on('-c', '--continue', 'Continue the most recent session in this directory')
+      parser.on('-r ID', '--resume ID', String, 'Resume the session with this id')
       parser.on('-h', '--help', 'Show this help')
     end
   end
@@ -66,6 +72,8 @@ class Riffer::Rig::CLI::Flags
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
   # @rbs save: bool
+  # @rbs continue: bool
+  # @rbs resume: String?
   # @rbs help: bool
   # @rbs return: void
   def initialize(
@@ -76,6 +84,8 @@ class Riffer::Rig::CLI::Flags
     tools: nil,
     max_steps: nil,
     save: true,
+    continue: false,
+    resume: nil,
     help: false
   )
     @model = model
@@ -85,6 +95,8 @@ class Riffer::Rig::CLI::Flags
     @tools = tools&.freeze
     @max_steps = max_steps
     @save = save
+    @continue = continue
+    @resume = resume
     @help = help
     freeze
   end

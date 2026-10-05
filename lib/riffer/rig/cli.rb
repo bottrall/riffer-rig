@@ -52,20 +52,51 @@ module Riffer::Rig::CLI
       version: Riffer::Rig::VERSION,
       no_color: env.is_a?(Riffer::Rig::Env) && env.no_color
     ).run do |host|
-      Riffer::Rig::Loader.runtime(
+      loader = Riffer::Rig::Loader.new(
         cwd: cwd,
         host: host,
         env: env,
         home: home,
-        model: flags.model,
-        extensions: flags.extensions,
-        skills: flags.skills,
-        agents_md: flags.agents_md,
-        tools: flags.tools,
-        max_steps: flags.max_steps,
         store: flags.save ? Riffer::Rig::Stores::JSONL.new : nil
       )
+      resumed(flags, host, loader) || build(loader, flags)
     end
+  end
+
+  # @rbs flags: Riffer::Rig::CLI::Flags
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs loader: Riffer::Rig::Loader
+  # @rbs return: Riffer::Rig::Runtime?
+  def resumed(flags, host, loader)
+    if flags.resume
+      started = loader.resume(flags.resume, **keywords(flags))
+      host.notify("No saved session #{flags.resume}.") unless started
+      started
+    elsif flags.continue
+      started = loader.continue(**keywords(flags))
+      host.notify('No saved session in this directory.') unless started
+      started
+    end
+  end
+
+  # @rbs loader: Riffer::Rig::Loader
+  # @rbs flags: Riffer::Rig::CLI::Flags
+  # @rbs return: Riffer::Rig::Runtime
+  def build(loader, flags)
+    loader.runtime(**keywords(flags))
+  end
+
+  # @rbs flags: Riffer::Rig::CLI::Flags
+  # @rbs return: Hash[Symbol, untyped]
+  def keywords(flags)
+    {
+      model: flags.model,
+      extensions: flags.extensions,
+      skills: flags.skills,
+      agents_md: flags.agents_md,
+      tools: flags.tools,
+      max_steps: flags.max_steps
+    }
   end
 
   # @rbs name: String

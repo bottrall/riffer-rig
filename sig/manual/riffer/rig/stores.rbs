@@ -6,6 +6,7 @@ module Riffer::Rig::Stores
     def append: (String id, Hash[Symbol, untyped] entry) -> void
     def read: (String id) -> Array[Hash[Symbol, untyped]]
     def list: (?cwd: String?) -> Array[Hash[Symbol, untyped]]
+    def updated: (String id) -> Time?
     def delete: (String id) -> void
   end
 end

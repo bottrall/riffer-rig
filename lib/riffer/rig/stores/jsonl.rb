@@ -35,8 +35,21 @@ class Riffer::Rig::Stores::JSONL
   # @rbs cwd: String?
   # @rbs return: Array[Hash[Symbol, untyped]]
   def list(cwd: nil)
-    headers = Dir.glob(File.join(root, '*', '*.jsonl')).filter_map { |path| header_of(path) }
+    headers = Dir.glob(File.join(root, '*', '*.jsonl')).filter_map do |path|
+      # Seeding the path cache here keeps picking the most recently updated
+      # session one mtime per header instead of one glob.
+      @paths[File.basename(path, '.jsonl')] = path
+      header_of(path)
+    end
     cwd ? headers.select { |header| header[:cwd] == cwd } : headers
+  end
+
+  # A session's last update is its file's mtime: appends are the only writes.
+  # @rbs id: String
+  # @rbs return: Time?
+  def updated(id)
+    path = find(id)
+    path ? File.mtime(path) : nil
   end
 
   # @rbs id: String

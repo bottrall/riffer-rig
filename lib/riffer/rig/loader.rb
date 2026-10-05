@@ -39,6 +39,7 @@ class Riffer::Rig::Loader
   # @rbs max_steps: Integer?
   # @rbs store: Riffer::Rig::Stores::_Store | nil
   # @rbs reload: (:auto | :manual | nil)
+  # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: Riffer::Rig::Runtime
   def self.runtime(
     cwd:,
@@ -53,7 +54,8 @@ class Riffer::Rig::Loader
     tools: nil,
     max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS,
     store: Riffer::Rig::Stores::JSONL.new,
-    reload: nil
+    reload: nil,
+    snapshot: nil
   )
     new(cwd:, host:, env:, home:, riffer_config:, store:).runtime(
       model:,
@@ -62,7 +64,8 @@ class Riffer::Rig::Loader
       agents_md:,
       tools:,
       max_steps:,
-      reload:
+      reload:,
+      snapshot:
     )
   end
 
@@ -104,6 +107,7 @@ class Riffer::Rig::Loader
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
   # @rbs reload: (:auto | :manual | nil)
+  # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: Riffer::Rig::Runtime
   def runtime(
     model: nil,
@@ -112,7 +116,8 @@ class Riffer::Rig::Loader
     agents_md: true,
     tools: nil,
     max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS,
-    reload: nil
+    reload: nil,
+    snapshot: nil
   )
     settings = merged_settings
     document = Riffer::Rig::Settings::Document.new(settings)
@@ -128,7 +133,7 @@ class Riffer::Rig::Loader
     @gem_extensions = []
     loaded += load_rig_files(document.autoload) if extensions
 
-    recorder = recorder_for(document)
+    recorder = recorder_for(document, resumed: !snapshot.nil?)
     loaded << Riffer::Rig::Stores::Recorder.extension(recorder) if recorder
 
     built = Riffer::Rig::Runtime.new(
@@ -143,13 +148,85 @@ class Riffer::Rig::Loader
       pricing: document.models,
       riffer_config: @riffer_config,
       model_options: Riffer::Rig::Settings.model_options(selected, document.reasoning),
-      native_tools: document.native_tools
+      native_tools: document.native_tools,
+      snapshot: snapshot
     )
     built.install_command(Riffer::Rig::Commands::Reload.command(self))
     built.install_reload_check(->(runtime) { automatic_reload(runtime) }) unless reload_mode(document) == :manual
     @file_state = file_state
     recorder&.attach(built)
     built
+  end
+
+  # @rbs model: String?
+  # @rbs extensions: bool
+  # @rbs skills: bool
+  # @rbs agents_md: bool
+  # @rbs tools: Array[String]?
+  # @rbs max_steps: Integer?
+  # @rbs return: Riffer::Rig::Runtime?
+  def continue(
+    model: nil,
+    extensions: true,
+    skills: true,
+    agents_md: true,
+    tools: nil,
+    max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS
+  )
+    store = @store
+    return nil unless store
+
+    latest = store.list(cwd: @cwd).max_by { |header| store.updated(header.fetch(:id)) || Time.at(0) }
+    return nil unless latest
+
+    id = latest.fetch(:id) #: String
+    resume(id, model:, extensions:, skills:, agents_md:, tools:, max_steps:)
+  end
+
+  # A resume carries the history over and nothing else: the settings,
+  # credentials, extensions and tools are today's.
+  # @rbs id: String
+  # @rbs model: String?
+  # @rbs extensions: bool
+  # @rbs skills: bool
+  # @rbs agents_md: bool
+  # @rbs tools: Array[String]?
+  # @rbs max_steps: Integer?
+  # @rbs return: Riffer::Rig::Runtime?
+  def resume(
+    id,
+    model: nil,
+    extensions: true,
+    skills: true,
+    agents_md: true,
+    tools: nil,
+    max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS
+  )
+    store = @store
+    return nil unless store
+
+    entries = store.read(id)
+    return nil if entries.empty?
+
+    runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:, snapshot: snapshot_of(entries, id))
+  end
+
+  # @rbs all: bool
+  # @rbs return: Array[Hash[Symbol, untyped]]
+  def list(all: false)
+    store = @store
+    return [] unless store
+
+    all ? store.list : store.list(cwd: @cwd)
+  end
+
+  # @rbs id: String
+  # @rbs return: void
+  def delete(id)
+    store = @store
+    return unless store
+
+    store.delete(id)
   end
 
   # Without force, a no-op while the tracked file set and the two rig.rb paths
@@ -486,15 +563,29 @@ class Riffer::Rig::Loader
     File.join(@home, '.riffer', 'settings.json')
   end
 
+  # @rbs entries: Array[Hash[Symbol, untyped]]
+  # @rbs id: String
+  # @rbs return: Hash[Symbol, untyped]
+  def snapshot_of(entries, id)
+    models = entries.select { |entry| entry[:type] == 'model' }
+    {
+      id: id,
+      messages: entries.select { |entry| entry[:type] == 'message' }.map { |entry| entry.fetch(:message) },
+      model: models.last&.fetch(:model),
+      skills: entries.select { |entry| entry[:type] == 'skill' }.map { |entry| entry.fetch(:skill) }
+    }
+  end
+
   # The store records unless it was declined with store: nil or globally with
   # "sessions": {"save": false}.
   # @rbs document: Riffer::Rig::Settings::Document
+  # @rbs resumed: bool
   # @rbs return: Riffer::Rig::Stores::Recorder?
-  def recorder_for(document)
+  def recorder_for(document, resumed:)
     store = @store
     return nil unless document.save
     return nil unless store
 
-    Riffer::Rig::Stores::Recorder.new(store: store)
+    Riffer::Rig::Stores::Recorder.new(store: store, resumed: resumed)
   end
 end

@@ -28,6 +28,21 @@ module Riffer::Rig::CLI
   # @rbs return: Integer
   def terminal: (Riffer::Rig::CLI::Flags flags, input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, cwd: String, home: String) -> Integer
 
+  # @rbs flags: Riffer::Rig::CLI::Flags
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs loader: Riffer::Rig::Loader
+  # @rbs return: Riffer::Rig::Runtime?
+  def resumed: (Riffer::Rig::CLI::Flags flags, Riffer::Rig::Hosts::_Host host, Riffer::Rig::Loader loader) -> Riffer::Rig::Runtime?
+
+  # @rbs loader: Riffer::Rig::Loader
+  # @rbs flags: Riffer::Rig::CLI::Flags
+  # @rbs return: Riffer::Rig::Runtime
+  def build: (Riffer::Rig::Loader loader, Riffer::Rig::CLI::Flags flags) -> Riffer::Rig::Runtime
+
+  # @rbs flags: Riffer::Rig::CLI::Flags
+  # @rbs return: Hash[Symbol, untyped]
+  def keywords: (Riffer::Rig::CLI::Flags flags) -> Hash[Symbol, untyped]
+
   # @rbs name: String
   # @rbs error: IO
   # @rbs return: Integer
