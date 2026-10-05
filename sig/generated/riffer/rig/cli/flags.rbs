@@ -3,7 +3,7 @@
 class Riffer::Rig::CLI::Flags
   BANNER: String
 
-  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save, continue, resume
+  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save, verbose, prompt, continue, resume
   attr_reader model: String?
 
   attr_reader extensions: bool
@@ -14,19 +14,24 @@ class Riffer::Rig::CLI::Flags
 
   attr_reader help: bool
 
+  attr_reader verbose: bool
+
   attr_reader tools: Array[String]?
 
   attr_reader max_steps: Integer?
 
   attr_reader save: bool
 
+  attr_reader prompt: String?
+
   attr_reader continue: bool
 
   attr_reader resume: String?
 
   # @rbs argv: Array[String]
+  # @rbs prompt: bool
   # @rbs return: Riffer::Rig::CLI::Flags | String
-  def self.parse: (Array[String] argv) -> (Riffer::Rig::CLI::Flags | String)
+  def self.parse: (Array[String] argv, ?prompt: bool) -> (Riffer::Rig::CLI::Flags | String)
 
   # @rbs return: String
   def self.usage: () -> String
@@ -41,9 +46,11 @@ class Riffer::Rig::CLI::Flags
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
   # @rbs save: bool
+  # @rbs verbose: bool
+  # @rbs prompt: String?
   # @rbs continue: bool
   # @rbs resume: String?
   # @rbs help: bool
   # @rbs return: void
-  def initialize: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?continue: bool, ?resume: String?, ?help: bool) -> void
+  def initialize: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?verbose: bool, ?prompt: String?, ?continue: bool, ?resume: String?, ?help: bool) -> void
 end

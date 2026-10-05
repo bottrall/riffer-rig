@@ -65,11 +65,31 @@ describe Riffer::Rig::CLI::Flags do
     assert_equal 'unexpected argument: hello', parse('hello')
   end
 
+  it 'takes the prompt positional with -p' do
+    assert_equal 'hello', Riffer::Rig::CLI::Flags.parse(%w[-p hello], prompt: true).prompt
+  end
+
+  it 'leaves the prompt to stdin without an argument' do
+    assert_nil Riffer::Rig::CLI::Flags.parse(['-p'], prompt: true).prompt
+  end
+
+  it 'refuses a second positional with -p' do
+    assert_equal 'unexpected argument: hello extra', Riffer::Rig::CLI::Flags.parse(%w[-p hello extra], prompt: true)
+  end
+
+  it 'reads --verbose' do
+    assert parse('--verbose').verbose
+  end
+
+  it 'keeps --verbose off by default' do
+    refute parse.verbose
+  end
+
   it 'lists every flag in the usage' do
     usage = Riffer::Rig::CLI::Flags.usage
 
     assert(
-      %w[--model --no-extensions --no-skills --no-agents-md --tools --max-steps].all? do |flag|
+      %w[--model --no-extensions --no-skills --no-agents-md --tools --max-steps -p --verbose].all? do |flag|
         usage.include?(flag)
       end
     )

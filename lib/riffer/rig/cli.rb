@@ -27,16 +27,42 @@ module Riffer::Rig::CLI
     home: Dir.home
   )
     return unavailable("riffer #{ACP_COMMAND}", error) if argv.first == ACP_COMMAND
-    return unavailable('riffer -p', error) if argv.intersect?(PRINT_FLAGS)
 
-    flags = Flags.parse(argv)
+    headless_mode = argv.intersect?(PRINT_FLAGS)
+    flags = Flags.parse(argv, prompt: headless_mode)
     return refuse(flags, error) if flags.is_a?(String)
     return help(output) if flags.help
+    return refuse('--verbose is only available with -p', error) if flags.verbose && !headless_mode
+
+    return headless(flags, input:, output:, error:, env:, cwd:, home:) if headless_mode
 
     terminal(flags, input:, output:, env:, cwd:, home:)
   end
 
   private
+
+  # @rbs flags: Riffer::Rig::CLI::Flags
+  # @rbs input: IO
+  # @rbs output: IO
+  # @rbs error: IO
+  # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  # @rbs cwd: String
+  # @rbs home: String
+  # @rbs return: Integer
+  def headless(flags, input:, output:, error:, env:, cwd:, home:)
+    Riffer::Rig::Headless.for(
+      input: input,
+      output: output,
+      error: error,
+      verbose: flags.verbose
+    ).run(prompt: flags.prompt) do |host|
+      loader = new_loader(flags, host: host, env: env, cwd: cwd, home: home)
+      started = find_session(flags, loader)
+      raise Riffer::Rig::Loader::ConfigurationError, missing_session(flags) if started.nil? && session_flags?(flags)
+
+      started || build(loader, flags)
+    end
+  end
 
   # @rbs flags: Riffer::Rig::CLI::Flags
   # @rbs input: IO
@@ -52,31 +78,51 @@ module Riffer::Rig::CLI
       version: Riffer::Rig::VERSION,
       no_color: env.is_a?(Riffer::Rig::Env) && env.no_color
     ).run do |host|
-      loader = Riffer::Rig::Loader.new(
-        cwd: cwd,
-        host: host,
-        env: env,
-        home: home,
-        store: flags.save ? Riffer::Rig::Stores::JSONL.new : nil
-      )
-      resumed(flags, host, loader) || build(loader, flags)
+      loader = new_loader(flags, host: host, env: env, cwd: cwd, home: home)
+      started = find_session(flags, loader)
+      host.notify(missing_session(flags)) if started.nil? && session_flags?(flags)
+
+      started || build(loader, flags)
     end
   end
 
   # @rbs flags: Riffer::Rig::CLI::Flags
   # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  # @rbs cwd: String
+  # @rbs home: String
+  # @rbs return: Riffer::Rig::Loader
+  def new_loader(flags, host:, env:, cwd:, home:)
+    Riffer::Rig::Loader.new(
+      cwd: cwd,
+      host: host,
+      env: env,
+      home: home,
+      store: flags.save ? Riffer::Rig::Stores::JSONL.new : nil
+    )
+  end
+
+  # @rbs flags: Riffer::Rig::CLI::Flags
   # @rbs loader: Riffer::Rig::Loader
   # @rbs return: Riffer::Rig::Runtime?
-  def resumed(flags, host, loader)
+  def find_session(flags, loader)
     if flags.resume
-      started = loader.resume(flags.resume, **keywords(flags))
-      host.notify("No saved session #{flags.resume}.") unless started
-      started
+      loader.resume(flags.resume, **keywords(flags))
     elsif flags.continue
-      started = loader.continue(**keywords(flags))
-      host.notify('No saved session in this directory.') unless started
-      started
+      loader.continue(**keywords(flags))
     end
+  end
+
+  # @rbs flags: Riffer::Rig::CLI::Flags
+  # @rbs return: bool
+  def session_flags?(flags)
+    flags.resume ? true : flags.continue
+  end
+
+  # @rbs flags: Riffer::Rig::CLI::Flags
+  # @rbs return: String
+  def missing_session(flags)
+    flags.resume ? "No saved session #{flags.resume}." : 'No saved session in this directory.'
   end
 
   # @rbs loader: Riffer::Rig::Loader
