@@ -3,6 +3,8 @@
 class Riffer::Rig::Stores::JSONL
   HEADER_VERSION: Integer
 
+  ENTRY_TYPES: Hash[String, Riffer::Rig::Stores::entry_type]
+
   @paths: Hash[String, String]
 
   @home: String
@@ -12,22 +14,17 @@ class Riffer::Rig::Stores::JSONL
   def initialize: (?home: String) -> void
 
   # @rbs id: String
-  # @rbs entry: Hash[Symbol, untyped]
+  # @rbs entry: Riffer::Rig::Stores::entry
   # @rbs return: void
-  def append: (String id, Hash[Symbol, untyped] entry) -> void
+  def append: (String id, Riffer::Rig::Stores::entry entry) -> void
 
   # @rbs id: String
-  # @rbs return: Array[Hash[Symbol, untyped]]
-  def read: (String id) -> Array[Hash[Symbol, untyped]]
+  # @rbs return: Array[Riffer::Rig::Stores::entry]
+  def read: (String id) -> Array[Riffer::Rig::Stores::entry]
 
   # @rbs cwd: String?
-  # @rbs return: Array[Hash[Symbol, untyped]]
-  def list: (?cwd: String?) -> Array[Hash[Symbol, untyped]]
-
-  # A session's last update is its file's mtime: appends are the only writes.
-  # @rbs id: String
-  # @rbs return: Time?
-  def updated: (String id) -> Time?
+  # @rbs return: Array[::Riffer::Rig::Stores::Header]
+  def list: (?cwd: String?) -> Array[::Riffer::Rig::Stores::Header]
 
   # @rbs id: String
   # @rbs return: void
@@ -39,18 +36,14 @@ class Riffer::Rig::Stores::JSONL
   def root: () -> String
 
   # @rbs id: String
-  # @rbs entry: Hash[Symbol, untyped]
+  # @rbs entry: Riffer::Rig::Stores::entry
   # @rbs return: String
-  def path_for: (String id, Hash[Symbol, untyped] entry) -> String
+  def path_for: (String id, Riffer::Rig::Stores::entry entry) -> String
 
   # @rbs id: String
   # @rbs cwd: String
   # @rbs return: String
   def new_path: (String id, String cwd) -> String
-
-  # @rbs path: String
-  # @rbs return: Hash[Symbol, untyped]?
-  def header_of: (String path) -> Hash[Symbol, untyped]?
 
   # @rbs id: String
   # @rbs return: String?
@@ -62,6 +55,17 @@ class Riffer::Rig::Stores::JSONL
   # @rbs cwd: String
   # @rbs return: String
   def slug: (String cwd) -> String
+
+  # A session's last update is its file's mtime: appends are the only writes.
+  # The store stamps it while it holds the artifact, so the listed header
+  # carries it.
+  # @rbs path: String
+  # @rbs return: ::Riffer::Rig::Stores::Header?
+  def header_of: (String path) -> ::Riffer::Rig::Stores::Header?
+
+  # @rbs line: String
+  # @rbs return: Riffer::Rig::Stores::entry?
+  def entry_of: (String line) -> Riffer::Rig::Stores::entry?
 
   # @rbs line: String
   # @rbs return: Hash[Symbol, untyped]?

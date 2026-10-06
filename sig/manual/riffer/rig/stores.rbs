@@ -2,11 +2,13 @@
 # explicitly so the compact `Riffer::Rig::Stores::*` signatures resolve.
 
 module Riffer::Rig::Stores
+  type entry = Header | MessageEntry | ModelEntry | SkillEntry
+  type entry_type = singleton(Header) | singleton(MessageEntry) | singleton(ModelEntry) | singleton(SkillEntry)
+
   interface _Store
-    def append: (String id, Hash[Symbol, untyped] entry) -> void
-    def read: (String id) -> Array[Hash[Symbol, untyped]]
-    def list: (?cwd: String?) -> Array[Hash[Symbol, untyped]]
-    def updated: (String id) -> Time?
+    def append: (String id, entry entry) -> void
+    def read: (String id) -> Array[entry]
+    def list: (?cwd: String?) -> Array[Header]
     def delete: (String id) -> void
   end
 end

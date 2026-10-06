@@ -5,7 +5,7 @@ class Riffer::Rig::Stores::Recorder
 
   @title: String?
 
-  @pending: Array[Hash[Symbol, untyped]]
+  @pending: Array[Riffer::Rig::Stores::entry]
 
   @header_written: bool
 
@@ -51,15 +51,15 @@ class Riffer::Rig::Stores::Recorder
 
   private
 
-  # @rbs entry: Hash[Symbol, untyped]
+  # @rbs entry: Riffer::Rig::Stores::entry
   # @rbs return: void
-  def record: (Hash[Symbol, untyped] entry) -> void
+  def record: (Riffer::Rig::Stores::entry entry) -> void
 
   # @rbs return: void
   def write_header: () -> void
 
-  # @rbs return: Hash[Symbol, untyped]
-  def header_entry: () -> Hash[Symbol, untyped]
+  # @rbs return: ::Riffer::Rig::Stores::Header
+  def header_entry: () -> ::Riffer::Rig::Stores::Header
 
   # @rbs content: String
   # @rbs return: String

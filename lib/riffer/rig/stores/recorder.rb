@@ -9,7 +9,7 @@ class Riffer::Rig::Stores::Recorder
   # @rbs @resumed: bool
   # @rbs @runtime: Riffer::Rig::Runtime?
   # @rbs @header_written: bool
-  # @rbs @pending: Array[Hash[Symbol, untyped]]
+  # @rbs @pending: Array[Riffer::Rig::Stores::entry]
   # @rbs @title: String?
 
   # Records one Loader-built session into the store: the header on the first
@@ -41,7 +41,7 @@ class Riffer::Rig::Stores::Recorder
   # @rbs event: Riffer::StreamEvents::SkillActivation
   # @rbs return: void
   def skill(event)
-    record(type: 'skill', skill: event.name)
+    record(Riffer::Rig::Stores::SkillEntry.new(skill: event.name))
   end
 
   # @rbs message: Riffer::Messages::Base
@@ -49,13 +49,13 @@ class Riffer::Rig::Stores::Recorder
   def message(message)
     @title ||= one_line(message.content) if message.is_a?(Riffer::Messages::User)
     write_header unless @header_written
-    record(type: 'message', message: message.to_h)
+    record(Riffer::Rig::Stores::MessageEntry.new(message: message.to_h))
   end
 
   # @rbs model: String
   # @rbs return: void
   def switched(model)
-    record(type: 'model', model: model)
+    record(Riffer::Rig::Stores::ModelEntry.new(model: model))
   end
 
   # The extension rides the build as its last extension, so its :stream hook
@@ -75,7 +75,7 @@ class Riffer::Rig::Stores::Recorder
 
   private
 
-  # @rbs entry: Hash[Symbol, untyped]
+  # @rbs entry: Riffer::Rig::Stores::entry
   # @rbs return: void
   def record(entry)
     unless @header_written
@@ -94,10 +94,9 @@ class Riffer::Rig::Stores::Recorder
     @pending.clear
   end
 
-  # @rbs return: Hash[Symbol, untyped]
+  # @rbs return: ::Riffer::Rig::Stores::Header
   def header_entry
-    {
-      type: 'header',
+    Riffer::Rig::Stores::Header.new(
       schema_version: Riffer::Rig::Stores::JSONL::HEADER_VERSION,
       id: runtime.id,
       cwd: runtime.cwd,
@@ -106,7 +105,7 @@ class Riffer::Rig::Stores::Recorder
       riffer_rig_version: Riffer::Rig::VERSION,
       riffer_version: Riffer::VERSION,
       title: @title.to_s
-    }
+    )
   end
 
   # @rbs content: String

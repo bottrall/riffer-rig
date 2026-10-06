@@ -1097,7 +1097,7 @@ class RecordingStore
   attr_reader :appended #: Array[[String, Hash[Symbol, untyped]]]
 
   def initialize
-    @appended = [] #: Array[[String, Hash[Symbol, untyped]]]
+    @appended = [] #: Array[[String, Riffer::Rig::Stores::entry]]
   end
 
   def append(id, entry)
@@ -1142,7 +1142,7 @@ describe 'Loader session store' do
   end
 
   def types(store)
-    store.appended.map { |_id, entry| entry[:type] }
+    store.appended.map { |_id, entry| entry.to_h[:type] }
   end
 
   def entries
@@ -1179,21 +1179,21 @@ describe 'Loader session store' do
     runtime = build(store: @store, model: 'mock/test')
     turn(runtime)
 
-    assert_equal 'header', @store.appended.first[1][:type]
+    assert_equal 'header', @store.appended.first[1].to_h[:type]
   end
 
   it 'titles the header with the first prompt, one line' do
     runtime = build(store: @store, model: 'mock/test')
     turn(runtime, "first line\nsecond line")
 
-    assert_equal 'first line', @store.appended.first[1][:title]
+    assert_equal 'first line', @store.appended.first[1].title
   end
 
   it 'names the session cwd in the header' do
     runtime = build(store: @store, model: 'mock/test')
     turn(runtime)
 
-    assert_equal @cwd, @store.appended.first[1][:cwd]
+    assert_equal @cwd, @store.appended.first[1].cwd
   end
 
   it 'carries the model entries of a /model switch, after the header' do
@@ -1209,7 +1209,9 @@ describe 'Loader session store' do
     runtime.run_command('model', 'mock/other')
     turn(runtime)
 
-    assert_equal 'mock/other', entries.find { |entry| entry[:type] == 'model' }[:model]
+    switch = entries.grep(Riffer::Rig::Stores::ModelEntry).first
+
+    assert_equal 'mock/other', switch.model
   end
 
   it 'records the model skill activations' do
@@ -1219,7 +1221,7 @@ describe 'Loader session store' do
     runtime.agent.provider.stub_response('Done.')
     runtime.ask('use skill a')
 
-    assert_equal(['a'], entries.select { |entry| entry[:type] == 'skill' }.map { |entry| entry[:skill] })
+    assert_equal(['a'], entries.grep(Riffer::Rig::Stores::SkillEntry).map(&:skill))
   end
 
   it 'leaves a user-run /skill: out of the entries' do
@@ -1229,7 +1231,7 @@ describe 'Loader session store' do
     runtime.run_command('skill:a')
     turn(runtime)
 
-    assert_empty(entries.select { |entry| entry[:type] == 'skill' })
+    assert_empty(entries.grep(Riffer::Rig::Stores::SkillEntry))
   end
 
   it 'writes a default-store file whose lines all parse' do
@@ -1271,7 +1273,7 @@ describe 'Loader session store' do
 end
 
 # A store whose listing order is the reverse of the wrapped store's, proving
-# the Loader picks by `updated` and not by position.
+# the Loader picks by the header's `updated` and not by position.
 class ReversedStore
   def initialize(store)
     @store = store
@@ -1287,10 +1289,6 @@ class ReversedStore
 
   def list(cwd: nil)
     @store.list(cwd: cwd).reverse
-  end
-
-  def updated(id)
-    @store.updated(id)
   end
 
   def delete(id)
@@ -1343,11 +1341,17 @@ describe 'Loader resume' do
     entries.each { |entry| store.append(id, entry) }
   end
 
-  def header(id, model = 'mock/test')
-    {
-      type: 'header', schema_version: 1, id: id, cwd: @cwd, created_at: '2026-01-01T00:00:00Z',
-      model: model, riffer_rig_version: '0.9.0', riffer_version: '0.49.0', title: 'hello'
-    }
+  def header(id, model = 'mock/test', cwd: @cwd)
+    Riffer::Rig::Stores::Header.new(
+      schema_version: 1,
+      id: id,
+      cwd: cwd,
+      created_at: '2026-01-01T00:00:00Z',
+      model: model,
+      riffer_rig_version: '0.9.0',
+      riffer_version: '0.49.0',
+      title: 'hello'
+    )
   end
 
   def session_path(id)
@@ -1402,7 +1406,7 @@ describe 'Loader resume' do
   end
 
   it 'continues nothing when no session matches the cwd' do
-    save_entries('other', [header('other').merge(cwd: '/other')])
+    save_entries('other', [header('other', cwd: '/other')])
 
     assert_nil loader.continue
   end
@@ -1414,14 +1418,14 @@ describe 'Loader resume' do
   it 'lists the sessions of this cwd' do
     save_session
 
-    assert_equal([@cwd], loader.list.map { |header| header[:cwd] })
+    assert_equal([@cwd], loader.list.map(&:cwd))
   end
 
   it 'escapes the cwd scope with all: true' do
     save_session
-    save_entries('elsewhere', [header('elsewhere').merge(cwd: '/elsewhere')])
+    save_entries('elsewhere', [header('elsewhere', cwd: '/elsewhere')])
 
-    assert_equal ['/elsewhere', @cwd], loader.list(all: true).map { |header| header[:cwd] }.sort
+    assert_equal ['/elsewhere', @cwd], loader.list(all: true).map(&:cwd).sort
   end
 
   it 'deletes a session' do
@@ -1442,7 +1446,11 @@ describe 'Loader resume' do
   end
 
   it 'lets the last model entry win' do
-    save_entries('aaa', [header('aaa'), { type: 'model', model: 'mock/one' }, { type: 'model', model: 'mock/two' }])
+    save_entries(
+      'aaa',
+      [header('aaa'), Riffer::Rig::Stores::ModelEntry.new(model: 'mock/one'),
+       Riffer::Rig::Stores::ModelEntry.new(model: 'mock/two')]
+    )
 
     assert_equal 'mock/two', loader.resume('aaa').to_h[:model]
   end
@@ -1452,8 +1460,8 @@ describe 'Loader resume' do
     write_skill('b')
     save_entries(
       'aaa',
-      [header('aaa'), { type: 'skill', skill: 'a' }, { type: 'skill', skill: 'b' },
-       { type: 'message', message: { role: 'user', content: 'hi' } }]
+      [header('aaa'), Riffer::Rig::Stores::SkillEntry.new(skill: 'a'), Riffer::Rig::Stores::SkillEntry.new(skill: 'b'),
+       Riffer::Rig::Stores::MessageEntry.new(message: { role: 'user', content: 'hi' })]
     )
 
     assert_equal %w[a b], loader.resume('aaa').to_h[:skills]
@@ -1462,7 +1470,10 @@ describe 'Loader resume' do
   it 'heals a file cut mid-turn' do
     saved = save_session
     call = Riffer::Messages::Assistant::ToolCall.new(call_id: 'orphan', name: 'read', arguments: '{"path":"/tmp/x"}')
-    save_entries(saved.id, [{ type: 'message', message: Riffer::Messages::Assistant.new('', tool_calls: [call]).to_h }])
+    save_entries(
+      saved.id,
+      [Riffer::Rig::Stores::MessageEntry.new(message: Riffer::Messages::Assistant.new('', tool_calls: [call]).to_h)]
+    )
     healed = loader.resume(saved.id).agent.session.messages.last
 
     assert_equal ['orphan', :interrupted], [healed.tool_call_id, healed.error_type]

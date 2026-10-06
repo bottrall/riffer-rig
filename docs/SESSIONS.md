@@ -4,7 +4,7 @@ A session is one conversation with a `Riffer::Rig::Runtime`: its id, its history
 
 ## The session store
 
-The Loader appends to a store: any object implementing the four `Riffer::Rig::Stores::_Store` methods — `append(id, entry)`, `read(id)`, `list(cwd: nil)` and `delete(id)`. It defaults to `Stores::JSONL` and takes `store:` per build; a Rails host implements the four over its own tables and passes its own. Hosts never see the store — they only choose which session to drive.
+The Loader appends to a store: any object implementing the four `Riffer::Rig::Stores::_Store` methods — `append(id, entry)`, `read(id)`, `list(cwd: nil)` and `delete(id)`. Entries cross the store as typed POROs — `Stores::Header`, `Stores::MessageEntry`, `Stores::ModelEntry` and `Stores::SkillEntry` — and each store serialises them itself; `Hash` remains only where it is already the documented currency, the JSON lines on disk and the riffer message payloads. The store defaults to `Stores::JSONL` and is taken per build with `store:`; a Rails host implements the four over its own tables and passes its own. Hosts never see the store — they only choose which session to drive.
 
 ## Where sessions live
 
@@ -12,14 +12,14 @@ The Loader appends to a store: any object implementing the four `Riffer::Rig::St
 
 ## What an entry holds
 
-Each line is a JSON object with a `type`:
+Each entry is a frozen PORO in `Riffer::Rig::Stores` — a new entry type is a new class. The JSONL store serialises each one to a line of JSON under its `type`; the line holds:
 
-| `type`    | Holds                                                                                                                                               |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `header`  | written on the first message: `schema_version`, `id`, `cwd`, `created_at`, `model`, `riffer_rig_version`, `riffer_version`, `title` (the first prompt truncated to one line) |
-| `message` | one conversation message as a riffer message hash under `message`, appended as it lands; the system message is not among them                        |
-| `model`   | one per `/model` switch, holding the new `model` string                                                                                              |
-| `skill`   | one per skill the model activated, holding the skill name; a `/skill:<name>` run is not one                                                          |
+| Class                  | Holds                                                                                                                                               |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Stores::Header`       | written on the first message: `schema_version`, `id`, `cwd`, `created_at`, `model`, `riffer_rig_version`, `riffer_version`, `title` (the first prompt truncated to one line); the store stamps the listed header with `updated` |
+| `Stores::MessageEntry` | one conversation message as a riffer message hash under `message`, appended as it lands; the system message is not among them                        |
+| `Stores::ModelEntry`   | one per `/model` switch, holding the new `model` string                                                                                              |
+| `Stores::SkillEntry`   | one per skill the model activated, holding the skill name; a `/skill:<name>` run is not one                                                          |
 
 ## Opting out
 
@@ -36,7 +36,7 @@ The Loader picks the session to drive; hosts never see the store:
 | `list(all: false)` | the header entries, the build's cwd only unless `all: true` escapes the scope |
 | `delete(id)`     | removes the session; an unknown id is a no-op                                   |
 
-`Stores::JSONL` dates a session by its file's mtime, which its last append set; `continue` picks the most recently `updated` session wherever `list` happens to place it.
+A listed header carries the session's update time as `updated`, stamped by the store while it holds the physical artifact — for `Stores::JSONL` the file's mtime, which its last append set; `continue` picks the most recently `updated` session wherever `list` happens to place it.
 
 On the command line, `riffer -c` continues the most recent session in the directory and `riffer -r <id>` resumes by id. With no match the REPL tells you and starts fresh.
 

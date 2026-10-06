@@ -176,11 +176,10 @@ class Riffer::Rig::Loader
     store = @store
     return nil unless store
 
-    latest = store.list(cwd: @cwd).max_by { |header| store.updated(header.fetch(:id)) || Time.at(0) }
+    latest = store.list(cwd: @cwd).max_by { |header| header.updated || Time.at(0) }
     return nil unless latest
 
-    id = latest.fetch(:id) #: String
-    resume(id, model:, extensions:, skills:, agents_md:, tools:, max_steps:)
+    resume(latest.id, model:, extensions:, skills:, agents_md:, tools:, max_steps:)
   end
 
   # A resume carries the history over and nothing else: the settings,
@@ -212,7 +211,7 @@ class Riffer::Rig::Loader
   end
 
   # @rbs all: bool
-  # @rbs return: Array[Hash[Symbol, untyped]]
+  # @rbs return: Array[::Riffer::Rig::Stores::Header]
   def list(all: false)
     store = @store
     return [] unless store
@@ -563,16 +562,15 @@ class Riffer::Rig::Loader
     File.join(@home, '.riffer', 'settings.json')
   end
 
-  # @rbs entries: Array[Hash[Symbol, untyped]]
+  # @rbs entries: Array[Riffer::Rig::Stores::entry]
   # @rbs id: String
   # @rbs return: Hash[Symbol, untyped]
   def snapshot_of(entries, id)
-    models = entries.select { |entry| entry[:type] == 'model' }
     {
       id: id,
-      messages: entries.select { |entry| entry[:type] == 'message' }.map { |entry| entry.fetch(:message) },
-      model: models.last&.fetch(:model),
-      skills: entries.select { |entry| entry[:type] == 'skill' }.map { |entry| entry.fetch(:skill) }
+      messages: entries.filter_map { |entry| entry.message if entry.is_a?(Riffer::Rig::Stores::MessageEntry) },
+      model: entries.filter_map { |entry| entry.model if entry.is_a?(Riffer::Rig::Stores::ModelEntry) }.last,
+      skills: entries.filter_map { |entry| entry.skill if entry.is_a?(Riffer::Rig::Stores::SkillEntry) }
     }
   end
 

@@ -6,6 +6,13 @@ require 'json'
 class Riffer::Rig::Stores::JSONL
   HEADER_VERSION = 1 #: Integer
 
+  ENTRY_TYPES = {
+    Riffer::Rig::Stores::Header::TYPE => Riffer::Rig::Stores::Header,
+    Riffer::Rig::Stores::MessageEntry::TYPE => Riffer::Rig::Stores::MessageEntry,
+    Riffer::Rig::Stores::ModelEntry::TYPE => Riffer::Rig::Stores::ModelEntry,
+    Riffer::Rig::Stores::SkillEntry::TYPE => Riffer::Rig::Stores::SkillEntry
+  }.freeze #: Hash[String, Riffer::Rig::Stores::entry_type]
+
   # @rbs @home: String
   # @rbs @paths: Hash[String, String]
 
@@ -17,23 +24,23 @@ class Riffer::Rig::Stores::JSONL
   end
 
   # @rbs id: String
-  # @rbs entry: Hash[Symbol, untyped]
+  # @rbs entry: Riffer::Rig::Stores::entry
   # @rbs return: void
   def append(id, entry)
-    File.write(path_for(id, entry), "#{JSON.generate(entry)}\n", mode: 'a')
+    File.write(path_for(id, entry), "#{JSON.generate(entry.to_h)}\n", mode: 'a')
   end
 
   # @rbs id: String
-  # @rbs return: Array[Hash[Symbol, untyped]]
+  # @rbs return: Array[Riffer::Rig::Stores::entry]
   def read(id)
     path = find(id)
     return [] unless path
 
-    File.foreach(path).filter_map { |line| parse(line) }
+    File.foreach(path).filter_map { |line| entry_of(line) }
   end
 
   # @rbs cwd: String?
-  # @rbs return: Array[Hash[Symbol, untyped]]
+  # @rbs return: Array[::Riffer::Rig::Stores::Header]
   def list(cwd: nil)
     headers = Dir.glob(File.join(root, '*', '*.jsonl')).filter_map do |path|
       # Seeding the path cache here keeps picking the most recently updated
@@ -41,15 +48,7 @@ class Riffer::Rig::Stores::JSONL
       @paths[File.basename(path, '.jsonl')] = path
       header_of(path)
     end
-    cwd ? headers.select { |header| header[:cwd] == cwd } : headers
-  end
-
-  # A session's last update is its file's mtime: appends are the only writes.
-  # @rbs id: String
-  # @rbs return: Time?
-  def updated(id)
-    path = find(id)
-    path ? File.mtime(path) : nil
+    cwd ? headers.select { |header| header.cwd == cwd } : headers
   end
 
   # @rbs id: String
@@ -70,11 +69,11 @@ class Riffer::Rig::Stores::JSONL
   end
 
   # @rbs id: String
-  # @rbs entry: Hash[Symbol, untyped]
+  # @rbs entry: Riffer::Rig::Stores::entry
   # @rbs return: String
   def path_for(id, entry)
     @paths.fetch(id) do
-      path = entry[:type] == 'header' ? new_path(id, entry.fetch(:cwd)) : find(id)
+      path = entry.is_a?(Riffer::Rig::Stores::Header) ? new_path(id, entry.cwd) : find(id)
       raise ArgumentError, "no session file for #{id}" unless path
 
       @paths[id] = path
@@ -88,14 +87,6 @@ class Riffer::Rig::Stores::JSONL
     dir = File.join(root, slug(cwd))
     FileUtils.mkdir_p(dir)
     File.join(dir, "#{id}.jsonl")
-  end
-
-  # @rbs path: String
-  # @rbs return: Hash[Symbol, untyped]?
-  def header_of(path)
-    line = File.foreach(path).first
-    entry = parse(line) if line
-    entry if entry.is_a?(Hash) && entry[:type] == 'header'
   end
 
   # @rbs id: String
@@ -116,6 +107,28 @@ class Riffer::Rig::Stores::JSONL
   def slug(cwd)
     slug = cwd.gsub(/[^A-Za-z0-9._-]+/, '-').gsub(/\A-+|-+\z/, '')
     slug.empty? || slug.match?(/\A\.{1,2}\z/) ? '-' : slug
+  end
+
+  # A session's last update is its file's mtime: appends are the only writes.
+  # The store stamps it while it holds the artifact, so the listed header
+  # carries it.
+  # @rbs path: String
+  # @rbs return: ::Riffer::Rig::Stores::Header?
+  def header_of(path)
+    line = File.foreach(path).first
+    hash = parse(line) if line
+    return nil unless hash && hash[:type] == Riffer::Rig::Stores::Header::TYPE
+
+    Riffer::Rig::Stores::Header.from_hash(hash, updated: File.mtime(path))
+  end
+
+  # @rbs line: String
+  # @rbs return: Riffer::Rig::Stores::entry?
+  def entry_of(line)
+    hash = parse(line)
+    return nil unless hash
+
+    ENTRY_TYPES[hash[:type]]&.from_hash(hash)
   end
 
   # @rbs line: String
