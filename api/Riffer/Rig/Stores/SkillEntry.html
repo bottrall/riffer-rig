@@ -5,17 +5,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>class Riffer::Rig::Terminal::Wrapper - riffer-rig API Reference</title>
+<title>class Riffer::Rig::Stores::SkillEntry - riffer-rig API Reference</title>
 
 
   <meta
     name="keywords"
-    content="ruby,class,Riffer::Rig::Terminal::Wrapper"
+    content="ruby,class,Riffer::Rig::Stores::SkillEntry"
   >
 
     <meta
       name="description"
-      content="Documentation for the Riffer::Rig::Terminal::Wrapper class"
+      content="Documentation for the Riffer::Rig::Stores::SkillEntry class"
     >
 
 
@@ -24,13 +24,13 @@
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="class Riffer::Rig::Terminal::Wrapper - riffer-rig API Reference">
+<meta property="og:title" content="class Riffer::Rig::Stores::SkillEntry - riffer-rig API Reference">
 
 
 
     <meta
       property="og:description"
-      content="Documentation for Riffer::Rig::Terminal::Wrapper class - API reference and code examples"
+      content="Documentation for Riffer::Rig::Stores::SkillEntry class - API reference and code examples"
     >
 
 
@@ -39,13 +39,13 @@
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="class Riffer::Rig::Terminal::Wrapper - riffer-rig API Reference">
+<meta name="twitter:title" content="class Riffer::Rig::Stores::SkillEntry - riffer-rig API Reference">
 
 
 
     <meta
       name="twitter:description"
-      content="Documentation for Riffer::Rig::Terminal::Wrapper class - API reference and code examples"
+      content="Documentation for Riffer::Rig::Stores::SkillEntry class - API reference and code examples"
     >
 
 
@@ -430,6 +430,30 @@
 
 
   
+<div id="includes-section" class="nav-section">
+  <details class="nav-section-collapsible" open>
+    <summary class="nav-section-header">
+      <span class="nav-section-icon">
+        <svg><use href="#icon-includes"></use></svg>
+      </span>
+      <span class="nav-section-title">Included Modules</span>
+      <span class="nav-section-chevron">
+        <svg><use href="#icon-chevron"></use></svg>
+      </span>
+    </summary>
+
+    <ul class="nav-list">
+
+      <li>
+
+        <a class="include" href="../Support/Equatable.html">Riffer::Rig::Support::Equatable</a>
+
+      </li>
+
+    </ul>
+  </details>
+</div>
+
 
   
 
@@ -446,6 +470,8 @@
         </span>
       </summary>
       <ul class="nav-list" role="directory">
+
+        <li ><a href="#method-c-from_hash">from_hash</a></li>
 
         <li ><a href="#method-c-new">new</a></li>
 
@@ -468,9 +494,7 @@
       </summary>
       <ul class="nav-list" role="directory">
 
-        <li ><a href="#method-i-3C-3C">&lt;&lt;</a></li>
-
-        <li ><a href="#method-i-flush">flush</a></li>
+        <li ><a href="#method-i-to_h">to_h</a></li>
 
       </ul>
     </details>
@@ -495,7 +519,7 @@
 
 </nav>
 
-<main role="main" aria-labelledby="class-riffer-rig-terminal-wrapper">
+<main role="main" aria-labelledby="class-riffer-rig-stores-skillentry">
   
   
     <ol role="navigation" aria-label="Breadcrumb navigation" class="breadcrumb">
@@ -514,23 +538,23 @@
       
       <li>
         
-        <a href="../../../Riffer/Rig/Terminal.html">Terminal</a><span class="separator">::</span>
+        <a href="../../../Riffer/Rig/Stores.html">Stores</a><span class="separator">::</span>
         
       </li>
       
       <li>
         
-        <span>Wrapper</span>
+        <span>SkillEntry</span>
         
       </li>
       
     </ol>
   
 
-  <span id="class-Riffer::Rig::Terminal::Wrapper" class="legacy-anchor"></span>
-  <h1 id="class-riffer-rig-terminal-wrapper" class="anchor-link class page-title">
+  <span id="class-Riffer::Rig::Stores::SkillEntry" class="legacy-anchor"></span>
+  <h1 id="class-riffer-rig-stores-skillentry" class="anchor-link class page-title">
     <span class="page-title-kind">class</span>
-    <span class="page-title-name">Riffer::Rig::Terminal::Wrapper</span>
+    <span class="page-title-name">Riffer::Rig::Stores::SkillEntry</span>
   </h1>
 
   <section class="description">
@@ -545,7 +569,51 @@
 
 
 
+    <section class="constants-list">
+      <header>
+        <h3 id="untitled-constants"><a href="#untitled-constants">Constants</a></h3>
+      </header>
+      <dl>
 
+        <dt id="TYPE">TYPE</dt>
+
+        <dd>
+
+          
+        </dd>
+
+
+      </dl>
+    </section>
+
+
+
+    <section class="attribute-method-details method-section">
+      <header>
+        <h3 id="untitled-attributes"><a href="#untitled-attributes">Attributes</a></h3>
+      </header>
+
+
+      <div id="attribute-i-skill" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-skill" title="Link to this attribute">
+            <span class="method-name">skill</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+          <span class="method-type-signature"><code>String</code></span>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>@dynamic skill</p>
+
+        </div>
+      </div>
+
+    </section>
 
 
 
@@ -558,6 +626,60 @@
        </header>
 
 
+      <div id="method-c-from_hash" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-c-from_hash" title="Link to this method">
+                  <span class="method-name">from_hash</span>
+                  <span class="method-args">(hash)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(Hash[Symbol, untyped] hash) &rarr; ::<a href="SkillEntry.html" class="rbs-type">Riffer::Rig::Stores::SkillEntry</a>?</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="from_hash-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/skill_entry.rb, line 13</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">from_hash</span>(<span class="ruby-identifier">hash</span>)
+  <span class="ruby-identifier">skill</span> = <span class="ruby-identifier">hash</span>[<span class="ruby-value">:</span><span class="ruby-value">skill</span>]
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">nil</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">skill</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">String</span>)
+
+  <span class="ruby-identifier">new</span>(<span class="ruby-value">skill</span><span class="ruby-value">:</span> <span class="ruby-identifier">skill</span>)
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs hash: Hash[Symbol, untyped] @rbs return: ::Riffer::Rig::Stores::SkillEntry?</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
       <div id="method-c-new" class="method-detail anchor-link ">
         <div class="method-header">
           <div class="method-heading-group">
@@ -565,13 +687,13 @@
               <div class="method-heading">
                 <a href="#method-c-new" title="Link to this method">
                   <span class="method-name">new</span>
-                  <span class="method-args">(width:, indent:)</span>
+                  <span class="method-args">(skill:)</span>
                 </a>
               </div>
 
 
 
-            <pre class="method-type-signature"><code>(width: Integer?, indent: Integer) &rarr; void</code></pre>
+            <pre class="method-type-signature"><code>(skill: String) &rarr; void</code></pre>
 
           </div>
 
@@ -586,11 +708,10 @@
 
 
           <div class="method-source-code" id="new-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/wrapper.rb, line 11</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-value">width:</span>, <span class="ruby-value">indent:</span>)
-  <span class="ruby-ivar">@width</span> = <span class="ruby-identifier">width</span>
-  <span class="ruby-ivar">@indent</span> = <span class="ruby-identifier">indent</span>
-  <span class="ruby-ivar">@line</span> = <span class="ruby-operator">+</span><span class="ruby-string">&#39;</span><span class="ruby-string">&#39;</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/skill_entry.rb, line 22</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-value">skill:</span>)
+  <span class="ruby-ivar">@skill</span> = <span class="ruby-identifier">skill</span>
+  <span class="ruby-identifier">freeze</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
 
@@ -599,7 +720,7 @@
         <div class="method-description">
 
 
-          <p>@rbs width: Integer? @rbs indent: Integer @rbs return: void</p>
+          <p>@rbs skill: String @rbs return: void</p>
 
 
         </div>
@@ -625,76 +746,20 @@
        </header>
 
 
-      <div id="method-i-3C-3C" class="method-detail anchor-link ">
+      <div id="method-i-to_h" class="method-detail anchor-link ">
         <div class="method-header">
           <div class="method-heading-group">
 
               <div class="method-heading">
-                <a href="#method-i-3C-3C" title="Link to this method">
-                  <span class="method-name">&lt;&lt;</span>
-                  <span class="method-args">(text)</span>
-                </a>
-              </div>
-
-
-
-            <pre class="method-type-signature"><code>(String text) &rarr; String</code></pre>
-
-          </div>
-
-
-            <div class="method-controls">
-              <details class="method-source-toggle">
-                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
-              </details>
-            </div>
-
-        </div>
-
-
-          <div class="method-source-code" id="3C-3C-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/wrapper.rb, line 19</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">&lt;&lt;</span>(<span class="ruby-identifier">text</span>)
-  <span class="ruby-ivar">@line</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">text</span>
-  <span class="ruby-identifier">out</span> = <span class="ruby-operator">+</span><span class="ruby-string">&#39;</span><span class="ruby-string">&#39;</span>
-  <span class="ruby-keyword">while</span> (<span class="ruby-identifier">logical</span> = <span class="ruby-identifier">take_line</span>)
-    <span class="ruby-identifier">out</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">physical_lines</span>(<span class="ruby-identifier">logical</span>)
-  <span class="ruby-keyword">end</span>
-  <span class="ruby-identifier">out</span>
-<span class="ruby-keyword">end</span></pre>
-          </div>
-
-
-
-        <div class="method-description">
-
-
-          <p>@rbs text: String @rbs return: String</p>
-
-
-        </div>
-
-
-
-
-
-      </div>
-
-
-      <div id="method-i-flush" class="method-detail anchor-link ">
-        <div class="method-header">
-          <div class="method-heading-group">
-
-              <div class="method-heading">
-                <a href="#method-i-flush" title="Link to this method">
-                  <span class="method-name">flush</span>
+                <a href="#method-i-to_h" title="Link to this method">
+                  <span class="method-name">to_h</span>
                   <span class="method-args">()</span>
                 </a>
               </div>
 
 
 
-            <pre class="method-type-signature"><code>() &rarr; String</code></pre>
+            <pre class="method-type-signature"><code>() &rarr; Hash[Symbol, untyped]</code></pre>
 
           </div>
 
@@ -708,13 +773,10 @@
         </div>
 
 
-          <div class="method-source-code" id="flush-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/wrapper.rb, line 29</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">flush</span>
-  <span class="ruby-identifier">out</span> = <span class="ruby-operator">+</span><span class="ruby-string">&#39;</span><span class="ruby-string">&#39;</span>
-  <span class="ruby-identifier">out</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">physical_lines</span>(<span class="ruby-ivar">@line</span>) <span class="ruby-keyword">unless</span> <span class="ruby-ivar">@line</span>.<span class="ruby-identifier">strip</span>.<span class="ruby-identifier">empty?</span>
-  <span class="ruby-ivar">@line</span> = <span class="ruby-operator">+</span><span class="ruby-string">&#39;</span><span class="ruby-string">&#39;</span>
-  <span class="ruby-identifier">out</span>
+          <div class="method-source-code" id="to_h-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/stores/skill_entry.rb, line 28</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">to_h</span>
+  { <span class="ruby-value">type</span><span class="ruby-value">:</span> <span class="ruby-constant">TYPE</span>, <span class="ruby-value">skill</span><span class="ruby-value">:</span> <span class="ruby-ivar">@skill</span> }
 <span class="ruby-keyword">end</span></pre>
           </div>
 
@@ -723,7 +785,7 @@
         <div class="method-description">
 
 
-          <p>@rbs return: String</p>
+          <p>@rbs return: Hash[Symbol, untyped]</p>
 
 
         </div>

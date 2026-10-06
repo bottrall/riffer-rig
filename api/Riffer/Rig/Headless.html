@@ -5,17 +5,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>module Riffer::Rig::Tools - riffer-rig API Reference</title>
+<title>class Riffer::Rig::Headless - riffer-rig API Reference</title>
 
 
   <meta
     name="keywords"
-    content="ruby,module,Riffer::Rig::Tools"
+    content="ruby,class,Riffer::Rig::Headless"
   >
 
     <meta
       name="description"
-      content="Documentation for the Riffer::Rig::Tools module"
+      content="Documentation for the Riffer::Rig::Headless class"
     >
 
 
@@ -24,13 +24,13 @@
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="module Riffer::Rig::Tools - riffer-rig API Reference">
+<meta property="og:title" content="class Riffer::Rig::Headless - riffer-rig API Reference">
 
 
 
     <meta
       property="og:description"
-      content="Documentation for Riffer::Rig::Tools module - API reference and code examples"
+      content="Documentation for Riffer::Rig::Headless class - API reference and code examples"
     >
 
 
@@ -39,13 +39,13 @@
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="module Riffer::Rig::Tools - riffer-rig API Reference">
+<meta name="twitter:title" content="class Riffer::Rig::Headless - riffer-rig API Reference">
 
 
 
     <meta
       name="twitter:description"
-      content="Documentation for Riffer::Rig::Tools module - API reference and code examples"
+      content="Documentation for Riffer::Rig::Headless class - API reference and code examples"
     >
 
 
@@ -102,7 +102,7 @@
 
 
 
-<body role="document" class="module has-toc">
+<body role="document" class="class has-toc">
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <!-- Chevron (right arrow) - used for expand/collapse -->
   <symbol
@@ -413,13 +413,68 @@
   
 
   
+<div id="parent-class-section" class="nav-section">
+  <details class="nav-section-collapsible" open>
+    <summary class="nav-section-header">
+      <span class="nav-section-icon">
+        <svg><use href="#icon-ancestors"></use></svg>
+      </span>
+      <span class="nav-section-title">Ancestors</span>
+      <span class="nav-section-chevron">
+        <svg><use href="#icon-chevron"></use></svg>
+      </span>
+    </summary>
+    <ul><li>Object</li></ul>
+  </details>
+</div>
+
 
   
 
   
 
   
+  <div class="nav-section">
+    <details class="nav-section-collapsible" open>
+      <summary class="nav-section-header">
+        <span class="nav-section-icon">
+          <svg><use href="#icon-class-methods"></use></svg>
+        </span>
+        <span class="nav-section-title">Class Methods</span>
+        <span class="nav-section-chevron">
+          <svg><use href="#icon-chevron"></use></svg>
+        </span>
+      </summary>
+      <ul class="nav-list" role="directory">
 
+        <li ><a href="#method-c-for">for</a></li>
+
+        <li ><a href="#method-c-new">new</a></li>
+
+      </ul>
+    </details>
+  </div>
+
+
+
+  <div class="nav-section">
+    <details class="nav-section-collapsible" open>
+      <summary class="nav-section-header">
+        <span class="nav-section-icon">
+          <svg><use href="#icon-instance-methods"></use></svg>
+        </span>
+        <span class="nav-section-title">Instance Methods</span>
+        <span class="nav-section-chevron">
+          <svg><use href="#icon-chevron"></use></svg>
+        </span>
+      </summary>
+      <ul class="nav-list" role="directory">
+
+        <li ><a href="#method-i-run">run</a></li>
+
+      </ul>
+    </details>
+  </div>
 
 
   <div id="classindex-section" class="nav-section">
@@ -440,7 +495,7 @@
 
 </nav>
 
-<main role="main" aria-labelledby="module-riffer-rig-tools">
+<main role="main" aria-labelledby="class-riffer-rig-headless">
   
   
     <ol role="navigation" aria-label="Breadcrumb navigation" class="breadcrumb">
@@ -459,17 +514,17 @@
       
       <li>
         
-        <span>Tools</span>
+        <span>Headless</span>
         
       </li>
       
     </ol>
   
 
-  <span id="module-Riffer::Rig::Tools" class="legacy-anchor"></span>
-  <h1 id="module-riffer-rig-tools" class="anchor-link module page-title">
-    <span class="page-title-kind">module</span>
-    <span class="page-title-name">Riffer::Rig::Tools</span>
+  <span id="class-Riffer::Rig::Headless" class="legacy-anchor"></span>
+  <h1 id="class-riffer-rig-headless" class="anchor-link class page-title">
+    <span class="page-title-kind">class</span>
+    <span class="page-title-name">Riffer::Rig::Headless</span>
   </h1>
 
   <section class="description">
@@ -484,6 +539,30 @@
 
 
 
+    <section class="constants-list">
+      <header>
+        <h3 id="untitled-constants"><a href="#untitled-constants">Constants</a></h3>
+      </header>
+      <dl>
+
+        <dt id="STOPPED_WITHOUT_COMPLETING">STOPPED_WITHOUT_COMPLETING</dt>
+
+        <dd>
+
+          <p>The plan’s exit-3 set: the cap plus the provider stop reasons that mean the turn ended without completing. Riffer’s remaining stop reasons (:error, :other, :guardrail_blocked) are runtime failures and map to 1.</p>
+        </dd>
+
+
+        <dt id="USAGE_ERROR">USAGE_ERROR</dt>
+
+        <dd>
+
+          
+        </dd>
+
+
+      </dl>
+    </section>
 
 
 
@@ -492,10 +571,196 @@
 
 
 
+     <section id="public-class-untitled-method-details" class="method-section anchor-link">
+       <header>
+         <h3 id="public-class-untitled-methods"><a href="#public-class-untitled-methods">Public Class Methods</a></h3>
+       </header>
+
+
+      <div id="method-c-for" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-c-for" title="Link to this method">
+                  <span class="method-name">for</span>
+                  <span class="method-args">(input:, output:, error:, verbose: false)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(input: IO, output: IO, error: IO, ?verbose: bool) &rarr; <a href="Headless.html" class="rbs-type">Riffer::Rig::Headless</a></code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="for-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/headless.rb, line 25</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">for</span>(<span class="ruby-value">input:</span>, <span class="ruby-value">output:</span>, <span class="ruby-value">error:</span>, <span class="ruby-value">verbose:</span> <span class="ruby-keyword">false</span>)
+  <span class="ruby-identifier">host</span> = <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Headless</span><span class="ruby-operator">::</span><span class="ruby-constant">Host</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">error</span><span class="ruby-value">:</span> <span class="ruby-identifier">error</span>)
+  <span class="ruby-identifier">new</span>(<span class="ruby-value">input</span><span class="ruby-value">:</span> <span class="ruby-identifier">input</span>, <span class="ruby-value">output</span><span class="ruby-value">:</span> <span class="ruby-identifier">output</span>, <span class="ruby-value">error</span><span class="ruby-value">:</span> <span class="ruby-identifier">error</span>, <span class="ruby-value">host</span><span class="ruby-value">:</span> <span class="ruby-identifier">host</span>, <span class="ruby-value">verbose</span><span class="ruby-value">:</span> <span class="ruby-identifier">verbose</span>)
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs input: IO @rbs output: IO @rbs error: IO @rbs verbose: bool @rbs return: <a href="Headless.html"><code>Riffer::Rig::Headless</code></a></p>
+
+
+        </div>
 
 
 
 
+
+      </div>
+
+
+      <div id="method-c-new" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-c-new" title="Link to this method">
+                  <span class="method-name">new</span>
+                  <span class="method-args">(input:, output:, error:, host:, verbose: false)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(input: IO, output: IO, error: IO, host: <a href="Headless/Host.html" class="rbs-type">Riffer::Rig::Headless::Host</a>, ?verbose: bool) &rarr; void</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="new-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/headless.rb, line 36</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-value">input:</span>, <span class="ruby-value">output:</span>, <span class="ruby-value">error:</span>, <span class="ruby-value">host:</span>, <span class="ruby-value">verbose:</span> <span class="ruby-keyword">false</span>)
+  <span class="ruby-ivar">@input</span> = <span class="ruby-identifier">input</span>
+  <span class="ruby-ivar">@output</span> = <span class="ruby-identifier">output</span>
+  <span class="ruby-ivar">@error</span> = <span class="ruby-identifier">error</span>
+  <span class="ruby-ivar">@host</span> = <span class="ruby-identifier">host</span>
+  <span class="ruby-ivar">@verbose</span> = <span class="ruby-identifier">verbose</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs input: IO @rbs output: IO @rbs error: IO @rbs host: <a href="Headless/Host.html"><code>Riffer::Rig::Headless::Host</code></a> @rbs verbose: bool @rbs return: void</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+    </section>
+
+
+
+
+
+
+
+     <section id="public-instance-untitled-method-details" class="method-section anchor-link">
+       <header>
+         <h3 id="public-instance-untitled-methods"><a href="#public-instance-untitled-methods">Public Instance Methods</a></h3>
+       </header>
+
+
+      <div id="method-i-run" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-run" title="Link to this method">
+                  <span class="method-name">run</span>
+                  <span class="method-args">(prompt:) { |host| ... }</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(prompt: String?) { (Riffer::Rig::Hosts::_Host) &rarr; <a href="Runtime.html" class="rbs-type">Riffer::Rig::Runtime</a> } &rarr; Integer</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="run-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/headless.rb, line 47</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">run</span>(<span class="ruby-value">prompt:</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">build</span>)
+  <span class="ruby-identifier">text</span> = <span class="ruby-identifier">prompt_text</span>(<span class="ruby-identifier">prompt</span>)
+  <span class="ruby-keyword">return</span> <span class="ruby-identifier">usage_error</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">text</span>.<span class="ruby-identifier">empty?</span>
+
+  <span class="ruby-identifier">drive</span>(<span class="ruby-keyword">yield</span>(<span class="ruby-ivar">@host</span>), <span class="ruby-identifier">text</span>)
+<span class="ruby-keyword">rescue</span> <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Loader</span><span class="ruby-operator">::</span><span class="ruby-constant">ConfigurationError</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">e</span>
+  <span class="ruby-ivar">@error</span>.<span class="ruby-identifier">puts</span>(<span class="ruby-string">&quot;</span><span class="ruby-string">riffer: </span><span class="ruby-string">#{</span><span class="ruby-identifier">e</span>.<span class="ruby-identifier">message</span><span class="ruby-string">}</span><span class="ruby-string">&quot;</span>)
+  <span class="ruby-constant">USAGE_ERROR</span>
+<span class="ruby-keyword">rescue</span> <span class="ruby-constant">Interrupt</span>
+  <span class="ruby-value">130</span>
+<span class="ruby-keyword">rescue</span> <span class="ruby-constant">StandardError</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">e</span>
+  <span class="ruby-ivar">@error</span>.<span class="ruby-identifier">puts</span>(<span class="ruby-string">&quot;</span><span class="ruby-string">riffer: </span><span class="ruby-string">#{</span><span class="ruby-identifier">e</span>.<span class="ruby-identifier">message</span><span class="ruby-string">}</span><span class="ruby-string">&quot;</span>)
+  <span class="ruby-value">1</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs prompt: String? @rbs &amp;build: (Riffer::Rig::Hosts::_Host) -&gt; <a href="Runtime.html"><code>Riffer::Rig::Runtime</code></a> @rbs return: Integer</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+    </section>
 
 
 

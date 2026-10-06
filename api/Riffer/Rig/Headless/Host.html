@@ -5,17 +5,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>class Riffer::Rig::Terminal::Wrapper - riffer-rig API Reference</title>
+<title>class Riffer::Rig::Headless::Host - riffer-rig API Reference</title>
 
 
   <meta
     name="keywords"
-    content="ruby,class,Riffer::Rig::Terminal::Wrapper"
+    content="ruby,class,Riffer::Rig::Headless::Host"
   >
 
     <meta
       name="description"
-      content="Documentation for the Riffer::Rig::Terminal::Wrapper class"
+      content="Documentation for the Riffer::Rig::Headless::Host class"
     >
 
 
@@ -24,13 +24,13 @@
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="class Riffer::Rig::Terminal::Wrapper - riffer-rig API Reference">
+<meta property="og:title" content="class Riffer::Rig::Headless::Host - riffer-rig API Reference">
 
 
 
     <meta
       property="og:description"
-      content="Documentation for Riffer::Rig::Terminal::Wrapper class - API reference and code examples"
+      content="Documentation for Riffer::Rig::Headless::Host class - API reference and code examples"
     >
 
 
@@ -39,13 +39,13 @@
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="class Riffer::Rig::Terminal::Wrapper - riffer-rig API Reference">
+<meta name="twitter:title" content="class Riffer::Rig::Headless::Host - riffer-rig API Reference">
 
 
 
     <meta
       name="twitter:description"
-      content="Documentation for Riffer::Rig::Terminal::Wrapper class - API reference and code examples"
+      content="Documentation for Riffer::Rig::Headless::Host class - API reference and code examples"
     >
 
 
@@ -468,9 +468,15 @@
       </summary>
       <ul class="nav-list" role="directory">
 
-        <li ><a href="#method-i-3C-3C">&lt;&lt;</a></li>
+        <li ><a href="#method-i-ask">ask</a></li>
 
-        <li ><a href="#method-i-flush">flush</a></li>
+        <li ><a href="#method-i-capabilities">capabilities</a></li>
+
+        <li ><a href="#method-i-confirm">confirm</a></li>
+
+        <li ><a href="#method-i-notify">notify</a></li>
+
+        <li ><a href="#method-i-progress">progress</a></li>
 
       </ul>
     </details>
@@ -495,7 +501,7 @@
 
 </nav>
 
-<main role="main" aria-labelledby="class-riffer-rig-terminal-wrapper">
+<main role="main" aria-labelledby="class-riffer-rig-headless-host">
   
   
     <ol role="navigation" aria-label="Breadcrumb navigation" class="breadcrumb">
@@ -514,23 +520,23 @@
       
       <li>
         
-        <a href="../../../Riffer/Rig/Terminal.html">Terminal</a><span class="separator">::</span>
+        <a href="../../../Riffer/Rig/Headless.html">Headless</a><span class="separator">::</span>
         
       </li>
       
       <li>
         
-        <span>Wrapper</span>
+        <span>Host</span>
         
       </li>
       
     </ol>
   
 
-  <span id="class-Riffer::Rig::Terminal::Wrapper" class="legacy-anchor"></span>
-  <h1 id="class-riffer-rig-terminal-wrapper" class="anchor-link class page-title">
+  <span id="class-Riffer::Rig::Headless::Host" class="legacy-anchor"></span>
+  <h1 id="class-riffer-rig-headless-host" class="anchor-link class page-title">
     <span class="page-title-kind">class</span>
-    <span class="page-title-name">Riffer::Rig::Terminal::Wrapper</span>
+    <span class="page-title-name">Riffer::Rig::Headless::Host</span>
   </h1>
 
   <section class="description">
@@ -544,6 +550,23 @@
 
 
 
+
+    <section class="constants-list">
+      <header>
+        <h3 id="untitled-constants"><a href="#untitled-constants">Constants</a></h3>
+      </header>
+      <dl>
+
+        <dt id="CAPABILITIES">CAPABILITIES</dt>
+
+        <dd>
+
+          
+        </dd>
+
+
+      </dl>
+    </section>
 
 
 
@@ -565,13 +588,13 @@
               <div class="method-heading">
                 <a href="#method-c-new" title="Link to this method">
                   <span class="method-name">new</span>
-                  <span class="method-args">(width:, indent:)</span>
+                  <span class="method-args">(error: $stderr)</span>
                 </a>
               </div>
 
 
 
-            <pre class="method-type-signature"><code>(width: Integer?, indent: Integer) &rarr; void</code></pre>
+            <pre class="method-type-signature"><code>(?error: IO) &rarr; void</code></pre>
 
           </div>
 
@@ -586,11 +609,9 @@
 
 
           <div class="method-source-code" id="new-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/wrapper.rb, line 11</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-value">width:</span>, <span class="ruby-value">indent:</span>)
-  <span class="ruby-ivar">@width</span> = <span class="ruby-identifier">width</span>
-  <span class="ruby-ivar">@indent</span> = <span class="ruby-identifier">indent</span>
-  <span class="ruby-ivar">@line</span> = <span class="ruby-operator">+</span><span class="ruby-string">&#39;</span><span class="ruby-string">&#39;</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/headless/host.rb, line 10</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-value">error:</span> <span class="ruby-identifier">$stderr</span>)
+  <span class="ruby-ivar">@error</span> = <span class="ruby-identifier">error</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
 
@@ -599,7 +620,7 @@
         <div class="method-description">
 
 
-          <p>@rbs width: Integer? @rbs indent: Integer @rbs return: void</p>
+          <p>@rbs error: IO @rbs return: void</p>
 
 
         </div>
@@ -625,20 +646,20 @@
        </header>
 
 
-      <div id="method-i-3C-3C" class="method-detail anchor-link ">
+      <div id="method-i-ask" class="method-detail anchor-link ">
         <div class="method-header">
           <div class="method-heading-group">
 
               <div class="method-heading">
-                <a href="#method-i-3C-3C" title="Link to this method">
-                  <span class="method-name">&lt;&lt;</span>
-                  <span class="method-args">(text)</span>
+                <a href="#method-i-ask" title="Link to this method">
+                  <span class="method-name">ask</span>
+                  <span class="method-args">(question = nil, options: nil, secret: false)</span>
                 </a>
               </div>
 
 
 
-            <pre class="method-type-signature"><code>(String text) &rarr; String</code></pre>
+            <pre class="method-type-signature"><code>(?String? question, ?options: Array[String]?, ?secret: bool) &rarr; String?</code></pre>
 
           </div>
 
@@ -652,15 +673,10 @@
         </div>
 
 
-          <div class="method-source-code" id="3C-3C-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/wrapper.rb, line 19</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">&lt;&lt;</span>(<span class="ruby-identifier">text</span>)
-  <span class="ruby-ivar">@line</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">text</span>
-  <span class="ruby-identifier">out</span> = <span class="ruby-operator">+</span><span class="ruby-string">&#39;</span><span class="ruby-string">&#39;</span>
-  <span class="ruby-keyword">while</span> (<span class="ruby-identifier">logical</span> = <span class="ruby-identifier">take_line</span>)
-    <span class="ruby-identifier">out</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">physical_lines</span>(<span class="ruby-identifier">logical</span>)
-  <span class="ruby-keyword">end</span>
-  <span class="ruby-identifier">out</span>
+          <div class="method-source-code" id="ask-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/headless/host.rb, line 23</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">ask</span>(<span class="ruby-identifier">question</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-value">options:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">secret:</span> <span class="ruby-keyword">false</span>)
+  <span class="ruby-keyword">nil</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
 
@@ -669,7 +685,7 @@
         <div class="method-description">
 
 
-          <p>@rbs text: String @rbs return: String</p>
+          <p>@rbs question: String? @rbs options: <a href="String">Array</a>? @rbs secret: bool @rbs return: String?</p>
 
 
         </div>
@@ -681,20 +697,20 @@
       </div>
 
 
-      <div id="method-i-flush" class="method-detail anchor-link ">
+      <div id="method-i-capabilities" class="method-detail anchor-link ">
         <div class="method-header">
           <div class="method-heading-group">
 
               <div class="method-heading">
-                <a href="#method-i-flush" title="Link to this method">
-                  <span class="method-name">flush</span>
+                <a href="#method-i-capabilities" title="Link to this method">
+                  <span class="method-name">capabilities</span>
                   <span class="method-args">()</span>
                 </a>
               </div>
 
 
 
-            <pre class="method-type-signature"><code>() &rarr; String</code></pre>
+            <pre class="method-type-signature"><code>() &rarr; Set[Symbol]</code></pre>
 
           </div>
 
@@ -708,13 +724,10 @@
         </div>
 
 
-          <div class="method-source-code" id="flush-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/wrapper.rb, line 29</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">flush</span>
-  <span class="ruby-identifier">out</span> = <span class="ruby-operator">+</span><span class="ruby-string">&#39;</span><span class="ruby-string">&#39;</span>
-  <span class="ruby-identifier">out</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">physical_lines</span>(<span class="ruby-ivar">@line</span>) <span class="ruby-keyword">unless</span> <span class="ruby-ivar">@line</span>.<span class="ruby-identifier">strip</span>.<span class="ruby-identifier">empty?</span>
-  <span class="ruby-ivar">@line</span> = <span class="ruby-operator">+</span><span class="ruby-string">&#39;</span><span class="ruby-string">&#39;</span>
-  <span class="ruby-identifier">out</span>
+          <div class="method-source-code" id="capabilities-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/headless/host.rb, line 15</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">capabilities</span>
+  <span class="ruby-constant">CAPABILITIES</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
 
@@ -723,7 +736,161 @@
         <div class="method-description">
 
 
-          <p>@rbs return: String</p>
+          <p>@rbs return: <a href="Symbol">Set</a></p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-confirm" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-confirm" title="Link to this method">
+                  <span class="method-name">confirm</span>
+                  <span class="method-args">(question = nil)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(?String? question) &rarr; bool</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="confirm-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/headless/host.rb, line 29</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">confirm</span>(<span class="ruby-identifier">question</span> = <span class="ruby-keyword">nil</span>)
+  <span class="ruby-keyword">false</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs question: String? @rbs return: bool</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-notify" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-notify" title="Link to this method">
+                  <span class="method-name">notify</span>
+                  <span class="method-args">(message = nil, level: :info)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(?String? message, ?level: Symbol) &rarr; void</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="notify-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/headless/host.rb, line 36</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">notify</span>(<span class="ruby-identifier">message</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-value">level:</span> <span class="ruby-value">:</span><span class="ruby-value">info</span>)
+  <span class="ruby-ivar">@error</span>.<span class="ruby-identifier">puts</span>(<span class="ruby-identifier">message</span>.<span class="ruby-identifier">to_s</span>)
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs message: String? @rbs level: Symbol @rbs return: void</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-progress" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-progress" title="Link to this method">
+                  <span class="method-name">progress</span>
+                  <span class="method-args">(label = nil, &amp;block)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(?String? label) ?{ () &rarr; void } &rarr; void</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="progress-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/headless/host.rb, line 43</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">progress</span>(<span class="ruby-identifier">label</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-ivar">@error</span>.<span class="ruby-identifier">puts</span>(<span class="ruby-identifier">label</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">label</span>
+  <span class="ruby-identifier">block</span>&amp;.<span class="ruby-identifier">call</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs label: String? @rbs &amp;block: ? () -&gt; void @rbs return: void</p>
 
 
         </div>

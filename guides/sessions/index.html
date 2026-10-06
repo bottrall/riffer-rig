@@ -23,7 +23,7 @@
             <a href="/guides/getting-started/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.10.0</span>
+            <span class="version">v0.11.0</span>
           </div>
         </nav>
       </div>
@@ -142,7 +142,7 @@
 
 <h2 id="the-session-store">The session store</h2>
 
-<p>The Loader appends to a store: any object implementing the four <code>Riffer::Rig::Stores::_Store</code> methods — <code>append(id, entry)</code>, <code>read(id)</code>, <code>list(cwd: nil)</code> and <code>delete(id)</code>. It defaults to <code>Stores::JSONL</code> and takes <code>store:</code> per build; a Rails host implements the four over its own tables and passes its own. Hosts never see the store — they only choose which session to drive.</p>
+<p>The Loader appends to a store: any object implementing the four <code>Riffer::Rig::Stores::_Store</code> methods — <code>append(id, entry)</code>, <code>read(id)</code>, <code>list(cwd: nil)</code> and <code>delete(id)</code>. Entries cross the store as typed POROs — <code>Stores::Header</code>, <code>Stores::MessageEntry</code>, <code>Stores::ModelEntry</code> and <code>Stores::SkillEntry</code> — and each store serialises them itself; <code>Hash</code> remains only where it is already the documented currency, the JSON lines on disk and the riffer message payloads. The store defaults to <code>Stores::JSONL</code> and is taken per build with <code>store:</code>; a Rails host implements the four over its own tables and passes its own. Hosts never see the store — they only choose which session to drive.</p>
 
 <h2 id="where-sessions-live">Where sessions live</h2>
 
@@ -150,30 +150,30 @@
 
 <h2 id="what-an-entry-holds">What an entry holds</h2>
 
-<p>Each line is a JSON object with a <code>type</code>:</p>
+<p>Each entry is a frozen PORO in <code>Riffer::Rig::Stores</code> — a new entry type is a new class. The JSONL store serialises each one to a line of JSON under its <code>type</code>; the line holds:</p>
 
 <table>
   <thead>
     <tr>
-      <th><code>type</code></th>
+      <th>Class</th>
       <th>Holds</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><code>header</code></td>
-      <td>written on the first message: <code>schema_version</code>, <code>id</code>, <code>cwd</code>, <code>created_at</code>, <code>model</code>, <code>riffer_rig_version</code>, <code>riffer_version</code>, <code>title</code> (the first prompt truncated to one line)</td>
+      <td><code>Stores::Header</code></td>
+      <td>written on the first message: <code>schema_version</code>, <code>id</code>, <code>cwd</code>, <code>created_at</code>, <code>model</code>, <code>riffer_rig_version</code>, <code>riffer_version</code>, <code>title</code> (the first prompt truncated to one line); the store stamps the listed header with <code>updated</code></td>
     </tr>
     <tr>
-      <td><code>message</code></td>
+      <td><code>Stores::MessageEntry</code></td>
       <td>one conversation message as a riffer message hash under <code>message</code>, appended as it lands; the system message is not among them</td>
     </tr>
     <tr>
-      <td><code>model</code></td>
+      <td><code>Stores::ModelEntry</code></td>
       <td>one per <code>/model</code> switch, holding the new <code>model</code> string</td>
     </tr>
     <tr>
-      <td><code>skill</code></td>
+      <td><code>Stores::SkillEntry</code></td>
       <td>one per skill the model activated, holding the skill name; a <code>/skill:&lt;name&gt;</code> run is not one</td>
     </tr>
   </tbody>
@@ -214,7 +214,7 @@
   </tbody>
 </table>
 
-<p><code>Stores::JSONL</code> dates a session by its file’s mtime, which its last append set; <code>continue</code> picks the most recently <code>updated</code> session wherever <code>list</code> happens to place it.</p>
+<p>A listed header carries the session’s update time as <code>updated</code>, stamped by the store while it holds the physical artifact — for <code>Stores::JSONL</code> the file’s mtime, which its last append set; <code>continue</code> picks the most recently <code>updated</code> session wherever <code>list</code> happens to place it.</p>
 
 <p>On the command line, <code>riffer -c</code> continues the most recent session in the directory and <code>riffer -r &lt;id&gt;</code> resumes by id. With no match the REPL tells you and starts fresh.</p>
 

@@ -23,7 +23,7 @@
             <a href="/guides/getting-started/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.10.0</span>
+            <span class="version">v0.11.0</span>
           </div>
         </nav>
       </div>
@@ -127,14 +127,81 @@
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
             <ul>
-              <li><a href="#the-ndjson-shape">The NDJSON shape</a></li>
-              <li><a href="#the-flag">The flag</a></li>
+              <li><a href="#the-prompt">The prompt</a></li>
+              <li><a href="#output">Output</a></li>
+              <li><a href="#flags">Flags</a></li>
+              <li><a href="#exit-codes">Exit codes</a></li>
+              <li><a href="#the-ndjson-shape---json-coming">The NDJSON shape (--json, coming)</a></li>
             </ul>
           </nav>
           
-<p>Run the agent with no terminal: one prompt on stdin, the event stream as NDJSON on stdout, exit code from how the turn ended. A pipe in, a pipe out — CI jobs, cron jobs, and other tools drive riffer-rig exactly as a human does, minus the TTY.</p>
+<p>Run one prompt with no terminal: <code>riffer -p "prompt"</code> runs a single turn through everything the REPL loads and exits with a code that says how it ended. A pipe in, a pipe out — CI jobs, cron jobs, and other tools drive riffer-rig exactly as a human does, minus the TTY.</p>
 
-<h2 id="the-ndjson-shape">The NDJSON shape</h2>
+<h2 id="the-prompt">The prompt</h2>
+
+<p>The prompt is the argument:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>riffer <span class="nt">-p</span> <span class="s2">"what does this repo do"</span>
+</code></pre></div></div>
+
+<p>Piped stdin is appended to the argument as context, and with no argument stdin alone is the prompt. A TTY stdin is never read, so <code>riffer -p</code> in a terminal without an argument has nothing to run and exits 2.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git diff | riffer <span class="nt">-p</span> <span class="s2">"review this diff"</span>   <span class="c"># argument + stdin as context</span>
+<span class="nb">echo</span> <span class="s2">"explain this diff"</span> | riffer <span class="nt">-p</span>      <span class="c"># stdin is the prompt</span>
+</code></pre></div></div>
+
+<p>The turn is one prompt: slash commands are not dispatched, and the session is saved like any other unless <code>--no-save</code> is given.</p>
+
+<h2 id="output">Output</h2>
+
+<p>By default only the assistant’s text is printed, streamed to stdout. Everything else goes to stderr: errors, configuration refusals, and the <a href="/guides/hosts/">notify</a> lines extensions and the Runtime emit. Reasoning is not printed. <code>--verbose</code> adds a one-line trace of each tool call to stderr.</p>
+
+<h2 id="flags">Flags</h2>
+
+<p>The REPL’s flags all work here: <code>--model provider/name</code>, <code>--no-extensions</code>, <code>--no-skills</code>, <code>--no-agents-md</code>, <code>--tools a,b,c</code>, <code>--max-steps N</code>, <code>--no-save</code>, <code>-c</code>/<code>--continue</code> and <code>-r ID</code>/<code>--resume ID</code>, plus <code>--verbose</code>. The same <a href="/guides/providers/overview/#resolution-order">resolution order</a> applies to the model: <code>--model</code>, then <code>RIFFER_MODEL</code>, then settings.</p>
+
+<p><code>-c</code> and <code>-r</code> are the multi-turn headless story: <code>riffer -p -c "now run the tests"</code> continues the most recent session in this directory, appending to the same <a href="/guides/sessions/#resuming">session file</a>. Unlike the REPL, a missing session is not a fresh start — headless prints <code>No saved session …</code> on stderr and exits 2.</p>
+
+<p>Headless never prompts. A missing model, a missing credential, or a missing optional SDK is not an interactive setup flow — the reason is printed on stderr with the provider’s recipe (its environment variables and key URL), or the exact <code>gem install</code> line, and the process exits 2.</p>
+
+<h2 id="exit-codes">Exit codes</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Exit</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>0</code></td>
+      <td>the turn finished</td>
+    </tr>
+    <tr>
+      <td><code>1</code></td>
+      <td>runtime error: provider failure, network failure, an exception in a tool or handler</td>
+    </tr>
+    <tr>
+      <td><code>2</code></td>
+      <td>usage or configuration: unknown flag, no prompt, a bare model name, no credentials, a missing optional SDK</td>
+    </tr>
+    <tr>
+      <td><code>3</code></td>
+      <td>the turn ended but did not complete: <code>max_steps</code>, <code>context_window</code>, <code>length</code>, <code>content_filter</code>, or <code>malformed_output</code>; the reason is on stderr</td>
+    </tr>
+    <tr>
+      <td><code>130</code></td>
+      <td>SIGINT: the turn is cancelled first — orphaned tool calls healed, the session closed — then exit</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>A script that only needs success or failure can therefore test the code alone; a caller that wants the reason reads stderr or waits for <code>--json</code> (below).</p>
+
+<h2 id="the-ndjson-shape---json-coming">The NDJSON shape (<code>--json</code>, coming)</h2>
+
+<p>The <code>--json</code> flag — one JSON object per line for every Runtime event — is specified but not built yet; see the ticket. The shape it will print to:</p>
 
 <p>Every event riffer-rig emits is printed as one JSON object per line — riffer’s <code>StreamEvents</code> plus the rig-level events from <code>Riffer::Rig::Events</code>, verbatim from each event’s <code>to_h</code> (a <code>TokenUsage</code> value serializes through its own <code>to_h</code>, as riffer’s own <code>token_usage_done</code> event does). Every record carries a <code>"type"</code> field: the snake_case event name (<code>text_delta</code>, <code>tool_call_done</code>, <code>session_start</code>, <code>turn_end</code>, …).</p>
 
@@ -146,13 +213,9 @@
 </span><span class="p">{</span><span class="nl">"stop_reason"</span><span class="p">:</span><span class="s2">"completed"</span><span class="p">,</span><span class="nl">"usage"</span><span class="p">:{</span><span class="nl">"input_tokens"</span><span class="p">:</span><span class="mi">1423</span><span class="p">,</span><span class="nl">"output_tokens"</span><span class="p">:</span><span class="mi">89</span><span class="p">},</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"turn_end"</span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p><code>turn_end</code> is always the last record of a prompt: <code>stop_reason</code> is riffer’s outcome vocabulary (<code>completed</code>, <code>length</code>, <code>max_steps</code>, <code>interrupted</code>, …) plus <code>cancelled</code> for a turn ended by <code>Runtime#cancel</code>, <code>usage</code> is the run’s token totals, and <code>cost</code> (USD, present when the model is priced) rides on <code>usage</code>. A consumer that only reads the last line still knows how the turn ended and what it cost.</p>
+<p><code>turn_end</code> is always the last record of a prompt: <code>stop_reason</code> is riffer’s outcome vocabulary (<code>completed</code>, <code>length</code>, <code>max_steps</code>, <code>cancelled</code>, …), <code>usage</code> is the run’s token totals, and <code>cost</code> (USD, present when the model is priced) rides on <code>usage</code>. A consumer that only reads the last line still knows how the turn ended and what it cost. A fatal configuration or runtime error is a last <code>{"type": "error", ...}</code> line.</p>
 
-<p>Rig events beyond <code>session_start</code> and <code>turn_end</code> — <code>session_end</code>, <code>command_output</code>, <code>skill_activated</code>, <code>notify</code> — will appear in the same stream once the snapshot and rebuild tickets land: one consumer then sees everything the terminal sees. <code>notify</code> mirrors every <code>host.notify</code>, including extension errors.</p>
-
-<h2 id="the-flag">The flag</h2>
-
-<p>The <code>--headless</code>/<code>-p</code> flag that runs this mode is coming in a later ticket; the shape above is the contract it prints to. Embedders who want headless behaviour today drive <code>Riffer::Rig::Runtime.prompt</code> themselves and serialize each event with <code>JSON.generate(event.to_h)</code> — the same code path the flag will use.</p>
+<p>Embedders who want this behaviour today drive <code>Riffer::Rig::Runtime.prompt</code> themselves and serialize each event with <code>JSON.generate(event.to_h)</code> — the same code path the flag will use.</p>
 
         </article>
 
