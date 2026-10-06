@@ -64,7 +64,8 @@ class Riffer::Rig::CLI::Sessions
   def list(host, all: false)
     loader(host)
       .list(all: all)
-      .sort_by { |header| header.updated ? -header.updated.to_f : 0.0 }
+      # The id breaks mtime ties so the rows never shuffle under sort_by.
+      .sort_by { |header| [header.updated ? -header.updated.to_f : 0.0, header.id] }
       .map { |header| row(header) }
   end
 

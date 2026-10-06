@@ -93,7 +93,7 @@ describe Riffer::Rig::Terminal do
     File.write(File.join(dir, 'SKILL.md'), "---\nname: #{name}\ndescription: Skill #{name}.\n---\nDo #{name}.\n")
   end
 
-  def seed_session(title, cwd: @cwd)
+  def seed_session(title, cwd: @cwd, updated: Time.now)
     runtime = Riffer::Rig::Loader.runtime(
       cwd: cwd,
       host: Riffer::Rig::Hosts::Null.new,
@@ -105,7 +105,9 @@ describe Riffer::Rig::Terminal do
     )
     runtime.prompt(title) { |event| event } # the turn only runs when its events are consumed
     runtime.close
-    session_file_for(title, cwd: cwd)
+    path = session_file_for(title, cwd: cwd)
+    File.utime(updated, updated, path)
+    path
   end
 
   def session_files
@@ -356,7 +358,7 @@ describe Riffer::Rig::Terminal do
     end
 
     it 'switches to a numbered row' do
-      path = seed_session('fix the login bug')
+      path = seed_session('fix the login bug', updated: Time.now - 3600)
       seed_session('add picker tests')
 
       run_terminal("/resume\n2\ntell me more\n")
@@ -390,7 +392,7 @@ describe Riffer::Rig::Terminal do
     end
 
     it 'deletes a session after Ctrl-D and confirm' do
-      seed_session('fix the login bug')
+      seed_session('fix the login bug', updated: Time.now - 3600)
       seed_session('add picker tests')
 
       run_terminal("/resume\n\x04\n1\ny\n")
@@ -399,7 +401,7 @@ describe Riffer::Rig::Terminal do
     end
 
     it 'keeps the unconfirmed session' do
-      seed_session('fix the login bug')
+      seed_session('fix the login bug', updated: Time.now - 3600)
       seed_session('add picker tests')
 
       run_terminal("/resume\n\x04\n1\nn\n")
