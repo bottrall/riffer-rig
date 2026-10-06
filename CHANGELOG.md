@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.0](https://github.com/bottrall/riffer-rig/compare/v0.10.0...v0.11.0) (2026-10-06)
+
+
+### Features
+
+* riffer -p runs one prompt headless with exit codes ([#226](https://github.com/bottrall/riffer-rig/issues/226)) ([eaa91d6](https://github.com/bottrall/riffer-rig/commit/eaa91d625eb303e4dc8a08c317ea38fc136a729d)), closes [#137](https://github.com/bottrall/riffer-rig/issues/137)
+* store entries as typed POROs at the store boundary ([#225](https://github.com/bottrall/riffer-rig/issues/225)) ([05431e5](https://github.com/bottrall/riffer-rig/commit/05431e583c412ee7c3551dadd61db1089af465a9))
+
 ## [0.10.0](https://github.com/bottrall/riffer-rig/compare/v0.9.0...v0.10.0) (2026-10-05)
 
 
