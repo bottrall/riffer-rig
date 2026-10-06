@@ -33,6 +33,7 @@ module Riffer::Rig::CLI
     return refuse(flags, error) if flags.is_a?(String)
     return help(output) if flags.help
     return refuse('--verbose is only available with -p', error) if flags.verbose && !headless_mode
+    return refuse('--json is only available with -p', error) if flags.json && !headless_mode
 
     return headless(flags, input:, output:, error:, env:, cwd:, home:) if headless_mode
 
@@ -55,7 +56,8 @@ module Riffer::Rig::CLI
       input: input,
       output: output,
       error: error,
-      verbose: flags.verbose
+      verbose: flags.verbose,
+      json: flags.json
     ).run(prompt: flags.prompt) do |host|
       started = sessions.find(host)
       raise Riffer::Rig::Loader::ConfigurationError, sessions.missing if started.nil? && sessions.asked?

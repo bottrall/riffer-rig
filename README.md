@@ -63,7 +63,7 @@ git diff | riffer -p "review this diff"   # piped stdin appended as context
 echo "explain this diff" | riffer -p      # piped stdin alone is the prompt
 ```
 
-Everything loads exactly as the REPL does, the shared flags work the same — `-c` and `-r` included: `riffer -p -c "now run the tests"` continues the most recent session in this directory, and a missing session exits 2 ([Headless](docs/HEADLESS.md)). The session is saved like any other unless `--no-save`. Only the assistant's text is printed, streamed to stdout; errors and warnings go to stderr, and `--verbose` adds a one-line trace of each tool call there. Headless never prompts: a missing model, credential, or SDK prints the reason on stderr and exits 2.
+Everything loads exactly as the REPL does, the shared flags work the same — `-c` and `-r` included: `riffer -p -c "now run the tests"` continues the most recent session in this directory, and a missing session exits 2 ([Headless](docs/HEADLESS.md)). The session is saved like any other unless `--no-save`. Only the assistant's text is printed, streamed to stdout; errors and warnings go to stderr, and `--verbose` adds a one-line trace of each tool call there. With `--json`, stdout is instead one JSON object per line for every Runtime event — the NDJSON stream ([Headless](docs/HEADLESS.md#the-ndjson-stream---json)). Headless never prompts: a missing model, credential, or SDK prints the reason on stderr and exits 2.
 
 The exit code says how the turn ended: `0` finished, `1` runtime error, `2` usage or configuration, `3` the turn ended without completing (`--max-steps`, a full context window, a provider content filter), `130` SIGINT (the turn is cancelled first).
 

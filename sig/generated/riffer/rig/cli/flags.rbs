@@ -6,7 +6,7 @@ class Riffer::Rig::CLI::Flags
   # The tokens OptionParser reports a missing argument for when -r is bare.
   BARE_RESUME: Array[String]
 
-  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save, verbose, prompt, continue, resume
+  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save, verbose, json, prompt, continue, resume
   attr_reader model: String?
 
   attr_reader extensions: bool
@@ -18,6 +18,8 @@ class Riffer::Rig::CLI::Flags
   attr_reader help: bool
 
   attr_reader verbose: bool
+
+  attr_reader json: bool
 
   attr_reader tools: Array[String]?
 
@@ -65,10 +67,11 @@ class Riffer::Rig::CLI::Flags
   # @rbs max_steps: Integer?
   # @rbs save: bool
   # @rbs verbose: bool
+  # @rbs json: bool
   # @rbs prompt: String?
   # @rbs continue: bool
   # @rbs resume: String?
   # @rbs help: bool
   # @rbs return: void
-  def initialize: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?verbose: bool, ?prompt: String?, ?continue: bool, ?resume: String?, ?help: bool) -> void
+  def initialize: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?verbose: bool, ?json: bool, ?prompt: String?, ?continue: bool, ?resume: String?, ?help: bool) -> void
 end

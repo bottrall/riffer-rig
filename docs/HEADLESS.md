@@ -43,21 +43,23 @@ Headless never prompts. A missing model, a missing credential, or a missing opti
 
 A script that only needs success or failure can therefore test the code alone; a caller that wants the reason reads stderr or waits for `--json` (below).
 
-## The NDJSON shape (`--json`, coming)
+## The NDJSON stream (`--json`)
 
-The `--json` flag — one JSON object per line for every Runtime event — is specified but not built yet; see the ticket. The shape it will print to:
-
-Every event riffer-rig emits is printed as one JSON object per line — riffer's `StreamEvents` plus the rig-level events from `Riffer::Rig::Events`, verbatim from each event's `to_h` (a `TokenUsage` value serializes through its own `to_h`, as riffer's own `token_usage_done` event does). Every record carries a `"type"` field: the snake_case event name (`text_delta`, `tool_call_done`, `session_start`, `turn_end`, …).
+`--json` replaces the streamed text with one JSON object per line on stdout, one record for every event the Runtime yields: riffer's [StreamEvents](https://github.com/bottrall/riffer) plus the rig-level events (`session_start`, `notify`, `turn_end`). The envelope is flat — the event's `to_h` fields, plus a `"type"` of the snake_case event class (`text_delta`, `tool_call_done`, `session_start`, `turn_end`, …). Nested riffer values (a `TokenUsage`, an assistant message, a tool response) serialize through their own `to_h`.
 
 ```json
-{"id":"0198…","reason":"new","type":"session_start"}
-{"role":"assistant","content":"Re","type":"text_delta"}
+{"type":"session_start","id":"0198…","reason":"new"}
+{"message":"heads up","level":"warning","type":"notify"}
+{"role":"assistant","content":"Reading the failing test first. ","type":"text_delta"}
 {"role":"assistant","content":"Reading the failing test first.","type":"text_done"}
-{"role":"assistant","name":"read","type":"tool_call_done"}
+{"role":"assistant","item_id":"call_1","name":"read","arguments_delta":"{\"path\":\"x\"}","type":"tool_call_delta"}
+{"role":"assistant","item_id":"call_1","call_id":"call_1","name":"read","arguments":"{\"path\":\"x\"}","type":"tool_call_done"}
 {"role":"assistant","token_usage":{"input_tokens":1423,"output_tokens":89},"type":"token_usage_done"}
 {"stop_reason":"completed","usage":{"input_tokens":1423,"output_tokens":89},"type":"turn_end"}
 ```
 
-`turn_end` is always the last record of a prompt: `stop_reason` is riffer's outcome vocabulary (`completed`, `length`, `max_steps`, `cancelled`, …), `usage` is the run's token totals, and `cost` (USD, present when the model is priced) rides on `usage`. A consumer that only reads the last line still knows how the turn ended and what it cost. A fatal configuration or runtime error is a last `{"type": "error", ...}` line.
+`session_start` is the first record, carrying the session id. The remaining StreamEvents follow the turn in order — the ones a tool-using turn produces are shown above; reasoning (`reasoning_delta`, `reasoning_done`), web search (`web_search_status`, `web_search_done`), finish reasons, guardrails and interrupts serialize the same way whenever the provider emits them. `turn_end` is always the last record of a prompt: `stop_reason` is riffer's outcome vocabulary (`completed`, `length`, `max_steps`, `cancelled`, …), `usage` is the run's token totals, and `cost` (USD, present when the model is priced) rides on `usage`. A consumer that only reads the last line still knows how the turn ended and what it cost.
 
-Embedders who want this behaviour today drive `Riffer::Rig::Runtime.prompt` themselves and serialize each event with `JSON.generate(event.to_h)` — the same code path the flag will use.
+Warnings and notify lines that headless prints on stderr in text mode ride the stream as `notify` records in `--json`; `progress` and the `--verbose` tool trace stay on stderr. The `before_prompt`, `before_tool_call`, `before_request`, `after_response` and `after_tool_call` events are extension-hook traffic, not Runtime output, so they never appear on the stream.
+
+A fatal error — a failed configuration, no prompt, or an exception mid-turn — is a last `{"type": "error", "message": "…"}` record and the exit code above. Everything else on stderr stays on stderr: the exit-3 stop reason is printed there as in text mode and also rides on `turn_end`.

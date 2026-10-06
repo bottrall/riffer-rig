@@ -27,6 +27,14 @@ describe Riffer::Rig::Headless::Host do
     assert_equal "heads up\n", @error.string
   end
 
+  it 'keeps a notify off stderr in --json mode' do
+    host = Riffer::Rig::Headless::Host.new(error: @error, json: true)
+
+    host.notify('heads up', level: :warning)
+
+    assert_empty @error.string
+  end
+
   it 'prints a progress label to stderr' do
     @host.progress('installing') { nil }
 

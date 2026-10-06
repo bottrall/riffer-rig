@@ -15,16 +15,18 @@ class Riffer::Rig::Headless
   # @rbs @error: IO
   # @rbs @host: Riffer::Rig::Headless::Host
   # @rbs @verbose: bool
+  # @rbs @json: bool
   # @rbs @streamed_text: bool
 
   # @rbs input: IO
   # @rbs output: IO
   # @rbs error: IO
   # @rbs verbose: bool
+  # @rbs json: bool
   # @rbs return: Riffer::Rig::Headless
-  def self.for(input:, output:, error:, verbose: false)
-    host = Riffer::Rig::Headless::Host.new(error: error)
-    new(input: input, output: output, error: error, host: host, verbose: verbose)
+  def self.for(input:, output:, error:, verbose: false, json: false)
+    host = Riffer::Rig::Headless::Host.new(error: error, json: json)
+    new(input: input, output: output, error: error, host: host, verbose: verbose, json: json)
   end
 
   # @rbs input: IO
@@ -32,13 +34,15 @@ class Riffer::Rig::Headless
   # @rbs error: IO
   # @rbs host: Riffer::Rig::Headless::Host
   # @rbs verbose: bool
+  # @rbs json: bool
   # @rbs return: void
-  def initialize(input:, output:, error:, host:, verbose: false)
+  def initialize(input:, output:, error:, host:, verbose: false, json: false)
     @input = input
     @output = output
     @error = error
     @host = host
     @verbose = verbose
+    @json = json
   end
 
   # @rbs prompt: String?
@@ -50,13 +54,11 @@ class Riffer::Rig::Headless
 
     drive(yield(@host), text)
   rescue Riffer::Rig::Loader::ConfigurationError => e
-    @error.puts("riffer: #{e.message}")
-    USAGE_ERROR
+    fatal(e.message, USAGE_ERROR)
   rescue Interrupt
     130
   rescue StandardError => e
-    @error.puts("riffer: #{e.message}")
-    1
+    fatal(e.message, 1)
   end
 
   private
@@ -70,8 +72,19 @@ class Riffer::Rig::Headless
 
   # @rbs return: Integer
   def usage_error
-    @error.puts('riffer: no prompt: pass one as an argument, or pipe it to stdin')
-    USAGE_ERROR
+    fatal('no prompt: pass one as an argument, or pipe it to stdin', USAGE_ERROR)
+  end
+
+  # @rbs message: String
+  # @rbs code: Integer
+  # @rbs return: Integer
+  def fatal(message, code)
+    if @json
+      @output.write(Ndjson.error(message))
+    else
+      @error.puts("riffer: #{message}")
+    end
+    code
   end
 
   # @rbs runtime: Riffer::Rig::Runtime
@@ -97,13 +110,13 @@ class Riffer::Rig::Headless
         case event
         when Riffer::Rig::Events::TurnEnd
           stop_reason = event.stop_reason
+          @output.write(Ndjson.line(event)) if @json
         else
           handle(event)
         end
       end
     rescue StandardError => e
-      @error.puts("riffer: #{e.message}")
-      return 1
+      return fatal(e.message, 1)
     ensure
       Signal.trap('INT', previous)
     end
@@ -113,6 +126,8 @@ class Riffer::Rig::Headless
   # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
   # @rbs return: void
   def handle(event)
+    return @output.write(Ndjson.line(event)) if @json
+
     case event
     when Riffer::StreamEvents::TextDelta
       @output.write(event.content)

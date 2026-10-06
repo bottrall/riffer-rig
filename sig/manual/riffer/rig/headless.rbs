@@ -1,0 +1,7 @@
+# RBS declarations rbs-inline cannot express. `json` is the shape an event
+# graph serializes to: riffer and rig events carry riffer's `untyped` payload
+# values, so the NDJSON writer narrows them at the output boundary.
+
+class Riffer::Rig::Headless
+  type json = String | Integer | Float | bool | nil | Array[json] | Hash[String, json]
+end

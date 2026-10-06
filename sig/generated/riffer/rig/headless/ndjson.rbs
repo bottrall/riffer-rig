@@ -1,0 +1,27 @@
+# Generated from lib/riffer/rig/headless/ndjson.rb with RBS::Inline
+
+module Riffer::Rig::Headless::Ndjson
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: String
+  def line: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> String
+
+  # @rbs message: String
+  # @rbs return: String
+  def error: (String message) -> String
+
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: Hash[String, Riffer::Rig::Headless::json]
+  def envelope: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> Hash[String, Riffer::Rig::Headless::json]
+
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs return: Hash[String, Riffer::Rig::Headless::json]
+  def json_hash: (Hash[Symbol, untyped] hash) -> Hash[String, Riffer::Rig::Headless::json]
+
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: String
+  def event_type: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> String
+
+  # @rbs value: untyped
+  # @rbs return: Riffer::Rig::Headless::json
+  def json_value: (untyped value) -> Riffer::Rig::Headless::json
+end

@@ -5,9 +5,12 @@ class Riffer::Rig::Headless::Host
 
   @error: IO
 
+  @json: bool
+
   # @rbs error: IO
+  # @rbs json: bool
   # @rbs return: void
-  def initialize: (?error: IO) -> void
+  def initialize: (?error: IO, ?json: bool) -> void
 
   # @rbs return: Set[Symbol]
   def capabilities: () -> Set[Symbol]

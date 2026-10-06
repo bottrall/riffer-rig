@@ -12,9 +12,9 @@ class Riffer::Rig::CLI::Flags
   # The tokens OptionParser reports a missing argument for when -r is bare.
   BARE_RESUME = %w[-r --resume].freeze #: Array[String]
 
-  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save, verbose, prompt, continue, resume
+  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save, verbose, json, prompt, continue, resume
   attr_reader :model #: String?
-  attr_reader :extensions, :skills, :agents_md, :help, :verbose #: bool
+  attr_reader :extensions, :skills, :agents_md, :help, :verbose, :json #: bool
   attr_reader :tools #: Array[String]?
   attr_reader :max_steps #: Integer?
   attr_reader :save #: bool
@@ -72,6 +72,7 @@ class Riffer::Rig::CLI::Flags
       parser.on('-r ID', '--resume ID', String, 'Resume the session with this id; bare -r opens the picker in the REPL')
       parser.on('-p', '--print', 'Run one prompt headless and exit; the prompt is the argument, else stdin')
       parser.on('--verbose', 'With -p, trace each tool call to stderr')
+      parser.on('--json', 'With -p, stream every Runtime event as NDJSON to stdout')
       parser.on('-h', '--help', 'Show this help')
     end
   end
@@ -92,6 +93,7 @@ class Riffer::Rig::CLI::Flags
       max_steps: values[:'max-steps'],
       save: !values.key?(:'no-save'),
       verbose: values.key?(:verbose),
+      json: values.key?(:json),
       prompt: prompt ? head : nil,
       continue: values.key?(:continue),
       resume: bare_resume ? '' : values[:resume],
@@ -108,6 +110,7 @@ class Riffer::Rig::CLI::Flags
   # @rbs max_steps: Integer?
   # @rbs save: bool
   # @rbs verbose: bool
+  # @rbs json: bool
   # @rbs prompt: String?
   # @rbs continue: bool
   # @rbs resume: String?
@@ -122,6 +125,7 @@ class Riffer::Rig::CLI::Flags
     max_steps: nil,
     save: true,
     verbose: false,
+    json: false,
     prompt: nil,
     continue: false,
     resume: nil,
@@ -135,6 +139,7 @@ class Riffer::Rig::CLI::Flags
     @max_steps = max_steps
     @save = save
     @verbose = verbose
+    @json = json
     @prompt = prompt
     @continue = continue
     @resume = resume
