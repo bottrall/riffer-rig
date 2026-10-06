@@ -75,14 +75,34 @@ describe Riffer::Rig::CLI do
     assert_includes @error.string, 'invalid option: --bogus'
   end
 
-  it 'stubs riffer -p until headless lands' do
-    assert_equal 2, start('-p', 'hello')
+  it 'runs one prompt headless and returns zero' do
+    assert_equal 0,
+                 start(
+                   '-p',
+                   'hello',
+                   input: '',
+                   env: { 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test' }
+                 )
   end
 
-  it 'says riffer -p is not available yet' do
-    start('-p', 'hello')
+  it 'prints the reply on stdout in headless mode' do
+    start('-p', 'hello', input: '', env: { 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test' })
 
-    assert_includes @error.string, 'riffer -p is not available yet'
+    refute_empty @output.string
+  end
+
+  it 'returns two when -p has no prompt' do
+    assert_equal 2, start('-p', input: '', env: { 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test' })
+  end
+
+  it 'returns two for --verbose without -p' do
+    assert_equal 2, start('--verbose')
+  end
+
+  it 'says --verbose is headless only' do
+    start('--verbose')
+
+    assert_includes @error.string, '--verbose is only available with -p'
   end
 
   it 'stubs riffer acp until ACP lands' do
@@ -154,6 +174,62 @@ describe Riffer::Rig::CLI do
 
     it 'returns two for a bare -r' do
       assert_equal 2, start('-r', env: model_env)
+    end
+
+    describe 'headless' do
+      it 'keeps one header when -p -c continues the session' do
+        start('-p', 'hello', input: '', env: model_env)
+        path = session_files.first
+        start('-p', '-c', 'again', input: '', env: model_env)
+        types = File.readlines(path).map { |line| JSON.parse(line, symbolize_names: true)[:type] }
+
+        assert_equal 1, types.count('header')
+      end
+
+      it 'appends the -p -c turn to the same session file' do
+        start('-p', 'hello', input: '', env: model_env)
+        path = session_files.first
+        saved = File.readlines(path).length
+
+        start('-p', '-c', 'again', input: '', env: model_env)
+
+        assert_operator File.readlines(path).length, :>, saved
+      end
+
+      it 'returns two when -p -c has no saved session' do
+        assert_equal 2, start('-p', '-c', 'again', input: '', env: model_env)
+      end
+
+      it 'says there is no saved session when -p -c has none' do
+        start('-p', '-c', 'again', input: '', env: model_env)
+
+        assert_includes @error.string, 'No saved session in this directory.'
+      end
+
+      it 'returns two for -p -r with an unknown id' do
+        assert_equal 2, start('-p', '-r', 'nope', 'again', input: '', env: model_env)
+      end
+
+      it 'says the session is missing for -p -r with an unknown id' do
+        start('-p', '-r', 'nope', 'again', input: '', env: model_env)
+
+        assert_includes @error.string, 'No saved session nope.'
+      end
+
+      it 'keeps one header when -p -r resumes the session' do
+        start('-p', 'hello', input: '', env: model_env)
+        path = session_files.first
+        id = File.basename(path, '.jsonl')
+
+        start('-p', '-r', id, 'again', input: '', env: model_env)
+        types = File.readlines(path).map { |line| JSON.parse(line, symbolize_names: true)[:type] }
+
+        assert_equal 1, types.count('header')
+      end
+
+      it 'returns two for a bare -p -r' do
+        assert_equal 2, start('-p', '-r', env: model_env)
+      end
     end
   end
 end

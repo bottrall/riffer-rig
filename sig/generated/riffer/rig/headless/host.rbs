@@ -1,0 +1,34 @@
+# Generated from lib/riffer/rig/headless/host.rb with RBS::Inline
+
+class Riffer::Rig::Headless::Host
+  CAPABILITIES: Set[Symbol]
+
+  @error: IO
+
+  # @rbs error: IO
+  # @rbs return: void
+  def initialize: (?error: IO) -> void
+
+  # @rbs return: Set[Symbol]
+  def capabilities: () -> Set[Symbol]
+
+  # @rbs question: String?
+  # @rbs options: Array[String]?
+  # @rbs secret: bool
+  # @rbs return: String?
+  def ask: (?String? question, ?options: Array[String]?, ?secret: bool) -> String?
+
+  # @rbs question: String?
+  # @rbs return: bool
+  def confirm: (?String? question) -> bool
+
+  # @rbs message: String?
+  # @rbs level: Symbol
+  # @rbs return: void
+  def notify: (?String? message, ?level: Symbol) -> void
+
+  # @rbs label: String?
+  # @rbs &block: ? () -> void
+  # @rbs return: void
+  def progress: (?String? label) ?{ () -> void } -> void
+end

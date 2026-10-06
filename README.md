@@ -51,7 +51,21 @@ The model is the first of these that is set: `--model`, `RIFFER_MODEL`, `model` 
 | `-r ID`, `--resume ID`  | resumes the session with id `ID` ([Sessions](docs/SESSIONS.md#resuming))    |
 | `-h`, `--help`          | prints the usage                                                            |
 
-`riffer -p` (one prompt, no terminal) and `riffer acp` (an editor's agent over stdio) are reserved: for now each prints the usage and exits with status 2.
+`riffer acp` (an editor's agent over stdio) is reserved: for now it prints the usage and exits with status 2.
+
+### Headless
+
+Run one prompt with no terminal ([Headless](docs/HEADLESS.md)):
+
+```bash
+riffer -p "what does this repo do"
+git diff | riffer -p "review this diff"   # piped stdin appended as context
+echo "explain this diff" | riffer -p      # piped stdin alone is the prompt
+```
+
+Everything loads exactly as the REPL does, the shared flags work the same — `-c` and `-r` included: `riffer -p -c "now run the tests"` continues the most recent session in this directory, and a missing session exits 2 ([Headless](docs/HEADLESS.md)). The session is saved like any other unless `--no-save`. Only the assistant's text is printed, streamed to stdout; errors and warnings go to stderr, and `--verbose` adds a one-line trace of each tool call there. Headless never prompts: a missing model, credential, or SDK prints the reason on stderr and exits 2.
+
+The exit code says how the turn ended: `0` finished, `1` runtime error, `2` usage or configuration, `3` the turn ended without completing (`--max-steps`, a full context window, a provider content filter), `130` SIGINT (the turn is cancelled first).
 
 ### In the session
 
