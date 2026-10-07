@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.12.0](https://github.com/bottrall/riffer-rig/compare/v0.11.0...v0.12.0) (2026-10-07)
+
+
+### Features
+
+* --json streams every Runtime event as NDJSON ([#231](https://github.com/bottrall/riffer-rig/issues/231)) ([a5e4641](https://github.com/bottrall/riffer-rig/commit/a5e464172cb84fcbfc2fbce0a311c070b54a539a))
+* /resume picker and /new in the terminal ([#232](https://github.com/bottrall/riffer-rig/issues/232)) ([140fbac](https://github.com/bottrall/riffer-rig/commit/140fbac7c7fc966987ee77c78222204bb755e37f))
+* ACP session/load and session/list ([#237](https://github.com/bottrall/riffer-rig/issues/237)) ([db81553](https://github.com/bottrall/riffer-rig/commit/db815536fa940d3f14615fa55b27af63164665ce))
+* resolve secret MCP headers from env and auth.json ([#234](https://github.com/bottrall/riffer-rig/issues/234)) ([6253f95](https://github.com/bottrall/riffer-rig/commit/6253f95932b81e276cec0850f7aa48abdb332b63))
+* riffer acp serves the Runtime over ACP ([#235](https://github.com/bottrall/riffer-rig/issues/235)) ([9497122](https://github.com/bottrall/riffer-rig/commit/9497122cc0cdac3576481f6efeda6e49f595d999))
+
 ## [0.11.0](https://github.com/bottrall/riffer-rig/compare/v0.10.0...v0.11.0) (2026-10-06)
 
 
