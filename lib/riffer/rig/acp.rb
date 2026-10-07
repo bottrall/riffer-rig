@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'acp/sdk'
+require 'time'
 
 # The ACP tier: Runtime events reach the client only through this adapter's
 # mapping, so nothing else in rig may translate an event into an ACP type.
@@ -84,14 +85,14 @@ class Riffer::Rig::ACP
 
   # Serves the connection until the client closes stdin; then the reader
   # thread ends and run returns.
-  # loadSession waits for #141: acp-sdk raises ArgumentError at start when
-  # initialize advertises a method the agent does not define, so the
-  # capability can only be advertised together with load_session.
   # @rbs return: Integer
   def run
     connection = ::ACP::AgentConnection.new(
       transport: ::ACP::Transport::Stdio.new(input: @input, output: @output),
-      capabilities: ::ACP::Types::AgentCapabilities.new,
+      capabilities: ::ACP::Types::AgentCapabilities.new(
+        load_session: true,
+        session_capabilities: ::ACP::Types::SessionCapabilities.new(list: ::ACP::Types::SessionListCapabilities.new)
+      ),
       agent_info: ::ACP::Types::Implementation.new(name: AGENT_NAME, version: Riffer::Rig::VERSION, title: AGENT_TITLE)
     ) do |client|
       @client = client
@@ -136,6 +137,52 @@ class Riffer::Rig::ACP
     end
     ::ACP::Types::PromptResponse.new(stop_reason: stop_reason_of(stop_reason))
   rescue Riffer::Rig::Runtime::BusyError, Riffer::Rig::Runtime::ClosedError => e
+    ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: e.message)
+  end
+
+  # The host takes the session id before the build, so a build-time notify
+  # still reaches the client as an update for this session.
+  # @rbs request: ::ACP::Types::LoadSessionRequest
+  # @rbs return: (::ACP::Types::LoadSessionResponse | ::ACP::RequestError)
+  def load_session(request)
+    host = Riffer::Rig::ACP::Host.new(client: client)
+    host.session_id = request.session_id
+    loader = Riffer::Rig::Loader.new(cwd: request.cwd, host: host, env: @env, home: @home)
+    runtime = loader.resume(request.session_id)
+    return ::ACP::RequestError.resource_not_found unless runtime
+
+    @lock.synchronize do
+      @sessions[request.session_id] = runtime
+      @hosts[request.session_id] = host
+    end
+    loader.messages(request.session_id)
+          .filter_map { |message| replay_of(message) }
+          .each { |update| client.update(request.session_id, update) }
+    ::ACP::Types::LoadSessionResponse.new
+  rescue StandardError => e
+    ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: e.message)
+  end
+
+  # @rbs request: ::ACP::Types::ListSessionsRequest
+  # @rbs return: (::ACP::Types::ListSessionsResponse | ::ACP::RequestError)
+  def list_sessions(request)
+    loader = Riffer::Rig::Loader.new(
+      cwd: request.cwd || Dir.pwd,
+      host: Riffer::Rig::Hosts::Null.new,
+      env: @env,
+      home: @home
+    )
+    headers = request.cwd ? loader.list : loader.list(all: true)
+    sessions = headers.map do |header|
+      ::ACP::Types::SessionInfo.new(
+        session_id: header.id,
+        cwd: header.cwd,
+        title: header.title,
+        updated_at: header.updated&.utc&.iso8601
+      )
+    end
+    ::ACP::Types::ListSessionsResponse.new(sessions: sessions)
+  rescue StandardError => e
     ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: e.message)
   end
 
@@ -233,7 +280,39 @@ class Riffer::Rig::ACP
   # @rbs content: String
   # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
   def message_chunk(content)
-    ::ACP::Types::SessionUpdate::AgentMessageChunk.new(content: ::ACP::Types::ContentBlock::Text.new(text: content))
+    ::ACP::Types::SessionUpdate::AgentMessageChunk.new(content: text_block(content))
+  end
+
+  # @rbs text: String
+  # @rbs return: ::ACP::Types::ContentBlock::Text
+  def text_block(text)
+    ::ACP::Types::ContentBlock::Text.new(text: text)
+  end
+
+  # @rbs message: Hash[Symbol, untyped]
+  # @rbs return: ::ACP::Types::SessionUpdate::t?
+  def replay_of(message)
+    case message[:role]
+    when 'user' then ::ACP::Types::SessionUpdate::UserMessageChunk.new(content: text_block(message[:content].to_s))
+    when 'assistant' then message_chunk(message[:content].to_s)
+    when 'tool' then replayed_tool_call(message)
+    end
+  end
+
+  # The stored result is all a replayed call has: the arguments live in the
+  # assistant message's tool_calls, so the title is the name alone.
+  # @rbs message: Hash[Symbol, untyped]
+  # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
+  def replayed_tool_call(message)
+    name = message[:name].to_s
+    ::ACP::Types::SessionUpdate::ToolCall.new(
+      tool_call_id: message[:tool_call_id].to_s,
+      title: name,
+      name: name,
+      kind: TOOL_KINDS.fetch(name, ::ACP::Types::ToolKind::OTHER),
+      status: ::ACP::Types::ToolCallStatus::COMPLETED,
+      content: [::ACP::Types::ToolCallContent::Content.new(content: text_block(message[:content].to_s))]
+    )
   end
 
   # riffer's stream has no completion boundary for a tool call, so a call goes

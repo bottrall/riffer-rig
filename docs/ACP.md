@@ -30,11 +30,13 @@ Everything loads exactly as the REPL does — settings from both scopes, credent
 - `available_commands_update` lists the Runtime's commands — `/reload`, `/auth`, `/model` and every skill — right after `session/new`.
 - Notify lines ([Extensions](EXTENSIONS.md#error-isolation)) reach the client as `agent_message_chunk` updates. Load-time ones flush right after the `session/new` reply.
 - Tool calls always run: the agent never sends `session/request_permission`, so no tool call waits on the client.
+- `session/list` maps the saved sessions of the store — scoped to the `cwd` the client sends, all of them when it sends none — to ACP session info: the session id, the cwd, the first prompt as the title, and the session file's last update as `updated_at`.
+- `session/load` restores a saved session: a [Loader](EMBEDDING.md#building-a-runtime-with-the-loader) at the request's `cwd` reads the stored entries and rebuilds the Runtime, the stored messages replay as updates in the order they were recorded — user turns as `user_message_chunk`, the assistant's text as `agent_message_chunk`, and each tool result as its completed `tool_call` (the result as its content; the arguments are not replayed) — and then the request answers. A following `session/prompt` continues the conversation; an unknown id fails with resource not found.
 - MCP servers the client sends on `session/new` in stdio shape are declared to the Runtime through the [`rig.mcp` seam](MCP.md#declaring-servers-from-an-extension) as if an extension had declared them, so a reload rebuild keeps them and a same-name declaration replaces them. See [MCP](MCP.md#servers-over-acp) for the stdio limit.
 
 ## What it skips
 
-- `session/load`, `session/list` and the other session-lifecycle methods: the agent does not advertise `loadSession`, and `session/resume`, `session/close`, `session/delete` and `authenticate` are not offered. [Sessions](SESSIONS.md) are still recorded to the store for the terminal to resume.
+- The other session-lifecycle methods: `session/resume`, `session/close`, `session/delete` and `authenticate` are not offered. [Sessions](SESSIONS.md) are still recorded to the store for the terminal to resume.
 - MCP servers in `http` or `sse` shape are skipped with a warning; only the stdio shape is read.
 - Terminal delegation (`terminal/*`) and file delegation (`fs/*`) to the client are never requested, and neither is elicitation.
 - Prompt blocks of other kinds than text and resource links are not advertised in `promptCapabilities`, so a compliant client does not send them.

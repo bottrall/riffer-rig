@@ -63,9 +63,6 @@ class Riffer::Rig::ACP
 
   # Serves the connection until the client closes stdin; then the reader
   # thread ends and run returns.
-  # loadSession waits for #141: acp-sdk raises ArgumentError at start when
-  # initialize advertises a method the agent does not define, so the
-  # capability can only be advertised together with load_session.
   # @rbs return: Integer
   def run: () -> Integer
 
@@ -76,6 +73,16 @@ class Riffer::Rig::ACP
   # @rbs request: ::ACP::Types::PromptRequest
   # @rbs return: (::ACP::Types::PromptResponse | ::ACP::RequestError)
   def prompt: (::ACP::Types::PromptRequest request) -> (::ACP::Types::PromptResponse | ::ACP::RequestError)
+
+  # The host takes the session id before the build, so a build-time notify
+  # still reaches the client as an update for this session.
+  # @rbs request: ::ACP::Types::LoadSessionRequest
+  # @rbs return: (::ACP::Types::LoadSessionResponse | ::ACP::RequestError)
+  def load_session: (::ACP::Types::LoadSessionRequest request) -> (::ACP::Types::LoadSessionResponse | ::ACP::RequestError)
+
+  # @rbs request: ::ACP::Types::ListSessionsRequest
+  # @rbs return: (::ACP::Types::ListSessionsResponse | ::ACP::RequestError)
+  def list_sessions: (::ACP::Types::ListSessionsRequest request) -> (::ACP::Types::ListSessionsResponse | ::ACP::RequestError)
 
   # Runs on the transport's reader thread, so it only sets the cancel flag.
   # @rbs notification: ::ACP::Types::CancelNotification
@@ -129,6 +136,20 @@ class Riffer::Rig::ACP
   # @rbs content: String
   # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
   def message_chunk: (String content) -> ::ACP::Types::SessionUpdate::AgentMessageChunk
+
+  # @rbs text: String
+  # @rbs return: ::ACP::Types::ContentBlock::Text
+  def text_block: (String text) -> ::ACP::Types::ContentBlock::Text
+
+  # @rbs message: Hash[Symbol, untyped]
+  # @rbs return: ::ACP::Types::SessionUpdate::t?
+  def replay_of: (Hash[Symbol, untyped] message) -> ::ACP::Types::SessionUpdate::t?
+
+  # The stored result is all a replayed call has: the arguments live in the
+  # assistant message's tool_calls, so the title is the name alone.
+  # @rbs message: Hash[Symbol, untyped]
+  # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
+  def replayed_tool_call: (Hash[Symbol, untyped] message) -> ::ACP::Types::SessionUpdate::ToolCall
 
   # riffer's stream has no completion boundary for a tool call, so a call goes
   # out once, in progress, when its arguments are complete.

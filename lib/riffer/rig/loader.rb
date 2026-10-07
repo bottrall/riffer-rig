@@ -220,6 +220,17 @@ class Riffer::Rig::Loader
     runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:, snapshot: snapshot_of(entries, id))
   end
 
+  # A host tier may not name the store, so the messages it replays come from
+  # here, in the order they were recorded.
+  # @rbs id: String
+  # @rbs return: Array[Hash[Symbol, untyped]]
+  def messages(id)
+    store = @store
+    return [] unless store
+
+    store.read(id).filter_map { |entry| entry.message if entry.is_a?(Riffer::Rig::Stores::MessageEntry) }
+  end
+
   # @rbs all: bool
   # @rbs return: Array[::Riffer::Rig::Stores::Header]
   def list(all: false)
