@@ -99,6 +99,12 @@ class Riffer::Rig::Loader
   # @rbs return: Riffer::Rig::Runtime?
   def resume: (String id, ?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?) -> Riffer::Rig::Runtime?
 
+  # A host tier may not name the store, so the messages it replays come from
+  # here, in the order they were recorded.
+  # @rbs id: String
+  # @rbs return: Array[Hash[Symbol, untyped]]
+  def messages: (String id) -> Array[Hash[Symbol, untyped]]
+
   # @rbs all: bool
   # @rbs return: Array[::Riffer::Rig::Stores::Header]
   def list: (?all: bool) -> Array[::Riffer::Rig::Stores::Header]

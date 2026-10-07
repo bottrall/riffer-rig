@@ -63,6 +63,30 @@ describe Riffer::Rig::ACP do
     [response, updates]
   end
 
+  def save_session(text)
+    session = new_session
+    reply('Reply.')
+    prompt(session.session_id, text)
+    session
+  end
+
+  def load(session_id)
+    updates = [] #: Array[ACP::Types::SessionUpdate::t]
+    response = @connection.session_load(
+      ACP::Types::LoadSessionRequest.new(cwd: @cwd, mcp_servers: [], session_id: session_id)
+    ) { |update| updates << update }
+    [response, updates]
+  end
+
+  def tool_turn
+    session = new_session
+    File.write(File.join(@cwd, 'subject.txt'), 'contents')
+    reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
+    reply('All done.')
+    prompt(session.session_id, 'hello')
+    session
+  end
+
   def reply(content, tool_calls: [])
     @built_runtimes.last.agent.provider.stub_response(content, tool_calls: tool_calls)
   end
@@ -211,6 +235,66 @@ describe Riffer::Rig::ACP do
     wait_for { message_texts.any? { |text| text.include?('Skipped MCP server httpdocs') } }
 
     assert(message_texts.any? { |text| text.include?('only stdio servers are supported') })
+  end
+
+  it 'lists the saved sessions of the cwd' do
+    first = save_session('first prompt')
+    second = save_session('second prompt')
+
+    response = @connection.session_list(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
+
+    assert_equal [first.session_id, second.session_id].sort, response.sessions.map(&:session_id).sort
+  end
+
+  it 'titles a listed session with its first prompt' do
+    session = save_session("first prompt\nsecond line")
+
+    response = @connection.session_list(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
+    listed = response.sessions.find { |info| info.session_id == session.session_id }
+
+    assert_equal 'first prompt', listed&.title
+  end
+
+  it 'stamps a listed session with its last update' do
+    session = save_session('first prompt')
+
+    response = @connection.session_list(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
+    listed = response.sessions.find { |info| info.session_id == session.session_id }
+
+    assert(Time.iso8601(listed&.updated_at.to_s))
+  end
+
+  it 'replays the stored messages of a loaded session in order' do
+    session = tool_turn
+
+    _response, updates = load(session.session_id)
+
+    replay = updates.map do |update|
+      text = update.is_a?(ACP::Types::SessionUpdate::ToolCall) ? update.name : update.content.text
+      [update.class.name.split('::').last, text]
+    end
+
+    assert_equal(
+      [['UserMessageChunk', 'hello'], ['AgentMessageChunk', 'Reading.'],
+       ['ToolCall', 'read'], ['AgentMessageChunk', 'All done.']],
+      replay
+    )
+  end
+
+  it 'continues the conversation after a load' do
+    session = tool_turn
+    load(session.session_id)
+    prompt(session.session_id, 'again')
+
+    assert_equal 2, @built_runtimes.last.agent.provider.calls.size
+  end
+
+  it 'answers an unknown session id with resource not found' do
+    error = @connection.session_load(
+      ACP::Types::LoadSessionRequest.new(cwd: @cwd, mcp_servers: [], session_id: 'missing')
+    )
+
+    assert_equal ACP::RequestError::RESOURCE_NOT_FOUND, error.code
   end
 
   describe 'namespace' do
