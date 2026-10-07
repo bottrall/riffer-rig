@@ -38,9 +38,10 @@
   <tr><td>Site</td><td>GitHub Pages project site pushed to <code>gh-pages</code> from the publish workflow after a release; custom domain <code>riffer.bottrall.dev</code>.</td></tr>
 </table></div>
 <p class="note">Rows <code>docs/*.md</code> and <code>docs-site/</code> enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/125">#125</a>: <code>docs-site/manifest.yml</code> lists every guide under <code>docs/</code> in reading order (see <a href="#guides">Guides</a> and <a href="#generator">The docs-site generator</a>). One deviation on the <code>docs/*.md</code> row: there is no <code>providers/</code> subdirectory, per the note under <a href="#guides">Guides</a>. The rows Code, <code>README.md</code> and Site are not landed by this.</p>
+<p class="note">Rows <code>README.md</code> and Code enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/144">#144</a>: the README landed its twelve-section user manual (see <a href="#readme">README shape</a>), and the Code row holds across the reboot — everything that is behaviour is code, and the one permanent doc that needed the base prompt's text, <code>docs/INSTRUCTIONS.md</code>, permalinks the source instead of restating it. The Site row landed with <a href="https://github.com/bottrall/riffer-rig/issues/125">#125</a> (see <a href="#deploy">Deploy</a>); its repository Pages settings and DNS remain the pending human steps.</p>
 </section>
 
-<section class="topic" id="readme">
+<section class="topic enshrined" id="readme">
 <h3>README shape</h3>
 <ol>
   <li><strong>Title and tagline.</strong> "riffer, in your terminal and in your process." One paragraph from the thesis: a general-purpose agent for Ruby developers who want to own their harness; runs in the terminal and inside any Ruby process; extend it in Ruby; ships the coding toolkit as its default bundle. The current "dead-simple terminal coding agent" line is replaced here, not before.</li>
@@ -56,6 +57,7 @@
   <li><strong>Releasing.</strong> As today.</li>
   <li><strong>Contributing, License, Maintainer.</strong> As today.</li>
 </ol>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/144">#144</a>, all twelve items. The README carries: the title and the tagline "riffer, in your terminal and in your process." with the thesis paragraph (the "dead-simple terminal coding agent" line replaced here); Requirements; Installation; Usage — <code>riffer</code>, first-run onboarding, <code>riffer -p</code>, <code>riffer acp</code>, the shared flags, the runtime and terminal commands; Authentication — env vars, <code>auth.json</code>, <code>/auth</code>, a pointer to the per-provider pages; Configuration — the two settings scopes, every core key with one line each, <code>RIFFER_MODEL</code>, AGENTS.md, skills, MCP servers; Extending — a ten-line <code>rig.rb</code> example and a pointer to the guide; Embedding — the three-line <code>Loader.runtime(...).ask(...)</code> example and a pointer to the guide; Documentation — every guide linked to <code>https://riffer.bottrall.dev/guides/&lt;slug&gt;/</code> with its one-line description from <code>docs-site/manifest.yml</code>, the guide sources in <code>docs/</code>, and the local preview through <code>bin/docs serve</code>; Development — the <code>bin/</code> table, whose <code>bin/docs</code> and <code>bin/plans</code> rows landed with <a href="https://github.com/bottrall/riffer-rig/issues/125">#125</a>; Releasing; and Contributing, License and Maintainer as they were. No deviations.</p>
 </section>
 
 <section class="topic enshrined" id="guides">
@@ -120,6 +122,7 @@
   <li>Both the plan PR and every docs PR are titled <code>docs: …</code> and never release.</li>
 </ul>
 <p class="note">Bullet 1's "manifest entry, once the generator exists" clause and bullet 2's "If it lands before every other unit, later build PRs still add to the guides" clause enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/125">#125</a>: the generator landed ahead of the other units, so a build PR that creates a guide now adds its <code>docs-site/manifest.yml</code> entry in the same PR, or the build fails, and CI's <code>docs:check</code> validates every guide link and anchor. The rest of bullet 2: the workflow job also landed with <a href="https://github.com/bottrall/riffer-rig/issues/125">#125</a> (see <a href="#deploy">Deploy</a>); <code>OVERVIEW.md</code>, the README top matter and deleting this file wait on the final docs PR.</p>
+<p class="note">The remainder of bullet 2 enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/144">#144</a>, the final docs PR: <code>OVERVIEW.md</code> written, <code>GETTING_STARTED.md</code> completed, the README top matter rewritten to the thesis, and every remaining section on these pages marked enshrined. One deviation: bullet 2 says the docs PR deletes this file, but the plan directory remains as the record of the reboot, still served by <code>bin/plans</code> — nothing in it is ever removed.</p>
 </section>
 
 <h2 id="interfaces">Interfaces</h2>

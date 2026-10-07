@@ -1,8 +1,8 @@
 # riffer-rig
 
-A dead-simple terminal coding agent built on [riffer](https://github.com/janeapp/riffer).
+**riffer, in your terminal and in your process.**
 
-`riffer-rig` is an interactive terminal coding agent with read, write, edit, and bash tools — point it at your project and chat with it from the command line.
+`riffer-rig` is a general-purpose agent for Ruby developers who want to own their harness. It runs as a terminal agent and, because the runtime is separate from the terminal, it also runs inside any Ruby process: a Rails app, a script, a job. You extend it in Ruby: tools, commands, providers and hooks are ordinary Ruby classes on [riffer](https://github.com/janeapp/riffer)'s primitives, and the same objects work whether the host is the terminal or your app. It ships with a coding toolkit (read, write, edit, bash) as the default bundle, because a shell and file access are the most efficient way to get almost any task done — but the prompt gives it no coding identity. [Overview](docs/OVERVIEW.md) has the full thesis.
 
 ## Requirements
 
@@ -77,7 +77,11 @@ Type a prompt and press Enter; the reply streams in, with each tool call and the
 - `/model provider/name` switches the model ([below](#switching-the-model)), and `/skill:<name> [text]` runs a skill ([Skills](docs/SKILLS.md)).
 - Any other `/name args` runs the Runtime command of that name, such as one an extension registers ([Extensions](docs/EXTENSIONS.md)); an unknown name is reported and nothing is sent to the model.
 
-### Authentication
+### Switching the model
+
+`/model provider/name` switches the model for the current session only, keeping the conversation so far — `/model openai/gpt-5`, say. The provider prefix is required: a bare name such as `/model sonnet` is rejected with the list of providers. `/model` alone shows the model in use. Switching runs the same setup for the new provider as startup does: its SDK gem is offered for install (or refused with the exact Gemfile line), and missing credentials are resolved — you are prompted for them when the host can ask, and the values apply to the running session immediately. The switch is refused with one error when the host cannot supply what is missing, and the model is left unchanged. `/model --save` writes the model in effect to the home `settings.json`, so new sessions start with it; `/model provider/name --save` switches and saves in one step, and a refused switch saves nothing ([Configuration](docs/CONFIGURATION.md#model)).
+
+## Authentication
 
 `riffer-rig` talks to the provider named by the model's prefix — `anthropic/claude-sonnet-4-6` means Anthropic. Provide that provider's credentials in either of two ways:
 
@@ -108,33 +112,92 @@ The flat `{"anthropic": "sk-…"}` shape earlier versions wrote is no longer rea
 
 Inside a session, `/auth` lists every provider with where its secret comes from — `env`, `stored`, `chain` (the SDK's own credential chain, for Bedrock) or `missing`. `/auth <provider>` re-runs that provider's setup, which is how you rotate a key, and applies the new values to the current session, so the next request uses them. `/auth remove <provider>` deletes the provider's `auth.json` entry and its `providers` block in settings.
 
-### Switching the model
+## Configuration
 
-`/model provider/name` switches the model for the current session only, keeping the conversation so far — `/model openai/gpt-5`, say. The provider prefix is required: a bare name such as `/model sonnet` is rejected with the list of providers. `/model` alone shows the model in use. Switching runs the same setup for the new provider as startup does: its SDK gem is offered for install (or refused with the exact Gemfile line), and missing credentials are resolved — you are prompted for them when the host can ask, and the values apply to the running session immediately. The switch is refused with one error when the host cannot supply what is missing, and the model is left unchanged. `/model --save` writes the model in effect to the home `settings.json`, so new sessions start with it; `/model provider/name --save` switches and saves in one step, and a refused switch saves nothing ([Configuration](docs/CONFIGURATION.md#model)).
+Settings live in two scopes, both optional: `~/.riffer/settings.json` for every project, and `<cwd>/.riffer/settings.json` for one project, merged key by key with the project winning ([Configuration](docs/CONFIGURATION.md)). Every core key is optional:
 
-### Configuration
+| Key          | What it sets                                                                     |
+| ------------ | -------------------------------------------------------------------------------- |
+| `model`      | the model new sessions start with, as `provider/name`                            |
+| `reasoning`  | the reasoning effort, translated to the provider's own parameter                 |
+| `models`     | prices each model in USD per million tokens                                      |
+| `providers`  | non-secret provider fields such as an endpoint or region (home file only)        |
+| `extensions` | `disabled` — bundled extensions to leave out; `autoload` — gem extension autoload |
+| `reload`     | `"auto"` (default) or `"manual"` — the hot-reload trigger                        |
+| `sessions`   | `save: false` stops saving sessions to the store                                 |
+| `tools`      | the provider-native tool switches (`native`), off by default                     |
 
-- `AGENTS.md` — `~/.riffer/AGENTS.md` and an `AGENTS.md` in the current working directory or any directory above it, whichever exist, are re-read every turn as instructions that take precedence over the default norms ([Instructions](docs/INSTRUCTIONS.md#agentsmd)).
-- Skills — Agent Skills in `.agents/skills/` from the current working directory up to the repository root, and in `~/.agents/skills/`, are offered to the model, and each can be run with `/skill:<name>` ([Skills](docs/SKILLS.md)).
 - `RIFFER_MODEL` — the model for this run as `provider/name`, winning over the `model` setting. A bare name such as `sonnet` is rejected with the list of providers.
-- `~/.riffer/settings.json` — optional user settings, and `<cwd>/.riffer/settings.json` for one project, merged key by key with the project winning. Every key is optional:
+- `AGENTS.md` — `~/.riffer/AGENTS.md` and an `AGENTS.md` in the current working directory or any directory above it are re-read every turn as instructions that take precedence over the default norms ([Instructions](docs/INSTRUCTIONS.md#agentsmd)).
+- Skills — Agent Skills in `.agents/skills/` from the working directory up to the repository root, and in `~/.agents/skills/`, are offered to the model, and `/skill:<name> [text]` runs one ([Skills](docs/SKILLS.md)).
+- MCP servers — declared under the `mcp` key in either settings file and registered with the Runtime ([MCP](docs/MCP.md)).
 
-  ```json
-  {
-    "model": "anthropic/claude-sonnet-4-6",
-    "reasoning": "low",
-    "models": {
-      "anthropic/claude-sonnet-4-6": {
-        "input": 3.0,
-        "output": 15.0,
-        "cache_write": 3.75,
-        "cache_read": 0.3
-      }
-    }
-  }
-  ```
+## Extending
 
-  `model` is the model new sessions start with; a host built on the [Loader](docs/EMBEDDING.md#building-a-runtime-with-the-loader) asks for one when none is set and writes the answer here. `extensions.disabled` (for example `["mcp"]`) leaves bundled extensions out. `models` prices each model in USD per million tokens; [Configuration](docs/CONFIGURATION.md) has every key. `reasoning` is translated to the provider's own parameter — Anthropic accepts `low`, `medium`, `high`, `xhigh` and `max`; OpenAI and OpenRouter accept `low`, `medium`, `high` and `xhigh`. Omitting it, or supplying an unrecognised value, leaves the model's default reasoning behaviour unchanged.
+An extension is a named registrar block in a `rig.rb` file — `~/.riffer/rig.rb` runs in every project, `<project>/.riffer/rig.rb` in one, and the first run of a project file asks you to trust it:
+
+```ruby
+Riffer::Rig.extension('git') do |rig|
+  # A tool the model can call
+  rig.tool GitLog
+
+  # A /log command in the session
+  rig.command('log', description: 'Recent commits') do |ctx|
+    ctx.say `git log --oneline -n #{ctx.args}`
+  end
+
+  # A section appended to the system message, re-read every turn
+  rig.prompt(:branch) { |ctx| "Branch: #{`git branch --show-current`}" }
+end
+```
+
+Tools, commands, prompt sections, event handlers, skills, MCP servers and providers register the same way, and the same objects work whether the host is the terminal or your app. [Extensions](docs/EXTENSIONS.md) has all eight seams, error isolation, and packaging an extension as a gem.
+
+## Embedding
+
+The runtime is separate from the terminal, so the same agent runs inside any Ruby process:
+
+```ruby
+runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: Riffer::Rig::Hosts::Null.new)
+response = runtime.ask('why is this test failing?')
+puts response.content
+```
+
+`Loader.runtime` applies the same filesystem conventions as the terminal — settings, credentials, `rig.rb`, skills. [Embedding](docs/EMBEDDING.md) has the streaming `prompt`, snapshots, and rebuilding after a code reload.
+
+## Documentation
+
+The guides, in reading order:
+
+Start here:
+
+- [Overview](https://riffer.bottrall.dev/guides/overview/) — What riffer-rig is, the four tiers, the runtime and host layers
+- [Getting started](https://riffer.bottrall.dev/guides/getting-started/) — Install, pick a model, first session
+
+Using the terminal:
+
+- [Configuration](https://riffer.bottrall.dev/guides/configuration/) — Settings scopes and every core key
+- [Instructions](https://riffer.bottrall.dev/guides/instructions/) — How the system message is built; AGENTS.md
+- [Tools](https://riffer.bottrall.dev/guides/tools/) — The bundled toolkit and provider-native tools
+- [Skills](https://riffer.bottrall.dev/guides/skills/) — Agent Skills directories and activation
+- [MCP](https://riffer.bottrall.dev/guides/mcp/) — Declaring MCP servers
+- [Sessions](https://riffer.bottrall.dev/guides/sessions/) — Saving, resuming, the picker, the JSONL store
+- [Reloading](https://riffer.bottrall.dev/guides/reloading/) — The /reload command, what reloads and what does not
+- [Headless](https://riffer.bottrall.dev/guides/headless/) — riffer -p, NDJSON, exit codes
+- [ACP](https://riffer.bottrall.dev/guides/acp/) — riffer acp, the ACP agent over stdio
+
+Extending and embedding:
+
+- [Extensions](https://riffer.bottrall.dev/guides/extensions/) — rig.rb, the registrar, the eight seams, commands, handlers, gems
+- [Embedding](https://riffer.bottrall.dev/guides/embedding/) — Runtime and Loader from Ruby; snapshots; rebuild
+- [Hosts](https://riffer.bottrall.dev/guides/hosts/) — The Host interface and writing a host
+
+Providers:
+
+- [Providers](https://riffer.bottrall.dev/guides/providers/overview/) — Model strings, precedence, credentials, /auth
+- [Custom providers](https://riffer.bottrall.dev/guides/providers/custom/) — Registering a provider from an extension; the setup, credentials, listings
+
+The guide sources are in `docs/`. To preview the site locally, run `bin/docs serve` and open <http://localhost:8000>.
 
 ## Development
 

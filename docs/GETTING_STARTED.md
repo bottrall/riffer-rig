@@ -46,3 +46,20 @@ The banner shows the model, the working directory, how many skills were found an
 - Ctrl-C cancels a running turn; at the prompt, a second Ctrl-C exits, as do `/exit`, `/quit` and Ctrl-D.
 
 The [README](https://github.com/bottrall/riffer-rig#usage) lists the flags and slash commands.
+
+## What first run leaves behind
+
+In `~/.riffer/`:
+
+- `settings.json` — the model you picked, and any other settings ([Configuration](CONFIGURATION.md));
+- `auth.json` — the credentials you pasted, permissions `600` ([Providers](PROVIDERS.md));
+- `sessions/` — one JSONL file per saved session ([Sessions](SESSIONS.md)).
+
+In the project, nothing: `.riffer/` is only there if you add a project `settings.json` or `rig.rb` ([Configuration](CONFIGURATION.md), [Extensions](EXTENSIONS.md)), and the first run of a project `rig.rb` asks you to trust it.
+
+## Where to next
+
+- [Overview](OVERVIEW.md) — what riffer-rig is, the four tiers, the runtime and host layers
+- [Configuration](CONFIGURATION.md) — the settings scopes and every core key
+- [Tools](TOOLS.md) and [Skills](SKILLS.md) — what the agent can do out of the box
+- [Extending](EXTENSIONS.md) — your own tools, commands and prompts in `rig.rb`

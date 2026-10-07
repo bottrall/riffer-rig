@@ -6,6 +6,9 @@ groups:
   - label: Start here
     tone: teal
     pages:
+      - source: OVERVIEW.md
+        slug: overview
+        description: What riffer-rig is, the four tiers, the runtime and host layers
       - source: GETTING_STARTED.md
         slug: getting-started
         featured: true

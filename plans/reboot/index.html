@@ -21,6 +21,7 @@
 
 <h1>riffer-rig reboot: building plan</h1>
 <p class="lede">Everything decided for the post-hiatus reboot, regrouped so that whoever builds a unit reads one file. Temporary: each build PR marks its topics enshrined, and this directory is gone when the reboot is built and documented.</p>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/144">#144</a>, the last plan PR: the reboot is built and documented, but the lede's "this directory is gone" did not happen — the directory remains as the record of the reboot, still served by <code>bin/plans</code>. Every section below is marked enshrined.</p>
 
 <h2 id="thesis">Thesis</h2>
 
@@ -64,6 +65,8 @@
   <li>No permission model for tool execution: the tool trusts the model.</li>
 </ul>
 
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/144">#144</a>: the thesis is restated in <code>docs/OVERVIEW.md</code> (thesis, audience, two claims, anti-goals) and as the README's intro paragraph.</p>
+
 <h2 id="tiers">The core-versus-extension rule</h2>
 
 <p>Everything in the project is one of four things. Ask in order; the first "yes" wins.</p>
@@ -88,6 +91,8 @@
   <li><strong>Core lives in riffer-rig first.</strong> Extract to riffer only when a second riffer agent needs the same thing. During the reboot riffer is not changed at all; in-gem workarounds are marked in code as upstream candidates.</li>
 </ul>
 
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/144">#144</a>: the core-versus-extension rule, its table and the three rules that follow are restated in <code>docs/OVERVIEW.md</code>.</p>
+
 <h2 id="names">Names</h2>
 
 <p>The name is <strong>riffer-rig</strong>. A player's rig is the whole setup they own and tweak: instrument, pedals, amp. It is the music word for "harness", so it restates the thesis without a jargon word, and it says nothing about coding or terminals, so it survives the runtime/CLI split. The rename has been applied; these are the names every unit uses.</p>
@@ -105,6 +110,8 @@
   <tr><td>Default agent name</td><td><code>"riffer"</code>, the value the base prompt interpolates; hosts and embedders may rename it</td></tr>
 </table></div>
 
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/144">#144</a>: the names are applied throughout the README and the <code>docs/</code> guides; the pitch line is the README's tagline. The table itself is not restated anywhere — the docs use the names, not a list of them.</p>
+
 <h2 id="applied">Already in place</h2>
 
 <p>Three decisions were applied before this plan was written and get no unit file. They constrain every build PR:</p>
@@ -113,6 +120,8 @@
   <li><strong>Rename.</strong> The tree is already <code>lib/riffer/rig/</code>; <code>riffer-rig 0.1.0</code> (the pre-reboot CLI) is on RubyGems. Nothing was ever published as riffer-code and nothing migrates from it.</li>
   <li><strong>bin/ over rake.</strong> Every chore is a rake task defined once; <code>bin/</code> scripts only delegate. New chores (docs, plans) follow the same layering.</li>
 </ul>
+
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/144">#144</a>: the release policy is the README's Releasing section, bin/ over rake is its Development section, and the rename is everywhere in the tree and the docs. The riffer pin in the README tracks releases (<code>~> 0.49.0</code> today), a deliberate update from the <code>~> 0.45.0</code> written here.</p>
 
 <h2 id="units">Build units</h2>
 
@@ -153,6 +162,8 @@
   <tr><td><a href="docs.html">Docs</a></td><td>README shape, <code>docs/</code> guides, the docs-site generator, gh-pages deploy, the custom domain.</td></tr>
 </table></div>
 
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/144">#144</a>: the layer diagram is restated as prose in <code>docs/OVERVIEW.md</code> (the runtime and host layers), and every unit file's sections are marked enshrined — this table stays as the index into them.</p>
+
 <h2 id="consuming">How this plan is consumed</h2>
 
 <ul>
@@ -163,8 +174,11 @@
   <li><strong>Nothing here is a permanent record.</strong> The tickets are. This directory is served locally by <code>bin/plans</code> at <code>http://localhost:8001/reboot/</code> and also works from <code>file://</code>.</li>
 </ul>
 
+<p class="note">Retired with the plan in <a href="https://github.com/bottrall/riffer-rig/issues/144">#144</a>: the consumption rules are not restated anywhere. The final bullet's implication — that the directory goes away with the reboot — is the same deviation recorded in the note under the lede: the directory remains as the record of the reboot.</p>
+
 <h2 id="provenance">Provenance</h2>
 <p class="provenance">The map: <a href="https://github.com/bottrall/riffer-rig/issues/70">Wayfinder: thesis and architecture spec for the post-hiatus reboot</a>. This page restates <a href="https://github.com/bottrall/riffer-rig/issues/77">Decide the differentiator: thesis and primary audience</a>, <a href="https://github.com/bottrall/riffer-rig/issues/79">Decide the core-versus-extension principle</a>, <a href="https://github.com/bottrall/riffer-rig/issues/78">Decide the name</a>, <a href="https://github.com/bottrall/riffer-rig/issues/89">Decide the rename mechanics</a>, <a href="https://github.com/bottrall/riffer-rig/issues/84">Decide versioning, release and publishing</a>, <a href="https://github.com/bottrall/riffer-rig/issues/75">Decide the bin/ scripts versus rake tasks strategy</a> and <a href="https://github.com/bottrall/riffer-rig/issues/99">Decide the spec format and home</a>. The surveys behind them: <a href="https://github.com/bottrall/riffer-rig/issues/71">agent-CLI landscape</a>, <a href="https://github.com/bottrall/riffer-rig/issues/72">extension mechanisms and hot reload</a>, <a href="https://github.com/bottrall/riffer-rig/issues/73">ACP</a>.</p>
+<p class="note">Enshrined in <a href="https://github.com/bottrall/riffer-rig/issues/144">#144</a>: the provenance stays as written — the tickets it links are the permanent record, and this page is the record of the reboot.</p>
 
 </body>
 </html>
