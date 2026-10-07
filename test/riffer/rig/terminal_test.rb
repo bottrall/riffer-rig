@@ -147,23 +147,26 @@ describe Riffer::Rig::Terminal do
     assert_includes output, 'Hi from the model'
   end
 
-  it 'renders a tool call' do
+  it 'summarizes a tool call instead of printing it inline' do
     output = run_terminal("read it\n") do |runtime|
       runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'missing.txt' } }])
       runtime.agent.provider.stub_response('Done.')
     end
 
-    assert_includes output, '⚙ read(path: "missing.txt")'
+    refute_includes output, '⚙'
+    assert_includes output, '1 call read'
+    assert_includes output, '✗ File not found: missing.txt'
   end
 
-  it 'renders a tool result under its call' do
+  it 'does not print successful tool results' do
     File.write(File.join(@cwd, 'note.txt'), 'the note')
     output = run_terminal("read it\n") do |runtime|
       runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'note.txt' } }])
       runtime.agent.provider.stub_response('Done.')
     end
 
-    assert_includes output, '↳ '
+    refute_includes output, '↳ '
+    assert_includes output, '1 call read'
   end
 
   it 'renders the cost line from turn_end' do
@@ -172,7 +175,7 @@ describe Riffer::Rig::Terminal do
       runtime.agent.provider.stub_response('Hi', token_usage: usage)
     end
 
-    assert_includes output, '↑10 · ↓5 · session 15 tok'
+    assert_includes output, '↑10 ↓5 · session 15 tok'
   end
 
   it 'shows the model in the banner' do

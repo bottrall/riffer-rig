@@ -5,11 +5,15 @@ class Riffer::Rig::Terminal::Renderer
 
   ARGUMENT_PREVIEW_LIMIT: Integer
 
+  DETAIL_LIMIT: Integer
+
   PROSE_INDENT: Integer
 
-  TOOL_CALL_INDENT: Integer
-
   TOOL_RESULT_INDENT: Integer
+
+  @turn_started_at: Float?
+
+  @tool_calls: Hash[String, Integer]
 
   @wrapper: Riffer::Rig::Terminal::Wrapper
 
@@ -84,6 +88,11 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs return: void
   def render_tool_result: (Riffer::Messages::Base message) -> void
 
+  # @rbs name: String
+  # @rbs arguments: String
+  # @rbs return: String
+  def tool_detail: (String name, String arguments) -> String
+
   class PassThroughSmoother
     @io: IO
 
@@ -116,22 +125,30 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs return: void
   def render_prose: (String content) -> void
 
-  # @rbs indent: Integer
-  # @rbs &block: () -> String
+  # Tool calls are summarized per turn rather than printed as they happen —
+  # the live status line carries the play-by-play — but prose on either side
+  # of a tool burst still gets a gap, so paragraphs don't merge.
+  # @rbs name: String
   # @rbs return: void
-  def render_tool_activity: (Integer indent) { () -> String } -> void
+  def note_tool_call: (String name) -> void
 
   # @rbs return: void
   def open_tool_activity: () -> void
 
-  # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs session: Riffer::Providers::TokenUsage
+  # @rbs usage: Riffer::Providers::TokenUsage?
+  # @rbs session: Riffer::Providers::TokenUsage?
   # @rbs return: String
-  def usage_line: (Riffer::Providers::TokenUsage usage, Riffer::Providers::TokenUsage session) -> String
+  def summary_line: (Riffer::Providers::TokenUsage? usage, Riffer::Providers::TokenUsage? session) -> String
 
-  # @rbs arguments: String
+  # @rbs return: String?
+  def calls_segment: () -> String?
+
+  # @rbs return: String?
+  def elapsed_segment: () -> String?
+
+  # @rbs usage: Riffer::Providers::TokenUsage
   # @rbs return: String
-  def format_arguments: (String arguments) -> String
+  def token_segment: (Riffer::Providers::TokenUsage usage) -> String
 
   # @rbs content: String
   # @rbs return: String

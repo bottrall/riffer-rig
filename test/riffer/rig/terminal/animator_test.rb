@@ -103,4 +103,57 @@ describe Riffer::Rig::Terminal::Animator do
 
     assert_nil animator.instance_variable_get(:@thread)
   end
+
+  it 'renders the described activity in the status line' do
+    animator = running_animator
+    animator.describe('read(path: "a.rb")')
+    wait_for(animator, animator_output) { |io| io.string.include?('read(path: "a.rb")') }
+    animator.stop
+
+    assert_includes animator_output.string, 'read(path: "a.rb")'
+  end
+
+  it 'renders elapsed time and running cost in the status line' do
+    animator = running_animator
+    animator.cost(0.25)
+    wait_for(animator, animator_output) { |io| io.string.include?('~$0.2500') }
+    animator.stop
+
+    output = animator_output.string
+
+    assert_includes output, '~$0.2500'
+    assert_match(/\d+s · ~\$0\.2500/, output)
+  end
+
+  it 'keeps a described activity across a stop and start' do
+    io = StringIO.new
+    io.define_singleton_method(:tty?) { true }
+    animator = Riffer::Rig::Terminal::Animator.new(io: io, theme: Riffer::Rig::Terminal::Theme.new(enabled: true))
+    animator.describe('bash(command: "ls")')
+    animator.start
+    wait_for(animator, io) { |frame_io| frame_io.string.include?('bash(command: "ls")') }
+
+    assert_includes io.string, 'bash(command: "ls")'
+  end
+
+  def running_animator
+    @animator_output = StringIO.new
+    @animator_output.define_singleton_method(:tty?) { true }
+    animator = Riffer::Rig::Terminal::Animator.new(
+      io: @animator_output,
+      theme: Riffer::Rig::Terminal::Theme.new(enabled: true)
+    )
+    animator.start
+    animator
+  end
+
+  attr_reader :animator_output
+
+  def wait_for(animator, io)
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
+    until yield(io) || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+    animator.stop
+  end
 end

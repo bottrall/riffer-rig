@@ -242,6 +242,7 @@ class Riffer::Rig::Terminal
     previous = Signal.trap('INT') { Thread.new { runtime.cancel } }
     begin
       @renderer.begin_turn
+      @animator.describe(nil)
       start_animator
       yield(->(event) { render(runtime, event) })
     rescue StandardError => e
@@ -260,14 +261,20 @@ class Riffer::Rig::Terminal
   def render(runtime, event)
     case event
     when Riffer::StreamEvents::ReasoningDelta
+      @animator.describe(nil)
       start_animator(:reasoning)
-    when Riffer::StreamEvents::ReasoningDone, Riffer::StreamEvents::TokenUsageDone
+    when Riffer::StreamEvents::ReasoningDone
       # Tool execution and the next model call emit no events, so the spinner
       # comes straight back on to cover the silent stretch.
+      start_animator
+    when Riffer::StreamEvents::TokenUsageDone
+      cost = runtime.tally&.cost
+      @animator.cost(cost) if cost
       start_animator
     when Riffer::StreamEvents::TextDelta, Riffer::StreamEvents::ToolCallDone, Riffer::StreamEvents::Interrupt
       @animator.stop
       @renderer.render(event)
+      describe_tool(event) if event.is_a?(Riffer::StreamEvents::ToolCallDone)
     when Riffer::StreamEvents::SkillActivation, Riffer::Rig::Events::SkillActivated
       @animator.stop
       @renderer.skill(event.name)
@@ -281,6 +288,14 @@ class Riffer::Rig::Terminal
     end
   end
 
+  # The status line is the only play-by-play a tool call gets: its detail
+  # stays up until the tool's result arrives.
+  # @rbs event: Riffer::StreamEvents::ToolCallDone
+  # @rbs return: void
+  def describe_tool(event)
+    @animator.describe(@renderer.tool_detail(event.name, event.arguments))
+  end
+
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
   def render_tool_result(message)
@@ -288,6 +303,7 @@ class Riffer::Rig::Terminal
 
     @animator.stop
     @renderer.render_tool_result(message)
+    @animator.describe(nil)
     start_animator
   end
 

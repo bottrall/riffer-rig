@@ -1,0 +1,11 @@
+# Generated from lib/riffer/rig/terminal/format.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Format
+  # @rbs seconds: Float
+  # @rbs return: String
+  def elapsed: (Float seconds) -> String
+
+  # @rbs count: Integer
+  # @rbs return: String
+  def tokens: (Integer count) -> String
+end

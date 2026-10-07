@@ -8,9 +8,9 @@ class Riffer::Rig::Terminal::Renderer
 
   ARGUMENT_PREVIEW_LIMIT = 60 #: Integer
 
-  PROSE_INDENT = 2 #: Integer
+  DETAIL_LIMIT = 48 #: Integer
 
-  TOOL_CALL_INDENT = 4 #: Integer
+  PROSE_INDENT = 2 #: Integer
 
   TOOL_RESULT_INDENT = 6 #: Integer
 
@@ -21,6 +21,8 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs @prose_gap_pending: bool
   # @rbs @width: Integer?
   # @rbs @wrapper: Riffer::Rig::Terminal::Wrapper
+  # @rbs @tool_calls: Hash[String, Integer]
+  # @rbs @turn_started_at: Float?
 
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -42,6 +44,8 @@ class Riffer::Rig::Terminal::Renderer
     @prose_gap_pending = false
     @width = width
     @wrapper = new_wrapper
+    @tool_calls = {}
+    @turn_started_at = nil
   end
 
   # @rbs event: Riffer::StreamEvents::TextDelta | Riffer::StreamEvents::ToolCallDone | Riffer::StreamEvents::Interrupt
@@ -51,7 +55,7 @@ class Riffer::Rig::Terminal::Renderer
     when Riffer::StreamEvents::TextDelta
       render_prose(event.content)
     when Riffer::StreamEvents::ToolCallDone
-      render_tool_activity(TOOL_CALL_INDENT) { "⚙ #{event.name}(#{format_arguments(event.arguments)})" }
+      note_tool_call(event.name)
     when Riffer::StreamEvents::Interrupt
       render_block(0) { @theme.dim("[interrupted: #{event.reason}]") }
     end
@@ -86,13 +90,13 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs session: Riffer::Providers::TokenUsage?
   # @rbs return: void
   def usage(usage, session)
-    return unless usage && session
-
+    line = fit(summary_line(usage, session), 0)
     flush_prose
     @prose_gap_pending = true
+    return if line.empty?
+
     @io.puts
-    text = (@wrapper << usage_line(usage, session)) + @wrapper.flush
-    @io.print(@theme.dim(text)) unless text.empty?
+    @io.print("#{@theme.dim(line)}\n")
     @io.flush
   end
 
@@ -127,6 +131,8 @@ class Riffer::Rig::Terminal::Renderer
 
   # @rbs return: void
   def begin_turn
+    @tool_calls = {}
+    @turn_started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     # A hidden cursor can't flicker against the animator's erase-and-redraw
     # churn.
     @cursor.hide
@@ -149,12 +155,23 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs return: void
   def render_tool_result(message)
     return unless message.is_a?(Riffer::Messages::Tool)
+    return unless message.error?
 
     open_tool_activity
-    line = fit("↳ #{preview(message.content)}", TOOL_RESULT_INDENT)
-    styled = message.error? ? @theme.red(line) : @theme.dim(line)
-    @io.print("#{' ' * TOOL_RESULT_INDENT}#{styled}\n")
+    line = fit("✗ #{preview(message.content)}", TOOL_RESULT_INDENT)
+    @io.print("#{' ' * TOOL_RESULT_INDENT}#{@theme.red(line)}\n")
     @io.flush
+  end
+
+  # @rbs name: String
+  # @rbs arguments: String
+  # @rbs return: String
+  def tool_detail(name, arguments)
+    parsed = JSON.parse(arguments)
+    detail = parsed.map { |key, value| "#{key}: #{elide(value.inspect, ARGUMENT_PREVIEW_LIMIT)}" }.join(', ')
+    elide("#{name}(#{detail})", DETAIL_LIMIT)
+  rescue JSON::ParserError
+    elide("#{name}(#{arguments})", DETAIL_LIMIT)
   end
 
   class PassThroughSmoother
@@ -209,19 +226,21 @@ class Riffer::Rig::Terminal::Renderer
     @smoother << emit unless emit.empty?
   end
 
-  # @rbs indent: Integer
-  # @rbs &block: () -> String
+  # Tool calls are summarized per turn rather than printed as they happen —
+  # the live status line carries the play-by-play — but prose on either side
+  # of a tool burst still gets a gap, so paragraphs don't merge.
+  # @rbs name: String
   # @rbs return: void
-  def render_tool_activity(indent, &)
-    open_tool_activity
-    @io.puts((' ' * indent) + @theme.cyan(fit(yield, indent)))
-    @io.flush
+  def note_tool_call(name)
+    flush_prose
+    @prose_gap_pending = true
+    @tool_calls[name] = @tool_calls.fetch(name, 0) + 1
   end
 
   # @rbs return: void
   def open_tool_activity
-    # Tool-activity lines (⚙ calls, ↳ results) share one blank line above the
-    # group; the group stays open so the prose after it pays the closing gap.
+    # Tool-result lines share one blank line above the group; the group stays
+    # open so the prose after it pays the closing gap.
     return if @prose_gap_pending
 
     flush_prose
@@ -229,27 +248,48 @@ class Riffer::Rig::Terminal::Renderer
     @prose_gap_pending = true
   end
 
-  # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs session: Riffer::Providers::TokenUsage
+  # @rbs usage: Riffer::Providers::TokenUsage?
+  # @rbs session: Riffer::Providers::TokenUsage?
   # @rbs return: String
-  def usage_line(usage, session)
-    parts = ["↑#{usage.input_tokens}", "↓#{usage.output_tokens}"]
-    parts << "cache_write:#{usage.cache_write_tokens}" if usage.cache_write_tokens&.positive?
-    parts << "cache_read:#{usage.cache_read_tokens}" if usage.cache_read_tokens&.positive?
-    parts << "session #{session.total_tokens} tok"
-    cost = session.cost
-    parts << format('~$%.4f', cost) if cost
+  def summary_line(usage, session)
+    parts = [calls_segment, elapsed_segment] #: Array[String?]
+    if usage && session
+      parts << token_segment(usage)
+      parts << "session #{Riffer::Rig::Terminal::Format.tokens(session.total_tokens)} tok"
+      cost = session.cost
+      parts << format('~$%.4f', cost) if cost
+    end
 
-    parts.join(' · ')
+    parts.compact.join(' · ')
   end
 
-  # @rbs arguments: String
+  # @rbs return: String?
+  def calls_segment
+    total = @tool_calls.values.sum
+    return nil if total.zero?
+
+    breakdown = @tool_calls.map do |name, count|
+      count == 1 ? name : "#{name}×#{count}"
+    end.join(' ')
+    "#{total == 1 ? '1 call' : "#{total} calls"} #{breakdown}"
+  end
+
+  # @rbs return: String?
+  def elapsed_segment
+    started = @turn_started_at
+    return nil unless started
+
+    Riffer::Rig::Terminal::Format.elapsed(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started)
+  end
+
+  # @rbs usage: Riffer::Providers::TokenUsage
   # @rbs return: String
-  def format_arguments(arguments)
-    parsed = JSON.parse(arguments)
-    parsed.map { |key, value| "#{key}: #{elide(value.inspect, ARGUMENT_PREVIEW_LIMIT)}" }.join(', ')
-  rescue JSON::ParserError
-    arguments
+  def token_segment(usage)
+    tokens = "↑#{Riffer::Rig::Terminal::Format.tokens(usage.input_tokens)} ↓#{Riffer::Rig::Terminal::Format.tokens(usage.output_tokens)}"
+    tokens << " cache_write:#{usage.cache_write_tokens}" if usage.cache_write_tokens&.positive?
+    tokens << " cache_read:#{usage.cache_read_tokens}" if usage.cache_read_tokens&.positive?
+
+    tokens
   end
 
   # @rbs content: String

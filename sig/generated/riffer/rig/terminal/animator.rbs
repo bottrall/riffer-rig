@@ -15,6 +15,12 @@ class Riffer::Rig::Terminal::Animator
 
   REASONING_TICK_RANGE: Range[Integer]
 
+  @started_at: Float?
+
+  @cost: Float?
+
+  @activity: String?
+
   @stop: bool
 
   @phrase: String?
@@ -40,6 +46,17 @@ class Riffer::Rig::Terminal::Animator
   # @rbs return: void
   def start: (?Symbol mode) -> void
 
+  # What the agent is doing right now (e.g. the tool it just called); nil
+  # falls back to the mode's default label. Survives stop/start so a
+  # describe between an animator stop and its next start isn't lost.
+  # @rbs text: String?
+  # @rbs return: void
+  def describe: (String? text) -> void
+
+  # @rbs value: Float?
+  # @rbs return: void
+  def cost: (Float? value) -> void
+
   # @rbs return: void
   def stop: () -> void
 
@@ -53,15 +70,24 @@ class Riffer::Rig::Terminal::Animator
   # @rbs return: void
   def animate: () -> void
 
+  # @rbs return: String
+  def status: () -> String
+
+  # @rbs return: String
+  def activity_label: () -> String
+
+  # @rbs return: String?
+  def elapsed_label: () -> String?
+
+  # @rbs return: String?
+  def cost_label: () -> String?
+
   # @rbs roll_at: Float
   # @rbs return: Float
   def roll_phrase: (Float roll_at) -> Float
 
   # @rbs return: Integer
   def roll_rand: () -> Integer
-
-  # @rbs return: String
-  def label: () -> String
 
   # @rbs return: bool
   def enabled?: () -> bool

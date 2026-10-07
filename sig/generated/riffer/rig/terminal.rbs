@@ -119,6 +119,12 @@ class Riffer::Rig::Terminal
   # @rbs return: void
   def render: (Riffer::Rig::Runtime runtime, ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
 
+  # The status line is the only play-by-play a tool call gets: its detail
+  # stays up until the tool's result arrives.
+  # @rbs event: Riffer::StreamEvents::ToolCallDone
+  # @rbs return: void
+  def describe_tool: (Riffer::StreamEvents::ToolCallDone event) -> void
+
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
   def render_tool_result: (Riffer::Messages::Base message) -> void

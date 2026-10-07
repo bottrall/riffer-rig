@@ -158,7 +158,7 @@ describe Riffer::Rig::Terminal::Renderer do
     assert_predicate recording_smoother, :drained?
   end
 
-  it 'renders tool call done as an indented block below a blank line' do
+  it 'records a tool call without printing it' do
     @renderer.render(
       Riffer::StreamEvents::ToolCallDone.new(
         item_id: 'i1',
@@ -168,68 +168,62 @@ describe Riffer::Rig::Terminal::Renderer do
       )
     )
 
-    assert_equal "\n    ⚙ read()\n", @io.string
+    assert_empty @io.string
   end
 
-  it 'truncates long tool call argument values' do
+  it 'opens a gap in the prose around a tool call' do
+    @renderer.render(Riffer::StreamEvents::TextDelta.new('before'))
     @renderer.render(
-      Riffer::StreamEvents::ToolCallDone.new(
-        item_id: 'i1',
-        call_id: 'c1',
-        name: 'read',
-        arguments: JSON.generate(path: 'a' * 200)
-      )
+      Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '{}')
     )
+    @renderer.render(Riffer::StreamEvents::TextDelta.new('after'))
+    @renderer.drain
 
-    refute_includes @io.string, 'a' * 200
+    assert_equal "  before\n\n  after\n", @io.string
   end
 
-  it 'fits tool call lines to the terminal width' do
-    renderer = Riffer::Rig::Terminal::Renderer.new(
-      io: @io,
-      theme: Riffer::Rig::Terminal::Theme.new(enabled: false),
-      width: 20
-    )
+  it 'summarizes a tool call with its arguments for the status line' do
+    detail = @renderer.tool_detail('read', JSON.generate(path: 'a.rb', limit: 5))
 
-    renderer.render(
-      Riffer::StreamEvents::ToolCallDone.new(
-        item_id: 'i1',
-        call_id: 'c1',
-        name: 'read',
-        arguments: JSON.generate(path: 'a' * 40)
-      )
-    )
-
-    assert_operator @io.string.lines.last.chomp.length, :<=, 20
+    assert_includes detail, 'read('
+    assert_includes detail, 'path: "a.rb"'
   end
 
-  it 'marks a fitted tool call line with an ellipsis' do
-    renderer = Riffer::Rig::Terminal::Renderer.new(
-      io: @io,
-      theme: Riffer::Rig::Terminal::Theme.new(enabled: false),
-      width: 20
-    )
-
-    renderer.render(
-      Riffer::StreamEvents::ToolCallDone.new(
-        item_id: 'i1',
-        call_id: 'c1',
-        name: 'read',
-        arguments: JSON.generate(path: 'a' * 40)
-      )
-    )
-
-    assert @io.string.lines.last.chomp.end_with?('…')
+  it 'falls back to raw arguments the status line cannot parse' do
+    assert_equal 'read(oops)', @renderer.tool_detail('read', 'oops')
   end
 
-  it 'fits tool result lines to the terminal width' do
+  it 'elides long tool call details to the status line limit' do
+    detail = @renderer.tool_detail('read', JSON.generate(path: 'a' * 200))
+
+    assert_operator detail.length, :<=, Riffer::Rig::Terminal::Renderer::DETAIL_LIMIT
+    refute_includes detail, 'a' * 200
+    assert detail.end_with?('…')
+  end
+
+  it 'prints failing tool results as an error line' do
+    message = Riffer::Messages::Tool.new('boom', tool_call_id: 'c1', name: 'write', error: 'nope')
+    @renderer.render_tool_result(message)
+
+    assert_equal "\n      ✗ boom\n", @io.string
+  end
+
+  it 'silences successful tool results' do
+    message = Riffer::Messages::Tool.new('done', tool_call_id: 'c1', name: 'write')
+    @renderer.render_tool_result(message)
+
+    assert_empty @io.string
+  end
+
+  it 'fits failing tool result lines to the terminal width' do
     renderer = Riffer::Rig::Terminal::Renderer.new(
       io: @io,
       theme: Riffer::Rig::Terminal::Theme.new(enabled: false),
       width: 15
     )
+    message = Riffer::Messages::Tool.new('x' * 40, tool_call_id: 'c1', name: 'write', error: 'nope')
 
-    renderer.render_tool_result(Riffer::Messages::Tool.new('x' * 40, tool_call_id: 'c1', name: 'write'))
+    renderer.render_tool_result(message)
 
     assert_operator @io.string.lines.last.chomp.length, :<=, 15
   end
@@ -240,23 +234,22 @@ describe Riffer::Rig::Terminal::Renderer do
     assert_equal "\n✦ skill: refactor\n", @io.string
   end
 
-  it 'renders tool results tight under their tool call' do
-    message = Riffer::Messages::Tool.new('done', tool_call_id: 'c1', name: 'write')
-    @renderer.render(
-      Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'write', arguments: '{}')
-    )
-    @renderer.render_tool_result(message)
-
-    assert_equal "\n    ⚙ write()\n      ↳ done\n", @io.string
-  end
-
-  it 'renders the turn usage and session total as one stats block' do
+  it 'renders the turn as one dim summary line' do
+    tool_call = ->(name, id) { Riffer::StreamEvents::ToolCallDone.new(item_id: id, call_id: id, name: name, arguments: '{}') }
+    @renderer.render(tool_call.call('read', 'i1'))
+    @renderer.render(tool_call.call('read', 'i2'))
+    @renderer.render(tool_call.call('bash', 'i3'))
     @renderer.usage(usage(100, 50, cache_read_tokens: 200), usage(300, 150))
 
-    assert_equal "\n  ↑100 · ↓50 · cache_read:200 · session 450 tok\n", @io.string
+    lines = @io.string.lines
+
+    assert_equal 2, lines.length
+    assert(lines.last.chomp.start_with?('3 calls read×2 bash · '))
+    assert_includes lines.last, '↑100 ↓50 cache_read:200'
+    assert_includes lines.last, 'session 450 tok'
   end
 
-  it 'renders nothing when the turn reported no usage' do
+  it 'renders nothing when the turn has nothing to report' do
     @renderer.usage(nil, usage(100, 50))
 
     assert_empty @io.string
@@ -269,7 +262,8 @@ describe Riffer::Rig::Terminal::Renderer do
       smoother: recording_smoother
     )
 
-    renderer.render_tool_result(Riffer::Messages::Tool.new('done', tool_call_id: 'c1', name: 'write'))
+    message = Riffer::Messages::Tool.new('done', tool_call_id: 'c1', name: 'write', error: 'nope')
+    renderer.render_tool_result(message)
 
     assert_predicate recording_smoother, :drained?
   end
@@ -299,8 +293,8 @@ describe Riffer::Rig::Terminal::Renderer do
     end.new
   end
 
-  it 'renders tool results without ansi when theme disabled' do
-    message = Riffer::Messages::Tool.new('done', tool_call_id: 'c1', name: 'write')
+  it 'renders failing tool results without ansi when theme disabled' do
+    message = Riffer::Messages::Tool.new('done', tool_call_id: 'c1', name: 'write', error: 'nope')
     @renderer.render_tool_result(message)
 
     refute_includes @io.string, "\e["

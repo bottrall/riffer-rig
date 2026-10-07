@@ -27,6 +27,9 @@ class Riffer::Rig::Terminal::Animator
   # @rbs @mode: Symbol
   # @rbs @phrase: String?
   # @rbs @stop: bool
+  # @rbs @activity: String?
+  # @rbs @cost: Float?
+  # @rbs @started_at: Float?
 
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -37,6 +40,9 @@ class Riffer::Rig::Terminal::Animator
     @thread = nil
     @mode = :neutral
     @phrase = nil
+    @activity = nil
+    @cost = nil
+    @started_at = nil
   end
 
   # @rbs frames: Array[Array[String]]
@@ -67,8 +73,24 @@ class Riffer::Rig::Terminal::Animator
     end
 
     @mode = mode
+    @started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     @stop = false
     @thread = Thread.new { animate }
+  end
+
+  # What the agent is doing right now (e.g. the tool it just called); nil
+  # falls back to the mode's default label. Survives stop/start so a
+  # describe between an animator stop and its next start isn't lost.
+  # @rbs text: String?
+  # @rbs return: void
+  def describe(text)
+    @activity = text
+  end
+
+  # @rbs value: Float?
+  # @rbs return: void
+  def cost(value)
+    @cost = value
   end
 
   # @rbs return: void
@@ -103,11 +125,41 @@ class Riffer::Rig::Terminal::Animator
     roll_at = 0.0
     until @stop
       roll_at = roll_phrase(roll_at)
-      @io.print("\r  #{equalizer(tick, label)}\e[K")
+      @io.print("\r  #{equalizer(tick, status)}\e[K")
       @io.flush
       sleep(SPINNER_FRAME_SECONDS)
       tick += 1
     end
+  end
+
+  # @rbs return: String
+  def status
+    [activity_label, elapsed_label, cost_label].join(' · ')
+  end
+
+  # @rbs return: String
+  def activity_label
+    activity = @activity
+    return activity if activity
+
+    @mode == :reasoning ? @phrase || NEUTRAL_LABEL : NEUTRAL_LABEL
+  end
+
+  # @rbs return: String?
+  def elapsed_label
+    started = @started_at
+    return nil unless started
+
+    seconds = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+    Riffer::Rig::Terminal::Format.elapsed(seconds)
+  end
+
+  # @rbs return: String?
+  def cost_label
+    cost = @cost
+    return nil unless cost
+
+    format('~$%.4f', cost)
   end
 
   # @rbs roll_at: Float
@@ -125,11 +177,6 @@ class Riffer::Rig::Terminal::Animator
     x = rand(REASONING_TICK_RANGE)
     # Range rand returns nil for an empty range; this one is a non-empty constant.
     x || 0
-  end
-
-  # @rbs return: String
-  def label
-    @mode == :reasoning ? @phrase || NEUTRAL_LABEL : NEUTRAL_LABEL
   end
 
   # @rbs return: bool
