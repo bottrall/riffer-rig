@@ -51,7 +51,7 @@ The model is the first of these that is set: `--model`, `RIFFER_MODEL`, `model` 
 | `-r ID`, `--resume ID`  | resumes the session with id `ID`; bare `-r` opens the [picker](docs/SESSIONS.md#the-picker) ([Sessions](docs/SESSIONS.md#resuming)) |
 | `-h`, `--help`          | prints the usage                                                            |
 
-`riffer acp` (an editor's agent over stdio) is reserved: for now it prints the usage and exits with status 2.
+An editor registers the agent as `riffer acp`, the same Runtimes over the [Agent Client Protocol](https://agentclientprotocol.com) on stdio ([ACP](docs/ACP.md)).
 
 ### Headless
 

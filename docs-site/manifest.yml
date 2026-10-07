@@ -38,6 +38,9 @@ groups:
       - source: HEADLESS.md
         slug: headless
         description: riffer -p, NDJSON, exit codes
+      - source: ACP.md
+        slug: acp
+        description: riffer acp, the ACP agent over stdio
 
   - label: Extending and embedding
     tone: gold

@@ -211,6 +211,28 @@ describe Riffer::Rig::Registrar do
     assert_equal 'https://other.example/mcp', registrar.mcp_servers.fetch('docs').url
   end
 
+  it 'declares a stdio MCP server from its command' do
+    registrar = Riffer::Rig::Registrar.new('docs')
+    registrar.mcp('local', command: 'echo', args: ['--flag'], env: { 'TOKEN' => 't' })
+
+    assert_equal(
+      Riffer::Rig::Mcp::Declaration.new(command: 'echo', args: ['--flag'], env: { 'TOKEN' => 't' }),
+      registrar.mcp_servers.fetch('local')
+    )
+  end
+
+  it 'refuses an MCP declaration with neither a url nor a command' do
+    registrar = Riffer::Rig::Registrar.new('docs')
+
+    assert_raises(ArgumentError) { registrar.mcp('local') }
+  end
+
+  it 'refuses an MCP declaration with both a url and a command' do
+    registrar = Riffer::Rig::Registrar.new('docs')
+
+    assert_raises(ArgumentError) { registrar.mcp('local', url: 'https://docs.example/mcp', command: 'echo') }
+  end
+
   it 'finds no collision for an extension name outside the core keys' do
     assert_nil Riffer::Rig::Registrar.new('git').collision
   end

@@ -66,7 +66,7 @@ Riffer::Rig.extension('tracker') do |rig|
 end
 ```
 
-`rig.mcp(name, url:, headers: {}, auth: {})` declares one server. An extension-declared server can carry an `auth` block and `${field}` header references of its own ([Secret headers](#secret-headers)). Server names are shared across extensions: a later declaration of the same name, from the same extension or a later one, replaces the earlier one, and a replacement across extensions is reported through `notify` at level `:info` as "Extension LATER replaces MCP server NAME from EARLIER".
+`rig.mcp(name, url:, headers: {}, auth: {})` declares one server. An extension-declared server can carry an `auth` block and `${field}` header references of its own ([Secret headers](#secret-headers)). A stdio server is declared with `rig.mcp(name, command:, args: [], env: {})` instead — exactly one of `url` and `command`, never both; a declaration with neither raises `ArgumentError`. Server names are shared across extensions: a later declaration of the same name, from the same extension or a later one, replaces the earlier one, and a replacement across extensions is reported through `notify` at level `:info` as "Extension LATER replaces MCP server NAME from EARLIER".
 
 An extension block can read its own settings namespace as `rig.settings` while it runs, with the defaults it declared with [`rig.setting`](EXTENSIONS.md#the-rigsetting-seam) filled in. That is how the bundled extension reads `mcp.servers`.
 
@@ -91,3 +91,9 @@ On a [rebuild](EMBEDDING.md#rebuilding-after-a-code-reload), a server whose name
 riffer keeps one MCP registry per process, keyed by server name. Each Runtime tags its registrations with its own `id`, so its agent sees only the servers it declared, even when other Runtimes in the process declare servers of their own.
 
 Two Runtimes in one process must not declare servers of the same name: the later registration replaces the earlier one, so the first Runtime loses that server's tools. A Runtime never unregisters a server another Runtime has since registered under the same name.
+
+## Servers over ACP
+
+An [ACP](ACP.md) client supplies its own MCP servers with `session/new`, in stdio shape only: a command, its args and an env map. The agent declares each one through the `rig.mcp` seam, so it reaches the Runtime as if an extension named `acp` had declared it, keeps it through a reload rebuild, and can be replaced by a same-name declaration. A server in `http` or `sse` shape is skipped with one warning notify.
+
+A stdio declaration still cannot be registered: riffer's MCP client speaks HTTPS only, so the Runtime reports "MCP server NAME runs over stdio, which riffer cannot register yet" through `notify` at level `:error` and runs without its tools.

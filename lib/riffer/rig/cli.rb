@@ -26,7 +26,8 @@ module Riffer::Rig::CLI
     cwd: Dir.pwd,
     home: Dir.home
   )
-    return unavailable("riffer #{ACP_COMMAND}", error) if argv.first == ACP_COMMAND
+    return refuse("#{ACP_COMMAND} takes no arguments", error) if argv.first == ACP_COMMAND && argv.length > 1
+    return acp(input: input, output: output, env: env, home: home) if argv.first == ACP_COMMAND
 
     headless_mode = argv.intersect?(PRINT_FLAGS)
     flags = Flags.parse(argv, prompt: headless_mode)
@@ -83,11 +84,13 @@ module Riffer::Rig::CLI
     ).run(open_picker: flags.resume == '')
   end
 
-  # @rbs name: String
-  # @rbs error: IO
+  # @rbs input: IO
+  # @rbs output: IO
+  # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  # @rbs home: String
   # @rbs return: Integer
-  def unavailable(name, error)
-    refuse("#{name} is not available yet", error)
+  def acp(input:, output:, env:, home:)
+    Riffer::Rig::ACP.for(input: input, output: output, env: env, home: home).run
   end
 
   # @rbs message: String

@@ -22,6 +22,7 @@ Gem::Specification.new do |spec|
   spec.executables = ['riffer']
   spec.require_paths = ['lib']
 
+  spec.add_dependency 'acp-sdk', '~> 0.9'
   spec.add_dependency 'base64', '~> 0.2'
   spec.add_dependency 'event_stream_parser', '~> 1.0'
   spec.add_dependency 'faraday', '~> 2.14'

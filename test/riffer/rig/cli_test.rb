@@ -115,8 +115,12 @@ describe Riffer::Rig::CLI do
     assert_includes @error.string, '--json is only available with -p'
   end
 
-  it 'stubs riffer acp until ACP lands' do
-    assert_equal 2, start('acp')
+  it 'serves ACP on stdio and returns zero when stdin closes' do
+    assert_equal 0, start('acp', input: '')
+  end
+
+  it 'refuses arguments after acp' do
+    assert_equal 2, start('acp', '--model', 'mock/test')
   end
 
   describe 'session flags' do

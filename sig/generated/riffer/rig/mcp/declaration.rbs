@@ -3,18 +3,30 @@
 class Riffer::Rig::Mcp::Declaration
   include Riffer::Rig::Support::Equatable
 
-  # @dynamic url, headers, auth
-  attr_reader url: String
+  # @dynamic url, headers, auth, command, args, env
+  attr_reader url: String?
 
   attr_reader headers: Hash[String, String]
 
   attr_reader auth: Hash[Symbol, Array[String]]
 
-  # @rbs url: String
+  attr_reader command: String?
+
+  attr_reader args: Array[String]
+
+  attr_reader env: Hash[String, String]
+
+  # A declaration is one server over one transport: HTTPS by url, or stdio by
+  # command. Raising is a programmer error: the registrar seam refuses an
+  # empty declaration before the Runtime ever sees it.
+  # @rbs url: String?
   # @rbs headers: Hash[String, String]
   # @rbs auth: Hash[Symbol, Array[String]]
+  # @rbs command: String?
+  # @rbs args: Array[String]
+  # @rbs env: Hash[String, String]
   # @rbs return: void
-  def initialize: (url: String, headers: Hash[String, String], ?auth: Hash[Symbol, Array[String]]) -> void
+  def initialize: (?url: String?, ?headers: Hash[String, String], ?auth: Hash[Symbol, Array[String]], ?command: String?, ?args: Array[String], ?env: Hash[String, String]) -> void
 
   # @rbs headers: Hash[String, String]
   # @rbs return: Riffer::Rig::Mcp::Declaration

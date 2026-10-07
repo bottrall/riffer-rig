@@ -1959,6 +1959,15 @@ describe Riffer::Rig::Runtime do
       Riffer::Mcp.registrations[name]
     end
 
+    it 'reports a stdio server as unregistrable through notify at error level' do
+      stdio = Riffer::Rig::Extension.new('serves_stdio') { |rig| rig.mcp('local', command: 'echo') }
+
+      assert_equal(
+        [Riffer::Rig::Events::Notify.new('MCP server local runs over stdio, which riffer cannot register yet', :error)],
+        notifies(runtime([stdio]))
+      )
+    end
+
     it 'adds each server tool under riffer MCP naming' do
       assert_equal %w[web__echo web__token], tool_names(runtime([serving]))
     end
