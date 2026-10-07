@@ -1,0 +1,148 @@
+# Generated from lib/riffer/rig/acp.rb with RBS::Inline
+
+# The ACP tier: Runtime events reach the client only through this adapter's
+# mapping, so nothing else in rig may translate an event into an ACP type.
+class Riffer::Rig::ACP
+  AGENT_NAME: String
+
+  AGENT_TITLE: String
+
+  SESSION_EXTENSION: String
+
+  TOOL_KINDS: Hash[String, String]
+
+  @lock: Thread::Mutex
+
+  @hosts: Hash[String, Riffer::Rig::ACP::Host]
+
+  @sessions: Hash[String, Riffer::Rig::Runtime]
+
+  @client: ::ACP::AgentConnection::_Client?
+
+  @build: ^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime
+
+  @home: String
+
+  @env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+
+  @output: IO
+
+  @input: IO
+
+  # @rbs input: IO
+  # @rbs output: IO
+  # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  # @rbs home: String
+  # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
+  # @rbs return: Riffer::Rig::ACP
+  def self.for: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?) -> Riffer::Rig::ACP
+
+  # Builds the Runtime a session runs on: the client's MCP servers flow
+  # through the rig.mcp seam as a synthetic extension, so a reload rebuild
+  # re-declares them and a same-name declaration from an extension replaces
+  # them with the usual notify.
+  # @rbs cwd: String
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs servers: Hash[String, Riffer::Rig::Mcp::Declaration]
+  # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  # @rbs home: String
+  # @rbs return: Riffer::Rig::Runtime
+  def self.build_runtime: (String cwd, Riffer::Rig::Hosts::_Host host, Hash[String, Riffer::Rig::Mcp::Declaration] servers, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String) -> Riffer::Rig::Runtime
+
+  # @rbs servers: Hash[String, Riffer::Rig::Mcp::Declaration]
+  # @rbs return: Riffer::Rig::Extension?
+  def self.session_extension: (Hash[String, Riffer::Rig::Mcp::Declaration] servers) -> Riffer::Rig::Extension?
+
+  # @rbs input: IO
+  # @rbs output: IO
+  # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  # @rbs home: String
+  # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
+  # @rbs return: void
+  def initialize: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?) -> void
+
+  # Serves the connection until the client closes stdin; then the reader
+  # thread ends and run returns.
+  # loadSession waits for #141: acp-sdk raises ArgumentError at start when
+  # initialize advertises a method the agent does not define, so the
+  # capability can only be advertised together with load_session.
+  # @rbs return: Integer
+  def run: () -> Integer
+
+  # @rbs request: ::ACP::Types::NewSessionRequest
+  # @rbs return: (::ACP::Types::NewSessionResponse | ::ACP::RequestError)
+  def new_session: (::ACP::Types::NewSessionRequest request) -> (::ACP::Types::NewSessionResponse | ::ACP::RequestError)
+
+  # @rbs request: ::ACP::Types::PromptRequest
+  # @rbs return: (::ACP::Types::PromptResponse | ::ACP::RequestError)
+  def prompt: (::ACP::Types::PromptRequest request) -> (::ACP::Types::PromptResponse | ::ACP::RequestError)
+
+  # Runs on the transport's reader thread, so it only sets the cancel flag.
+  # @rbs notification: ::ACP::Types::CancelNotification
+  # @rbs return: void
+  def cancel: (::ACP::Types::CancelNotification notification) -> void
+
+  # Runs after the session/new reply, so the client knows the id before any
+  # update for it arrives: the build-time notifies flush here, then the
+  # commands go out.
+  # @rbs response: ::ACP::Types::NewSessionResponse
+  # @rbs return: void
+  def session_created: (::ACP::Types::NewSessionResponse response) -> void
+
+  private
+
+  # @rbs return: ::ACP::AgentConnection::_Client
+  def client: () -> ::ACP::AgentConnection::_Client
+
+  # @rbs id: String
+  # @rbs return: Riffer::Rig::Runtime?
+  def session: (String id) -> Riffer::Rig::Runtime?
+
+  # @rbs servers: Array[::ACP::Types::McpServer::t]
+  # @rbs host: Riffer::Rig::ACP::Host
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::Declaration]
+  def declarations: (Array[::ACP::Types::McpServer::t] servers, Riffer::Rig::ACP::Host host) -> Hash[String, Riffer::Rig::Mcp::Declaration]
+
+  # @rbs server: ::ACP::Types::McpServer::t
+  # @rbs host: Riffer::Rig::ACP::Host
+  # @rbs return: [String, Riffer::Rig::Mcp::Declaration]?
+  def declaration_of: (::ACP::Types::McpServer::t server, Riffer::Rig::ACP::Host host) -> [ String, Riffer::Rig::Mcp::Declaration ]?
+
+  # @rbs server: ::ACP::Types::McpServer::t
+  # @rbs return: String
+  def server_name: (::ACP::Types::McpServer::t server) -> String
+
+  # @rbs server: ::ACP::Types::McpServerStdio
+  # @rbs return: Hash[String, String]
+  def stdio_env: (::ACP::Types::McpServerStdio server) -> Hash[String, String]
+
+  # Text and resource links are ACP's must-support prompt blocks; the client
+  # cannot send the others unless the agent advertised them.
+  # @rbs blocks: Array[::ACP::Types::ContentBlock::t]
+  # @rbs return: String
+  def prompt_text: (Array[::ACP::Types::ContentBlock::t] blocks) -> String
+
+  # @rbs block: ::ACP::Types::ContentBlock::t
+  # @rbs return: String?
+  def prompt_text_of: (::ACP::Types::ContentBlock::t block) -> String?
+
+  # @rbs content: String
+  # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
+  def message_chunk: (String content) -> ::ACP::Types::SessionUpdate::AgentMessageChunk
+
+  # riffer's stream has no completion boundary for a tool call, so a call goes
+  # out once, in progress, when its arguments are complete.
+  # @rbs event: Riffer::StreamEvents::ToolCallDone
+  # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
+  def tool_call: (Riffer::StreamEvents::ToolCallDone event) -> ::ACP::Types::SessionUpdate::ToolCall
+
+  # riffer's failure reasons (:error, :other, :guardrail_blocked) have no ACP
+  # counterpart; refusal is the closest signal that the turn did not complete.
+  # @rbs stop_reason: Symbol?
+  # @rbs return: String
+  def stop_reason_of: (Symbol? stop_reason) -> String
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: Array[::ACP::Types::AvailableCommand]
+  def available_commands: (Riffer::Rig::Runtime runtime) -> Array[::ACP::Types::AvailableCommand]
+end

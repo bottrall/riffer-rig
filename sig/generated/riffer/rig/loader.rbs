@@ -14,6 +14,8 @@ class Riffer::Rig::Loader
 
   @file_state: Hash[String, Time?]?
 
+  @extra_extensions: Array[Riffer::Rig::Extension]
+
   @gem_extensions: Array[Riffer::Rig::Extension]
 
   @extensions_enabled: bool
@@ -50,9 +52,10 @@ class Riffer::Rig::Loader
   # @rbs max_steps: Integer?
   # @rbs store: Riffer::Rig::Stores::_Store | nil
   # @rbs reload: (:auto | :manual | nil)
+  # @rbs extra_extensions: Array[Riffer::Rig::Extension]
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: Riffer::Rig::Runtime
-  def self.runtime: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?store: Riffer::Rig::Stores::_Store | nil, ?reload: :auto | :manual | nil, ?snapshot: Hash[Symbol, untyped]?) -> Riffer::Rig::Runtime
+  def self.runtime: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?store: Riffer::Rig::Stores::_Store | nil, ?reload: :auto | :manual | nil, ?extra_extensions: Array[Riffer::Rig::Extension], ?snapshot: Hash[Symbol, untyped]?) -> Riffer::Rig::Runtime
 
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -70,9 +73,10 @@ class Riffer::Rig::Loader
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
   # @rbs reload: (:auto | :manual | nil)
+  # @rbs extra_extensions: Array[Riffer::Rig::Extension]
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: Riffer::Rig::Runtime
-  def runtime: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?reload: :auto | :manual | nil, ?snapshot: Hash[Symbol, untyped]?) -> Riffer::Rig::Runtime
+  def runtime: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?reload: :auto | :manual | nil, ?extra_extensions: Array[Riffer::Rig::Extension], ?snapshot: Hash[Symbol, untyped]?) -> Riffer::Rig::Runtime
 
   # @rbs model: String?
   # @rbs extensions: bool

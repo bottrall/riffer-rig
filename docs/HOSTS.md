@@ -67,3 +67,5 @@ The terminal renders `TextDelta` as streamed prose, `ToolCallDone` as the call, 
 | `confirm`  | asks `[y/N]`; only an answer starting with `y` confirms                                    |
 | `notify`   | prints the message as a line of its own, red for `level: :error`                           |
 | `progress` | prints the label and runs the block under the spinner                                      |
+
+The other two tiers follow the same shape. `Riffer::Rig::Headless::Host` reports `Set[:notify, :progress]` and prints both to stderr ([Headless](HEADLESS.md)). `Riffer::Rig::ACP::Host` reports `Set[:notify]`, turns `notify` into a `session/update` on the session it belongs to, and buffers the ones raised while the Runtime is still building ([ACP](ACP.md)).

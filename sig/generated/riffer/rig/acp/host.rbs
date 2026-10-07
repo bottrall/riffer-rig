@@ -1,0 +1,53 @@
+# Generated from lib/riffer/rig/acp/host.rb with RBS::Inline
+
+class Riffer::Rig::ACP::Host
+  CAPABILITIES: Set[Symbol]
+
+  @client: ::ACP::AgentConnection::_Client
+
+  @session_id: String?
+
+  @buffered: Array[String]
+
+  # @rbs client: ::ACP::AgentConnection::_Client
+  # @rbs return: void
+  def initialize: (client: ::ACP::AgentConnection::_Client) -> void
+
+  # @rbs return: Set[Symbol]
+  def capabilities: () -> Set[Symbol]
+
+  # @rbs question: String?
+  # @rbs options: Array[String]?
+  # @rbs secret: bool
+  # @rbs return: String?
+  def ask: (?String? question, ?options: Array[String]?, ?secret: bool) -> String?
+
+  # @rbs question: String?
+  # @rbs return: bool
+  def confirm: (?untyped _question) -> bool
+
+  # @rbs message: String?
+  # @rbs level: Symbol
+  # @rbs return: void
+  def notify: (?String? message, ?level: Symbol) -> void
+
+  # @rbs label: String?
+  # @rbs &block: ? () -> void
+  # @rbs return: void
+  def progress: (?String? label) ?{ () -> void } -> void
+
+  # Session updates name their session, and acp-sdk runs session_created after
+  # the session/new reply so the client knows the id before any update for it
+  # arrives — that is why the build-time notifies wait for this, not for the
+  # Runtime's construction to end.
+  # @rbs id: String
+  # @rbs return: void
+  def session_id=: (String id) -> void
+
+  private
+
+  # @rbs id: String
+  # @rbs message: String
+  # @rbs return: void
+  def send_update: (String id, String message) -> void
+end

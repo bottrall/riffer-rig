@@ -60,11 +60,14 @@ class Riffer::Rig::Registrar
   def setting: (Symbol key, default: untyped) -> void
 
   # @rbs name: String
-  # @rbs url: String
+  # @rbs url: String?
   # @rbs headers: Hash[String, String]
   # @rbs auth: Hash[Symbol, (String | Array[String])]
+  # @rbs command: String?
+  # @rbs args: Array[String]
+  # @rbs env: Hash[String, String]
   # @rbs return: void
-  def mcp: (String name, url: String, ?headers: Hash[String, String], ?auth: Hash[Symbol, String | Array[String]]) -> void
+  def mcp: (String name, ?url: String?, ?headers: Hash[String, String], ?auth: Hash[Symbol, String | Array[String]], ?command: String?, ?args: Array[String], ?env: Hash[String, String]) -> void
 
   # @rbs prefix: String | Symbol
   # @rbs setup: Riffer::Rig::ProviderSetup | Hash[Symbol, untyped]?

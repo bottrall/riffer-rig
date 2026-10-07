@@ -756,6 +756,14 @@ class Riffer::Rig::Runtime
   # @rbs declaration: Riffer::Rig::Mcp::Declaration
   # @rbs return: Riffer::Rig::Mcp::Server?
   def register_mcp_server(name, declaration)
+    unless declaration.url
+      # Upstream candidate: riffer's MCP registry speaks HTTPS only, so a
+      # stdio declaration reaches the Runtime but cannot be registered until
+      # riffer grows a stdio client.
+      @host.notify("MCP server #{name} runs over stdio, which riffer cannot register yet", level: :error)
+      return nil
+    end
+
     registration = @mcp_registry.register(
       name: name, endpoint: declaration.url, tags: [mcp_tag], discovery_headers: declaration.headers
     )

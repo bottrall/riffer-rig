@@ -81,14 +81,19 @@ class Riffer::Rig::Registrar
   end
 
   # @rbs name: String
-  # @rbs url: String
+  # @rbs url: String?
   # @rbs headers: Hash[String, String]
   # @rbs auth: Hash[Symbol, (String | Array[String])]
+  # @rbs command: String?
+  # @rbs args: Array[String]
+  # @rbs env: Hash[String, String]
   # @rbs return: void
-  def mcp(name, url:, headers: {}, auth: {})
+  def mcp(name, url: nil, headers: {}, auth: {}, command: nil, args: [], env: {})
     fields = auth.transform_keys(&:to_sym)
                  .transform_values { |env_names| env_names.is_a?(String) ? [env_names] : env_names }
-    @mcp_servers[name] = Riffer::Rig::Mcp::Declaration.new(url: url, headers: headers, auth: fields)
+    @mcp_servers[name] = Riffer::Rig::Mcp::Declaration.new(
+      url: url, headers: headers, auth: fields, command: command, args: args, env: env
+    )
   end
 
   # @rbs prefix: String | Symbol

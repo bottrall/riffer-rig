@@ -174,6 +174,22 @@ describe Riffer::Rig::Loader do
       assert_equal @cwd, build(model: 'mock/test').cwd
     end
 
+    it 'loads extra extensions with the bundle' do
+      extra = Riffer::Rig::Extension.new('extra_loader') { |rig| rig.command('ping', description: 'Pings') { |_ctx| nil } }
+      runtime = build(model: 'mock/test', extra_extensions: [extra])
+
+      assert(runtime.commands.any? { |command| command.name == 'ping' })
+    end
+
+    it 'keeps extra extensions through a reload' do
+      extra = Riffer::Rig::Extension.new('extra_loader') { |rig| rig.command('ping', description: 'Pings') { |_ctx| nil } }
+      loader = new_loader
+      runtime = loader.runtime(model: 'mock/test', extra_extensions: [extra])
+      loader.reload(runtime, force: true)
+
+      assert(runtime.commands.any? { |command| command.name == 'ping' })
+    end
+
     it 'loads the bundled tools' do
       assert_equal %w[read write edit bash], tool_names(build(model: 'mock/test'))
     end

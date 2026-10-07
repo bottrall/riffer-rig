@@ -38,10 +38,12 @@ module Riffer::Rig::CLI
   # @rbs return: Integer
   def terminal: (Riffer::Rig::CLI::Flags flags, input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, cwd: String, home: String) -> Integer
 
-  # @rbs name: String
-  # @rbs error: IO
+  # @rbs input: IO
+  # @rbs output: IO
+  # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  # @rbs home: String
   # @rbs return: Integer
-  def unavailable: (String name, IO error) -> Integer
+  def acp: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String) -> Integer
 
   # @rbs message: String
   # @rbs error: IO

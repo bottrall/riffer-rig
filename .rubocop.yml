@@ -46,6 +46,9 @@ Lint/UnusedMethodArgument:
     # Same reason: the headless host writes out its declines with the
     # contract's parameter names.
     - "lib/riffer/rig/headless/host.rb"
+    # Same reason: the ACP host writes out its declines with the contract's
+    # parameter names.
+    - "lib/riffer/rig/acp/host.rb"
 
 Metrics:
   Enabled: false

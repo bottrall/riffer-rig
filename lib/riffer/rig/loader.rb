@@ -20,6 +20,7 @@ class Riffer::Rig::Loader
   # @rbs @stripped: Array[Symbol]
   # @rbs @extensions_enabled: bool
   # @rbs @gem_extensions: Array[Riffer::Rig::Extension]
+  # @rbs @extra_extensions: Array[Riffer::Rig::Extension]
   # @rbs @file_state: Hash[String, Time?]?
   # @rbs @reload_mode: (:auto | :manual | nil)
 
@@ -39,6 +40,7 @@ class Riffer::Rig::Loader
   # @rbs max_steps: Integer?
   # @rbs store: Riffer::Rig::Stores::_Store | nil
   # @rbs reload: (:auto | :manual | nil)
+  # @rbs extra_extensions: Array[Riffer::Rig::Extension]
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: Riffer::Rig::Runtime
   def self.runtime(
@@ -55,6 +57,7 @@ class Riffer::Rig::Loader
     max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS,
     store: Riffer::Rig::Stores::JSONL.new,
     reload: nil,
+    extra_extensions: [],
     snapshot: nil
   )
     new(cwd:, host:, env:, home:, riffer_config:, store:).runtime(
@@ -65,6 +68,7 @@ class Riffer::Rig::Loader
       tools:,
       max_steps:,
       reload:,
+      extra_extensions:,
       snapshot:
     )
   end
@@ -107,6 +111,7 @@ class Riffer::Rig::Loader
   # @rbs tools: Array[String]?
   # @rbs max_steps: Integer?
   # @rbs reload: (:auto | :manual | nil)
+  # @rbs extra_extensions: Array[Riffer::Rig::Extension]
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: Riffer::Rig::Runtime
   def runtime(
@@ -117,6 +122,7 @@ class Riffer::Rig::Loader
     tools: nil,
     max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS,
     reload: nil,
+    extra_extensions: [],
     snapshot: nil
   )
     settings = merged_settings
@@ -126,12 +132,14 @@ class Riffer::Rig::Loader
     ensure_sdk(provider)
     credentials = { provider.to_sym => credentials_for(provider) }
     @extensions_enabled = extensions
+    @extra_extensions = extra_extensions
     @reload_mode = reload
     @stripped = { skills: skills, agents_md: agents_md }.reject { |_name, kept| kept }.keys
     loaded = Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *@stripped).values
     @tracked_files = []
     @gem_extensions = []
     loaded += load_rig_files(document.autoload) if extensions
+    loaded += @extra_extensions
 
     recorder = recorder_for(document, resumed: !snapshot.nil?)
     loaded << Riffer::Rig::Stores::Recorder.extension(recorder) if recorder
@@ -310,7 +318,10 @@ class Riffer::Rig::Loader
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs return: Array[Riffer::Rig::Extension]
   def reload_extensions(document, settings)
-    candidates = Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *@stripped).values
+    candidates = Riffer::Rig::Bundled::BY_NAME.except(
+      *document.disabled.map(&:to_sym),
+      *@stripped
+    ).values + @extra_extensions
     return validated(candidates, settings) unless @extensions_enabled
 
     scrub_tracked_features
