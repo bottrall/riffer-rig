@@ -137,7 +137,7 @@ Adds a source of [Agent Skills](SKILLS.md). The block receives the Runtime as `c
 rig.mcp 'tracker', url: 'https://tracker.example.com/mcp', headers: { 'Authorization' => 'Bearer …' }
 ```
 
-Declares an HTTPS MCP server for the Runtime: `rig.mcp(name, url:, headers: {})`. The Runtime registers the server with riffer's MCP client, and the agent gets its tools as `<server>__<tool>`; a later declaration of the same name replaces the earlier one. [MCP](MCP.md) covers naming, why the `tools:` allowlist does not apply, failures, what a rebuild keeps and the same-name limit across Runtimes.
+Declares an HTTPS MCP server for the Runtime: `rig.mcp(name, url:, headers: {}, auth: {})`. The Runtime registers the server with riffer's MCP client, and the agent gets its tools as `<server>__<tool>`; a later declaration of the same name replaces the earlier one. [MCP](MCP.md) covers naming, why the `tools:` allowlist does not apply, failures, what a rebuild keeps and the same-name limit across Runtimes.
 
 ## The `rig.provider` seam
 

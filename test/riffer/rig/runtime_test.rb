@@ -1927,16 +1927,19 @@ describe Riffer::Rig::Runtime do
       @ssl_cert_file = ENV.fetch('SSL_CERT_FILE', nil)
       ENV['SSL_CERT_FILE'] = @server.ca_file
       @runtimes = []
+      @auth_dir = Dir.mktmpdir('rig-mcp-auth')
+      @auth_path = File.join(@auth_dir, '.riffer', 'auth.json')
     end
 
     after do
       @runtimes.each(&:close)
       ENV['SSL_CERT_FILE'] = @ssl_cert_file
       @server.stop
+      FileUtils.remove_entry(@auth_dir)
     end
 
-    def serving(name = 'web', url: @server.url, headers: {})
-      Riffer::Rig::Extension.new("serves_#{name}") { |rig| rig.mcp(name, url: url, headers: headers) }
+    def serving(name = 'web', url: @server.url, headers: {}, auth: {})
+      Riffer::Rig::Extension.new("serves_#{name}") { |rig| rig.mcp(name, url: url, headers: headers, auth: auth) }
     end
 
     def runtime(extensions, **)
@@ -1985,6 +1988,69 @@ describe Riffer::Rig::Runtime do
                    }.new.call(context: nil).content
     end
 
+    it 'sends the auth-resolved headers' do
+      built = runtime(
+        [serving(headers: { 'X-Token' => 'Bearer ${api_key}' }, auth: { api_key: 'KAGI_API_KEY' })],
+        env: Riffer::Rig::Env.new({ 'KAGI_API_KEY' => 'kagi-key' }),
+        auth_path: @auth_path
+      )
+
+      assert_equal 'Bearer kagi-key',
+                   built.agent.tools.find { |klass|
+                     klass.name == 'web__token'
+                   }.new.call(context: nil).content
+    end
+
+    it 'prompts once for a missing credential and sends the answer' do
+      host = Class.new(Riffer::Rig::Hosts::Null) { define_method(:ask) { |*| 'pasted' } }.new
+      built = runtime(
+        [serving(headers: { 'X-Token' => 'Bearer ${api_key}' }, auth: { api_key: 'KAGI_API_KEY' })],
+        host: host,
+        env: Riffer::Rig::Env.new({}),
+        auth_path: @auth_path
+      )
+
+      assert_equal 'Bearer pasted',
+                   built.agent.tools.find { |klass|
+                     klass.name == 'web__token'
+                   }.new.call(context: nil).content
+    end
+
+    it 'resolves the auth block of a server declared in the mcp settings' do
+      settings = {
+        mcp: {
+          servers: {
+            web: { url: @server.url, auth: { api_key: 'KAGI_API_KEY' }, headers: { 'X-Token' => 'Bearer ${api_key}' } }
+          }
+        }
+      }
+      built = runtime(
+        [Riffer::Rig.bundled(:mcp)],
+        settings: settings,
+        env: Riffer::Rig::Env.new({ 'KAGI_API_KEY' => 'kagi-key' }),
+        auth_path: @auth_path
+      )
+
+      assert_equal 'Bearer kagi-key',
+                   built.agent.tools.find { |klass|
+                     klass.name == 'web__token'
+                   }.new.call(context: nil).content
+    end
+
+    it 'reports a server whose credential cannot be resolved through notify' do
+      notice = 'MCP server web failed to register: MCP server web has no api_key (KAGI_API_KEY); ' \
+               'set it in the environment or run riffer interactively to paste it'
+
+      assert_equal [Riffer::Rig::Events::Notify.new(notice, :error)],
+                   notifies(
+                     runtime(
+                       [serving(headers: { 'X-Token' => 'Bearer ${api_key}' }, auth: { api_key: 'KAGI_API_KEY' })],
+                       env: Riffer::Rig::Env.new({}),
+                       auth_path: @auth_path
+                     )
+                   )
+    end
+
     it 'declares the servers in the mcp settings through the bundled extension' do
       settings = { mcp: { servers: { web: { url: @server.url } } } }
 
@@ -2028,6 +2094,19 @@ describe Riffer::Rig::Runtime do
       built = runtime([serving])
       before = registration
       built.rebuild(extensions: [serving], settings: {})
+
+      assert_same before, registration
+    end
+
+    it 'keeps the registration across a rebuild when the auth block resolves the same' do
+      declaration = { headers: { 'X-Token' => 'Bearer ${api_key}' }, auth: { api_key: 'KAGI_API_KEY' } }
+      built = runtime(
+        [serving(**declaration)],
+        env: Riffer::Rig::Env.new({ 'KAGI_API_KEY' => 'kagi-key' }),
+        auth_path: @auth_path
+      )
+      before = registration
+      built.rebuild(extensions: [serving(**declaration)], settings: {})
 
       assert_same before, registration
     end

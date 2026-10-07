@@ -20,9 +20,9 @@ The bundled `mcp` extension (`Riffer::Rig.bundled(:mcp)`) declares every server 
 }
 ```
 
-`url` is required and must be `https://`; `headers` is optional and defaults to none. Header values are sent exactly as written; nothing in them is expanded from the environment. An embedder passes the same shape in the Runtime's `settings:` hash, with symbol keys: `{ mcp: { servers: { docs: { url: 'https://docs.example.com/mcp' } } } }` (see [Embedding](EMBEDDING.md#constructing-a-runtime)). An entry without a `url` fails the whole `mcp` extension, which is reported as a load error (see [Extensions](EXTENSIONS.md#error-isolation)).
+`url` is required and must be `https://`; `headers` is optional and defaults to none. An embedder passes the same shape in the Runtime's `settings:` hash, with symbol keys: `{ mcp: { servers: { docs: { url: 'https://docs.example.com/mcp' } } } }` (see [Embedding](EMBEDDING.md#constructing-a-runtime)). An entry without a `url` fails the whole `mcp` extension, which is reported as a load error (see [Extensions](EXTENSIONS.md#error-isolation)).
 
-Put a server that needs a secret header in your home `~/.riffer/settings.json`, not the project's `.riffer/settings.json`, which is usually committed with the project.
+Put a server that needs a secret header in your home `~/.riffer/settings.json`, not the project's `.riffer/settings.json`, which is usually committed with the project — the same goes for its `auth` block ([Secret headers](#secret-headers)).
 
 Settings come in two scopes, `~/.riffer/settings.json` then the project's `.riffer/settings.json`. `Riffer::Rig::Mcp.merge(home, project)` merges the two `mcp` hashes by server name: a server declared in only one scope is kept, and a project server replaces the home server of the same name whole — its `headers` are not merged with the home server's.
 
@@ -34,6 +34,28 @@ Riffer::Rig::Mcp.merge(home_settings[:mcp] || {}, project_settings[:mcp] || {})
 
 `mcp` is an ordinary extension name, not a core settings key: `mcp.servers` is simply the bundled extension's own namespace, the same as any other extension's. To run without it, leave it out of the Runtime's `extensions:`, or list it in `extensions.disabled` ([Configuration](CONFIGURATION.md#extensions)).
 
+## Secret headers
+
+A server that authenticates with a token need not put the token in `settings.json`. Declare an `auth` block with a field per credential — the field's value is one or more environment variable names — and reference the fields from the header values as `${field}`:
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "kagi": {
+        "url": "https://mcp.kagi.com/mcp",
+        "auth": { "api_key": "KAGI_API_KEY" },
+        "headers": { "Authorization": "Bearer ${api_key}" }
+      }
+    }
+  }
+}
+```
+
+When the Runtime is built, each field resolves like a provider credential: the environment first, then the entry stored under the server's name in `~/.riffer/auth.json`, then a prompt — asked once with no echo and stored there for every run after. A field may name several environment variables, tried in order. Header values of a server without an `auth` block are sent exactly as written; with one, every `${field}` must name a declared field, and a reference to anything else fails the registration.
+
+A credential that cannot be resolved — unset everywhere, with no stored entry and a host that cannot ask — is reported through `notify` at level `:error` as "MCP server NAME failed to register: MCP server NAME has no FIELD (ENV_VAR); set it in the environment or run riffer interactively to paste it", and the Runtime runs without that server's tools. A rebuild re-resolves the block, so a server whose resolved headers changed is registered again ([Reload and close](#reload-and-close)).
+
 ## Declaring servers from an extension
 
 Any extension declares a server of its own with the `rig.mcp` seam; the bundled extension is only the settings-driven convention on top of it.
@@ -44,7 +66,7 @@ Riffer::Rig.extension('tracker') do |rig|
 end
 ```
 
-`rig.mcp(name, url:, headers: {})` declares one server. Server names are shared across extensions: a later declaration of the same name, from the same extension or a later one, replaces the earlier one, and a replacement across extensions is reported through `notify` at level `:info` as "Extension LATER replaces MCP server NAME from EARLIER".
+`rig.mcp(name, url:, headers: {}, auth: {})` declares one server. An extension-declared server can carry an `auth` block and `${field}` header references of its own ([Secret headers](#secret-headers)). Server names are shared across extensions: a later declaration of the same name, from the same extension or a later one, replaces the earlier one, and a replacement across extensions is reported through `notify` at level `:info` as "Extension LATER replaces MCP server NAME from EARLIER".
 
 An extension block can read its own settings namespace as `rig.settings` while it runs, with the defaults it declared with [`rig.setting`](EXTENSIONS.md#the-rigsetting-seam) filled in. That is how the bundled extension reads `mcp.servers`.
 
