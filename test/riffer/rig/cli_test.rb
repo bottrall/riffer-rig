@@ -110,16 +110,12 @@ describe Riffer::Rig::CLI do
   end
 
   describe 'session flags' do
-    before do
-      FileUtils.rm_rf(File.join(Dir.home, '.riffer', 'sessions'))
-    end
-
     def model_env
       { 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test' }
     end
 
     def session_files
-      Dir.glob(File.join(Dir.home, '.riffer', 'sessions', '*', '*.jsonl'))
+      Dir.glob(File.join(@home, '.riffer', 'sessions', '*', '*.jsonl'))
     end
 
     it 'starts fresh when -c has no saved session' do
@@ -172,8 +168,14 @@ describe Riffer::Rig::CLI do
       assert_includes @output.string, 'No saved session nope.'
     end
 
-    it 'returns two for a bare -r' do
-      assert_equal 2, start('-r', env: model_env)
+    it 'opens the picker for a bare -r' do
+      assert_equal 0, start('-r', env: model_env)
+    end
+
+    it 'shows the picker for a bare -r' do
+      start('-r', env: model_env)
+
+      assert_includes @output.string, 'No saved sessions.'
     end
 
     describe 'headless' do

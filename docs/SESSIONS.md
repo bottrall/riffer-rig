@@ -38,9 +38,23 @@ The Loader picks the session to drive; hosts never see the store:
 
 A listed header carries the session's update time as `updated`, stamped by the store while it holds the physical artifact — for `Stores::JSONL` the file's mtime, which its last append set; `continue` picks the most recently `updated` session wherever `list` happens to place it.
 
-On the command line, `riffer -c` continues the most recent session in the directory and `riffer -r <id>` resumes by id. With no match the REPL tells you and starts fresh.
+On the command line, `riffer -c` continues the most recent session in the directory and `riffer -r <id>` resumes by id. With no match the REPL tells you and starts fresh. Bare `riffer -r` opens the [picker](#the-picker) before the first session starts; picking a session resumes it, leaving the picker starts a fresh one.
 
 Resuming folds the session's entries back into a snapshot and builds a Runtime over it: the last `model` entry wins, skill activations accumulate, and the `message` entries are the history. Everything else is today's — the settings, credentials, extensions and tools of the new build, and its model selection, unless the session recorded a `/model` switch, which is restored when its provider still has credentials ([Restoring](#restoring) has the rules, including the healed tail of a file cut mid-turn). A resumed session keeps its id and appends to the same file.
+
+## The picker
+
+In the REPL, `/resume` opens the picker over the sessions of the current directory, and `/resume --all` over every directory's. Each row shows the session's first prompt as its title, the relative time of its last update and its message count, most recent first.
+
+The picker reads one line at a time:
+
+- Typing text filters the rows to titles containing it (case-insensitive).
+- Enter switches to the session when a single row remains.
+- A row number — `2`, Enter — switches to that row directly.
+- Ctrl-D starts a delete: type the number of the row, then confirm with `y` (`n` or anything else keeps it). The session is removed from the store.
+- Enter with several rows, or Ctrl-C, leaves the picker.
+
+Switching replaces the Runtime the terminal drives and re-renders the banner: the conversation you left is already saved, keeps its id and file, and `/resume` appends to it. `/new` starts a fresh session in place the same way — a new id, empty history — and the session you left stays on disk.
 
 ## What a snapshot holds
 

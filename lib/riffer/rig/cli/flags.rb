@@ -9,6 +9,9 @@ class Riffer::Rig::CLI::Flags
            riffer acp           (not available yet)
   TEXT
 
+  # The tokens OptionParser reports a missing argument for when -r is bare.
+  BARE_RESUME = %w[-r --resume].freeze #: Array[String]
+
   # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save, verbose, prompt, continue, resume
   attr_reader :model #: String?
   attr_reader :extensions, :skills, :agents_md, :help, :verbose #: bool
@@ -19,6 +22,11 @@ class Riffer::Rig::CLI::Flags
   attr_reader :continue #: bool
   attr_reader :resume #: String?
 
+  # A bare -r (no id) only reaches here for the REPL: the parser requires the
+  # id, and the missing-argument error is translated to an empty resume so the
+  # terminal can open the picker instead. Headless keeps the error and prints
+  # it as the usage failure.
+  #
   # @rbs argv: Array[String]
   # @rbs prompt: bool
   # @rbs return: Riffer::Rig::CLI::Flags | String
@@ -28,20 +36,12 @@ class Riffer::Rig::CLI::Flags
     allowed = rest.empty? || (prompt && rest.size == 1)
     return "unexpected argument: #{rest.join(' ')}" unless allowed
 
-    new(
-      model: values[:model],
-      extensions: !values.key?(:'no-extensions'),
-      skills: !values.key?(:'no-skills'),
-      agents_md: !values.key?(:'no-agents-md'),
-      tools: values[:tools],
-      max_steps: values[:'max-steps'],
-      save: !values.key?(:'no-save'),
-      verbose: values.key?(:verbose),
-      prompt: prompt ? rest.first : nil,
-      continue: values.key?(:continue),
-      resume: values[:resume],
-      help: values.key?(:help)
-    )
+    assemble(values, rest.first, prompt: prompt)
+  rescue OptionParser::MissingArgument => e
+    bare = !prompt && BARE_RESUME.include?(e.args.first.to_s)
+    return assemble(values || {}, nil, prompt: prompt, bare_resume: bare) if bare
+
+    e.message
   rescue OptionParser::ParseError => e
     e.message
   end
@@ -49,6 +49,11 @@ class Riffer::Rig::CLI::Flags
   # @rbs return: String
   def self.usage
     parser.help
+  end
+
+  # @rbs return: Hash[Symbol, untyped]
+  def keywords
+    { model: model, extensions: extensions, skills: skills, agents_md: agents_md, tools: tools, max_steps: max_steps }
   end
 
   # @rbs return: OptionParser
@@ -64,13 +69,36 @@ class Riffer::Rig::CLI::Flags
       parser.on('--max-steps N', Integer, 'Stop a turn after N model calls')
       parser.on('--no-save', 'Do not save this session')
       parser.on('-c', '--continue', 'Continue the most recent session in this directory')
-      parser.on('-r ID', '--resume ID', String, 'Resume the session with this id')
+      parser.on('-r ID', '--resume ID', String, 'Resume the session with this id; bare -r opens the picker in the REPL')
       parser.on('-p', '--print', 'Run one prompt headless and exit; the prompt is the argument, else stdin')
       parser.on('--verbose', 'With -p, trace each tool call to stderr')
       parser.on('-h', '--help', 'Show this help')
     end
   end
   private_class_method :parser
+
+  # @rbs values: Hash[Symbol, untyped]
+  # @rbs head: String?
+  # @rbs prompt: bool
+  # @rbs bare_resume: bool
+  # @rbs return: Riffer::Rig::CLI::Flags
+  def self.assemble(values, head, prompt:, bare_resume: false)
+    new(
+      model: values[:model],
+      extensions: !values.key?(:'no-extensions'),
+      skills: !values.key?(:'no-skills'),
+      agents_md: !values.key?(:'no-agents-md'),
+      tools: values[:tools],
+      max_steps: values[:'max-steps'],
+      save: !values.key?(:'no-save'),
+      verbose: values.key?(:verbose),
+      prompt: prompt ? head : nil,
+      continue: values.key?(:continue),
+      resume: bare_resume ? '' : values[:resume],
+      help: values.key?(:help)
+    )
+  end
+  private_class_method :assemble
 
   # @rbs model: String?
   # @rbs extensions: bool

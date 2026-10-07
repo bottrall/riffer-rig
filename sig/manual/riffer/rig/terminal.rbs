@@ -1,0 +1,12 @@
+# The sessions collaborator the terminal drives the session lifecycle through;
+# Riffer::Rig::CLI::Sessions is the implementation.
+
+class Riffer::Rig::Terminal
+  interface _Sessions
+    def start: (::Riffer::Rig::Hosts::_Host host) -> ::Riffer::Rig::Runtime
+    def fresh: (::Riffer::Rig::Hosts::_Host host) -> ::Riffer::Rig::Runtime
+    def resume: (::Riffer::Rig::Hosts::_Host host, String id) -> ::Riffer::Rig::Runtime?
+    def list: (::Riffer::Rig::Hosts::_Host host, ?all: bool) -> Array[::Riffer::Rig::Terminal::Session]
+    def delete: (::Riffer::Rig::Hosts::_Host host, String id) -> void
+  end
+end

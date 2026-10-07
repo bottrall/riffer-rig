@@ -3,6 +3,14 @@
 class Riffer::Rig::Terminal
   EXIT_COMMANDS = %w[/exit /quit].freeze #: Array[String]
 
+  NEW_COMMAND = 'new' #: String
+
+  RESUME_COMMAND = 'resume' #: String
+
+  NEW_USAGE = 'Usage: /new' #: String
+
+  RESUME_USAGE = 'Usage: /resume [--all]' #: String
+
   SLASH_COMMAND = %r{\A/(\S+)\s*(.*)\z}m #: Regexp
 
   SKILL_COMMAND_PREFIX = 'skill:'
@@ -17,19 +25,32 @@ class Riffer::Rig::Terminal
   # @rbs @animator: Riffer::Rig::Terminal::Animator
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @version: String
+  # @rbs @sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs @picker: Riffer::Rig::Terminal::Picker
 
   # @rbs input: IO
   # @rbs output: IO
   # @rbs version: String
   # @rbs no_color: bool
+  # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs return: Riffer::Rig::Terminal
-  def self.for(input:, output:, version:, no_color: false)
+  def self.for(input:, output:, version:, sessions:, no_color: false)
     theme = Theme.for(output, no_color: no_color)
     smoother = Smoother.new(io: output, theme: theme)
     renderer = Renderer.new(io: output, theme: theme, smoother: smoother, cursor: Cursor.new(io: output, theme: theme))
     animator = Animator.new(io: output, theme: theme)
     host = Riffer::Rig::Terminal::Host.new(input: input, renderer: renderer, animator: animator)
-    new(input: input, host: host, renderer: renderer, animator: animator, theme: theme, version: version)
+    picker = Picker.new(input: input, renderer: renderer, host: host, sessions: sessions)
+    new(
+      input: input,
+      host: host,
+      renderer: renderer,
+      animator: animator,
+      theme: theme,
+      version: version,
+      sessions: sessions,
+      picker: picker
+    )
   end
 
   # @rbs input: IO
@@ -38,20 +59,24 @@ class Riffer::Rig::Terminal
   # @rbs animator: Riffer::Rig::Terminal::Animator
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs version: String
+  # @rbs sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs picker: Riffer::Rig::Terminal::Picker
   # @rbs return: void
-  def initialize(input:, host:, renderer:, animator:, theme:, version:)
+  def initialize(input:, host:, renderer:, animator:, theme:, version:, sessions:, picker:)
     @input = input
     @host = host
     @renderer = renderer
     @animator = animator
     @theme = theme
     @version = version
+    @sessions = sessions
+    @picker = picker
   end
 
-  # @rbs &build: (Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime
+  # @rbs open_picker: bool
   # @rbs return: Integer
-  def run(&build)
-    runtime = load(build)
+  def run(open_picker: false)
+    runtime = start(open_picker: open_picker)
     return 1 unless runtime
 
     begin
@@ -67,10 +92,23 @@ class Riffer::Rig::Terminal
 
   private
 
-  # @rbs build: ^(Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime
+  # @rbs open_picker: bool
   # @rbs return: Riffer::Rig::Runtime?
-  def load(build)
-    build.call(@host)
+  def start(open_picker:)
+    session = @picker.open(all: false) if open_picker
+    return build { @sessions.start(@host) } unless session
+
+    resumed = build { @sessions.resume(@host, session.id) }
+    return resumed if resumed
+
+    @renderer.notify("No saved session #{session.id}.", :info)
+    build { @sessions.start(@host) }
+  end
+
+  # @rbs &build: () -> Riffer::Rig::Runtime?
+  # @rbs return: Riffer::Rig::Runtime?
+  def build(&)
+    yield
   rescue Riffer::Rig::Loader::ConfigurationError => e
     @renderer.error(e.message)
     nil
@@ -110,7 +148,7 @@ class Riffer::Rig::Terminal
         text = line.strip
         break if EXIT_COMMANDS.include?(text)
 
-        dispatch(runtime, text) unless text.empty?
+        runtime = dispatch(runtime, text) unless text.empty?
       end
     end
   end
@@ -125,22 +163,80 @@ class Riffer::Rig::Terminal
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs text: String
-  # @rbs return: void
+  # @rbs return: Riffer::Rig::Runtime
   def dispatch(runtime, text)
     command = SLASH_COMMAND.match(text)
-    turn(runtime) do |emit|
-      if command
-        runtime.run_command(command[1].to_s, command[2].to_s, &emit)
-      else
-        runtime.prompt(text, &emit)
+    if command
+      case command[1].to_s
+      when NEW_COMMAND then return command_new(runtime, command[2].to_s)
+      when RESUME_COMMAND then return command_resume(runtime, command[2].to_s)
       end
+
+      turn(runtime) { |emit| runtime.run_command(command[1].to_s, command[2].to_s, &emit) }
+    else
+      turn(runtime) { |emit| runtime.prompt(text, &emit) }
     end
+    runtime
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs args: String
+  # @rbs return: Riffer::Rig::Runtime
+  def command_new(runtime, args)
+    return usage(runtime, NEW_USAGE) unless args.strip.empty?
+
+    fresh = build { @sessions.fresh(@host) }
+    return runtime unless fresh
+
+    swap(runtime, fresh)
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs args: String
+  # @rbs return: Riffer::Rig::Runtime
+  def command_resume(runtime, args)
+    stripped = args.strip
+    return usage(runtime, RESUME_USAGE) unless stripped.empty? || stripped == '--all'
+
+    session = @picker.open(all: stripped == '--all')
+    return runtime unless session
+
+    resumed = build { @sessions.resume(@host, session.id) }
+    return missing(runtime, session) unless resumed
+
+    swap(runtime, resumed)
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs usage: String
+  # @rbs return: Riffer::Rig::Runtime
+  def usage(runtime, usage)
+    @renderer.notice(usage)
+    runtime
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs session: Riffer::Rig::Terminal::Session
+  # @rbs return: Riffer::Rig::Runtime
+  def missing(runtime, session)
+    @renderer.notify("No saved session #{session.id}.", :info)
+    runtime
+  end
+
+  # @rbs previous: Riffer::Rig::Runtime
+  # @rbs next_runtime: Riffer::Rig::Runtime
+  # @rbs return: Riffer::Rig::Runtime
+  def swap(previous, next_runtime)
+    previous.close
+    next_runtime.on_message { |message| render_tool_result(message) }
+    reveal_banner(next_runtime)
+    next_runtime
   end
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs &block: (^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void) -> void
   # @rbs return: void
-  def turn(runtime)
+  def turn(runtime, &)
     # Runtime#cancel takes a Mutex, which Ruby refuses inside a trap handler,
     # so the handler hands the cancel to a thread.
     previous = Signal.trap('INT') { Thread.new { runtime.cancel } }

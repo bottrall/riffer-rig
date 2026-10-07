@@ -48,7 +48,7 @@ The model is the first of these that is set: `--model`, `RIFFER_MODEL`, `model` 
 | `--max-steps N`         | stops a turn after `N` model calls                                          |
 | `--no-save`             | does not save this session to the [store](docs/SESSIONS.md)                 |
 | `-c`, `--continue`      | continues the most recent session in this directory ([Sessions](docs/SESSIONS.md#resuming)) |
-| `-r ID`, `--resume ID`  | resumes the session with id `ID` ([Sessions](docs/SESSIONS.md#resuming))    |
+| `-r ID`, `--resume ID`  | resumes the session with id `ID`; bare `-r` opens the [picker](docs/SESSIONS.md#the-picker) ([Sessions](docs/SESSIONS.md#resuming)) |
 | `-h`, `--help`          | prints the usage                                                            |
 
 `riffer acp` (an editor's agent over stdio) is reserved: for now it prints the usage and exits with status 2.
@@ -73,6 +73,7 @@ Type a prompt and press Enter; the reply streams in, with each tool call and the
 
 - Ctrl-C during a turn cancels it and returns to the prompt. Ctrl-C at the prompt asks for a second one, which exits.
 - `/exit` or `/quit` ends the session, as does Ctrl-D.
+- `/resume [--all]` opens the [session picker](docs/SESSIONS.md#the-picker): type to filter, switch with Enter on a single match or a row number, and delete with Ctrl-D and a confirm. `/new` starts a fresh session in place; the one you left stays on disk. Both replace the session the terminal drives and re-render the banner.
 - `/model provider/name` switches the model ([below](#switching-the-model)), and `/skill:<name> [text]` runs a skill ([Skills](docs/SKILLS.md)).
 - Any other `/name args` runs the Runtime command of that name, such as one an extension registers ([Extensions](docs/EXTENSIONS.md)); an unknown name is reported and nothing is sent to the model.
 

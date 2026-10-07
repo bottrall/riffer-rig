@@ -1,0 +1,66 @@
+# Generated from lib/riffer/rig/terminal/picker.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Picker
+  HEADER: String
+
+  DELETE_HEADER: String
+
+  DELETED: String
+
+  EMPTY: String
+
+  EOT: String
+
+  @sessions: Riffer::Rig::Terminal::_Sessions
+
+  @host: Riffer::Rig::Hosts::_Host
+
+  @renderer: Riffer::Rig::Terminal::Renderer
+
+  @input: IO
+
+  # @rbs input: IO
+  # @rbs renderer: Riffer::Rig::Terminal::Renderer
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs return: void
+  def initialize: (input: IO, renderer: Riffer::Rig::Terminal::Renderer, host: Riffer::Rig::Hosts::_Host, sessions: Riffer::Rig::Terminal::_Sessions) -> void
+
+  # @rbs all: bool
+  # @rbs return: Riffer::Rig::Terminal::Session?
+  def open: (all: bool) -> Riffer::Rig::Terminal::Session?
+
+  private
+
+  # @rbs row: Riffer::Rig::Terminal::Session
+  # @rbs filter: String
+  # @rbs return: bool
+  def matches?: (Riffer::Rig::Terminal::Session row, String filter) -> bool
+
+  # @rbs line: String
+  # @rbs shown: Array[Riffer::Rig::Terminal::Session]
+  # @rbs return: Riffer::Rig::Terminal::Session?
+  def number: (String line, Array[Riffer::Rig::Terminal::Session] shown) -> Riffer::Rig::Terminal::Session?
+
+  # @rbs shown: Array[Riffer::Rig::Terminal::Session]
+  # @rbs all: bool
+  # @rbs return: Array[Riffer::Rig::Terminal::Session] | :cancel
+  def delete_mode: (Array[Riffer::Rig::Terminal::Session] shown, bool all) -> (Array[Riffer::Rig::Terminal::Session] | :cancel)
+
+  # @rbs return: String | :interrupt | nil
+  def read: () -> (String | :interrupt | nil)
+
+  # @rbs row: Riffer::Rig::Terminal::Session
+  # @rbs all: bool
+  # @rbs return: String
+  def row_text: (Riffer::Rig::Terminal::Session row, bool all) -> String
+
+  # @rbs updated: Time?
+  # @rbs return: String
+  def relative: (Time? updated) -> String
+
+  # @rbs amount: Integer
+  # @rbs unit: String
+  # @rbs return: String
+  def count: (Integer amount, String unit) -> String
+end

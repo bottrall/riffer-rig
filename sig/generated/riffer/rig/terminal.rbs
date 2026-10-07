@@ -3,6 +3,14 @@
 class Riffer::Rig::Terminal
   EXIT_COMMANDS: Array[String]
 
+  NEW_COMMAND: String
+
+  RESUME_COMMAND: String
+
+  NEW_USAGE: String
+
+  RESUME_USAGE: String
+
   SLASH_COMMAND: Regexp
 
   SKILL_COMMAND_PREFIX: ::String
@@ -10,6 +18,10 @@ class Riffer::Rig::Terminal
   EXIT_HINT: ::String
 
   FAREWELL: ::String
+
+  @picker: Riffer::Rig::Terminal::Picker
+
+  @sessions: Riffer::Rig::Terminal::_Sessions
 
   @version: String
 
@@ -27,8 +39,9 @@ class Riffer::Rig::Terminal
   # @rbs output: IO
   # @rbs version: String
   # @rbs no_color: bool
+  # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs return: Riffer::Rig::Terminal
-  def self.for: (input: IO, output: IO, version: String, ?no_color: bool) -> Riffer::Rig::Terminal
+  def self.for: (input: IO, output: IO, version: String, sessions: Riffer::Rig::Terminal::_Sessions, ?no_color: bool) -> Riffer::Rig::Terminal
 
   # @rbs input: IO
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -36,18 +49,24 @@ class Riffer::Rig::Terminal
   # @rbs animator: Riffer::Rig::Terminal::Animator
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs version: String
+  # @rbs sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs picker: Riffer::Rig::Terminal::Picker
   # @rbs return: void
-  def initialize: (input: IO, host: Riffer::Rig::Hosts::_Host, renderer: Riffer::Rig::Terminal::Renderer, animator: Riffer::Rig::Terminal::Animator, theme: Riffer::Rig::Terminal::Theme, version: String) -> void
+  def initialize: (input: IO, host: Riffer::Rig::Hosts::_Host, renderer: Riffer::Rig::Terminal::Renderer, animator: Riffer::Rig::Terminal::Animator, theme: Riffer::Rig::Terminal::Theme, version: String, sessions: Riffer::Rig::Terminal::_Sessions, picker: Riffer::Rig::Terminal::Picker) -> void
 
-  # @rbs &build: (Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime
+  # @rbs open_picker: bool
   # @rbs return: Integer
-  def run: () { (Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime } -> Integer
+  def run: (?open_picker: bool) -> Integer
 
   private
 
-  # @rbs build: ^(Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime
+  # @rbs open_picker: bool
   # @rbs return: Riffer::Rig::Runtime?
-  def load: (^(Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime build) -> Riffer::Rig::Runtime?
+  def start: (open_picker: bool) -> Riffer::Rig::Runtime?
+
+  # @rbs &build: () -> Riffer::Rig::Runtime?
+  # @rbs return: Riffer::Rig::Runtime?
+  def build: () { () -> Riffer::Rig::Runtime? } -> Riffer::Rig::Runtime?
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void
@@ -62,8 +81,33 @@ class Riffer::Rig::Terminal
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs text: String
-  # @rbs return: void
-  def dispatch: (Riffer::Rig::Runtime runtime, String text) -> void
+  # @rbs return: Riffer::Rig::Runtime
+  def dispatch: (Riffer::Rig::Runtime runtime, String text) -> Riffer::Rig::Runtime
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs args: String
+  # @rbs return: Riffer::Rig::Runtime
+  def command_new: (Riffer::Rig::Runtime runtime, String args) -> Riffer::Rig::Runtime
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs args: String
+  # @rbs return: Riffer::Rig::Runtime
+  def command_resume: (Riffer::Rig::Runtime runtime, String args) -> Riffer::Rig::Runtime
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs usage: String
+  # @rbs return: Riffer::Rig::Runtime
+  def usage: (Riffer::Rig::Runtime runtime, String usage) -> Riffer::Rig::Runtime
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs session: Riffer::Rig::Terminal::Session
+  # @rbs return: Riffer::Rig::Runtime
+  def missing: (Riffer::Rig::Runtime runtime, Riffer::Rig::Terminal::Session session) -> Riffer::Rig::Runtime
+
+  # @rbs previous: Riffer::Rig::Runtime
+  # @rbs next_runtime: Riffer::Rig::Runtime
+  # @rbs return: Riffer::Rig::Runtime
+  def swap: (Riffer::Rig::Runtime previous, Riffer::Rig::Runtime next_runtime) -> Riffer::Rig::Runtime
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs &block: (^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void) -> void
