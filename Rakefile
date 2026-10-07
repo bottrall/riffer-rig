@@ -100,11 +100,6 @@ end
 desc 'Build the full deployable docs tree (site + API reference) into _site/'
 task docs: %w[docs:site rdoc]
 
-desc 'Serve the building plans in plans/ at http://localhost:8001'
-task :plans do
-  ruby '-run -e httpd plans -p 8001'
-end
-
 desc 'Check RBS signatures are current, then type-check'
 task typecheck: %w[rbs:check rbs:collection_check rbs:lint_manual steep:check]
 
