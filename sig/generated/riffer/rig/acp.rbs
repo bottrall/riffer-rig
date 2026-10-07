@@ -74,11 +74,8 @@ class Riffer::Rig::ACP
   # @rbs return: (::ACP::Types::PromptResponse | ::ACP::RequestError)
   def prompt: (::ACP::Types::PromptRequest request) -> (::ACP::Types::PromptResponse | ::ACP::RequestError)
 
-  # Restores a saved session: a Loader at the request's cwd reads the entries
-  # and rebuilds the Runtime, the stored messages replay as updates, then the
-  # request answers and a following prompt continues the conversation. The
-  # host takes the session id before the build so a build-time notify still
-  # reaches the client as an update for this session.
+  # The host takes the session id before the build, so a build-time notify
+  # still reaches the client as an update for this session.
   # @rbs request: ::ACP::Types::LoadSessionRequest
   # @rbs return: (::ACP::Types::LoadSessionResponse | ::ACP::RequestError)
   def load_session: (::ACP::Types::LoadSessionRequest request) -> (::ACP::Types::LoadSessionResponse | ::ACP::RequestError)
@@ -144,7 +141,6 @@ class Riffer::Rig::ACP
   # @rbs return: ::ACP::Types::ContentBlock::Text
   def text_block: (String text) -> ::ACP::Types::ContentBlock::Text
 
-  # A stored message replays as the update it was when it first streamed.
   # @rbs message: Hash[Symbol, untyped]
   # @rbs return: ::ACP::Types::SessionUpdate::t?
   def replay_of: (Hash[Symbol, untyped] message) -> ::ACP::Types::SessionUpdate::t?
