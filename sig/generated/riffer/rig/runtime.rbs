@@ -26,6 +26,8 @@ class Riffer::Rig::Runtime
   # tests and embedders can exercise the switches.
   NATIVE_TOOLS_BY_PROVIDER: Hash[Symbol, Hash[Symbol, bool]]
 
+  @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+
   @model_observers: Array[^(String) -> void]
 
   @message_observers: Array[^(Riffer::Messages::Base) -> void]
@@ -56,8 +58,6 @@ class Riffer::Rig::Runtime
 
   @agent: Riffer::Agent
 
-  @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
-
   @commands: Hash[String, Riffer::Rig::Command]
 
   @core_commands: Array[Riffer::Rig::Command]
@@ -77,6 +77,10 @@ class Riffer::Rig::Runtime
   @mcp_registry: Riffer::Rig::Mcp::_Registry
 
   @mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
+
+  @env: Riffer::Rig::Env
+
+  @auth_path: String
 
   @model_options: Hash[Symbol, untyped]
 
@@ -108,6 +112,8 @@ class Riffer::Rig::Runtime
   # @rbs name: String
   # @rbs instructions: String?
   # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
   # @rbs pricing: Hash[String, Riffer::Rig::Settings::Pricing]
   # @rbs riffer_config: Riffer::Config
   # @rbs mcp_registry: Riffer::Rig::Mcp::_Registry
@@ -116,7 +122,7 @@ class Riffer::Rig::Runtime
   # @rbs native_tools: Hash[Symbol, untyped]
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
-  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?native_tools: Hash[Symbol, untyped], ?snapshot: Hash[Symbol, untyped]?) -> void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?env: Riffer::Rig::Env, ?auth_path: String, ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?native_tools: Hash[Symbol, untyped], ?snapshot: Hash[Symbol, untyped]?) -> void
 
   # @rbs text: String
   # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
@@ -357,6 +363,13 @@ class Riffer::Rig::Runtime
   # @rbs registrars: Array[Riffer::Rig::Registrar]
   # @rbs return: Hash[String, Riffer::Rig::Mcp::Server]
   def register_mcp_servers: (Array[Riffer::Rig::Registrar] registrars) -> Hash[String, Riffer::Rig::Mcp::Server]
+
+  # The stored declaration is the resolved one, so a rebuild compares resolved
+  # headers and re-registers when the credentials changed.
+  # @rbs name: String
+  # @rbs declaration: Riffer::Rig::Mcp::Declaration
+  # @rbs return: Riffer::Rig::Mcp::Declaration?
+  def resolve_declaration: (String name, Riffer::Rig::Mcp::Declaration declaration) -> Riffer::Rig::Mcp::Declaration?
 
   # @rbs name: String
   # @rbs declaration: Riffer::Rig::Mcp::Declaration

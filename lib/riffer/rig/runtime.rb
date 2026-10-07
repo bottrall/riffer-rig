@@ -64,6 +64,8 @@ class Riffer::Rig::Runtime
   # @rbs @tool_allowlist: Array[String]?
   # @rbs @mcp_registry: Riffer::Rig::Mcp::_Registry
   # @rbs @mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
+  # @rbs @env: Riffer::Rig::Env
+  # @rbs @auth_path: String
   # @rbs @model_options: Hash[Symbol, untyped]
   # @rbs @native_tools: Hash[Symbol, untyped]
   # @rbs @reload_check: (^(::Riffer::Rig::Runtime) -> void)?
@@ -86,6 +88,8 @@ class Riffer::Rig::Runtime
   # @rbs name: String
   # @rbs instructions: String?
   # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
   # @rbs pricing: Hash[String, Riffer::Rig::Settings::Pricing]
   # @rbs riffer_config: Riffer::Config
   # @rbs mcp_registry: Riffer::Rig::Mcp::_Registry
@@ -104,6 +108,8 @@ class Riffer::Rig::Runtime
     name: DEFAULT_NAME,
     instructions: nil,
     credentials: {},
+    env: Riffer::Rig::Env.new,
+    auth_path: Riffer::Rig::Credentials::PATH,
     pricing: {},
     riffer_config: Riffer.config,
     mcp_registry: Riffer::Mcp,
@@ -117,6 +123,8 @@ class Riffer::Rig::Runtime
     @host = Riffer::Rig::Hosts::Mirror.new(host)
     @cwd = cwd || Dir.pwd
     @credentials = credentials
+    @env = env
+    @auth_path = auth_path
 
     @busy = false
     @closed = false
@@ -720,10 +728,28 @@ class Riffer::Rig::Runtime
   def register_mcp_servers(registrars)
     declarations = registrars.flat_map { |registrar| registrar.mcp_servers.to_a }.to_h
     declarations.filter_map do |name, declaration|
+      resolved = resolve_declaration(name, declaration)
+      next nil unless resolved
+
       live = @mcp_servers[name]
-      server = live && live.declaration == declaration ? live : register_mcp_server(name, declaration)
+      server = live && live.declaration == resolved ? live : register_mcp_server(name, resolved)
       [name, server] if server
     end.to_h
+  end
+
+  # The stored declaration is the resolved one, so a rebuild compares resolved
+  # headers and re-registers when the credentials changed.
+  # @rbs name: String
+  # @rbs declaration: Riffer::Rig::Mcp::Declaration
+  # @rbs return: Riffer::Rig::Mcp::Declaration?
+  def resolve_declaration(name, declaration)
+    return declaration if declaration.auth.empty?
+
+    values = Riffer::Rig::Mcp::Auth.resolve(name, declaration.auth, host: @host, env: @env, auth_path: @auth_path)
+    declaration.with_headers(Riffer::Rig::Mcp::Auth.expand(declaration.headers, values))
+  rescue Riffer::Rig::Mcp::Auth::Error => e
+    @host.notify("MCP server #{name} failed to register: #{e.message}", level: :error)
+    nil
   end
 
   # @rbs name: String

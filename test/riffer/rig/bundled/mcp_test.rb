@@ -28,6 +28,19 @@ describe 'Riffer::Rig::Bundled::Mcp' do
     )
   end
 
+  it 'passes the auth block through' do
+    settings = { servers: { web: { url: 'https://web.example/mcp', auth: { api_key: 'WEB_API_KEY' } } } }
+
+    assert_equal(
+      Riffer::Rig::Mcp::Declaration.new(
+        url: 'https://web.example/mcp',
+        headers: {},
+        auth: { api_key: ['WEB_API_KEY'] }
+      ),
+      registered(settings).mcp_servers.fetch('web')
+    )
+  end
+
   it 'gives a server without headers none' do
     assert_empty registered({ servers: { web: { url: 'https://web.example/mcp' } } }).mcp_servers.fetch('web').headers
   end

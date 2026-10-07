@@ -1,0 +1,32 @@
+# Generated from lib/riffer/rig/mcp/auth.rb with RBS::Inline
+
+module Riffer::Rig::Mcp::Auth
+  class Error < StandardError
+  end
+
+  PLACEHOLDER: Regexp
+
+  # @rbs server: String
+  # @rbs fields: Hash[Symbol, Array[String]]
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs return: Hash[Symbol, String]
+  def resolve: (String server, Hash[Symbol, Array[String]] fields, host: Riffer::Rig::Hosts::_Host, env: Riffer::Rig::Env, ?auth_path: String) -> Hash[Symbol, String]
+
+  # @rbs headers: Hash[String, String]
+  # @rbs values: Hash[Symbol, String]
+  # @rbs return: Hash[String, String]
+  def expand: (Hash[String, String] headers, Hash[Symbol, String] values) -> Hash[String, String]
+
+  private
+
+  # @rbs template: String
+  # @rbs values: Hash[Symbol, String]
+  # @rbs return: void
+  def check: (String template, Hash[Symbol, String] values) -> void
+
+  # @rbs fields: Hash[Symbol, Array[String]]
+  # @rbs return: Riffer::Rig::ProviderSetup
+  def setup_for: (Hash[Symbol, Array[String]] fields) -> Riffer::Rig::ProviderSetup
+end

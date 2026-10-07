@@ -258,6 +258,9 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def home_settings_path: () -> String
 
+  # @rbs return: String
+  def home_auth_path: () -> String
+
   # @rbs entries: Array[Riffer::Rig::Stores::entry]
   # @rbs id: String
   # @rbs return: Hash[Symbol, untyped]

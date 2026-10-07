@@ -145,6 +145,8 @@ class Riffer::Rig::Loader
       cwd: @cwd,
       max_steps: max_steps,
       credentials: credentials,
+      env: @env,
+      auth_path: home_auth_path,
       pricing: document.models,
       riffer_config: @riffer_config,
       model_options: Riffer::Rig::Settings.model_options(selected, document.reasoning),
@@ -364,7 +366,7 @@ class Riffer::Rig::Loader
       provider,
       host: asking_host,
       env: @env,
-      auth_path: File.join(@home, '.riffer', 'auth.json'),
+      auth_path: home_auth_path,
       settings_path: home_settings_path
     )
     return missing_credentials(provider, resolution.missing) unless resolution.missing.empty?
@@ -533,7 +535,7 @@ class Riffer::Rig::Loader
       provider,
       host: asking_host,
       env: @env,
-      auth_path: File.join(@home, '.riffer', 'auth.json'),
+      auth_path: home_auth_path,
       settings_path: home_settings_path
     )
     raise ConfigurationError, missing_credentials(provider, resolution.missing) unless resolution.missing.empty?
@@ -560,6 +562,11 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def home_settings_path
     File.join(@home, '.riffer', 'settings.json')
+  end
+
+  # @rbs return: String
+  def home_auth_path
+    File.join(@home, '.riffer', 'auth.json')
   end
 
   # @rbs entries: Array[Riffer::Rig::Stores::entry]

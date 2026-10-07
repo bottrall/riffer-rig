@@ -182,6 +182,27 @@ describe Riffer::Rig::Registrar do
     assert_empty registrar.mcp_servers.fetch('docs').headers
   end
 
+  it 'gives an MCP server no auth by default' do
+    registrar = Riffer::Rig::Registrar.new('docs')
+    registrar.mcp('docs', url: 'https://docs.example/mcp')
+
+    assert_empty registrar.mcp_servers.fetch('docs').auth
+  end
+
+  it 'collects the auth block with each env name wrapped' do
+    registrar = Riffer::Rig::Registrar.new('docs')
+    registrar.mcp('docs', url: 'https://docs.example/mcp', auth: { api_key: 'DOCS_API_KEY' })
+
+    assert_equal({ api_key: ['DOCS_API_KEY'] }, registrar.mcp_servers.fetch('docs').auth)
+  end
+
+  it 'keeps an auth block already given as arrays of env names' do
+    registrar = Riffer::Rig::Registrar.new('docs')
+    registrar.mcp('docs', url: 'https://docs.example/mcp', auth: { api_key: %w[DOCS_API_KEY DOCS_TOKEN] })
+
+    assert_equal({ api_key: %w[DOCS_API_KEY DOCS_TOKEN] }, registrar.mcp_servers.fetch('docs').auth)
+  end
+
   it 'lets a later declaration of an MCP server replace the earlier one' do
     registrar = Riffer::Rig::Registrar.new('docs')
     registrar.mcp('docs', url: 'https://docs.example/mcp')
