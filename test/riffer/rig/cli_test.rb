@@ -105,6 +105,16 @@ describe Riffer::Rig::CLI do
     assert_includes @error.string, '--verbose is only available with -p'
   end
 
+  it 'returns two for --json without -p' do
+    assert_equal 2, start('--json')
+  end
+
+  it 'says --json is headless only' do
+    start('--json')
+
+    assert_includes @error.string, '--json is only available with -p'
+  end
+
   it 'stubs riffer acp until ACP lands' do
     assert_equal 2, start('acp')
   end

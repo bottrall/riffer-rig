@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'test_helper'
+require 'json'
 require 'stringio'
 
 describe Riffer::Rig::Headless do
@@ -22,11 +23,12 @@ describe Riffer::Rig::Headless do
     env: { 'MOCK_API_KEY' => 'mock-key' },
     model: 'mock/test',
     verbose: false,
+    json: false,
     max_steps: nil,
     &block
   )
     input = StringIO.new(input) if input.is_a?(String)
-    @status = Riffer::Rig::Headless.for(input: input, output: @output, error: @error, verbose: verbose).run(
+    @status = Riffer::Rig::Headless.for(input: input, output: @output, error: @error, verbose: verbose, json: json).run(
       prompt: prompt
     ) do |host|
       @runtime = Riffer::Rig::Loader.runtime(
@@ -258,5 +260,141 @@ describe Riffer::Rig::Headless do
     end
 
     refute_match(/tool_call/, @error.string)
+  end
+
+  describe 'with --json' do
+    def records
+      @output.string.lines.map { |line| JSON.parse(line) }
+    end
+
+    def types
+      records.map { |record| record.fetch('type') }
+    end
+
+    def turn(prompt = 'read it')
+      run_headless(prompt: prompt, json: true) do |runtime|
+        runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
+        runtime.agent.provider.stub_response('Done.')
+      end
+    end
+
+    it 'opens with a session_start record' do
+      turn('hello')
+
+      assert_equal 'session_start', records.first.fetch('type')
+    end
+
+    it 'carries the session id on session_start' do
+      turn('hello')
+
+      assert_equal @runtime.id, records.first.fetch('id')
+    end
+
+    it 'ends with a turn_end record' do
+      turn
+
+      assert_equal 'turn_end', types.last
+    end
+
+    it 'streams the provider stream events in order' do
+      turn
+
+      stream_events = %w[tool_call_delta tool_call_done text_done text_delta]
+
+      assert_equal stream_events, types.intersection(stream_events)
+    end
+
+    it 'parses every line as JSON' do
+      turn
+
+      assert_equal @output.string.lines.size, records.size
+    end
+
+    it 'carries the stop reason on turn_end' do
+      turn('hello')
+
+      assert_equal 'completed', records.last.fetch('stop_reason')
+    end
+
+    it 'prints a notify as an event line rather than stderr' do
+      run_headless(prompt: 'hello', json: true) do |runtime|
+        runtime.host.notify('heads up', level: :warning)
+        runtime.agent.provider.stub_response('Hi')
+      end
+
+      assert_equal(
+        { 'type' => 'notify', 'message' => 'heads up', 'level' => 'warning' },
+        records.find { |record| record.fetch('type') == 'notify' }
+      )
+    end
+
+    it 'keeps the stderr silent for a notify in --json mode' do
+      run_headless(prompt: 'hello', json: true) do |runtime|
+        runtime.host.notify('heads up', level: :warning)
+        runtime.agent.provider.stub_response('Hi')
+      end
+
+      assert_empty @error.string
+    end
+
+    it 'prints a single error record for a configuration error' do
+      run_headless(prompt: 'hello', json: true, model: 'gemini/gem-2.5-pro', env: {})
+
+      assert_equal ['error'], types
+    end
+
+    it 'carries the reason on the configuration error record' do
+      run_headless(prompt: 'hello', json: true, model: 'gemini/gem-2.5-pro', env: {})
+
+      assert_match(/gemini has no api_key/, records.first.fetch('message'))
+    end
+
+    it 'exits two for a configuration error' do
+      run_headless(prompt: 'hello', json: true, model: 'gemini/gem-2.5-pro', env: {})
+
+      assert_equal 2, @status
+    end
+
+    it 'ends with an error record when the turn raises' do
+      run_headless(prompt: 'hello', json: true) do |runtime|
+        runtime.agent.provider.define_singleton_method(:stream_text) { |*| raise 'boom' }
+      end
+
+      assert_equal 'error', types.last
+    end
+
+    it 'carries the message on the error record' do
+      run_headless(prompt: 'hello', json: true) do |runtime|
+        runtime.agent.provider.define_singleton_method(:stream_text) { |*| raise 'boom' }
+      end
+
+      assert_equal 'boom', records.last.fetch('message')
+    end
+
+    it 'exits one when the turn raises' do
+      run_headless(prompt: 'hello', json: true) do |runtime|
+        runtime.agent.provider.define_singleton_method(:stream_text) { |*| raise 'boom' }
+      end
+
+      assert_equal 1, @status
+    end
+
+    it 'prints a single error record without a prompt' do
+      run_headless(json: true)
+
+      assert_equal ['error'], types
+    end
+
+    it 'says there is no prompt on the error record' do
+      run_headless(json: true)
+
+      assert_match(/no prompt/, records.first.fetch('message'))
+    end
+
+    it 'exits two without a prompt' do
+      run_headless(json: true)
+
+      assert_equal 2, @status
+    end
   end
 end

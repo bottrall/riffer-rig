@@ -10,6 +10,8 @@ class Riffer::Rig::Headless
 
   @streamed_text: bool
 
+  @json: bool
+
   @verbose: bool
 
   @host: Riffer::Rig::Headless::Host
@@ -24,16 +26,18 @@ class Riffer::Rig::Headless
   # @rbs output: IO
   # @rbs error: IO
   # @rbs verbose: bool
+  # @rbs json: bool
   # @rbs return: Riffer::Rig::Headless
-  def self.for: (input: IO, output: IO, error: IO, ?verbose: bool) -> Riffer::Rig::Headless
+  def self.for: (input: IO, output: IO, error: IO, ?verbose: bool, ?json: bool) -> Riffer::Rig::Headless
 
   # @rbs input: IO
   # @rbs output: IO
   # @rbs error: IO
   # @rbs host: Riffer::Rig::Headless::Host
   # @rbs verbose: bool
+  # @rbs json: bool
   # @rbs return: void
-  def initialize: (input: IO, output: IO, error: IO, host: Riffer::Rig::Headless::Host, ?verbose: bool) -> void
+  def initialize: (input: IO, output: IO, error: IO, host: Riffer::Rig::Headless::Host, ?verbose: bool, ?json: bool) -> void
 
   # @rbs prompt: String?
   # @rbs &build: (Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime
@@ -48,6 +52,11 @@ class Riffer::Rig::Headless
 
   # @rbs return: Integer
   def usage_error: () -> Integer
+
+  # @rbs message: String
+  # @rbs code: Integer
+  # @rbs return: Integer
+  def fatal: (String message, Integer code) -> Integer
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs text: String
