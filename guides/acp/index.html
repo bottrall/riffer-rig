@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ACP — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/overview/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.12.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/overview/"
+                  ><span class="num">01</span>Overview</a
+                >
+              </li>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">02</span>Getting started</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">03</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">04</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">05</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">06</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">07</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/reloading/"
+                  ><span class="num">08</span>Reloading</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">09</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">10</span>Headless mode</a
+                >
+              </li>
+              <li>
+                <a href="/guides/acp/" class="active" aria-current="page"
+                  ><span class="num">11</span>ACP</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">12</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">13</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">14</span>Hosts</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">15</span>Providers</a
+                >
+              </li>
+              <li>
+                <a href="/guides/providers/custom/"
+                  ><span class="num">16</span>Custom providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Using the terminal · 11</span></p>
+          <h1>ACP</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#registering-with-an-editor">Registering with an editor</a></li>
+              <li><a href="#what-the-agent-supports">What the agent supports</a></li>
+              <li><a href="#what-it-skips">What it skips</a></li>
+            </ul>
+          </nav>
+          
+<p><code>riffer acp</code> serves the same Runtimes the REPL drives as an <a href="https://agentclientprotocol.com">Agent Client Protocol</a> (ACP) agent over stdio, so editors and other ACP clients can run riffer without a terminal. The wire layer is the <a href="https://github.com/bottrall/acp-sdk"><code>acp-sdk</code></a> gem; the agent is <code>Riffer::Rig::ACP</code> (<code>lib/riffer/rig/acp.rb</code>) and its host object is <code>Riffer::Rig::ACP::Host</code> (<code>lib/riffer/rig/acp/host.rb</code>).</p>
+
+<h2 id="registering-with-an-editor">Registering with an editor</h2>
+
+<p>An editor registers the agent as the command <code>riffer acp</code>. In <a href="https://zed.dev">Zed</a>’s <code>settings.json</code>:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"agent"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"profiles"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"riffer"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Riffer"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"riffer"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"acp"</span><span class="p">]</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>Everything loads exactly as the REPL does — settings from both scopes, credentials, <code>rig.rb</code> files (once trusted), skills — because each session builds its Runtime through the <a href="/guides/embedding/#building-a-runtime-with-the-loader">Loader</a> at the <code>cwd</code> the client sends in <code>session/new</code>. The model comes from the same <a href="/guides/providers/overview/#resolution-order">resolution order</a> as everywhere else: <code>RIFFER_MODEL</code>, then settings. The host cannot ask, so a session whose model or credentials are missing is refused: <code>session/new</code> fails with the reason, and nothing is built.</p>
+
+<h2 id="what-the-agent-supports">What the agent supports</h2>
+
+<ul>
+  <li><code>session/new</code> builds a Runtime and answers with the Runtime’s UUID as the <code>sessionId</code>. Each session is independent; a <code>session/cancel</code> during a turn reaches <a href="/guides/embedding/#cancelling-a-turn"><code>Runtime#cancel</code></a> from the transport’s reader thread, and the running turn ends with <code>stopReason: cancelled</code>.</li>
+  <li><code>session/prompt</code> streams text as <code>agent_message_chunk</code> updates and reports each tool call as a <code>tool_call</code> update once its arguments are complete. Prompt blocks arrive as text and resource links; a resource link is included as its name and URI. A completed turn answers <code>end_turn</code>, a step cap <code>max_turn_requests</code>, and a turn that stopped for tokens, the context window or a blocked output <code>max_tokens</code>.</li>
+  <li><code>available_commands_update</code> lists the Runtime’s commands — <code>/reload</code>, <code>/auth</code>, <code>/model</code> and every skill — right after <code>session/new</code>.</li>
+  <li>Notify lines (<a href="/guides/extensions/#error-isolation">Extensions</a>) reach the client as <code>agent_message_chunk</code> updates. Load-time ones flush right after the <code>session/new</code> reply.</li>
+  <li>Tool calls always run: the agent never sends <code>session/request_permission</code>, so no tool call waits on the client.</li>
+  <li><code>session/list</code> maps the saved sessions of the store — scoped to the <code>cwd</code> the client sends, all of them when it sends none — to ACP session info: the session id, the cwd, the first prompt as the title, and the session file’s last update as <code>updated_at</code>.</li>
+  <li><code>session/load</code> restores a saved session: a <a href="/guides/embedding/#building-a-runtime-with-the-loader">Loader</a> at the request’s <code>cwd</code> reads the stored entries and rebuilds the Runtime, the stored messages replay as updates in the order they were recorded — user turns as <code>user_message_chunk</code>, the assistant’s text as <code>agent_message_chunk</code>, and each tool result as its completed <code>tool_call</code> (the result as its content; the arguments are not replayed) — and then the request answers. A following <code>session/prompt</code> continues the conversation; an unknown id fails with resource not found.</li>
+  <li>MCP servers the client sends on <code>session/new</code> in stdio shape are declared to the Runtime through the <a href="/guides/mcp/#declaring-servers-from-an-extension"><code>rig.mcp</code> seam</a> as if an extension had declared them, so a reload rebuild keeps them and a same-name declaration replaces them. See <a href="/guides/mcp/#servers-over-acp">MCP</a> for the stdio limit.</li>
+</ul>
+
+<h2 id="what-it-skips">What it skips</h2>
+
+<ul>
+  <li>The other session-lifecycle methods: <code>session/resume</code>, <code>session/close</code>, <code>session/delete</code> and <code>authenticate</code> are not offered. <a href="/guides/sessions/">Sessions</a> are still recorded to the store for the terminal to resume.</li>
+  <li>MCP servers in <code>http</code> or <code>sse</code> shape are skipped with a warning; only the stdio shape is read.</li>
+  <li>Terminal delegation (<code>terminal/*</code>) and file delegation (<code>fs/*</code>) to the client are never requested, and neither is elicitation.</li>
+  <li>Prompt blocks of other kinds than text and resource links are not advertised in <code>promptCapabilities</code>, so a compliant client does not send them.</li>
+</ul>
+
+<p>A project <code>rig.rb</code> loads over ACP only once a terminal session has trusted it: the host declines <code>confirm</code>, so an untrusted file is stored as not trusted and never asked about again.</p>
+
+        </article>
+
+        <nav class="pager">
+          <a class="doc" href="/guides/headless/"
+            ><span class="go">←</span
+            ><span
+              ><span class="desc">Previous</span
+              ><span class="name">Headless mode</span></span
+            ></a
+          >
+          <a class="doc next" href="/guides/extensions/"
+            ><span
+              ><span class="desc">Next</span
+              ><span class="name">Extensions</span></span
+            ><span class="go">→</span></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Overview — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/overview/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.12.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/overview/" class="active" aria-current="page"
+                  ><span class="num">01</span>Overview</a
+                >
+              </li>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">02</span>Getting started</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">03</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">04</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">05</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">06</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">07</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/reloading/"
+                  ><span class="num">08</span>Reloading</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">09</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">10</span>Headless mode</a
+                >
+              </li>
+              <li>
+                <a href="/guides/acp/"
+                  ><span class="num">11</span>ACP</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">12</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">13</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">14</span>Hosts</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">15</span>Providers</a
+                >
+              </li>
+              <li>
+                <a href="/guides/providers/custom/"
+                  ><span class="num">16</span>Custom providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Start here · 01</span></p>
+          <h1>Overview</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#the-two-claims">The two claims</a></li>
+              <li><a href="#the-four-tiers">The four tiers</a></li>
+              <li><a href="#the-layers">The layers</a></li>
+              <li><a href="#where-to-next">Where to next</a></li>
+            </ul>
+          </nav>
+          
+<p>riffer-rig is <strong>a general-purpose agent for Ruby developers who want to own their harness</strong>. It runs as a terminal agent and, because the runtime is separate from the terminal, it also runs inside any Ruby process: a Rails app, a script, a job. You extend it in Ruby — tools, commands, providers and hooks are ordinary Ruby classes on <a href="https://github.com/janeapp/riffer">riffer</a>’s primitives, and the same objects work whether the host is the terminal or your app. It ships with a coding toolkit (read, write, edit, bash) as the default bundle, because a shell and file access are the most efficient way to get almost any task done, but the prompt gives it no coding identity. It is built and maintained by riffer’s lead maintainer as a personal MIT project, so the framework grows whatever the agent needs.</p>
+
+<h2 id="the-two-claims">The two claims</h2>
+
+<p>Measured against pi, OpenCode, Claude Code and Codex:</p>
+
+<ol>
+  <li><strong>Runs in your Ruby process.</strong> None of the four can be embedded from Ruby; all give Ruby a subprocess with JSONL, HTTP or RPC.</li>
+  <li><strong>Extend it in Ruby.</strong> pi offers in-process code extensions in TypeScript; nobody offers them in Ruby.</li>
+</ol>
+
+<p>The agent is general purpose, not a “coding agent”: the default tools are the coding toolkit, but the prompt states operating norms as task-neutral rules and gives no coding identity. It does not compete on provider breadth, on polish with Claude Code, as a hosted product, or for non-Ruby developers — they get <a href="/guides/acp/">ACP</a> or a subprocess. There is no permission model for tool execution: the tool trusts the model.</p>
+
+<h2 id="the-four-tiers">The four tiers</h2>
+
+<p>Everything in the project is one of four things. Ask in order; the first “yes” wins.</p>
+
+<ol>
+  <li><strong>Core</strong> — is it something an extension cannot do, <em>or</em> something every host needs in exactly the same form?</li>
+  <li><strong>Host</strong> — is it about how one front-end drives the runtime? The terminal is one host; the headless printer, the ACP adapter and a Rails app are others.</li>
+  <li><strong>Bundled</strong> — is it the coding toolkit (read, write, edit, bash), or a convention at least two of pi, OpenCode, Claude Code and Codex already share? Then it ships in the gem, is built only on the extension API, and you can disable or replace it.</li>
+  <li><strong>Third-party</strong> — everything else: ordinary Ruby extensions people write and publish themselves.</li>
+</ol>
+
+<table>
+  <thead>
+    <tr>
+      <th>Tier</th>
+      <th>Contents</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Core</td>
+      <td>agent loop (riffer); registration seams for tools, commands, providers, prompt contributions and events; extension loader; host interface; settings mechanism and precedence; credentials store and recipe table; session save/resume; token tally and pricing; provider-native tools (off by default)</td>
+    </tr>
+    <tr>
+      <td>Host</td>
+      <td>terminal REPL and UI; headless printer; ACP adapter; extension-directory discovery; provider onboarding prompts</td>
+    </tr>
+    <tr>
+      <td>Bundled</td>
+      <td>read/write/edit/bash; Agent Skills; AGENTS.md; MCP client</td>
+    </tr>
+    <tr>
+      <td>Third-party</td>
+      <td>hooks, models.dev catalog, MCP server, git context, SQLite session store, any tool beyond the four</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Three rules follow. <strong>Provider-native tools are core and off by default</strong>: they arrive through riffer’s provider seam and are switched on in <a href="/guides/configuration/#toolsnative">settings</a>, so a provider change never silently changes what the agent can do. <strong>Standards never touch core</strong>: a new convention only asks whether the extension API is rich enough to express it, and if not, that is a seam to add. <strong>Core lives in riffer-rig first</strong>, and is extracted to riffer only when a second riffer agent needs the same thing.</p>
+
+<h2 id="the-layers">The layers</h2>
+
+<p>Hosts drive a Runtime; the <a href="/guides/embedding/#building-a-runtime-with-the-loader">Loader</a> builds one from the filesystem for the shipped hosts, and an embedding app may skip it and register objects directly.</p>
+
+<ul>
+  <li><strong>Hosts</strong> render events and own the TTY or the wire. Three ship: the terminal REPL (<a href="/guides/getting-started/"><code>riffer</code></a>), the headless printer (<a href="/guides/headless/"><code>riffer -p</code></a>), and the ACP adapter (<a href="/guides/acp/"><code>riffer acp</code></a>); a Ruby app writes its own on the <a href="/guides/hosts/">Host interface</a>.</li>
+  <li><strong>The Loader</strong> holds the filesystem conventions — <code>rig.rb</code>, <code>settings.json</code>, <code>auth.json</code>, trust, <code>AGENTS.md</code>, skills, the reload trigger, the session store — and builds a Runtime for a working directory the way the shipped hosts do.</li>
+  <li><strong>The <a href="/guides/embedding/">Runtime</a></strong> assumes no TTY and reads no disk: it accepts registered objects only. It assembles the prompt, streams events, cancels turns, dispatches commands, and snapshots and rebuilds for hot reload. Extensions sit beside it in the runtime layer — the registrar and its <a href="/guides/extensions/">eight seams</a>, carrying the bundled read, write, edit, bash, skills, AGENTS.md and MCP client.</li>
+</ul>
+
+<p>Two seams keep the boundary honest. Extension discovery — scanning the config and project directories — lives in the Loader; the Runtime only accepts registered objects. And global state allows several agents in one process: each Runtime builds its own agent and registrar, and provider credentials are one set per process. The runtime assumes no TTY, and no further embedding accommodation is made until a real host exists.</p>
+
+<h2 id="where-to-next">Where to next</h2>
+
+<ul>
+  <li><a href="/guides/getting-started/">Getting started</a> — install, pick a model, first session</li>
+  <li><a href="/guides/configuration/">Configuration</a> — the settings scopes and every core key</li>
+  <li><a href="/guides/extensions/">Extending</a> — <code>rig.rb</code> and the eight seams</li>
+  <li><a href="/guides/embedding/">Embedding</a> — <code>Loader.runtime</code> and the Runtime from Ruby</li>
+  <li><a href="/guides/providers/overview/">Providers</a> — model strings and credentials</li>
+</ul>
+
+        </article>
+
+        <nav class="pager">
+          <span></span>
+          <a class="doc next" href="/guides/getting-started/"
+            ><span
+              ><span class="desc">Next</span
+              ><span class="name">Getting started</span></span
+            ><span class="go">→</span></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

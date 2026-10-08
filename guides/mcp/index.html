@@ -20,10 +20,10 @@
         <nav>
           <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
           <div class="links">
-            <a href="/guides/getting-started/">Guides</a>
+            <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.11.0</span>
+            <span class="version">v0.12.0</span>
           </div>
         </nav>
       </div>
@@ -37,8 +37,13 @@
             <span class="group-label">Start here</span>
             <ul>
               <li>
+                <a href="/guides/overview/"
+                  ><span class="num">01</span>Overview</a
+                >
+              </li>
+              <li>
                 <a href="/guides/getting-started/"
-                  ><span class="num">01</span>Getting started</a
+                  ><span class="num">02</span>Getting started</a
                 >
               </li>
             </ul>
@@ -46,42 +51,47 @@
             <ul>
               <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">02</span>Configuration</a
+                  ><span class="num">03</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">03</span>Instructions</a
+                  ><span class="num">04</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">04</span>Tools</a
+                  ><span class="num">05</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">05</span>Skills</a
+                  ><span class="num">06</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/" class="active" aria-current="page"
-                  ><span class="num">06</span>MCP</a
+                  ><span class="num">07</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">07</span>Reloading</a
+                  ><span class="num">08</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">08</span>Sessions</a
+                  ><span class="num">09</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">09</span>Headless mode</a
+                  ><span class="num">10</span>Headless mode</a
+                >
+              </li>
+              <li>
+                <a href="/guides/acp/"
+                  ><span class="num">11</span>ACP</a
                 >
               </li>
             </ul>
@@ -89,17 +99,17 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">10</span>Extensions</a
+                  ><span class="num">12</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">11</span>Embedding riffer-rig</a
+                  ><span class="num">13</span>Embedding riffer-rig</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">12</span>Hosts</a
+                  ><span class="num">14</span>Hosts</a
                 >
               </li>
             </ul>
@@ -107,12 +117,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">13</span>Providers</a
+                  ><span class="num">15</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">14</span>Custom providers</a
+                  ><span class="num">16</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -122,16 +132,18 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Using the terminal · 06</span></p>
+          <p class="kicker"><span class="chapter">Using the terminal · 07</span></p>
           <h1>MCP</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
             <ul>
               <li><a href="#declaring-servers-in-settings">Declaring servers in settings</a></li>
+              <li><a href="#secret-headers">Secret headers</a></li>
               <li><a href="#declaring-servers-from-an-extension">Declaring servers from an extension</a></li>
               <li><a href="#tool-names">Tool names</a></li>
               <li><a href="#reload-and-close">Reload and close</a></li>
               <li><a href="#servers-in-more-than-one-runtime">Servers in more than one Runtime</a></li>
+              <li><a href="#servers-over-acp">Servers over ACP</a></li>
             </ul>
           </nav>
           
@@ -154,9 +166,9 @@
 </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p><code>url</code> is required and must be <code>https://</code>; <code>headers</code> is optional and defaults to none. Header values are sent exactly as written; nothing in them is expanded from the environment. An embedder passes the same shape in the Runtime’s <code>settings:</code> hash, with symbol keys: <code>{ mcp: { servers: { docs: { url: 'https://docs.example.com/mcp' } } } }</code> (see <a href="/guides/embedding/#constructing-a-runtime">Embedding</a>). An entry without a <code>url</code> fails the whole <code>mcp</code> extension, which is reported as a load error (see <a href="/guides/extensions/#error-isolation">Extensions</a>).</p>
+<p><code>url</code> is required and must be <code>https://</code>; <code>headers</code> is optional and defaults to none. An embedder passes the same shape in the Runtime’s <code>settings:</code> hash, with symbol keys: <code>{ mcp: { servers: { docs: { url: 'https://docs.example.com/mcp' } } } }</code> (see <a href="/guides/embedding/#constructing-a-runtime">Embedding</a>). An entry without a <code>url</code> fails the whole <code>mcp</code> extension, which is reported as a load error (see <a href="/guides/extensions/#error-isolation">Extensions</a>).</p>
 
-<p>Put a server that needs a secret header in your home <code>~/.riffer/settings.json</code>, not the project’s <code>.riffer/settings.json</code>, which is usually committed with the project.</p>
+<p>Put a server that needs a secret header in your home <code>~/.riffer/settings.json</code>, not the project’s <code>.riffer/settings.json</code>, which is usually committed with the project — the same goes for its <code>auth</code> block (<a href="#secret-headers">Secret headers</a>).</p>
 
 <p>Settings come in two scopes, <code>~/.riffer/settings.json</code> then the project’s <code>.riffer/settings.json</code>. <code>Riffer::Rig::Mcp.merge(home, project)</code> merges the two <code>mcp</code> hashes by server name: a server declared in only one scope is kept, and a project server replaces the home server of the same name whole — its <code>headers</code> are not merged with the home server’s.</p>
 
@@ -167,6 +179,27 @@
 
 <p><code>mcp</code> is an ordinary extension name, not a core settings key: <code>mcp.servers</code> is simply the bundled extension’s own namespace, the same as any other extension’s. To run without it, leave it out of the Runtime’s <code>extensions:</code>, or list it in <code>extensions.disabled</code> (<a href="/guides/configuration/#extensions">Configuration</a>).</p>
 
+<h2 id="secret-headers">Secret headers</h2>
+
+<p>A server that authenticates with a token need not put the token in <code>settings.json</code>. Declare an <code>auth</code> block with a field per credential — the field’s value is one or more environment variable names — and reference the fields from the header values as <code>${field}</code>:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="nl">"mcp"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nl">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"kagi"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nl">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://mcp.kagi.com/mcp"</span><span class="p">,</span><span class="w">
+        </span><span class="nl">"auth"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"KAGI_API_KEY"</span><span class="w"> </span><span class="p">},</span><span class="w">
+        </span><span class="nl">"headers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"Authorization"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Bearer ${api_key}"</span><span class="w"> </span><span class="p">}</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>When the Runtime is built, each field resolves like a provider credential: the environment first, then the entry stored under the server’s name in <code>~/.riffer/auth.json</code>, then a prompt — asked once with no echo and stored there for every run after. A field may name several environment variables, tried in order. Header values of a server without an <code>auth</code> block are sent exactly as written; with one, every <code>${field}</code> must name a declared field, and a reference to anything else fails the registration.</p>
+
+<p>A credential that cannot be resolved — unset everywhere, with no stored entry and a host that cannot ask — is reported through <code>notify</code> at level <code>:error</code> as “MCP server NAME failed to register: MCP server NAME has no FIELD (ENV_VAR); set it in the environment or run riffer interactively to paste it”, and the Runtime runs without that server’s tools. A rebuild re-resolves the block, so a server whose resolved headers changed is registered again (<a href="#reload-and-close">Reload and close</a>).</p>
+
 <h2 id="declaring-servers-from-an-extension">Declaring servers from an extension</h2>
 
 <p>Any extension declares a server of its own with the <code>rig.mcp</code> seam; the bundled extension is only the settings-driven convention on top of it.</p>
@@ -176,7 +209,7 @@
 <span class="k">end</span>
 </code></pre></div></div>
 
-<p><code>rig.mcp(name, url:, headers: {})</code> declares one server. Server names are shared across extensions: a later declaration of the same name, from the same extension or a later one, replaces the earlier one, and a replacement across extensions is reported through <code>notify</code> at level <code>:info</code> as “Extension LATER replaces MCP server NAME from EARLIER”.</p>
+<p><code>rig.mcp(name, url:, headers: {}, auth: {})</code> declares one server. An extension-declared server can carry an <code>auth</code> block and <code>${field}</code> header references of its own (<a href="#secret-headers">Secret headers</a>). A stdio server is declared with <code>rig.mcp(name, command:, args: [], env: {})</code> instead — exactly one of <code>url</code> and <code>command</code>, never both; a declaration with neither raises <code>ArgumentError</code>. Server names are shared across extensions: a later declaration of the same name, from the same extension or a later one, replaces the earlier one, and a replacement across extensions is reported through <code>notify</code> at level <code>:info</code> as “Extension LATER replaces MCP server NAME from EARLIER”.</p>
 
 <p>An extension block can read its own settings namespace as <code>rig.settings</code> while it runs, with the defaults it declared with <a href="/guides/extensions/#the-rigsetting-seam"><code>rig.setting</code></a> filled in. That is how the bundled extension reads <code>mcp.servers</code>.</p>
 
@@ -201,6 +234,12 @@
 <p>riffer keeps one MCP registry per process, keyed by server name. Each Runtime tags its registrations with its own <code>id</code>, so its agent sees only the servers it declared, even when other Runtimes in the process declare servers of their own.</p>
 
 <p>Two Runtimes in one process must not declare servers of the same name: the later registration replaces the earlier one, so the first Runtime loses that server’s tools. A Runtime never unregisters a server another Runtime has since registered under the same name.</p>
+
+<h2 id="servers-over-acp">Servers over ACP</h2>
+
+<p>An <a href="/guides/acp/">ACP</a> client supplies its own MCP servers with <code>session/new</code>, in stdio shape only: a command, its args and an env map. The agent declares each one through the <code>rig.mcp</code> seam, so it reaches the Runtime as if an extension named <code>acp</code> had declared it, keeps it through a reload rebuild, and can be replaced by a same-name declaration. A server in <code>http</code> or <code>sse</code> shape is skipped with one warning notify.</p>
+
+<p>A stdio declaration still cannot be registered: riffer’s MCP client speaks HTTPS only, so the Runtime reports “MCP server NAME runs over stdio, which riffer cannot register yet” through <code>notify</code> at level <code>:error</code> and runs without its tools.</p>
 
         </article>
 

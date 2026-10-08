@@ -20,10 +20,10 @@
         <nav>
           <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
           <div class="links">
-            <a href="/guides/getting-started/">Guides</a>
+            <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.11.0</span>
+            <span class="version">v0.12.0</span>
           </div>
         </nav>
       </div>
@@ -37,8 +37,13 @@
             <span class="group-label">Start here</span>
             <ul>
               <li>
+                <a href="/guides/overview/"
+                  ><span class="num">01</span>Overview</a
+                >
+              </li>
+              <li>
                 <a href="/guides/getting-started/"
-                  ><span class="num">01</span>Getting started</a
+                  ><span class="num">02</span>Getting started</a
                 >
               </li>
             </ul>
@@ -46,42 +51,47 @@
             <ul>
               <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">02</span>Configuration</a
+                  ><span class="num">03</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">03</span>Instructions</a
+                  ><span class="num">04</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">04</span>Tools</a
+                  ><span class="num">05</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">05</span>Skills</a
+                  ><span class="num">06</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">06</span>MCP</a
+                  ><span class="num">07</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">07</span>Reloading</a
+                  ><span class="num">08</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">08</span>Sessions</a
+                  ><span class="num">09</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/" class="active" aria-current="page"
-                  ><span class="num">09</span>Headless mode</a
+                  ><span class="num">10</span>Headless mode</a
+                >
+              </li>
+              <li>
+                <a href="/guides/acp/"
+                  ><span class="num">11</span>ACP</a
                 >
               </li>
             </ul>
@@ -89,17 +99,17 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">10</span>Extensions</a
+                  ><span class="num">12</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">11</span>Embedding riffer-rig</a
+                  ><span class="num">13</span>Embedding riffer-rig</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">12</span>Hosts</a
+                  ><span class="num">14</span>Hosts</a
                 >
               </li>
             </ul>
@@ -107,12 +117,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">13</span>Providers</a
+                  ><span class="num">15</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">14</span>Custom providers</a
+                  ><span class="num">16</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -122,7 +132,7 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Using the terminal · 09</span></p>
+          <p class="kicker"><span class="chapter">Using the terminal · 10</span></p>
           <h1>Headless mode</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
@@ -131,7 +141,7 @@
               <li><a href="#output">Output</a></li>
               <li><a href="#flags">Flags</a></li>
               <li><a href="#exit-codes">Exit codes</a></li>
-              <li><a href="#the-ndjson-shape---json-coming">The NDJSON shape (--json, coming)</a></li>
+              <li><a href="#the-ndjson-stream---json">The NDJSON stream (--json)</a></li>
             </ul>
           </nav>
           
@@ -199,23 +209,25 @@
 
 <p>A script that only needs success or failure can therefore test the code alone; a caller that wants the reason reads stderr or waits for <code>--json</code> (below).</p>
 
-<h2 id="the-ndjson-shape---json-coming">The NDJSON shape (<code>--json</code>, coming)</h2>
+<h2 id="the-ndjson-stream---json">The NDJSON stream (<code>--json</code>)</h2>
 
-<p>The <code>--json</code> flag — one JSON object per line for every Runtime event — is specified but not built yet; see the ticket. The shape it will print to:</p>
+<p><code>--json</code> replaces the streamed text with one JSON object per line on stdout, one record for every event the Runtime yields: riffer’s <a href="https://github.com/bottrall/riffer">StreamEvents</a> plus the rig-level events (<code>session_start</code>, <code>notify</code>, <code>turn_end</code>). The envelope is flat — the event’s <code>to_h</code> fields, plus a <code>"type"</code> of the snake_case event class (<code>text_delta</code>, <code>tool_call_done</code>, <code>session_start</code>, <code>turn_end</code>, …). Nested riffer values (a <code>TokenUsage</code>, an assistant message, a tool response) serialize through their own <code>to_h</code>.</p>
 
-<p>Every event riffer-rig emits is printed as one JSON object per line — riffer’s <code>StreamEvents</code> plus the rig-level events from <code>Riffer::Rig::Events</code>, verbatim from each event’s <code>to_h</code> (a <code>TokenUsage</code> value serializes through its own <code>to_h</code>, as riffer’s own <code>token_usage_done</code> event does). Every record carries a <code>"type"</code> field: the snake_case event name (<code>text_delta</code>, <code>tool_call_done</code>, <code>session_start</code>, <code>turn_end</code>, …).</p>
-
-<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"id"</span><span class="p">:</span><span class="s2">"0198…"</span><span class="p">,</span><span class="nl">"reason"</span><span class="p">:</span><span class="s2">"new"</span><span class="p">,</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"session_start"</span><span class="p">}</span><span class="w">
-</span><span class="p">{</span><span class="nl">"role"</span><span class="p">:</span><span class="s2">"assistant"</span><span class="p">,</span><span class="nl">"content"</span><span class="p">:</span><span class="s2">"Re"</span><span class="p">,</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"text_delta"</span><span class="p">}</span><span class="w">
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"session_start"</span><span class="p">,</span><span class="nl">"id"</span><span class="p">:</span><span class="s2">"0198…"</span><span class="p">,</span><span class="nl">"reason"</span><span class="p">:</span><span class="s2">"new"</span><span class="p">}</span><span class="w">
+</span><span class="p">{</span><span class="nl">"message"</span><span class="p">:</span><span class="s2">"heads up"</span><span class="p">,</span><span class="nl">"level"</span><span class="p">:</span><span class="s2">"warning"</span><span class="p">,</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"notify"</span><span class="p">}</span><span class="w">
+</span><span class="p">{</span><span class="nl">"role"</span><span class="p">:</span><span class="s2">"assistant"</span><span class="p">,</span><span class="nl">"content"</span><span class="p">:</span><span class="s2">"Reading the failing test first. "</span><span class="p">,</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"text_delta"</span><span class="p">}</span><span class="w">
 </span><span class="p">{</span><span class="nl">"role"</span><span class="p">:</span><span class="s2">"assistant"</span><span class="p">,</span><span class="nl">"content"</span><span class="p">:</span><span class="s2">"Reading the failing test first."</span><span class="p">,</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"text_done"</span><span class="p">}</span><span class="w">
-</span><span class="p">{</span><span class="nl">"role"</span><span class="p">:</span><span class="s2">"assistant"</span><span class="p">,</span><span class="nl">"name"</span><span class="p">:</span><span class="s2">"read"</span><span class="p">,</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"tool_call_done"</span><span class="p">}</span><span class="w">
+</span><span class="p">{</span><span class="nl">"role"</span><span class="p">:</span><span class="s2">"assistant"</span><span class="p">,</span><span class="nl">"item_id"</span><span class="p">:</span><span class="s2">"call_1"</span><span class="p">,</span><span class="nl">"name"</span><span class="p">:</span><span class="s2">"read"</span><span class="p">,</span><span class="nl">"arguments_delta"</span><span class="p">:</span><span class="s2">"{</span><span class="se">\"</span><span class="s2">path</span><span class="se">\"</span><span class="s2">:</span><span class="se">\"</span><span class="s2">x</span><span class="se">\"</span><span class="s2">}"</span><span class="p">,</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"tool_call_delta"</span><span class="p">}</span><span class="w">
+</span><span class="p">{</span><span class="nl">"role"</span><span class="p">:</span><span class="s2">"assistant"</span><span class="p">,</span><span class="nl">"item_id"</span><span class="p">:</span><span class="s2">"call_1"</span><span class="p">,</span><span class="nl">"call_id"</span><span class="p">:</span><span class="s2">"call_1"</span><span class="p">,</span><span class="nl">"name"</span><span class="p">:</span><span class="s2">"read"</span><span class="p">,</span><span class="nl">"arguments"</span><span class="p">:</span><span class="s2">"{</span><span class="se">\"</span><span class="s2">path</span><span class="se">\"</span><span class="s2">:</span><span class="se">\"</span><span class="s2">x</span><span class="se">\"</span><span class="s2">}"</span><span class="p">,</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"tool_call_done"</span><span class="p">}</span><span class="w">
 </span><span class="p">{</span><span class="nl">"role"</span><span class="p">:</span><span class="s2">"assistant"</span><span class="p">,</span><span class="nl">"token_usage"</span><span class="p">:{</span><span class="nl">"input_tokens"</span><span class="p">:</span><span class="mi">1423</span><span class="p">,</span><span class="nl">"output_tokens"</span><span class="p">:</span><span class="mi">89</span><span class="p">},</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"token_usage_done"</span><span class="p">}</span><span class="w">
 </span><span class="p">{</span><span class="nl">"stop_reason"</span><span class="p">:</span><span class="s2">"completed"</span><span class="p">,</span><span class="nl">"usage"</span><span class="p">:{</span><span class="nl">"input_tokens"</span><span class="p">:</span><span class="mi">1423</span><span class="p">,</span><span class="nl">"output_tokens"</span><span class="p">:</span><span class="mi">89</span><span class="p">},</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"turn_end"</span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p><code>turn_end</code> is always the last record of a prompt: <code>stop_reason</code> is riffer’s outcome vocabulary (<code>completed</code>, <code>length</code>, <code>max_steps</code>, <code>cancelled</code>, …), <code>usage</code> is the run’s token totals, and <code>cost</code> (USD, present when the model is priced) rides on <code>usage</code>. A consumer that only reads the last line still knows how the turn ended and what it cost. A fatal configuration or runtime error is a last <code>{"type": "error", ...}</code> line.</p>
+<p><code>session_start</code> is the first record, carrying the session id. The remaining StreamEvents follow the turn in order — the ones a tool-using turn produces are shown above; reasoning (<code>reasoning_delta</code>, <code>reasoning_done</code>), web search (<code>web_search_status</code>, <code>web_search_done</code>), finish reasons, guardrails and interrupts serialize the same way whenever the provider emits them. <code>turn_end</code> is always the last record of a prompt: <code>stop_reason</code> is riffer’s outcome vocabulary (<code>completed</code>, <code>length</code>, <code>max_steps</code>, <code>cancelled</code>, …), <code>usage</code> is the run’s token totals, and <code>cost</code> (USD, present when the model is priced) rides on <code>usage</code>. A consumer that only reads the last line still knows how the turn ended and what it cost.</p>
 
-<p>Embedders who want this behaviour today drive <code>Riffer::Rig::Runtime.prompt</code> themselves and serialize each event with <code>JSON.generate(event.to_h)</code> — the same code path the flag will use.</p>
+<p>Warnings and notify lines that headless prints on stderr in text mode ride the stream as <code>notify</code> records in <code>--json</code>; <code>progress</code> and the <code>--verbose</code> tool trace stay on stderr. The <code>before_prompt</code>, <code>before_tool_call</code>, <code>before_request</code>, <code>after_response</code> and <code>after_tool_call</code> events are extension-hook traffic, not Runtime output, so they never appear on the stream.</p>
+
+<p>A fatal error — a failed configuration, no prompt, or an exception mid-turn — is a last <code>{"type": "error", "message": "…"}</code> record and the exit code above. Everything else on stderr stays on stderr: the exit-3 stop reason is printed there as in text mode and also rides on <code>turn_end</code>.</p>
 
         </article>
 
@@ -227,10 +239,10 @@
               ><span class="name">Sessions</span></span
             ></a
           >
-          <a class="doc next" href="/guides/extensions/"
+          <a class="doc next" href="/guides/acp/"
             ><span
               ><span class="desc">Next</span
-              ><span class="name">Extensions</span></span
+              ><span class="name">ACP</span></span
             ><span class="go">→</span></a
           >
         </nav>
