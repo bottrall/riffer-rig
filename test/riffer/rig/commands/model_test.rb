@@ -221,6 +221,22 @@ describe Riffer::Rig::Commands::Model do
                    events.first.message
     end
 
+    it 'succeeds when the Runtime already holds part of the required credentials' do
+      ENV['AZURE_OPENAI_ENDPOINT'] = 'https://azure.test'
+      runtime = Riffer::Rig::Runtime.new('mock/test', credentials: { azure_openai: { api_key: 'key' } })
+      with_openai_sdk_present { command_events(runtime, 'azure_openai/gpt-5') }
+
+      assert_equal 'azure_openai/gpt-5', runtime.model
+    end
+
+    it 'merges the resolved fields into the Runtime credentials it already holds' do
+      ENV['AZURE_OPENAI_ENDPOINT'] = 'https://azure.test'
+      runtime = Riffer::Rig::Runtime.new('mock/test', credentials: { azure_openai: { api_key: 'key' } })
+      with_openai_sdk_present { command_events(runtime, 'azure_openai/gpt-5') }
+
+      assert_equal({ api_key: 'key', endpoint: 'https://azure.test' }, runtime.credentials[:azure_openai])
+    end
+
     it 'does not ask when the Runtime already has the credentials' do
       host = AnsweringModelHost.new('sk-new')
       runtime = Riffer::Rig::Runtime.new('mock/test', host: host, credentials: { gemini: { api_key: 'stored' } })

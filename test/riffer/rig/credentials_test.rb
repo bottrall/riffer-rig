@@ -394,6 +394,58 @@ describe Riffer::Rig::Credentials do
     end
   end
 
+  describe '.install' do
+    it 'returns the resolved values when nothing is missing' do
+      in_tmp_home do |paths|
+        result = Riffer::Rig::Credentials.install(
+          :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), **paths
+        )
+
+        assert_equal [:ok, { api_key: 'sk-env' }], result
+      end
+    end
+
+    it 'returns the resolution when a required field is missing' do
+      in_tmp_home do |paths|
+        result = Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, **paths)
+
+        assert_equal [:missing, [:api_key]], [result[0], result[1].missing]
+      end
+    end
+
+    it 'succeeds when the missing fields are already known' do
+      in_tmp_home do |paths|
+        result = Riffer::Rig::Credentials.install(
+          :anthropic, host: null_host, env:, known: { api_key: 'sk-known' }, **paths
+        )
+
+        assert_equal [:ok, {}], result
+      end
+    end
+
+    it 'applies the values to the given config on success' do
+      in_tmp_home do |paths|
+        config = Riffer::Config.new
+        Riffer::Rig::Credentials.install(
+          :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), config: config, **paths
+        )
+
+        assert_equal 'sk-env', config.anthropic.api_key
+      end
+    end
+
+    it 'does not apply when there is no config' do
+      in_tmp_home do |paths|
+        before = Riffer::Rig::Credentials.read(:anthropic)
+        Riffer::Rig::Credentials.install(
+          :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), config: nil, **paths
+        )
+
+        assert_equal before, Riffer::Rig::Credentials.read(:anthropic)
+      end
+    end
+  end
+
   describe '.apply and Riffer::Rig.credentials' do
     let(:config) { Riffer::Config.new }
 

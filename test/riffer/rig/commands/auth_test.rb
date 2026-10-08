@@ -133,6 +133,21 @@ describe Riffer::Rig::Commands::Auth do
       )
     end
 
+    it 'applies nothing when the host declines' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      before = Riffer::Rig::Credentials.read(:anthropic)
+      command_events(runtime, 'anthropic')
+
+      assert_equal before, Riffer::Rig::Credentials.read(:anthropic)
+    end
+
+    it 'does not merge credentials into the Runtime when the host declines' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      command_events(runtime, 'anthropic')
+
+      assert_empty runtime.credentials
+    end
+
     it 'rejects an unknown provider with the providers in the hint' do
       runtime = Riffer::Rig::Runtime.new('mock/test')
 

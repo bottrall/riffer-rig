@@ -42,6 +42,32 @@ module Riffer::Rig::Credentials
     Resolution.new(values:, missing: required.map(&:name) - values.keys)
   end
 
+  # @rbs identifier: String | Symbol
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs setup: Riffer::Rig::ProviderSetup
+  # @rbs env: Riffer::Rig::Env
+  # @rbs config: Riffer::Config?
+  # @rbs auth_path: String
+  # @rbs settings_path: String
+  # @rbs known: Hash[Symbol, String]
+  # @rbs return: [:ok, Hash[Symbol, String]] | [:missing, Resolution]
+  def install(
+    identifier,
+    host:,
+    setup: Riffer::Rig::ProviderSetup.for(identifier),
+    env: Riffer::Rig::Env.new,
+    config: Riffer.config,
+    auth_path: PATH,
+    settings_path: Riffer::Rig::Settings::PATH,
+    known: {}
+  )
+    resolution = resolve(identifier, host:, setup:, env:, auth_path:, settings_path:)
+    return [:missing, resolution] unless (resolution.missing - known.keys).empty?
+
+    apply(identifier, resolution.values, config: config) unless config.nil?
+    [:ok, resolution.values]
+  end
+
   # A registered extension provider has no Riffer::Config member, so the
   # assignment stays built-ins-only.
   # @rbs identifier: String | Symbol
