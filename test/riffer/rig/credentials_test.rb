@@ -436,12 +436,12 @@ describe Riffer::Rig::Credentials do
 
     it 'does not apply when there is no config' do
       in_tmp_home do |paths|
-        before = Riffer::Rig::Credentials.read(:anthropic)
+        Riffer::Rig::Credentials.apply(:anthropic, { api_key: 'sk-old' })
         Riffer::Rig::Credentials.install(
           :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), config: nil, **paths
         )
 
-        assert_equal before, Riffer::Rig::Credentials.read(:anthropic)
+        assert_equal({ api_key: 'sk-old' }, Riffer::Rig::Credentials.read(:anthropic))
       end
     end
   end

@@ -318,8 +318,12 @@ describe Riffer::Rig::Terminal do
     end
 
     it 'drives the new session' do
-      run_terminal("hello\n/new\nagain\n") { |runtime| runtime.agent.provider.stub_response('Hi') }
-      fresh = session_files.max_by { |path| File.mtime(path) }
+      ids = []
+      run_terminal("hello\n/new\nagain\n") do |runtime|
+        ids << runtime.id
+        runtime.agent.provider.stub_response('Hi')
+      end
+      fresh = session_files.find { |path| File.basename(path, '.jsonl') == ids.last }
 
       assert_includes File.read(fresh), 'again'
     end

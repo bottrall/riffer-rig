@@ -134,11 +134,11 @@ describe Riffer::Rig::Commands::Auth do
     end
 
     it 'applies nothing when the host declines' do
+      Riffer::Rig::Credentials.apply(:anthropic, { api_key: 'sk-old' })
       runtime = Riffer::Rig::Runtime.new('mock/test')
-      before = Riffer::Rig::Credentials.read(:anthropic)
       command_events(runtime, 'anthropic')
 
-      assert_equal before, Riffer::Rig::Credentials.read(:anthropic)
+      assert_equal({ api_key: 'sk-old' }, Riffer::Rig::Credentials.read(:anthropic))
     end
 
     it 'does not merge credentials into the Runtime when the host declines' do
