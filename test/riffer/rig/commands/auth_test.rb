@@ -93,7 +93,7 @@ describe Riffer::Rig::Commands::Auth do
       runtime = Riffer::Rig::Runtime.new('mock/test', host: host)
       command_events(runtime, 'anthropic')
 
-      assert_equal 'sk-new', Riffer::Rig::Credentials.resolve(:anthropic, host: host).values[:api_key]
+      assert_equal 'sk-new', Riffer::Rig::Credentials.install(:anthropic, host: host, config: nil).values[:api_key]
     end
 
     it 'applies the new key to the provider config' do
@@ -131,6 +131,21 @@ describe Riffer::Rig::Commands::Auth do
         [Riffer::Rig::Events::Notify.new('anthropic still has no api_key (ANTHROPIC_API_KEY)', :error)],
         command_events(runtime, 'anthropic')
       )
+    end
+
+    it 'applies nothing when the host declines' do
+      Riffer::Rig::Credentials.apply(:anthropic, { api_key: 'sk-old' })
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      command_events(runtime, 'anthropic')
+
+      assert_equal({ api_key: 'sk-old' }, Riffer::Rig::Credentials.read(:anthropic))
+    end
+
+    it 'does not merge credentials into the Runtime when the host declines' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      command_events(runtime, 'anthropic')
+
+      assert_empty runtime.credentials
     end
 
     it 'rejects an unknown provider with the providers in the hint' do

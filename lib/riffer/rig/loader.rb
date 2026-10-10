@@ -384,16 +384,16 @@ class Riffer::Rig::Loader
   # @rbs return: String?
   def reload_credentials(runtime)
     provider = runtime.model.partition('/').first
-    resolution = Riffer::Rig::Credentials.resolve(
+    resolution = Riffer::Rig::Credentials.install(
       provider,
       host: asking_host,
       env: @env,
+      config: @riffer_config,
       auth_path: home_auth_path,
       settings_path: home_settings_path
     )
     return missing_credentials(provider, resolution.missing) unless resolution.missing.empty?
 
-    Riffer::Rig::Credentials.apply(provider, resolution.values, config: @riffer_config)
     runtime.merge_credentials(provider.to_sym, resolution.values)
     nil
   end
@@ -553,16 +553,16 @@ class Riffer::Rig::Loader
   # @rbs provider: String
   # @rbs return: Hash[Symbol, String]
   def credentials_for(provider)
-    resolution = Riffer::Rig::Credentials.resolve(
+    resolution = Riffer::Rig::Credentials.install(
       provider,
       host: asking_host,
       env: @env,
+      config: @riffer_config,
       auth_path: home_auth_path,
       settings_path: home_settings_path
     )
     raise ConfigurationError, missing_credentials(provider, resolution.missing) unless resolution.missing.empty?
 
-    Riffer::Rig::Credentials.apply(provider, resolution.values, config: @riffer_config)
     resolution.values
   end
 

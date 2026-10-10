@@ -77,17 +77,15 @@ module Riffer::Rig::Commands::Model
                    .reject { |name| ctx.runtime.credentials.dig(provider.to_sym, name) }
     return true if missing.empty?
 
-    resolution = Riffer::Rig::Credentials.resolve(provider, host: ctx.host)
-    unfilled = missing & resolution.missing
-    if unfilled.empty?
-      Riffer::Rig::Credentials.apply(provider, resolution.values)
-      empty = {} #: Hash[Symbol, String]
-      values = ctx.runtime.credentials.fetch(provider.to_sym, empty).merge(resolution.values)
-      ctx.runtime.merge_credentials(provider.to_sym, values)
-      true
-    else
-      refuse(ctx, model, provider, unfilled)
+    empty = {} #: Hash[Symbol, String]
+    stored = ctx.runtime.credentials.fetch(provider.to_sym, empty)
+    resolution = Riffer::Rig::Credentials.install(provider, host: ctx.host, known: stored)
+    if resolution.missing.any?
+      refuse(ctx, model, provider, missing & resolution.missing)
       false
+    else
+      ctx.runtime.merge_credentials(provider.to_sym, stored.merge(resolution.values))
+      true
     end
   end
 
