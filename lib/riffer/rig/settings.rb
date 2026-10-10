@@ -21,6 +21,11 @@ module Riffer::Rig::Settings
     Riffer::Rig::Providers.identifiers
   end
 
+  # @rbs return: String
+  def provider_list
+    providers.join(', ')
+  end
+
   # @rbs path: String
   # @rbs return: Hash[Symbol, untyped]
   def read(path)
@@ -63,7 +68,7 @@ module Riffer::Rig::Settings
     provider = provider_for(model)
     return if provider && Riffer::Providers::Repository.find(provider)
 
-    "#{model} is not a provider/name model string; the provider is one of: #{providers.join(', ')}"
+    "#{model} is not a provider/name model string; the provider is one of: #{provider_list}"
   end
 
   # @rbs model: String

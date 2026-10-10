@@ -525,18 +525,13 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def onboarding_question
     'Which model should riffer use? Enter provider/name, ' \
-      "with a provider from: #{provider_list}"
+      "with a provider from: #{Riffer::Rig::Settings.provider_list}"
   end
 
   # @rbs return: String
   def no_model
     'No model is set: pass --model provider/name, set RIFFER_MODEL, or set "model" in ' \
-      "~/.riffer/settings.json, with a provider from: #{provider_list}"
-  end
-
-  # @rbs return: String
-  def provider_list
-    Riffer::Rig::Settings.providers.join(', ')
+      "~/.riffer/settings.json, with a provider from: #{Riffer::Rig::Settings.provider_list}"
   end
 
   # @rbs provider: String

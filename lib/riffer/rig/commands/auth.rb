@@ -30,7 +30,7 @@ module Riffer::Rig::Commands::Auth
   # @rbs return: String
   def hint
     'Use /auth <provider> or /auth remove <provider>, with a provider from: ' \
-      "#{Riffer::Rig::Settings.providers.join(', ')}"
+      "#{Riffer::Rig::Settings.provider_list}"
   end
 
   # @rbs return: String
@@ -51,7 +51,8 @@ module Riffer::Rig::Commands::Auth
     provider = identifier.to_sym
     resolution = Riffer::Rig::Credentials.install(provider, host: ctx.host)
     if resolution.missing.any?
-      ctx.host.notify(refusal(provider, resolution.missing), level: :error)
+      missing_fields = Riffer::Rig::ProviderSetup.for(provider).missing_fields(resolution.missing)
+      ctx.host.notify("#{provider} still has no #{missing_fields}", level: :error)
     else
       ctx.runtime.merge_credentials(provider, resolution.values)
       ctx.say("Updated #{provider} credentials")
@@ -66,15 +67,5 @@ module Riffer::Rig::Commands::Auth
 
     Riffer::Rig::Credentials.remove(identifier)
     ctx.say("Removed stored #{identifier} credentials")
-  end
-
-  # @rbs provider: Symbol
-  # @rbs missing: Array[Symbol]
-  # @rbs return: String
-  def refusal(provider, missing)
-    setup = Riffer::Rig::ProviderSetup.for(provider)
-    fields = setup.fields.select { |field| missing.include?(field.name) }
-    wanted = fields.map { |field| "#{field.name} (#{field.env.join(' or ')})" }.join(', ')
-    "#{provider} still has no #{wanted}"
   end
 end
