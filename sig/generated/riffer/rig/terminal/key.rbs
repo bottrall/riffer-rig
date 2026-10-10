@@ -1,0 +1,27 @@
+# Generated from lib/riffer/rig/terminal/key.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Key
+  # @dynamic name, text
+  attr_reader name: Symbol
+
+  attr_reader text: String?
+
+  # @rbs name: Symbol
+  # @rbs text: String?
+  # @rbs return: void
+  def initialize: (Symbol name, ?String? text) -> void
+
+  # @rbs other: untyped
+  # @rbs return: bool
+  def ==: (untyped other) -> bool
+
+  # @rbs return: Integer
+  def hash: () -> Integer
+
+  # @rbs other: untyped
+  # @rbs return: bool
+  def eql?: (untyped other) -> bool
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end
