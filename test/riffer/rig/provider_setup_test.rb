@@ -20,11 +20,11 @@ describe Riffer::Rig::ProviderSetup do
   end
 
   it 'looks an entry up by string identifier' do
-    assert_same Riffer::Rig::ProviderSetup::TABLE[:anthropic], Riffer::Rig::ProviderSetup['anthropic']
+    assert_same Riffer::Rig::ProviderSetup::TABLE[:anthropic], Riffer::Rig::ProviderSetup.registered_setup('anthropic')
   end
 
-  it 'returns nil from [] for an unknown identifier' do
-    assert_nil Riffer::Rig::ProviderSetup[:acme]
+  it 'returns nil from registered_setup for an unknown identifier' do
+    assert_nil Riffer::Rig::ProviderSetup.registered_setup(:acme)
   end
 
   it 'returns the built-in setup from for' do
@@ -65,7 +65,7 @@ describe Riffer::Rig::ProviderSetup do
   end
 
   it 'freezes the sdk pair' do
-    assert_predicate Riffer::Rig::ProviderSetup[:anthropic].sdk, :frozen?
+    assert_predicate Riffer::Rig::ProviderSetup.registered_setup(:anthropic).sdk, :frozen?
   end
 
   it 'freezes a setup' do
@@ -77,23 +77,23 @@ describe Riffer::Rig::ProviderSetup do
   end
 
   it 'never prompts for the OpenAI base_url' do
-    base_url = Riffer::Rig::ProviderSetup[:openai].fields.find { |field| field.name == :base_url }
+    base_url = Riffer::Rig::ProviderSetup.registered_setup(:openai).fields.find { |field| field.name == :base_url }
 
     refute base_url.required
   end
 
   it 'marks Bedrock as offering the credential chain' do
-    assert Riffer::Rig::ProviderSetup[:amazon_bedrock].chain
+    assert Riffer::Rig::ProviderSetup.registered_setup(:amazon_bedrock).chain
   end
 
   it 'reads the Bedrock region from both AWS env vars' do
-    region = Riffer::Rig::ProviderSetup[:amazon_bedrock].fields.find { |field| field.name == :region }
+    region = Riffer::Rig::ProviderSetup.registered_setup(:amazon_bedrock).fields.find { |field| field.name == :region }
 
     assert_equal %w[AWS_REGION AWS_DEFAULT_REGION], region.env
   end
 
   it 'gives the Bedrock region a fallback' do
-    region = Riffer::Rig::ProviderSetup[:amazon_bedrock].fields.find { |field| field.name == :region }
+    region = Riffer::Rig::ProviderSetup.registered_setup(:amazon_bedrock).fields.find { |field| field.name == :region }
 
     assert_respond_to region.fallback, :call
   end
@@ -114,10 +114,10 @@ describe Riffer::Rig::ProviderSetup do
       Riffer::Rig::Providers.unregister(:globex_setup)
     end
 
-    it 'wins the [] lookup over the table' do
+    it 'wins the registered_setup lookup over the table' do
       Riffer::Rig::Providers.register(:globex_setup, setup: registered_setup) { GlobexSetupProvider }
 
-      assert_same registered_setup, Riffer::Rig::ProviderSetup[:globex_setup]
+      assert_same registered_setup, Riffer::Rig::ProviderSetup.registered_setup(:globex_setup)
     end
 
     it 'wins the for lookup over the generic fallback' do

@@ -160,7 +160,7 @@ A `Riffer::Rig::Env` is a frozen snapshot of the process environment, and `riffe
 
 ## Riffer::Rig::ProviderSetup
 
-`Riffer::Rig::ProviderSetup[identifier]` returns a built-in setup entry or `nil`; `Riffer::Rig::ProviderSetup.for(identifier)` returns the generic entry instead of `nil`. A setup entry is a frozen `Riffer::Rig::ProviderSetup` holding a frozen list of `Riffer::Rig::ProviderSetup::Field`s.
+`Riffer::Rig::ProviderSetup.registered_setup(identifier)` returns the provider's registered setup entry, or a built-in one, or `nil` when the provider has neither; `Riffer::Rig::ProviderSetup.for(identifier)` is the only lookup that synthesises, returning the generic entry instead of `nil`. A setup entry is a frozen `Riffer::Rig::ProviderSetup` holding a frozen list of `Riffer::Rig::ProviderSetup::Field`s.
 
 | `ProviderSetup` reader | Meaning                                                                                     |
 | ---------------------- | ------------------------------------------------------------------------------------------- |
