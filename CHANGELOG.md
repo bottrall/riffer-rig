@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.1](https://github.com/bottrall/riffer-rig/compare/v0.12.0...v0.12.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* route missing-session wording through the sessions collaborator ([#298](https://github.com/bottrall/riffer-rig/issues/298)) ([a22e2bd](https://github.com/bottrall/riffer-rig/commit/a22e2bd483c44a6ec345f50f0a15a8a84c4c9b66)), closes [#283](https://github.com/bottrall/riffer-rig/issues/283)
+* single credentials install flow, fixing the /auth partial-apply ([#295](https://github.com/bottrall/riffer-rig/issues/295)) ([d6626d8](https://github.com/bottrall/riffer-rig/commit/d6626d8b8f46c78f2c9a7b3a50f4d730c4d63a71))
+
 ## [0.12.0](https://github.com/bottrall/riffer-rig/compare/v0.11.0...v0.12.0) (2026-10-07)
 
 
