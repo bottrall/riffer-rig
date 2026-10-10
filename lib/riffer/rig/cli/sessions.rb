@@ -81,9 +81,10 @@ class Riffer::Rig::CLI::Sessions
     resume_id ? true : @flags.continue
   end
 
+  # @rbs id: String?
   # @rbs return: String
-  def missing
-    id = resume_id
+  def missing(id = nil)
+    id ||= resume_id
     id ? "No saved session #{id}." : 'No saved session in this directory.'
   end
 
@@ -96,18 +97,8 @@ class Riffer::Rig::CLI::Sessions
       id: header.id,
       title: header.title.gsub(/\s+/, ' ').strip,
       updated: header.updated,
-      messages: message_count(header.id),
       cwd: header.cwd
     )
-  end
-
-  # @rbs id: String
-  # @rbs return: Integer
-  def message_count(id)
-    store = @store
-    return 0 unless store
-
-    store.read(id).count { |entry| entry.is_a?(Riffer::Rig::Stores::MessageEntry) }
   end
 
   # @rbs host: Riffer::Rig::Hosts::_Host

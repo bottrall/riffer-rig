@@ -101,7 +101,7 @@ class Riffer::Rig::Terminal
     resumed = build { @sessions.resume(@host, session.id) }
     return resumed if resumed
 
-    @renderer.notify("No saved session #{session.id}.", :info)
+    @renderer.notify(@sessions.missing(session.id), :info)
     build { @sessions.start(@host) }
   end
 
@@ -219,7 +219,7 @@ class Riffer::Rig::Terminal
   # @rbs session: Riffer::Rig::Terminal::Session
   # @rbs return: Riffer::Rig::Runtime
   def missing(runtime, session)
-    @renderer.notify("No saved session #{session.id}.", :info)
+    @renderer.notify(@sessions.missing(session.id), :info)
     runtime
   end
 

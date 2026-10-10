@@ -28,6 +28,10 @@ class PreparedSessions
     @sessions.list(host, all: all)
   end
 
+  def missing(id = nil)
+    @sessions.missing(id)
+  end
+
   def delete(host, id)
     @sessions.delete(host, id)
   end
@@ -51,10 +55,17 @@ describe Riffer::Rig::Terminal do
     FileUtils.remove_entry(@cwd)
   end
 
-  def run_terminal(input, env: { 'MOCK_API_KEY' => 'mock-key' }, model: 'mock/test', open_picker: false, &)
+  def run_terminal(
+    input,
+    env: { 'MOCK_API_KEY' => 'mock-key' },
+    model: 'mock/test',
+    open_picker: false,
+    sessions: nil,
+    &
+  )
     output = StringIO.new
     input = StringIO.new(input) if input.is_a?(String)
-    sessions = Riffer::Rig::CLI::Sessions.new(
+    sessions ||= Riffer::Rig::CLI::Sessions.new(
       flags: Riffer::Rig::CLI::Flags.new(model: model),
       env: Riffer::Rig::Env.new(env),
       cwd: @cwd,
@@ -370,10 +381,22 @@ describe Riffer::Rig::Terminal do
       assert_operator File.readlines(path).length, :>, 3
     end
 
-    it 'shows the relative time and the message count on a row' do
+    it 'shows the relative time on a row' do
       seed_session('fix the login bug')
 
-      assert_match(/fix the login bug — just now · 2 messages/, run_terminal("/resume\n/exit\n/exit\n"))
+      assert_match(/fix the login bug — just now/, run_terminal("/resume\n/exit\n/exit\n"))
+    end
+
+    it 'takes the missing-session wording from the sessions collaborator' do
+      sessions = Object.new
+      sessions.define_singleton_method(:start) { |_host| nil }
+      sessions.define_singleton_method(:resume) { |_host, _id| nil }
+      sessions.define_singleton_method(:list) do |_host, **|
+        [Riffer::Rig::Terminal::Session.new(id: 'nope', title: 'gone', updated: Time.now, cwd: Dir.pwd)]
+      end
+      sessions.define_singleton_method(:missing) { |id| "wording for #{id}" }
+
+      assert_includes run_terminal("\n", open_picker: true, sessions: sessions), 'wording for nope'
     end
 
     it 'lists other directories with --all' do

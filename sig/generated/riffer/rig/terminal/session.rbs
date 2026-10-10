@@ -7,26 +7,21 @@ class Riffer::Rig::Terminal::Session
 
   @updated: Time?
 
-  @messages: Integer
-
   @cwd: String
 
-  # @dynamic id, title, updated, messages, cwd
+  # @dynamic id, title, updated, cwd
   attr_reader id: String
 
   attr_reader title: String
 
   attr_reader updated: Time?
 
-  attr_reader messages: Integer
-
   attr_reader cwd: String
 
   # @rbs id: String
   # @rbs title: String
   # @rbs updated: Time?
-  # @rbs messages: Integer
   # @rbs cwd: String
   # @rbs return: void
-  def initialize: (id: String, title: String, updated: Time?, messages: Integer, cwd: String) -> void
+  def initialize: (id: String, title: String, updated: Time?, cwd: String) -> void
 end

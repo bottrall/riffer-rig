@@ -50,18 +50,15 @@ class Riffer::Rig::CLI::Sessions
   # @rbs return: bool
   def asked?: () -> bool
 
+  # @rbs id: String?
   # @rbs return: String
-  def missing: () -> String
+  def missing: (?String? id) -> String
 
   private
 
   # @rbs header: Riffer::Rig::Stores::Header
   # @rbs return: ::Riffer::Rig::Terminal::Session
   def row: (Riffer::Rig::Stores::Header header) -> ::Riffer::Rig::Terminal::Session
-
-  # @rbs id: String
-  # @rbs return: Integer
-  def message_count: (String id) -> Integer
 
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs return: Riffer::Rig::Loader

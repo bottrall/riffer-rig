@@ -8,5 +8,6 @@ class Riffer::Rig::Terminal
     def resume: (::Riffer::Rig::Hosts::_Host host, String id) -> ::Riffer::Rig::Runtime?
     def list: (::Riffer::Rig::Hosts::_Host host, ?all: bool) -> Array[::Riffer::Rig::Terminal::Session]
     def delete: (::Riffer::Rig::Hosts::_Host host, String id) -> void
+    def missing: (?String id) -> String
   end
 end
