@@ -1,0 +1,32 @@
+# Generated from lib/riffer/rig/tools/bash/jobs.rb with RBS::Inline
+
+class Riffer::Rig::Tools::Bash::Jobs
+  include Riffer::Rig::Tools::Bash::KillGroup
+
+  @jobs: Hash[String, Riffer::Rig::Tools::Bash::Job]
+
+  @mutex: Mutex
+
+  # @rbs return: void
+  def initialize: () -> void
+
+  # @rbs pid: Integer
+  # @rbs output_path: String
+  # @rbs return: Riffer::Rig::Tools::Bash::Job
+  def register: (Integer pid, String output_path) -> Riffer::Rig::Tools::Bash::Job
+
+  # @rbs return: Array[Riffer::Rig::Tools::Bash::Job]
+  def list: () -> Array[Riffer::Rig::Tools::Bash::Job]
+
+  # @rbs return: void
+  def kill_outstanding: () -> void
+
+  private
+
+  # @rbs job: Riffer::Rig::Tools::Bash::Job
+  # @rbs return: Riffer::Rig::Tools::Bash::Job?
+  def reap: (Riffer::Rig::Tools::Bash::Job job) -> Riffer::Rig::Tools::Bash::Job?
+
+  # @rbs return: void
+  def sweep: () -> void
+end

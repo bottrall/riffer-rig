@@ -1,0 +1,5 @@
+# RBS's core `process` signatures omit spawn.
+
+module Process
+  def self.spawn: (*untyped, **untyped) -> Integer
+end

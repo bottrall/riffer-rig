@@ -41,6 +41,7 @@ class Riffer::Rig::Runtime
   # @rbs @agent: Riffer::Agent
   # @rbs @base_prompt: String
   # @rbs @cancel_flag: Riffer::Rig::Runtime::CancelFlag
+  # @rbs @jobs: Riffer::Rig::Tools::Bash::Jobs
   # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs @cwd: String
   # @rbs @host: Riffer::Rig::Hosts::Mirror
@@ -133,6 +134,7 @@ class Riffer::Rig::Runtime
     @core_commands = []
     @reload_check = nil
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
+    @jobs = Riffer::Rig::Tools::Bash::Jobs.new
     @session_start_pending = true
     @session_start_reason = snapshot ? :restore : :new
     @message_observers = []
@@ -296,6 +298,7 @@ class Riffer::Rig::Runtime
   # @rbs return: nil
   def cancel
     @cancel_flag.set
+    @jobs.kill_outstanding
     nil
   end
 
@@ -311,6 +314,7 @@ class Riffer::Rig::Runtime
     # TODO: emit Riffer::Rig::Events::SessionEnd on the stream once the rebuild
     # ticket settles the stream's session_end reasons.
     @closed = true
+    @jobs.kill_outstanding
     unregister_mcp_servers(@mcp_servers)
     @hooks.observe(:session_end, Riffer::Rig::Events::SessionEnd.new(:close)) unless @session_start_pending
   end
@@ -355,7 +359,11 @@ class Riffer::Rig::Runtime
   # @rbs session: Riffer::Agent::Session?
   # @rbs return: Riffer::Agent
   def build_agent(model, config, session: nil)
-    Riffer::Agent.new(session: session, context: { cancel_flag: @cancel_flag, cwd: @cwd, model: model }, config: config)
+    Riffer::Agent.new(
+      session: session,
+      context: { cancel_flag: @cancel_flag, cwd: @cwd, model: model, jobs: @jobs },
+      config: config
+    )
   end
 
   # @rbs model: String

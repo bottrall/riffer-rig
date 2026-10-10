@@ -9,11 +9,15 @@ riffer-rig ships four tools — `read`, `write`, `edit` and `bash` — each regi
 | `read`  | returns a file with line numbers; `offset` (1-based) and `limit` (default 2000 lines) slice a large file; a missing file is a tool error                    | "Read a file before editing it, and read rather than guess what a file contains."                   |
 | `write` | creates or overwrites a file, making any parent directories                                                                                                 | "Use this for new files or full rewrites; prefer edit for changes to an existing file."             |
 | `edit`  | replaces an exact string, which must be unique unless `replace_all` is set; a missing or ambiguous match is a tool error                                    | "Prefer this over write for existing files; pass enough surrounding text to make old_string unique." |
-| `bash`  | runs a command in the working directory in its own process group and returns combined stdout/stderr; a non-zero exit is a tool error; `timeout_ms` (default 120000) caps each call; output is truncated at 30,000 bytes; a Runtime `cancel` kills the process group | "Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers."    |
+| `bash`  | runs a command in the working directory in its own process group and returns combined stdout/stderr; a non-zero exit is a tool error; `timeout_ms` (default 120000) caps each call; output is truncated at 30,000 bytes; a Runtime `cancel` kills the process group; `run_in_background` starts the command as a background job and returns a job id and output path immediately | "Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers."    |
 
 The guidance sentence ends each tool's description. It is the only coding guidance the model gets: the base prompt names no tools, so the guidance travels with the tool and disappears when the tool is left out.
 
 Tools never raise. A bad argument, a missing file or a failing command comes back to the model as a tool error it can read and act on.
+
+## Background jobs
+
+`bash` takes a `run_in_background` flag: instead of waiting, the command runs in its own process group with stdout and stderr redirected to a private temp file, and the call returns a job id and the output path immediately. The job lives in the Runtime's in-process registry — `{pid, output path, started_at}` keyed by job id, with elapsed time and, once reaped, the exit status. Each registry touch reaps finished children and sweeps completed jobs out, so the registry cannot grow unbounded across a session. A Runtime `cancel` or `close` kills every outstanding job's process group.
 
 Relative paths resolve against the Runtime's `cwd:` (and `bash` runs there), not the process directory, so two Runtimes in one process can work in different directories. A tool called outside a Runtime falls back to `Dir.pwd`.
 

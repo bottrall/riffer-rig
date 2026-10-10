@@ -1,0 +1,7 @@
+# Generated from lib/riffer/rig/tools/bash/kill_group.rb with RBS::Inline
+
+module Riffer::Rig::Tools::Bash::KillGroup
+  # @rbs pid: Integer
+  # @rbs return: Integer
+  def kill_group: (Integer pid) -> Integer
+end
