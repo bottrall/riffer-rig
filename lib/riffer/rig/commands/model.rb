@@ -10,7 +10,7 @@ module Riffer::Rig::Commands::Model
     Riffer::Rig::Command.new(
       'model',
       description: 'Switch the model for this session: /model provider/name, /model --save',
-      extension: 'core'
+      extension: :core
     ) { |ctx| run(ctx) }
   end
 

@@ -10,7 +10,7 @@ module Riffer::Rig::Commands::Auth
     Riffer::Rig::Command.new(
       'auth',
       description: 'Show, re-run or remove provider credentials',
-      extension: 'core'
+      extension: :core
     ) { |ctx| run(ctx) }
   end
 

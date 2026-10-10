@@ -6,7 +6,7 @@ class Riffer::Rig::CLI::Flags
   BANNER = <<~TEXT.chomp #: String
     Usage: riffer [options]
            riffer -p [prompt]   run one prompt headless and exit
-           riffer acp           (not available yet)
+           riffer acp           serve Runtimes as an ACP agent over stdio
   TEXT
 
   # The tokens OptionParser reports a missing argument for when -r is bare.

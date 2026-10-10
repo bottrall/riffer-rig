@@ -24,7 +24,7 @@ describe Riffer::Rig::Commands::Skill do
   end
 
   it 'belongs to core' do
-    assert_equal 'core', Riffer::Rig::Commands::Skill.command(@skill).extension
+    assert_equal :core, Riffer::Rig::Commands::Skill.command(@skill).extension
   end
 
   it 'notifies when the Runtime no longer has skills' do

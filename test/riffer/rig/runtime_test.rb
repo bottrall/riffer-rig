@@ -747,7 +747,7 @@ describe Riffer::Rig::Runtime do
       assert_equal(
         [['log', 'Recent commits'], ['review', 'Review the diff'], ['depth', 'Show the depth'],
          ['boom', 'Always fails'], ['which', 'Ask a question'], ['hello', 'Say hello']],
-        runtime.commands.reject { |command| command.extension == 'core' }
+        runtime.commands.reject { |command| command.extension == :core }
                .map { |command| [command.name, command.description] }
       )
     end
@@ -868,7 +868,7 @@ describe Riffer::Rig::Runtime do
     describe '#install_command' do
       it 'keeps an installed command through a rebuild' do
         runtime = Riffer::Rig::Runtime.new('mock/test')
-        command = Riffer::Rig::Command.new('reload', description: 'Reload', extension: 'core') { |_ctx| nil }
+        command = Riffer::Rig::Command.new('reload', description: 'Reload', extension: :core) { |_ctx| nil }
         runtime.install_command(command)
         runtime.rebuild(extensions: [], settings: {})
 
@@ -877,7 +877,7 @@ describe Riffer::Rig::Runtime do
 
       it 'lets an extension command replace an installed one' do
         runtime = Riffer::Rig::Runtime.new('mock/test')
-        command = Riffer::Rig::Command.new('log', description: 'Installed log', extension: 'core') { |_ctx| nil }
+        command = Riffer::Rig::Command.new('log', description: 'Installed log', extension: :core) { |_ctx| nil }
         runtime.install_command(command)
         runtime.rebuild(extensions: [@git], settings: {})
 
@@ -1082,7 +1082,7 @@ describe Riffer::Rig::Runtime do
       bare = Riffer::Rig::Extension.new('bare') { |rig| rig.tool Riffer::Rig::Tools::Read }
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git, bare])
 
-      assert_equal({ 'git' => { depth: 3, remote: 'origin' } }, runtime.declared_settings)
+      assert_equal({ git: { depth: 3, remote: 'origin' } }, runtime.declared_settings)
     end
 
     it 'rejects extensions named after core settings keys' do
