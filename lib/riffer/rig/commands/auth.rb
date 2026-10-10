@@ -49,7 +49,7 @@ module Riffer::Rig::Commands::Auth
     return ctx.say(hint) unless Riffer::Providers::Repository.find(identifier)
 
     provider = identifier.to_sym
-    _tag, payload = Riffer::Rig::Credentials.install(provider, host: ctx.host)
+    payload = Riffer::Rig::Credentials.install(provider, host: ctx.host)
     if payload.is_a?(Riffer::Rig::Credentials::Resolution)
       ctx.host.notify(refusal(provider, payload.missing), level: :error)
     else

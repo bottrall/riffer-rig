@@ -50,7 +50,7 @@ module Riffer::Rig::Credentials
   # @rbs auth_path: String
   # @rbs settings_path: String
   # @rbs known: Hash[Symbol, String]
-  # @rbs return: [:ok, Hash[Symbol, String]] | [:missing, Resolution]
+  # @rbs return: (Resolution | Hash[Symbol, String])
   def install(
     identifier,
     host:,
@@ -62,10 +62,10 @@ module Riffer::Rig::Credentials
     known: {}
   )
     resolution = resolve(identifier, host:, setup:, env:, auth_path:, settings_path:)
-    return [:missing, resolution] unless (resolution.missing - known.keys).empty?
+    return resolution unless (resolution.missing - known.keys).empty?
 
     apply(identifier, resolution.values, config: config) unless config.nil?
-    [:ok, resolution.values]
+    resolution.values
   end
 
   # A registered extension provider has no Riffer::Config member, so the

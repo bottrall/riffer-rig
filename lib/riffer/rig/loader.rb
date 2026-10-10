@@ -384,7 +384,7 @@ class Riffer::Rig::Loader
   # @rbs return: String?
   def reload_credentials(runtime)
     provider = runtime.model.partition('/').first
-    _tag, payload = Riffer::Rig::Credentials.install(
+    payload = Riffer::Rig::Credentials.install(
       provider,
       host: asking_host,
       env: @env,
@@ -553,7 +553,7 @@ class Riffer::Rig::Loader
   # @rbs provider: String
   # @rbs return: Hash[Symbol, String]
   def credentials_for(provider)
-    _tag, payload = Riffer::Rig::Credentials.install(
+    payload = Riffer::Rig::Credentials.install(
       provider,
       host: asking_host,
       env: @env,

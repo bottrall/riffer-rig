@@ -15,7 +15,7 @@ module Riffer::Rig::Mcp::Auth
   # @rbs return: Hash[Symbol, String]
   def resolve(server, fields, host:, env:, auth_path: Riffer::Rig::Credentials::PATH)
     setup = setup_for(fields)
-    _tag, payload = Riffer::Rig::Credentials.install(server, host:, setup:, env:, auth_path:, config: nil)
+    payload = Riffer::Rig::Credentials.install(server, host:, setup:, env:, auth_path:, config: nil)
     if payload.is_a?(Riffer::Rig::Credentials::Resolution)
       raise Error,
             "MCP server #{server} has no #{setup.missing_fields(payload.missing)}; " \

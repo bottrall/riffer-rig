@@ -79,7 +79,7 @@ module Riffer::Rig::Commands::Model
 
     empty = {} #: Hash[Symbol, String]
     stored = ctx.runtime.credentials.fetch(provider.to_sym, empty)
-    _tag, payload = Riffer::Rig::Credentials.install(provider, host: ctx.host, known: stored)
+    payload = Riffer::Rig::Credentials.install(provider, host: ctx.host, known: stored)
     if payload.is_a?(Riffer::Rig::Credentials::Resolution)
       refuse(ctx, model, provider, missing & payload.missing)
       false

@@ -397,29 +397,29 @@ describe Riffer::Rig::Credentials do
   describe '.install' do
     it 'returns the resolved values when nothing is missing' do
       in_tmp_home do |paths|
-        result = Riffer::Rig::Credentials.install(
+        values = Riffer::Rig::Credentials.install(
           :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), **paths
         )
 
-        assert_equal [:ok, { api_key: 'sk-env' }], result
+        assert_equal({ api_key: 'sk-env' }, values)
       end
     end
 
     it 'returns the resolution when a required field is missing' do
       in_tmp_home do |paths|
-        result = Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, **paths)
+        resolution = Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, **paths)
 
-        assert_equal [:missing, [:api_key]], [result[0], result[1].missing]
+        assert_equal [:api_key], resolution.missing
       end
     end
 
     it 'succeeds when the missing fields are already known' do
       in_tmp_home do |paths|
-        result = Riffer::Rig::Credentials.install(
+        values = Riffer::Rig::Credentials.install(
           :anthropic, host: null_host, env:, known: { api_key: 'sk-known' }, **paths
         )
 
-        assert_equal [:ok, {}], result
+        assert_equal({}, values)
       end
     end
 
