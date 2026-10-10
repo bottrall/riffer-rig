@@ -117,7 +117,7 @@ class Riffer::Rig::Terminal::Picker
   # @rbs return: String
   def row_text(row, all)
     place = all ? "[#{File.basename(row.cwd)}] " : ''
-    "#{place}#{row.title} — #{relative(row.updated)} · #{count(row.messages, 'message')}"
+    "#{place}#{row.title} — #{relative(row.updated)}"
   end
 
   # @rbs updated: Time?

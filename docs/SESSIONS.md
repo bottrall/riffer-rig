@@ -44,7 +44,7 @@ Resuming folds the session's entries back into a snapshot and builds a Runtime o
 
 ## The picker
 
-In the REPL, `/resume` opens the picker over the sessions of the current directory, and `/resume --all` over every directory's. Each row shows the session's first prompt as its title, the relative time of its last update and its message count, most recent first.
+In the REPL, `/resume` opens the picker over the sessions of the current directory, and `/resume --all` over every directory's. Each row shows the session's first prompt as its title and the relative time of its last update, most recent first.
 
 The picker reads one line at a time:
 
