@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/tools/bash.rb with RBS::Inline
 
 class Riffer::Rig::Tools::Bash < Riffer::Tool
+  include Riffer::Rig::Tools::Bash::KillGroup
+
   DEFAULT_TIMEOUT_MS: Integer
 
   MAX_OUTPUT_BYTES: Integer
@@ -10,10 +12,16 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
   # @rbs context: Riffer::Agent::Context?
   # @rbs command: String
   # @rbs timeout_ms: Integer
+  # @rbs run_in_background: bool
   # @rbs return: Riffer::Tools::Response
-  def call: (context: Riffer::Agent::Context?, command: String, ?timeout_ms: Integer) -> Riffer::Tools::Response
+  def call: (context: Riffer::Agent::Context?, command: String, ?timeout_ms: Integer, ?run_in_background: bool) -> Riffer::Tools::Response
 
   private
+
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs command: String
+  # @rbs return: Riffer::Tools::Response
+  def spawn_job: (Riffer::Agent::Context? context, String command) -> Riffer::Tools::Response
 
   # @rbs command: String
   # @rbs cwd: String
@@ -30,10 +38,6 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
 
   # @rbs return: Float
   def monotonic_now: () -> Float
-
-  # @rbs pid: Integer
-  # @rbs return: Integer
-  def kill_group: (Integer pid) -> Integer
 
   # @rbs output: String
   # @rbs return: String

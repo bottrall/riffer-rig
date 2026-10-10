@@ -67,6 +67,63 @@ describe Riffer::Rig::Tools::Bash do
     assert_equal 'hello', response.content
   end
 
+  def background_context(command_registry)
+    Riffer::Agent::Context.new(cwd: Dir.pwd, jobs: command_registry)
+  end
+
+  it 'returns a job id and output path when run_in_background is set' do
+    response = @tool.call(
+      context: background_context(Riffer::Rig::Tools::Bash::Jobs.new),
+      command: 'echo hello',
+      run_in_background: true
+    )
+
+    assert_match(/\AJob \h{8} started in background\nOutput: \S+\z/, response.content)
+  end
+
+  it 'returns before a background job finishes' do
+    jobs = Riffer::Rig::Tools::Bash::Jobs.new
+    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    @tool.call(context: background_context(jobs), command: 'sleep 5', run_in_background: true)
+
+    assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - started, :<, 5
+  ensure
+    jobs&.kill_outstanding
+  end
+
+  it 'collects a background job output at the returned path' do
+    jobs = Riffer::Rig::Tools::Bash::Jobs.new
+    response = @tool.call(context: background_context(jobs), command: 'echo hello', run_in_background: true)
+    path = response.content.split("\n").last.delete_prefix('Output: ')
+    content = ''
+    50.times do
+      content = File.exist?(path) ? File.read(path) : ''
+      break if content.include?('hello')
+
+      sleep 0.02
+    end
+
+    assert_includes content, 'hello'
+  ensure
+    jobs&.kill_outstanding
+  end
+
+  it 'registers a background job in the context registry' do
+    jobs = Riffer::Rig::Tools::Bash::Jobs.new
+    response = @tool.call(context: background_context(jobs), command: 'echo hello', run_in_background: true)
+    job_id = response.content[/\AJob (\h{8})/, 1]
+
+    assert_includes jobs.list.map(&:id), job_id
+  ensure
+    jobs&.kill_outstanding
+  end
+
+  it 'is a tool error without a job registry in its context' do
+    response = @tool.call_with_validation(context: @context, command: 'echo hello', run_in_background: true)
+
+    assert_predicate response, :error?
+  end
+
   def test_kill_group_returns_the_childs_process_group_id
     pid = Process.spawn('sleep 5', pgroup: true)
 

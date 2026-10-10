@@ -474,6 +474,40 @@ describe Riffer::Rig::Runtime do
     assert_raises(Riffer::Rig::Runtime::ClosedError) { runtime.ask('hello') }
   end
 
+  describe 'background jobs' do
+    def spawn_group_job(runtime)
+      jobs = runtime.agent.context[:jobs] #: Riffer::Rig::Tools::Bash::Jobs
+      pid = Process.spawn('sleep 30', pgroup: true)
+      [jobs.register(pid, File.join(Dir.tmpdir, "riffer-rig-job-test-#{pid}")), jobs]
+    end
+
+    def completed?(jobs, job)
+      50.times do
+        found = jobs.list.find { |candidate| candidate.id == job.id && candidate.completed? }
+        return true if found
+
+        sleep 0.02
+      end
+      false
+    end
+
+    it 'kills outstanding background jobs on cancel' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+      job, jobs = spawn_group_job(runtime)
+      runtime.cancel
+
+      assert completed?(jobs, job)
+    end
+
+    it 'kills outstanding background jobs on close' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+      job, jobs = spawn_group_job(runtime)
+      runtime.close
+
+      assert completed?(jobs, job)
+    end
+  end
+
   it 'wraps the given host' do
     host = Class.new(Riffer::Rig::Hosts::Null) { define_method(:capabilities) { Set[:notify].freeze } }.new
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], host: host)
