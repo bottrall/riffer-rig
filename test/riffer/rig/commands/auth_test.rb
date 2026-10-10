@@ -93,7 +93,7 @@ describe Riffer::Rig::Commands::Auth do
       runtime = Riffer::Rig::Runtime.new('mock/test', host: host)
       command_events(runtime, 'anthropic')
 
-      assert_equal 'sk-new', Riffer::Rig::Credentials.resolve(:anthropic, host: host).values[:api_key]
+      assert_equal 'sk-new', Riffer::Rig::Credentials.install(:anthropic, host: host, config: nil).values[:api_key]
     end
 
     it 'applies the new key to the provider config' do

@@ -34,15 +34,16 @@ describe Riffer::Rig::Credentials do
     Riffer::Rig::ProviderSetup.new(fields: [region])
   end
 
-  describe '.resolve' do
+  describe '.install' do
     it 'prefers the env var over the stored value' do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-stored' }, **paths)
 
-        resolution = Riffer::Rig::Credentials.resolve(
+        resolution = Riffer::Rig::Credentials.install(
           :anthropic,
           host: null_host,
           env: env('ANTHROPIC_API_KEY' => 'sk-env'),
+          config: nil,
           **paths
         )
 
@@ -52,10 +53,11 @@ describe Riffer::Rig::Credentials do
 
     it 'reads a later env var when the first is unset' do
       in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.resolve(
+        resolution = Riffer::Rig::Credentials.install(
           :amazon_bedrock,
           host: null_host,
           env: env('AWS_DEFAULT_REGION' => 'us-west-2'),
+          config: nil,
           **paths
         )
 
@@ -65,10 +67,11 @@ describe Riffer::Rig::Credentials do
 
     it 'treats a blank env var as unset' do
       in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.resolve(
+        resolution = Riffer::Rig::Credentials.install(
           :anthropic,
           host: null_host,
           env: env('ANTHROPIC_API_KEY' => ' '),
+          config: nil,
           **paths
         )
 
@@ -80,7 +83,14 @@ describe Riffer::Rig::Credentials do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:acme, { region: 'from-settings' }, setup: fallback_setup, **paths)
 
-        resolution = Riffer::Rig::Credentials.resolve(:acme, host: null_host, setup: fallback_setup, env:, **paths)
+        resolution = Riffer::Rig::Credentials.install(
+          :acme,
+          host: null_host,
+          setup: fallback_setup,
+          env:,
+          config: nil,
+          **paths
+        )
 
         assert_equal({ region: 'from-settings' }, resolution.values)
       end
@@ -90,7 +100,7 @@ describe Riffer::Rig::Credentials do
       in_tmp_home do |paths|
         host = AnsweringHost.new('from-host')
 
-        Riffer::Rig::Credentials.resolve(:acme, host: host, setup: fallback_setup, env:, **paths)
+        Riffer::Rig::Credentials.install(:acme, host: host, setup: fallback_setup, env:, config: nil, **paths)
 
         assert_empty host.asked
       end
@@ -98,7 +108,14 @@ describe Riffer::Rig::Credentials do
 
     it 'returns the fallback value' do
       in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.resolve(:acme, host: null_host, setup: fallback_setup, env:, **paths)
+        resolution = Riffer::Rig::Credentials.install(
+          :acme,
+          host: null_host,
+          setup: fallback_setup,
+          env:,
+          config: nil,
+          **paths
+        )
 
         assert_equal({ region: 'from-fallback' }, resolution.values)
       end
@@ -106,10 +123,11 @@ describe Riffer::Rig::Credentials do
 
     it 'asks the host when nothing else resolves' do
       in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.resolve(
+        resolution = Riffer::Rig::Credentials.install(
           :anthropic,
           host: AnsweringHost.new("sk-asked\n"),
           env:,
+          config: nil,
           **paths
         )
 
@@ -121,7 +139,7 @@ describe Riffer::Rig::Credentials do
       in_tmp_home do |paths|
         host = AnsweringHost.new('sk-asked')
 
-        Riffer::Rig::Credentials.resolve(:anthropic, host: host, env:, **paths)
+        Riffer::Rig::Credentials.install(:anthropic, host: host, env:, config: nil, **paths)
 
         assert_equal [{ question: 'anthropic api_key', secret: true }], host.asked
       end
@@ -129,7 +147,7 @@ describe Riffer::Rig::Credentials do
 
     it 'stores what the host answered' do
       in_tmp_home do |paths|
-        Riffer::Rig::Credentials.resolve(:anthropic, host: AnsweringHost.new('sk-asked'), env:, **paths)
+        Riffer::Rig::Credentials.install(:anthropic, host: AnsweringHost.new('sk-asked'), env:, config: nil, **paths)
 
         assert_equal :stored, Riffer::Rig::Credentials.status(:anthropic, env:, auth_path: paths[:auth_path])
       end
@@ -139,7 +157,7 @@ describe Riffer::Rig::Credentials do
       in_tmp_home do |paths|
         host = AnsweringHost.new('sk-asked')
 
-        Riffer::Rig::Credentials.resolve(:openai, host: host, env:, **paths)
+        Riffer::Rig::Credentials.install(:openai, host: host, env:, config: nil, **paths)
 
         assert_equal(['openai api_key'], host.asked.map { |ask| ask[:question] })
       end
@@ -149,7 +167,7 @@ describe Riffer::Rig::Credentials do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:openai, { base_url: 'https://proxy.test/v1' }, **paths)
 
-        resolution = Riffer::Rig::Credentials.resolve(:openai, host: null_host, env:, **paths)
+        resolution = Riffer::Rig::Credentials.install(:openai, host: null_host, env:, config: nil, **paths)
 
         assert_equal 'https://proxy.test/v1', resolution.values[:base_url]
       end
@@ -157,10 +175,11 @@ describe Riffer::Rig::Credentials do
 
     it 'returns what it has when the null host declines' do
       in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.resolve(
+        resolution = Riffer::Rig::Credentials.install(
           :azure_openai,
           host: null_host,
           env: env('AZURE_OPENAI_ENDPOINT' => 'https://azure.test'),
+          config: nil,
           **paths
         )
 
@@ -170,10 +189,11 @@ describe Riffer::Rig::Credentials do
 
     it 'lists the required fields still missing when the null host declines' do
       in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.resolve(
+        resolution = Riffer::Rig::Credentials.install(
           :azure_openai,
           host: null_host,
           env: env('AZURE_OPENAI_ENDPOINT' => 'https://azure.test'),
+          config: nil,
           **paths
         )
 
@@ -183,7 +203,7 @@ describe Riffer::Rig::Credentials do
 
     it 'leaves an optional field out of the missing list' do
       in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.resolve(:openai, host: null_host, env:, **paths)
+        resolution = Riffer::Rig::Credentials.install(:openai, host: null_host, env:, config: nil, **paths)
 
         assert_equal [:api_key], resolution.missing
       end
@@ -193,10 +213,11 @@ describe Riffer::Rig::Credentials do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:anthropic, { api_key: '$MY_ANTHROPIC_KEY' }, **paths)
 
-        resolution = Riffer::Rig::Credentials.resolve(
+        resolution = Riffer::Rig::Credentials.install(
           :anthropic,
           host: null_host,
           env: env('MY_ANTHROPIC_KEY' => 'sk-referenced'),
+          config: nil,
           **paths
         )
 
@@ -208,7 +229,7 @@ describe Riffer::Rig::Credentials do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:anthropic, { api_key: '!echo sk-from-command' }, **paths)
 
-        resolution = Riffer::Rig::Credentials.resolve(:anthropic, host: null_host, env:, **paths)
+        resolution = Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, config: nil, **paths)
 
         assert_equal({ api_key: 'sk-from-command' }, resolution.values)
       end
@@ -218,7 +239,7 @@ describe Riffer::Rig::Credentials do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:anthropic, { api_key: '!exit 1' }, **paths)
 
-        resolution = Riffer::Rig::Credentials.resolve(:anthropic, host: null_host, env:, **paths)
+        resolution = Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, config: nil, **paths)
 
         assert_equal [:api_key], resolution.missing
       end
@@ -228,7 +249,7 @@ describe Riffer::Rig::Credentials do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:azure_openai, { endpoint: '!echo https://azure.test' }, **paths)
 
-        resolution = Riffer::Rig::Credentials.resolve(:azure_openai, host: null_host, env:, **paths)
+        resolution = Riffer::Rig::Credentials.install(:azure_openai, host: null_host, env:, config: nil, **paths)
 
         assert_equal '!echo https://azure.test', resolution.values[:endpoint]
       end
@@ -239,10 +260,11 @@ describe Riffer::Rig::Credentials do
         marker = File.join(File.dirname(paths[:auth_path]), 'marker')
         Riffer::Rig::Credentials.store(:anthropic, { api_key: "!touch #{marker}" }, **paths)
 
-        Riffer::Rig::Credentials.resolve(
+        Riffer::Rig::Credentials.install(
           :anthropic,
           host: null_host,
           env: env('ANTHROPIC_API_KEY' => 'sk-env'),
+          config: nil,
           **paths
         )
 
@@ -255,9 +277,59 @@ describe Riffer::Rig::Credentials do
         FileUtils.mkdir_p(File.dirname(paths[:auth_path]))
         File.write(paths[:auth_path], JSON.generate('anthropic' => 'sk-ant-flat'))
 
-        resolution = Riffer::Rig::Credentials.resolve(:anthropic, host: null_host, env:, **paths)
+        resolution = Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, config: nil, **paths)
 
         assert_empty resolution.values
+      end
+    end
+
+    it 'returns the resolved values when nothing is missing' do
+      in_tmp_home do |paths|
+        resolution = Riffer::Rig::Credentials.install(
+          :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), **paths
+        )
+
+        assert_equal({ api_key: 'sk-env' }, resolution.values)
+      end
+    end
+
+    it 'returns the resolution when a required field is missing' do
+      in_tmp_home do |paths|
+        resolution = Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, **paths)
+
+        assert_equal [:api_key], resolution.missing
+      end
+    end
+
+    it 'succeeds when the missing fields are already known' do
+      in_tmp_home do |paths|
+        resolution = Riffer::Rig::Credentials.install(
+          :anthropic, host: null_host, env:, known: { api_key: 'sk-known' }, **paths
+        )
+
+        assert_empty resolution.missing
+      end
+    end
+
+    it 'applies the values to the given config on success' do
+      in_tmp_home do |paths|
+        config = Riffer::Config.new
+        Riffer::Rig::Credentials.install(
+          :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), config: config, **paths
+        )
+
+        assert_equal 'sk-env', config.anthropic.api_key
+      end
+    end
+
+    it 'does not apply when there is no config' do
+      in_tmp_home do |paths|
+        Riffer::Rig::Credentials.apply(:anthropic, { api_key: 'sk-old' })
+        Riffer::Rig::Credentials.install(
+          :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), config: nil, **paths
+        )
+
+        assert_equal({ api_key: 'sk-old' }, Riffer::Rig::Credentials.read(:anthropic))
       end
     end
   end
@@ -390,58 +462,6 @@ describe Riffer::Rig::Credentials do
     it 'is :missing otherwise' do
       in_tmp_home do |paths|
         assert_equal :missing, Riffer::Rig::Credentials.status(:anthropic, env:, auth_path: paths[:auth_path])
-      end
-    end
-  end
-
-  describe '.install' do
-    it 'returns the resolved values when nothing is missing' do
-      in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.install(
-          :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), **paths
-        )
-
-        assert_equal({ api_key: 'sk-env' }, resolution.values)
-      end
-    end
-
-    it 'returns the resolution when a required field is missing' do
-      in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, **paths)
-
-        assert_equal [:api_key], resolution.missing
-      end
-    end
-
-    it 'succeeds when the missing fields are already known' do
-      in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.install(
-          :anthropic, host: null_host, env:, known: { api_key: 'sk-known' }, **paths
-        )
-
-        assert_empty resolution.missing
-      end
-    end
-
-    it 'applies the values to the given config on success' do
-      in_tmp_home do |paths|
-        config = Riffer::Config.new
-        Riffer::Rig::Credentials.install(
-          :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), config: config, **paths
-        )
-
-        assert_equal 'sk-env', config.anthropic.api_key
-      end
-    end
-
-    it 'does not apply when there is no config' do
-      in_tmp_home do |paths|
-        Riffer::Rig::Credentials.apply(:anthropic, { api_key: 'sk-old' })
-        Riffer::Rig::Credentials.install(
-          :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), config: nil, **paths
-        )
-
-        assert_equal({ api_key: 'sk-old' }, Riffer::Rig::Credentials.read(:anthropic))
       end
     end
   end

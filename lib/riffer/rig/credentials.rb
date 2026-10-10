@@ -18,34 +18,6 @@ module Riffer::Rig::Credentials
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs setup: Riffer::Rig::ProviderSetup
   # @rbs env: Riffer::Rig::Env
-  # @rbs auth_path: String
-  # @rbs settings_path: String
-  # @rbs return: Resolution
-  def resolve(
-    identifier,
-    host:,
-    setup: Riffer::Rig::ProviderSetup.for(identifier),
-    env: Riffer::Rig::Env.new,
-    auth_path: PATH,
-    settings_path: Riffer::Rig::Settings::PATH
-  )
-    secrets = stored_secrets(identifier, auth_path)
-    plain = Riffer::Rig::Settings.provider_fields(identifier.to_s, path: settings_path)
-    found = setup.fields.to_h do |field|
-      [field.name, env.value_for(field) || stored_value(field, secrets, plain, env) || field.fallback&.call]
-    end.compact
-    required = setup.fields.select(&:required)
-    answers = ask_for(required.reject { |field| found.key?(field.name) }, identifier, host)
-    store(identifier, answers, setup:, auth_path:, settings_path:)
-
-    values = found.merge(answers)
-    Resolution.new(values:, missing: required.map(&:name) - values.keys)
-  end
-
-  # @rbs identifier: String | Symbol
-  # @rbs host: Riffer::Rig::Hosts::_Host
-  # @rbs setup: Riffer::Rig::ProviderSetup
-  # @rbs env: Riffer::Rig::Env
   # @rbs config: Riffer::Config?
   # @rbs auth_path: String
   # @rbs settings_path: String
@@ -140,6 +112,34 @@ module Riffer::Rig::Credentials
   end
 
   private
+
+  # @rbs identifier: String | Symbol
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs setup: Riffer::Rig::ProviderSetup
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
+  # @rbs return: Resolution
+  def resolve(
+    identifier,
+    host:,
+    setup: Riffer::Rig::ProviderSetup.for(identifier),
+    env: Riffer::Rig::Env.new,
+    auth_path: PATH,
+    settings_path: Riffer::Rig::Settings::PATH
+  )
+    secrets = stored_secrets(identifier, auth_path)
+    plain = Riffer::Rig::Settings.provider_fields(identifier.to_s, path: settings_path)
+    found = setup.fields.to_h do |field|
+      [field.name, env.value_for(field) || stored_value(field, secrets, plain, env) || field.fallback&.call]
+    end.compact
+    required = setup.fields.select(&:required)
+    answers = ask_for(required.reject { |field| found.key?(field.name) }, identifier, host)
+    store(identifier, answers, setup:, auth_path:, settings_path:)
+
+    values = found.merge(answers)
+    Resolution.new(values:, missing: required.map(&:name) - values.keys)
+  end
 
   # @rbs fields: Array[Riffer::Rig::ProviderSetup::Field]
   # @rbs identifier: String | Symbol
