@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
 require 'open3'
+require 'securerandom'
+require 'tmpdir'
 
 class Riffer::Rig::Tools::Bash < Riffer::Tool
+  include Riffer::Rig::Tools::Bash::KillGroup
+
   identifier 'bash'
   description 'Run a shell command in the working directory and return its combined stdout/stderr and exit status. ' \
               'Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers.'
@@ -21,13 +25,20 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
              Integer,
              description: 'Kill the command after this many milliseconds',
              default: DEFAULT_TIMEOUT_MS
+    optional :run_in_background,
+             Riffer::Params::Boolean,
+             description: 'Start the command in the background and return a job id and output path immediately',
+             default: false
   end
 
   # @rbs context: Riffer::Agent::Context?
   # @rbs command: String
   # @rbs timeout_ms: Integer
+  # @rbs run_in_background: bool
   # @rbs return: Riffer::Tools::Response
-  def call(context:, command:, timeout_ms: DEFAULT_TIMEOUT_MS)
+  def call(context:, command:, timeout_ms: DEFAULT_TIMEOUT_MS, run_in_background: false)
+    return spawn_job(context, command) if run_in_background
+
     cancel_flag = context&.[](:cancel_flag) #: Riffer::Rig::Runtime::CancelFlag?
     cwd = context&.[](:cwd) #: String
     output, status = run(command, cwd, timeout_ms / 1000.0, cancel_flag)
@@ -39,6 +50,21 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
   end
 
   private
+
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs command: String
+  # @rbs return: Riffer::Tools::Response
+  def spawn_job(context, command)
+    jobs = context&.[](:jobs) #: Riffer::Rig::Tools::Bash::Jobs?
+    return error('no background job registry in the context', type: :command_failed) unless jobs
+
+    cwd = context&.[](:cwd) #: String
+    path = File.join(Dir.tmpdir, "riffer-rig-job-#{SecureRandom.hex(4)}")
+    pid = Process.spawn(command, chdir: cwd, pgroup: true, out: [path, 'w', 0o600], err: %i[child out])
+    job = jobs.register(pid, path)
+
+    text("Job #{job.id} started in background\nOutput: #{job.output_path}")
+  end
 
   # @rbs command: String
   # @rbs cwd: String
@@ -78,15 +104,6 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
   # @rbs return: Float
   def monotonic_now
     Process.clock_gettime(Process::CLOCK_MONOTONIC)
-  end
-
-  # @rbs pid: Integer
-  # @rbs return: Integer
-  def kill_group(pid)
-    Process.kill('TERM', -Process.getpgid(pid))
-    Process.getpgid(pid)
-  rescue Errno::ESRCH, Errno::EPERM
-    0
   end
 
   # @rbs output: String
