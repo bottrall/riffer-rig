@@ -41,7 +41,7 @@ module Riffer::Rig::Commands::Model
 
   # @rbs return: String
   def hint
-    "Use /model provider/name, with a provider from: #{Riffer::Rig::Settings.providers.join(', ')}"
+    "Use /model provider/name, with a provider from: #{Riffer::Rig::Settings.provider_list}"
   end
 
   # The same setup flows the Loader runs when it builds a Runtime: the

@@ -27,9 +27,4 @@ module Riffer::Rig::Commands::Auth
   # @rbs identifier: String
   # @rbs return: void
   def remove: (Riffer::Rig::Command::Context ctx, String identifier) -> void
-
-  # @rbs provider: Symbol
-  # @rbs missing: Array[Symbol]
-  # @rbs return: String
-  def refusal: (Symbol provider, Array[Symbol] missing) -> String
 end

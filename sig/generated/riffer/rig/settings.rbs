@@ -10,6 +10,9 @@ module Riffer::Rig::Settings
   # @rbs return: Array[Symbol]
   def providers: () -> Array[Symbol]
 
+  # @rbs return: String
+  def provider_list: () -> String
+
   # @rbs path: String
   # @rbs return: Hash[Symbol, untyped]
   def read: (String path) -> Hash[Symbol, untyped]

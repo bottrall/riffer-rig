@@ -246,9 +246,6 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def no_model: () -> String
 
-  # @rbs return: String
-  def provider_list: () -> String
-
   # @rbs provider: String
   # @rbs return: void
   def ensure_sdk: (String provider) -> void
