@@ -49,11 +49,11 @@ module Riffer::Rig::Commands::Auth
     return ctx.say(hint) unless Riffer::Providers::Repository.find(identifier)
 
     provider = identifier.to_sym
-    payload = Riffer::Rig::Credentials.install(provider, host: ctx.host)
-    if payload.is_a?(Riffer::Rig::Credentials::Resolution)
-      ctx.host.notify(refusal(provider, payload.missing), level: :error)
+    resolution = Riffer::Rig::Credentials.install(provider, host: ctx.host)
+    if resolution.missing.any?
+      ctx.host.notify(refusal(provider, resolution.missing), level: :error)
     else
-      ctx.runtime.merge_credentials(provider, payload)
+      ctx.runtime.merge_credentials(provider, resolution.values)
       ctx.say("Updated #{provider} credentials")
     end
   end
