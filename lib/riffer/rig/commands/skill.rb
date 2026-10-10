@@ -6,7 +6,7 @@ module Riffer::Rig::Commands::Skill
   # @rbs skill: Riffer::Skills::Frontmatter
   # @rbs return: Riffer::Rig::Command
   def command(skill)
-    Riffer::Rig::Command.new("skill:#{skill.name}", description: skill.description, extension: 'core') do |ctx|
+    Riffer::Rig::Command.new("skill:#{skill.name}", description: skill.description, extension: :core) do |ctx|
       run(ctx, skill)
     end
   end

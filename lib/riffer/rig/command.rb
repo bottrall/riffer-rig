@@ -6,11 +6,11 @@ class Riffer::Rig::Command
   # @dynamic name, description, extension
   attr_reader :name #: String
   attr_reader :description #: String
-  attr_reader :extension #: String
+  attr_reader :extension #: Symbol
 
   # @rbs name: String
   # @rbs description: String
-  # @rbs extension: String
+  # @rbs extension: Symbol
   # @rbs &block: (Riffer::Rig::Command::Context) -> void
   # @rbs return: void
   def initialize(name, description:, extension:, &block)
