@@ -33,7 +33,7 @@ class Riffer::Rig::ProviderSetup
 
   # @rbs identifier: String | Symbol
   # @rbs return: Riffer::Rig::ProviderSetup?
-  def self.[]: (String | Symbol identifier) -> Riffer::Rig::ProviderSetup?
+  def self.registered_setup: (String | Symbol identifier) -> Riffer::Rig::ProviderSetup?
 
   # @rbs identifier: String | Symbol
   # @rbs return: Riffer::Rig::ProviderSetup

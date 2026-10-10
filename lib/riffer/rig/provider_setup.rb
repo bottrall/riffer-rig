@@ -102,14 +102,14 @@ class Riffer::Rig::ProviderSetup
 
   # @rbs identifier: String | Symbol
   # @rbs return: Riffer::Rig::ProviderSetup?
-  def self.[](identifier)
+  def self.registered_setup(identifier)
     Riffer::Rig::Providers.setup(identifier) || TABLE[identifier.to_sym]
   end
 
   # @rbs identifier: String | Symbol
   # @rbs return: Riffer::Rig::ProviderSetup
   def self.for(identifier)
-    self[identifier] ||
+    registered_setup(identifier) ||
       new(fields: [Field.new(name: :api_key, env: ["#{identifier.to_s.upcase}_API_KEY"], secret: true, required: true)])
   end
 end

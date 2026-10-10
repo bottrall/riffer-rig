@@ -51,7 +51,7 @@ module Riffer::Rig::Commands::Model
   # @rbs provider: String
   # @rbs return: bool
   def ready?(ctx, model, provider)
-    setup = Riffer::Rig::ProviderSetup[provider]
+    setup = Riffer::Rig::ProviderSetup.registered_setup(provider)
     return true unless setup
 
     sdk = setup.sdk

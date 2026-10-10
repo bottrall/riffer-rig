@@ -311,7 +311,7 @@ describe Riffer::Rig::Registrar do
 
       assert_equal(
         [[:api_key, ['ACME_API_KEY'], true, true]],
-        Riffer::Rig::ProviderSetup[:acme].fields.map do |field|
+        Riffer::Rig::ProviderSetup.registered_setup(:acme).fields.map do |field|
           [field.name, field.env, field.secret, field.required]
         end
       )
@@ -323,7 +323,7 @@ describe Riffer::Rig::Registrar do
         setup: { url: 'https://example.com/keys', fields: [{ name: :api_key, env: ['ACME_API_KEY'] }] }
       ) { AcmeSeamProvider }
 
-      assert_equal 'https://example.com/keys', Riffer::Rig::ProviderSetup[:acme].url
+      assert_equal 'https://example.com/keys', Riffer::Rig::ProviderSetup.registered_setup(:acme).url
     end
 
     it 'freezes the converted setup' do
@@ -332,7 +332,7 @@ describe Riffer::Rig::Registrar do
         setup: { fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }
       ) { AcmeSeamProvider }
 
-      assert_predicate Riffer::Rig::ProviderSetup[:acme], :frozen?
+      assert_predicate Riffer::Rig::ProviderSetup.registered_setup(:acme), :frozen?
     end
 
     it 'gives a registered provider no setup by default' do
