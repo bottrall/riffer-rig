@@ -1,0 +1,50 @@
+# Generated from lib/riffer/rig/tools/bash/job.rb with RBS::Inline
+
+class Riffer::Rig::Tools::Bash::Job
+  @id: String
+
+  @pid: Integer
+
+  @output_path: String
+
+  @started_at: Float
+
+  @status: Integer?
+
+  @ended_at: Float?
+
+  # @dynamic id, pid, output_path, started_at, status
+  attr_reader id: String
+
+  attr_reader pid: Integer
+
+  attr_reader output_path: String
+
+  attr_reader started_at: Float
+
+  attr_reader status: Integer?
+
+  # @rbs id: String
+  # @rbs pid: Integer
+  # @rbs output_path: String
+  # @rbs started_at: Float
+  # @rbs status: Integer?
+  # @rbs ended_at: Float?
+  # @rbs return: void
+  def initialize: (id: String, pid: Integer, output_path: String, started_at: Float, ?status: Integer?, ?ended_at: Float?) -> void
+
+  # @rbs return: bool
+  def active?: () -> bool
+
+  # @rbs return: bool
+  def completed?: () -> bool
+
+  # @rbs now: Float
+  # @rbs return: Float
+  def elapsed: (Float now) -> Float
+
+  # @rbs status: Integer
+  # @rbs ended_at: Float
+  # @rbs return: Riffer::Rig::Tools::Bash::Job
+  def finish: (Integer status, Float ended_at) -> Riffer::Rig::Tools::Bash::Job
+end

@@ -17,6 +17,7 @@ target :lib do
   library 'open3'
   library 'io-console'
   library 'optparse'
+  library 'tmpdir'
 
   configure_code_diagnostics(D::Ruby.all_error)
 end

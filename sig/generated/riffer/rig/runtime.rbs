@@ -26,8 +26,6 @@ class Riffer::Rig::Runtime
   # tests and embedders can exercise the switches.
   NATIVE_TOOLS_BY_PROVIDER: Hash[Symbol, Hash[Symbol, bool]]
 
-  @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
-
   @model_observers: Array[^(String) -> void]
 
   @message_observers: Array[^(Riffer::Messages::Base) -> void]
@@ -52,11 +50,15 @@ class Riffer::Rig::Runtime
 
   @credentials: Hash[Symbol, Hash[Symbol, String]]
 
+  @jobs: Riffer::Rig::Tools::Bash::Jobs
+
   @cancel_flag: Riffer::Rig::Runtime::CancelFlag
 
   @base_prompt: String
 
   @agent: Riffer::Agent
+
+  @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
 
   @commands: Hash[String, Riffer::Rig::Command]
 
