@@ -49,6 +49,19 @@ describe Riffer::Rig::CLI::Flags do
     assert_equal 5, parse('--max-steps', '5').max_steps
   end
 
+  it 'builds the Loader options from the flags' do
+    options = parse('--model', 'openai/gpt-5', '--no-skills', '--tools', 'read,bash', '--max-steps', '5').to_options
+
+    assert_equal ['openai/gpt-5', false, %w[read bash], 5],
+                 [options.model, options.skills, options.tools, options.max_steps]
+  end
+
+  it 'keeps the Loader defaults in the options' do
+    options = parse.to_options
+
+    assert_instance_of Riffer::Rig::Loader::Options, options
+  end
+
   it 'reads --help' do
     assert_predicate parse('--help'), :help
   end

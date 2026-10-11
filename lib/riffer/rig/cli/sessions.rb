@@ -31,7 +31,7 @@ class Riffer::Rig::CLI::Sessions
     started = find(host)
     host.notify(missing) if started.nil? && asked?
 
-    started || loader(host).runtime(**@flags.keywords)
+    started || loader(host).runtime(@flags.to_options)
   end
 
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -39,23 +39,23 @@ class Riffer::Rig::CLI::Sessions
   def find(host)
     id = resume_id
     if id
-      loader(host).resume(id, **@flags.keywords)
+      loader(host).resume(id, @flags.to_options)
     elsif @flags.continue
-      loader(host).continue(**@flags.keywords)
+      loader(host).continue(@flags.to_options)
     end
   end
 
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs return: Riffer::Rig::Runtime
   def fresh(host)
-    loader(host).runtime(**@flags.keywords)
+    loader(host).runtime(@flags.to_options)
   end
 
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs id: String
   # @rbs return: Riffer::Rig::Runtime?
   def resume(host, id)
-    loader(host).resume(id, **@flags.keywords)
+    loader(host).resume(id, @flags.to_options)
   end
 
   # @rbs host: Riffer::Rig::Hosts::_Host

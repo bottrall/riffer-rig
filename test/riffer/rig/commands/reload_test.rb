@@ -23,7 +23,7 @@ describe Riffer::Rig::Commands::Reload do
       env: Riffer::Rig::Env.new({ 'MOCK_API_KEY' => 'mock-key' }),
       home: @home,
       riffer_config: @config,
-      model: 'mock/test'
+      options: Riffer::Rig::Loader::Options.new(model: 'mock/test')
     )
   end
 

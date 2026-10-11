@@ -37,8 +37,7 @@ describe Riffer::Rig::Headless do
         env: Riffer::Rig::Env.new(env),
         home: @home,
         riffer_config: Riffer::Config.new,
-        model: model,
-        max_steps: max_steps
+        options: Riffer::Rig::Loader::Options.new(model: model, max_steps: max_steps)
       )
       yield @runtime if block
       @runtime
