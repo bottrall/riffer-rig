@@ -12,7 +12,7 @@ group :development, :test do
   gem 'openai', '~> 0.80'
 
   gem 'rubocop', '~> 1.91', require: false
-  gem 'rubocop-minitest', '~> 0.40', require: false
+  gem 'rubocop-minitest', '~> 0.41', require: false
   gem 'rubocop-performance', '~> 1.26', require: false
   gem 'rubocop-rake', '~> 0.7', require: false
 
@@ -29,5 +29,5 @@ group :development, :test do
   gem 'kramdown-parser-gfm', require: false
   gem 'rdoc', require: false
   # kramdown's rouge integration trips deprecation warnings on rouge 5.
-  gem 'rouge', '~> 4.6', require: false
+  gem 'rouge', '~> 5.1', require: false
 end
