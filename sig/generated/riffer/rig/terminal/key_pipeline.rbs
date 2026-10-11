@@ -1,0 +1,43 @@
+# Generated from lib/riffer/rig/terminal/key_pipeline.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::KeyPipeline
+  IDLE_SECONDS: Float
+
+  @input: IO
+
+  @decoder: Riffer::Rig::Terminal::KeyDecoder
+
+  @queue: Thread::Queue[Riffer::Rig::Terminal::Key]
+
+  @thread: Thread?
+
+  @stopping: bool
+
+  # @rbs input: IO
+  # @rbs decoder: Riffer::Rig::Terminal::KeyDecoder
+  # @rbs return: void
+  def initialize: (input: IO, ?decoder: Riffer::Rig::Terminal::KeyDecoder) -> void
+
+  # @rbs return: Thread::Queue[Riffer::Rig::Terminal::Key]
+  def keys: () -> Thread::Queue[Riffer::Rig::Terminal::Key]
+
+  # @rbs return: void
+  def start: () -> void
+
+  # @rbs return: void
+  def stop: () -> void
+
+  private
+
+  # The reader only reads: it never renders, and the queue is the single
+  # handoff point back to the single-threaded render loop.
+  # @rbs return: void
+  def read_loop: () -> void
+
+  # @rbs return: String?
+  def read_char: () -> String?
+
+  # @rbs events: Array[Riffer::Rig::Terminal::Key]
+  # @rbs return: void
+  def emit: (Array[Riffer::Rig::Terminal::Key] events) -> void
+end

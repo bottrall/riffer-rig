@@ -1,0 +1,64 @@
+# Generated from lib/riffer/rig/terminal/key_decoder.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::KeyDecoder
+  ESCAPE: String
+
+  CSI_KEYS: Hash[String, Symbol]
+
+  TILDE_KEYS: Hash[String, Symbol]
+
+  PASTE_START: String
+
+  PASTE_END: String
+
+  @sequence: String
+
+  @state: Symbol
+
+  # @rbs return: void
+  def initialize: () -> void
+
+  # @rbs return: bool
+  def pending?: () -> bool
+
+  # @rbs char: String
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def push: (String char) -> Array[Riffer::Rig::Terminal::Key]
+
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def flush: () -> Array[Riffer::Rig::Terminal::Key]
+
+  private
+
+  # @rbs char: String
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def ground: (String char) -> Array[Riffer::Rig::Terminal::Key]
+
+  # @rbs char: String
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def ground_other: (String char) -> Array[Riffer::Rig::Terminal::Key]
+
+  # @rbs char: String
+  # @rbs return: Symbol?
+  def ctrl_chord: (String char) -> Symbol?
+
+  # @rbs char: String
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def escape: (String char) -> Array[Riffer::Rig::Terminal::Key]
+
+  # @rbs char: String
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def csi: (String char) -> Array[Riffer::Rig::Terminal::Key]
+
+  # @rbs final: String
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def finish_csi: (String final) -> Array[Riffer::Rig::Terminal::Key]
+
+  # @rbs char: String
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def ss3: (String char) -> Array[Riffer::Rig::Terminal::Key]
+
+  # @rbs char: String
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def paste: (String char) -> Array[Riffer::Rig::Terminal::Key]
+end
