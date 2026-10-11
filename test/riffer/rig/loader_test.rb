@@ -73,6 +73,8 @@ class ConfirmingHost
   end
 end
 
+LOADER_OPTION_KEYS = %i[model extensions skills agents_md tools max_steps].freeze
+
 describe Riffer::Rig::Loader do
   before do
     @home = Dir.mktmpdir
@@ -96,7 +98,13 @@ describe Riffer::Rig::Loader do
 
   def build(host: Riffer::Rig::Hosts::Null.new, env: { 'MOCK_API_KEY' => 'mock-key' }, **keywords)
     Riffer::Rig::Loader.runtime(
-      cwd: @cwd, host: host, env: Riffer::Rig::Env.new(env), home: @home, riffer_config: @config, **keywords
+      cwd: @cwd,
+      host: host,
+      env: Riffer::Rig::Env.new(env),
+      home: @home,
+      riffer_config: @config,
+      options: Riffer::Rig::Loader::Options.new(**keywords.slice(*LOADER_OPTION_KEYS)),
+      **keywords.except(*LOADER_OPTION_KEYS)
     )
   end
 
@@ -184,7 +192,7 @@ describe Riffer::Rig::Loader do
     it 'keeps extra extensions through a reload' do
       extra = Riffer::Rig::Extension.new('extra_loader') { |rig| rig.command('ping', description: 'Pings') { |_ctx| nil } }
       loader = new_loader
-      runtime = loader.runtime(model: 'mock/test', extra_extensions: [extra])
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'), extra_extensions: [extra])
       loader.reload(runtime, force: true)
 
       assert(runtime.commands.any? { |command| command.name == 'ping' })
@@ -381,7 +389,7 @@ describe Riffer::Rig::Loader do
       write_rig(:home, '')
       write_rig(:project, '')
       loader = new_loader(host: ConfirmingHost.new([true]))
-      loader.runtime(model: 'mock/test')
+      loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
 
       assert_equal [home_rig_path, project_rig_path], loader.tracked_files
     end
@@ -405,7 +413,7 @@ describe Riffer::Rig::Loader do
       File.write(File.join(@cwd, '.riffer', 'local.rb'), 'Riffer::Rig.extension("local") { |rig| }')
       File.write(project_rig_path, "require_relative 'local'")
       loader = new_loader(host: ConfirmingHost.new([true]))
-      loader.runtime(model: 'mock/test')
+      loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
 
       assert_equal [File.expand_path(File.join(@cwd, '.riffer', 'local.rb')), project_rig_path], loader.tracked_files
     end
@@ -413,7 +421,7 @@ describe Riffer::Rig::Loader do
     it 'drops required gem paths from the tracked files' do
       write_rig(:project, "require 'json'")
       loader = new_loader(host: ConfirmingHost.new([true]))
-      loader.runtime(model: 'mock/test')
+      loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
 
       assert_equal [project_rig_path], loader.tracked_files
     end
@@ -751,7 +759,7 @@ describe Riffer::Rig::Loader do
       write_rig(:project, probe_rig('probe'))
       host = ConfirmingHost.new([true])
       loader = new_loader(host: host)
-      runtime = loader.runtime(model: 'mock/test')
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       usage = Riffer::Providers::TokenUsage.new(input_tokens: 7, output_tokens: 3)
       runtime.agent.provider.stub_response('Before.', token_usage: usage)
       runtime.ask('before')
@@ -764,7 +772,7 @@ describe Riffer::Rig::Loader do
       write_rig(:project, probe_rig('probe'))
       host = ConfirmingHost.new([true])
       loader = new_loader(host: host)
-      runtime = loader.runtime(model: 'mock/test')
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       File.write(project_rig_path, 'raise "boom"')
       [loader, runtime, host]
     end
@@ -835,7 +843,7 @@ describe Riffer::Rig::Loader do
       write_rig(:project, probe_rig('probe'))
       host = ConfirmingHost.new([true])
       loader = new_loader(host: host)
-      runtime = loader.runtime(model: 'mock/test')
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       marker = File.join(@cwd, 'reload_marker')
       File.write(project_rig_path, "File.write(#{marker.inspect}, 'attempted')\nraise 'boom'")
       bump(project_rig_path)
@@ -870,7 +878,7 @@ describe Riffer::Rig::Loader do
     it 're-reads settings changed on disk' do
       write_settings(@home, { git: { depth: 10 } })
       loader = new_loader
-      runtime = loader.runtime(model: 'mock/test')
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       write_settings(@home, { git: { depth: 3 } })
       loader.reload(runtime, force: true)
 
@@ -880,7 +888,7 @@ describe Riffer::Rig::Loader do
     it 'drops the extensions of a deleted rig.rb' do
       write_rig(:project, probe_rig('probe'))
       loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(model: 'mock/test')
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       FileUtils.rm(project_rig_path)
       loader.reload(runtime, force: true)
 
@@ -890,7 +898,7 @@ describe Riffer::Rig::Loader do
     it 'confirms a project rig.rb appearing mid-session' do
       host = ConfirmingHost.new([true])
       loader = new_loader(host: host)
-      runtime = loader.runtime(model: 'mock/test')
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       write_rig(:project, probe_rig('probe'))
       loader.reload(runtime, force: true)
 
@@ -900,7 +908,7 @@ describe Riffer::Rig::Loader do
     it 'reports Reloaded from /reload' do
       write_rig(:project, probe_rig('probe'))
       loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(model: 'mock/test')
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       File.write(project_rig_path, probe_rig('probe_next'))
       events = []
       runtime.run_command('reload') { |event| events << event }
@@ -911,7 +919,7 @@ describe Riffer::Rig::Loader do
     it 'stays installed after the rebuild it triggers' do
       write_rig(:project, probe_rig('probe'))
       loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(model: 'mock/test')
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       runtime.run_command('reload')
       events = []
       runtime.run_command('reload') { |event| events << event }
@@ -922,7 +930,7 @@ describe Riffer::Rig::Loader do
     it 'reports a raise during the reload instead of propagating it' do
       write_rig(:project, probe_rig('probe'))
       loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(model: 'mock/test')
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       File.write(project_rig_path, probe_rig('probe_next'))
       with_raising_credentials do
         reloaded = loader.reload(runtime, force: true)
@@ -934,7 +942,7 @@ describe Riffer::Rig::Loader do
     it 'advances the snapshot when a reload raises' do
       write_rig(:project, probe_rig('probe'))
       loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(model: 'mock/test')
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       marker = File.join(@cwd, 'reload_marker')
       File.write(project_rig_path, probe_rig('probe_next') + "File.write(#{marker.inspect}, 'executed')\n")
       with_raising_credentials { loader.reload(runtime, force: true) }
@@ -981,7 +989,7 @@ describe Riffer::Rig::Loader do
     def built_with(host, **keywords)
       write_rig(:project, probe_rig('probe'))
       loader = new_loader(host: host)
-      runtime = loader.runtime(model: 'mock/test', **keywords)
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'), **keywords)
       [loader, runtime]
     end
 
@@ -993,7 +1001,7 @@ describe Riffer::Rig::Loader do
     it 'registers a tool added to a tracked file mid-turn' do
       write_rig(:project, editor_rig)
       loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(model: 'mock/test')
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       runtime.agent.provider.stub_response('', tool_calls: [{ name: 'editor', arguments: '{}' }])
       runtime.agent.provider.stub_response('done')
       runtime.ask('add a tool')
@@ -1004,7 +1012,7 @@ describe Riffer::Rig::Loader do
     it 'serves the next request with the reloaded tools' do
       write_rig(:project, editor_rig)
       loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(model: 'mock/test')
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       runtime.agent.provider.stub_response('', tool_calls: [{ name: 'editor', arguments: '{}' }])
       runtime.agent.provider.stub_response('done')
       runtime.ask('add a tool')
@@ -1153,7 +1161,8 @@ describe 'Loader session store' do
       env: Riffer::Rig::Env.new({ 'MOCK_API_KEY' => 'mock-key' }),
       home: @home,
       riffer_config: @config,
-      **keywords
+      options: Riffer::Rig::Loader::Options.new(**keywords.slice(*LOADER_OPTION_KEYS)),
+      **keywords.except(*LOADER_OPTION_KEYS)
     )
   end
 
@@ -1341,7 +1350,7 @@ describe 'Loader resume' do
   end
 
   def save_session(text = 'hello')
-    runtime = loader.runtime(model: 'mock/test')
+    runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
     turn(runtime, text)
     runtime
   end

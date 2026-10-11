@@ -44,18 +44,13 @@ class Riffer::Rig::Loader
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
   # @rbs riffer_config: Riffer::Config
-  # @rbs model: String?
-  # @rbs extensions: bool
-  # @rbs skills: bool
-  # @rbs agents_md: bool
-  # @rbs tools: Array[String]?
-  # @rbs max_steps: Integer?
   # @rbs store: Riffer::Rig::Stores::_Store | nil
+  # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)
   # @rbs extra_extensions: Array[Riffer::Rig::Extension]
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: Riffer::Rig::Runtime
-  def self.runtime: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?store: Riffer::Rig::Stores::_Store | nil, ?reload: :auto | :manual | nil, ?extra_extensions: Array[Riffer::Rig::Extension], ?snapshot: Hash[Symbol, untyped]?) -> Riffer::Rig::Runtime
+  def self.runtime: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?store: Riffer::Rig::Stores::_Store | nil, ?options: Riffer::Rig::Loader::Options, ?reload: :auto | :manual | nil, ?extra_extensions: Array[Riffer::Rig::Extension], ?snapshot: Hash[Symbol, untyped]?) -> Riffer::Rig::Runtime
 
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -66,38 +61,23 @@ class Riffer::Rig::Loader
   # @rbs return: void
   def initialize: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?store: Riffer::Rig::Stores::_Store | nil, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config) -> void
 
-  # @rbs model: String?
-  # @rbs extensions: bool
-  # @rbs skills: bool
-  # @rbs agents_md: bool
-  # @rbs tools: Array[String]?
-  # @rbs max_steps: Integer?
+  # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)
   # @rbs extra_extensions: Array[Riffer::Rig::Extension]
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: Riffer::Rig::Runtime
-  def runtime: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?reload: :auto | :manual | nil, ?extra_extensions: Array[Riffer::Rig::Extension], ?snapshot: Hash[Symbol, untyped]?) -> Riffer::Rig::Runtime
+  def runtime: (?Riffer::Rig::Loader::Options options, ?reload: :auto | :manual | nil, ?extra_extensions: Array[Riffer::Rig::Extension], ?snapshot: Hash[Symbol, untyped]?) -> Riffer::Rig::Runtime
 
-  # @rbs model: String?
-  # @rbs extensions: bool
-  # @rbs skills: bool
-  # @rbs agents_md: bool
-  # @rbs tools: Array[String]?
-  # @rbs max_steps: Integer?
+  # @rbs options: Riffer::Rig::Loader::Options
   # @rbs return: Riffer::Rig::Runtime?
-  def continue: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?) -> Riffer::Rig::Runtime?
+  def continue: (?Riffer::Rig::Loader::Options options) -> Riffer::Rig::Runtime?
 
   # A resume carries the history over and nothing else: the settings,
   # credentials, extensions and tools are today's.
   # @rbs id: String
-  # @rbs model: String?
-  # @rbs extensions: bool
-  # @rbs skills: bool
-  # @rbs agents_md: bool
-  # @rbs tools: Array[String]?
-  # @rbs max_steps: Integer?
+  # @rbs options: Riffer::Rig::Loader::Options
   # @rbs return: Riffer::Rig::Runtime?
-  def resume: (String id, ?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?) -> Riffer::Rig::Runtime?
+  def resume: (String id, ?Riffer::Rig::Loader::Options options) -> Riffer::Rig::Runtime?
 
   # A host tier may not name the store, so the messages it replays come from
   # here, in the order they were recorded.

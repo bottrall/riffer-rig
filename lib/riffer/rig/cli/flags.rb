@@ -51,9 +51,16 @@ class Riffer::Rig::CLI::Flags
     parser.help
   end
 
-  # @rbs return: Hash[Symbol, untyped]
-  def keywords
-    { model: model, extensions: extensions, skills: skills, agents_md: agents_md, tools: tools, max_steps: max_steps }
+  # @rbs return: Riffer::Rig::Loader::Options
+  def to_options
+    Riffer::Rig::Loader::Options.new(
+      model: model,
+      extensions: extensions,
+      skills: skills,
+      agents_md: agents_md,
+      tools: tools,
+      max_steps: max_steps
+    )
   end
 
   # @rbs return: OptionParser

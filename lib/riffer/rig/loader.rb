@@ -32,13 +32,8 @@ class Riffer::Rig::Loader
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
   # @rbs riffer_config: Riffer::Config
-  # @rbs model: String?
-  # @rbs extensions: bool
-  # @rbs skills: bool
-  # @rbs agents_md: bool
-  # @rbs tools: Array[String]?
-  # @rbs max_steps: Integer?
   # @rbs store: Riffer::Rig::Stores::_Store | nil
+  # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)
   # @rbs extra_extensions: Array[Riffer::Rig::Extension]
   # @rbs snapshot: Hash[Symbol, untyped]?
@@ -49,28 +44,13 @@ class Riffer::Rig::Loader
     env: Riffer::Rig::Env.load,
     home: Dir.home,
     riffer_config: Riffer.config,
-    model: nil,
-    extensions: true,
-    skills: true,
-    agents_md: true,
-    tools: nil,
-    max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS,
     store: Riffer::Rig::Stores::JSONL.new,
+    options: Options.new,
     reload: nil,
     extra_extensions: [],
     snapshot: nil
   )
-    new(cwd:, host:, env:, home:, riffer_config:, store:).runtime(
-      model:,
-      extensions:,
-      skills:,
-      agents_md:,
-      tools:,
-      max_steps:,
-      reload:,
-      extra_extensions:,
-      snapshot:
-    )
+    new(cwd:, host:, env:, home:, riffer_config:, store:).runtime(options, reload:, extra_extensions:, snapshot:)
   end
 
   # @rbs cwd: String
@@ -104,41 +84,26 @@ class Riffer::Rig::Loader
     @reload_mode = nil
   end
 
-  # @rbs model: String?
-  # @rbs extensions: bool
-  # @rbs skills: bool
-  # @rbs agents_md: bool
-  # @rbs tools: Array[String]?
-  # @rbs max_steps: Integer?
+  # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)
   # @rbs extra_extensions: Array[Riffer::Rig::Extension]
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: Riffer::Rig::Runtime
-  def runtime(
-    model: nil,
-    extensions: true,
-    skills: true,
-    agents_md: true,
-    tools: nil,
-    max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS,
-    reload: nil,
-    extra_extensions: [],
-    snapshot: nil
-  )
+  def runtime(options = Options.new, reload: nil, extra_extensions: [], snapshot: nil)
     settings = merged_settings
     document = Riffer::Rig::Settings::Document.new(settings)
-    selected = select_model(model || @env.model || document.model)
+    selected = select_model(options.model || @env.model || document.model)
     provider = Riffer::Rig::Settings.provider_for(selected).to_s
     ensure_sdk(provider)
     credentials = { provider.to_sym => credentials_for(provider) }
-    @extensions_enabled = extensions
+    @extensions_enabled = options.extensions
     @extra_extensions = extra_extensions
     @reload_mode = reload
-    @stripped = { skills: skills, agents_md: agents_md }.reject { |_name, kept| kept }.keys
+    @stripped = { skills: options.skills, agents_md: options.agents_md }.reject { |_name, kept| kept }.keys
     loaded = Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *@stripped).values
     @tracked_files = []
     @gem_extensions = []
-    loaded += load_rig_files(document.autoload) if extensions
+    loaded += load_rig_files(document.autoload) if options.extensions
     loaded += @extra_extensions
 
     recorder = recorder_for(document, resumed: !snapshot.nil?)
@@ -147,11 +112,11 @@ class Riffer::Rig::Loader
     built = Riffer::Rig::Runtime.new(
       selected,
       extensions: loaded,
-      tools: tools,
+      tools: options.tools,
       settings: settings,
       host: @host,
       cwd: @cwd,
-      max_steps: max_steps,
+      max_steps: options.max_steps,
       credentials: credentials,
       env: @env,
       auth_path: home_auth_path,
@@ -168,56 +133,31 @@ class Riffer::Rig::Loader
     built
   end
 
-  # @rbs model: String?
-  # @rbs extensions: bool
-  # @rbs skills: bool
-  # @rbs agents_md: bool
-  # @rbs tools: Array[String]?
-  # @rbs max_steps: Integer?
+  # @rbs options: Riffer::Rig::Loader::Options
   # @rbs return: Riffer::Rig::Runtime?
-  def continue(
-    model: nil,
-    extensions: true,
-    skills: true,
-    agents_md: true,
-    tools: nil,
-    max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS
-  )
+  def continue(options = Options.new)
     store = @store
     return nil unless store
 
     latest = store.list(cwd: @cwd).max_by { |header| header.updated || Time.at(0) }
     return nil unless latest
 
-    resume(latest.id, model:, extensions:, skills:, agents_md:, tools:, max_steps:)
+    resume(latest.id, options)
   end
 
   # A resume carries the history over and nothing else: the settings,
   # credentials, extensions and tools are today's.
   # @rbs id: String
-  # @rbs model: String?
-  # @rbs extensions: bool
-  # @rbs skills: bool
-  # @rbs agents_md: bool
-  # @rbs tools: Array[String]?
-  # @rbs max_steps: Integer?
+  # @rbs options: Riffer::Rig::Loader::Options
   # @rbs return: Riffer::Rig::Runtime?
-  def resume(
-    id,
-    model: nil,
-    extensions: true,
-    skills: true,
-    agents_md: true,
-    tools: nil,
-    max_steps: Riffer::Rig::Runtime::DEFAULT_MAX_STEPS
-  )
+  def resume(id, options = Options.new)
     store = @store
     return nil unless store
 
     entries = store.read(id)
     return nil if entries.empty?
 
-    runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:, snapshot: snapshot_of(entries, id))
+    runtime(options, snapshot: snapshot_of(entries, id))
   end
 
   # A host tier may not name the store, so the messages it replays come from

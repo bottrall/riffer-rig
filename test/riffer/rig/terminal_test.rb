@@ -111,7 +111,7 @@ describe Riffer::Rig::Terminal do
       env: Riffer::Rig::Env.new('MOCK_API_KEY' => 'mock-key'),
       home: @home,
       riffer_config: Riffer::Config.new,
-      model: 'mock/test',
+      options: Riffer::Rig::Loader::Options.new(model: 'mock/test'),
       store: Riffer::Rig::Stores::JSONL.new(home: @home)
     )
     runtime.prompt(title) { |event| event } # the turn only runs when its events are consumed

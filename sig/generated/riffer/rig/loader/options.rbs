@@ -1,0 +1,25 @@
+# Generated from lib/riffer/rig/loader/options.rb with RBS::Inline
+
+class Riffer::Rig::Loader::Options
+  # @dynamic model, extensions, skills, agents_md, tools, max_steps
+  attr_reader model: String?
+
+  attr_reader extensions: bool
+
+  attr_reader skills: bool
+
+  attr_reader agents_md: bool
+
+  attr_reader tools: Array[String]?
+
+  attr_reader max_steps: Integer?
+
+  # @rbs model: String?
+  # @rbs extensions: bool
+  # @rbs skills: bool
+  # @rbs agents_md: bool
+  # @rbs tools: Array[String]?
+  # @rbs max_steps: Integer?
+  # @rbs return: void
+  def initialize: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?) -> void
+end
