@@ -9,7 +9,7 @@ module Riffer::Rig::Commands::Reload
     Riffer::Rig::Command.new(
       'reload',
       description: 'Reload the rig.rb files, settings, credentials and trust',
-      extension: 'core'
+      extension: :core
     ) { |ctx| run(loader, ctx) }
   end
 

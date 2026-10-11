@@ -98,7 +98,7 @@ describe Riffer::Rig::Registrar do
     registrar = Riffer::Rig::Registrar.new('git')
     registrar.command('log', description: 'Recent commits') { |_ctx| nil }
 
-    assert_equal 'git', registrar.commands['log'].extension
+    assert_equal :git, registrar.commands['log'].extension
   end
 
   it 'replaces a command registered again under the same name' do

@@ -64,7 +64,7 @@ class Riffer::Rig::Registrar
   # @rbs &block: (Riffer::Rig::Command::Context) -> void
   # @rbs return: void
   def command(name, description:, &)
-    @commands[name] = Riffer::Rig::Command.new(name, description: description, extension: @extension, &)
+    @commands[name] = Riffer::Rig::Command.new(name, description: description, extension: @extension.to_sym, &)
   end
 
   # @rbs &block: (Riffer::Rig::Runtime) -> Riffer::Skills::Backend

@@ -8,14 +8,14 @@ class Riffer::Rig::Command
 
   attr_reader description: String
 
-  attr_reader extension: String
+  attr_reader extension: Symbol
 
   # @rbs name: String
   # @rbs description: String
-  # @rbs extension: String
+  # @rbs extension: Symbol
   # @rbs &block: (Riffer::Rig::Command::Context) -> void
   # @rbs return: void
-  def initialize: (String name, description: String, extension: String) { (Riffer::Rig::Command::Context) -> void } -> void
+  def initialize: (String name, description: String, extension: Symbol) { (Riffer::Rig::Command::Context) -> void } -> void
 
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs return: void

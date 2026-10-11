@@ -58,7 +58,7 @@ class Riffer::Rig::Runtime
   # @rbs @core_commands: Array[Riffer::Rig::Command]
   # @rbs @claim_depth: Integer
   # @rbs @claim_thread: Thread?
-  # @rbs @declared_settings: Hash[String, Hash[Symbol, untyped]]
+  # @rbs @declared_settings: Hash[Symbol, Hash[Symbol, untyped]]
   # @rbs @errors: Array[Riffer::Rig::Extension::Failure]
   # @rbs @hooks: Riffer::Rig::Runtime::Hooks
   # @rbs @tool_allowlist: Array[String]?
@@ -77,7 +77,7 @@ class Riffer::Rig::Runtime
   attr_reader :host #: Riffer::Rig::Hosts::Mirror
   attr_reader :id #: String
   attr_reader :settings #: Hash[Symbol, untyped]
-  attr_reader :declared_settings #: Hash[String, Hash[Symbol, untyped]]
+  attr_reader :declared_settings #: Hash[Symbol, Hash[Symbol, untyped]]
 
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]
@@ -308,8 +308,6 @@ class Riffer::Rig::Runtime
   def close
     return if @closed
 
-    # TODO: emit Riffer::Rig::Events::SessionEnd on the stream once the rebuild
-    # ticket settles the stream's session_end reasons.
     @closed = true
     unregister_mcp_servers(@mcp_servers)
     @hooks.observe(:session_end, Riffer::Rig::Events::SessionEnd.new(:close)) unless @session_start_pending
@@ -435,7 +433,7 @@ class Riffer::Rig::Runtime
   def install(registrars, mcp_servers, settings, hooks, agent)
     overrides(registrars).each { |message| @host.notify(message, level: :info) }
     @mcp_servers = mcp_servers
-    @declared_settings = registrars.to_h { |registrar| [registrar.extension, registrar.declared_settings] }
+    @declared_settings = registrars.to_h { |registrar| [registrar.extension.to_sym, registrar.declared_settings] }
                                    .reject { |_extension, declared| declared.empty? }
     @settings = with_declared_defaults(settings)
     @prompts = registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h
@@ -511,7 +509,7 @@ class Riffer::Rig::Runtime
   # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: Riffer::Rig::Command::Context
   def command_context(command, args, emit)
-    settings = @settings[command.extension.to_sym] || {} #: Hash[Symbol, untyped]
+    settings = @settings[command.extension] || {} #: Hash[Symbol, untyped]
     Riffer::Rig::Command::Context.new(
       command.name,
       args,
@@ -702,8 +700,8 @@ class Riffer::Rig::Runtime
   # @rbs return: Hash[Symbol, untyped]
   def with_declared_defaults(settings)
     namespaces = @declared_settings.to_h do |extension, defaults|
-      given = settings[extension.to_sym] || {} #: Hash[Symbol, untyped]
-      [extension.to_sym, defaults.merge(given)]
+      given = settings[extension] || {} #: Hash[Symbol, untyped]
+      [extension, defaults.merge(given)]
     end
     settings.merge(namespaces)
   end
