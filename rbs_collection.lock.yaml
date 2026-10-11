@@ -2,7 +2,7 @@
 path: ".gem_rbs_collection"
 gems:
 - name: acp-sdk
-  version: 0.9.0
+  version: 0.10.0
   source:
     type: rubygems
 - name: anthropic
@@ -118,7 +118,7 @@ gems:
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: riffer
-  version: 0.49.0
+  version: 0.51.0
   source:
     type: rubygems
 - name: thor
