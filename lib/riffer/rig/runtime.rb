@@ -28,6 +28,12 @@ class Riffer::Rig::Runtime
 
   INTERRUPT_CANCELLED = :cancelled #: Symbol
 
+  # Riffer's remaining stop reasons (:error, :other, :guardrail_blocked) are
+  # failures, not early stops.
+  STOPPED_WITHOUT_COMPLETING = %i[
+    max_steps context_window length content_filter malformed_output
+  ].freeze #: Array[Symbol]
+
   # Upstream candidate: riffer's Anthropic, OpenAI and Azure OpenAI classes read
   # the web_search option and OpenRouter passes unknown options through to its
   # API, but the provider seam cannot yet answer which provider takes which

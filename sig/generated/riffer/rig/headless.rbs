@@ -3,11 +3,6 @@
 class Riffer::Rig::Headless
   USAGE_ERROR: Integer
 
-  # The plan's exit-3 set: the cap plus the provider stop reasons that mean the
-  # turn ended without completing. Riffer's remaining stop reasons (:error,
-  # :other, :guardrail_blocked) are runtime failures and map to 1.
-  STOPPED_WITHOUT_COMPLETING: Array[Symbol]
-
   @streamed_text: bool
 
   @json: bool
