@@ -7,6 +7,10 @@ class Riffer::Rig::Terminal::Frame
 
   STATUS_INDENT: String
 
+  # The first column is the cursor's own cell when it rests at the end of the
+  # text.
+  QUEUED_GAP: String
+
   # The cursor rests on the input line, the footer's first row, so this wipes
   # the whole footer.
   ERASE: String
@@ -18,6 +22,8 @@ class Riffer::Rig::Terminal::Frame
   @active: bool
 
   @width: Integer
+
+  @queued: Integer
 
   @status: String
 
@@ -48,6 +54,10 @@ class Riffer::Rig::Terminal::Frame
   # @rbs return: void
   def status: (String status) -> void
 
+  # @rbs count: Integer
+  # @rbs return: void
+  def queued: (Integer count) -> void
+
   # @rbs return: void
   def stop: () -> void
 
@@ -67,6 +77,10 @@ class Riffer::Rig::Terminal::Frame
 
   # @rbs return: String
   def footer: () -> String
+
+  # @rbs room: Integer
+  # @rbs return: String
+  def chip: (Integer room) -> String
 
   # @rbs bytes: String
   # @rbs return: void
