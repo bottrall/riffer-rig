@@ -96,7 +96,7 @@ module Riffer::Rig::Terminal::Markdown
     opening = chunk.fetch(0)
     language = opening[Blocks::FENCE, :language].to_s
     indent = opening[Blocks::FENCE, :indent].to_s.length
-    closed = chunk.size > 1 && Blocks.closing(opening[Blocks::FENCE, :fence].to_s).match?(chunk.fetch(-1))
+    closed = Blocks.closing(opening[Blocks::FENCE, :fence].to_s).match?(chunk.fetch(-1))
     code = (closed ? chunk[1...-1] : chunk.drop(1)) || []
     limit = narrow(width, 2)
     # The Wrapper folds runs of spaces, which would destroy code's indentation,
