@@ -42,7 +42,7 @@ module Riffer::Rig::Headless::Ndjson
     when String, Integer, Float, true, false, nil then value
     when Symbol then value.to_s
     when Hash then value.to_h { |key, item| [key.to_s, json_value(item)] }
-    when Array then value.map { |item| json_value(item) }
+    when Enumerable then value.map { |item| json_value(item) }
     else value.respond_to?(:to_h) ? json_value(value.to_h) : value.to_s
     end
   end
