@@ -34,7 +34,7 @@ module Riffer::Rig::Commands::Model
 
     ctx.runtime.model = model
     Riffer::Rig::Settings::File.store_model(model) if save
-    ctx.say("Model: #{model}")
+    ctx.say("Model switched to #{model}")
   end
 
   private

@@ -269,8 +269,11 @@ describe Riffer::Rig::Commands::Model do
     assert_equal 'gemini/gem-2.5-pro', saved_settings['model']
   end
 
-  it 'reports the new model' do
-    assert_equal [output('Model: mock/other')], command_events(Riffer::Rig::Runtime.new('mock/test'), 'mock/other')
+  it 'reports the switch to the new model' do
+    assert_equal(
+      [output('Model switched to mock/other')],
+      command_events(Riffer::Rig::Runtime.new('mock/test'), 'mock/other')
+    )
   end
 
   describe 'with a registered extension provider' do

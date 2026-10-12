@@ -166,7 +166,6 @@ class Riffer::Rig::Terminal
   # @rbs text: String
   # @rbs return: Riffer::Rig::Runtime
   def dispatch(runtime, text)
-    model = runtime.model
     command = SLASH_COMMAND.match(text)
     if command
       case command[1].to_s
@@ -178,7 +177,6 @@ class Riffer::Rig::Terminal
     else
       turn(runtime) { |emit| runtime.prompt(text, &emit) }
     end
-    reveal_banner(runtime) unless runtime.model == model
     runtime
   end
 
