@@ -16,6 +16,10 @@ describe Riffer::Rig::Terminal::Columns do
       assert_equal 2, Riffer::Rig::Terminal::Columns.width('👍')
     end
 
+    it 'counts joined emoji as the one character the terminal draws' do
+      assert_equal 2, Riffer::Rig::Terminal::Columns.width("👨\u200D👩\u200D👧")
+    end
+
     it 'counts a character forced to emoji presentation as two columns' do
       assert_equal 2, Riffer::Rig::Terminal::Columns.width("\u2764\uFE0F")
     end

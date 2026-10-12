@@ -12,6 +12,10 @@ class KeyPty
     @master, @slave = PTY.open
     @master.timeout = TIMEOUT_SECONDS
     @pipeline = Riffer::Rig::Terminal::KeyPipeline.new(input: @slave, output: @slave)
+    start
+  end
+
+  def start
     @pipeline.start
     # Bytes typed before the reader switches the tty to raw mode would be
     # echoed and line-buffered instead of reaching the decoder one by one.

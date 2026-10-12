@@ -46,6 +46,14 @@ describe Riffer::Rig::Terminal::KeyPipeline do
       assert_nil pipeline.keys.pop(timeout: 0.1)
     end
 
+    it 'closes the keys when the input is not a tty' do
+      pipeline = Riffer::Rig::Terminal::KeyPipeline.new(input: StringIO.new, output: StringIO.new)
+
+      pipeline.start
+
+      assert_predicate pipeline.keys, :closed?
+    end
+
     it 'leaves bracketed paste alone when the input is not a tty' do
       output = StringIO.new
 
@@ -56,6 +64,14 @@ describe Riffer::Rig::Terminal::KeyPipeline do
 
     it 'turns bracketed paste on' do
       assert_equal "\e[?2004h", @pty.written(8)
+    end
+
+    it 'reads again after a stop' do
+      @pty.pipeline.stop
+      @pty.start
+      @pty.type('a')
+
+      assert_equal Riffer::Rig::Terminal::Key.new(:text, 'a'), @pty.key
     end
   end
 
@@ -102,6 +118,15 @@ describe Riffer::Rig::Terminal::KeyPipeline do
       assert_empty input.reads
     end
 
+    it 'closes the keys at end of input' do
+      pipeline = Riffer::Rig::Terminal::KeyPipeline.new(input: scripted_input, output: StringIO.new)
+
+      pipeline.start
+      pipeline.keys.pop(timeout: KeyPty::TIMEOUT_SECONDS)
+
+      assert_predicate pipeline.keys, :closed?
+    end
+
     it 'decodes typed characters into text key events' do
       @pty.type('a')
 
@@ -129,7 +154,7 @@ describe Riffer::Rig::Terminal::KeyPipeline do
     it 'delivers a multi-line paste as one key instead of submitting its lines' do
       @pty.type("\e[200~one\ntwo\r\e[201~")
 
-      assert_equal Riffer::Rig::Terminal::Key.new(:paste, "one\ntwo\r"), @pty.key
+      assert_equal Riffer::Rig::Terminal::Key.new(:paste, "one\ntwo\n"), @pty.key
     end
 
     it 'holds a paste open across an idle gap longer than the read timeout' do

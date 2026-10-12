@@ -18,7 +18,7 @@ module Riffer::Rig::Terminal::Markdown::Table
 
   # @rbs spans: Array[Riffer::Rig::Terminal::Markdown::Span]
   # @rbs return: Integer
-  def length: (Array[Riffer::Rig::Terminal::Markdown::Span] spans) -> Integer
+  def cell_width: (Array[Riffer::Rig::Terminal::Markdown::Span] spans) -> Integer
 
   # @rbs row: Array[Array[Riffer::Rig::Terminal::Markdown::Span]]
   # @rbs widths: Array[Integer]
