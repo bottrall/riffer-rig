@@ -78,6 +78,16 @@ describe Riffer::Rig::CLI do
     assert_equal 0, start('--help')
   end
 
+  it 'prints the version for --version' do
+    start('--version')
+
+    assert_equal "riffer-rig #{Riffer::Rig::VERSION}\n", @output.string
+  end
+
+  it 'returns zero for --version' do
+    assert_equal 0, start('--version')
+  end
+
   it 'returns two for --verbose without -p' do
     assert_equal 2, start('--verbose')
   end

@@ -9,9 +9,10 @@ class Riffer::Rig::CLI::Flags
            riffer acp           serve Runtimes as an ACP agent over stdio
   TEXT
 
-  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save, verbose, json, prompt, continue, resume
+  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, version
+  # @dynamic save, verbose, json, prompt, continue, resume
   attr_reader :model #: String?
-  attr_reader :extensions, :skills, :agents_md, :help, :verbose, :json #: bool
+  attr_reader :extensions, :skills, :agents_md, :help, :version, :verbose, :json #: bool
   attr_reader :tools #: Array[String]?
   attr_reader :max_steps #: Integer?
   attr_reader :save #: bool
@@ -74,6 +75,7 @@ class Riffer::Rig::CLI::Flags
       parser.on('--verbose', 'With -p, trace each tool call to stderr')
       parser.on('--json', 'With -p, stream every Runtime event as NDJSON to stdout')
       parser.on('-h', '--help', 'Show this help')
+      parser.on('-v', '--version', 'Show the version')
     end
   end
   private_class_method :parser
@@ -96,7 +98,8 @@ class Riffer::Rig::CLI::Flags
       prompt: prompt ? head : nil,
       continue: values.key?(:continue),
       resume: values[:resume],
-      help: values.key?(:help)
+      help: values.key?(:help),
+      version: values.key?(:version)
     )
   end
   private_class_method :assemble
@@ -114,6 +117,7 @@ class Riffer::Rig::CLI::Flags
   # @rbs continue: bool
   # @rbs resume: String?
   # @rbs help: bool
+  # @rbs version: bool
   # @rbs return: void
   def initialize(
     model: nil,
@@ -128,7 +132,8 @@ class Riffer::Rig::CLI::Flags
     prompt: nil,
     continue: false,
     resume: nil,
-    help: false
+    help: false,
+    version: false
   )
     @model = model
     @extensions = extensions
@@ -143,6 +148,7 @@ class Riffer::Rig::CLI::Flags
     @continue = continue
     @resume = resume
     @help = help
+    @version = version
     freeze
   end
 end
