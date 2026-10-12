@@ -165,6 +165,10 @@ describe Riffer::Rig::ACP do
     { 'name' => name, 'type' => 'http', 'url' => 'https://docs.example/mcp', 'headers' => [] }
   end
 
+  def without_commands(updates)
+    updates.grep_v(ACP::Types::SessionUpdate::AvailableCommandsUpdate)
+  end
+
   def message_texts
     texts_of(@updates.map(&:update))
   end
@@ -398,7 +402,15 @@ describe Riffer::Rig::ACP do
       session = adopt_session
       _response, updates = load(session.session_id)
 
-      assert_equal(%w[hello Reply.], updates.map { |update| update.content.text })
+      assert_equal(%w[hello Reply.], without_commands(updates).map { |update| update.content.text })
+    end
+
+    it 'sends the commands of an adopted session after its replay' do
+      write_skill('tidy')
+      session = adopt_session
+      _response, updates = load(session.session_id)
+
+      assert_equal %w[auth model skill:tidy reload trace], updates.last.available_commands.map(&:name)
     end
 
     it 'runs a prompt from a later connection on the adopted runtime' do
@@ -493,7 +505,7 @@ describe Riffer::Rig::ACP do
 
       _response, updates = load(session.session_id)
 
-      replay = updates.map do |update|
+      replay = without_commands(updates).map do |update|
         text = update.is_a?(ACP::Types::SessionUpdate::ToolCall) ? update.name : update.content.text
         [update.class.name.split('::').last, text]
       end
@@ -503,6 +515,14 @@ describe Riffer::Rig::ACP do
          ['ToolCall', 'read'], ['AgentMessageChunk', 'All done.']],
         replay
       )
+    end
+
+    it 'sends the commands of a restored session after its replay' do
+      write_skill('tidy')
+      session = save_session('first prompt')
+      _response, updates = load(session.session_id)
+
+      assert_equal %w[auth model skill:tidy reload trace], updates.last.available_commands.map(&:name)
     end
 
     it 'continues the conversation after a load' do

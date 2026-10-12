@@ -163,6 +163,7 @@ class Riffer::Rig::ACP
     loader.messages(request.session_id)
           .filter_map { |message| Riffer::Rig::ACP::Mapper.replay_of(message) }
           .each { |update| client.update(request.session_id, update) }
+    client.available_commands(request.session_id, available_commands(runtime))
     ::ACP::Types::LoadSessionResponse.new
   rescue StandardError => e
     ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: e.message)
