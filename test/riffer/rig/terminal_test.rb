@@ -167,13 +167,23 @@ describe Riffer::Rig::Terminal do
     assert_includes output, '⚙ read(path: "missing.txt")'
   end
 
-  it 'renders nothing for the tool lifecycle events' do
+  it 'renders nothing for the before_tool_call and after_tool_call events' do
     output = run_terminal("read it\n") do |runtime|
       runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'missing.txt' } }])
       runtime.agent.provider.stub_response('Done.')
     end
 
-    refute_match(/tool_(dispatched|running|done)|Events::Tool/, output)
+    refute_match(/(before|after)_tool_call|Events::/, output)
+  end
+
+  it 'renders a tool result once' do
+    File.write(File.join(@cwd, 'note.txt'), 'the note')
+    output = run_terminal("read it\n") do |runtime|
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'note.txt' } }])
+      runtime.agent.provider.stub_response('Done.')
+    end
+
+    assert_equal 1, output.scan('↳ ').size
   end
 
   it 'renders a tool result under its call' do

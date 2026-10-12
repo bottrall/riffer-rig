@@ -547,7 +547,7 @@ class Riffer::Rig::Runtime
         yielder << session_start
       end
       @host.drain.each { |queued| yielder << queued }
-      response = start_turn(text).each { |event| pass_through(yielder, :stream, event) }
+      response = start_turn(text).each { |event| pass_through(yielder, event) }
       turn_end = Riffer::Rig::Events::TurnEnd.new(stop_reason(response.outcome), response.token_usage)
       @hooks.observe(:turn_end, turn_end)
       @host.drain.each { |queued| yielder << queued }
@@ -559,22 +559,28 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs yielder: Enumerator::Yielder
-  # @rbs hook: Symbol
-  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs event: ::Riffer::StreamEvents::Base
   # @rbs return: void
-  def pass_through(yielder, hook, event)
-    @hooks.observe(hook, event)
-    yielder << event
-    # Mid-turn notifies (a failing hook, a blocked request) reach the stream
-    # next to the event that raised them, not at the next turn.
-    @host.drain.each { |queued| yielder << queued }
+  def pass_through(yielder, event)
+    @hooks.observe(:stream, event)
+    forward(yielder, event)
   end
 
   # @rbs event: Riffer::Rig::Events::_Event
   # @rbs return: void
   def emit(event)
     yielder = @yielder
-    pass_through(yielder, event.type, event) if yielder
+    forward(yielder, event) if yielder
+  end
+
+  # @rbs yielder: Enumerator::Yielder
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: void
+  def forward(yielder, event)
+    yielder << event
+    # Mid-turn notifies (a failing hook, a blocked request) reach the stream
+    # next to the event that raised them, not at the next turn.
+    @host.drain.each { |queued| yielder << queued }
   end
 
   # @rbs message: Riffer::Messages::Base

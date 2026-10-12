@@ -26,12 +26,16 @@ class Riffer::Rig::Runtime::Hooks
     announce(veto(:before_prompt, text, accepts) { |current| Riffer::Rig::Events::BeforePrompt.new(current) })
   end
 
+  # @rbs call_id: String
   # @rbs tool: String
   # @rbs args: Hash[Symbol, untyped]
+  # @rbs at: Float
   # @rbs return: Hash[Symbol, untyped] | Riffer::Rig::Runtime::Blocked
-  def before_tool_call(tool, args)
+  def before_tool_call(call_id, tool, args, at)
     accepts = ->(value) { value.is_a?(Hash) }
-    veto(:before_tool_call, args, accepts) { |current| Riffer::Rig::Events::BeforeToolCall.new(tool, current) }
+    veto(:before_tool_call, args, accepts) do |current|
+      Riffer::Rig::Events::BeforeToolCall.new(call_id, tool, current, at)
+    end
   end
 
   # @rbs messages: Array[::Riffer::Messages::Base]

@@ -19,37 +19,6 @@ class Riffer::Rig::Runtime::ToolRuntime < Riffer::Tools::Runtime
     @clock = clock
   end
 
-  # @rbs tool_calls: Array[Riffer::Messages::Assistant::ToolCall]
-  # @rbs tools: Array[singleton(Riffer::Tool)]
-  # @rbs context: Riffer::Agent::Context?
-  # @rbs assistant_message: Riffer::Messages::Assistant?
-  # @rbs tags: Hash[String, String]
-  # @rbs return: Array[[Riffer::Messages::Assistant::ToolCall, Riffer::Tools::Response]]
-  def execute(tool_calls, tools:, context:, assistant_message: nil, tags: {})
-    tool_calls.each do |tool_call|
-      @emit.call(Riffer::Rig::Events::ToolDispatched.new(tool_call.call_id, tool_call.name, @clock.call))
-    end
-    super
-  end
-
-  # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
-  # @rbs context: Riffer::Agent::Context?
-  # @rbs assistant_message: Riffer::Messages::Assistant?
-  # @rbs &: () -> Riffer::Tools::Response
-  # @rbs return: Riffer::Tools::Response
-  def around_tool_call(tool_call, context:, assistant_message: nil)
-    started = @clock.call
-    @emit.call(Riffer::Rig::Events::ToolRunning.new(tool_call.call_id, tool_call.name, started))
-    response = yield
-    finished = @clock.call
-    @emit.call(
-      Riffer::Rig::Events::ToolDone.new(
-        tool_call.call_id, tool_call.name, finished, finished - started, response.error?
-      )
-    )
-    response
-  end
-
   private
 
   # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
@@ -59,17 +28,41 @@ class Riffer::Rig::Runtime::ToolRuntime < Riffer::Tools::Runtime
   # @rbs return: Riffer::Tools::Response
   def dispatch_tool_call(tool_call, tools:, context:, assistant_message: nil)
     args = parse_arguments(tool_call.arguments)
-    return super unless args.is_a?(Hash)
+    return never_ran(tool_call, {}, super) unless args.is_a?(Hash)
 
-    verdict = @hooks.before_tool_call(tool_call.name, args)
-    return Riffer::Tools::Response.error(verdict.reason, type: :blocked) if verdict.is_a?(Riffer::Rig::Runtime::Blocked)
+    verdict = @hooks.before_tool_call(tool_call.call_id, tool_call.name, args, @clock.call)
+    if verdict.is_a?(Riffer::Rig::Runtime::Blocked)
+      return never_ran(tool_call, args, Riffer::Tools::Response.error(verdict.reason, type: :blocked))
+    end
 
     call = verdict.equal?(args) ? tool_call : replace_arguments(tool_call, verdict)
+    started = @clock.call
+    @emit.call(Riffer::Rig::Events::BeforeToolCall.new(tool_call.call_id, tool_call.name, verdict, started))
     response = super(call, tools: tools, context: context, assistant_message: assistant_message)
-    @hooks.observe(:after_tool_call, Riffer::Rig::Events::AfterToolCall.new(tool_call.name, verdict, response))
-    response
+    finished = @clock.call
+    finish(
+      Riffer::Rig::Events::AfterToolCall.new(
+        tool_call.call_id, tool_call.name, verdict, response, finished, finished - started
+      )
+    )
   rescue JSON::ParserError
-    super
+    never_ran(tool_call, {}, super)
+  end
+
+  # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
+  # @rbs args: Hash[Symbol, untyped]
+  # @rbs response: Riffer::Tools::Response
+  # @rbs return: Riffer::Tools::Response
+  def never_ran(tool_call, args, response)
+    finish(Riffer::Rig::Events::AfterToolCall.new(tool_call.call_id, tool_call.name, args, response, @clock.call, 0.0))
+  end
+
+  # @rbs event: Riffer::Rig::Events::AfterToolCall
+  # @rbs return: Riffer::Tools::Response
+  def finish(event)
+    @hooks.observe(:after_tool_call, event)
+    @emit.call(event)
+    event.result
   end
 
   # @rbs tool_call: Riffer::Messages::Assistant::ToolCall

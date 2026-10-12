@@ -261,7 +261,7 @@ describe Riffer::Rig::Headless do
     refute_match(/tool_call/, @error.string)
   end
 
-  it 'prints nothing for the tool lifecycle in text mode' do
+  it 'prints nothing for the tool call events in text mode' do
     run_headless(prompt: 'read it') do |runtime|
       runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
       runtime.agent.provider.stub_response('Done.')
@@ -312,22 +312,39 @@ describe Riffer::Rig::Headless do
       assert_equal stream_events, types.intersection(stream_events)
     end
 
-    it 'streams the tool lifecycle between the tool call and the next response' do
+    it 'streams the tool call events between the tool call and the next response' do
       turn
 
-      lifecycle = %w[tool_call_done tool_dispatched tool_running tool_done text_delta]
+      tool_call = %w[tool_call_done before_tool_call after_tool_call text_delta]
 
-      assert_equal lifecycle, types.intersection(lifecycle)
+      assert_equal tool_call, types.intersection(tool_call)
     end
 
-    it 'carries the call, its timing and its outcome on tool_done' do
+    it 'carries the call and its arguments on before_tool_call' do
       turn
-      done = records.find { |record| record.fetch('type') == 'tool_done' }
+      before = records.find { |record| record.fetch('type') == 'before_tool_call' }
 
       assert_equal(
-        [%w[at call_id duration error tool type], 'mock_call_0', 'read'],
-        [done.keys.sort, done.fetch('call_id'), done.fetch('tool')]
+        { 'type' => 'before_tool_call', 'call_id' => 'mock_call_0', 'tool' => 'read',
+          'args' => { 'path' => '/tmp/x' } },
+        before.except('at')
       )
+    end
+
+    it 'carries the call and its timing on after_tool_call' do
+      turn
+      after = records.find { |record| record.fetch('type') == 'after_tool_call' }
+
+      assert_equal(
+        [%w[args at call_id duration result tool type], 'mock_call_0'], [after.keys.sort, after.fetch('call_id')]
+      )
+    end
+
+    it 'carries the result as its content and error on after_tool_call' do
+      turn
+      after = records.find { |record| record.fetch('type') == 'after_tool_call' }
+
+      assert_equal %w[content error error_type], after.fetch('result').keys
     end
 
     it 'parses every line as JSON' do

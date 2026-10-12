@@ -8,7 +8,6 @@ class Riffer::Rig::Registrar
   EVENTS = %i[
     session_start session_end
     before_prompt before_tool_call before_request
-    tool_dispatched tool_running tool_done
     after_tool_call after_response turn_end
     stream
   ].freeze #: Array[Symbol]

@@ -104,11 +104,8 @@ Adds a hook for one event of the Runtime's lifecycle or loop. The block receives
 | `session_end`      | lifecycle   | `reason` (`:reload`, `:close`)                     | before a `rebuild` swaps this extension out (`:reload`), and on `close` (`:close`), if a session started |
 | `before_prompt`    | vetoable    | `text`                                             | as each `prompt` or `ask` starts, before the text reaches the session |
 | `before_request`   | vetoable    | `messages` (the whole request)                     | before every LLM call: at the start of the turn and again after each round of tool results |
-| `before_tool_call` | vetoable    | `tool` (the identifier), `args` (symbol keys)      | before each tool runs                                                 |
-| `after_tool_call`  | observe     | `tool`, `args` (as run), `result` (the tool's `Riffer::Tools::Response`) | after each tool runs                        |
-| `tool_dispatched`  | observe     | `call_id`, `tool`, `at`                            | for every tool call of a batch, before the first one runs             |
-| `tool_running`     | observe     | `call_id`, `tool`, `at`                            | as each tool call starts, before its `before_tool_call` hooks         |
-| `tool_done`        | observe     | `call_id`, `tool`, `at`, `duration`, `error`       | as each tool call finishes, after its `after_tool_call` hooks         |
+| `before_tool_call` | vetoable    | `call_id`, `tool` (the identifier), `args` (symbol keys), `at` | before each tool runs, once the call's arguments have parsed into an object |
+| `after_tool_call`  | observe     | `call_id`, `tool`, `args` (as run), `result` (the call's `Riffer::Tools::Response`), `at`, `duration` | after every tool call, whether or not the tool ran |
 | `after_response`   | observe     | `message` (the `Riffer::Messages::Assistant`)      | after each model response is added to the session                     |
 | `turn_end`         | observe     | `stop_reason`, `usage`, `cost`                     | as each turn ends, `ask` included                                     |
 | `stream`           | passthrough | the riffer `StreamEvent` itself                    | for every riffer stream event of a turn, `ask` included               |
@@ -122,7 +119,11 @@ A vetoable hook may return:
 
 A replacement request is written back to the session, so later requests carry it too. A replacement tool payload changes what the tool runs with; the model's own tool call in the history is left as it sent it.
 
-Observe and passthrough hooks change nothing: their return values are ignored, and a `stream` hook sees each riffer event unchanged, the same object the host receives. The `tool_dispatched`, `tool_running` and `tool_done` hooks receive the [tool lifecycle events](EMBEDDING.md#tool-lifecycle-events) the host receives, just before it does; unlike `before_tool_call` and `after_tool_call` they fire for every call, including one to an unknown tool or with unparseable arguments, and they carry the call's id and timing. They are rig events, so the `stream` hook does not see them.
+Observe and passthrough hooks change nothing: their return values are ignored, and a `stream` hook sees each riffer event unchanged, the same object the host receives.
+
+`after_tool_call` fires exactly once for every tool call the model makes, so a hook that counts, logs or times calls sees all of them — including the calls whose tool never ran. A call a `before_tool_call` hook blocked arrives with the `:blocked` error as its `result` and the `args` the model sent; a call whose arguments are not a JSON object arrives with the `:validation_error` result and empty `args`, and no `before_tool_call` hook ran for it. A hook that should act only on tools that ran checks `event.result.error_type`, or `event.result.error?` to skip every failure.
+
+Both tool events carry `call_id`, riffer's id for the call (the one on the stream's `ToolCallDone` and on the tool message), and `at`, a monotonic timestamp in seconds. On `before_tool_call` `at` is when the call's hooks began, the same for every hook of the call; on `after_tool_call` it is when the tool returned, and `duration` is the seconds the tool itself ran — time spent in hooks is left out, and a call whose tool never ran has `0.0`. The host receives both as [stream events](EMBEDDING.md#tool-call-events) too: the `after_tool_call` event is the one the hooks saw, handed on once they have run. They are rig events, so the `stream` hook does not see them.
 
 Hooks run on the thread running the turn, one at a time — tools run sequentially so their hooks never overlap.
 

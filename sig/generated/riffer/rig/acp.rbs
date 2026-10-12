@@ -155,9 +155,13 @@ class Riffer::Rig::ACP
   # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
   def tool_call: (Riffer::StreamEvents::ToolCallDone event) -> ::ACP::Types::SessionUpdate::ToolCall
 
-  # @rbs event: Riffer::Rig::Events::ToolDone
+  # @rbs event: Riffer::Rig::Events::AfterToolCall
   # @rbs return: ::ACP::Types::SessionUpdate::ToolCallUpdate
-  def tool_call_done: (Riffer::Rig::Events::ToolDone event) -> ::ACP::Types::SessionUpdate::ToolCallUpdate
+  def tool_call_done: (Riffer::Rig::Events::AfterToolCall event) -> ::ACP::Types::SessionUpdate::ToolCallUpdate
+
+  # @rbs text: String
+  # @rbs return: Array[::ACP::Types::ToolCallContent::t]
+  def tool_content: (String text) -> Array[::ACP::Types::ToolCallContent::t]
 
   # riffer's failure reasons (:error, :other, :guardrail_blocked) have no ACP
   # counterpart; refusal is the closest signal that the turn did not complete.

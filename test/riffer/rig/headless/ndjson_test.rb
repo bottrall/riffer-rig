@@ -34,26 +34,42 @@ describe Riffer::Rig::Headless::Ndjson do
     assert_equal 10, JSON.parse(line).dig('message', 'token_usage', 'input_tokens')
   end
 
-  it 'serializes a tool response through its to_h' do
-    response = Riffer::Tools::Response.new(content: 'ok', success: true)
-    line = Riffer::Rig::Headless::Ndjson.line(Riffer::Rig::Events::AfterToolCall.new('read', { path: 'x' }, response))
+  def after_tool_call(response)
+    Riffer::Rig::Events::AfterToolCall.new('call_1', 'read', { path: 'x' }, response, 4.5, 2.5)
+  end
 
-    assert_equal({ 'content' => 'ok', 'error' => nil, 'error_type' => nil }, JSON.parse(line).fetch('result'))
+  it 'serializes a before_tool_call with the call it starts' do
+    event = Riffer::Rig::Events::BeforeToolCall.new('call_1', 'read', { path: 'x' }, 2.0)
+
+    assert_equal(
+      { 'type' => 'before_tool_call', 'call_id' => 'call_1', 'tool' => 'read', 'args' => { 'path' => 'x' },
+        'at' => 2.0 },
+      JSON.parse(Riffer::Rig::Headless::Ndjson.line(event))
+    )
+  end
+
+  it 'serializes an after_tool_call with its result and timing' do
+    line = Riffer::Rig::Headless::Ndjson.line(after_tool_call(Riffer::Tools::Response.text('ok')))
+
+    assert_equal(
+      { 'type' => 'after_tool_call', 'call_id' => 'call_1', 'tool' => 'read', 'args' => { 'path' => 'x' },
+        'result' => { 'content' => 'ok', 'error' => nil, 'error_type' => nil }, 'at' => 4.5, 'duration' => 2.5 },
+      JSON.parse(line)
+    )
+  end
+
+  it 'serializes an error result as its message and type, without the exception' do
+    response = Riffer::Tools::Response.error('boom', type: :unhandled_error, exception: RuntimeError.new('boom'))
+    line = Riffer::Rig::Headless::Ndjson.line(after_tool_call(response))
+
+    assert_equal(
+      { 'content' => 'boom', 'error' => 'boom', 'error_type' => 'unhandled_error' }, JSON.parse(line).fetch('result')
+    )
   end
 
   it 'renders a fatal message as an error record' do
     line = Riffer::Rig::Headless::Ndjson.error('boom')
 
     assert_equal "{\"type\":\"error\",\"message\":\"boom\"}\n", line
-  end
-
-  it 'serializes a tool lifecycle event with its timing' do
-    line = Riffer::Rig::Headless::Ndjson.line(Riffer::Rig::Events::ToolDone.new('call_1', 'read', 4.5, 2.5, false))
-
-    assert_equal(
-      { 'type' => 'tool_done', 'call_id' => 'call_1', 'tool' => 'read', 'at' => 4.5, 'duration' => 2.5,
-        'error' => false },
-      JSON.parse(line)
-    )
   end
 end

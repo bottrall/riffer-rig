@@ -294,14 +294,18 @@ class Riffer::Rig::Runtime
   def turn: (String text) -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
 
   # @rbs yielder: Enumerator::Yielder
-  # @rbs hook: Symbol
-  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs event: ::Riffer::StreamEvents::Base
   # @rbs return: void
-  def pass_through: (Enumerator::Yielder yielder, Symbol hook, ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
+  def pass_through: (Enumerator::Yielder yielder, ::Riffer::StreamEvents::Base event) -> void
 
   # @rbs event: Riffer::Rig::Events::_Event
   # @rbs return: void
   def emit: (Riffer::Rig::Events::_Event event) -> void
+
+  # @rbs yielder: Enumerator::Yielder
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: void
+  def forward: (Enumerator::Yielder yielder, ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
 
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
