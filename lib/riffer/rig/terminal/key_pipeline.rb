@@ -37,9 +37,10 @@ class Riffer::Rig::Terminal::KeyPipeline
 
   # @rbs return: void
   def start
-    return unless @input.tty?
+    return @queue.close unless @input.tty?
 
     write(BRACKETED_PASTE_ON)
+    @stopping = false
     @thread = Thread.new { read_loop }
   end
 
@@ -67,7 +68,10 @@ class Riffer::Rig::Terminal::KeyPipeline
         next unless @input.wait_readable(IDLE_SECONDS)
 
         char = @input.getc
-        break unless char
+        unless char
+          @queue.close
+          break
+        end
 
         emit(@decoder.push(char))
         while @decoder.pending? && !@stopping

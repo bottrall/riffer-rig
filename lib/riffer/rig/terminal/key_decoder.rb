@@ -170,7 +170,8 @@ class Riffer::Rig::Terminal::KeyDecoder
     @sequence << char
     return [] unless @sequence.end_with?(PASTE_END)
 
-    text = @sequence.delete_suffix(PASTE_END)
+    # Terminals send a pasted line break as a carriage return.
+    text = @sequence.delete_suffix(PASTE_END).gsub(/\r\n?/, "\n")
     @state = :ground
     @sequence = +''
     [Riffer::Rig::Terminal::Key.new(:paste, text)]

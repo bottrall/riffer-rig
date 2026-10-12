@@ -20,7 +20,7 @@ module Riffer::Rig::Terminal::Markdown::Table
         Riffer::Rig::Terminal::Markdown::Inline.parse(cell, plain: !theme.enabled, styles: styles)
       end
     end
-    widths = grid.transpose.map { |column| column.map { |spans| length(spans) }.max.to_i }
+    widths = grid.transpose.map { |column| column.map { |spans| cell_width(spans) }.max.to_i }
     rule = widths.map { |width| '─' * width }.join('─┼─')
     return nil if rule.length > WIDTH_LIMIT
 
@@ -38,8 +38,8 @@ module Riffer::Rig::Terminal::Markdown::Table
 
   # @rbs spans: Array[Riffer::Rig::Terminal::Markdown::Span]
   # @rbs return: Integer
-  def length(spans)
-    spans.sum { |span| span.text.length }
+  def cell_width(spans)
+    Riffer::Rig::Terminal::Columns.width(spans.map(&:text).join)
   end
 
   # @rbs row: Array[Array[Riffer::Rig::Terminal::Markdown::Span]]
@@ -49,7 +49,7 @@ module Riffer::Rig::Terminal::Markdown::Table
   def join(row, widths, theme)
     padded = row.zip(widths).map do |spans, width|
       painted = spans.empty? ? '' : Riffer::Rig::Terminal::Markdown::Flow.lines(spans, theme: theme, width: nil).join
-      "#{painted}#{' ' * (width.to_i - length(spans))}"
+      "#{painted}#{' ' * (width.to_i - cell_width(spans))}"
     end
     padded.join(" #{theme.dim('│')} ").rstrip
   end

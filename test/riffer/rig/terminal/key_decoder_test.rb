@@ -118,6 +118,14 @@ describe Riffer::Rig::Terminal::KeyDecoder do
 
       assert_equal [Riffer::Rig::Terminal::Key.new(:paste, 'hello')], events
     end
+
+    it 'decodes a carriage return inside a paste as a newline' do
+      assert_equal [[:paste, "one\ntwo\n"]], pairs("\e[200~one\rtwo\r\e[201~")
+    end
+
+    it 'decodes a carriage return and line feed inside a paste as one newline' do
+      assert_equal [[:paste, "one\ntwo"]], pairs("\e[200~one\r\ntwo\e[201~")
+    end
   end
 
   describe '#flush' do

@@ -57,6 +57,10 @@ describe Riffer::Rig::Terminal::Markdown::Table do
     assert_equal ['a  b │ c', '─────┼──', 'd    │ e'], lines("| a  b | c |\n|---|---|\n| d | e |")
   end
 
+  it 'pads a cell of wide characters by the columns they fill' do
+    assert_equal ['日本 │ b', '─────┼──', 'a    │ c'], lines("| 日本 | b |\n|---|---|\n| a | c |")
+  end
+
   it 'keeps the backticks of a code cell without colour' do
     assert_equal ['a', '───', '`x`'], lines("| a |\n|---|\n| `x` |")
   end
