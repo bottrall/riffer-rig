@@ -121,7 +121,7 @@ A replacement request is written back to the session, so later requests carry it
 
 Observe and passthrough hooks change nothing: their return values are ignored, and a `stream` hook sees each riffer event unchanged, the same object the host receives.
 
-Hooks run on the thread running the turn, one at a time — tools run sequentially so their hooks never overlap.
+Hooks run on the thread running the turn, one at a time, so a hook never needs a lock of its own. By default tools run one after another, and each call's `before_tool_call` and `after_tool_call` hooks run around it. With [`tools.parallel`](TOOLS.md#parallel-tool-calls) on, the tools of one model response run at the same time on worker threads, and their hooks stay on the turn's thread: every call's `before_tool_call` hooks run first, in the order the model made the calls and before any of those tools starts, and every `after_tool_call` hook runs in that same order once all of them have finished. A veto therefore sees the same calls in the same order either way; what changes is that a `before_tool_call` hook no longer sees the effects of the earlier calls of the same response.
 
 ## The `rig.skills` seam
 

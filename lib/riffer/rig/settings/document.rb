@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Settings::Document
-  # @dynamic model, reasoning, models, providers, disabled, autoload, native_tools, save, reload
+  # @dynamic model, reasoning, models, providers, disabled, autoload, native_tools, tool_concurrency, save, reload
   attr_reader :model #: String?
   attr_reader :reasoning #: String?
   attr_reader :models #: Hash[String, Riffer::Rig::Settings::Pricing]
@@ -9,6 +9,7 @@ class Riffer::Rig::Settings::Document
   attr_reader :disabled #: Array[String]
   attr_reader :autoload #: bool
   attr_reader :native_tools #: Hash[Symbol, bool | Hash[Symbol, untyped]]
+  attr_reader :tool_concurrency #: Integer?
   attr_reader :save #: bool
   attr_reader :reload #: (:auto | :manual)
 
@@ -36,10 +37,19 @@ class Riffer::Rig::Settings::Document
     @native_tools = hash_or_empty(hash_or_empty(source[:tools])[:native])
                     .select { |_tool, switch| switch == true || switch.is_a?(Hash) }
                     .transform_keys(&:to_sym).freeze
+    @tool_concurrency = concurrency(hash_or_empty(source[:tools])[:parallel])
     freeze
   end
 
   private
+
+  # @rbs parallel: untyped
+  # @rbs return: Integer?
+  def concurrency(parallel)
+    return Riffer::Runner::Threaded::DEFAULT_MAX_CONCURRENCY if parallel == true
+
+    parallel if parallel.is_a?(Integer) && parallel.positive?
+  end
 
   # @rbs value: untyped
   # @rbs return: Hash[Symbol, untyped]

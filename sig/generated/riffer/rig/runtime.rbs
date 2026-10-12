@@ -241,9 +241,15 @@ class Riffer::Rig::Runtime
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs settings: Hash[Symbol, untyped]
   # @rbs max_steps: Numeric?
   # @rbs return: Riffer::Agent::Config
-  def agent_config: (Array[Riffer::Rig::Registrar] registrars, Riffer::Rig::Runtime::Hooks hooks, Numeric? max_steps) -> Riffer::Agent::Config
+  def agent_config: (Array[Riffer::Rig::Registrar] registrars, Riffer::Rig::Runtime::Hooks hooks, Hash[Symbol, untyped] settings, Numeric? max_steps) -> Riffer::Agent::Config
+
+  # @rbs hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: Riffer::Tools::Runtime
+  def tool_runtime: (Riffer::Rig::Runtime::Hooks hooks, Hash[Symbol, untyped] settings) -> Riffer::Tools::Runtime
 
   # @rbs sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
   # @rbs return: Riffer::Skills::Config?

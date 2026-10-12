@@ -150,7 +150,7 @@ class Riffer::Rig::Runtime
     registrars = build_registrars(extensions, settings) { |extension, error| record_error(extension, error) }
     mcp_servers = register_mcp_servers(registrars)
     hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
-    config = agent_config(registrars, hooks, max_steps)
+    config = agent_config(registrars, hooks, settings, max_steps)
     agent = snapshot ? restore(snapshot, model, config) : build_agent(model, config)
     install(registrars, mcp_servers, settings, hooks, agent)
     @agent.session.on_message { |message| observe_message(message) }
@@ -263,7 +263,7 @@ class Riffer::Rig::Runtime
       registrars = build_registrars(extensions, settings) { |_extension, error| raise error }
       mcp_servers = register_mcp_servers(registrars)
       hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
-      agent = successor(model, agent_config(registrars, hooks, @agent.config.max_steps))
+      agent = successor(model, agent_config(registrars, hooks, settings, @agent.config.max_steps))
       lifecycle(:session_end, Riffer::Rig::Events::SessionEnd.new(:reload))
       @errors = []
       dropped = @mcp_servers.except(*mcp_servers.keys)
@@ -403,16 +403,17 @@ class Riffer::Rig::Runtime
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs settings: Hash[Symbol, untyped]
   # @rbs max_steps: Numeric?
   # @rbs return: Riffer::Agent::Config
-  def agent_config(registrars, hooks, max_steps)
+  def agent_config(registrars, hooks, settings, max_steps)
     config = Riffer::Agent::Config.new(
       model: ->(context) { context[:model] },
       model_options: @model_options,
       instructions: system_prompt([]),
       tools_config: select_tools(registrars.flat_map { |registrar| registrar.tools.to_a }.to_h.values, @tool_allowlist),
       max_steps: max_steps,
-      tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(hooks),
+      tool_runtime: tool_runtime(hooks, settings),
       skills_config: skills_config(registrars.flat_map(&:skill_sources))
     )
     config.add_guardrail(:before, klass: Riffer::Rig::Runtime::RequestGuardrail, options: { hooks: hooks })
@@ -420,6 +421,17 @@ class Riffer::Rig::Runtime
     # tools_config, so the tools: allowlist never sees them.
     config.add_mcp(mcp_tag, progressive: false)
     config
+  end
+
+  # @rbs hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: Riffer::Tools::Runtime
+  def tool_runtime(hooks, settings)
+    concurrency = Riffer::Rig::Settings::Document.new(settings).tool_concurrency
+    return Riffer::Rig::Runtime::ToolRuntime.new(hooks) unless concurrency
+
+    runner = Riffer::Runner::Threaded.new(max_concurrency: concurrency)
+    Riffer::Rig::Runtime::ParallelToolRuntime.new(hooks, runner)
   end
 
   # @rbs sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]

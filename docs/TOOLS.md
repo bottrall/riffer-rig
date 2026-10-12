@@ -21,6 +21,20 @@ Tools never raise. A bad argument, a missing file or a failing command comes bac
 
 Relative paths resolve against the Runtime's `cwd:` (and `bash` runs there), not the process directory, so two Runtimes in one process can work in different directories. A tool called outside a Runtime falls back to `Dir.pwd`.
 
+## Parallel tool calls
+
+A model response can ask for several tools at once. By default the Runtime runs them one after another, on the thread running the turn. With `tools.parallel` set ([Configuration](CONFIGURATION.md#toolsparallel)) it runs them at the same time, on worker threads, up to the configured cap:
+
+```json
+{ "tools": { "parallel": 3 } }
+```
+
+Only the tools themselves leave the turn's thread. The Runtime first runs every call's `before_tool_call` hooks, one call at a time in the order the model made them, then hands the calls no hook blocked to the workers, waits for all of them, and runs every `after_tool_call` hook in call order ([Extensions](EXTENSIONS.md#the-rigon-seam)). Results reach the session in call order either way, whichever tool finishes first.
+
+A tool that can run under this setting must be safe to run next to another call of itself or of any other tool: its `call` runs on a worker thread, so state it shares outside the call needs its own lock. The four bundled tools are; two calls that write the same file still race, as they would from two shells.
+
+An embedder building a Runtime directly passes the same key in `settings:` — `settings: { tools: { parallel: true } }`.
+
 ## Identifiers
 
 A tool's name everywhere — in `tools:` on `Runtime.new` and `Loader.runtime`, and on `--tools` — is its riffer `identifier`: `read`, `write`, `edit`, `bash`, and whatever identifier an extension tool declares.

@@ -20,7 +20,7 @@ Every core key is top level and optional:
 | `extensions` | `disabled`, the bundled extensions to leave out ([below](#extensions)); `autoload`, gem extension autoload ([below](#extensions)) |
 | `reload`     | `"auto"` (default) or `"manual"`, the hot-reload trigger ([Reloading](RELOADING.md#triggers)) |
 | `sessions`   | `save`, set it to `false` to stop saving sessions to the store ([Sessions](SESSIONS.md)) |
-| `tools`      | the provider-native tool switches (`native`) ([below](#toolsnative)) |
+| `tools`      | the provider-native tool switches (`native`) ([below](#toolsnative)); `parallel`, running a round of tool calls at the same time ([below](#toolsparallel)) |
 
 ## `model`
 
@@ -117,6 +117,16 @@ The lists in the two scopes add up, so a project can disable more but cannot re-
 ```
 
 A switch value can be an object, passed through to the provider as the tool's options. The Loader hands the switches to the Runtime at build, and a `/model` switch re-derives them for the new provider, so the tool is there exactly when the provider supports it.
+
+## `tools.parallel`
+
+`tools.parallel` runs the tool calls of one model response at the same time instead of one after another. It is off by default; `true` turns it on with at most 5 tools running at once, and a positive integer turns it on with that cap. Any other value leaves it off ([Tools](TOOLS.md#parallel-tool-calls)):
+
+```json
+{ "tools": { "parallel": true } }
+```
+
+The Runtime reads the key from its settings when it is built and again on every [rebuild](RELOADING.md), so a reload picks up a change.
 
 ## `reload`
 

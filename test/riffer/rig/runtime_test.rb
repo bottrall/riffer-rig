@@ -1433,6 +1433,114 @@ describe Riffer::Rig::Runtime do
     end
   end
 
+  describe 'tools.parallel' do
+    before do
+      @log = Queue.new
+      log = @log
+      note = Class.new(Riffer::Tool) do
+        identifier 'note'
+        description 'Notes where it ran'
+
+        params do
+          required :text, String
+        end
+
+        define_method(:call) do |context:, text:| # rubocop:disable Lint/UnusedBlockArgument -- riffer passes context: to every call
+          log << [:tool, text, Thread.current]
+          text(text)
+        end
+      end
+      @note = Riffer::Rig::Extension.new('note') do |rig|
+        rig.tool note
+        rig.on(:before_tool_call) { |e| log << [:before, e.args[:text], Thread.current] }
+        rig.on(:after_tool_call) { |e| log << [:after, e.args[:text], Thread.current] }
+      end
+    end
+
+    def runtime_with(settings = {})
+      Riffer::Rig::Runtime.new('mock/test', extensions: [@note], settings: settings)
+    end
+
+    def noted(runtime)
+      calls = %w[a b].map { |text| { name: 'note', arguments: { text: text }.to_json } }
+      runtime.agent.provider.stub_response('', tool_calls: calls)
+      runtime.agent.provider.stub_response('All done.')
+      runtime.ask('go')
+      Array.new(@log.size) { @log.pop }
+    end
+
+    def threads(entries, kind)
+      entries.select { |entry| entry.first == kind }.map(&:last).uniq
+    end
+
+    describe 'when off' do
+      it 'is the default' do
+        assert_instance_of Riffer::Rig::Runtime::ToolRuntime, runtime_with.agent.tool_runtime
+      end
+
+      it 'runs each call through its hooks before the next call starts' do
+        steps = noted(runtime_with).map { |entry| entry.first(2) }
+
+        assert_equal [[:before, 'a'], [:tool, 'a'], [:after, 'a'], [:before, 'b'], [:tool, 'b'], [:after, 'b']], steps
+      end
+
+      it 'runs the tools on the prompting thread' do
+        assert_equal [Thread.current], threads(noted(runtime_with), :tool)
+      end
+
+      it 'stays off for a value that is neither true nor a positive integer' do
+        runtime = runtime_with({ tools: { parallel: 'yes' } })
+
+        assert_instance_of Riffer::Rig::Runtime::ToolRuntime, runtime.agent.tool_runtime
+      end
+    end
+
+    describe 'when on' do
+      it 'vetoes every call in order, runs the tools, then observes every result in order' do
+        steps = noted(runtime_with({ tools: { parallel: true } })).map { |entry| entry.first(2) }
+
+        assert_equal [[:before, 'a'], [:before, 'b'], [:after, 'a'], [:after, 'b']], steps.values_at(0, 1, 4, 5)
+      end
+
+      it 'runs the tools off the prompting thread' do
+        refute_includes threads(noted(runtime_with({ tools: { parallel: true } })), :tool), Thread.current
+      end
+
+      it 'runs the before_tool_call hooks on the prompting thread' do
+        assert_equal [Thread.current], threads(noted(runtime_with({ tools: { parallel: true } })), :before)
+      end
+
+      it 'runs the after_tool_call hooks on the prompting thread' do
+        assert_equal [Thread.current], threads(noted(runtime_with({ tools: { parallel: true } })), :after)
+      end
+
+      it 'keeps the tool results in call order' do
+        runtime = runtime_with({ tools: { parallel: true } })
+        noted(runtime)
+
+        assert_equal %w[a b], runtime.agent.session.messages.grep(Riffer::Messages::Tool).map(&:content)
+      end
+
+      it 'honours an integer as the concurrency cap' do
+        assert_equal 1, threads(noted(runtime_with({ tools: { parallel: 1 } })), :tool).size
+      end
+
+      it 'is switched off by a rebuild without the setting' do
+        runtime = runtime_with({ tools: { parallel: true } })
+        runtime.rebuild(extensions: [@note], settings: {})
+
+        assert_instance_of Riffer::Rig::Runtime::ToolRuntime, runtime.agent.tool_runtime
+      end
+
+      it 'is switched on by a rebuild with the setting' do
+        runtime = runtime_with
+        runtime.rebuild(extensions: [@note], settings: { tools: { parallel: true } })
+
+        assert_instance_of Riffer::Rig::Runtime::ParallelToolRuntime, runtime.agent.tool_runtime
+      end
+    end
+  end
+
   describe 'snapshots' do
     def usage(input, output)
       Riffer::Providers::TokenUsage.new(input_tokens: input, output_tokens: output)

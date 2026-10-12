@@ -102,6 +102,32 @@ describe Riffer::Rig::Settings::Document do
     assert_empty Riffer::Rig::Settings::Document.new({ tools: 'web_search' }).native_tools
   end
 
+  it 'runs tools one at a time by default' do
+    assert_nil Riffer::Rig::Settings::Document.new({}).tool_concurrency
+  end
+
+  it "caps parallel tools at riffer's default when tools.parallel is true" do
+    document = Riffer::Rig::Settings::Document.new({ tools: { parallel: true } })
+
+    assert_equal Riffer::Runner::Threaded::DEFAULT_MAX_CONCURRENCY, document.tool_concurrency
+  end
+
+  it 'reads a tools.parallel integer as the concurrency cap' do
+    assert_equal 2, Riffer::Rig::Settings::Document.new({ tools: { parallel: 2 } }).tool_concurrency
+  end
+
+  it 'leaves parallel tools off when tools.parallel is false' do
+    assert_nil Riffer::Rig::Settings::Document.new({ tools: { parallel: false } }).tool_concurrency
+  end
+
+  it 'leaves parallel tools off when the cap is not positive' do
+    assert_nil Riffer::Rig::Settings::Document.new({ tools: { parallel: 0 } }).tool_concurrency
+  end
+
+  it 'leaves parallel tools off when tools.parallel is neither true nor an integer' do
+    assert_nil Riffer::Rig::Settings::Document.new({ tools: { parallel: 'yes' } }).tool_concurrency
+  end
+
   it 'is frozen' do
     assert_predicate Riffer::Rig::Settings::Document.new({}), :frozen?
   end

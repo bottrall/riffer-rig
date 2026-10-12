@@ -1,0 +1,29 @@
+# Generated from lib/riffer/rig/runtime/parallel_tool_runtime.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::ParallelToolRuntime < Riffer::Tools::Runtime
+  @hooks: Riffer::Rig::Runtime::Hooks
+
+  # @rbs hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs runner: Riffer::Runner
+  # @rbs return: void
+  def initialize: (Riffer::Rig::Runtime::Hooks hooks, Riffer::Runner runner) -> void
+
+  # @rbs tool_calls: Array[Riffer::Messages::Assistant::ToolCall]
+  # @rbs tools: Array[singleton(Riffer::Tool)]
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs assistant_message: Riffer::Messages::Assistant?
+  # @rbs tags: Hash[String, String]
+  # @rbs return: Array[[Riffer::Messages::Assistant::ToolCall, Riffer::Tools::Response]]
+  def execute: (Array[Riffer::Messages::Assistant::ToolCall] tool_calls, tools: Array[singleton(Riffer::Tool)], context: Riffer::Agent::Context?, ?assistant_message: Riffer::Messages::Assistant?, ?tags: Hash[String, String]) -> Array[[ Riffer::Messages::Assistant::ToolCall, Riffer::Tools::Response ]]
+
+  private
+
+  # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
+  # @rbs return: Hash[Symbol, untyped] | Riffer::Rig::Runtime::Blocked | nil
+  def verdict: (Riffer::Messages::Assistant::ToolCall tool_call) -> (Hash[Symbol, untyped] | Riffer::Rig::Runtime::Blocked | nil)
+
+  # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
+  # @rbs verdict: Hash[Symbol, untyped] | Riffer::Rig::Runtime::Blocked | nil
+  # @rbs return: Riffer::Messages::Assistant::ToolCall
+  def approved_call: (Riffer::Messages::Assistant::ToolCall tool_call, Hash[Symbol, untyped] | Riffer::Rig::Runtime::Blocked | nil verdict) -> Riffer::Messages::Assistant::ToolCall
+end

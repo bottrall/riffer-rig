@@ -125,7 +125,7 @@ Settings live in two scopes, both optional: `~/.riffer/settings.json` for every 
 | `extensions` | `disabled` — bundled extensions to leave out; `autoload` — gem extension autoload |
 | `reload`     | `"auto"` (default) or `"manual"` — the hot-reload trigger                        |
 | `sessions`   | `save: false` stops saving sessions to the store                                 |
-| `tools`      | the provider-native tool switches (`native`), off by default                     |
+| `tools`      | the provider-native tool switches (`native`) and parallel tool calls (`parallel`), both off by default |
 
 - `RIFFER_MODEL` — the model for this run as `provider/name`, winning over the `model` setting. A bare name such as `sonnet` is rejected with the list of providers.
 - `AGENTS.md` — `~/.riffer/AGENTS.md` and an `AGENTS.md` in the current working directory or any directory above it are re-read every turn as instructions that take precedence over the default norms ([Instructions](docs/INSTRUCTIONS.md#agentsmd)).
