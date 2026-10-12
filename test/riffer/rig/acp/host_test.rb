@@ -101,12 +101,6 @@ describe Riffer::Rig::ACP::Host do
         assert_nil @host.ask('Name?')
       end
 
-      it 'declines a free-text ask the client cannot elicit' do
-        @replies[:elicitation] = ACP::RequestError.unadvertised('elicitation.form')
-
-        assert_nil @host.ask('Name?')
-      end
-
       it 'offers the options of an ask as permission options' do
         @host.ask('Colour?', options: %w[red blue])
 

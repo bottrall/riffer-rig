@@ -198,19 +198,26 @@ describe Riffer::Rig::ACP::Mapper do
   end
 
   describe '.elicitation_request' do
-    it 'serializes to a session-scoped form with one required string field' do
-      expected = {
-        'message' => 'Name?',
-        'mode' => 'form',
-        'requestedSchema' => {
-          'type' => 'object',
-          'properties' => { 'answer' => { 'type' => 'string', 'title' => 'Name?' } },
-          'required' => ['answer']
-        },
-        'sessionId' => 's1'
-      }
+    def request
+      Riffer::Rig::ACP::Mapper.elicitation_request('s1', 'Name?')
+    end
 
-      assert_equal expected, Riffer::Rig::ACP::Mapper.elicitation_request('s1', 'Name?').to_h
+    it 'carries the question as its message' do
+      assert_equal 'Name?', request.message
+    end
+
+    it 'scopes a form to the session' do
+      assert_equal 's1', request.mode.scope.session_id
+    end
+
+    it 'asks for a string answer titled with the question' do
+      answer = request.mode.requested_schema.properties.fetch('answer')
+
+      assert_equal [ACP::Types::ElicitationPropertySchema::StringPropertySchema, 'Name?'], [answer.class, answer.title]
+    end
+
+    it 'requires the answer' do
+      assert_equal ['answer'], request.mode.requested_schema.required
     end
   end
 
