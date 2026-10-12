@@ -11,7 +11,6 @@ class Riffer::Rig::Stores::Recorder
   # @rbs @runtime: Riffer::Rig::Runtime?
   # @rbs @header_written: bool
   # @rbs @pending: Array[Riffer::Rig::Stores::entry]
-  # @rbs @title: String?
   # @rbs @last_recorded_at: Time?
 
   # Records one Loader-built session into the store: the header on the first
@@ -31,7 +30,6 @@ class Riffer::Rig::Stores::Recorder
     @runtime = nil
     @header_written = false
     @pending = []
-    @title = nil
     @last_recorded_at = nil
   end
 
@@ -53,8 +51,7 @@ class Riffer::Rig::Stores::Recorder
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
   def message(message)
-    @title ||= one_line(message.content) if message.is_a?(Riffer::Messages::User)
-    write_header unless @header_written
+    write_header(message) unless @header_written
     record(Riffer::Rig::Stores::MessageEntry.new(message: message.to_h, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
   end
 
@@ -92,16 +89,18 @@ class Riffer::Rig::Stores::Recorder
     @store.append(runtime.id, entry)
   end
 
+  # @rbs message: Riffer::Messages::Base
   # @rbs return: void
-  def write_header
+  def write_header(message)
     @header_written = true
-    @store.append(runtime.id, header_entry) unless @resumed
+    @store.append(runtime.id, header_entry(message)) unless @resumed
     @pending.each { |entry| @store.append(runtime.id, entry) }
     @pending.clear
   end
 
+  # @rbs message: Riffer::Messages::Base
   # @rbs return: ::Riffer::Rig::Stores::Header
-  def header_entry
+  def header_entry(message)
     Riffer::Rig::Stores::Header.new(
       schema_version: Riffer::Rig::Stores::JSONL::HEADER_VERSION,
       id: runtime.id,
@@ -110,7 +109,7 @@ class Riffer::Rig::Stores::Recorder
       model: runtime.model,
       riffer_rig_version: Riffer::Rig::VERSION,
       riffer_version: Riffer::VERSION,
-      title: @title.to_s
+      title: message.is_a?(Riffer::Messages::User) ? one_line(message.content) : ''
     )
   end
 

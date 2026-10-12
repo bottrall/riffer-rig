@@ -5,8 +5,6 @@ class Riffer::Rig::Stores::Recorder
 
   @last_recorded_at: Time?
 
-  @title: String?
-
   @pending: Array[Riffer::Rig::Stores::entry]
 
   @header_written: bool
@@ -60,11 +58,13 @@ class Riffer::Rig::Stores::Recorder
   # @rbs return: void
   def record: (Riffer::Rig::Stores::entry entry) -> void
 
+  # @rbs message: Riffer::Messages::Base
   # @rbs return: void
-  def write_header: () -> void
+  def write_header: (Riffer::Messages::Base message) -> void
 
+  # @rbs message: Riffer::Messages::Base
   # @rbs return: ::Riffer::Rig::Stores::Header
-  def header_entry: () -> ::Riffer::Rig::Stores::Header
+  def header_entry: (Riffer::Messages::Base message) -> ::Riffer::Rig::Stores::Header
 
   # @rbs return: Time
   def stamp: () -> Time

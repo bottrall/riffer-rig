@@ -92,7 +92,7 @@ class Riffer::Rig::Terminal::Renderer
     @prose_gap_pending = true
     @io.puts
     text = (@wrapper << usage_line(usage, session)) + @wrapper.flush
-    @io.print(@theme.dim(text)) unless text.empty?
+    @io.print(@theme.dim(text))
     @io.flush
   end
 
