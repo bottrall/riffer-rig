@@ -37,6 +37,7 @@ target :lib do
   library 'io-console'
   library 'optparse'
   library 'tmpdir'
+  library 'time'
 
   configure_code_diagnostics(D::Ruby.all_error)
 end
