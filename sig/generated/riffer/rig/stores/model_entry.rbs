@@ -7,15 +7,17 @@ class Riffer::Rig::Stores::ModelEntry
 
   include Riffer::Rig::Stores::Stamped
 
-  # @dynamic model
+  # @dynamic model, recorded_at
   attr_reader model: String
+
+  attr_reader recorded_at: String?
 
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: ::Riffer::Rig::Stores::ModelEntry?
   def self.from_hash: (Hash[Symbol, untyped] hash) -> ::Riffer::Rig::Stores::ModelEntry?
 
   # @rbs model: String
-  # @rbs recorded_at: Time?
+  # @rbs recorded_at: String?
   # @rbs return: void
-  def initialize: (model: String, ?recorded_at: Time?) -> void
+  def initialize: (model: String, ?recorded_at: String?) -> void
 end

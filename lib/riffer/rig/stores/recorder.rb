@@ -47,7 +47,7 @@ class Riffer::Rig::Stores::Recorder
   # @rbs event: Riffer::StreamEvents::SkillActivation
   # @rbs return: void
   def skill(event)
-    record(Riffer::Rig::Stores::SkillEntry.new(skill: event.name, recorded_at: stamp))
+    record(Riffer::Rig::Stores::SkillEntry.new(skill: event.name, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
   end
 
   # @rbs message: Riffer::Messages::Base
@@ -55,13 +55,13 @@ class Riffer::Rig::Stores::Recorder
   def message(message)
     @title ||= one_line(message.content) if message.is_a?(Riffer::Messages::User)
     write_header unless @header_written
-    record(Riffer::Rig::Stores::MessageEntry.new(message: message.to_h, recorded_at: stamp))
+    record(Riffer::Rig::Stores::MessageEntry.new(message: message.to_h, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
   end
 
   # @rbs model: String
   # @rbs return: void
   def switched(model)
-    record(Riffer::Rig::Stores::ModelEntry.new(model: model, recorded_at: stamp))
+    record(Riffer::Rig::Stores::ModelEntry.new(model: model, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
   end
 
   # The extension rides the build as its last extension, so its :stream hook
@@ -125,7 +125,7 @@ class Riffer::Rig::Stores::Recorder
   # @rbs id: String
   # @rbs return: Time?
   def last_recorded_at(id)
-    @store.read(id).filter_map { |entry| entry.recorded_at unless entry.is_a?(Riffer::Rig::Stores::Header) }.max
+    @store.read(id).filter_map { |entry| entry.recorded_time unless entry.is_a?(Riffer::Rig::Stores::Header) }.max
   end
 
   # @rbs content: String

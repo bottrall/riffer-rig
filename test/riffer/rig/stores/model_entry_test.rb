@@ -31,7 +31,7 @@ describe Riffer::Rig::Stores::ModelEntry do
 
   describe '#to_h' do
     it 'serialises the disk line' do
-      assert_equal({ type: 'model', model: 'mock/other' }, entry.to_h)
+      assert_equal({ type: 'model', model: 'mock/other', recorded_at: nil }, entry.to_h)
     end
   end
 
@@ -47,7 +47,7 @@ describe Riffer::Rig::Stores::ModelEntry do
 
   describe 'recorded_at' do
     def stamped
-      Riffer::Rig::Stores::ModelEntry.new(model: 'mock/other', recorded_at: Time.utc(2026, 10, 11, 12, 0, 0.5r))
+      Riffer::Rig::Stores::ModelEntry.new(model: 'mock/other', recorded_at: '2026-10-11T12:00:00.500Z')
     end
 
     it 'is nil unless stamped' do

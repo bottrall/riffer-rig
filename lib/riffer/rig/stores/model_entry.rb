@@ -5,10 +5,11 @@ class Riffer::Rig::Stores::ModelEntry
   include Riffer::Rig::Support::TypedValue #[String]
   include Riffer::Rig::Stores::Stamped
 
-  typed_value 'model', :model
+  typed_value 'model', :model, :recorded_at
 
-  # @dynamic model
+  # @dynamic model, recorded_at
   attr_reader :model #: String
+  attr_reader :recorded_at #: String?
 
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: ::Riffer::Rig::Stores::ModelEntry?
@@ -16,11 +17,11 @@ class Riffer::Rig::Stores::ModelEntry
     model = hash[:model]
     return nil unless model.is_a?(String)
 
-    new(model: model, recorded_at: Riffer::Rig::Stores::Timestamp.load(hash[:recorded_at]))
+    new(model: model, recorded_at: Riffer::Rig::Stores::Timestamp.dump(Riffer::Rig::Stores::Timestamp.load(hash[:recorded_at])))
   end
 
   # @rbs model: String
-  # @rbs recorded_at: Time?
+  # @rbs recorded_at: String?
   # @rbs return: void
   def initialize(model:, recorded_at: nil)
     @model = model

@@ -71,7 +71,7 @@ describe Riffer::Rig::Stores::JSONL do
   end
 
   it 'round-trips the recorded_at of a stamped entry' do
-    stamped = Riffer::Rig::Stores::ModelEntry.new(model: 'mock/one', recorded_at: Time.utc(2026, 10, 11, 12, 0, 0.5r))
+    stamped = Riffer::Rig::Stores::ModelEntry.new(model: 'mock/one', recorded_at: '2026-10-11T12:00:00.500Z')
     @store.append('aaa', header('aaa'))
     @store.append('aaa', stamped)
 

@@ -7,15 +7,17 @@ class Riffer::Rig::Stores::MessageEntry
 
   include Riffer::Rig::Stores::Stamped
 
-  # @dynamic message
+  # @dynamic message, recorded_at
   attr_reader message: Hash[Symbol, untyped]
+
+  attr_reader recorded_at: String?
 
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: ::Riffer::Rig::Stores::MessageEntry?
   def self.from_hash: (Hash[Symbol, untyped] hash) -> ::Riffer::Rig::Stores::MessageEntry?
 
   # @rbs message: Hash[Symbol, untyped]
-  # @rbs recorded_at: Time?
+  # @rbs recorded_at: String?
   # @rbs return: void
-  def initialize: (message: Hash[Symbol, untyped], ?recorded_at: Time?) -> void
+  def initialize: (message: Hash[Symbol, untyped], ?recorded_at: String?) -> void
 end

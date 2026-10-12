@@ -31,7 +31,7 @@ describe Riffer::Rig::Stores::MessageEntry do
 
   describe '#to_h' do
     it 'serialises the disk line' do
-      assert_equal({ type: 'message', message: { role: 'user', content: 'hello' } }, entry.to_h)
+      assert_equal({ type: 'message', message: { role: 'user', content: 'hello' }, recorded_at: nil }, entry.to_h)
     end
   end
 
@@ -49,7 +49,7 @@ describe Riffer::Rig::Stores::MessageEntry do
     def stamped
       Riffer::Rig::Stores::MessageEntry.new(
         message: { role: 'user', content: 'hello' },
-        recorded_at: Time.utc(2026, 10, 11, 12, 0, 0.5r)
+        recorded_at: '2026-10-11T12:00:00.500Z'
       )
     end
 

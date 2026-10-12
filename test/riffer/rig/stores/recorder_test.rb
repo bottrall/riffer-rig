@@ -59,7 +59,7 @@ describe Riffer::Rig::Stores::Recorder do
   end
 
   def stamps(store)
-    store.appended.grep_v(Riffer::Rig::Stores::Header).map(&:recorded_at)
+    store.appended.grep_v(Riffer::Rig::Stores::Header).map(&:recorded_time)
   end
 
   it 'stamps the header with the clock' do
@@ -82,7 +82,7 @@ describe Riffer::Rig::Stores::Recorder do
     recording.switched('mock/other')
     recording.message(user)
 
-    assert_equal at(1), store.appended.grep(Riffer::Rig::Stores::ModelEntry).first.recorded_at
+    assert_equal at(1), store.appended.grep(Riffer::Rig::Stores::ModelEntry).first.recorded_time
   end
 
   it 'stamps a skill entry with the clock' do
@@ -91,7 +91,7 @@ describe Riffer::Rig::Stores::Recorder do
     recording.message(user)
     recording.skill(Riffer::StreamEvents::SkillActivation.new('a'))
 
-    assert_equal at(2), store.appended.grep(Riffer::Rig::Stores::SkillEntry).first.recorded_at
+    assert_equal at(2), store.appended.grep(Riffer::Rig::Stores::SkillEntry).first.recorded_time
   end
 
   it 'stamps an entry held for the header when it happened' do
@@ -112,7 +112,7 @@ describe Riffer::Rig::Stores::Recorder do
   end
 
   it 'never steps back from the session it resumes' do
-    seeded = [Riffer::Rig::Stores::MessageEntry.new(message: user.to_h, recorded_at: at(9))]
+    seeded = [Riffer::Rig::Stores::MessageEntry.new(message: user.to_h, recorded_at: Riffer::Rig::Stores::Timestamp.dump(at(9)))]
     store = SeededStore.new(seeded)
     recording = recorder(store, [at(3), at(10)], resumed: true)
     2.times { recording.message(user) }
