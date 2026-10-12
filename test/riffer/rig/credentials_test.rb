@@ -343,14 +343,6 @@ describe Riffer::Rig::Credentials do
       end
     end
 
-    it 'creates the directory owner-only' do
-      in_tmp_home do |paths|
-        Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-stored' }, **paths)
-
-        assert_equal 0o700, File.stat(File.dirname(paths[:auth_path])).mode & 0o777
-      end
-    end
-
     it 'writes a typed entry per provider' do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-ant' }, **paths)

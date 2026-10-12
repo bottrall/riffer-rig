@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'json'
-require 'fileutils'
 require 'open3'
 
 module Riffer::Rig::Credentials
@@ -195,23 +193,17 @@ module Riffer::Rig::Credentials
   # @rbs path: String
   # @rbs return: Hash[String, Hash[String, String]]
   def read_auth(path)
-    return {} unless File.file?(path)
-
-    JSON.parse(File.read(path))
-        .select { |_identifier, entry| entry.is_a?(Hash) && entry['type'] == ENTRY_TYPE }
-        .transform_values { |entry| entry.except('type').select { |_name, value| value.is_a?(String) } }
-  rescue JSON::ParserError
-    {}
+    Riffer::Rig::Support::JsonFile
+      .read(path)
+      .select { |_identifier, entry| entry.is_a?(Hash) && entry['type'] == ENTRY_TYPE }
+      .transform_values { |entry| entry.except('type').select { |_name, value| value.is_a?(String) } }
   end
 
   # @rbs path: String
   # @rbs entries: Hash[String, Hash[String, String]]
   # @rbs return: void
   def write_auth(path, entries)
-    FileUtils.mkdir_p(File.dirname(path), mode: 0o700)
     data = entries.transform_values { |fields| { 'type' => ENTRY_TYPE }.merge(fields) }
-    File.open(path, File::WRONLY | File::CREAT | File::TRUNC, 0o600) do |file|
-      file.write(JSON.pretty_generate(data))
-    end
+    Riffer::Rig::Support::JsonFile.write(path, data, mode: 0o600)
   end
 end

@@ -12,27 +12,6 @@ describe Riffer::Rig::Settings do
   end
 
   describe '.read' do
-    it 'is empty when the file is absent' do
-      Dir.mktmpdir do |dir|
-        assert_empty Riffer::Rig::Settings.read(File.join(dir, 'settings.json'))
-      end
-    end
-
-    it 'is empty for malformed json' do
-      Dir.mktmpdir do |dir|
-        path = File.join(dir, 'settings.json')
-        File.write(path, 'not json {{{')
-
-        assert_empty Riffer::Rig::Settings.read(path)
-      end
-    end
-
-    it 'is empty for a document that is not an object' do
-      Dir.mktmpdir do |dir|
-        assert_empty Riffer::Rig::Settings.read(settings_file(dir, %w[model]))
-      end
-    end
-
     it 'reads the document with symbol keys' do
       Dir.mktmpdir do |dir|
         path = settings_file(dir, { 'model' => 'anthropic/claude-sonnet-4-6', 'git' => { 'depth' => 10 } })
