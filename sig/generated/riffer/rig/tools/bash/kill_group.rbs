@@ -2,6 +2,7 @@
 
 module Riffer::Rig::Tools::Bash::KillGroup
   # @rbs pid: Integer
+  # @rbs signal: String
   # @rbs return: Integer
-  def kill_group: (Integer pid) -> Integer
+  def kill_group: (Integer pid, ?String signal) -> Integer
 end

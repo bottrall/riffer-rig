@@ -61,15 +61,13 @@ describe Riffer::Rig::Runtime do
     Riffer::Rig::Extension.new('serving') { |rig| names.each { |name| rig.mcp(name, url: "https://#{name}.test/mcp") } }
   end
 
-  def spawn_group_job(runtime)
+  def spawn_group_job(runtime, command = 'sleep 30')
     jobs = runtime.agent.context[:jobs] #: Riffer::Rig::Tools::Bash::Jobs
-    pid = Process.spawn('sleep 30', pgroup: true)
-    jobs.register(pid, File.join(Dir.tmpdir, "riffer-rig-job-test-#{pid}"))
-    pid
+    jobs.register(Process.spawn(command, pgroup: true), command, File::NULL)
   end
 
-  def killed?(pid)
-    Process.wait2(pid).last.signaled?
+  def job_exits(runtime)
+    Queue.new.tap { |exits| runtime.on_job_exit { |completion| exits << completion } }
   end
 
   it 'mints a uuid_v7 id at construction' do
@@ -1778,6 +1776,62 @@ describe Riffer::Rig::Runtime do
     end
   end
 
+  describe '#on_job_exit' do
+    before do
+      @runtime = Riffer::Rig::Runtime.new('mock/test')
+      @exits = job_exits(@runtime)
+    end
+
+    after do
+      @runtime.close
+    end
+
+    it 'calls a subscriber with the completion of a job that exited' do
+      job = spawn_group_job(@runtime, 'true')
+
+      assert_equal job.id, @exits.pop(timeout: 5)&.job_id
+    end
+
+    it 'drops the exit of a job once the Runtime is closed' do
+      spawn_group_job(@runtime)
+      @runtime.close
+
+      assert_empty @exits
+    end
+
+    it 'returns nil' do
+      assert_nil(@runtime.on_job_exit { |completion| completion })
+    end
+  end
+
+  describe '#running_job_count' do
+    before do
+      @runtime = Riffer::Rig::Runtime.new('mock/test')
+      @exits = job_exits(@runtime)
+    end
+
+    after do
+      @runtime.close
+    end
+
+    it 'is zero without a job' do
+      assert_equal 0, @runtime.running_job_count
+    end
+
+    it 'counts a running job' do
+      spawn_group_job(@runtime)
+
+      assert_equal 1, @runtime.running_job_count
+    end
+
+    it 'drops when a job exits with no turn running' do
+      spawn_group_job(@runtime, 'true')
+      @exits.pop(timeout: 5)
+
+      assert_equal 0, @runtime.running_job_count
+    end
+  end
+
   describe '#cancel' do
     before do
       started = @started = Queue.new
@@ -1855,10 +1909,11 @@ describe Riffer::Rig::Runtime do
 
     it 'kills outstanding background jobs on cancel' do
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
-      pid = spawn_group_job(runtime)
+      exits = job_exits(runtime)
+      job = spawn_group_job(runtime)
       runtime.cancel
 
-      assert killed?(pid)
+      assert_equal job.id, exits.pop(timeout: 5)&.job_id
     end
 
     it 'returns nil' do
@@ -1920,12 +1975,21 @@ describe Riffer::Rig::Runtime do
   end
 
   describe '#close' do
-    it 'kills outstanding background jobs on close' do
+    it 'kills and reaps outstanding background jobs on close' do
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
-      pid = spawn_group_job(runtime)
+      job = spawn_group_job(runtime)
       runtime.close
 
-      assert killed?(pid)
+      assert_raises(Errno::ECHILD) { Process.wait(job.pid) }
+    end
+
+    it 'leaves no watcher thread on close' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+      threads = Thread.list
+      spawn_group_job(runtime)
+      runtime.close
+
+      assert_empty Thread.list - threads
     end
 
     it 'unregisters every server on close' do

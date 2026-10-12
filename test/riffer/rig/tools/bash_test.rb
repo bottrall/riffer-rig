@@ -59,11 +59,11 @@ describe Riffer::Rig::Tools::Bash do
   end
 
   def with_background_job(command)
-    jobs = Riffer::Rig::Tools::Bash::Jobs.new
+    jobs = Riffer::Rig::Tools::Bash::Jobs.new(Riffer::Rig::Runtime::JobInbox.new)
     response = @tool.call(context: background_context(jobs), command: command, run_in_background: true)
     yield response, jobs
   ensure
-    jobs.kill_outstanding
+    jobs.shutdown
     FileUtils.rm_f(output_path(response)) if response
   end
 
@@ -101,6 +101,12 @@ describe Riffer::Rig::Tools::Bash do
       job_id = response.content[/\AJob (\h{8})/, 1]
 
       assert_includes jobs.list.map(&:id), job_id
+    end
+  end
+
+  it 'registers a background job with its command' do
+    with_background_job('echo hello') do |_response, jobs|
+      assert_equal ['echo hello'], jobs.list.map(&:command)
     end
   end
 

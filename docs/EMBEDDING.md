@@ -286,3 +286,30 @@ runtime.on_message { |message| log.puts(JSON.generate(message.to_h)) }
 ```
 
 Observers run on the prompting thread, inside the turn, once per message; they survive a model switch. The system message is not delivered — it is rebuilt every turn — nor are the "interrupted" results filled in after a cancel or on restore.
+
+## Background jobs
+
+A `bash` call with `run_in_background` starts a job that outlives the tool call and the turn that started it. The Runtime watches every job and reports its exit as it happens, whether or not a turn is running:
+
+```ruby
+exits = Queue.new
+runtime.on_job_exit { |completion| exits << completion }
+runtime.running_job_count # => 2
+```
+
+`on_job_exit { |completion| }` registers a subscriber called once per job, when the job exits: by itself, on a signal, or killed by `cancel`. The completion is a frozen `Riffer::Rig::Runtime::JobCompletion`:
+
+| Reader        | Value                                                                 |
+| ------------- | --------------------------------------------------------------------- |
+| `job_id`      | The id `bash` returned when it started the job                        |
+| `command`     | The shell command                                                     |
+| `exit_status` | The exit status; `1` for a job ended by a signal                      |
+| `duration`    | Seconds from start to exit, as a `Float`                              |
+| `output_path` | The file holding everything the job wrote                             |
+| `tail`        | The last 2,000 bytes of that output, with invalid characters replaced |
+
+Subscribers run on a background thread, not the thread running the turn, and one at a time. Hand the completion to your own loop — push it onto a queue — rather than rendering, prompting or closing the Runtime from the block.
+
+`running_job_count` is the number of jobs still running. It is thread-safe, and has already dropped by the time a subscriber hears of that job's exit.
+
+`close` ends delivery: the jobs it kills, and any exit that lands after it, reach no subscriber. A host that swaps one Runtime for another closes the old one and subscribes on the new one.

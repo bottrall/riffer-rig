@@ -1,0 +1,9 @@
+# The inbox the job registry puts completions into and consumes them from;
+# Riffer::Rig::Runtime::JobInbox is the implementation.
+
+class Riffer::Rig::Tools::Bash
+  interface _Inbox
+    def push: (::Riffer::Rig::Runtime::JobCompletion completion) -> void
+    def drain: () -> Array[::Riffer::Rig::Runtime::JobCompletion]
+  end
+end

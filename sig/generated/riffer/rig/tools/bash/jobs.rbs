@@ -3,30 +3,68 @@
 class Riffer::Rig::Tools::Bash::Jobs
   include Riffer::Rig::Tools::Bash::KillGroup
 
-  @jobs: Hash[String, Riffer::Rig::Tools::Bash::Job]
+  include Riffer::Rig::Tools::Bash::MonotonicClock
+
+  READ_LIMIT_BYTES: Integer
+
+  TAIL_BYTES: Integer
+
+  SHUTDOWN_GRACE_SECONDS: Float
+
+  @watchers: ThreadGroup
 
   @mutex: Mutex
 
+  @jobs: Hash[String, Riffer::Rig::Tools::Bash::Job]
+
+  @inbox: Riffer::Rig::Tools::Bash::_Inbox
+
+  # @rbs inbox: Riffer::Rig::Tools::Bash::_Inbox
   # @rbs return: void
-  def initialize: () -> void
+  def initialize: (Riffer::Rig::Tools::Bash::_Inbox inbox) -> void
 
   # @rbs pid: Integer
+  # @rbs command: String
   # @rbs output_path: String
   # @rbs return: Riffer::Rig::Tools::Bash::Job
-  def register: (Integer pid, String output_path) -> Riffer::Rig::Tools::Bash::Job
+  def register: (Integer pid, String command, String output_path) -> Riffer::Rig::Tools::Bash::Job
 
   # @rbs return: Array[Riffer::Rig::Tools::Bash::Job]
   def list: () -> Array[Riffer::Rig::Tools::Bash::Job]
 
+  # @rbs id: String
+  # @rbs return: [Riffer::Rig::Tools::Bash::Job, String]?
+  def read: (String id) -> [ Riffer::Rig::Tools::Bash::Job, String ]?
+
+  # @rbs id: String
+  # @rbs return: Riffer::Rig::Tools::Bash::Job?
+  def kill: (String id) -> Riffer::Rig::Tools::Bash::Job?
+
+  # @rbs signal: String
   # @rbs return: void
-  def kill_outstanding: () -> void
+  def kill_outstanding: (?String signal) -> void
+
+  # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
+  def consume: () -> Array[Riffer::Rig::Runtime::JobCompletion]
+
+  # @rbs grace: Float
+  # @rbs return: void
+  def shutdown: (?Float grace) -> void
 
   private
 
   # @rbs job: Riffer::Rig::Tools::Bash::Job
-  # @rbs return: Riffer::Rig::Tools::Bash::Job?
-  def reap: (Riffer::Rig::Tools::Bash::Job job) -> Riffer::Rig::Tools::Bash::Job?
-
   # @rbs return: void
-  def sweep: () -> void
+  def watch: (Riffer::Rig::Tools::Bash::Job job) -> void
+
+  # @rbs job: Riffer::Rig::Tools::Bash::Job
+  # @rbs exit_status: Integer
+  # @rbs return: Riffer::Rig::Runtime::JobCompletion
+  def completion: (Riffer::Rig::Tools::Bash::Job job, Integer exit_status) -> Riffer::Rig::Runtime::JobCompletion
+
+  # @rbs path: String
+  # @rbs limit: Integer
+  # @rbs offset: Integer
+  # @rbs return: String
+  def slice: (String path, Integer limit, Integer offset) -> String
 end

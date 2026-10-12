@@ -1,0 +1,7 @@
+# Generated from lib/riffer/rig/tools/bash/truncation.rb with RBS::Inline
+
+module Riffer::Rig::Tools::Bash::Truncation
+  # @rbs output: String
+  # @rbs return: String
+  def truncate: (String output) -> String
+end

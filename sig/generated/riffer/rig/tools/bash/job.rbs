@@ -1,22 +1,28 @@
 # Generated from lib/riffer/rig/tools/bash/job.rb with RBS::Inline
 
 class Riffer::Rig::Tools::Bash::Job
-  @id: String
-
-  @pid: Integer
-
-  @output_path: String
-
-  @started_at: Float
-
-  @status: Integer?
+  @offset: Integer
 
   @ended_at: Float?
 
-  # @dynamic id, pid, output_path, started_at, status
+  @status: Integer?
+
+  @started_at: Float
+
+  @output_path: String
+
+  @command: String
+
+  @pid: Integer
+
+  @id: String
+
+  # @dynamic id, pid, command, output_path, started_at, status, offset
   attr_reader id: String
 
   attr_reader pid: Integer
+
+  attr_reader command: String
 
   attr_reader output_path: String
 
@@ -24,14 +30,18 @@ class Riffer::Rig::Tools::Bash::Job
 
   attr_reader status: Integer?
 
+  attr_reader offset: Integer
+
   # @rbs id: String
   # @rbs pid: Integer
+  # @rbs command: String
   # @rbs output_path: String
   # @rbs started_at: Float
   # @rbs status: Integer?
   # @rbs ended_at: Float?
+  # @rbs offset: Integer
   # @rbs return: void
-  def initialize: (id: String, pid: Integer, output_path: String, started_at: Float, ?status: Integer?, ?ended_at: Float?) -> void
+  def initialize: (id: String, pid: Integer, command: String, output_path: String, started_at: Float, ?status: Integer?, ?ended_at: Float?, ?offset: Integer) -> void
 
   # @rbs return: bool
   def active?: () -> bool
@@ -47,4 +57,16 @@ class Riffer::Rig::Tools::Bash::Job
   # @rbs ended_at: Float
   # @rbs return: Riffer::Rig::Tools::Bash::Job
   def finish: (Integer status, Float ended_at) -> Riffer::Rig::Tools::Bash::Job
+
+  # @rbs bytes: Integer
+  # @rbs return: Riffer::Rig::Tools::Bash::Job
+  def advance: (Integer bytes) -> Riffer::Rig::Tools::Bash::Job
+
+  private
+
+  # @rbs status: Integer?
+  # @rbs ended_at: Float?
+  # @rbs offset: Integer
+  # @rbs return: Riffer::Rig::Tools::Bash::Job
+  def copy: (?status: Integer?, ?ended_at: Float?, ?offset: Integer) -> Riffer::Rig::Tools::Bash::Job
 end

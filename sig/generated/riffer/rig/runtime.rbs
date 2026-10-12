@@ -30,8 +30,6 @@ class Riffer::Rig::Runtime
   # tests and embedders can exercise the switches.
   NATIVE_TOOLS_BY_PROVIDER: Hash[Symbol, Hash[Symbol, bool]]
 
-  @model_observers: Array[^(String) -> void]
-
   @message_observers: Array[^(Riffer::Messages::Base) -> void]
 
   @model_override: String?
@@ -54,9 +52,13 @@ class Riffer::Rig::Runtime
 
   @jobs: Riffer::Rig::Tools::Bash::Jobs
 
+  @job_inbox: Riffer::Rig::Runtime::JobInbox
+
   @cancel_flag: Riffer::Rig::Runtime::CancelFlag
 
   @agent: Riffer::Agent
+
+  @model_observers: Array[^(String) -> void]
 
   @system_prompt: Riffer::Rig::Runtime::SystemPrompt
 
@@ -182,6 +184,13 @@ class Riffer::Rig::Runtime
   # @rbs &block: (String) -> void
   # @rbs return: nil
   def on_model_change: () { (String) -> void } -> nil
+
+  # @rbs &: (Riffer::Rig::Runtime::JobCompletion) -> void
+  # @rbs return: nil
+  def on_job_exit: () { (Riffer::Rig::Runtime::JobCompletion) -> void } -> nil
+
+  # @rbs return: Integer
+  def running_job_count: () -> Integer
 
   # @rbs return: nil
   def cancel: () -> nil
