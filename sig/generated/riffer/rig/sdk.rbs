@@ -9,15 +9,25 @@ module Riffer::Rig::SDK
 
   DECLINED_MESSAGE: String
 
+  INSTALL_FAILED_MESSAGE: String
+
   FAILED_MESSAGE: String
 
   # @rbs gem: String
   # @rbs requirement: String
   # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs installer: Riffer::Rig::SDK::_Installer
   # @rbs return: String?
-  def ensure: (String gem, String requirement, host: Riffer::Rig::Hosts::_Host) -> String?
+  def ensure: (String gem, String requirement, host: Riffer::Rig::Hosts::_Host, ?installer: Riffer::Rig::SDK::_Installer) -> String?
 
   private
+
+  # @rbs gem: String
+  # @rbs requirement: String
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs installer: Riffer::Rig::SDK::_Installer
+  # @rbs return: String?
+  def install: (String gem, String requirement, host: Riffer::Rig::Hosts::_Host, installer: Riffer::Rig::SDK::_Installer) -> String?
 
   # @rbs gem: String
   # @rbs requirement: String
