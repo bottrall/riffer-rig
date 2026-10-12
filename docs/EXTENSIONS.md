@@ -29,7 +29,7 @@ The home file is always trusted. The first time a project `.riffer/rig.rb` is se
 { "/home/jake/project/.riffer/rig.rb": true }
 ```
 
-A host whose `capabilities` leave out `:confirm` — the [null host](HOSTS.md), headless, ACP — is never asked: the file is skipped and nothing is stored, so a later terminal session can still ask. A host that answers no stores `false`, skips the file silently, and is not asked again until the entry is removed from `trust.json`.
+A host whose `capabilities` leave out `:confirm` — the [null host](HOSTS.md), headless, ACP while `session/new` builds — is never asked: the file is skipped and nothing is stored, so a later terminal session can still ask. A host that answers no stores `false`, skips the file silently, and is not asked again until the entry is removed from `trust.json`.
 
 Each file is isolated the way an extension block is: a `rig.rb` that raises a `StandardError` is reported to the host through `notify` at level `:error`, and none of the extensions it recorded reach the Runtime, while the other file's extensions still load. A `ScriptError` — a bad `require`, say — propagates out of the build. Errors go to the host only, never into the model's context.
 

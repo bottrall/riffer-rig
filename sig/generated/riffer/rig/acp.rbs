@@ -17,8 +17,6 @@ class Riffer::Rig::ACP
 
   @client: ::ACP::AgentConnection::_Client?
 
-  @relay: bool
-
   @build: ^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime
 
   @home: String
@@ -34,9 +32,8 @@ class Riffer::Rig::ACP
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
   # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
-  # @rbs relay: bool
   # @rbs return: Riffer::Rig::ACP
-  def self.for: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?, ?relay: bool) -> Riffer::Rig::ACP
+  def self.for: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?) -> Riffer::Rig::ACP
 
   # Builds the Runtime a session runs on: the client's MCP servers flow
   # through the rig.mcp seam as a synthetic extension, so a reload rebuild
@@ -59,9 +56,8 @@ class Riffer::Rig::ACP
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
   # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
-  # @rbs relay: bool
   # @rbs return: void
-  def initialize: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?, ?relay: bool) -> void
+  def initialize: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?) -> void
 
   # Serves the connection until the client closes stdin; then the reader
   # thread ends and run returns.

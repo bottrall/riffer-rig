@@ -5,20 +5,17 @@ class Riffer::Rig::ACP::Host
 
   CAPABILITIES: Set[Symbol]
 
-  RELAY_CAPABILITIES: Set[Symbol]
+  BUILDING_CAPABILITIES: Set[Symbol]
 
   @buffered: Array[String]
 
   @session_id: String?
 
-  @relay: bool
-
   @client: ::ACP::AgentConnection::_Client
 
   # @rbs client: ::ACP::AgentConnection::_Client
-  # @rbs relay: bool
   # @rbs return: void
-  def initialize: (client: ::ACP::AgentConnection::_Client, ?relay: bool) -> void
+  def initialize: (client: ::ACP::AgentConnection::_Client) -> void
 
   # A request to the client names its session, and the client learns the id
   # of a new one only from the session/new reply, so nothing can be relayed

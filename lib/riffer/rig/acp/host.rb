@@ -6,20 +6,17 @@ require 'securerandom'
 class Riffer::Rig::ACP::Host
   include Riffer::Rig::Hosts::NonInteractive
 
-  CAPABILITIES = Set[:notify].freeze #: Set[Symbol]
-  RELAY_CAPABILITIES = Set[:notify, :ask, :confirm].freeze #: Set[Symbol]
+  CAPABILITIES = Set[:notify, :ask, :confirm].freeze #: Set[Symbol]
+  BUILDING_CAPABILITIES = Set[:notify].freeze #: Set[Symbol]
 
   # @rbs @client: ::ACP::AgentConnection::_Client
-  # @rbs @relay: bool
   # @rbs @session_id: String?
   # @rbs @buffered: Array[String]
 
   # @rbs client: ::ACP::AgentConnection::_Client
-  # @rbs relay: bool
   # @rbs return: void
-  def initialize(client:, relay: false)
+  def initialize(client:)
     @client = client
-    @relay = relay
     @session_id = nil
     @buffered = []
   end
@@ -29,7 +26,7 @@ class Riffer::Rig::ACP::Host
   # while that session is still building.
   # @rbs return: Set[Symbol]
   def capabilities
-    @relay && @session_id ? RELAY_CAPABILITIES : CAPABILITIES
+    @session_id ? CAPABILITIES : BUILDING_CAPABILITIES
   end
 
   # @rbs question: String?
@@ -40,7 +37,7 @@ class Riffer::Rig::ACP::Host
     id = @session_id
     # ACP forbids asking for a secret in a form elicitation, and rig serves no
     # URL for the URL mode to open.
-    return super unless @relay && id && !secret
+    return super unless id && !secret
     return elicit(id, question.to_s) unless options
 
     selected = permit(id, question.to_s, Riffer::Rig::ACP::Mapper.choices(options))
@@ -51,7 +48,7 @@ class Riffer::Rig::ACP::Host
   # @rbs return: bool
   def confirm(question = nil)
     id = @session_id
-    return super unless @relay && id
+    return super unless id
 
     permit(id, question.to_s, Riffer::Rig::ACP::Mapper::CONFIRM_OPTIONS) == Riffer::Rig::ACP::Mapper::CONFIRMED
   end

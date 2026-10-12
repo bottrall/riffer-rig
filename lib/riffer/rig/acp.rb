@@ -16,7 +16,6 @@ class Riffer::Rig::ACP
   # @rbs @env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs @home: String
   # @rbs @build: ^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime
-  # @rbs @relay: bool
   # @rbs @client: ::ACP::AgentConnection::_Client?
   # @rbs @sessions: Hash[String, Riffer::Rig::Runtime]
   # @rbs @hosts: Hash[String, Riffer::Rig::ACP::Host]
@@ -27,10 +26,9 @@ class Riffer::Rig::ACP
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
   # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
-  # @rbs relay: bool
   # @rbs return: Riffer::Rig::ACP
-  def self.for(input:, output:, env:, home:, build: nil, relay: false)
-    new(input: input, output: output, env: env, home: home, build: build, relay: relay)
+  def self.for(input:, output:, env:, home:, build: nil)
+    new(input: input, output: output, env: env, home: home, build: build)
   end
 
   # Builds the Runtime a session runs on: the client's MCP servers flow
@@ -65,15 +63,13 @@ class Riffer::Rig::ACP
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
   # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
-  # @rbs relay: bool
   # @rbs return: void
-  def initialize(input:, output:, env:, home:, build: nil, relay: false)
+  def initialize(input:, output:, env:, home:, build: nil)
     @input = input
     @output = output
     @env = env
     @home = home
     @build = build || ->(cwd, host, servers) { self.class.build_runtime(cwd, host, servers, env: @env, home: @home) }
-    @relay = relay
     @client = nil
     @sessions = {}
     @hosts = {}
@@ -102,7 +98,7 @@ class Riffer::Rig::ACP
   # @rbs request: ::ACP::Types::NewSessionRequest
   # @rbs return: (::ACP::Types::NewSessionResponse | ::ACP::RequestError)
   def new_session(request)
-    host = Riffer::Rig::ACP::Host.new(client: client, relay: @relay)
+    host = Riffer::Rig::ACP::Host.new(client: client)
     servers = declarations(request.mcp_servers, host)
     runtime = @build.call(request.cwd, host, servers)
     @lock.synchronize do
@@ -144,7 +140,7 @@ class Riffer::Rig::ACP
   # @rbs request: ::ACP::Types::LoadSessionRequest
   # @rbs return: (::ACP::Types::LoadSessionResponse | ::ACP::RequestError)
   def load_session(request)
-    host = Riffer::Rig::ACP::Host.new(client: client, relay: @relay)
+    host = Riffer::Rig::ACP::Host.new(client: client)
     host.session_id = request.session_id
     loader = Riffer::Rig::Loader.new(cwd: request.cwd, host: host, env: @env, home: @home)
     runtime = loader.resume(request.session_id)

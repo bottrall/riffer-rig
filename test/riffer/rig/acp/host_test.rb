@@ -4,8 +4,6 @@ require 'test_helper'
 require 'acp/sdk'
 
 describe Riffer::Rig::ACP::Host do
-  let(:relay) { false }
-
   before do
     sent = [] #: Array[[String, ACP::Types::SessionUpdate::t]]
     permissions = [] #: Array[ACP::Types::RequestPermissionRequest]
@@ -21,7 +19,7 @@ describe Riffer::Rig::ACP::Host do
       elicitations << request
       replies.fetch(:elicitation)
     end
-    @host = Riffer::Rig::ACP::Host.new(client: client, relay: relay)
+    @host = Riffer::Rig::ACP::Host.new(client: client)
     @sent = sent
     @permissions = permissions
     @elicitations = elicitations
@@ -46,171 +44,135 @@ describe Riffer::Rig::ACP::Host do
   end
 
   describe '#capabilities' do
-    it 'reports only notify' do
+    it 'reports only notify before it knows the session id' do
       assert_equal Set[:notify], @host.capabilities
     end
 
-    it 'reports only notify once it knows the session id' do
+    it 'reports ask and confirm too once it knows the session id' do
       @host.session_id = 'session-1'
 
-      assert_equal Set[:notify], @host.capabilities
-    end
-
-    describe 'with relay' do
-      let(:relay) { true }
-
-      it 'reports only notify before it knows the session id' do
-        assert_equal Set[:notify], @host.capabilities
-      end
-
-      it 'reports ask and confirm too once it knows the session id' do
-        @host.session_id = 'session-1'
-
-        assert_equal Set[:notify, :ask, :confirm], @host.capabilities
-      end
+      assert_equal Set[:notify, :ask, :confirm], @host.capabilities
     end
   end
 
   describe '#ask' do
-    it 'declines without eliciting from the client' do
-      @host.session_id = 'session-1'
+    it 'declines without eliciting before it knows the session id' do
       @host.ask('Which model?')
 
       assert_empty @elicitations
     end
 
-    describe 'with relay' do
-      let(:relay) { true }
+    describe 'once it knows the session id' do
+      before { @host.session_id = 'session-1' }
 
-      it 'declines without eliciting before it knows the session id' do
-        @host.ask('Which model?')
+      it 'declines a secret ask without eliciting it' do
+        @host.ask('API key?', secret: true)
 
         assert_empty @elicitations
       end
 
-      describe 'once it knows the session id' do
-        before { @host.session_id = 'session-1' }
+      it 'declines a secret ask with options without asking permission' do
+        @host.ask('Key?', options: %w[a b], secret: true)
 
-        it 'declines a secret ask without eliciting it' do
-          @host.ask('API key?', secret: true)
+        assert_empty @permissions
+      end
 
-          assert_empty @elicitations
-        end
+      it 'elicits a free-text ask on its session' do
+        @host.ask('Name?')
 
-        it 'declines a secret ask with options without asking permission' do
-          @host.ask('Key?', options: %w[a b], secret: true)
+        assert_equal 'session-1', @elicitations.first.mode.scope.session_id
+      end
 
-          assert_empty @permissions
-        end
+      it 'elicits a free-text ask with the question as its message' do
+        @host.ask('Name?')
 
-        it 'elicits a free-text ask on its session' do
-          @host.ask('Name?')
+        assert_equal 'Name?', @elicitations.first.message
+      end
 
-          assert_equal 'session-1', @elicitations.first.mode.scope.session_id
-        end
+      it 'answers a free-text ask with the elicited answer' do
+        assert_equal 'Ada', @host.ask('Name?')
+      end
 
-        it 'elicits a free-text ask with the question as its message' do
-          @host.ask('Name?')
+      it 'declines a free-text ask the client declines' do
+        @replies[:elicitation] = ACP::Types::CreateElicitationResponse.new(
+          action: ACP::Types::CreateElicitationResponse::Action::Decline.new
+        )
 
-          assert_equal 'Name?', @elicitations.first.message
-        end
+        assert_nil @host.ask('Name?')
+      end
 
-        it 'answers a free-text ask with the elicited answer' do
-          assert_equal 'Ada', @host.ask('Name?')
-        end
+      it 'declines a free-text ask the client cannot elicit' do
+        @replies[:elicitation] = ACP::RequestError.unadvertised('elicitation.form')
 
-        it 'declines a free-text ask the client declines' do
-          @replies[:elicitation] = ACP::Types::CreateElicitationResponse.new(
-            action: ACP::Types::CreateElicitationResponse::Action::Decline.new
-          )
+        assert_nil @host.ask('Name?')
+      end
 
-          assert_nil @host.ask('Name?')
-        end
+      it 'offers the options of an ask as permission options' do
+        @host.ask('Colour?', options: %w[red blue])
 
-        it 'declines a free-text ask the client cannot elicit' do
-          @replies[:elicitation] = ACP::RequestError.unadvertised('elicitation.form')
+        assert_equal(%w[red blue], @permissions.first.options.map(&:name))
+      end
 
-          assert_nil @host.ask('Name?')
-        end
+      it 'answers an ask with options with the selected option' do
+        @replies[:permission] = selected('blue')
 
-        it 'offers the options of an ask as permission options' do
-          @host.ask('Colour?', options: %w[red blue])
+        assert_equal 'blue', @host.ask('Colour?', options: %w[red blue])
+      end
 
-          assert_equal(%w[red blue], @permissions.first.options.map(&:name))
-        end
+      it 'declines an ask whose selected option was never offered' do
+        assert_nil @host.ask('Colour?', options: %w[red blue])
+      end
 
-        it 'answers an ask with options with the selected option' do
-          @replies[:permission] = selected('blue')
+      it 'declines an ask with options when the client cancels the request' do
+        @replies[:permission] = cancelled
 
-          assert_equal 'blue', @host.ask('Colour?', options: %w[red blue])
-        end
-
-        it 'declines an ask whose selected option was never offered' do
-          assert_nil @host.ask('Colour?', options: %w[red blue])
-        end
-
-        it 'declines an ask with options when the client cancels the request' do
-          @replies[:permission] = cancelled
-
-          assert_nil @host.ask('Colour?', options: %w[red blue])
-        end
+        assert_nil @host.ask('Colour?', options: %w[red blue])
       end
     end
   end
 
   describe '#confirm' do
-    it 'declines without asking the client for permission' do
-      @host.session_id = 'session-1'
+    it 'declines without asking permission before it knows the session id' do
       @host.confirm('Trust this project?')
 
       assert_empty @permissions
     end
 
-    describe 'with relay' do
-      let(:relay) { true }
+    describe 'once it knows the session id' do
+      before { @host.session_id = 'session-1' }
 
-      it 'declines without asking permission before it knows the session id' do
+      it 'asks permission on its session' do
         @host.confirm('Trust this project?')
 
-        assert_empty @permissions
+        assert_equal 'session-1', @permissions.first.session_id
       end
 
-      describe 'once it knows the session id' do
-        before { @host.session_id = 'session-1' }
+      it 'offers yes and no' do
+        @host.confirm('Trust this project?')
 
-        it 'asks permission on its session' do
-          @host.confirm('Trust this project?')
+        assert_equal(%w[Yes No], @permissions.first.options.map(&:name))
+      end
 
-          assert_equal 'session-1', @permissions.first.session_id
-        end
+      it 'confirms when the client selects yes' do
+        assert @host.confirm('Trust this project?')
+      end
 
-        it 'offers yes and no' do
-          @host.confirm('Trust this project?')
+      it 'declines when the client selects no' do
+        @replies[:permission] = selected('no')
 
-          assert_equal(%w[Yes No], @permissions.first.options.map(&:name))
-        end
+        refute @host.confirm('Trust this project?')
+      end
 
-        it 'confirms when the client selects yes' do
-          assert @host.confirm('Trust this project?')
-        end
+      it 'declines when the client cancels the request' do
+        @replies[:permission] = cancelled
 
-        it 'declines when the client selects no' do
-          @replies[:permission] = selected('no')
+        refute @host.confirm('Trust this project?')
+      end
 
-          refute @host.confirm('Trust this project?')
-        end
+      it 'declines when the request fails' do
+        @replies[:permission] = ACP::RequestError.new(code: ACP::RequestError::INTERNAL_ERROR, message: 'closed')
 
-        it 'declines when the client cancels the request' do
-          @replies[:permission] = cancelled
-
-          refute @host.confirm('Trust this project?')
-        end
-
-        it 'declines when the request fails' do
-          @replies[:permission] = ACP::RequestError.new(code: ACP::RequestError::INTERNAL_ERROR, message: 'closed')
-
-          refute @host.confirm('Trust this project?')
-        end
+        refute @host.confirm('Trust this project?')
       end
     end
   end
