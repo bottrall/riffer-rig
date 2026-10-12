@@ -3,8 +3,6 @@
 module Riffer::Rig::CLI
   extend self
 
-  PRINT_FLAGS = %w[-p --print].freeze #: Array[String]
-
   ACP_COMMAND = 'acp'
 
   USAGE_ERROR = 2
@@ -29,15 +27,14 @@ module Riffer::Rig::CLI
     return refuse("#{ACP_COMMAND} takes no arguments", error) if argv.first == ACP_COMMAND && argv.length > 1
     return acp(input:, output:, env:, cwd:, home:) if argv.first == ACP_COMMAND
 
-    headless_mode = argv.intersect?(PRINT_FLAGS)
-    flags = Flags.parse(argv, prompt: headless_mode)
+    flags = Flags.parse(argv)
     return refuse(flags, error) if flags.is_a?(String)
     return help(output) if flags.help
     return version(output) if flags.version
-    return refuse('--verbose is only available with -p', error) if flags.verbose && !headless_mode
-    return refuse('--json is only available with -p', error) if flags.json && !headless_mode
+    return refuse('--verbose is only available with -p', error) if flags.verbose && !flags.headless
+    return refuse('--json is only available with -p', error) if flags.json && !flags.headless
 
-    return headless(flags, input:, output:, error:, env:, cwd:, home:) if headless_mode
+    return headless(flags, input:, output:, error:, env:, cwd:, home:) if flags.headless
 
     terminal(flags, input:, output:, env:, cwd:, home:)
   end

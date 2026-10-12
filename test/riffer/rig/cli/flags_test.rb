@@ -13,15 +13,19 @@ describe Riffer::Rig::CLI::Flags do
     end
 
     it 'refuses a second positional with -p' do
-      assert_equal 'unexpected argument: hello extra', Riffer::Rig::CLI::Flags.parse(%w[-p hello extra], prompt: true)
+      assert_equal 'unexpected argument: hello extra', parse('-p', 'hello', 'extra')
     end
 
     it 'refuses a bare -r with -p' do
-      assert_equal 'missing argument: -r', Riffer::Rig::CLI::Flags.parse(%w[-p -r], prompt: true)
+      assert_equal 'missing argument: -r', parse('-p', '-r')
     end
 
     it 'refuses a bare -r followed by a flag with -p' do
-      assert_equal 'missing argument: -r', Riffer::Rig::CLI::Flags.parse(%w[-r -p hello], prompt: true)
+      assert_equal 'missing argument: -r', parse('-r', '-p', 'hello')
+    end
+
+    it 'refuses a bare -r clustered after -p' do
+      assert_equal 'missing argument: -r', parse('-pr')
     end
 
     it 'refuses any other flag missing its argument' do
@@ -86,12 +90,48 @@ describe Riffer::Rig::CLI::Flags do
       refute parse.verbose
     end
 
+    it 'reads -p as headless' do
+      assert parse('-p').headless
+    end
+
+    it 'reads --print as headless' do
+      assert parse('--print').headless
+    end
+
+    it 'reads an abbreviated --print as headless' do
+      assert parse('--pri').headless
+    end
+
+    it 'reads -p clustered before another short flag as headless' do
+      assert parse('-pc').headless
+    end
+
+    it 'reads -p clustered after another short flag as headless' do
+      assert parse('-cp').headless
+    end
+
+    it 'keeps headless off by default' do
+      refute parse.headless
+    end
+
     it 'takes the prompt positional with -p' do
-      assert_equal 'hello', Riffer::Rig::CLI::Flags.parse(%w[-p hello], prompt: true).prompt
+      assert_equal 'hello', parse('-p', 'hello').prompt
+    end
+
+    it 'takes the prompt positional with a clustered -p' do
+      assert_equal 'hello', parse('-pc', 'hello').prompt
+    end
+
+    it 'takes the prompt positional after a clustered -pr id' do
+      assert_equal 'hello', parse('-pr', 'abc', 'hello').prompt
     end
 
     it 'leaves the prompt to stdin without an argument' do
-      assert_nil Riffer::Rig::CLI::Flags.parse(['-p'], prompt: true).prompt
+      assert_nil parse('-p').prompt
+    end
+
+    it 'reads -c clustered with -p' do
+      assert parse('-pc').continue
     end
 
     it 'reads --resume with an id' do
@@ -107,7 +147,15 @@ describe Riffer::Rig::CLI::Flags do
     end
 
     it 'reads -r with an id under -p' do
-      assert_equal 'abc', Riffer::Rig::CLI::Flags.parse(%w[-p -r abc], prompt: true).resume
+      assert_equal 'abc', parse('-p', '-r', 'abc').resume
+    end
+
+    it 'reads the id after a clustered -pr' do
+      assert_equal 'abc', parse('-pr', 'abc').resume
+    end
+
+    it 'reads the rest of a cluster after -r as the id' do
+      assert_equal 'p', parse('-rp').resume
     end
 
     it 'opens the picker for a bare -r' do

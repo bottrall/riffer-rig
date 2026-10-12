@@ -10,9 +10,9 @@ class Riffer::Rig::CLI::Flags
   TEXT
 
   # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, version
-  # @dynamic save, verbose, json, prompt, continue, resume
+  # @dynamic save, verbose, json, headless, prompt, continue, resume
   attr_reader :model #: String?
-  attr_reader :extensions, :skills, :agents_md, :help, :version, :verbose, :json #: bool
+  attr_reader :extensions, :skills, :agents_md, :help, :version, :verbose, :json, :headless #: bool
   attr_reader :tools #: Array[String]?
   attr_reader :max_steps #: Integer?
   attr_reader :save #: bool
@@ -21,16 +21,16 @@ class Riffer::Rig::CLI::Flags
   attr_reader :resume #: String?
 
   # @rbs argv: Array[String]
-  # @rbs prompt: bool
   # @rbs return: Riffer::Rig::CLI::Flags | String
-  def self.parse(argv, prompt: false)
+  def self.parse(argv)
     values = {} #: Hash[Symbol, untyped]
     rest = parser.parse(argv, into: values)
-    allowed = rest.empty? || (prompt && rest.size == 1)
+    flags = assemble(values, rest.first)
+    allowed = rest.empty? || (flags.headless && rest.size == 1)
     return "unexpected argument: #{rest.join(' ')}" unless allowed
-    return 'missing argument: -r' if prompt && values[:resume] == ''
+    return 'missing argument: -r' if flags.headless && flags.resume == ''
 
-    assemble(values, rest.first, prompt: prompt)
+    flags
   rescue OptionParser::ParseError => e
     e.message
   end
@@ -81,10 +81,9 @@ class Riffer::Rig::CLI::Flags
   private_class_method :parser
 
   # @rbs values: Hash[Symbol, untyped]
-  # @rbs head: String?
-  # @rbs prompt: bool
+  # @rbs prompt: String?
   # @rbs return: Riffer::Rig::CLI::Flags
-  def self.assemble(values, head, prompt:)
+  def self.assemble(values, prompt)
     new(
       model: values[:model],
       extensions: !values.key?(:'no-extensions'),
@@ -95,7 +94,8 @@ class Riffer::Rig::CLI::Flags
       save: !values.key?(:'no-save'),
       verbose: values.key?(:verbose),
       json: values.key?(:json),
-      prompt: prompt ? head : nil,
+      headless: values.key?(:print),
+      prompt: prompt,
       continue: values.key?(:continue),
       resume: values[:resume],
       help: values.key?(:help),
@@ -113,6 +113,7 @@ class Riffer::Rig::CLI::Flags
   # @rbs save: bool
   # @rbs verbose: bool
   # @rbs json: bool
+  # @rbs headless: bool
   # @rbs prompt: String?
   # @rbs continue: bool
   # @rbs resume: String?
@@ -129,6 +130,7 @@ class Riffer::Rig::CLI::Flags
     save: true,
     verbose: false,
     json: false,
+    headless: false,
     prompt: nil,
     continue: false,
     resume: nil,
@@ -144,6 +146,7 @@ class Riffer::Rig::CLI::Flags
     @save = save
     @verbose = verbose
     @json = json
+    @headless = headless
     @prompt = prompt
     @continue = continue
     @resume = resume
