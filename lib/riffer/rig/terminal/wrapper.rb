@@ -38,7 +38,8 @@ class Riffer::Rig::Terminal::Wrapper
   # @rbs return: String?
   def take_line
     if (index = @line.index("\n"))
-      @line.slice!(0, index + 1).to_s.chomp
+      terminated = @line.slice!(0, index + 1).to_s.chomp
+      terminated.strip.empty? ? '' : terminated
     elsif (limit = usable_width) && @line.length > limit
       take_overfull_head(limit)
     end
