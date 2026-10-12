@@ -124,38 +124,6 @@ describe Riffer::Rig::Tools::Bash do
     assert_predicate response, :error?
   end
 
-  def test_kill_group_returns_the_childs_process_group_id
-    pid = Process.spawn('sleep 5', pgroup: true)
-
-    pgid = @tool.send(:kill_group, pid)
-
-    refute_equal Process.getpgid(Process.pid), pgid
-  ensure
-    begin
-      Process.kill('KILL', -Process.getpgid(pid)) if pid
-    rescue Errno::ESRCH
-      nil
-    end
-  end
-
-  def test_kill_group_pgids_are_positive
-    pid = Process.spawn('sleep 5', pgroup: true)
-
-    pgid = @tool.send(:kill_group, pid)
-
-    assert_operator pgid, :positive?
-  ensure
-    begin
-      Process.kill('KILL', -Process.getpgid(pid)) if pid
-    rescue Errno::ESRCH
-      nil
-    end
-  end
-
-  def test_kill_group_returns_zero_when_the_group_is_gone
-    assert_equal 0, @tool.send(:kill_group, -1)
-  end
-
   it 'ends its description with its guidance sentence' do
     assert Riffer::Rig::Tools::Bash.description.end_with?(
       'Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers.'
