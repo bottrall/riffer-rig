@@ -12,6 +12,14 @@ describe Riffer::Rig::Terminal::Wrapper do
     assert_empty wrapper << 'hello'
   end
 
+  it 'keeps a whitespace-only line as a blank line between paragraphs' do
+    assert_equal "  a\n\n  b\n", wrapper << "a\n   \nb\n"
+  end
+
+  it 'keeps a whitespace-only line as a blank line when no width is known' do
+    assert_equal "  a\n\n  b\n", wrapper(width: nil) << "a\n   \nb\n"
+  end
+
   it 'emits nothing for an unterminated line when no width is known' do
     assert_empty wrapper(width: nil) << ('a' * 30)
   end
