@@ -150,6 +150,11 @@ describe Riffer::Rig::ACP do
     File.write(File.join(dir, 'SKILL.md'), "---\nname: #{name}\ndescription: Skill #{name}.\n---\nDo #{name}.\n")
   end
 
+  def write_project_rig
+    FileUtils.mkdir_p(File.join(@cwd, '.riffer'))
+    File.write(File.join(@cwd, '.riffer', 'rig.rb'), '')
+  end
+
   def skipped_server_warning(name)
     wait_for { message_texts.any? { |text| text.include?("Skipped MCP server #{name}") } }
     message_texts.find { |text| text.include?("Skipped MCP server #{name}") }
@@ -462,6 +467,14 @@ describe Riffer::Rig::ACP do
       assert_equal %w[hello], prompts_seen_by(@built_runtimes.first)
     end
 
+    it 'sends the client no permission request while a loaded session builds' do
+      session = save_session('first prompt')
+      write_project_rig
+      load(session.session_id)
+
+      assert_empty @permissions
+    end
+
     it 'sends a build-time notify as an update for the loaded session' do
       session = save_session('first prompt')
       FileUtils.mkdir_p(File.join(@home, '.riffer'))
@@ -515,9 +528,9 @@ describe Riffer::Rig::ACP do
 
     it 'relays a question of the loaded session to the client' do
       session = save_session('first prompt')
-      FileUtils.mkdir_p(File.join(@cwd, '.riffer'))
-      File.write(File.join(@cwd, '.riffer', 'rig.rb'), '')
       load(session.session_id)
+      write_project_rig
+      prompt(session.session_id, 'again')
 
       assert_equal [session.session_id], @permissions.map(&:session_id)
     end

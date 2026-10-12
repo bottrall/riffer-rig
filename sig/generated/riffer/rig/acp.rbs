@@ -81,8 +81,6 @@ class Riffer::Rig::ACP
   # @rbs return: (::ACP::Types::PromptResponse | ::ACP::RequestError)
   def prompt: (::ACP::Types::PromptRequest request) -> (::ACP::Types::PromptResponse | ::ACP::RequestError)
 
-  # The host takes the session id before the build, so a build-time notify
-  # still reaches the client as an update for this session.
   # @rbs request: ::ACP::Types::LoadSessionRequest
   # @rbs return: (::ACP::Types::LoadSessionResponse | ::ACP::RequestError)
   def load_session: (::ACP::Types::LoadSessionRequest request) -> (::ACP::Types::LoadSessionResponse | ::ACP::RequestError)

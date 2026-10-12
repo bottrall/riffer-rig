@@ -21,7 +21,7 @@ An editor registers the agent as the command `riffer acp`. In [Zed](https://zed.
 }
 ```
 
-Everything loads exactly as the REPL does — settings from both scopes, credentials, `rig.rb` files (once trusted), skills — because each session builds its Runtime through the [Loader](EMBEDDING.md#building-a-runtime-with-the-loader) at the `cwd` the client sends in `session/new`. The model comes from the same [resolution order](PROVIDERS.md#resolution-order) as everywhere else: `RIFFER_MODEL`, then settings. The host cannot ask, so a session whose model or credentials are missing is refused: `session/new` fails with the reason, and nothing is built.
+Everything loads exactly as the REPL does — settings from both scopes, credentials, `rig.rb` files (once trusted), skills — because each session builds its Runtime through the [Loader](EMBEDDING.md#building-a-runtime-with-the-loader) at the `cwd` the client sends in `session/new`. The model comes from the same [resolution order](PROVIDERS.md#resolution-order) as everywhere else: `RIFFER_MODEL`, then settings. The host cannot ask while a session builds, so a session whose model or credentials are missing is refused: `session/new` or `session/load` fails with the reason, and nothing is built.
 
 ## What the agent supports
 
@@ -60,7 +60,7 @@ end
 - Terminal delegation (`terminal/*`) and file delegation (`fs/*`) to the client are never requested. Elicitation is requested only for a [question the host relays](#relaying-questions-to-the-client).
 - Prompt blocks of other kinds than text and resource links are not advertised in `promptCapabilities`, so a compliant client does not send them.
 
-A project `rig.rb` loads in a new session only once it is trusted: `session/new` cannot [ask about it](#relaying-questions-to-the-client), so an untrusted file is skipped and nothing is stored. A `session/load` asks the client.
+A project `rig.rb` loads only once it is trusted: neither `session/new` nor `session/load` can [ask about it](#relaying-questions-to-the-client) while it builds the Runtime, so an untrusted file is skipped and nothing is stored. The session asks the client at its next [automatic reload](RELOADING.md#triggers), which a change to the file sets off.
 
 ## Relaying questions to the client
 
@@ -73,6 +73,6 @@ The host's `ask` and `confirm` reach the client, and each question blocks the tu
 
 A permission request has to name a tool call and a question has none, so each one carries a tool call of its own — a fresh `toolCallId`, `pending`, with the question as its `title`.
 
-Anything but a selected option or an accepted form — the client cancels, declines, answers with an error, or the connection closes — declines the question: `confirm` is `false` and `ask` is `nil`. A declined trust question is stored as a no, like any other ([Extensions](EXTENSIONS.md#the-rigrb-files)).
+Anything but a selected option or an accepted form — the client cancels, declines, answers with an error, or the connection closes — declines the question: `confirm` is `false` and `ask` is `nil`. A trust question the client declines is stored as a no, like any other ([Extensions](EXTENSIONS.md#the-rigrb-files)).
 
-A question can only be relayed once the client knows the session id. While `session/new` is building the Runtime it does not, so the host reports only `:notify` until the reply is sent and build-time questions are declined. `session/load` names its session up front, so the questions of its build — trusting a project `rig.rb` included — are relayed.
+A question is relayed only once the session is built. While `session/new` or `session/load` is building the Runtime the host reports only `:notify`, so the questions of the build — trusting a project `rig.rb` included — are declined without being sent, and no answer is stored. The client learns the id of a new session only from the `session/new` reply, and a question sent during a `session/load` would hold up the load it belongs to.

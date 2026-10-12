@@ -24,9 +24,8 @@ class Riffer::Rig::ACP::Host
     @buffered = []
   end
 
-  # A request to the client names its session, and the client learns the id
-  # of a new one only from the session/new reply, so nothing can be relayed
-  # while that session is still building.
+  # A request to the client names its session, so nothing can be relayed
+  # until the agent sets the id.
   # @rbs return: Set[Symbol]
   def capabilities
     @session_id ? CAPABILITIES : BUILDING_CAPABILITIES

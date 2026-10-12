@@ -145,13 +145,10 @@ class Riffer::Rig::ACP
     ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: e.message)
   end
 
-  # The host takes the session id before the build, so a build-time notify
-  # still reaches the client as an update for this session.
   # @rbs request: ::ACP::Types::LoadSessionRequest
   # @rbs return: (::ACP::Types::LoadSessionResponse | ::ACP::RequestError)
   def load_session(request)
     host = Riffer::Rig::ACP::Host.new(client: client)
-    host.session_id = request.session_id
     loader = Riffer::Rig::Loader.new(cwd: request.cwd, host: host, env: @env, home: @home)
     runtime = adopted(request.session_id) || loader.resume(
       request.session_id,
@@ -159,6 +156,10 @@ class Riffer::Rig::ACP
     )
     return ::ACP::RequestError.resource_not_found unless runtime
 
+    # A client need not answer a question while its own session/load is
+    # pending, and acp-sdk never times a request out, so the host takes the
+    # session id only once the build can no longer ask one.
+    host.session_id = request.session_id
     @lock.synchronize { @sessions[request.session_id] = runtime }
     loader.messages(request.session_id)
           .filter_map { |message| Riffer::Rig::ACP::Mapper.replay_of(message) }
