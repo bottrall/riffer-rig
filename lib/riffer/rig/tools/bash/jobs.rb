@@ -55,7 +55,7 @@ class Riffer::Rig::Tools::Bash::Jobs
       job = @jobs.fetch(id, nil)
       return unless job
 
-      size = File.size(job.output_path)
+      size = File.size?(job.output_path).to_i
       output = slice(job.output_path, READ_LIMIT_BYTES, job.offset)
       # Output past the read limit is dropped rather than queued, so a job writing
       # faster than it is read cannot build a backlog; the max covers a file
@@ -124,7 +124,7 @@ class Riffer::Rig::Tools::Bash::Jobs
       duration: job.elapsed(monotonic_now),
       output_path: path,
       # Scrubbed because the cut can split a multibyte character.
-      tail: slice(path, TAIL_BYTES, [File.size(path) - TAIL_BYTES, 0].max).scrub
+      tail: slice(path, TAIL_BYTES, [File.size?(path).to_i - TAIL_BYTES, 0].max).scrub
     )
   end
 
@@ -133,7 +133,13 @@ class Riffer::Rig::Tools::Bash::Jobs
   # @rbs offset: Integer
   # @rbs return: String
   def slice(path, limit, offset)
-    read = File.read(path, limit, offset) #: String?
+    read = begin
+      File.read(path, limit, offset)
+    rescue Errno::ENOENT
+      # A tmp cleaner or the job itself can remove the output file, even between
+      # the size and the read.
+      nil
+    end
     (read || +'').force_encoding(Encoding.default_external)
   end
 end
