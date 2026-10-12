@@ -34,7 +34,7 @@ The provider is one of `anthropic`, `openai`, `gemini`, `openrouter`, `azure_ope
 
 There is no built-in default. The model is the first of these that is set, highest first:
 
-1. the `model:` keyword on `Loader.runtime` (the `--model` flag);
+1. `model:` in the [`Loader::Options`](EMBEDDING.md#loader-options) given to `Loader.runtime` (the `--model` flag);
 2. the `RIFFER_MODEL` environment variable, e.g. `RIFFER_MODEL=openai/gpt-5 riffer`;
 3. `model` in the project settings, then in the home settings;
 4. onboarding: the Loader asks the host for a model string, listing the providers, and writes the answer to `~/.riffer/settings.json`. A host that cannot ask (the null host, so headless and embedded use) declines, and the Loader raises `Riffer::Rig::Loader::ConfigurationError` instead.
@@ -104,9 +104,9 @@ Keep a server with a secret header in `~/.riffer/settings.json` rather than a co
 { "extensions": { "disabled": ["mcp", "bash"] } }
 ```
 
-The lists in the two scopes add up, so a project can disable more but cannot re-enable what home disabled. A disabled extension is simply not passed to the Runtime; nothing it would register exists. An embedder calling `Loader.runtime` can also strip `skills: false` and `agents_md: false` for one Runtime.
+The lists in the two scopes add up, so a project can disable more but cannot re-enable what home disabled. A disabled extension is simply not passed to the Runtime; nothing it would register exists. An embedder calling `Loader.runtime` can also strip `skills` and `agents_md` for one Runtime, with `skills: false` and `agents_md: false` in its [`Loader::Options`](EMBEDDING.md#loader-options).
 
-`extensions.autoload` (default `false`) makes the Loader run `riffer/rig/extension` from every gem `Gem.find_files` finds, before the `rig.rb` files ([Gem extensions](EXTENSIONS.md#gem-extensions)). Set it in either scope; the project's value wins. The strip keyword `extensions: false` on `Loader.runtime` (the `--no-extensions` flag) skips both the autoload and the `rig.rb` files; the bundle still loads.
+`extensions.autoload` (default `false`) makes the Loader run `riffer/rig/extension` from every gem `Gem.find_files` finds, before the `rig.rb` files ([Gem extensions](EXTENSIONS.md#gem-extensions)). Set it in either scope; the project's value wins. `extensions: false` in the `Loader::Options` (the `--no-extensions` flag) skips both the autoload and the `rig.rb` files; the bundle still loads.
 
 ## `tools.native`
 

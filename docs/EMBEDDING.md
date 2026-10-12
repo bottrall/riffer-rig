@@ -12,11 +12,11 @@ runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: MyHost.new)
 
 In order, it:
 
-1. reads `~/.riffer/settings.json` then `<cwd>/.riffer/settings.json` and merges them, the project winning key by key ([Configuration](CONFIGURATION.md)), and selects the model: the `model:` keyword, then `RIFFER_MODEL`, then the settings, then onboarding;
+1. reads `~/.riffer/settings.json` then `<cwd>/.riffer/settings.json` and merges them, the project winning key by key ([Configuration](CONFIGURATION.md)), and selects the model: the `model:` [option](#loader-options), then `RIFFER_MODEL`, then the settings, then onboarding;
 2. resolves the model's provider credentials ([Providers](PROVIDERS.md#resolution-order)), assigns them to `Riffer.config` and keeps them for the Runtime's `credentials:`;
-3. takes the [bundled extensions](TOOLS.md), minus those named in `extensions.disabled` and the strip keywords;
+3. takes the [bundled extensions](TOOLS.md), minus those named in `extensions.disabled` and those the options strip;
 4. runs `riffer/rig/extension` from every gem when [`extensions.autoload`](CONFIGURATION.md#extensions) is set, then `~/.riffer/rig.rb` and, once [trusted](EXTENSIONS.md#the-rigrb-files), `<cwd>/.riffer/rig.rb`, and appends the extensions the loads record to the bundle ([Extensions](EXTENSIONS.md#the-rigrb-files));
-5. constructs the Runtime with the model, the credentials, the extensions, the merged settings, the `models` pricing table, the `reasoning` level as riffer `model_options`, and the keywords below.
+5. constructs the Runtime with the model, the credentials, the extensions, the merged settings, the `models` pricing table, the `reasoning` level as riffer `model_options`, and the options and keywords below.
 
 Whatever `store:` records the build: the [header](SESSIONS.md#what-an-entry-holds) lands on the first message, then one entry per message, per `/model` switch and per model skill activation; `store: nil`, or `"sessions": {"save": false}` in settings ([Configuration](CONFIGURATION.md)), writes nothing ([Sessions](SESSIONS.md)). A build that records also gets the [`/trace`](SESSIONS.md#tracing-the-last-turn) command, which replays the last turn from the same store.
 
@@ -24,20 +24,15 @@ Whatever `store:` records the build: the [header](SESSIONS.md#what-an-entry-hold
 | ------------- | ------------------------------------------------------------------------ | ------- |
 | `cwd:`        | the working directory; its `.riffer/settings.json` is the project scope  | required |
 | `host:`       | the [host](HOSTS.md) the Runtime gets, and the one onboarding and credential prompts ask | required |
-| `model:`      | `"provider/name"`, winning over `RIFFER_MODEL` and the settings           | `nil` |
-| `extensions: false` | skips the `rig.rb` files and the gem `riffer/rig/extension` autoload; the bundle still loads | `true` |
-| `skills: false` | leaves out the bundled [`skills`](SKILLS.md) extension                 | `true` |
-| `agents_md: false` | leaves out the bundled [`agents_md`](INSTRUCTIONS.md#agentsmd) extension | `true` |
-| `tools:`      | the Runtime's tool allowlist                                              | `nil` |
-| `max_steps:`  | the Runtime's step limit                                                  | `nil` |
+| `options:`    | a [`Riffer::Rig::Loader::Options`](#loader-options): the model, what to leave out, the tool allowlist and the step limit | `Riffer::Rig::Loader::Options.new` |
 | `reload: :manual` | drops the automatic reload check for this build ([Reloading](RELOADING.md#triggers)) | follows the `reload` setting |
 | `extra_extensions:` | extensions loaded with the bundle and kept through a [reload](#rebuilding-after-a-code-reload), after the bundle and the `rig.rb` files | `[]` |
 | `env:`        | a `Riffer::Rig::Env`, or what `Riffer::Rig::Env.load` returned            | `Riffer::Rig::Env.load` |
-| `home:`       | the directory holding `.riffer/settings.json` and `.riffer/auth.json`    | `Dir.home` |
+| `home:`       | the directory whose `.riffer/` holds `settings.json`, `auth.json`, `rig.rb`, `trust.json` and the default store's `sessions/` | `Dir.home` |
 | `riffer_config:` | the `Riffer::Config` that receives the credentials and pricing        | `Riffer.config` |
 | `store:`      | the [session store](SESSIONS.md#the-session-store) that records the build; `nil` opts one run out | `Stores::JSONL.new(home: home)` |
 
-`Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)` takes the same setup and builds with `runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:, reload:, extra_extensions:)`, for a host that keeps the Loader.
+`Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)` takes the same setup and builds with `runtime(options, reload:, extra_extensions:)` for a host that keeps the Loader.
 
 The host is asked only when its `capabilities` include `:ask`. With no model set anywhere, the Loader asks it for a model string, listing the providers, and writes the answer to `~/.riffer/settings.json`; a required credential that does not resolve is asked for the same way and stored ([Providers](PROVIDERS.md#rifferrigcredentials)). Anything the Loader cannot settle raises `Riffer::Rig::Loader::ConfigurationError` with a message fit to show the user: no model and a host that cannot ask (the null host), a model string without a known provider prefix, a bare `RIFFER_MODEL`, or a required credential still missing. A headless host should map it to exit status 2.
 
@@ -50,6 +45,24 @@ rescue Riffer::Rig::Loader::ConfigurationError => e
 end
 ```
 
+### Loader options
+
+`Riffer::Rig::Loader::Options` holds the per-build choices the `riffer` command-line flags make. It is a frozen value object with a reader for each keyword, and every keyword is optional:
+
+```ruby
+options = Riffer::Rig::Loader::Options.new(model: 'anthropic/claude-sonnet-4-6', skills: false)
+runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: MyHost.new, options: options)
+```
+
+| Keyword             | Meaning                                                                                      | Default |
+| ------------------- | -------------------------------------------------------------------------------------------- | ------- |
+| `model:`            | `"provider/name"`, winning over `RIFFER_MODEL` and the settings                              | `nil`   |
+| `extensions: false` | skips the `rig.rb` files and the gem `riffer/rig/extension` autoload; the bundle still loads | `true`  |
+| `skills: false`     | leaves out the bundled [`skills`](SKILLS.md) extension                                       | `true`  |
+| `agents_md: false`  | leaves out the bundled [`agents_md`](INSTRUCTIONS.md#agentsmd) extension                     | `true`  |
+| `tools:`            | the Runtime's tool allowlist                                                                 | `nil`   |
+| `max_steps:`        | the Runtime's step limit                                                                     | `nil`   |
+
 ## Constructing a Runtime
 
 ```ruby
@@ -60,7 +73,7 @@ runtime = Riffer::Rig::Runtime.new(
 )
 ```
 
-The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `model_options:`, `credentials:`, `pricing:`, `riffer_config:`, `mcp_registry:`, `snapshot:`. All except the model are optional. `credentials:` is stored and exposed (`runtime.credentials`); only `/model` and a [restore](#snapshots) read it so far. It takes the shape the [Loader](#building-a-runtime-with-the-loader) passes — each provider's resolved field values. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.resolve` finds a provider's values and `Riffer::Rig::Credentials.apply` assigns them (see [Providers](PROVIDERS.md)), or set them yourself with `Riffer.configure`.
+The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `model_options:`, `native_tools:`, `credentials:`, `env:`, `auth_path:`, `pricing:`, `riffer_config:`, `mcp_registry:`, `clock:`, `snapshot:`. All except the model are optional. `credentials:` is stored and exposed (`runtime.credentials`); only `/model` and a [restore](#snapshots) read it so far. It takes the shape the [Loader](#building-a-runtime-with-the-loader) passes — each provider's resolved field values. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.install` resolves a provider's values and assigns them (see [Providers](PROVIDERS.md#rifferrigcredentials)), or set them yourself with `Riffer.configure`.
 
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
@@ -74,13 +87,17 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `instructions:` | replaces the base prompt; sections and the environment block still apply    | `nil` (use the base)    |
 | `max_steps:`    | agent-loop step limit; `nil` runs the loop without a limit                  | `nil`                   |
 | `model_options:` | riffer `model_options` sent with every model call (`{ reasoning: 'high' }`, `{ cache_control: { type: :ephemeral } }`); `Riffer::Rig::Settings::ModelOptions.model_options(model, reasoning)` builds them from the settings | `{}` |
+| `native_tools:` | the [provider-native tool](TOOLS.md#provider-native-tools) switches, as the `tools.native` setting holds them (`{ web_search: true }`) | `{}` |
 | `credentials:`  | provider → resolved field values (`{ anthropic: { api_key: "…" } }`), stored as given and exposed; read by `/model` and a restore | `{}` |
+| `env:`          | the `Riffer::Rig::Env` an MCP server's [`auth` fields](MCP.md#secret-headers) resolve from | `Riffer::Rig::Env.new` |
+| `auth_path:`    | the `auth.json` those fields are read from and stored in | `~/.riffer/auth.json` |
 | `pricing:`      | model → `Riffer::Rig::Settings::Pricing` entries (USD per million tokens), registered into riffer's pricing when the Runtime is built; see [tally](#token-tally-and-cost) | `{}` |
 | `riffer_config:` | the `Riffer::Config` whose `pricing` receives the `pricing:` entries      | `Riffer.config`         |
 | `mcp_registry:` | where declared [MCP servers](MCP.md) are registered and unregistered: an object with riffer's `register(name:, endpoint:, tags:, discovery_headers:)` and `unregister(name)` | `Riffer::Mcp` |
+| `clock:`        | a callable returning seconds as a `Float`, which stamps the [tool call events](#tool-call-events) | the process's monotonic clock |
 | `snapshot:`     | a hash from `to_h` to restore; see [Snapshots](#snapshots)                 | `nil`                   |
 
-`runtime.settings` is the `settings:` hash with each extension's [declared defaults](EXTENSIONS.md#the-rigsetting-seam) filled into its namespace; core reads it only to hand each [command](#commands) its extension's namespace. `runtime.declared_settings` is the table of what extensions declared, extension name → key → default, for a host to render.
+`runtime.settings` is the `settings:` hash with each extension's [declared defaults](EXTENSIONS.md#the-rigsetting-seam) filled into its namespace; core reads it only to hand each [command](#commands) its extension's namespace. `runtime.declared_settings` is the table of what extensions declared — extension name → key → default, names and keys as Symbols — for a host to render.
 
 Two Runtimes in one process share nothing but the process-wide extension registry, riffer's provider repository and riffer's config, which holds the process's one set of provider credentials.
 
@@ -218,7 +235,7 @@ runtime.model # => "anthropic/claude-sonnet-4-6"
 runtime.model = 'openai/gpt-5'
 ```
 
-`model` is also a core command, listed in `commands` first, ahead of the [`skill:<name>`](SKILLS.md#skillname) commands and every extension's: `run_command('model', 'openai/gpt-5')` validates before it assigns. A bare name or an unknown provider gets a `command_output` listing the providers; a provider whose required fields are missing from the Runtime's `credentials:` is refused through `notify` at level `:error`, as is `--save`, which is not available yet. With no argument it reports the current model.
+`model` is also a core command, listed in `commands` after [`auth`](PROVIDERS.md#auth) and ahead of the [`skill:<name>`](SKILLS.md#skillname) commands and every extension's: `run_command('model', 'openai/gpt-5')` validates before it assigns. A bare name or an unknown provider gets a `command_output` listing the providers; the provider is set up first, its SDK gem ensured and then any required field missing from the Runtime's `credentials:` resolved through [`Credentials.install`](PROVIDERS.md#rifferrigcredentials), and the switch is refused through `notify` at level `:error` when the gem cannot be loaded or a field is still missing. `--save` also writes the model to `~/.riffer/settings.json`, and on its own saves the current one. With no argument it reports the current model.
 
 ## Rebuilding after a code reload
 

@@ -132,29 +132,27 @@ Model prefix `amazon_bedrock/`. Bedrock authenticates in one of two ways: the AW
 
 The module behind all of the above, for a host or an embedder:
 
-| Method                       | Does                                                                          |
-| ---------------------------- | ----------------------------------------------------------------------------- |
-| `resolve(identifier, host:)` | resolves every field in the order above and returns a `Resolution`            |
-| `apply(identifier, values)`  | assigns each value to the `Riffer.config.<provider>` member its field names   |
-| `store(identifier, values)`  | writes secret fields to `auth.json` and plain fields to the `providers` block |
-| `remove(identifier)`         | deletes the provider's `auth.json` entry and its `providers` block            |
-| `status(identifier)`         | `:env`, `:stored`, `:chain` or `:missing`                                     |
+| Method                       | Does                                                                                                                       |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `install(identifier, host:)` | resolves every field in the order above, `apply`s the values once no required field is missing, and returns a `Resolution` |
+| `apply(identifier, values)`  | assigns each value to the `Riffer.config.<provider>` member its field names                                                |
+| `store(identifier, values)`  | writes secret fields to `auth.json` and plain fields to the `providers` block                                              |
+| `remove(identifier)`         | deletes the provider's `auth.json` entry and its `providers` block                                                         |
+| `status(identifier)`         | `:env`, `:stored`, `:chain` or `:missing`                                                                                  |
 
 ```ruby
-resolution = Riffer::Rig::Credentials.resolve(:azure_openai, host: host)
+resolution = Riffer::Rig::Credentials.install(:azure_openai, host: host)
 resolution.values  # => { endpoint: "https://…", api_key: "…" }
 resolution.missing # => []
-
-Riffer::Rig::Credentials.apply(:azure_openai, resolution.values)
 ```
 
-`resolve` asks through the host's `ask` when its `capabilities` include `:ask` (see [Hosts](HOSTS.md)) and stores what the host answers. A host that declines, as `Riffer::Rig::Hosts::Null` does, leaves `missing` listing the required fields that did not resolve, next to the values that did. A `!command` runs on every `resolve`, so resolve once and keep the result.
+`install` asks through the host's `ask` when its `capabilities` include `:ask` (see [Hosts](HOSTS.md)) and stores what the host answers. A host that declines, as `Riffer::Rig::Hosts::Null` does, leaves `missing` listing the required fields that did not resolve, next to the values that did, and nothing is assigned. A `!command` runs on every `install`, so install once and keep the result.
 
-`apply` touches only the members it was given a value for, and does nothing for a provider `Riffer.config` has no section for.
+`apply` is the assignment `install` makes, for values that came from elsewhere. It touches only the members it was given a value for, and for a provider `Riffer.config` has no section for it assigns nothing, only recording the values for [`Riffer::Rig.credentials`](CUSTOM_PROVIDERS.md#reading-the-credentials).
 
 `status` reports where a provider's secret comes from: `:env` when one of its env vars is set, `:stored` when `auth.json` has it, `:chain` when neither holds and the setup entry offers the SDK's own credential chain, otherwise `:missing`. It reads no plain fields and runs no command.
 
-`resolve`, `store` and `remove` take `auth_path:` and `settings_path:` to point at other files, and `status` takes `auth_path:`. `resolve` and `status` take `env:`, a `Riffer::Rig::Env`; `resolve`, `store` and `status` take `setup:` in place of the `Riffer::Rig::ProviderSetup.for(identifier)` lookup; `apply` takes `config:` in place of `Riffer.config`.
+`install`, `store` and `remove` take `auth_path:` and `settings_path:` to point at other files, and `status` takes `auth_path:`. `install` and `status` take `env:`, a `Riffer::Rig::Env`; `install`, `store` and `status` take `setup:` in place of the `Riffer::Rig::ProviderSetup.for(identifier)` lookup; `install` and `apply` take `config:` in place of `Riffer.config`, and `install` with `config: nil` assigns nothing. `install` also takes `known:`, the values the caller already holds for the provider: a required field named there is not reported as `missing`.
 
 A `Riffer::Rig::Env` is a frozen snapshot of the process environment, and `riffer-rig` reads the process environment nowhere else. `Riffer::Rig::Env.new` snapshots the real one; `Riffer::Rig::Env.new('ANTHROPIC_API_KEY' => '…')` builds one from a hash, for an embedder or a test. `env.model` is `RIFFER_MODEL`. `Riffer::Rig::Env.load` snapshots the same way but checks it: when `RIFFER_MODEL` is not a `provider/name` string it returns a `Riffer::Rig::Env::Invalid`, whose `message` names the variable and lists the providers, instead of an `Env`. `Loader.runtime` uses `Env.load` by default and raises its message as a `Riffer::Rig::Loader::ConfigurationError`.
 
@@ -176,7 +174,7 @@ A `Riffer::Rig::Env` is a frozen snapshot of the process environment, and `riffe
 | `required`     | only required fields are asked for                                                        |
 | `fallback`     | a callable tried after the environment and the files, before asking, or `nil`             |
 
-`Credentials.resolve`, `store` and `status` take a setup entry as `setup:`. Build one with the same keywords as the readers; `url:`, `chain:` and `fallback:` are optional:
+`Credentials.install`, `store` and `status` take a setup entry as `setup:`. Build one with the same keywords as the readers; `url:`, `chain:` and `fallback:` are optional:
 
 ```ruby
 setup = Riffer::Rig::ProviderSetup.new(
@@ -189,5 +187,5 @@ setup = Riffer::Rig::ProviderSetup.new(
   ]
 )
 
-Riffer::Rig::Credentials.resolve(:acme, host: host, setup: setup)
+Riffer::Rig::Credentials.install(:acme, host: host, setup: setup)
 ```
