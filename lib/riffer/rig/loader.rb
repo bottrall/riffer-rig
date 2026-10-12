@@ -33,7 +33,7 @@ class Riffer::Rig::Loader
     env: Riffer::Rig::Env.load,
     home: Dir.home,
     riffer_config: Riffer.config,
-    store: Riffer::Rig::Stores::JSONL.new,
+    store: Riffer::Rig::Stores::JSONL.new(home: home),
     options: Options.new,
     reload: nil,
     extra_extensions: [],
@@ -52,10 +52,10 @@ class Riffer::Rig::Loader
   def initialize(
     cwd:,
     host:,
-    store: Riffer::Rig::Stores::JSONL.new,
     env: Riffer::Rig::Env.load,
     home: Dir.home,
-    riffer_config: Riffer.config
+    riffer_config: Riffer.config,
+    store: Riffer::Rig::Stores::JSONL.new(home: home)
   )
     raise ConfigurationError, env.message if env.is_a?(Riffer::Rig::Env::Invalid)
 
@@ -137,15 +137,16 @@ class Riffer::Rig::Loader
   # credentials, extensions and tools are today's.
   # @rbs id: String
   # @rbs options: Riffer::Rig::Loader::Options
+  # @rbs extra_extensions: Array[Riffer::Rig::Extension]
   # @rbs return: Riffer::Rig::Runtime?
-  def resume(id, options = Options.new)
+  def resume(id, options = Options.new, extra_extensions: [])
     store = @store
     return nil unless store
 
     entries = store.read(id)
     return nil if entries.empty?
 
-    runtime(options, snapshot: Riffer::Rig::Stores::Entries.snapshot(entries, id))
+    runtime(options, extra_extensions: extra_extensions, snapshot: Riffer::Rig::Stores::Entries.snapshot(entries, id))
   end
 
   # A host tier may not name the store, so the messages it replays come from

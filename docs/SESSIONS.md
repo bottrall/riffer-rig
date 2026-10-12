@@ -4,7 +4,7 @@ A session is one conversation with a `Riffer::Rig::Runtime`: its id, its history
 
 ## The session store
 
-The Loader appends to a store: any object implementing the four `Riffer::Rig::Stores::_Store` methods — `append(id, entry)`, `read(id)`, `list(cwd: nil)` and `delete(id)`. Entries cross the store as typed POROs — `Stores::Header`, `Stores::MessageEntry`, `Stores::ModelEntry` and `Stores::SkillEntry` — and each store serialises them itself; `Hash` remains only where it is already the documented currency, the JSON lines on disk and the riffer message payloads. The store defaults to `Stores::JSONL` and is taken per build with `store:`; a Rails host implements the four over its own tables and passes its own. Hosts never see the store — they only choose which session to drive.
+The Loader appends to a store: any object implementing the four `Riffer::Rig::Stores::_Store` methods — `append(id, entry)`, `read(id)`, `list(cwd: nil)` and `delete(id)`. Entries cross the store as typed POROs — `Stores::Header`, `Stores::MessageEntry`, `Stores::ModelEntry` and `Stores::SkillEntry` — and each store serialises them itself; `Hash` remains only where it is already the documented currency, the JSON lines on disk and the riffer message payloads. The store defaults to a `Stores::JSONL` under the Loader's `home:` and is taken per build with `store:`; a Rails host implements the four over its own tables and passes its own. Hosts never see the store — they only choose which session to drive.
 
 ## Where sessions live
 
@@ -34,7 +34,7 @@ The Loader picks the session to drive; hosts never see the store:
 | Method           | Picks                                                                          |
 | ---------------- | ------------------------------------------------------------------------------ |
 | `continue`       | the most recently updated session whose header cwd matches the build's, or nil |
-| `resume(id)`     | the session with that id, or nil when the store has none                        |
+| `resume(id)`     | the session with that id, or nil when the store has none; `extra_extensions:` loads into its build as it does for [`runtime`](EMBEDDING.md#building-a-runtime-with-the-loader) |
 | `list(all: false)` | the header entries, the build's cwd only unless `all: true` escapes the scope |
 | `delete(id)`     | removes the session; an unknown id is a no-op                                   |
 

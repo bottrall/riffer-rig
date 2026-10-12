@@ -21,6 +21,8 @@ class Riffer::Rig::ACP
 
   @build: ^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime
 
+  @cwd: String
+
   @home: String
 
   @env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
@@ -33,10 +35,11 @@ class Riffer::Rig::ACP
   # @rbs output: IO
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
+  # @rbs cwd: String
   # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
   # @rbs adopt: (^(String) -> Riffer::Rig::Runtime?)?
   # @rbs return: Riffer::Rig::ACP
-  def self.for: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?, ?adopt: (^(String) -> Riffer::Rig::Runtime?)?) -> Riffer::Rig::ACP
+  def self.for: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, cwd: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?, ?adopt: (^(String) -> Riffer::Rig::Runtime?)?) -> Riffer::Rig::ACP
 
   # Builds the Runtime a session runs on: the client's MCP servers flow
   # through the rig.mcp seam as a synthetic extension, so a reload rebuild
@@ -51,17 +54,18 @@ class Riffer::Rig::ACP
   def self.build_runtime: (String cwd, Riffer::Rig::Hosts::_Host host, Hash[String, Riffer::Rig::Mcp::Declaration] servers, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String) -> Riffer::Rig::Runtime
 
   # @rbs servers: Hash[String, Riffer::Rig::Mcp::Declaration]
-  # @rbs return: Riffer::Rig::Extension?
-  def self.session_extension: (Hash[String, Riffer::Rig::Mcp::Declaration] servers) -> Riffer::Rig::Extension?
+  # @rbs return: Array[Riffer::Rig::Extension]
+  def self.session_extensions: (Hash[String, Riffer::Rig::Mcp::Declaration] servers) -> Array[Riffer::Rig::Extension]
 
   # @rbs input: IO
   # @rbs output: IO
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
+  # @rbs cwd: String
   # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
   # @rbs adopt: (^(String) -> Riffer::Rig::Runtime?)?
   # @rbs return: void
-  def initialize: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?, ?adopt: (^(String) -> Riffer::Rig::Runtime?)?) -> void
+  def initialize: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, cwd: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?, ?adopt: (^(String) -> Riffer::Rig::Runtime?)?) -> void
 
   # Serves the connection until the client closes stdin; then the reader
   # thread ends and run returns.

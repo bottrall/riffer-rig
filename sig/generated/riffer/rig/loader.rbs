@@ -48,7 +48,7 @@ class Riffer::Rig::Loader
   # @rbs riffer_config: Riffer::Config
   # @rbs store: Riffer::Rig::Stores::_Store | nil
   # @rbs return: void
-  def initialize: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?store: Riffer::Rig::Stores::_Store | nil, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config) -> void
+  def initialize: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?store: Riffer::Rig::Stores::_Store | nil) -> void
 
   # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)
@@ -65,8 +65,9 @@ class Riffer::Rig::Loader
   # credentials, extensions and tools are today's.
   # @rbs id: String
   # @rbs options: Riffer::Rig::Loader::Options
+  # @rbs extra_extensions: Array[Riffer::Rig::Extension]
   # @rbs return: Riffer::Rig::Runtime?
-  def resume: (String id, ?Riffer::Rig::Loader::Options options) -> Riffer::Rig::Runtime?
+  def resume: (String id, ?Riffer::Rig::Loader::Options options, ?extra_extensions: Array[Riffer::Rig::Extension]) -> Riffer::Rig::Runtime?
 
   # A host tier may not name the store, so the messages it replays come from
   # here, in the order they were recorded.

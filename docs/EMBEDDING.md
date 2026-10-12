@@ -35,7 +35,7 @@ Whatever `store:` records the build: the [header](SESSIONS.md#what-an-entry-hold
 | `env:`        | a `Riffer::Rig::Env`, or what `Riffer::Rig::Env.load` returned            | `Riffer::Rig::Env.load` |
 | `home:`       | the directory holding `.riffer/settings.json` and `.riffer/auth.json`    | `Dir.home` |
 | `riffer_config:` | the `Riffer::Config` that receives the credentials and pricing        | `Riffer.config` |
-| `store:`      | the [session store](SESSIONS.md#the-session-store) that records the build; `nil` opts one run out | `Stores::JSONL.new` |
+| `store:`      | the [session store](SESSIONS.md#the-session-store) that records the build; `nil` opts one run out | `Stores::JSONL.new(home: home)` |
 
 `Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)` takes the same setup and builds with `runtime(model:, extensions:, skills:, agents_md:, tools:, max_steps:, reload:, extra_extensions:)`, for a host that keeps the Loader.
 
