@@ -1,0 +1,38 @@
+# Generated from lib/riffer/rig/runtime/snapshot.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::Snapshot
+  # @dynamic id, messages, model, skills
+  attr_reader id: String
+
+  attr_reader messages: Array[Riffer::Messages::Base]
+
+  attr_reader model: String?
+
+  attr_reader skills: Array[String]
+
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs return: Riffer::Rig::Runtime::Snapshot
+  def self.from_h: (Hash[Symbol, untyped] hash) -> Riffer::Rig::Runtime::Snapshot
+
+  # @rbs id: String
+  # @rbs messages: Array[Riffer::Messages::Base]
+  # @rbs model: String?
+  # @rbs skills: Array[String]
+  # @rbs return: void
+  def initialize: (id: String, messages: Array[Riffer::Messages::Base], model: String?, skills: Array[String]) -> void
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+
+  # @rbs return: Riffer::Agent::Session
+  def session: () -> Riffer::Agent::Session
+
+  # @rbs return: Riffer::Providers::TokenUsage?
+  def usage: () -> Riffer::Providers::TokenUsage?
+
+  # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs fallback: String
+  # @rbs return: String?
+  def restorable_model: (Hash[Symbol, Hash[Symbol, String]] credentials, Riffer::Rig::Hosts::_Host host, String fallback) -> String?
+end

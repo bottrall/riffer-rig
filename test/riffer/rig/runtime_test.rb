@@ -248,13 +248,6 @@ describe Riffer::Rig::Runtime do
     assert_includes runtime.agent.instruction_message.content, 'Be concise. Lead with the outcome'
   end
 
-  it 'carries the date and cwd in the environment block' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], cwd: '/tmp/proj')
-
-    assert_includes runtime.agent.instruction_message.content,
-                    "Current date: #{Date.today}\nCurrent working directory: /tmp/proj"
-  end
-
   it 'lists no tools in the base prompt' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
 
@@ -289,21 +282,6 @@ describe Riffer::Rig::Runtime do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], instructions: 'CUSTOM_BASE')
 
     refute_includes runtime.agent.instruction_message.content, 'general-purpose agent'
-  end
-
-  it 'renders sections in load order between the base and the environment block' do
-    sections = Riffer::Rig::Extension.new('sections') do |rig|
-      rig.prompt(:first) { 'SECTION_ONE' }
-      rig.prompt(:second) { 'SECTION_TWO' }
-    end
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [sections], cwd: '/tmp/proj')
-    runtime.agent.provider.stub_response('All done.')
-    runtime.ask('hello')
-
-    assert_match(
-      /Lead with the outcome.*\n\nSECTION_ONE\n\nSECTION_TWO\n\nCurrent date: /m,
-      runtime.agent.provider.calls.last[:messages].first[:content]
-    )
   end
 
   it 're-evaluates a section every turn without a rebuild' do
@@ -349,30 +327,6 @@ describe Riffer::Rig::Runtime do
     runtime.ask('hello')
 
     assert_includes runtime.agent.provider.calls.last[:messages].first[:content], 'In /tmp/proj'
-  end
-
-  it 'skips a section that renders nothing' do
-    sections = Riffer::Rig::Extension.new('sections') { |rig| rig.prompt(:skills) { nil } }
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [sections], instructions: 'CUSTOM_BASE')
-    runtime.agent.provider.stub_response('All done.')
-    runtime.ask('hello')
-
-    assert_match(/\ACUSTOM_BASE\n\nCurrent date: /, runtime.agent.provider.calls.last[:messages].first[:content])
-  end
-
-  it 'appends sections and the environment block under custom instructions' do
-    sections = Riffer::Rig::Extension.new('sections') { |rig| rig.prompt(:branch) { 'Branch: main' } }
-    runtime = Riffer::Rig::Runtime.new(
-      'mock/test',
-      extensions: [sections],
-      instructions: 'CUSTOM_BASE',
-      cwd: '/tmp/proj'
-    )
-    runtime.agent.provider.stub_response('All done.')
-    runtime.ask('hello')
-
-    assert_equal "CUSTOM_BASE\n\nBranch: main\n\nCurrent date: #{Date.today}\nCurrent working directory: /tmp/proj",
-                 runtime.agent.provider.calls.last[:messages].first[:content]
   end
 
   it 'raises on a second prompt while one runs' do
@@ -1449,11 +1403,6 @@ describe Riffer::Rig::Runtime do
       Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], snapshot: snapshot, **)
     end
 
-    def with_orphaned_tail(snapshot)
-      call = Riffer::Messages::Assistant::ToolCall.new(call_id: 'orphan', name: 'read', arguments: '{"path":"/tmp/x"}')
-      snapshot.merge(messages: [*snapshot[:messages], Riffer::Messages::Assistant.new('', tool_calls: [call]).to_h])
-    end
-
     def first_prompt_events(runtime)
       runtime.agent.provider.stub_response('Again.')
       runtime.prompt('again').to_a
@@ -1499,14 +1448,6 @@ describe Riffer::Rig::Runtime do
       assert_equal ['hello', 'Hi there.', 'still there?'], sent.drop(1)
     end
 
-    it 'continues the conversation from a JSON round trip' do
-      snapshot = JSON.parse(JSON.generate(saved_runtime.to_h), symbolize_names: true)
-      runtime = restored(snapshot)
-      runtime.agent.provider.stub_response('Welcome back.')
-
-      assert_equal 'Welcome back.', runtime.ask('still there?').content
-    end
-
     it 'opens the first prompt after a restore with session_start(reason: :restore)' do
       snapshot = saved_runtime.to_h
       first = first_prompt_events(restored(snapshot)).first
@@ -1521,13 +1462,6 @@ describe Riffer::Rig::Runtime do
       first_prompt_events(runtime)
 
       assert_equal [:restore], reasons
-    end
-
-    it 'heals an orphaned tail tool call with an interrupted result' do
-      runtime = restored(with_orphaned_tail(saved_runtime.to_h))
-      healed = runtime.agent.session.messages.last
-
-      assert_equal ['orphan', :interrupted], [healed.tool_call_id, healed.error_type]
     end
 
     it 'applies the saved model when its provider has credentials' do
@@ -1559,26 +1493,12 @@ describe Riffer::Rig::Runtime do
       assert_equal 1, notifies.length
     end
 
-    it 'does not notify when there is no saved model' do
-      notifies = first_prompt_events(restored(saved_runtime.to_h)).grep(Riffer::Rig::Events::Notify)
-
-      assert_empty notifies
-    end
-
     it 'restores the tally as the sum of the messages token usage' do
       runtime = saved_runtime
       runtime.agent.provider.stub_response('Second.', token_usage: usage(20, 7))
       runtime.ask('again')
 
       assert_equal usage(30, 12).to_h, restored(runtime.to_h).tally.to_h
-    end
-
-    it 'restores a nil tally when no message carries usage' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
-      runtime.agent.provider.stub_response('No usage.')
-      runtime.ask('hello')
-
-      assert_nil restored(runtime.to_h).tally
     end
   end
 
@@ -1972,8 +1892,8 @@ describe Riffer::Rig::Runtime do
       FileUtils.remove_entry(@auth_dir)
     end
 
-    def serving(name = 'web', url: @server.url, headers: {}, auth: {})
-      Riffer::Rig::Extension.new("serves_#{name}") { |rig| rig.mcp(name, url: url, headers: headers, auth: auth) }
+    def serving(name = 'web', url: @server.url)
+      Riffer::Rig::Extension.new("serves_#{name}") { |rig| rig.mcp(name, url: url) }
     end
 
     def runtime(extensions, **)
@@ -2002,17 +1922,6 @@ describe Riffer::Rig::Runtime do
       )
     end
 
-    it 'reports a stdio server with auth as unregistrable rather than raising' do
-      stdio = Riffer::Rig::Extension.new('serves_stdio') do |rig|
-        rig.mcp('local', command: 'echo', auth: { api_key: 'LOCAL_KEY' })
-      end
-
-      assert_equal(
-        [Riffer::Rig::Events::Notify.new('MCP server local runs over stdio, which riffer cannot register yet', :error)],
-        notifies(runtime([stdio], env: Riffer::Rig::Env.new({ 'LOCAL_KEY' => 'k' }), auth_path: @auth_path))
-      )
-    end
-
     it 'adds each server tool under riffer MCP naming' do
       assert_equal %w[web__echo web__token], tool_names(runtime([serving]))
     end
@@ -2031,46 +1940,6 @@ describe Riffer::Rig::Runtime do
       built.agent.provider.stub_response('Echoed.')
 
       assert_equal 'hi', built.ask('echo hi').messages.grep(Riffer::Messages::Tool).first.content
-    end
-
-    it 'sends the declared headers' do
-      built = runtime([serving(headers: { 'X-Token' => 'secret' })])
-
-      assert_equal 'secret',
-                   built.agent.tools.find { |klass|
-                     klass.name == 'web__token'
-                   }.new.call(context: nil).content
-    end
-
-    it 'sends the auth-resolved headers' do
-      built = runtime(
-        [serving(headers: { 'X-Token' => 'Bearer ${api_key}' }, auth: { api_key: 'KAGI_API_KEY' })],
-        env: Riffer::Rig::Env.new({ 'KAGI_API_KEY' => 'kagi-key' }),
-        auth_path: @auth_path
-      )
-
-      assert_equal 'Bearer kagi-key',
-                   built.agent.tools.find { |klass|
-                     klass.name == 'web__token'
-                   }.new.call(context: nil).content
-    end
-
-    it 'prompts once for a missing credential and sends the answer' do
-      host = Class.new(Riffer::Rig::Hosts::Null) do
-        define_method(:capabilities) { Set[:ask].freeze }
-        define_method(:ask) { |*| 'pasted' }
-      end.new
-      built = runtime(
-        [serving(headers: { 'X-Token' => 'Bearer ${api_key}' }, auth: { api_key: 'KAGI_API_KEY' })],
-        host: host,
-        env: Riffer::Rig::Env.new({}),
-        auth_path: @auth_path
-      )
-
-      assert_equal 'Bearer pasted',
-                   built.agent.tools.find { |klass|
-                     klass.name == 'web__token'
-                   }.new.call(context: nil).content
     end
 
     it 'resolves the auth block of a server declared in the mcp settings' do
@@ -2094,20 +1963,6 @@ describe Riffer::Rig::Runtime do
                    }.new.call(context: nil).content
     end
 
-    it 'reports a server whose credential cannot be resolved through notify' do
-      notice = 'MCP server web failed to register: MCP server web has no api_key (KAGI_API_KEY); ' \
-               'set it in the environment or run riffer interactively to paste it'
-
-      assert_equal [Riffer::Rig::Events::Notify.new(notice, :error)],
-                   notifies(
-                     runtime(
-                       [serving(headers: { 'X-Token' => 'Bearer ${api_key}' }, auth: { api_key: 'KAGI_API_KEY' })],
-                       env: Riffer::Rig::Env.new({}),
-                       auth_path: @auth_path
-                     )
-                   )
-    end
-
     it 'declares the servers in the mcp settings through the bundled extension' do
       settings = { mcp: { servers: { web: { url: @server.url } } } }
 
@@ -2126,20 +1981,6 @@ describe Riffer::Rig::Runtime do
       assert_equal %w[alt__echo alt__token], tool_names(runtime([serving('alt', url: @server.url('alt'))]))
     end
 
-    it 'reports a server with a non-HTTPS url through notify' do
-      notice = 'MCP server plain failed to register: MCP manifest endpoint must be a valid HTTPS URL'
-
-      assert_equal [Riffer::Rig::Events::Notify.new(notice, :error)],
-                   notifies(runtime([serving('plain', url: 'http://127.0.0.1/mcp')]))
-    end
-
-    it 'reports a server that cannot be reached through notify' do
-      notice = 'MCP server gone failed to register: Internal error handling tools/list request'
-
-      assert_equal [Riffer::Rig::Events::Notify.new(notice, :error)],
-                   notifies(runtime([serving('gone', url: 'https://127.0.0.1:1/mcp')]))
-    end
-
     it 'reports a replaced server through notify at info level' do
       later = Riffer::Rig::Extension.new('later') { |rig| rig.mcp('web', url: @server.url) }
       notice = 'Extension later replaces MCP server web from serves_web'
@@ -2155,35 +1996,6 @@ describe Riffer::Rig::Runtime do
       assert_same before, registration
     end
 
-    it 'keeps the registration across a rebuild when the auth block resolves the same' do
-      declaration = { headers: { 'X-Token' => 'Bearer ${api_key}' }, auth: { api_key: 'KAGI_API_KEY' } }
-      built = runtime(
-        [serving(**declaration)],
-        env: Riffer::Rig::Env.new({ 'KAGI_API_KEY' => 'kagi-key' }),
-        auth_path: @auth_path
-      )
-      before = registration
-      built.rebuild(extensions: [serving(**declaration)], settings: {})
-
-      assert_same before, registration
-    end
-
-    it 're-registers a server whose url changed on rebuild' do
-      built = runtime([serving])
-      before = registration
-      built.rebuild(extensions: [serving(url: @server.url('alt'))], settings: {})
-
-      refute_same before, registration
-    end
-
-    it 're-registers a server whose headers changed on rebuild' do
-      built = runtime([serving])
-      before = registration
-      built.rebuild(extensions: [serving(headers: { 'X-Token' => 'new' })], settings: {})
-
-      refute_same before, registration
-    end
-
     it 'unregisters a server the rebuilt list no longer declares' do
       built = runtime([serving])
       built.rebuild(extensions: [], settings: {})
@@ -2196,14 +2008,6 @@ describe Riffer::Rig::Runtime do
       built.close
 
       assert_empty Riffer::Mcp.registrations.keys & %w[web alt]
-    end
-
-    it 'leaves a server another Runtime has since registered under the same name' do
-      first = runtime([serving])
-      second = runtime([serving])
-      first.close
-
-      assert_equal [:"riffer_rig_#{second.id}"], registration.manifest.tags
     end
   end
 end

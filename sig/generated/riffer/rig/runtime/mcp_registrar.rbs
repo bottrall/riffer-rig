@@ -1,0 +1,46 @@
+# Generated from lib/riffer/rig/runtime/mcp_registrar.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::McpRegistrar
+  @registry: Riffer::Rig::Mcp::_Registry
+
+  @host: Riffer::Rig::Hosts::_Host
+
+  @env: Riffer::Rig::Env
+
+  @auth_path: String
+
+  @servers: Hash[String, Riffer::Rig::Mcp::Server]
+
+  # @dynamic tag
+  attr_reader tag: Symbol
+
+  # @rbs runtime_id: String
+  # @rbs registry: Riffer::Rig::Mcp::_Registry
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs return: void
+  def initialize: (String runtime_id, registry: Riffer::Rig::Mcp::_Registry, host: Riffer::Rig::Hosts::_Host, env: Riffer::Rig::Env, auth_path: String) -> void
+
+  # @rbs declarations: Hash[String, Riffer::Rig::Mcp::Declaration]
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::Server]
+  def register: (Hash[String, Riffer::Rig::Mcp::Declaration] declarations) -> Hash[String, Riffer::Rig::Mcp::Server]
+
+  # @rbs servers: Hash[String, Riffer::Rig::Mcp::Server]
+  # @rbs return: void
+  def retain: (Hash[String, Riffer::Rig::Mcp::Server] servers) -> void
+
+  private
+
+  # The stored declaration is the resolved one, so a later register compares
+  # resolved headers and re-registers when the credentials changed.
+  # @rbs name: String
+  # @rbs declaration: Riffer::Rig::Mcp::Declaration
+  # @rbs return: Riffer::Rig::Mcp::Declaration?
+  def resolve: (String name, Riffer::Rig::Mcp::Declaration declaration) -> Riffer::Rig::Mcp::Declaration?
+
+  # @rbs name: String
+  # @rbs declaration: Riffer::Rig::Mcp::Declaration
+  # @rbs return: Riffer::Rig::Mcp::Server?
+  def register_server: (String name, Riffer::Rig::Mcp::Declaration declaration) -> Riffer::Rig::Mcp::Server?
+end
