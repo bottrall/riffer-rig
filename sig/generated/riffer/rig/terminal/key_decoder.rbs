@@ -5,6 +5,10 @@ class Riffer::Rig::Terminal::KeyDecoder
 
   CSI_KEYS: Hash[String, Symbol]
 
+  MODIFIED_CSI_KEYS: Hash[String, Symbol]
+
+  META_KEYS: Hash[String, Symbol]
+
   TILDE_KEYS: Hash[String, Symbol]
 
   PASTE_START: String

@@ -8,6 +8,10 @@ class Riffer::Rig::Terminal::LineEditor
 
   ELIDE_FROM: Integer
 
+  WORD: Regexp
+
+  @kill: String
+
   @pastes: Array[String]
 
   @draft: String
@@ -27,8 +31,9 @@ class Riffer::Rig::Terminal::LineEditor
   # @rbs recall: Integer
   # @rbs draft: String
   # @rbs pastes: Array[String]
+  # @rbs kill: String
   # @rbs return: void
-  def initialize: (?before: String, ?after: String, ?history: Array[String], ?recall: Integer, ?draft: String, ?pastes: Array[String]) -> void
+  def initialize: (?before: String, ?after: String, ?history: Array[String], ?recall: Integer, ?draft: String, ?pastes: Array[String], ?kill: String) -> void
 
   # @rbs return: String
   def text: () -> String
@@ -53,8 +58,9 @@ class Riffer::Rig::Terminal::LineEditor
   # @rbs recall: Integer
   # @rbs draft: String
   # @rbs pastes: Array[String]
+  # @rbs kill: String
   # @rbs return: Riffer::Rig::Terminal::LineEditor
-  def with: (?before: String, ?after: String, ?recall: Integer, ?draft: String, ?pastes: Array[String]) -> Riffer::Rig::Terminal::LineEditor
+  def with: (?before: String, ?after: String, ?recall: Integer, ?draft: String, ?pastes: Array[String], ?kill: String) -> Riffer::Rig::Terminal::LineEditor
 
   # @rbs text: String
   # @rbs return: String
@@ -75,6 +81,25 @@ class Riffer::Rig::Terminal::LineEditor
 
   # @rbs return: Riffer::Rig::Terminal::LineEditor
   def right: () -> Riffer::Rig::Terminal::LineEditor
+
+  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  def word_left: () -> Riffer::Rig::Terminal::LineEditor
+
+  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  def word_right: () -> Riffer::Rig::Terminal::LineEditor
+
+  # @rbs killed: String
+  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  def kill_before: (String killed) -> Riffer::Rig::Terminal::LineEditor
+
+  # @rbs pattern: Regexp
+  # @rbs return: String
+  def word_before: (Regexp pattern) -> String
+
+  # @rbs clusters: Array[String]
+  # @rbs pattern: Regexp
+  # @rbs return: Array[String]
+  def leading_word: (Array[String] clusters, Regexp pattern) -> Array[String]
 
   # @rbs step: Integer
   # @rbs return: Riffer::Rig::Terminal::LineEditor
