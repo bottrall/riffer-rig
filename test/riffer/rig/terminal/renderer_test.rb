@@ -104,6 +104,30 @@ describe Riffer::Rig::Terminal::Renderer do
     assert_equal "\n    ⚙ read()\n", @io.string
   end
 
+  it 'renders null tool call arguments verbatim' do
+    @renderer.render(
+      Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: 'null')
+    )
+
+    assert_equal "\n    ⚙ read(null)\n", @io.string
+  end
+
+  it 'renders scalar tool call arguments verbatim' do
+    @renderer.render(
+      Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '5')
+    )
+
+    assert_equal "\n    ⚙ read(5)\n", @io.string
+  end
+
+  it 'renders array tool call arguments verbatim' do
+    @renderer.render(
+      Riffer::StreamEvents::ToolCallDone.new(item_id: 'i1', call_id: 'c1', name: 'read', arguments: '[1, 2]')
+    )
+
+    assert_equal "\n    ⚙ read([1, 2])\n", @io.string
+  end
+
   it 'renders tool call arguments as key and value pairs' do
     @renderer.render(
       Riffer::StreamEvents::ToolCallDone.new(

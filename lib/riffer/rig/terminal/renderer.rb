@@ -245,6 +245,8 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs return: String
   def format_arguments(arguments)
     parsed = JSON.parse(arguments)
+    return arguments unless parsed.is_a?(Hash)
+
     parsed.map { |key, value| "#{key}: #{elide(value.inspect, ARGUMENT_PREVIEW_LIMIT)}" }.join(', ')
   rescue JSON::ParserError
     arguments
