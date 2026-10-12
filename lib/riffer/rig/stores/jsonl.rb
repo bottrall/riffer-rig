@@ -134,7 +134,8 @@ class Riffer::Rig::Stores::JSONL
   # @rbs line: String
   # @rbs return: Hash[Symbol, untyped]?
   def parse(line)
-    JSON.parse(line, symbolize_names: true)
+    parsed = JSON.parse(line, symbolize_names: true)
+    parsed if parsed.is_a?(Hash)
   rescue JSON::ParserError
     nil
   end

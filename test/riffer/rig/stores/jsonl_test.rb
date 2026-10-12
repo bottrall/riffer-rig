@@ -40,8 +40,8 @@ describe Riffer::Rig::Stores::JSONL do
     File.write(File.join(dir, "#{id}.jsonl"), "#{JSON.generate(entry.to_h)}\n")
   end
 
-  def append_line(entry_hash)
-    File.open(File.join(sessions, 'project', 'aaa.jsonl'), 'a') { |file| file.write("#{JSON.generate(entry_hash)}\n") }
+  def append_line(value)
+    File.open(File.join(sessions, 'project', 'aaa.jsonl'), 'a') { |file| file.write("#{JSON.generate(value)}\n") }
   end
 
   it 'raises when appending without a header' do
@@ -104,6 +104,13 @@ describe Riffer::Rig::Stores::JSONL do
     assert_equal [header('aaa')], @store.read('aaa')
   end
 
+  it 'skips non-object JSON lines when reading' do
+    @store.append('aaa', header('aaa'))
+    [123, [1], 'str'].each { |value| append_line(value) }
+
+    assert_equal [header('aaa')], @store.read('aaa')
+  end
+
   it 'skips an unknown entry type when reading' do
     @store.append('aaa', header('aaa'))
     append_line({ type: 'weird', payload: {} })
@@ -129,6 +136,13 @@ describe Riffer::Rig::Stores::JSONL do
   it 'omits a session file with a malformed first line from the listing' do
     FileUtils.mkdir_p(File.join(sessions, 'project'))
     File.write(File.join(sessions, 'project', 'aaa.jsonl'), "not json\n")
+
+    assert_empty @store.list
+  end
+
+  it 'omits a session file with a non-object first line from the listing' do
+    FileUtils.mkdir_p(File.join(sessions, 'project'))
+    File.write(File.join(sessions, 'project', 'aaa.jsonl'), "123\n")
 
     assert_empty @store.list
   end
