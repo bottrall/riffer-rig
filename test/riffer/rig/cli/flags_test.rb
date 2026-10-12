@@ -137,6 +137,14 @@ describe Riffer::Rig::CLI::Flags do
     it 'reads --help' do
       assert_predicate parse('--help'), :help
     end
+
+    it 'reads --version' do
+      assert_predicate parse('--version'), :version
+    end
+
+    it 'reads -v as --version' do
+      assert_predicate parse('-v'), :version
+    end
   end
 
   describe '.usage' do
@@ -144,7 +152,7 @@ describe Riffer::Rig::CLI::Flags do
       usage = Riffer::Rig::CLI::Flags.usage
 
       assert(
-        %w[--model --no-extensions --no-skills --no-agents-md --tools --max-steps -p --verbose].all? do |flag|
+        %w[--model --no-extensions --no-skills --no-agents-md --tools --max-steps -p --verbose --version].all? do |flag|
           usage.include?(flag)
         end
       )

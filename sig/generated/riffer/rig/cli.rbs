@@ -54,4 +54,8 @@ module Riffer::Rig::CLI
   # @rbs output: IO
   # @rbs return: Integer
   def help: (IO output) -> Integer
+
+  # @rbs output: IO
+  # @rbs return: Integer
+  def version: (IO output) -> Integer
 end
