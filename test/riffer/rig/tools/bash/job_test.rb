@@ -46,4 +46,8 @@ describe Riffer::Rig::Tools::Bash::Job do
     assert_equal [job.id, job.pid, job.output_path, job.started_at],
                  [finished.id, finished.pid, finished.output_path, finished.started_at]
   end
+
+  it 'returns a completed copy that measures elapsed to the end time from finish' do
+    assert_in_delta(3.0, job.finish(0, 13.0).elapsed(99.0))
+  end
 end

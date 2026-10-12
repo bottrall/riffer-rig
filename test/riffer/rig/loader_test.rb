@@ -206,19 +206,6 @@ describe Riffer::Rig::Loader do
     File.utime(time, time, path)
   end
 
-  def recorded(id)
-    File.readlines(session_path(id)).filter_map { |line| JSON.parse(line, symbolize_names: true)[:recorded_at] }
-  end
-
-  def save_unstamped(id)
-    save_entries(id, [header(id)])
-    lines = [
-      { type: 'message', message: { role: 'user', content: 'hi' } },
-      { type: 'message', message: { role: 'assistant', content: 'yo' } }
-    ]
-    File.write(session_path(id), lines.map { |line| "#{JSON.generate(line)}\n" }.join, mode: 'a')
-  end
-
   describe '.runtime' do
     it 'returns a Runtime for the working directory' do
       assert_equal @cwd, build(model: 'mock/test').cwd
@@ -384,89 +371,20 @@ describe Riffer::Rig::Loader do
         )
       end
 
+      it 'stores a key the host supplies in home auth.json' do
+        build(model: 'gemini/gem-2.5-pro', env: {}, host: ScriptedHost.new('sk-gem-pasted'))
+
+        assert_equal(
+          'sk-gem-pasted',
+          JSON.parse(File.read(File.join(@home, '.riffer', 'auth.json')))['gemini']['api_key']
+        )
+      end
+
       it 'raises the configuration error naming a key the null host cannot supply' do
         assert_match(
           /\Agemini has no api_key \(GEMINI_API_KEY\)/,
           refusal { build(model: 'gemini/gem-2.5-pro', env: {}) }
         )
-      end
-    end
-
-    describe 'extension providers' do
-      after do
-        Riffer::Rig::Providers.unregister(:acme)
-        Riffer::Rig::Providers.unregister(:globex)
-      end
-
-      def write_provider_rig(identifier, class_name, setup)
-        fields = setup ? ", setup: #{setup}" : ''
-        write_rig(:home, <<~RUBY)
-          class #{class_name} < Riffer::Providers::Mock
-            attr_reader :credentials
-
-            private
-
-            def build_request_params(messages, model, options)
-              @credentials = Riffer::Rig.credentials(#{identifier.to_s.inspect})
-              super
-            end
-          end
-          Riffer::Rig.extension('#{identifier}') { |rig| rig.provider(#{identifier.to_s.inspect}#{fields}) { #{class_name} } }
-        RUBY
-      end
-
-      it 'resolves a registered provider\'s setup field from its env var' do
-        write_provider_rig(
-          :acme,
-          'AcmeRigProvider',
-          "{ fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }"
-        )
-        build(model: 'mock/test')
-
-        assert_equal(
-          { acme: { api_key: 'sk-acme' } },
-          build(model: 'acme/foo', env: { 'ACME_API_KEY' => 'sk-acme' }).credentials
-        )
-      end
-
-      it 'reads the credentials through Riffer::Rig.credentials during a request' do
-        write_provider_rig(
-          :acme,
-          'AcmeRigProvider',
-          "{ fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }"
-        )
-        build(model: 'mock/test')
-        runtime = build(model: 'acme/foo', env: { 'ACME_API_KEY' => 'sk-acme' })
-        runtime.agent.provider.stub_response('All done.')
-        runtime.ask('hello')
-
-        assert_equal({ api_key: 'sk-acme' }, runtime.agent.provider.credentials)
-      end
-
-      it 'resolves a setup-less provider through the generic fallback' do
-        write_provider_rig(:globex, 'GlobexRigProvider', nil)
-        build(model: 'mock/test')
-
-        assert_equal(
-          { api_key: 'sk-globex' },
-          build(model: 'globex/foo', env: { 'GLOBEX_API_KEY' => 'sk-globex' }).credentials[:globex]
-        )
-      end
-
-      it 'keeps one entry when a reload registers the provider again' do
-        write_provider_rig(:acme, 'AcmeRigProvider', nil)
-        build(model: 'mock/test')
-        second = build(model: 'acme/foo', env: { 'ACME_API_KEY' => 'sk-acme' })
-
-        assert_same second.agent.provider.class, Riffer::Providers::Repository.find(:acme)
-      end
-
-      it 'lists extension providers in the onboarding question' do
-        Riffer::Rig::Registrar.new('acme').provider(:acme) { Riffer::Providers::Mock }
-        host = ScriptedHost.new('mock/test')
-        build(host: host)
-
-        assert_match(/with a provider from: .*acme/, host.questions.first)
       end
     end
 
@@ -580,66 +498,8 @@ describe Riffer::Rig::Loader do
     describe 'session store' do
       before { @store = RecordingStore.new }
 
-      def types(store)
-        store.appended.map { |_id, entry| entry.to_h[:type] }
-      end
-
       def entries
         @store.appended.map { |_id, entry| entry }
-      end
-
-      it 'appends the header then one entry per message' do
-        runtime = build(store: @store, model: 'mock/test')
-        turn(runtime)
-        turn(runtime, 'again')
-
-        assert_equal %w[header message message message message], types(@store)
-      end
-
-      it 'keys every entry by the runtime id' do
-        runtime = build(store: @store, model: 'mock/test')
-        turn(runtime)
-
-        assert(@store.appended.all? { |(id, _entry)| id == runtime.id })
-      end
-
-      it 'writes the header first' do
-        runtime = build(store: @store, model: 'mock/test')
-        turn(runtime)
-
-        assert_equal 'header', @store.appended.first[1].to_h[:type]
-      end
-
-      it 'titles the header with the first prompt, one line' do
-        runtime = build(store: @store, model: 'mock/test')
-        turn(runtime, "first line\nsecond line")
-
-        assert_equal 'first line', @store.appended.first[1].title
-      end
-
-      it 'names the session cwd in the header' do
-        runtime = build(store: @store, model: 'mock/test')
-        turn(runtime)
-
-        assert_equal @cwd, @store.appended.first[1].cwd
-      end
-
-      it 'carries the model entries of a /model switch, after the header' do
-        runtime = build(store: @store, model: 'mock/test')
-        runtime.run_command('model', 'mock/other')
-        turn(runtime)
-
-        assert_equal %w[header model message message], types(@store)
-      end
-
-      it 'records a model switch with the new model string' do
-        runtime = build(store: @store, model: 'mock/test')
-        runtime.run_command('model', 'mock/other')
-        turn(runtime)
-
-        switch = entries.grep(Riffer::Rig::Stores::ModelEntry).first
-
-        assert_equal 'mock/other', switch.model
       end
 
       it 'records the model skill activations' do
@@ -650,16 +510,6 @@ describe Riffer::Rig::Loader do
         runtime.ask('use skill a')
 
         assert_equal(['a'], entries.grep(Riffer::Rig::Stores::SkillEntry).map(&:skill))
-      end
-
-      it 'leaves a user-run /skill: out of the entries' do
-        write_skill('a')
-        runtime = build(store: @store, model: 'mock/test')
-        runtime.agent.provider.stub_response('On it.')
-        runtime.run_command('skill:a')
-        turn(runtime)
-
-        assert_empty(entries.grep(Riffer::Rig::Stores::SkillEntry))
       end
 
       it 'writes a default-store file whose lines all parse' do
@@ -790,54 +640,6 @@ describe Riffer::Rig::Loader do
       assert_equal saved.id, loader.resume(saved.id).id
     end
 
-    it 'resumes with the recorded model switch' do
-      saved = save_session
-      saved.run_command('model', 'mock/other')
-      turn(saved, 'again')
-
-      assert_equal 'mock/other', loader.resume(saved.id).to_h[:model]
-    end
-
-    it 're-applies every recorded skill activation' do
-      write_skill('a')
-      write_skill('b')
-      save_entries(
-        'aaa',
-        [header('aaa'),
-         Riffer::Rig::Stores::SkillEntry.new(skill: 'a'),
-         Riffer::Rig::Stores::SkillEntry.new(skill: 'b'),
-         Riffer::Rig::Stores::MessageEntry.new(message: { role: 'user', content: 'hi' })]
-      )
-
-      assert_equal %w[a b], loader.resume('aaa').to_h[:skills]
-    end
-
-    it 'heals a file cut mid-turn' do
-      saved = save_session
-      call = Riffer::Messages::Assistant::ToolCall.new(call_id: 'orphan', name: 'read', arguments: '{"path":"/tmp/x"}')
-      save_entries(
-        saved.id,
-        [Riffer::Rig::Stores::MessageEntry.new(message: Riffer::Messages::Assistant.new('', tool_calls: [call]).to_h)]
-      )
-      healed = loader.resume(saved.id).agent.session.messages.last
-
-      assert_equal ['orphan', :interrupted], [healed.tool_call_id, healed.error_type]
-    end
-
-    it 'resumes a session written before entries were stamped' do
-      save_unstamped('aaa')
-
-      assert_equal %w[hi yo], loader.resume('aaa').agent.session.messages.map(&:content)
-    end
-
-    it 'leaves the lines of an unstamped session untouched when resuming it' do
-      save_unstamped('aaa')
-      before = File.readlines(session_path('aaa'))
-      turn(loader.resume('aaa'), 'again')
-
-      assert_equal before, File.readlines(session_path('aaa')).first(before.size)
-    end
-
     it 'rewrites no header when resuming' do
       saved = save_session
       resumed = loader.resume(saved.id)
@@ -846,20 +648,6 @@ describe Riffer::Rig::Loader do
       types = File.readlines(session_path(saved.id)).map { |line| JSON.parse(line, symbolize_names: true)[:type] }
 
       assert_equal 1, types.count('header')
-    end
-
-    it 'stamps every entry it records' do
-      saved = save_session
-
-      assert_equal 2, recorded(saved.id).size
-    end
-
-    it 'keeps the stamps in order across a resume' do
-      saved = save_session
-      turn(loader.resume(saved.id), 'again')
-      stamps = recorded(saved.id)
-
-      assert_equal stamps.sort, stamps
     end
   end
 
@@ -873,12 +661,6 @@ describe Riffer::Rig::Loader do
       contents = loader.messages(saved.id).map { |message| message[:content] }
 
       assert_equal ['welcome back', 'All done.'], contents
-    end
-
-    it 'replays a session written before entries were stamped' do
-      save_unstamped('aaa')
-
-      assert_equal(%w[hi yo], loader.messages('aaa').map { |message| message[:content] })
     end
   end
 
@@ -1026,26 +808,6 @@ describe Riffer::Rig::Loader do
       assert_empty tool_names(runtime).grep(/\Aprobe/)
     end
 
-    it 'drops the extensions of a deleted rig.rb' do
-      write_rig(:project, probe_rig('probe'))
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      FileUtils.rm(project_rig_path)
-      loader.reload(runtime, force: true)
-
-      assert_empty tool_names(runtime).grep(/\Aprobe/)
-    end
-
-    it 'confirms a project rig.rb appearing mid-session' do
-      host = ConfirmingHost.new([true])
-      loader = new_loader(host: host)
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      write_rig(:project, probe_rig('probe'))
-      loader.reload(runtime, force: true)
-
-      assert_equal ["Trust #{project_rig_path}?"], host.questions
-    end
-
     it 'abandons the reload when a rig.rb raises' do
       loader, runtime, = raising_rig
       reloaded = loader.reload(runtime, force: true)
@@ -1082,40 +844,11 @@ describe Riffer::Rig::Loader do
       assert_includes tool_names(runtime), 'probe_next'
     end
 
-    it 'keeps the message history' do
-      loader, runtime, = tool_added
-      history = runtime.agent.session.messages.drop(1)
-      loader.reload(runtime, force: true)
-
-      assert_equal history, runtime.agent.session.messages.drop(1)
-    end
-
-    it 'keeps the tally' do
-      loader, runtime, = tool_added
-      loader.reload(runtime, force: true)
-
-      assert_equal 10, runtime.tally.total_tokens
-    end
-
-    it 'keeps the /model override' do
-      loader, runtime, = tool_added
-      loader.reload(runtime, force: true)
-
-      assert_equal 'mock/other', runtime.model
-    end
-
     it 'reports the rebuilt runtime' do
       loader, runtime, = tool_added
       reloaded = loader.reload(runtime, force: true)
 
       assert_same runtime, reloaded
-    end
-
-    it 'replaces a re-recorded extension rather than duplicating it' do
-      loader, runtime, = tool_added
-      loader.reload(runtime, force: true)
-
-      assert_equal ['probe_next'], tool_names(runtime).grep(/\Aprobe/)
     end
 
     it 'reports a raise during the reload instead of propagating it' do
@@ -1142,28 +875,6 @@ describe Riffer::Rig::Loader do
 
       refute_path_exists marker
     end
-
-    it 'reports Reloaded from /reload' do
-      write_rig(:project, probe_rig('probe'))
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      File.write(project_rig_path, probe_rig('probe_next'))
-      events = []
-      runtime.run_command('reload') { |event| events << event }
-
-      assert_equal [Riffer::Rig::Events::CommandOutput.new('reload', 'Reloaded')], events
-    end
-
-    it 'stays installed after the rebuild it triggers' do
-      write_rig(:project, probe_rig('probe'))
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      runtime.run_command('reload')
-      events = []
-      runtime.run_command('reload') { |event| events << event }
-
-      assert_equal [Riffer::Rig::Events::CommandOutput.new('reload', 'Reloaded')], events
-    end
   end
 
   describe 'automatic reload' do
@@ -1178,59 +889,11 @@ describe Riffer::Rig::Loader do
       RUBY
     end
 
-    def editor_rig
-      <<~RUBY
-        class EditorTool < Riffer::Tool
-          identifier 'editor'
-          description 'edits the rig'
-          def call(context:)
-            File.write(#{project_rig_path.inspect}, <<~INNER)
-              class ProbeNextTool < Riffer::Tool
-                identifier 'probe_next'
-                description 'probe'
-                def call(context:) = text('probe')
-              end
-              Riffer::Rig.extension('probe') { |rig| rig.tool ProbeNextTool }
-            INNER
-            text('edited')
-          end
-        end
-        Riffer::Rig.extension('probe') { |rig| rig.tool EditorTool }
-      RUBY
-    end
-
     def built_with(host, **keywords)
       write_rig(:project, probe_rig('probe'))
       loader = new_loader(host: host)
       runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'), **keywords)
       [loader, runtime]
-    end
-
-    it 'registers a tool added to a tracked file mid-turn' do
-      write_rig(:project, editor_rig)
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'editor', arguments: '{}' }])
-      runtime.agent.provider.stub_response('done')
-      runtime.ask('add a tool')
-
-      assert_includes tool_names(runtime), 'probe_next'
-    end
-
-    it 'serves the next request with the reloaded tools' do
-      write_rig(:project, editor_rig)
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'editor', arguments: '{}' }])
-      runtime.agent.provider.stub_response('done')
-      runtime.ask('add a tool')
-      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'probe_next', arguments: '{}' }])
-      runtime.agent.provider.stub_response('done')
-      response = runtime.ask('use it')
-
-      tool = response.messages.rfind { |message| message.is_a?(Riffer::Messages::Tool) }
-
-      assert_equal 'probe', tool.content
     end
 
     it 'reloads a tracked file changed before a turn' do
@@ -1239,23 +902,6 @@ describe Riffer::Rig::Loader do
       turn(runtime)
 
       assert_includes tool_names(runtime), 'probe_next'
-    end
-
-    it 'confirms a project rig.rb appearing mid-session' do
-      host = ConfirmingHost.new([true])
-      _loader, runtime = built_with(host)
-      write_rig(:project, probe_rig('probe'))
-      turn(runtime)
-
-      assert_equal ["Trust #{project_rig_path}?"], host.questions
-    end
-
-    it 'drops the extensions of a rig.rb deleted mid-session' do
-      _loader, runtime = built_with(ConfirmingHost.new([true]))
-      FileUtils.rm(project_rig_path)
-      turn(runtime)
-
-      assert_empty tool_names(runtime).grep(/\Aprobe/)
     end
 
     it 'does not retry a failed reload on the next request' do

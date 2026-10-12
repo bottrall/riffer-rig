@@ -5,13 +5,10 @@ require 'fileutils'
 require 'json'
 
 class PromptingHost
-  attr_reader :asked #: Array[String]
-
   # @rbs answer: String
   # @rbs return: void
   def initialize(answer)
     @answer = answer
-    @asked = []
   end
 
   # @rbs return: Set[Symbol]
@@ -23,8 +20,7 @@ class PromptingHost
   # @rbs options: Array[String]?
   # @rbs secret: bool
   # @rbs return: String?
-  def ask(question = nil, options: nil, secret: false)
-    @asked << question.to_s
+  def ask(_question = nil, options: nil, secret: false)
     @answer
   end
 
@@ -113,19 +109,6 @@ describe Riffer::Rig::Mcp::Auth do
         )
 
         assert_equal({ 'api_key' => 'pasted' }, stored_fields(auth_path, 'docs'))
-      end
-    end
-
-    it 'does not prompt again once the field is stored' do
-      in_tmp_home do |auth_path|
-        Riffer::Rig::Mcp::Auth.resolve(
-          'docs', { api_key: ['DOCS_API_KEY'] }, host: PromptingHost.new('pasted'), env: env, auth_path:
-        )
-        host = PromptingHost.new('again')
-
-        Riffer::Rig::Mcp::Auth.resolve('docs', { api_key: ['DOCS_API_KEY'] }, host:, env: env, auth_path:)
-
-        assert_empty host.asked
       end
     end
 

@@ -100,10 +100,6 @@ describe Riffer::Rig::Terminal::Markdown do
       assert_equal "\e[2m─────\e[0m\n", render('---', enabled: true, width: 5)
     end
 
-    it 'reads asterisks, underscores and spaced dashes as rules' do
-      assert_equal "──\n──\n──\n", render("***\n___\n- - -", width: 2)
-    end
-
     it 'draws a fixed-length rule when no width is known' do
       assert_equal "#{'─' * 40}\n", render('---', width: nil)
     end
@@ -150,10 +146,6 @@ describe Riffer::Rig::Terminal::Markdown do
 
     it 'drops a closing run of marks' do
       assert_equal "## Title\n", render('## Title ##')
-    end
-
-    it 'leaves a mark with no following space as text' do
-      assert_equal "#hashtag\n", render('#hashtag')
     end
   end
 
@@ -275,10 +267,6 @@ describe Riffer::Rig::Terminal::Markdown do
   end
 
   describe 'tables' do
-    it 'leaves a line with a pipe and no divider row as a paragraph' do
-      assert_equal "a | b c\n", render("a | b\nc")
-    end
-
     it 'prints a table whose header is past the column limit as text' do
       assert_equal "#{'|' * 33} |-| |a\n", render("#{'|' * 33}\n|-|\n|a", width: nil)
     end
@@ -298,19 +286,8 @@ describe Riffer::Rig::Terminal::Markdown do
       assert_equal "a    │ b\n─────┼──\nlong │ 2\n", render("| a | b |\n|---|---|\n| long | 2 |")
     end
 
-    it 'renders a table as wide as the limit as a grid' do
-      assert_equal "#{'a' * 496} │ b\n#{'─' * 496}─┼──\n", render("|#{'a' * 496}|b|\n|-|-|", width: nil)
-    end
-
     it 'prints a table wider than the limit as text' do
       assert_equal "|#{'a' * 497}|b| |-|-|\n", render("|#{'a' * 497}|b|\n|-|-|", width: nil)
-    end
-
-    it 'prints a table whose wide cells sit in different rows as text' do
-      assert_equal(
-        "|#{'a' * 300}|b| |-|-| |c|#{'d' * 300}|\n",
-        render("|#{'a' * 300}|b|\n|-|-|\n|c|#{'d' * 300}|", width: nil)
-      )
     end
   end
 end

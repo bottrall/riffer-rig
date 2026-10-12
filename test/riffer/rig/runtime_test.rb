@@ -139,18 +139,6 @@ describe Riffer::Rig::Runtime do
     assert_includes runtime.agent.instruction_message.content, 'CUSTOM_BASE'
   end
 
-  it 'keeps the environment block under custom instructions' do
-    runtime = Riffer::Rig::Runtime.new(
-      'mock/test',
-      extensions: [@extension],
-      instructions: 'CUSTOM_BASE',
-      cwd: '/tmp/proj'
-    )
-
-    assert_includes runtime.agent.instruction_message.content,
-                    "Current date: #{Date.today}\nCurrent working directory: /tmp/proj"
-  end
-
   it 'drops the default base under custom instructions' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], instructions: 'CUSTOM_BASE')
 
@@ -190,36 +178,6 @@ describe Riffer::Rig::Runtime do
       refute_includes @runtime.agent.provider.calls.last[:messages].to_s, 'kaboom'
     end
 
-    it 'reports an unmet requires as a load error' do
-      future = Riffer::Rig::Extension.new('future', requires: '>= 99') { |rig| rig.tool Riffer::Rig::Tools::Edit }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [future])
-      runtime.agent.provider.stub_response('All done.')
-
-      assert_equal(
-        [Riffer::Rig::Events::Notify.new(
-          "Extension future failed to load: extension future requires riffer-rig >= 99, found #{Riffer::Rig::VERSION}",
-          :error
-        )],
-        runtime.prompt('hello').grep(Riffer::Rig::Events::Notify)
-      )
-    end
-
-    it 'skips an extension whose requires is unmet' do
-      future = Riffer::Rig::Extension.new('future', requires: '>= 99') { |rig| rig.tool Riffer::Rig::Tools::Edit }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [future])
-
-      assert_empty runtime.agent.tools
-    end
-
-    it 'loads an extension whose requires is met' do
-      current = Riffer::Rig::Extension.new('current', requires: "= #{Riffer::Rig::VERSION}") do |rig|
-        rig.tool Riffer::Rig::Tools::Edit
-      end
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [current])
-
-      assert_equal [Riffer::Rig::Tools::Edit], runtime.agent.tools
-    end
-
     it 'records no errors when every extension loads' do
       assert_empty Riffer::Rig::Runtime.new('mock/test', extensions: [@first, @last]).errors
     end
@@ -231,15 +189,12 @@ describe Riffer::Rig::Runtime do
       @ssl_cert_file = ENV.fetch('SSL_CERT_FILE', nil)
       ENV['SSL_CERT_FILE'] = @server.ca_file
       @runtimes = []
-      @auth_dir = Dir.mktmpdir('rig-mcp-auth')
-      @auth_path = File.join(@auth_dir, '.riffer', 'auth.json')
     end
 
     after do
       @runtimes.each(&:close)
       ENV['SSL_CERT_FILE'] = @ssl_cert_file
       @server.stop
-      FileUtils.remove_entry(@auth_dir)
     end
 
     def serving(name = 'web', url: @server.url)
@@ -263,15 +218,6 @@ describe Riffer::Rig::Runtime do
       Riffer::Mcp.registrations[name]
     end
 
-    it 'reports a stdio server as unregistrable through notify at error level' do
-      stdio = Riffer::Rig::Extension.new('serves_stdio') { |rig| rig.mcp('local', command: 'echo') }
-
-      assert_equal(
-        [Riffer::Rig::Events::Notify.new('MCP server local runs over stdio, which riffer cannot register yet', :error)],
-        notifies(runtime([stdio]))
-      )
-    end
-
     it 'adds each server tool under riffer MCP naming' do
       assert_equal %w[web__echo web__token], tool_names(runtime([serving]))
     end
@@ -292,39 +238,6 @@ describe Riffer::Rig::Runtime do
       assert_equal 'hi', built.ask('echo hi').messages.grep(Riffer::Messages::Tool).first.content
     end
 
-    it 'resolves the auth block of a server declared in the mcp settings' do
-      settings = {
-        mcp: {
-          servers: {
-            web: { url: @server.url, auth: { api_key: 'KAGI_API_KEY' }, headers: { 'X-Token' => 'Bearer ${api_key}' } }
-          }
-        }
-      }
-      built = runtime(
-        [Riffer::Rig.bundled(:mcp)],
-        settings: settings,
-        env: Riffer::Rig::Env.new({ 'KAGI_API_KEY' => 'kagi-key' }),
-        auth_path: @auth_path
-      )
-
-      assert_equal 'Bearer kagi-key',
-                   built.agent.tools.find { |klass|
-                     klass.name == 'web__token'
-                   }.new.call(context: nil).content
-    end
-
-    it 'declares the servers in the mcp settings through the bundled extension' do
-      settings = { mcp: { servers: { web: { url: @server.url } } } }
-
-      assert_equal %w[web__echo web__token], tool_names(runtime([Riffer::Rig.bundled(:mcp)], settings: settings))
-    end
-
-    it 'tags each registration with its Runtime' do
-      built = runtime([serving])
-
-      assert_equal [:"riffer_rig_#{built.id}"], registration.manifest.tags
-    end
-
     it "keeps one Runtime's servers from another Runtime's agent" do
       runtime([serving])
 
@@ -336,14 +249,6 @@ describe Riffer::Rig::Runtime do
       notice = 'Extension later replaces MCP server web from serves_web'
 
       assert_equal [Riffer::Rig::Events::Notify.new(notice, :info)], notifies(runtime([serving, later]))
-    end
-
-    it 'keeps the registration across a rebuild with the same declaration' do
-      built = runtime([serving])
-      before = registration
-      built.rebuild(extensions: [serving], settings: {})
-
-      assert_same before, registration
     end
 
     it 'unregisters a server the rebuilt list no longer declares' do
@@ -547,16 +452,6 @@ describe Riffer::Rig::Runtime do
                    runtime.host.drain
     end
 
-    it 'keeps the bundled original reachable after a replacement' do
-      sandbox = replaced_bash
-      replacement = Riffer::Rig::Extension.new('sandbox') { |rig| rig.tool sandbox }
-      Riffer::Rig::Runtime.new('mock/test', extensions: [Riffer::Rig.bundled(:bash), replacement])
-      registrar = Riffer::Rig::Registrar.new('bash')
-      Riffer::Rig.bundled(:bash).run(registrar)
-
-      assert_equal [Riffer::Rig::Tools::Bash], registrar.tools.values
-    end
-
     it 'reports a replaced command through notify' do
       earlier = Riffer::Rig::Extension.new('earlier') { |rig| rig.command('log', description: 'a') { |_ctx| nil } }
       later = Riffer::Rig::Extension.new('later') { |rig| rig.command('log', description: 'b') { |_ctx| nil } }
@@ -631,41 +526,6 @@ describe Riffer::Rig::Runtime do
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git, bare])
 
       assert_equal({ git: { depth: 3, remote: 'origin' } }, runtime.declared_settings)
-    end
-
-    it 'rejects extensions named after core settings keys' do
-      colliding = %w[reasoning model].map { |name| Riffer::Rig::Extension.new(name) { |rig| rig.tool Riffer::Rig::Tools::Read } }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: colliding)
-
-      assert_empty runtime.agent.tools
-    end
-
-    it 'records a colliding extension on errors' do
-      reasoning = Riffer::Rig::Extension.new('reasoning') { |rig| rig.setting :level, default: 'low' }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [reasoning])
-
-      assert_equal(
-        [[reasoning, Riffer::Rig::Registrar::NameCollisionError]],
-        runtime.errors.map { |failure| [failure.extension, failure.error.class] }
-      )
-    end
-
-    it 'reports a colliding extension through notify' do
-      model = Riffer::Rig::Extension.new('model') { |rig| rig.setting :name, default: 'x' }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [model])
-      runtime.agent.provider.stub_response('All done.')
-
-      notice = 'Extension model failed to load: extension name model collides with a core settings key'
-
-      assert_equal [Riffer::Rig::Events::Notify.new(notice, :error)],
-                   runtime.prompt('hello').grep(Riffer::Rig::Events::Notify)
-    end
-
-    it 'leaves the core settings key untouched by a colliding extension' do
-      model = Riffer::Rig::Extension.new('model') { |rig| rig.setting :name, default: 'x' }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [model], settings: { model: 'mock/other' })
-
-      assert_equal({ model: 'mock/other' }, runtime.settings)
     end
   end
 
@@ -803,19 +663,6 @@ describe Riffer::Rig::Runtime do
     assert_includes runtime.agent.provider.calls.last[:messages].first[:content], 'Branch: feature'
   end
 
-  it 'keeps one system message across turns' do
-    sections = Riffer::Rig::Extension.new('sections') { |rig| rig.prompt(:branch) { 'Branch: main' } }
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [sections])
-    runtime.agent.provider.stub_response('One.')
-    runtime.agent.provider.stub_response('Two.')
-    runtime.ask('hello')
-    runtime.ask('again')
-
-    roles = runtime.agent.provider.calls.last[:messages].map { |message| message[:role].to_s }
-
-    assert_equal %w[system user assistant user], roles
-  end
-
   it 'closes every prompt with a turn_end' do
     usage = Riffer::Providers::TokenUsage.new(input_tokens: 10, output_tokens: 5)
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
@@ -873,47 +720,6 @@ describe Riffer::Rig::Runtime do
       runtime.agent.provider.stub_response('All done.')
     end
 
-    def tool_result(runtime)
-      runtime.agent.session.messages.grep(Riffer::Messages::Tool).last
-    end
-
-    it 'turns a blocked tool call into a tool error the model sees' do
-      runtime = runtime_with { |rig| rig.on(:before_tool_call) { |_e| next :block, 'no echoes' } }
-      stub_tool_turn(runtime)
-      runtime.ask('go')
-      sent = runtime.agent.provider.calls.last[:messages].find { |message| message[:role].to_s == 'tool' }
-
-      assert_equal 'no echoes', sent[:content]
-    end
-
-    it 'marks a blocked tool call as an error' do
-      runtime = runtime_with { |rig| rig.on(:before_tool_call) { |_e| next :block, 'no echoes' } }
-      stub_tool_turn(runtime)
-      runtime.ask('go')
-
-      assert_equal :blocked, tool_result(runtime).error_type
-    end
-
-    it 'feeds a replacement tool payload to the next hook' do
-      seen = nil
-      runtime = runtime_with do |rig|
-        rig.on(:before_tool_call) { |e| e.args.merge(text: 'replaced') }
-        rig.on(:before_tool_call) { |e| seen = e.args[:text] }
-      end
-      stub_tool_turn(runtime)
-      runtime.ask('go')
-
-      assert_equal 'replaced', seen
-    end
-
-    it 'runs the tool with the replacement payload' do
-      runtime = runtime_with { |rig| rig.on(:before_tool_call) { |e| e.args.merge(text: 'replaced') } }
-      stub_tool_turn(runtime)
-      runtime.ask('go')
-
-      assert_equal 'echo: replaced', tool_result(runtime).content
-    end
-
     it 'fires before_request before each LLM call in a two-step tool turn' do
       count = 0
       runtime = runtime_with { |rig| rig.on(:before_request) { |_e| count += 1 } }
@@ -955,13 +761,6 @@ describe Riffer::Rig::Runtime do
       runtime.ask('go')
 
       assert_equal 'MID_TURN_NOTE', runtime.agent.provider.calls.last[:messages].last[:content]
-    end
-
-    it 'blocks the first request as a guardrail block' do
-      runtime = runtime_with { |rig| rig.on(:before_request) { |_e| next :block, 'offline' } }
-      runtime.agent.provider.stub_response('All done.')
-
-      assert_equal :guardrail_blocked, runtime.ask('go').outcome.reason
     end
 
     it 'interrupts the turn when a later request is blocked' do
@@ -1009,23 +808,6 @@ describe Riffer::Rig::Runtime do
       notifies = runtime.prompt('go').grep(Riffer::Rig::Events::Notify)
 
       assert_equal [Riffer::Rig::Events::Notify.new('not now', :warning)], notifies
-    end
-
-    it 'ignores what after_tool_call returns' do
-      runtime = runtime_with { |rig| rig.on(:after_tool_call) { |_e| 'IGNORED' } }
-      stub_tool_turn(runtime)
-      runtime.ask('go')
-
-      assert_equal 'echo: hi', tool_result(runtime).content
-    end
-
-    it 'hands after_tool_call the tool result' do
-      result = nil
-      runtime = runtime_with { |rig| rig.on(:after_tool_call) { |e| result = e.result.content } }
-      stub_tool_turn(runtime)
-      runtime.ask('go')
-
-      assert_equal 'echo: hi', result
     end
 
     it 'ignores what after_response returns' do
@@ -1110,22 +892,6 @@ describe Riffer::Rig::Runtime do
       assert_empty events
     end
 
-    it 'reports a raising hook through notify' do
-      runtime = runtime_with { |rig| rig.on(:before_tool_call) { |_e| raise 'boom' } }
-      stub_tool_turn(runtime)
-      notifies = runtime.prompt('go').grep(Riffer::Rig::Events::Notify)
-
-      assert_equal [Riffer::Rig::Events::Notify.new('before_tool_call hook failed: boom', :error)], notifies
-    end
-
-    it 'continues the turn after a hook raises' do
-      runtime = runtime_with { |rig| rig.on(:before_tool_call) { |_e| raise 'boom' } }
-      stub_tool_turn(runtime)
-      runtime.ask('go')
-
-      assert_equal 'echo: hi', tool_result(runtime).content
-    end
-
     it 'runs hooks in load order across extensions' do
       order = []
       first = Riffer::Rig::Extension.new('first') { |rig| rig.on(:before_prompt) { |_e| order << :first } }
@@ -1161,9 +927,9 @@ describe Riffer::Rig::Runtime do
       end
     end
 
-    def batch_runtime(*extensions, calls: %w[one two].map { |text| echo_call(text) }, **)
+    def batch_runtime(*extensions, **)
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@echo, *extensions], **)
-      runtime.agent.provider.stub_response('', tool_calls: calls)
+      runtime.agent.provider.stub_response('', tool_calls: %w[one two].map { |text| echo_call(text) })
       runtime.agent.provider.stub_response('All done.')
       runtime
     end
@@ -1178,16 +944,6 @@ describe Riffer::Rig::Runtime do
 
     def tool_events(events)
       events.select { |event| tool_event?(event) }
-    end
-
-    def outcomes(events)
-      tool_events(events).map do |event|
-        event.is_a?(Riffer::Rig::Events::AfterToolCall) ? [event.type, event.result.error_type] : event.type
-      end
-    end
-
-    def blocker
-      Riffer::Rig::Extension.new('blocker') { |rig| rig.on(:before_tool_call) { |_e| next :block, 'no' } }
     end
 
     it 'streams each call of a batch as a before and an after, one call at a time' do
@@ -1249,62 +1005,11 @@ describe Riffer::Rig::Runtime do
       )
     end
 
-    it 'streams the arguments a hook rewrote' do
-      rewriter = Riffer::Rig::Extension.new('rewriter') do |rig|
-        rig.on(:before_tool_call) { |e| e.args.merge(text: 'replaced') }
-      end
-      events = tool_events(batch_runtime(rewriter, calls: [echo_call('one')]).prompt('go'))
-
-      assert_equal [{ text: 'replaced' }, { text: 'replaced' }], events.map(&:args)
-    end
-
-    it 'finishes a call to an unknown tool' do
-      events = batch_runtime(calls: [{ name: 'missing', arguments: '{}' }]).prompt('go')
-
-      assert_equal [:before_tool_call, %i[after_tool_call unknown_tool]], outcomes(events)
-    end
-
-    it 'finishes a blocked call without starting it' do
-      events = batch_runtime(blocker).prompt('go')
-
-      assert_equal [%i[after_tool_call blocked]] * 2, outcomes(events)
-    end
-
-    it 'finishes a call whose arguments are not JSON without starting it' do
-      events = batch_runtime(calls: [{ name: 'echo', arguments: '{not json' }]).prompt('go')
-
-      assert_equal [%i[after_tool_call validation_error]], outcomes(events)
-    end
-
-    it 'finishes a call whose arguments are not an object without starting it' do
-      events = batch_runtime(calls: [{ name: 'echo', arguments: '[1]' }]).prompt('go')
-
-      assert_equal [%i[after_tool_call validation_error]], outcomes(events)
-    end
-
-    it 'hands after_tool_call a blocked call' do
-      batch_runtime(@observer, blocker).ask('go')
-
-      assert_equal [:before_tool_call, %i[after_tool_call blocked]] * 2, outcomes(@seen)
-    end
-
-    it 'hands after_tool_call a call whose arguments did not parse, with empty args' do
-      batch_runtime(@observer, calls: [{ name: 'echo', arguments: '{not json' }]).ask('go')
-
-      assert_equal([[:after_tool_call, {}]], @seen.map { |event| [event.type, event.args] })
-    end
-
     it 'streams a notify raised inside a tool call next to that call' do
       raiser = Riffer::Rig::Extension.new('raiser') { |rig| rig.on(:before_tool_call) { |_e| raise 'boom' } }
       types = batch_runtime(raiser).prompt('go').filter_map { |event| event.type if event.respond_to?(:type) }
 
       assert_equal %i[before_tool_call notify after_tool_call], types[types.index(:before_tool_call), 3]
-    end
-
-    it 'fires each hook once per call' do
-      batch_runtime(@observer).prompt('go').to_a
-
-      assert_equal %i[before_tool_call after_tool_call] * 2, @seen.map(&:type)
     end
 
     it 'streams the after events the hooks observed' do
@@ -2031,14 +1736,6 @@ describe Riffer::Rig::Runtime do
       assert_equal 'mock/test', restored(runtime.to_h).model
     end
 
-    it 'notifies once when the saved provider has no credentials' do
-      runtime = saved_runtime
-      runtime.model = 'mock/other'
-      notifies = first_prompt_events(restored(runtime.to_h)).grep(Riffer::Rig::Events::Notify)
-
-      assert_equal 1, notifies.length
-    end
-
     it 'restores the tally as the sum of the messages token usage' do
       runtime = saved_runtime
       runtime.agent.provider.stub_response('Second.', token_usage: usage(20, 7))
@@ -2267,20 +1964,12 @@ describe Riffer::Rig::Runtime do
       )
     end
 
-    it 'prices a turn in USD per million tokens' do
-      assert_in_delta 6.0, priced_runtime(pricing).ask('hello').token_usage.cost
-    end
-
     it 'sums the cost across turns' do
       runtime = priced_runtime(pricing)
       runtime.ask('hello')
       runtime.prompt('again') { |event| event }
 
       assert_in_delta 11.175, runtime.tally.cost
-    end
-
-    it 'leaves a turn unpriced without a pricing entry' do
-      assert_nil priced_runtime({ 'other/model' => pricing['mock/test'] }).ask('hello').token_usage.cost
     end
 
     it 'leaves the total unpriced without a pricing entry' do

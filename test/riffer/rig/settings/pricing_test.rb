@@ -32,10 +32,10 @@ describe Riffer::Rig::Settings::Pricing do
   end
 
   describe '.register' do
-    def registered_rates
+    def registered_rates(model = 'anthropic/claude-sonnet-4-6')
       registry = Riffer::Config::Pricing.new
       Riffer::Rig::Settings::Pricing.register({ 'anthropic/claude-sonnet-4-6' => sonnet }, registry)
-      registry.rates_for('anthropic/claude-sonnet-4-6')
+      registry.rates_for(model)
     end
 
     it 'registers the input rate under the model id' do
@@ -52,6 +52,14 @@ describe Riffer::Rig::Settings::Pricing do
 
     it 'registers the cache read rate under the model id' do
       assert_in_delta 0.3, registered_rates.cache_read
+    end
+
+    it 'prices the model in USD per million tokens' do
+      assert_in_delta 6.0, registered_rates.cost_for(input_tokens: 1_000_000, output_tokens: 200_000)
+    end
+
+    it 'leaves a model outside the table unpriced' do
+      assert_nil registered_rates('mock/test')
     end
   end
 end

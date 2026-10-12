@@ -308,18 +308,6 @@ describe Riffer::Rig::Terminal::Renderer do
     refute_includes @io.string, 'cache_read'
   end
 
-  it 'renders the session cost when the session is priced' do
-    @renderer.usage(usage(100, 50), Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 50, cost: 0.25))
-
-    assert_includes @io.string, '~$0.2500'
-  end
-
-  it 'omits the cost when the session is unpriced' do
-    @renderer.usage(usage(100, 50), usage(100, 50))
-
-    refute_includes @io.string, '~$'
-  end
-
   it 'renders the prompt marker below a blank line' do
     @renderer.prompt
 

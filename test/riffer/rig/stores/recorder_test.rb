@@ -13,14 +13,16 @@ class SteppingClock
 end
 
 class SeededStore
-  attr_reader :appended
+  attr_reader :appended, :ids
 
   def initialize(seeded = [])
     @seeded = seeded
     @appended = []
+    @ids = []
   end
 
-  def append(_id, entry)
+  def append(id, entry)
+    @ids << id
     @appended << entry
   end
 
@@ -206,6 +208,13 @@ describe Riffer::Rig::Stores::Recorder do
       assert_equal [Riffer::Rig::Stores::Header, Riffer::Rig::Stores::MessageEntry], store.appended.map(&:class)
     end
 
+    it 'keys the header and the message by the runtime id' do
+      store = SeededStore.new
+      recorder(store, [at(1), at(2)]).message(user)
+
+      assert_equal %w[aaa aaa], store.ids
+    end
+
     it 'writes the header once' do
       store = SeededStore.new
       recording = recorder(store, [at(1), at(2), at(3)])
@@ -226,6 +235,15 @@ describe Riffer::Rig::Stores::Recorder do
       recorder(store, [at(1), at(2)]).message(user('hello'))
 
       assert_equal [user('hello').to_h], store.appended.grep(Riffer::Rig::Stores::MessageEntry).map(&:message)
+    end
+
+    it 'records one entry per message' do
+      store = SeededStore.new
+      recording = recorder(store, [at(1), at(2), at(3)])
+      recording.message(user)
+      recording.message(assistant)
+
+      assert_equal [user.to_h, assistant.to_h], store.appended.grep(Riffer::Rig::Stores::MessageEntry).map(&:message)
     end
 
     it 'stamps a message entry with the clock' do

@@ -40,6 +40,13 @@ describe Riffer::Rig::Providers do
       assert_nil Riffer::Rig::Providers.setup(:globex_probe)
     end
 
+    it 'keeps the class factory when registered again' do
+      Riffer::Rig::Providers.register(:globex_probe) { GlobexProbeProvider }
+      Riffer::Rig::Providers.register(:globex_probe) { GlobexProbeProvider }
+
+      assert_same GlobexProbeProvider, Riffer::Providers::Repository.find(:globex_probe)
+    end
+
     it 'replaces the setup when registered again' do
       Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
       Riffer::Rig::Providers.register(:globex_probe, setup: { fields: [{ name: :token, env: ['GLOBEX_PROBE_TOKEN'] }] }) { GlobexProbeProvider }
@@ -76,6 +83,13 @@ describe Riffer::Rig::Providers do
       Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
 
       assert_equal((Riffer::Providers::Repository::REPO.keys - [:mock]) + [:globex_probe], Riffer::Rig::Providers.identifiers)
+    end
+
+    it 'lists an identifier registered again once' do
+      Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
+      Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
+
+      assert_equal 1, Riffer::Rig::Providers.identifiers.count(:globex_probe)
     end
 
     it 'keeps a setup-less registration in the identifier list' do

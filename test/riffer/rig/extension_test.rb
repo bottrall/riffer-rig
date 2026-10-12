@@ -65,6 +65,13 @@ describe Riffer::Rig::Extension do
       assert_instance_of Riffer::Rig::Registrar::NameCollisionError, extension.trial({})
     end
 
+    it 'runs the block of a met requirement' do
+      ran = false
+      Riffer::Rig::Extension.new('git', requires: "= #{Riffer::Rig::VERSION}") { |_rig| ran = true }.trial({})
+
+      assert ran
+    end
+
     it 'returns the registrar the block ran against' do
       recorded = nil
       registrar = Riffer::Rig::Extension.new('git') { |rig| recorded = rig }.trial({})

@@ -62,34 +62,6 @@ describe Riffer::Rig::Credentials do
       end
     end
 
-    it 'reads a later env var when the first is unset' do
-      in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.install(
-          :amazon_bedrock,
-          host: null_host,
-          env: env('AWS_DEFAULT_REGION' => 'us-west-2'),
-          config: nil,
-          **paths
-        )
-
-        assert_equal 'us-west-2', resolution.values[:region]
-      end
-    end
-
-    it 'treats a blank env var as unset' do
-      in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.install(
-          :anthropic,
-          host: null_host,
-          env: env('ANTHROPIC_API_KEY' => ' '),
-          config: nil,
-          **paths
-        )
-
-        assert_equal [:api_key], resolution.missing
-      end
-    end
-
     it 'resolves a stored secret' do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-stored' }, **paths)
@@ -195,6 +167,17 @@ describe Riffer::Rig::Credentials do
         Riffer::Rig::Credentials.install(:anthropic, host: AnsweringHost.new('sk-asked'), env:, config: nil, **paths)
 
         assert_equal :stored, Riffer::Rig::Credentials.status(:anthropic, env:, auth_path: paths[:auth_path])
+      end
+    end
+
+    it 'does not ask again once the answer is stored' do
+      in_tmp_home do |paths|
+        Riffer::Rig::Credentials.install(:anthropic, host: AnsweringHost.new('sk-asked'), env:, config: nil, **paths)
+        host = AnsweringHost.new('sk-again')
+
+        Riffer::Rig::Credentials.install(:anthropic, host: host, env:, config: nil, **paths)
+
+        assert_empty host.asked
       end
     end
 

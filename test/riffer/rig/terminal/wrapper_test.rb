@@ -15,6 +15,10 @@ describe Riffer::Rig::Terminal::Wrapper do
     assert_equal "  hello\n  world\n  foo\n", wrapper << "hello world foo\n"
   end
 
+  it 'collapses runs of spaces' do
+    assert_equal "  a b\n", wrapper << "  a    b \n"
+  end
+
   it 'keeps blank lines between paragraphs' do
     assert_equal "  a\n\n  b\n", wrapper << "a\n\nb\n"
   end

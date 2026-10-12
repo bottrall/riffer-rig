@@ -94,8 +94,24 @@ describe Riffer::Rig::Terminal::Markdown::Blocks do
       assert_equal :paragraph, kind('####### a')
     end
 
+    it 'does not classify a mark with no following space as a heading' do
+      assert_equal :paragraph, kind('#hashtag')
+    end
+
     it 'classifies a rule' do
       assert_equal :rule, kind('* * *')
+    end
+
+    it 'classifies unspaced asterisks as a rule' do
+      assert_equal :rule, kind('***')
+    end
+
+    it 'classifies underscores as a rule' do
+      assert_equal :rule, kind('___')
+    end
+
+    it 'classifies spaced dashes as a rule rather than a list' do
+      assert_equal :rule, kind('- - -')
     end
 
     it 'classifies a quote' do

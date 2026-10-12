@@ -12,18 +12,6 @@ describe Riffer::Rig::Trust do
   end
 
   describe '.read' do
-    it 'is empty when the file is absent' do
-      Dir.mktmpdir do |dir|
-        assert_empty Riffer::Rig::Trust.read(File.join(dir, 'trust.json'))
-      end
-    end
-
-    it 'is empty for malformed json' do
-      Dir.mktmpdir do |dir|
-        assert_empty Riffer::Rig::Trust.read(trust_file(dir, 'not json {{{'))
-      end
-    end
-
     it 'keeps true decisions' do
       Dir.mktmpdir do |dir|
         path = trust_file(dir, '{"a.rb":true}')

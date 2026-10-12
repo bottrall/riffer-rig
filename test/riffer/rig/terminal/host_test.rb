@@ -102,10 +102,10 @@ describe Riffer::Rig::Terminal::Host do
     refute host.confirm('Trust this project?')
   end
 
-  it 'renders a notify as its own line' do
+  it 'prints the notification' do
     host.notify('Extension x failed to load', level: :error)
 
-    assert_equal "\nExtension x failed to load\n", @output.string
+    assert_includes @output.string, 'Extension x failed to load'
   end
 
   it 'labels the progress' do

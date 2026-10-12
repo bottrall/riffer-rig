@@ -48,16 +48,11 @@ describe Riffer::Rig::Terminal::Banner do
       Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: 'none', version: '1', tally: tally)
     end
 
-    it 'shows the session cost when the tally is priced' do
+    it 'shows the tally in a session row' do
       tally = Riffer::Providers::TokenUsage.new(input_tokens: 300, output_tokens: 150, cost: 0.25)
+      session = Regexp.escape(Riffer::Rig::Terminal::Tally.call(tally))
 
-      assert_match(/session\s+450 tok · ~\$0\.2500/, banner(tally))
-    end
-
-    it 'shows the token total when the tally is unpriced' do
-      tally = Riffer::Providers::TokenUsage.new(input_tokens: 300, output_tokens: 150)
-
-      assert_match(/session\s+450 tok$/, banner(tally))
+      assert_match(/session\s+#{session}$/, banner(tally))
     end
 
     it 'omits the row before the first turn' do

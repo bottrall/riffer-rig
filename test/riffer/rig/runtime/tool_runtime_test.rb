@@ -80,6 +80,10 @@ describe Riffer::Rig::Runtime::ToolRuntime do
       assert_empty @emitted.last.args
     end
 
+    it 'emits the after event the hook observed' do
+      assert_same @hooked.last, @emitted.last
+    end
+
     it 'reports no time spent in the tool' do
       assert_in_delta 0.0, @emitted.last.duration
     end
@@ -205,6 +209,12 @@ describe Riffer::Rig::Runtime::ToolRuntime do
 
   it "returns riffer's results unchanged" do
     results = execute(tool_runtime, call('a'))
+
+    assert_equal(['echo: hi'], results.map { |_tool_call, response| response.content })
+  end
+
+  it 'ignores what an after_tool_call hook returns' do
+    results = execute(tool_runtime(after_tool_call: [->(_event) { 'IGNORED' }]), call('a'))
 
     assert_equal(['echo: hi'], results.map { |_tool_call, response| response.content })
   end

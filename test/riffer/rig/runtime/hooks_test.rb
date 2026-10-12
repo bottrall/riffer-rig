@@ -101,6 +101,19 @@ describe Riffer::Rig::Runtime::Hooks do
       assert_equal({ command: 'ls' }, hooks.before_tool_call('call_1', 'bash', { command: 'ls' }, 1.5))
     end
 
+    it 'counts a raising hook as no veto' do
+      hooks = hooks_for(before_tool_call: [->(_event) { raise 'boom' }])
+
+      assert_equal({ command: 'ls' }, hooks.before_tool_call('call_1', 'bash', { command: 'ls' }, 1.5))
+    end
+
+    it 'reports a raising hook through notify' do
+      host = Riffer::Rig::Hosts::Mirror.new(Riffer::Rig::Hosts::Null.new)
+      hooks_for(host, before_tool_call: [->(_event) { raise 'boom' }]).before_tool_call('call_1', 'bash', {}, 1.5)
+
+      assert_equal [Riffer::Rig::Events::Notify.new('before_tool_call hook failed: boom', :error)], host.drain
+    end
+
     it 'blocks with the reason a hook gives' do
       hooks = hooks_for(before_tool_call: [->(_event) { [:block, 'no force pushes'] }])
 

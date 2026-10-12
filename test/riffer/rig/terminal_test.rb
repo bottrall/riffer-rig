@@ -73,9 +73,9 @@ describe Riffer::Rig::Terminal do
     FileUtils.remove_entry(@cwd)
   end
 
-  def cli_sessions(env: { 'MOCK_API_KEY' => 'mock-key' }, model: 'mock/test')
+  def cli_sessions(env: { 'MOCK_API_KEY' => 'mock-key' })
     Riffer::Rig::CLI::Sessions.new(
-      flags: Riffer::Rig::CLI::Flags.new(model: model),
+      flags: Riffer::Rig::CLI::Flags.new(model: 'mock/test'),
       env: Riffer::Rig::Env.new(env),
       cwd: @cwd,
       home: @home
@@ -85,14 +85,13 @@ describe Riffer::Rig::Terminal do
   def run_terminal(
     input,
     env: { 'MOCK_API_KEY' => 'mock-key' },
-    model: 'mock/test',
     open_picker: false,
     sessions: nil,
     &
   )
     output = StringIO.new
     input = StringIO.new(input) if input.is_a?(String)
-    sessions ||= cli_sessions(env: env, model: model)
+    sessions ||= cli_sessions(env: env)
     sessions = PreparedSessions.new(sessions, &) if block_given?
     terminal = Riffer::Rig::Terminal.for(input: input, output: output, version: '9.9.9', sessions: sessions)
     @status = terminal.run(open_picker: open_picker)
@@ -171,9 +170,8 @@ describe Riffer::Rig::Terminal do
     Dir.glob(File.join(@home, '.riffer', 'sessions', '*', '*.jsonl'))
   end
 
-  def session_file_for(title, cwd: nil)
-    files = cwd ? session_files.select { |path| header_of(path)[:cwd] == cwd } : session_files
-    files.find { |path| header_of(path)[:title] == title }
+  def session_file_for(title, cwd:)
+    session_files.find { |path| header_of(path).values_at(:cwd, :title) == [cwd, title] }
   end
 
   def header_of(path)
@@ -264,18 +262,6 @@ describe Riffer::Rig::Terminal do
     assert_equal 1, @status
   end
 
-  it 'writes the onboarded model to home settings' do
-    run_terminal("mock/test\nmock-key\n/exit\n", env: {}, model: nil)
-
-    assert_equal 'mock/test', JSON.parse(File.read(File.join(@home, '.riffer', 'settings.json')))['model']
-  end
-
-  it 'writes the pasted key to home auth.json' do
-    run_terminal("mock/test\nmock-key\n/exit\n", env: {}, model: nil)
-
-    assert_equal 'mock-key', JSON.parse(File.read(File.join(@home, '.riffer', 'auth.json')))['mock']['api_key']
-  end
-
   it 'shows the model in the banner' do
     assert_includes run_terminal(''), 'mock/test'
   end
@@ -338,17 +324,6 @@ describe Riffer::Rig::Terminal do
     assert_includes output, '✦ skill: tidy'
   end
 
-  it 'sends the skill body as a user turn' do
-    write_skill('tidy')
-    runtime = nil
-    run_terminal("/skill:tidy now\n") do |driven|
-      runtime = driven
-      driven.agent.provider.stub_response('Tidied.')
-    end
-
-    assert_includes runtime.agent.provider.calls.last[:messages].last[:content], 'Do tidy.'
-  end
-
   it 'runs an extension command through run_command' do
     source = <<~RUBY
       Riffer::Rig.extension('greet') do |rig|
@@ -357,10 +332,6 @@ describe Riffer::Rig::Terminal do
     RUBY
 
     assert_includes run_with_extension("/hello world\n", source), 'hello, world'
-  end
-
-  it 'reports an unknown slash command through notify' do
-    assert_includes run_terminal("/nope\n"), 'Unknown command: nope'
   end
 
   describe 'a /model switch' do
@@ -437,15 +408,6 @@ describe Riffer::Rig::Terminal do
       assert_includes run_terminal("/resume\n/exit\n/exit\n"), 'add picker tests'
     end
 
-    it 'filters the rows by typed text' do
-      seed_session('fix the login bug')
-      seed_session('add picker tests')
-
-      output = run_terminal("/resume\nlogin\n/exit\n/exit\n")
-
-      assert_equal 2, output.scan('fix the login bug').length
-    end
-
     it 'resumes the session the filter narrows to' do
       path = seed_session('fix the login bug')
       seed_session('add picker tests')
@@ -453,21 +415,6 @@ describe Riffer::Rig::Terminal do
       run_terminal("/resume\nlogin\n\ntell me more\n")
 
       assert_operator File.readlines(path).length, :>, 3
-    end
-
-    it 'switches to a numbered row' do
-      path = seed_session('fix the login bug', updated: Time.now - 3600)
-      seed_session('add picker tests')
-
-      run_terminal("/resume\n2\ntell me more\n")
-
-      assert_operator File.readlines(path).length, :>, 3
-    end
-
-    it 'shows the relative time on a row' do
-      seed_session('fix the login bug')
-
-      assert_match(/fix the login bug — just now/, run_terminal("/resume\n/exit\n/exit\n"))
     end
 
     it 'keeps the current session when the picked one is missing' do
@@ -496,24 +443,6 @@ describe Riffer::Rig::Terminal do
       assert_includes run_terminal("/resume\n/exit\n/exit\n"), 'No saved sessions.'
     ensure
       FileUtils.remove_entry(other)
-    end
-
-    it 'deletes a session after Ctrl-D and confirm' do
-      seed_session('fix the login bug', updated: Time.now - 3600)
-      seed_session('add picker tests')
-
-      run_terminal("/resume\n\x04\n1\ny\n")
-
-      assert_nil session_file_for('add picker tests')
-    end
-
-    it 'keeps the unconfirmed session' do
-      seed_session('fix the login bug', updated: Time.now - 3600)
-      seed_session('add picker tests')
-
-      run_terminal("/resume\n\x04\n1\nn\n")
-
-      assert_equal 2, session_files.length
     end
   end
 

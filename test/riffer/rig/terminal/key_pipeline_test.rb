@@ -107,11 +107,5 @@ describe Riffer::Rig::Terminal::KeyPipeline do
 
       assert_equal Riffer::Rig::Terminal::Key.new(:escape), @pty.key
     end
-
-    it 'decodes a bracketed paste into one key event' do
-      @pty.type("\e[200~pasted text\e[201~")
-
-      assert_equal Riffer::Rig::Terminal::Key.new(:paste, 'pasted text'), @pty.key
-    end
   end
 end

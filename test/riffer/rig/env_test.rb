@@ -38,10 +38,9 @@ describe Riffer::Rig::Env do
       assert_instance_of Riffer::Rig::Env::Invalid, Riffer::Rig::Env.load('RIFFER_MODEL' => 'sonnet')
     end
 
-    it 'names RIFFER_MODEL and the providers when rejecting a bare model' do
+    it 'names RIFFER_MODEL ahead of the rejection' do
       assert_equal(
-        'RIFFER_MODEL: sonnet is not a provider/name model string; the provider is one of: ' \
-        'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter',
+        "RIFFER_MODEL: #{Riffer::Rig::Settings::ModelOptions.rejection('sonnet')}",
         Riffer::Rig::Env.load('RIFFER_MODEL' => 'sonnet').message
       )
     end
@@ -74,6 +73,10 @@ describe Riffer::Rig::Env do
       env = Riffer::Rig::Env.new('ACME_API_KEY' => 'from-key', 'ACME_TOKEN' => 'from-token')
 
       assert_equal 'from-key', env.value_for(pair)
+    end
+
+    it 'skips an unset var for the next one' do
+      assert_equal 'from-token', Riffer::Rig::Env.new('ACME_TOKEN' => 'from-token').value_for(pair)
     end
 
     it 'skips a blank var for the next one' do

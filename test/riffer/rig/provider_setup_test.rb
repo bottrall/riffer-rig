@@ -163,7 +163,10 @@ describe Riffer::Rig::ProviderSetup do
     it 'leaves a registered provider without a setup on the generic fallback' do
       Riffer::Rig::Providers.register(:globex_setup) { GlobexSetupProvider }
 
-      assert_equal [['GLOBEX_SETUP_API_KEY']], Riffer::Rig::ProviderSetup.for(:globex_setup).fields.map(&:env)
+      assert_equal(
+        [[:api_key, ['GLOBEX_SETUP_API_KEY']]],
+        Riffer::Rig::ProviderSetup.for(:globex_setup).fields.map { |field| [field.name, field.env] }
+      )
     end
 
     it 'reads the generic fallback key from <IDENTIFIER>_API_KEY' do

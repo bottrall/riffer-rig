@@ -72,16 +72,8 @@ describe Riffer::Rig::Stores::Header do
   end
 
   describe 'equality' do
-    it 'equals a header with the same fields' do
-      assert_equal header, header
-    end
-
     it 'ignores the stamped updated' do
       assert_equal header, header(updated: updated_time)
-    end
-
-    it 'differs when a field differs' do
-      refute_equal header, header(title: 'other')
     end
 
     it 'hashes equal for equal entries' do

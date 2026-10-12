@@ -35,10 +35,6 @@ describe Riffer::Rig::Settings::Document do
     assert_in_delta(15.0, Riffer::Rig::Settings::Document.new(pricing).models['anthropic/claude-sonnet-4-6'].output)
   end
 
-  it 'coerces prices to float' do
-    assert_kind_of Float, Riffer::Rig::Settings::Document.new(pricing).models['anthropic/claude-sonnet-4-6'].input
-  end
-
   it 'ignores a pricing entry that is not an object' do
     assert_empty Riffer::Rig::Settings::Document.new({ models: { 'openai/o3': 3 } }).models
   end

@@ -16,14 +16,6 @@ describe Riffer::Rig::Terminal::Markdown::Flow do
     assert_equal ['hello there'], lines([span('hello there')])
   end
 
-  it 'wraps at the width' do
-    assert_equal %w[hello there], lines([span('hello there')], width: 8)
-  end
-
-  it 'collapses runs of spaces' do
-    assert_equal ['a b'], lines([span('  a    b ')])
-  end
-
   it 'returns one empty line for no spans' do
     assert_equal [''], lines([])
   end

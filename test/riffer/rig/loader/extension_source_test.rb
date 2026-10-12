@@ -314,6 +314,15 @@ describe Riffer::Rig::Loader::ExtensionSource do
       assert_equal %w[es_home_next], rediscovering.rediscover.map(&:name)
     end
 
+    it 'returns a re-recorded extension once, as the rewritten rig.rb records it' do
+      write_rig(:home, recording('es_home'))
+      rediscovering = discovered
+      write_rig(:home, recording('es_home'))
+      rediscovered = rediscovering.rediscover
+
+      assert_equal [Riffer::Rig.extensions['es_home']], rediscovered
+    end
+
     it 'drops the extensions of a deleted rig.rb' do
       write_rig(:home, recording('es_home'))
       rediscovering = discovered

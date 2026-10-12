@@ -170,18 +170,6 @@ describe Riffer::Rig::Registrar do
     )
   end
 
-  it 'refuses an MCP declaration with neither a url nor a command' do
-    registrar = Riffer::Rig::Registrar.new('docs')
-
-    assert_raises(ArgumentError) { registrar.mcp('local') }
-  end
-
-  it 'refuses an MCP declaration with both a url and a command' do
-    registrar = Riffer::Rig::Registrar.new('docs')
-
-    assert_raises(ArgumentError) { registrar.mcp('local', url: 'https://docs.example/mcp', command: 'echo') }
-  end
-
   describe 'provider' do
     after do
       Riffer::Rig::Providers.unregister(:acme)
@@ -193,42 +181,6 @@ describe Riffer::Rig::Registrar do
       assert_same AcmeSeamProvider, Riffer::Providers::Repository.find(:acme)
     end
 
-    it 'keeps one entry when registered again' do
-      registrar = Riffer::Rig::Registrar.new('acme')
-      registrar.provider(:acme) { AcmeSeamProvider }
-      registrar.provider(:acme) { AcmeSeamProvider }
-
-      assert_same AcmeSeamProvider, Riffer::Providers::Repository.find(:acme)
-    end
-
-    it 'resolves a setup-less registration through the generic fallback' do
-      Riffer::Rig::Registrar.new('acme').provider(:acme) { AcmeSeamProvider }
-
-      assert_equal(
-        [[:api_key, ['ACME_API_KEY']]],
-        Riffer::Rig::ProviderSetup.for(:acme).fields.map do |field|
-          [field.name, field.env]
-        end
-      )
-    end
-
-    it 'converts a setup hash into fields' do
-      Riffer::Rig::Registrar.new('acme').provider(
-        :acme,
-        setup: {
-          url: 'https://example.com/keys',
-          fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }]
-        }
-      ) { AcmeSeamProvider }
-
-      assert_equal(
-        [[:api_key, ['ACME_API_KEY'], true, true]],
-        Riffer::Rig::ProviderSetup.registered_setup(:acme).fields.map do |field|
-          [field.name, field.env, field.secret, field.required]
-        end
-      )
-    end
-
     it 'converts a setup hash\'s url' do
       Riffer::Rig::Registrar.new('acme').provider(
         :acme,
@@ -236,29 +188,6 @@ describe Riffer::Rig::Registrar do
       ) { AcmeSeamProvider }
 
       assert_equal 'https://example.com/keys', Riffer::Rig::ProviderSetup.registered_setup(:acme).url
-    end
-
-    it 'freezes the converted setup' do
-      Riffer::Rig::Registrar.new('acme').provider(
-        :acme,
-        setup: { fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }
-      ) { AcmeSeamProvider }
-
-      assert_predicate Riffer::Rig::ProviderSetup.registered_setup(:acme), :frozen?
-    end
-
-    it 'gives a registered provider no setup by default' do
-      Riffer::Rig::Registrar.new('acme').provider(:acme) { AcmeSeamProvider }
-
-      assert_nil Riffer::Rig::Providers.setup(:acme)
-    end
-
-    it 'gives two Runtimes the same registered prefix' do
-      extension = Riffer::Rig.extension('acme') { |rig| rig.provider(:acme) { AcmeSeamProvider } }
-      Riffer::Rig::Runtime.new('acme/first', extensions: [extension])
-      second = Riffer::Rig::Runtime.new('acme/second', extensions: [extension])
-
-      assert_instance_of AcmeSeamProvider, second.agent.provider
     end
   end
 

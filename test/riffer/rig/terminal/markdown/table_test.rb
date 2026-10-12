@@ -12,6 +12,14 @@ describe Riffer::Rig::Terminal::Markdown::Table do
     assert_nil lines("|#{'a' * 497}|b|\n|-|-|")
   end
 
+  it 'returns nothing when the widest cells of different rows sum past the limit' do
+    assert_nil lines("|#{'a' * 300}|b|\n|-|-|\n|c|#{'d' * 300}|")
+  end
+
+  it 'renders a grid as wide as the limit' do
+    assert_equal ["#{'a' * 496} │ b", "#{'─' * 496}─┼──"], lines("|#{'a' * 496}|b|\n|-|-|")
+  end
+
   it 'reads rows without outer pipes' do
     assert_equal ['a │ b', '──┼──', '1 │ 2'], lines("a | b\n--- | ---\n1 | 2")
   end

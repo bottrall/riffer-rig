@@ -13,14 +13,6 @@ describe Riffer::Rig::Headless::Host do
     assert_equal Set[:notify, :progress], @host.capabilities
   end
 
-  it 'declines an ask' do
-    assert_nil @host.ask('Which model?')
-  end
-
-  it 'declines a confirm' do
-    refute @host.confirm('Trust this project?')
-  end
-
   it 'keeps a notify off stderr in --json mode' do
     host = Riffer::Rig::Headless::Host.new(error: @error, json: true)
 

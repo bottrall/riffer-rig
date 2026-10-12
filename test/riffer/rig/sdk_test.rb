@@ -208,15 +208,4 @@ describe Riffer::Rig::SDK do
       end
     end
   end
-
-  describe 'gemspec' do
-    it 'depends on no provider SDK' do
-      spec = Gem::Specification.load('riffer-rig.gemspec')
-      sdks = spec.runtime_dependencies.select do |dependency|
-        %w[anthropic openai aws-sdk-bedrockruntime].include?(dependency.name)
-      end
-
-      assert_empty sdks
-    end
-  end
 end

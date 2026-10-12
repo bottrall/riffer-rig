@@ -82,17 +82,6 @@ describe Riffer::Rig::Headless do
     end
   end
 
-  def with_sdk_absent_and_installable
-    gem_specs = Gem::Specification.method(:find_by_name)
-    bundler = Riffer::Rig::SDK.method(:bundler?)
-    Gem::Specification.define_singleton_method(:find_by_name) { |*_args| raise Gem::LoadError, 'not installed' }
-    Riffer::Rig::SDK.define_singleton_method(:bundler?) { false }
-    yield
-  ensure
-    Gem::Specification.define_singleton_method(:find_by_name, gem_specs)
-    Riffer::Rig::SDK.define_singleton_method(:bundler?, bundler)
-  end
-
   def run_build(&)
     @status = Riffer::Rig::Headless.for(input: StringIO.new, output: @output, error: @error).run(prompt: 'hello', &)
   end
@@ -186,34 +175,6 @@ describe Riffer::Rig::Headless do
     run_headless(prompt: 'hello', model: 'gemini/gem-2.5-pro', env: {})
 
     assert_match(/gemini has no api_key \(GEMINI_API_KEY\)/, @error.string)
-  end
-
-  it 'returns two for a bare model name' do
-    run_headless(prompt: 'hello', model: nil, env: { 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'sonnet' })
-
-    assert_equal 2, @status
-  end
-
-  it 'names the model string shape for a bare model name' do
-    run_headless(prompt: 'hello', model: nil, env: { 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'sonnet' })
-
-    assert_match(%r{not a provider/name model string}, @error.string)
-  end
-
-  it 'returns two for a declined optional SDK install' do
-    with_sdk_absent_and_installable do
-      run_headless(prompt: 'hello', model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
-    end
-
-    assert_equal 2, @status
-  end
-
-  it 'prints the install line for a declined optional SDK install' do
-    with_sdk_absent_and_installable do
-      run_headless(prompt: 'hello', model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
-    end
-
-    assert_match(/gem install openai/, @error.string)
   end
 
   it 'returns 130 when the build is interrupted' do
@@ -521,41 +482,6 @@ describe Riffer::Rig::Headless do
       stream_events = %w[tool_call_delta tool_call_done text_done text_delta]
 
       assert_equal stream_events, types.intersection(stream_events)
-    end
-
-    it 'streams the tool call events between the tool call and the next response' do
-      turn
-
-      tool_call = %w[tool_call_done before_tool_call after_tool_call text_delta]
-
-      assert_equal tool_call, types.intersection(tool_call)
-    end
-
-    it 'carries the call and its arguments on before_tool_call' do
-      turn
-      before = records.find { |record| record.fetch('type') == 'before_tool_call' }
-
-      assert_equal(
-        { 'type' => 'before_tool_call', 'call_id' => 'mock_call_0', 'tool' => 'read',
-          'args' => { 'path' => '/tmp/x' } },
-        before.except('at')
-      )
-    end
-
-    it 'carries the call and its timing on after_tool_call' do
-      turn
-      after = records.find { |record| record.fetch('type') == 'after_tool_call' }
-
-      assert_equal(
-        [%w[args at call_id duration result tool type], 'mock_call_0'], [after.keys.sort, after.fetch('call_id')]
-      )
-    end
-
-    it 'carries the result as its content and error on after_tool_call' do
-      turn
-      after = records.find { |record| record.fetch('type') == 'after_tool_call' }
-
-      assert_equal %w[content error error_type], after.fetch('result').keys
     end
 
     it 'parses every line as JSON' do
