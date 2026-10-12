@@ -48,12 +48,6 @@ describe Riffer::Rig::Runtime::Concurrency do
   end
 
   describe '#claim' do
-    it 'holds the Runtime' do
-      @concurrency.claim
-
-      assert_predicate self, :held?
-    end
-
     it 'refuses a second claim from the thread that holds it' do
       @concurrency.claim
 
@@ -102,27 +96,15 @@ describe Riffer::Rig::Runtime::Concurrency do
 
       assert_raises(Riffer::Rig::Runtime::BusyError) { @concurrency.claim }
     end
-  end
 
-  describe '#claim_rebuild' do
-    it 'holds a free Runtime' do
-      @concurrency.claim_rebuild
+    it 'holds the Runtime' do
+      @concurrency.claim
 
       assert_predicate self, :held?
     end
+  end
 
-    it 'nests under the thread that holds the Runtime' do
-      @concurrency.claim
-
-      refute(refused? { @concurrency.claim_rebuild })
-    end
-
-    it 'nests under a rebuild the same thread holds' do
-      @concurrency.claim_rebuild
-
-      refute(refused? { @concurrency.claim_rebuild })
-    end
-
+  describe '#claim_rebuild' do
     it 'refuses another thread while one holds the Runtime' do
       @concurrency.claim
 
@@ -154,16 +136,27 @@ describe Riffer::Rig::Runtime::Concurrency do
 
       assert_predicate self, :rebuild_refused_elsewhere?
     end
+
+    it 'holds a free Runtime' do
+      @concurrency.claim_rebuild
+
+      assert_predicate self, :held?
+    end
+
+    it 'nests under the thread that holds the Runtime' do
+      @concurrency.claim
+
+      refute(refused? { @concurrency.claim_rebuild })
+    end
+
+    it 'nests under a rebuild the same thread holds' do
+      @concurrency.claim_rebuild
+
+      refute(refused? { @concurrency.claim_rebuild })
+    end
   end
 
   describe '#release' do
-    it 'frees the Runtime' do
-      @concurrency.claim
-      @concurrency.release
-
-      refute_predicate self, :held?
-    end
-
     it 'keeps the Runtime held while an outer claim remains' do
       @concurrency.claim
       @concurrency.claim_rebuild
@@ -178,6 +171,13 @@ describe Riffer::Rig::Runtime::Concurrency do
       @concurrency.release
 
       assert_predicate self, :rebuild_refused_elsewhere?
+    end
+
+    it 'frees the Runtime' do
+      @concurrency.claim
+      @concurrency.release
+
+      refute_predicate self, :held?
     end
 
     it 'frees the Runtime once every nested claim is released' do

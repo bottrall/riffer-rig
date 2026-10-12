@@ -48,15 +48,6 @@ describe Riffer::Rig::Support::JsonFile do
   end
 
   describe '.write' do
-    it 'writes the document as json' do
-      Dir.mktmpdir do |dir|
-        path = File.join(dir, 'document.json')
-        Riffer::Rig::Support::JsonFile.write(path, { 'git' => { 'depth' => 10 } })
-
-        assert_equal({ 'git' => { 'depth' => 10 } }, JSON.parse(File.read(path)))
-      end
-    end
-
     it 'creates the directory owner-only' do
       Dir.mktmpdir do |dir|
         path = File.join(dir, '.riffer', 'document.json')
@@ -72,6 +63,15 @@ describe Riffer::Rig::Support::JsonFile do
         Riffer::Rig::Support::JsonFile.write(path, {}, mode: 0o600)
 
         assert_equal 0o600, File.stat(path).mode & 0o777
+      end
+    end
+
+    it 'writes the document as json' do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, 'document.json')
+        Riffer::Rig::Support::JsonFile.write(path, { 'git' => { 'depth' => 10 } })
+
+        assert_equal({ 'git' => { 'depth' => 10 } }, JSON.parse(File.read(path)))
       end
     end
   end

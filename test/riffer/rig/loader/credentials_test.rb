@@ -18,9 +18,9 @@ describe Riffer::Rig::Loader::Credentials do
     File.join(@home, '.riffer', 'auth.json')
   end
 
-  def install(host: Riffer::Rig::Hosts::Null.new, env: {})
+  def install(provider: 'gemini', host: Riffer::Rig::Hosts::Null.new, env: {})
     Riffer::Rig::Loader::Credentials.install(
-      'gemini',
+      provider,
       host: host,
       env: Riffer::Rig::Env.new(env),
       config: @config,
@@ -38,6 +38,27 @@ describe Riffer::Rig::Loader::Credentials do
       install(env: { 'GEMINI_API_KEY' => 'sk-gem-env' })
 
       assert_equal 'sk-gem-env', @config.gemini.api_key
+    end
+
+    describe 'with a provider an extension registered' do
+      after do
+        Riffer::Rig::Providers.unregister(:acme)
+      end
+
+      it 'resolves the field of its setup from the env var the setup names' do
+        Riffer::Rig::Providers.register(
+          :acme,
+          setup: { fields: [{ name: :api_key, env: ['ACME_SECRET'], secret: true, required: true }] }
+        ) { Riffer::Providers::Mock }
+
+        assert_equal({ api_key: 'sk-acme' }, install(provider: 'acme', env: { 'ACME_SECRET' => 'sk-acme' }))
+      end
+
+      it 'resolves a setup-less registration through the generic fallback' do
+        Riffer::Rig::Providers.register(:acme) { Riffer::Providers::Mock }
+
+        assert_equal({ api_key: 'sk-acme' }, install(provider: 'acme', env: { 'ACME_API_KEY' => 'sk-acme' }))
+      end
     end
 
     it 'reads a key stored at the auth path' do
@@ -59,10 +80,12 @@ describe Riffer::Rig::Loader::Credentials do
       )
     end
 
-    it 'leaves the riffer config alone when a key is missing' do
-      install
-
-      assert_nil @config.gemini.api_key
+    it 'omits the console link when the provider has none' do
+      assert_equal(
+        'mystery has no api_key (MYSTERY_API_KEY); set it in the environment or run riffer interactively ' \
+        'to paste it',
+        install(provider: 'mystery')
+      )
     end
   end
 end

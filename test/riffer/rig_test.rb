@@ -32,11 +32,29 @@ describe Riffer::Rig do
     drop('test_mismatch')
   end
 
-  it 'returns the bundled extensions in load order' do
-    assert_equal %w[read write edit bash agents_md skills mcp], Riffer::Rig.bundled.map(&:name)
+  it 'keeps the bundled extensions out of the registry' do
+    bundled_names = Riffer::Rig.bundled.map(&:name)
+
+    assert_empty Riffer::Rig.extensions.keys & bundled_names
+  end
+
+  it 'returns the credentials applied for an identifier' do
+    Riffer::Rig::Credentials.apply(:test_rig_credentials, { key: 'secret' })
+
+    assert_equal({ key: 'secret' }, Riffer::Rig.credentials(:test_rig_credentials))
+  ensure
+    Riffer::Rig::Credentials.instance_variable_get(:@applied).delete(:test_rig_credentials)
+  end
+
+  it 'returns every bundled extension when no name is given' do
+    assert_equal Riffer::Rig::Bundled::BY_NAME.values, Riffer::Rig.bundled
   end
 
   it 'returns one bundled extension by name' do
     assert_same Riffer::Rig::Bundled::Bash, Riffer::Rig.bundled(:bash)
+  end
+
+  it 'raises for an unknown bundled name' do
+    assert_raises(KeyError) { Riffer::Rig.bundled(:missing) }
   end
 end

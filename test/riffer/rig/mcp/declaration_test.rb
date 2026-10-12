@@ -9,17 +9,23 @@ describe Riffer::Rig::Mcp::Declaration do
     )
   end
 
+  def refusal
+    yield
+    nil
+  rescue ArgumentError => e
+    e.message
+  end
+
   describe '.new' do
     it 'rejects a url and a command together' do
-      error = assert_raises(ArgumentError) { Riffer::Rig::Mcp::Declaration.new(url: 'https://x.test', command: 'x') }
-
-      assert_equal 'a declaration takes a url or a command, not both', error.message
+      assert_equal(
+        'a declaration takes a url or a command, not both',
+        refusal { Riffer::Rig::Mcp::Declaration.new(url: 'https://x.test', command: 'x') }
+      )
     end
 
     it 'rejects neither a url nor a command' do
-      error = assert_raises(ArgumentError) { Riffer::Rig::Mcp::Declaration.new }
-
-      assert_equal 'a declaration takes a url or a command', error.message
+      assert_equal('a declaration takes a url or a command', refusal { Riffer::Rig::Mcp::Declaration.new })
     end
   end
 
@@ -36,14 +42,14 @@ describe Riffer::Rig::Mcp::Declaration do
       assert_equal 'https://x.test', declaration.with_headers({ 'B' => 'b' }).url
     end
 
+    it 'preserves the auth of a stdio declaration' do
+      assert_equal({ api_key: ['MY_KEY'] }, stdio.with_headers({ 'X-Y' => 'z' }).auth)
+    end
+
     it 'preserves the command, args and env of a stdio declaration' do
       rebuilt = stdio.with_headers({ 'X-Y' => 'z' })
 
       assert_equal ['some-server', ['--x'], { 'FOO' => 'bar' }], [rebuilt.command, rebuilt.args, rebuilt.env]
-    end
-
-    it 'preserves the auth of a stdio declaration' do
-      assert_equal({ api_key: ['MY_KEY'] }, stdio.with_headers({ 'X-Y' => 'z' }).auth)
     end
   end
 

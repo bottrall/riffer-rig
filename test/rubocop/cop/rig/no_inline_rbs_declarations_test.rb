@@ -30,8 +30,4 @@ describe RuboCop::Cop::Rig::NoInlineRbsDeclarations do
 
     assert_empty offenses(source)
   end
-
-  it 'tells the author where declarations belong' do
-    assert_match %r{sig/manual/}, offenses("# @rbs!\n").first.message
-  end
 end

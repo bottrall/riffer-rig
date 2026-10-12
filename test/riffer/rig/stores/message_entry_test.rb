@@ -11,15 +11,7 @@ describe Riffer::Rig::Stores::MessageEntry do
     assert_equal({ role: 'user', content: 'hello' }, entry.message)
   end
 
-  it 'is frozen' do
-    assert_predicate entry, :frozen?
-  end
-
   describe '.from_hash' do
-    it 'rebuilds the entry' do
-      assert_equal entry, Riffer::Rig::Stores::MessageEntry.from_hash(entry.to_h)
-    end
-
     it 'returns nil when the message is missing' do
       assert_nil Riffer::Rig::Stores::MessageEntry.from_hash({ type: 'message' })
     end
@@ -27,6 +19,14 @@ describe Riffer::Rig::Stores::MessageEntry do
     it 'returns nil when the message is not a hash' do
       assert_nil Riffer::Rig::Stores::MessageEntry.from_hash({ type: 'message', message: 'hello' })
     end
+
+    it 'rebuilds the entry' do
+      assert_equal entry, Riffer::Rig::Stores::MessageEntry.from_hash(entry.to_h)
+    end
+  end
+
+  it 'is frozen' do
+    assert_predicate entry, :frozen?
   end
 
   describe '#to_h' do

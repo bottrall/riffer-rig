@@ -9,6 +9,12 @@ describe Riffer::Rig::Command do
     assert_equal ['log', 'Recent commits', :git], [command.name, command.description, command.extension]
   end
 
+  it 'is frozen' do
+    command = Riffer::Rig::Command.new('log', description: 'Recent commits', extension: :git) { |_ctx| nil }
+
+    assert_predicate command, :frozen?
+  end
+
   it 'passes the context to its block' do
     received = nil
     command = Riffer::Rig::Command.new('log', description: 'Recent commits', extension: :git) { |ctx| received = ctx }
@@ -16,11 +22,5 @@ describe Riffer::Rig::Command do
     command.call(ctx)
 
     assert_same ctx, received
-  end
-
-  it 'is frozen' do
-    command = Riffer::Rig::Command.new('log', description: 'Recent commits', extension: :git) { |_ctx| nil }
-
-    assert_predicate command, :frozen?
   end
 end

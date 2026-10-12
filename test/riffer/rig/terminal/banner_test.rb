@@ -7,6 +7,12 @@ describe Riffer::Rig::Terminal::Banner do
     @theme = Riffer::Rig::Terminal::Theme.new(enabled: false)
   end
 
+  it 'emits no ansi escapes when theme disabled' do
+    banner = Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: 'none', version: '1')
+
+    refute_includes banner, "\e["
+  end
+
   it 'includes the provided info values' do
     banner = Riffer::Rig::Terminal::Banner.call(
       @theme,
@@ -31,28 +37,10 @@ describe Riffer::Rig::Terminal::Banner do
     assert_includes banner, 'anthropic/claude-x'
   end
 
-  it 'includes the skills label' do
-    banner = Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: '3', version: '1')
-
-    assert_includes banner, 'skills'
-  end
-
   it 'includes the skills count' do
     banner = Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: '3', version: '1')
 
     assert_includes banner, '3'
-  end
-
-  it 'shows none when no skills' do
-    banner = Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: 'none', version: '1')
-
-    assert_includes banner, 'none'
-  end
-
-  it 'emits no ansi escapes when theme disabled' do
-    banner = Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: 'none', version: '1')
-
-    refute_includes banner, "\e["
   end
 
   describe 'the session row' do
@@ -60,16 +48,11 @@ describe Riffer::Rig::Terminal::Banner do
       Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: 'none', version: '1', tally: tally)
     end
 
-    it 'shows the session cost when the tally is priced' do
+    it 'shows the tally in a session row' do
       tally = Riffer::Providers::TokenUsage.new(input_tokens: 300, output_tokens: 150, cost: 0.25)
+      session = Regexp.escape(Riffer::Rig::Terminal::Tally.call(tally))
 
-      assert_match(/session\s+450 tok · ~\$0\.2500/, banner(tally))
-    end
-
-    it 'shows the token total when the tally is unpriced' do
-      tally = Riffer::Providers::TokenUsage.new(input_tokens: 300, output_tokens: 150)
-
-      assert_match(/session\s+450 tok$/, banner(tally))
+      assert_match(/session\s+#{session}$/, banner(tally))
     end
 
     it 'omits the row before the first turn' do

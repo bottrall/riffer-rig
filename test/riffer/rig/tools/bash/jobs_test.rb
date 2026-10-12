@@ -22,9 +22,7 @@ describe Riffer::Rig::Tools::Bash::Jobs do
     nil
   end
 
-  def completed_job(command)
-    pid = spawn_pgroup(command)
-    job = @jobs.register(pid, output_path)
+  def await_completed(job)
     completed = nil
     50.times do
       completed = @jobs.list.find { |candidate| candidate.id == job.id && candidate.completed? }
@@ -32,7 +30,22 @@ describe Riffer::Rig::Tools::Bash::Jobs do
 
       sleep 0.02
     end
-    [job, completed]
+    completed
+  end
+
+  def completed_job(command)
+    pid = spawn_pgroup(command)
+    job = @jobs.register(pid, output_path)
+    [job, await_completed(job)]
+  ensure
+    stop_group(pid)
+  end
+
+  def killed_job
+    pid = spawn_pgroup('sleep 30')
+    job = @jobs.register(pid, output_path)
+    @jobs.kill_outstanding
+    await_completed(job)
   ensure
     stop_group(pid)
   end
@@ -89,10 +102,22 @@ describe Riffer::Rig::Tools::Bash::Jobs do
     assert_equal 0, completed&.status
   end
 
+  it 'reports a job ended by a signal with status 1' do
+    assert_equal 1, killed_job&.status
+  end
+
   it 'reports a finished job with elapsed time to its completion' do
     _job, completed = completed_job('sleep 0.3')
 
     assert_operator completed.elapsed(Process.clock_gettime(Process::CLOCK_MONOTONIC)), :>=, 0.2
+  end
+
+  it 'drops a job whose process can no longer be waited on' do
+    pid = spawn_pgroup('true')
+    Process.wait(pid)
+    registered = @jobs.register(pid, output_path)
+
+    refute_includes @jobs.list.map(&:id), registered.id
   end
 
   it 'sweeps completed jobs so later touches no longer list them' do
@@ -102,17 +127,6 @@ describe Riffer::Rig::Tools::Bash::Jobs do
   end
 
   it 'kills outstanding process groups' do
-    pid = spawn_pgroup('sleep 30')
-    job = @jobs.register(pid, output_path)
-    @jobs.kill_outstanding
-    killed = nil
-    50.times do
-      killed = @jobs.list.find { |candidate| candidate.id == job.id && candidate.completed? }
-      break if killed
-
-      sleep 0.02
-    end
-
-    assert killed
+    assert killed_job
   end
 end

@@ -16,20 +16,12 @@ describe Riffer::Rig::Terminal::Markdown::Blocks do
       assert_empty Riffer::Rig::Terminal::Markdown::Blocks.split([])
     end
 
-    it 'keeps the lines of a paragraph together' do
-      assert_equal [%w[a b]], split("a\nb")
+    it 'gives each heading a block of its own' do
+      assert_equal [['# a'], ['# b']], split("# a\n# b")
     end
 
-    it 'gives a run of blank lines a block of its own' do
-      assert_equal [['a'], ['', ''], ['b']], split("a\n\n\nb")
-    end
-
-    it 'ends a paragraph at a heading' do
-      assert_equal [['a'], ['# b'], ['c']], split("a\n# b\nc")
-    end
-
-    it 'ends a paragraph at a list' do
-      assert_equal [['a'], ['- b']], split("a\n- b")
+    it 'gives each rule a block of its own' do
+      assert_equal [['---'], ['---']], split("---\n---")
     end
 
     it 'takes a fence through its closing line' do
@@ -48,16 +40,32 @@ describe Riffer::Rig::Terminal::Markdown::Blocks do
       assert_equal [['```', '~~~', '```']], split("```\n~~~\n```")
     end
 
+    it 'takes a table through its last row' do
+      assert_equal [['| a |', '|---|', '| b |'], ['c']], split("| a |\n|---|\n| b |\nc")
+    end
+
     it 'keeps indented and blank lines with their list' do
       assert_equal [['- a', '', '  b', '- c'], ['d']], split("- a\n\n  b\n- c\nd")
     end
 
-    it 'keeps the lines of a quote together' do
-      assert_equal [['> a', '> b'], ['c']], split("> a\n> b\nc")
+    it 'keeps the lines of a paragraph together' do
+      assert_equal [%w[a b]], split("a\nb")
     end
 
-    it 'takes a table through its last row' do
-      assert_equal [['| a |', '|---|', '| b |'], ['c']], split("| a |\n|---|\n| b |\nc")
+    it 'gives a run of blank lines a block of its own' do
+      assert_equal [['a'], ['', ''], ['b']], split("a\n\n\nb")
+    end
+
+    it 'ends a paragraph at a heading' do
+      assert_equal [['a'], ['# b'], ['c']], split("a\n# b\nc")
+    end
+
+    it 'ends a paragraph at a list' do
+      assert_equal [['a'], ['- b']], split("a\n- b")
+    end
+
+    it 'keeps the lines of a quote together' do
+      assert_equal [['> a', '> b'], ['c']], split("> a\n> b\nc")
     end
   end
 
@@ -86,8 +94,24 @@ describe Riffer::Rig::Terminal::Markdown::Blocks do
       assert_equal :paragraph, kind('####### a')
     end
 
+    it 'does not classify a mark with no following space as a heading' do
+      assert_equal :paragraph, kind('#hashtag')
+    end
+
     it 'classifies a rule' do
       assert_equal :rule, kind('* * *')
+    end
+
+    it 'classifies unspaced asterisks as a rule' do
+      assert_equal :rule, kind('***')
+    end
+
+    it 'classifies underscores as a rule' do
+      assert_equal :rule, kind('___')
+    end
+
+    it 'classifies spaced dashes as a rule rather than a list' do
+      assert_equal :rule, kind('- - -')
     end
 
     it 'classifies a quote' do
@@ -108,6 +132,18 @@ describe Riffer::Rig::Terminal::Markdown::Blocks do
 
     it 'classifies a row followed by a divider as a table' do
       assert_equal :table, kind("a | b\n--- | ---")
+    end
+
+    it 'does not classify a last line with a pipe as a table' do
+      assert_equal :paragraph, kind('a | b')
+    end
+
+    it 'does not classify a line without a pipe above a divider as a table' do
+      assert_equal :paragraph, kind("a\n--- | ---")
+    end
+
+    it 'does not classify a row above a divider without a pipe as a table' do
+      assert_equal :paragraph, kind("a | b\n---")
     end
 
     it 'does not classify a row without a divider as a table' do

@@ -18,33 +18,10 @@ describe Riffer::Rig::ACP::Host do
     assert_equal Set[:notify], @host.capabilities
   end
 
-  it 'declines ask with nil' do
-    assert_nil @host.ask('Which model?')
-  end
-
-  it 'declines confirm with false' do
-    refute @host.confirm('Trust this project?')
-  end
-
-  it 'yields from progress and notifies the label' do
-    yielded = false
-    @host.progress('Installing') { yielded = true }
-
-    assert yielded
-  end
-
   it 'buffers a notify until it knows the session id' do
     @host.notify('Buffered', level: :warning)
 
     assert_empty sent
-  end
-
-  it 'flushes the buffered notifies in order when the session id arrives' do
-    @host.notify('First')
-    @host.notify('Second', level: :error)
-    @host.session_id = 'session-1'
-
-    assert_equal(%w[First Second], sent.map { |_, update| update.content.text })
   end
 
   it 'sends a notify after the session id as an agent message chunk with its text' do
@@ -59,5 +36,34 @@ describe Riffer::Rig::ACP::Host do
     @host.notify('Live')
 
     assert_equal 'session-1', sent.first.first
+  end
+
+  it 'notifies the progress label' do
+    @host.session_id = 'session-1'
+    @host.progress('Installing')
+
+    assert_equal 'Installing', sent.first.last.content.text
+  end
+
+  it 'sends nothing from progress without a label' do
+    @host.session_id = 'session-1'
+    @host.progress { nil }
+
+    assert_empty sent
+  end
+
+  it 'yields to the block given to progress' do
+    yielded = false
+    @host.progress('Installing') { yielded = true }
+
+    assert yielded
+  end
+
+  it 'flushes the buffered notifies in order when the session id arrives' do
+    @host.notify('First')
+    @host.notify('Second', level: :error)
+    @host.session_id = 'session-1'
+
+    assert_equal(%w[First Second], sent.map { |_, update| update.content.text })
   end
 end

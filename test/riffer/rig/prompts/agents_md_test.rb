@@ -32,10 +32,22 @@ describe Riffer::Rig::Prompts::AgentsMd do
     Riffer::Rig::Prompts::AgentsMd.paths(cwd).select { |path| path.start_with?(@tmp) }
   end
 
+  it 'resolves a relative cwd against the process working directory' do
+    File.write(@inner, 'APP_RULES')
+
+    assert_equal [@inner], Dir.chdir(@repo) { own_paths('packages/app') }
+  end
+
   it 'lists the global file, then every ancestor file from the outermost down to the cwd' do
     write_all
 
     assert_equal [@global, @outer, @inner], own_paths(@cwd)
+  end
+
+  it 'lists the global file once when the cwd is its directory' do
+    File.write(@global, 'GLOBAL_RULES')
+
+    assert_equal [@global], own_paths(File.dirname(@global))
   end
 
   it 'lists only the files that exist' do
@@ -44,16 +56,10 @@ describe Riffer::Rig::Prompts::AgentsMd do
     assert_equal [@outer], own_paths(@cwd)
   end
 
-  it 'resolves a relative cwd against the process working directory' do
-    File.write(@inner, 'APP_RULES')
+  it 'renders nothing when no file exists' do
+    skip 'an AGENTS.md above the tmpdir' unless Riffer::Rig::Prompts::AgentsMd.paths(@cwd).empty?
 
-    assert_equal [@inner], Dir.chdir(@repo) { own_paths('packages/app') }
-  end
-
-  it 'lists the global file once when the cwd is its directory' do
-    File.write(@global, 'GLOBAL_RULES')
-
-    assert_equal [@global], own_paths(File.dirname(@global))
+    assert_nil Riffer::Rig::Prompts::AgentsMd.section(@cwd)
   end
 
   it 'renders one block per file in order, each with its absolute path' do
@@ -70,11 +76,5 @@ describe Riffer::Rig::Prompts::AgentsMd do
     write_all
 
     assert Riffer::Rig::Prompts::AgentsMd.section(@cwd).start_with?("#{Riffer::Rig::Prompts::AgentsMd::FRAMING}\n\n")
-  end
-
-  it 'renders nothing when no file exists' do
-    skip 'an AGENTS.md above the tmpdir' unless Riffer::Rig::Prompts::AgentsMd.paths(@cwd).empty?
-
-    assert_nil Riffer::Rig::Prompts::AgentsMd.section(@cwd)
   end
 end

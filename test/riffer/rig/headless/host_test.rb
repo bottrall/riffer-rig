@@ -13,20 +13,6 @@ describe Riffer::Rig::Headless::Host do
     assert_equal Set[:notify, :progress], @host.capabilities
   end
 
-  it 'declines an ask' do
-    assert_nil @host.ask('Which model?')
-  end
-
-  it 'declines a confirm' do
-    refute @host.confirm('Trust this project?')
-  end
-
-  it 'prints a notify to stderr' do
-    @host.notify('heads up', level: :warning)
-
-    assert_equal "heads up\n", @error.string
-  end
-
   it 'keeps a notify off stderr in --json mode' do
     host = Riffer::Rig::Headless::Host.new(error: @error, json: true)
 
@@ -35,10 +21,22 @@ describe Riffer::Rig::Headless::Host do
     assert_empty @error.string
   end
 
+  it 'prints a notify to stderr' do
+    @host.notify('heads up', level: :warning)
+
+    assert_equal "heads up\n", @error.string
+  end
+
   it 'prints a progress label to stderr' do
     @host.progress('installing') { nil }
 
     assert_equal "installing\n", @error.string
+  end
+
+  it 'prints nothing for progress without a label' do
+    @host.progress { nil }
+
+    assert_empty @error.string
   end
 
   it 'yields the progress block' do
@@ -47,5 +45,11 @@ describe Riffer::Rig::Headless::Host do
     @host.progress { yielded = true }
 
     assert yielded
+  end
+
+  it 'accepts progress without a block' do
+    @host.progress('installing')
+
+    assert_equal "installing\n", @error.string
   end
 end

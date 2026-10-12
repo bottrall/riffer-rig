@@ -14,6 +14,10 @@ describe Riffer::Rig::Tools::Bash::Job do
     )
   end
 
+  it 'freezes itself' do
+    assert_predicate job, :frozen?
+  end
+
   it 'is active without a status' do
     assert_predicate job, :active?
   end
@@ -22,16 +26,12 @@ describe Riffer::Rig::Tools::Bash::Job do
     assert_predicate job(status: 0), :completed?
   end
 
-  it 'freezes itself' do
-    assert_predicate job, :frozen?
+  it 'measures elapsed to the end time once completed' do
+    assert_in_delta(3.0, job(status: 0, ended_at: 13.0).elapsed(99.0))
   end
 
   it 'measures elapsed from the given time while active' do
     assert_in_delta(2.5, job.elapsed(12.5))
-  end
-
-  it 'measures elapsed to the end time once completed' do
-    assert_in_delta(3.0, job(status: 0, ended_at: 13.0).elapsed(99.0))
   end
 
   it 'returns a completed copy with the status from finish' do
@@ -45,5 +45,9 @@ describe Riffer::Rig::Tools::Bash::Job do
 
     assert_equal [job.id, job.pid, job.output_path, job.started_at],
                  [finished.id, finished.pid, finished.output_path, finished.started_at]
+  end
+
+  it 'returns a completed copy that measures elapsed to the end time from finish' do
+    assert_in_delta(3.0, job.finish(0, 13.0).elapsed(99.0))
   end
 end

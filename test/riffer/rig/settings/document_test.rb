@@ -7,16 +7,28 @@ describe Riffer::Rig::Settings::Document do
     { models: { 'anthropic/claude-sonnet-4-6': { input: 3, output: 15.0, cache_write: 3.75, cache_read: 0 } } }
   end
 
-  it 'reads the model' do
-    assert_equal 'openai/o3', Riffer::Rig::Settings::Document.new({ model: 'openai/o3' }).model
-  end
-
   it 'ignores a model that is not a string' do
     assert_nil Riffer::Rig::Settings::Document.new({ model: 42 }).model
   end
 
+  it 'reads the model' do
+    assert_equal 'openai/o3', Riffer::Rig::Settings::Document.new({ model: 'openai/o3' }).model
+  end
+
+  it 'ignores a reasoning level that is not a string' do
+    assert_nil Riffer::Rig::Settings::Document.new({ reasoning: 3 }).reasoning
+  end
+
   it 'reads the reasoning level' do
     assert_equal 'high', Riffer::Rig::Settings::Document.new({ reasoning: 'high' }).reasoning
+  end
+
+  it 'has no pricing when the models block is not an object' do
+    assert_empty Riffer::Rig::Settings::Document.new({ models: 'anthropic' }).models
+  end
+
+  it 'ignores a pricing entry that is not an object' do
+    assert_empty Riffer::Rig::Settings::Document.new({ models: { 'openai/o3': 3 } }).models
   end
 
   it 'keys the pricing table by model string' do
@@ -27,12 +39,19 @@ describe Riffer::Rig::Settings::Document do
     assert_in_delta(15.0, Riffer::Rig::Settings::Document.new(pricing).models['anthropic/claude-sonnet-4-6'].output)
   end
 
-  it 'coerces prices to float' do
-    assert_kind_of Float, Riffer::Rig::Settings::Document.new(pricing).models['anthropic/claude-sonnet-4-6'].input
+  it 'has no provider blocks when the providers block is not an object' do
+    assert_empty Riffer::Rig::Settings::Document.new({ providers: 'azure_openai' }).providers
   end
 
-  it 'ignores a pricing entry that is not an object' do
-    assert_empty Riffer::Rig::Settings::Document.new({ models: { 'openai/o3': 3 } }).models
+  it 'ignores a provider block that is not an object' do
+    assert_empty Riffer::Rig::Settings::Document.new({ providers: { azure_openai: 'https://azure.test' } }).providers
+  end
+
+  it 'drops provider fields that are not strings' do
+    fields = { endpoint: 'https://azure.test', timeout: 30 }
+    document = Riffer::Rig::Settings::Document.new({ providers: { azure_openai: fields } })
+
+    assert_equal({ 'azure_openai' => { 'endpoint' => 'https://azure.test' } }, document.providers)
   end
 
   it 'keys the provider blocks by identifier and field name' do

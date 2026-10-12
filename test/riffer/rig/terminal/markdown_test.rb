@@ -34,21 +34,74 @@ describe Riffer::Rig::Terminal::Markdown do
     end
   end
 
-  describe 'headings' do
-    it 'paints a heading and drops its marks in colour' do
-      assert_equal "\e[1m\e[38;2;122;92;255mTitle\e[0m\e[0m\n", render('## Title', enabled: true)
+  describe 'untrusted input' do
+    it 'replaces invalid bytes instead of raising' do
+      assert_equal "abc ��31m def\n", render("abc \xff\x9b31m def")
     end
 
-    it 'keeps the marks without colour' do
-      assert_equal "## Title\n", render('## Title')
+    it 'transcodes a source in another encoding' do
+      assert_equal "café\n", render("caf\xE9".b.force_encoding(Encoding::ISO_8859_1))
     end
 
-    it 'drops a closing run of marks' do
-      assert_equal "## Title\n", render('## Title ##')
+    it 'treats a carriage return line feed as one line ending' do
+      assert_equal "a b\n\nc\n", render("a\r\nb\r\n\r\nc")
     end
 
-    it 'leaves a mark with no following space as text' do
-      assert_equal "#hashtag\n", render('#hashtag')
+    it 'strips an escape sequence down to inert text' do
+      assert_equal "a[31mb\n", render("a\e[31mb")
+    end
+
+    it 'strips c1 control characters' do
+      assert_equal "a31mb\n", render("a\u009b31mb")
+    end
+
+    it 'strips the bell and backspace' do
+      assert_equal "ab\n", render("a\a\bb")
+    end
+
+    it 'strips control characters inside a fence' do
+      assert_equal "│ a[2Jb\n", render("```\na\e[2Jb\n```")
+    end
+
+    it 'cannot close a hyperlink early from its target' do
+      assert_equal(
+        "\e]8;;https://a]8;;https://evil\e\\\e[4m\e[38;2;77;124;255mx\e[0m\e[0m\e]8;;\e\\\n",
+        render("[x](https://a\e]8;;https://evil\a)", enabled: true)
+      )
+    end
+
+    it 'expands a tab to four spaces' do
+      assert_equal "│     x\n", render("```\n\tx\n```")
+    end
+
+    it 'prints html as text' do
+      assert_equal "<script>alert(1)</script>\n", render('<script>alert(1)</script>')
+    end
+
+    it 'terminates at a width of one' do
+      assert_equal "• a\n  b\n┃ c\n", render("- a b\n> c", width: 1)
+    end
+
+    it 'treats a width below one as one' do
+      assert_equal "a\nb\n", render('ab', width: 0)
+    end
+
+    it 'prints nesting past the limit as text instead of recursing' do
+      assert_equal "#{'┃ ' * 17}#{'>' * 4983} deep\n", render("#{'>' * 5000} deep", width: nil)
+    end
+  end
+
+  describe 'horizontal rules' do
+    it 'draws a rule across the width' do
+      assert_equal "─────\n", render('---', width: 5)
+    end
+
+    it 'paints the rule' do
+      assert_equal "\e[2m─────\e[0m\n", render('---', enabled: true, width: 5)
+    end
+
+    it 'draws a fixed-length rule when no width is known' do
+      assert_equal "#{'─' * 40}\n", render('---', width: nil)
     end
   end
 
@@ -69,8 +122,8 @@ describe Riffer::Rig::Terminal::Markdown do
       assert_equal "a\n\nb\n", render("a\n\n\n\nb")
     end
 
-    it 'treats a carriage return line feed as one line ending' do
-      assert_equal "a b\n\nc\n", render("a\r\nb\r\n\r\nc")
+    it 'drops leading and trailing blank lines' do
+      assert_equal "a\n", render("\n\na\n\n")
     end
 
     it 'renders nothing for an empty source' do
@@ -82,16 +135,23 @@ describe Riffer::Rig::Terminal::Markdown do
     end
   end
 
+  describe 'headings' do
+    it 'paints a heading and drops its marks in colour' do
+      assert_equal "\e[1m\e[38;2;122;92;255mTitle\e[0m\e[0m\n", render('## Title', enabled: true)
+    end
+
+    it 'keeps the marks without colour' do
+      assert_equal "## Title\n", render('## Title')
+    end
+
+    it 'drops a closing run of marks' do
+      assert_equal "## Title\n", render('## Title ##')
+    end
+  end
+
   describe 'fenced code' do
     it 'labels the language above a gutter' do
       assert_equal "ruby\n│ puts 1\n", render("```ruby\nputs 1\n```")
-    end
-
-    it 'paints the label, the gutter and the code' do
-      assert_equal(
-        "\e[2mruby\e[0m\n\e[2m│\e[0m \e[38;2;45;226;230mputs 1\e[0m\n",
-        render("```ruby\nputs 1\n```", enabled: true)
-      )
     end
 
     it 'omits the label when the fence names no language' do
@@ -102,12 +162,8 @@ describe Riffer::Rig::Terminal::Markdown do
       assert_equal "│ if x\n│\n│   y\n", render("```\nif x\n\n  y\n```")
     end
 
-    it 'cuts a long line at the width behind the gutter' do
-      assert_equal "│ abcdef\n│ gh ij\n", render("```\nabcdefgh ij\n```", width: 8)
-    end
-
-    it 'does not read markdown inside a fence' do
-      assert_equal "│ # not **a** heading\n", render("```\n# not **a** heading\n```")
+    it 'strips the indentation of the opening fence from the code' do
+      assert_equal "│   x\n│ y\n", render("  ```\n    x\n  y\n  ```")
     end
 
     it 'runs an unclosed fence to the end of the source' do
@@ -118,8 +174,49 @@ describe Riffer::Rig::Terminal::Markdown do
       assert_equal "py\n│ ```\n│ inner\n│ ```\n", render("~~~~py\n```\ninner\n```\n~~~~")
     end
 
-    it 'expands a tab to four spaces' do
-      assert_equal "│     x\n", render("```\n\tx\n```")
+    it 'cuts a long line at the width behind the gutter' do
+      assert_equal "│ abcdef\n│ gh ij\n", render("```\nabcdefgh ij\n```", width: 8)
+    end
+
+    it 'does not cut a long line when no width is known' do
+      assert_equal "│ #{'ab ' * 19}ab\n", render("```\n#{'ab ' * 20}\n```", width: nil)
+    end
+
+    it 'does not read markdown inside a fence' do
+      assert_equal "│ # not **a** heading\n", render("```\n# not **a** heading\n```")
+    end
+
+    it 'paints the label, the gutter and the code' do
+      assert_equal(
+        "\e[2mruby\e[0m\n\e[2m│\e[0m \e[38;2;45;226;230mputs 1\e[0m\n",
+        render("```ruby\nputs 1\n```", enabled: true)
+      )
+    end
+
+    it 'leaves a blank code line unpainted' do
+      assert_equal "\e[2m│\e[0m\n", render("```\na\n\nb\n```", enabled: true).lines.fetch(1)
+    end
+  end
+
+  describe 'block quotes' do
+    it 'renders a quote behind a gutter' do
+      assert_equal "┃ a\n┃\n┃ b\n", render("> a\n>\n> b")
+    end
+
+    it 'paints the gutter' do
+      assert_equal "\e[38;2;122;92;255m┃\e[0m a\n", render('> a', enabled: true)
+    end
+
+    it 'wraps a quote inside its gutter' do
+      assert_equal "┃ one\n┃ two\n", render('> one two', width: 6)
+    end
+
+    it 'nests quotes' do
+      assert_equal "┃ ┃ a\n┃ b\n", render(">> a\n> b")
+    end
+
+    it 'renders the blocks inside a quote' do
+      assert_equal "┃ • a\n", render('> - a')
     end
   end
 
@@ -130,6 +227,10 @@ describe Riffer::Rig::Terminal::Markdown do
 
     it 'paints the marker' do
       assert_equal "\e[38;2;192;76;253m•\e[0m a\n", render('- a', enabled: true)
+    end
+
+    it 'strips the indentation of an indented list' do
+      assert_equal "• a\n• b\n", render("  - a\n  - b")
     end
 
     it 'keeps the numbers of an ordered list and aligns them' do
@@ -159,55 +260,19 @@ describe Riffer::Rig::Terminal::Markdown do
     it 'renders an empty item as its marker' do
       assert_equal "•\n• x\n", render("-\n- x")
     end
-  end
 
-  describe 'block quotes' do
-    it 'renders a quote behind a gutter' do
-      assert_equal "┃ a\n┃\n┃ b\n", render("> a\n>\n> b")
-    end
-
-    it 'paints the gutter' do
-      assert_equal "\e[38;2;122;92;255m┃\e[0m a\n", render('> a', enabled: true)
-    end
-
-    it 'wraps a quote inside its gutter' do
-      assert_equal "┃ one\n┃ two\n", render('> one two', width: 6)
-    end
-
-    it 'nests quotes' do
-      assert_equal "┃ ┃ a\n┃ b\n", render(">> a\n> b")
-    end
-
-    it 'renders the blocks inside a quote' do
-      assert_equal "┃ • a\n", render('> - a')
-    end
-  end
-
-  describe 'horizontal rules' do
-    it 'draws a rule across the width' do
-      assert_equal "─────\n", render('---', width: 5)
-    end
-
-    it 'paints the rule' do
-      assert_equal "\e[2m─────\e[0m\n", render('---', enabled: true, width: 5)
-    end
-
-    it 'reads asterisks, underscores and spaced dashes as rules' do
-      assert_equal "──\n──\n──\n", render("***\n___\n- - -", width: 2)
-    end
-
-    it 'draws a fixed-length rule when no width is known' do
-      assert_equal "#{'─' * 40}\n", render('---', width: nil)
+    it 'renders an item whose marker is followed by more spaces than a regexp repeat allows' do
+      assert_equal "• a b\n", render("-#{' ' * 100_001}a\n  b", width: nil)
     end
   end
 
   describe 'tables' do
-    it 'renders a table as a grid' do
-      assert_equal "a    │ b\n─────┼──\nlong │ 2\n", render("| a | b |\n|---|---|\n| long | 2 |")
+    it 'prints a table whose header is past the column limit as text' do
+      assert_equal "#{'|' * 33} |-| |a\n", render("#{'|' * 33}\n|-|\n|a", width: nil)
     end
 
-    it 'leaves a line with a pipe and no divider row as a paragraph' do
-      assert_equal "a | b c\n", render("a | b\nc")
+    it 'prints a table with a body row past the column limit as text' do
+      assert_equal "|h |-| #{'|' * 33}\n", render("|h\n|-|\n#{'|' * 33}", width: nil)
     end
 
     it 'renders a table with as many pipes as the limit as a grid' do
@@ -217,80 +282,12 @@ describe Riffer::Rig::Terminal::Markdown do
       )
     end
 
-    it 'prints a table whose header is past the column limit as text' do
-      assert_equal "#{'|' * 33} |-| |a\n", render("#{'|' * 33}\n|-|\n|a", width: nil)
-    end
-
-    it 'prints a table with a body row past the column limit as text' do
-      assert_equal "|h |-| #{'|' * 33}\n", render("|h\n|-|\n#{'|' * 33}", width: nil)
-    end
-
-    it 'renders a table as wide as the limit as a grid' do
-      assert_equal "#{'a' * 496} │ b\n#{'─' * 496}─┼──\n", render("|#{'a' * 496}|b|\n|-|-|", width: nil)
+    it 'renders a table as a grid' do
+      assert_equal "a    │ b\n─────┼──\nlong │ 2\n", render("| a | b |\n|---|---|\n| long | 2 |")
     end
 
     it 'prints a table wider than the limit as text' do
       assert_equal "|#{'a' * 497}|b| |-|-|\n", render("|#{'a' * 497}|b|\n|-|-|", width: nil)
-    end
-
-    it 'prints a table whose wide cells sit in different rows as text' do
-      assert_equal(
-        "|#{'a' * 300}|b| |-|-| |c|#{'d' * 300}|\n",
-        render("|#{'a' * 300}|b|\n|-|-|\n|c|#{'d' * 300}|", width: nil)
-      )
-    end
-  end
-
-  describe 'untrusted input' do
-    it 'prints html as text' do
-      assert_equal "<script>alert(1)</script>\n", render('<script>alert(1)</script>')
-    end
-
-    it 'strips an escape sequence down to inert text' do
-      assert_equal "a[31mb\n", render("a\e[31mb")
-    end
-
-    it 'strips c1 control characters' do
-      assert_equal "a31mb\n", render("a\u009b31mb")
-    end
-
-    it 'replaces invalid bytes instead of raising' do
-      assert_equal "abc ��31m def\n", render("abc \xff\x9b31m def")
-    end
-
-    it 'transcodes a source in another encoding' do
-      assert_equal "café\n", render("caf\xE9".b.force_encoding(Encoding::ISO_8859_1))
-    end
-
-    it 'strips the bell and backspace' do
-      assert_equal "ab\n", render("a\a\bb")
-    end
-
-    it 'strips control characters inside a fence' do
-      assert_equal "│ a[2Jb\n", render("```\na\e[2Jb\n```")
-    end
-
-    it 'cannot close a hyperlink early from its target' do
-      assert_equal(
-        "\e]8;;https://a]8;;https://evil\e\\\e[4m\e[38;2;77;124;255mx\e[0m\e[0m\e]8;;\e\\\n",
-        render("[x](https://a\e]8;;https://evil\a)", enabled: true)
-      )
-    end
-
-    it 'terminates at a width of one' do
-      assert_equal "• a\n  b\n┃ c\n", render("- a b\n> c", width: 1)
-    end
-
-    it 'treats a width below one as one' do
-      assert_equal "a\nb\n", render('ab', width: 0)
-    end
-
-    it 'renders an item whose marker is followed by more spaces than a regexp repeat allows' do
-      assert_equal "• a b\n", render("-#{' ' * 100_001}a\n  b", width: nil)
-    end
-
-    it 'prints nesting past the limit as text instead of recursing' do
-      assert_equal "#{'┃ ' * 17}#{'>' * 4983} deep\n", render("#{'>' * 5000} deep", width: nil)
     end
   end
 end

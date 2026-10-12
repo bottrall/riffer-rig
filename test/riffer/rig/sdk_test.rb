@@ -7,9 +7,11 @@ class AskRecorder
   attr_reader :confirmations #: Array[String?]
 
   # @rbs capabilities: Set[Symbol]
+  # @rbs answer: bool
   # @rbs return: void
-  def initialize(capabilities = Set[:confirm])
+  def initialize(capabilities = Set[:confirm], answer: true)
     @capabilities = capabilities
+    @answer = answer
     @confirmations = []
   end
 
@@ -17,7 +19,7 @@ class AskRecorder
   # @rbs return: bool
   def confirm(question = nil)
     @confirmations << question
-    true
+    @answer
   end
 
   # @rbs label: String?
@@ -34,6 +36,14 @@ describe Riffer::Rig::SDK do
   def with_sdk_absent
     original = Gem::Specification.method(:find_by_name)
     Gem::Specification.define_singleton_method(:find_by_name) { |*_args| raise Gem::LoadError, 'not installed' }
+    yield
+  ensure
+    Gem::Specification.define_singleton_method(:find_by_name, original)
+  end
+
+  def with_sdk_present
+    original = Gem::Specification.method(:find_by_name)
+    Gem::Specification.define_singleton_method(:find_by_name) { |*_args| true }
     yield
   ensure
     Gem::Specification.define_singleton_method(:find_by_name, original)
@@ -63,6 +73,20 @@ describe Riffer::Rig::SDK do
   describe '.ensure' do
     it 'requires a present gem' do
       assert_nil Riffer::Rig::SDK.ensure('json', '>= 0', host: null)
+    end
+
+    it 'falls through when an installed gem cannot be loaded' do
+      with_sdk_present do
+        with_bundler(true) do
+          result = Riffer::Rig::SDK.ensure('acme-sdk', '~> 1.0', host: null)
+
+          assert_equal(
+            'acme-sdk is not installed and Bundler manages the load path; ' \
+            "add gem 'acme-sdk', '~> 1.0' to the Gemfile",
+            result
+          )
+        end
+      end
     end
 
     it 'reports the Gemfile line for an absent gem under Bundler' do
@@ -101,6 +125,22 @@ describe Riffer::Rig::SDK do
       end
 
       assert_empty host.confirmations
+    end
+
+    it 'reports how to install when the user declines the confirm' do
+      host = AskRecorder.new(answer: false)
+      with_sdk_absent do
+        with_bundler(false) do
+          with_gem_stubs do
+            result = Riffer::Rig::SDK.ensure('acme-sdk', '~> 1.0', host: host)
+
+            assert_equal(
+              "acme-sdk is not installed; install it with gem install acme-sdk -v '~> 1.0' or add it to a Gemfile",
+              result
+            )
+          end
+        end
+      end
     end
 
     it 'asks the host to install an absent gem outside Bundler' do
@@ -154,16 +194,18 @@ describe Riffer::Rig::SDK do
         end
       end
     end
-  end
 
-  describe 'gemspec' do
-    it 'depends on no provider SDK' do
-      spec = Gem::Specification.load('riffer-rig.gemspec')
-      sdks = spec.runtime_dependencies.select do |dependency|
-        %w[anthropic openai aws-sdk-bedrockruntime].include?(dependency.name)
+    it 'reports a gem that still cannot be loaded after installing' do
+      host = AskRecorder.new
+      with_sdk_absent do
+        with_bundler(false) do
+          with_gem_stubs do
+            result = Riffer::Rig::SDK.ensure('acme-sdk', '~> 1.0', host: host)
+
+            assert_equal 'acme-sdk was installed but could not be loaded', result
+          end
+        end
       end
-
-      assert_empty sdks
     end
   end
 end

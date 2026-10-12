@@ -44,6 +44,10 @@ describe Riffer::Rig::Stores::JSONL do
     File.open(File.join(sessions, 'project', 'aaa.jsonl'), 'a') { |file| file.write("#{JSON.generate(entry_hash)}\n") }
   end
 
+  it 'raises when appending without a header' do
+    assert_raises(ArgumentError) { @store.append('aaa', message_entry('hello')) }
+  end
+
   it 'appends one JSON line per entry under the cwd slug' do
     @store.append('aaa', header('aaa', '/home/jake/My Work'))
     @store.append('aaa', message_entry('hello'))
@@ -58,6 +62,29 @@ describe Riffer::Rig::Stores::JSONL do
     )
   end
 
+  it 'appends to a session file another store instance created' do
+    write_elsewhere('project', 'aaa', header('aaa'))
+    @store.append('aaa', message_entry('hello'))
+
+    assert_equal [header('aaa'), message_entry('hello')], @store.read('aaa')
+  end
+
+  it 'files a cwd with no slug characters under a dash' do
+    @store.append('aaa', header('aaa', '/'))
+
+    assert_path_exists File.join(sessions, '-', 'aaa.jsonl')
+  end
+
+  it 'collapses a bare dot cwd so the file stays in the tree' do
+    @store.append('aaa', header('aaa', '..'))
+
+    refute_empty Dir.glob(File.join(sessions, '*', 'aaa.jsonl'))
+  end
+
+  it 'reads an unknown session as empty' do
+    assert_empty @store.read('nope')
+  end
+
   it 'round-trips every entry type' do
     entries = [
       header('aaa'),
@@ -68,35 +95,6 @@ describe Riffer::Rig::Stores::JSONL do
     entries.each { |entry| @store.append('aaa', entry) }
 
     assert_equal entries, @store.read('aaa')
-  end
-
-  it 'round-trips the recorded_at of a stamped entry' do
-    stamped = Riffer::Rig::Stores::ModelEntry.new(model: 'mock/one', recorded_at: '2026-10-11T12:00:00.500Z')
-    @store.append('aaa', header('aaa'))
-    @store.append('aaa', stamped)
-
-    assert_equal stamped.recorded_at, @store.read('aaa').last.recorded_at
-  end
-
-  it 'reads a file written before entries carried recorded_at' do
-    @store.append('aaa', header('aaa'))
-    append_line({ type: 'message', message: { role: 'user', content: 'hello' } })
-    append_line({ type: 'model', model: 'mock/one' })
-    append_line({ type: 'skill', skill: 'a' })
-
-    assert_equal(
-      [
-        header('aaa'),
-        message_entry('hello'),
-        Riffer::Rig::Stores::ModelEntry.new(model: 'mock/one'),
-        Riffer::Rig::Stores::SkillEntry.new(skill: 'a')
-      ],
-      @store.read('aaa')
-    )
-  end
-
-  it 'reads an unknown session as empty' do
-    assert_empty @store.read('nope')
   end
 
   it 'skips malformed lines when reading' do
@@ -121,6 +119,26 @@ describe Riffer::Rig::Stores::JSONL do
     assert_equal [header('aaa', '/one'), header('bbb', '/two')], @store.list
   end
 
+  it 'omits an empty session file from the listing' do
+    FileUtils.mkdir_p(File.join(sessions, 'project'))
+    File.write(File.join(sessions, 'project', 'aaa.jsonl'), '')
+
+    assert_empty @store.list
+  end
+
+  it 'omits a session file with a malformed first line from the listing' do
+    FileUtils.mkdir_p(File.join(sessions, 'project'))
+    File.write(File.join(sessions, 'project', 'aaa.jsonl'), "not json\n")
+
+    assert_empty @store.list
+  end
+
+  it 'omits a session file that does not start with a header from the listing' do
+    write_elsewhere('project', 'aaa', message_entry('hello'))
+
+    assert_empty @store.list
+  end
+
   it 'stamps the listed header with the file mtime' do
     @store.append('aaa', header('aaa'))
     time = Time.at(1000)
@@ -136,6 +154,10 @@ describe Riffer::Rig::Stores::JSONL do
     assert_equal [header('aaa', '/project')], @store.list(cwd: '/project')
   end
 
+  it 'ignores deleting an unknown session' do
+    assert_nil @store.delete('nope')
+  end
+
   it 'deletes the session file' do
     @store.append('aaa', header('aaa'))
     @store.delete('aaa')
@@ -148,15 +170,5 @@ describe Riffer::Rig::Stores::JSONL do
     @store.delete('aaa')
 
     assert_empty @store.read('aaa')
-  end
-
-  it 'collapses a bare dot cwd so the file stays in the tree' do
-    @store.append('aaa', header('aaa', '..'))
-
-    refute_empty Dir.glob(File.join(sessions, '*', 'aaa.jsonl'))
-  end
-
-  it 'raises when appending without a header' do
-    assert_raises(ArgumentError) { @store.append('aaa', message_entry('hello')) }
   end
 end

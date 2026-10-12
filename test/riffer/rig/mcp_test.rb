@@ -22,4 +22,10 @@ describe Riffer::Rig::Mcp do
 
     assert_equal home, Riffer::Rig::Mcp.merge(home, {})
   end
+
+  it 'takes the servers of the project when the home names none' do
+    project = { servers: { web: { url: 'https://web.example/mcp' } } }
+
+    assert_equal project, Riffer::Rig::Mcp.merge({}, project)
+  end
 end

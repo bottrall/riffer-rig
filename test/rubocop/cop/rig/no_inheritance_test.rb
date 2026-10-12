@@ -11,8 +11,12 @@ describe RuboCop::Cop::Rig::NoInheritance do
     RuboCop::Cop::Commissioner.new([cop]).investigate(processed).offenses
   end
 
-  it 'flags a class inheriting from a rig class' do
-    assert_equal [1], offenses("class Fake < Riffer::Rig::Hosts::Null; end\n").map(&:line)
+  it 'allows a class without a parent' do
+    assert_empty offenses("class Plain; end\n")
+  end
+
+  it 'allows a parent that is not a constant' do
+    assert_empty offenses("class Plain < Struct.new(:a); end\n")
   end
 
   it 'allows a framework-mandated riffer parent' do
@@ -27,7 +31,7 @@ describe RuboCop::Cop::Rig::NoInheritance do
     assert_empty offenses("class BusyError < StandardError; end\n")
   end
 
-  it 'allows a class without a parent' do
-    assert_empty offenses("class Plain; end\n")
+  it 'flags a class inheriting from a rig class' do
+    assert_equal [1], offenses("class Fake < Riffer::Rig::Hosts::Null; end\n").map(&:line)
   end
 end

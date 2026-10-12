@@ -24,19 +24,23 @@ describe Riffer::Rig::Skills::Sources do
     File.write(File.join(root, name, 'SKILL.md'), "---\nname: #{name}\ndescription: Skill #{name}.\n---\n#{body}\n")
   end
 
-  it 'lists the skills of every source, once per name' do
-    assert_equal %w[a b], @sources.list_skills.map(&:name)
+  describe '#list_skills' do
+    it 'lists the skills of every source, once per name' do
+      assert_equal %w[a b], @sources.list_skills.map(&:name)
+    end
   end
 
-  it 'reads a skill from the earliest source that has it' do
-    assert_equal "first a\n", @sources.read_skill('a')
-  end
+  describe '#read_skill' do
+    it 'raises for a skill no source has' do
+      assert_raises(Riffer::ArgumentError) { @sources.read_skill('gone') }
+    end
 
-  it 'reads a skill only a later source has' do
-    assert_equal "second b\n", @sources.read_skill('b')
-  end
+    it 'reads a skill from the earliest source that has it' do
+      assert_equal "first a\n", @sources.read_skill('a')
+    end
 
-  it 'raises for a skill no source has' do
-    assert_raises(Riffer::ArgumentError) { @sources.read_skill('gone') }
+    it 'reads a skill only a later source has' do
+      assert_equal "second b\n", @sources.read_skill('b')
+    end
   end
 end

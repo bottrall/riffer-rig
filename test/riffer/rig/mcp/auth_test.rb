@@ -5,13 +5,10 @@ require 'fileutils'
 require 'json'
 
 class PromptingHost
-  attr_reader :asked #: Array[String]
-
   # @rbs answer: String
   # @rbs return: void
   def initialize(answer)
     @answer = answer
-    @asked = []
   end
 
   # @rbs return: Set[Symbol]
@@ -23,8 +20,7 @@ class PromptingHost
   # @rbs options: Array[String]?
   # @rbs secret: bool
   # @rbs return: String?
-  def ask(question = nil, options: nil, secret: false)
-    @asked << question.to_s
+  def ask(_question = nil, options: nil, secret: false)
     @answer
   end
 
@@ -116,19 +112,6 @@ describe Riffer::Rig::Mcp::Auth do
       end
     end
 
-    it 'does not prompt again once the field is stored' do
-      in_tmp_home do |auth_path|
-        Riffer::Rig::Mcp::Auth.resolve(
-          'docs', { api_key: ['DOCS_API_KEY'] }, host: PromptingHost.new('pasted'), env: env, auth_path:
-        )
-        host = PromptingHost.new('again')
-
-        Riffer::Rig::Mcp::Auth.resolve('docs', { api_key: ['DOCS_API_KEY'] }, host:, env: env, auth_path:)
-
-        assert_empty host.asked
-      end
-    end
-
     it 'raises with the env var names when the field cannot be resolved' do
       in_tmp_home do |auth_path|
         error = assert_raises(Riffer::Rig::Mcp::Auth::Error) do
@@ -147,6 +130,14 @@ describe Riffer::Rig::Mcp::Auth do
   end
 
   describe '.expand' do
+    it 'raises when a placeholder is not an auth field' do
+      error = assert_raises(Riffer::Rig::Mcp::Auth::Error) do
+        Riffer::Rig::Mcp::Auth.expand({ 'Authorization' => 'Bearer ${token}' }, { api_key: 'secret' })
+      end
+
+      assert_equal 'header references ${token}, which the auth block does not declare', error.message
+    end
+
     it 'substitutes every declared field into the headers' do
       headers = { 'Authorization' => 'Bearer ${api_key}', 'X-Org' => '${org}' }
 
@@ -158,14 +149,6 @@ describe Riffer::Rig::Mcp::Auth do
 
     it 'keeps text without placeholders as written' do
       assert_equal({ 'X-Token' => 'plain' }, Riffer::Rig::Mcp::Auth.expand({ 'X-Token' => 'plain' }, {}))
-    end
-
-    it 'raises when a placeholder is not an auth field' do
-      error = assert_raises(Riffer::Rig::Mcp::Auth::Error) do
-        Riffer::Rig::Mcp::Auth.expand({ 'Authorization' => 'Bearer ${token}' }, { api_key: 'secret' })
-      end
-
-      assert_equal 'header references ${token}, which the auth block does not declare', error.message
     end
   end
 

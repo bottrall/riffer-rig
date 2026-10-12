@@ -10,28 +10,16 @@ describe Riffer::Rig::Headless::Ndjson do
     assert_equal "{\"role\":\"assistant\",\"content\":\"Re\",\"type\":\"text_delta\"}\n", line
   end
 
-  it 'snake_cases the multi-word stream event classes' do
-    line = Riffer::Rig::Headless::Ndjson.line(Riffer::StreamEvents::TokenUsageDone.new(token_usage: nil))
+  it 'renders a fatal message as an error record' do
+    line = Riffer::Rig::Headless::Ndjson.error('boom')
 
-    assert_equal 'token_usage_done', JSON.parse(line).fetch('type')
+    assert_equal "{\"type\":\"error\",\"message\":\"boom\"}\n", line
   end
 
   it 'serializes a rig event with its type and fields' do
     line = Riffer::Rig::Headless::Ndjson.line(Riffer::Rig::Events::SessionStart.new('abc', :new))
 
     assert_equal({ 'type' => 'session_start', 'id' => 'abc', 'reason' => 'new' }, JSON.parse(line))
-  end
-
-  it 'serializes a nested riffer object through its to_h' do
-    message = Riffer::Messages::Assistant.new(
-      'Hi',
-      token_usage: Riffer::Providers::TokenUsage.new(
-        input_tokens: 10, output_tokens: 5, cache_write_tokens: 0, cache_read_tokens: 0, cost: nil
-      )
-    )
-    line = Riffer::Rig::Headless::Ndjson.line(Riffer::Rig::Events::AfterResponse.new(message))
-
-    assert_equal 10, JSON.parse(line).dig('message', 'token_usage', 'input_tokens')
   end
 
   def after_tool_call(response)
@@ -58,18 +46,29 @@ describe Riffer::Rig::Headless::Ndjson do
     )
   end
 
-  it 'serializes an error result as its message and type, without the exception' do
-    response = Riffer::Tools::Response.error('boom', type: :unhandled_error, exception: RuntimeError.new('boom'))
-    line = Riffer::Rig::Headless::Ndjson.line(after_tool_call(response))
+  it 'snake_cases the multi-word stream event classes' do
+    line = Riffer::Rig::Headless::Ndjson.line(Riffer::StreamEvents::TokenUsageDone.new(token_usage: nil))
 
-    assert_equal(
-      { 'content' => 'boom', 'error' => 'boom', 'error_type' => 'unhandled_error' }, JSON.parse(line).fetch('result')
-    )
+    assert_equal 'token_usage_done', JSON.parse(line).fetch('type')
   end
 
-  it 'renders a fatal message as an error record' do
-    line = Riffer::Rig::Headless::Ndjson.error('boom')
+  it 'serializes a nested riffer object through its to_h' do
+    message = Riffer::Messages::Assistant.new(
+      'Hi',
+      token_usage: Riffer::Providers::TokenUsage.new(
+        input_tokens: 10, output_tokens: 5, cache_write_tokens: 0, cache_read_tokens: 0, cost: nil
+      )
+    )
+    line = Riffer::Rig::Headless::Ndjson.line(Riffer::Rig::Events::AfterResponse.new(message))
 
-    assert_equal "{\"type\":\"error\",\"message\":\"boom\"}\n", line
+    assert_equal 10, JSON.parse(line).dig('message', 'token_usage', 'input_tokens')
+  end
+
+  it 'serializes each element of an array' do
+    assert_equal [1, 'a'], Riffer::Rig::Headless::Ndjson.json_value([1, :a])
+  end
+
+  it 'falls back to the string form of a value with no to_h' do
+    assert_equal '1970-01-01 00:00:00 UTC', Riffer::Rig::Headless::Ndjson.json_value(Time.at(0).utc)
   end
 end

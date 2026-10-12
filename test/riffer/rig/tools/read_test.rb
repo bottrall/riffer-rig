@@ -7,25 +7,18 @@ describe Riffer::Rig::Tools::Read do
     @tool = Riffer::Rig::Tools::Read.new
   end
 
-  it 'reads file contents with line numbers' do
-    Dir.mktmpdir do |dir|
-      Dir.chdir(dir) do
-        File.write('greeting.txt', "hello\nworld")
-        response = @tool.call(context: nil, path: 'greeting.txt')
-
-        assert_includes response.content, "1\thello"
-      end
-    end
+  it 'ends its description with its guidance sentence' do
+    assert Riffer::Rig::Tools::Read.description.end_with?(
+      'Read a file before editing it, and read rather than guess what a file contains.'
+    )
   end
 
-  it 'offset and limit select a slice' do
+  it 'resolves a relative path against the cwd in its context' do
     Dir.mktmpdir do |dir|
-      Dir.chdir(dir) do
-        File.write('lines.txt', (1..10).map { |n| "line#{n}" }.join("\n"))
-        response = @tool.call(context: nil, path: 'lines.txt', offset: 3, limit: 1)
+      File.write(File.join(dir, 'greeting.txt'), 'hello')
+      response = @tool.call(context: Riffer::Agent::Context.new(cwd: dir), path: 'greeting.txt')
 
-        assert_equal "     3\tline3", response.content
-      end
+      assert_equal "     1\thello", response.content
     end
   end
 
@@ -50,18 +43,36 @@ describe Riffer::Rig::Tools::Read do
     end
   end
 
-  it 'ends its description with its guidance sentence' do
-    assert Riffer::Rig::Tools::Read.description.end_with?(
-      'Read a file before editing it, and read rather than guess what a file contains.'
-    )
+  it 'reads file contents with line numbers' do
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        File.write('greeting.txt', "hello\nworld")
+        response = @tool.call(context: nil, path: 'greeting.txt')
+
+        assert_includes response.content, "1\thello"
+      end
+    end
   end
 
-  it 'resolves a relative path against the cwd in its context' do
+  it 'offset and limit select a slice' do
     Dir.mktmpdir do |dir|
-      File.write(File.join(dir, 'greeting.txt'), 'hello')
-      response = @tool.call(context: Riffer::Agent::Context.new(cwd: dir), path: 'greeting.txt')
+      Dir.chdir(dir) do
+        File.write('lines.txt', (1..10).map { |n| "line#{n}" }.join("\n"))
+        response = @tool.call(context: nil, path: 'lines.txt', offset: 3, limit: 1)
 
-      assert_equal "     1\thello", response.content
+        assert_equal "     3\tline3", response.content
+      end
+    end
+  end
+
+  it 'offset past the end of the file returns empty content' do
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        File.write('lines.txt', "a\nb\nc")
+        response = @tool.call(context: nil, path: 'lines.txt', offset: 10)
+
+        assert_equal '', response.content
+      end
     end
   end
 end

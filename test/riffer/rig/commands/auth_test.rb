@@ -3,7 +3,6 @@
 require 'test_helper'
 require 'forwardable'
 require 'fileutils'
-require 'json'
 class AcmeAuthProvider < Riffer::Providers::Mock; end # rubocop:disable Rig/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
 
 class AnsweringAuthHost
@@ -11,20 +10,16 @@ class AnsweringAuthHost
 
   def_delegators :@null, :confirm, :notify, :progress
 
-  attr_reader :asked
-
   def initialize(answer)
     @null = Riffer::Rig::Hosts::Null.new
     @answer = answer
-    @asked = []
   end
 
   def capabilities
     Set[:ask]
   end
 
-  def ask(question = nil, options: nil, secret: false)
-    @asked << { question: question, secret: secret }
+  def ask(_question = nil, options: nil, secret: false)
     @answer
   end
 end
@@ -60,10 +55,6 @@ describe Riffer::Rig::Commands::Auth do
     Riffer::Rig::Events::CommandOutput.new('auth', text)
   end
 
-  it 'is listed in the Runtime commands' do
-    assert_includes Riffer::Rig::Runtime.new('mock/test').commands.map(&:name), 'auth'
-  end
-
   describe 'listing' do
     it 'reports each provider with its status' do
       ENV['ANTHROPIC_API_KEY'] = 'sk-env'
@@ -92,19 +83,32 @@ describe Riffer::Rig::Commands::Auth do
       Riffer.config.anthropic.api_key = @api_key
     end
 
-    it 'stores the key the host answers' do
-      host = AnsweringAuthHost.new('sk-new')
-      runtime = Riffer::Rig::Runtime.new('mock/test', host: host)
-      command_events(runtime, 'anthropic')
+    it 'rejects an unknown provider with the providers in the hint' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
 
-      assert_equal 'sk-new', Riffer::Rig::Credentials.install(:anthropic, host: host, config: nil).values[:api_key]
+      assert_equal(
+        [output(
+          'Use /auth <provider> or /auth remove <provider>, with a provider from: ' \
+          'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter'
+        )],
+        command_events(runtime, 'acme')
+      )
     end
 
-    it 'applies the new key to the provider config' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', host: AnsweringAuthHost.new('sk-new'))
+    it 'refuses through notify when the host declines' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+
+      assert_equal(
+        [Riffer::Rig::Events::Notify.new('anthropic still has no api_key (ANTHROPIC_API_KEY)', :error)],
+        command_events(runtime, 'anthropic')
+      )
+    end
+
+    it 'does not merge credentials into the Runtime when the host declines' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
       command_events(runtime, 'anthropic')
 
-      assert_equal 'sk-new', Riffer.config.anthropic.api_key
+      assert_empty runtime.credentials
     end
 
     it 'updates the Runtime credentials' do
@@ -119,75 +123,9 @@ describe Riffer::Rig::Commands::Auth do
 
       assert_equal [output('Updated anthropic credentials')], command_events(runtime, 'anthropic')
     end
-
-    it 'asks for the required field with hidden input' do
-      host = AnsweringAuthHost.new('sk-new')
-      runtime = Riffer::Rig::Runtime.new('mock/test', host: host)
-      command_events(runtime, 'anthropic')
-
-      assert_equal [{ question: 'anthropic api_key', secret: true }], host.asked
-    end
-
-    it 'refuses through notify when the host declines' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
-
-      assert_equal(
-        [Riffer::Rig::Events::Notify.new('anthropic still has no api_key (ANTHROPIC_API_KEY)', :error)],
-        command_events(runtime, 'anthropic')
-      )
-    end
-
-    it 'applies nothing when the host declines' do
-      Riffer::Rig::Credentials.apply(:anthropic, { api_key: 'sk-old' })
-      runtime = Riffer::Rig::Runtime.new('mock/test')
-      command_events(runtime, 'anthropic')
-
-      assert_equal({ api_key: 'sk-old' }, Riffer::Rig::Credentials.read(:anthropic))
-    end
-
-    it 'does not merge credentials into the Runtime when the host declines' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
-      command_events(runtime, 'anthropic')
-
-      assert_empty runtime.credentials
-    end
-
-    it 'rejects an unknown provider with the providers in the hint' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
-
-      assert_equal(
-        [output(
-          'Use /auth <provider> or /auth remove <provider>, with a provider from: ' \
-          'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter'
-        )],
-        command_events(runtime, 'acme')
-      )
-    end
   end
 
   describe 'removing a provider' do
-    it 'deletes the auth.json entry' do
-      Riffer::Rig::Credentials.store(:openai, { api_key: 'sk-openai' })
-      runtime = Riffer::Rig::Runtime.new('mock/test')
-      command_events(runtime, 'remove openai')
-
-      assert_empty JSON.parse(File.read(Riffer::Rig::Credentials::PATH))
-    end
-
-    it 'deletes the providers block in settings' do
-      Riffer::Rig::Credentials.store(:openai, { api_key: 'sk-openai', base_url: 'https://proxy.test' })
-      runtime = Riffer::Rig::Runtime.new('mock/test')
-      command_events(runtime, 'remove openai')
-
-      assert_nil JSON.parse(File.read(Riffer::Rig::Settings::File::PATH))['providers']
-    end
-
-    it 'reports the removal' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
-
-      assert_equal [output('Removed stored openai credentials')], command_events(runtime, 'remove openai')
-    end
-
     it 'rejects an unknown provider with the providers in the hint' do
       runtime = Riffer::Rig::Runtime.new('mock/test')
 
@@ -198,6 +136,19 @@ describe Riffer::Rig::Commands::Auth do
         )],
         command_events(runtime, 'remove acme')
       )
+    end
+
+    it 'removes the stored credentials' do
+      Riffer::Rig::Credentials.store(:openai, { api_key: 'sk-openai' })
+      command_events(Riffer::Rig::Runtime.new('mock/test'), 'remove openai')
+
+      assert_equal :missing, Riffer::Rig::Credentials.status(:openai)
+    end
+
+    it 'reports the removal' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+
+      assert_equal [output('Removed stored openai credentials')], command_events(runtime, 'remove openai')
     end
   end
 

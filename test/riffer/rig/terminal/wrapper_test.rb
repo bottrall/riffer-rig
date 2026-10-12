@@ -11,20 +11,40 @@ describe Riffer::Rig::Terminal::Wrapper do
     assert_empty wrapper << 'hello'
   end
 
-  it 'wraps words at the width with the indent on every line' do
-    assert_equal "  hello\n  world\n  foo\n", wrapper << "hello world foo\n"
+  it 'emits nothing for an unterminated line when no width is known' do
+    assert_empty wrapper(width: nil) << ('a' * 30)
+  end
+
+  it 'wraps a logical line as soon as it outgrows the width' do
+    assert_equal "  hello\n", wrapper << 'hello world'
+  end
+
+  it 'hard-splits an overfull word that has no space to break on' do
+    assert_equal "  #{'a' * 8}\n", wrapper << ('a' * 12)
   end
 
   it 'keeps blank lines between paragraphs' do
     assert_equal "  a\n\n  b\n", wrapper << "a\n\nb\n"
   end
 
+  it 'indents without wrapping when no width is known' do
+    assert_equal "  #{'a' * 30}\n", wrapper(width: nil) << "#{'a' * 30}\n"
+  end
+
+  it 'wraps words at the width with the indent on every line' do
+    assert_equal "  hello\n  world\n  foo\n", wrapper << "hello world foo\n"
+  end
+
+  it 'collapses runs of spaces' do
+    assert_equal "  a b\n", wrapper << "  a    b \n"
+  end
+
   it 'hard-splits words longer than the width' do
     assert_equal "  aaaaaaaa\n  aaaa\n", wrapper << "#{'a' * 12}\n"
   end
 
-  it 'wraps a logical line as soon as it outgrows the width' do
-    assert_equal "  hello\n", wrapper << 'hello world'
+  it 'emits no line for the leading whitespace of an overfull line' do
+    assert_equal "  hello\n", wrapper << '   hello world'
   end
 
   it 'flushes the pending line' do
@@ -39,9 +59,5 @@ describe Riffer::Rig::Terminal::Wrapper do
     subject << '   '
 
     assert_empty subject.flush
-  end
-
-  it 'indents without wrapping when no width is known' do
-    assert_equal "  #{'a' * 30}\n", wrapper(width: nil) << "#{'a' * 30}\n"
   end
 end

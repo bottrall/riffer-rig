@@ -56,18 +56,6 @@ describe Riffer::Rig::Runtime::McpRegistrar do
   end
 
   describe '#register' do
-    it 'returns a server per declaration under its name' do
-      servers = retained(registrar, { 'web' => serving, 'alt' => serving(url: @server.url('alt')) })
-
-      assert_equal %w[web alt], servers.keys
-    end
-
-    it 'tags each registration with its Runtime' do
-      retained(registrar('one'), { 'web' => serving })
-
-      assert_equal [:riffer_rig_one], registration.manifest.tags
-    end
-
     it 'sends the declared headers' do
       assert_equal 'secret', token(retained(registrar, { 'web' => serving(headers: { 'X-Token' => 'secret' }) }))
     end
@@ -97,43 +85,6 @@ describe Riffer::Rig::Runtime::McpRegistrar do
 
     it 'leaves out a server whose credential cannot be resolved' do
       assert_empty registrar.register({ 'web' => authed })
-    end
-
-    it 'reports a stdio server as unregistrable through notify at error level' do
-      registrar.register({ 'local' => Riffer::Rig::Mcp::Declaration.new(command: 'echo') })
-
-      assert_equal [error('MCP server local runs over stdio, which riffer cannot register yet')], @host.drain
-    end
-
-    it 'reports a stdio server with auth as unregistrable rather than raising' do
-      stdio = Riffer::Rig::Mcp::Declaration.new(command: 'echo', auth: { api_key: ['LOCAL_KEY'] })
-      registrar(env: { 'LOCAL_KEY' => 'k' }).register({ 'local' => stdio })
-
-      assert_equal [error('MCP server local runs over stdio, which riffer cannot register yet')], @host.drain
-    end
-
-    it 'leaves out a stdio server' do
-      assert_empty registrar.register({ 'local' => Riffer::Rig::Mcp::Declaration.new(command: 'echo') })
-    end
-
-    it 'reports a server with a non-HTTPS url through notify' do
-      registrar.register({ 'plain' => serving(url: 'http://127.0.0.1/mcp') })
-
-      assert_equal [error('MCP server plain failed to register: MCP manifest endpoint must be a valid HTTPS URL')],
-                   @host.drain
-    end
-
-    it 'reports a server that cannot be reached through notify' do
-      registrar.register({ 'gone' => serving(url: 'https://127.0.0.1:1/mcp') })
-
-      assert_equal [error('MCP server gone failed to register: Internal error handling tools/list request')],
-                   @host.drain
-    end
-
-    it 'registers the servers around one that fails' do
-      servers = retained(registrar, { 'plain' => serving(url: 'http://127.0.0.1/mcp'), 'web' => serving })
-
-      assert_equal %w[web], servers.keys
     end
 
     it 'keeps the registration of a retained server declared the same' do
@@ -166,6 +117,55 @@ describe Riffer::Rig::Runtime::McpRegistrar do
       retained(built, { 'web' => serving(headers: { 'X-Token' => 'new' }) })
 
       refute_same before, registration
+    end
+
+    it 'reports a stdio server as unregistrable through notify at error level' do
+      registrar.register({ 'local' => Riffer::Rig::Mcp::Declaration.new(command: 'echo') })
+
+      assert_equal [error('MCP server local runs over stdio, which riffer cannot register yet')], @host.drain
+    end
+
+    it 'reports a stdio server with auth as unregistrable rather than raising' do
+      stdio = Riffer::Rig::Mcp::Declaration.new(command: 'echo', auth: { api_key: ['LOCAL_KEY'] })
+      registrar(env: { 'LOCAL_KEY' => 'k' }).register({ 'local' => stdio })
+
+      assert_equal [error('MCP server local runs over stdio, which riffer cannot register yet')], @host.drain
+    end
+
+    it 'leaves out a stdio server' do
+      assert_empty registrar.register({ 'local' => Riffer::Rig::Mcp::Declaration.new(command: 'echo') })
+    end
+
+    it 'returns a server per declaration under its name' do
+      servers = retained(registrar, { 'web' => serving, 'alt' => serving(url: @server.url('alt')) })
+
+      assert_equal %w[web alt], servers.keys
+    end
+
+    it 'tags each registration with its Runtime' do
+      retained(registrar('one'), { 'web' => serving })
+
+      assert_equal [:riffer_rig_one], registration.manifest.tags
+    end
+
+    it 'reports a server with a non-HTTPS url through notify' do
+      registrar.register({ 'plain' => serving(url: 'http://127.0.0.1/mcp') })
+
+      assert_equal [error('MCP server plain failed to register: MCP manifest endpoint must be a valid HTTPS URL')],
+                   @host.drain
+    end
+
+    it 'reports a server that cannot be reached through notify' do
+      registrar.register({ 'gone' => serving(url: 'https://127.0.0.1:1/mcp') })
+
+      assert_equal [error('MCP server gone failed to register: Internal error handling tools/list request')],
+                   @host.drain
+    end
+
+    it 'registers the servers around one that fails' do
+      servers = retained(registrar, { 'plain' => serving(url: 'http://127.0.0.1/mcp'), 'web' => serving })
+
+      assert_equal %w[web], servers.keys
     end
   end
 

@@ -48,20 +48,26 @@ describe Riffer::Rig::Hosts::Mirror do
     assert @host.confirm('sure?')
   end
 
-  it 'forwards notify to the wrapped host' do
-    @host.notify('boom', level: :error)
-
-    assert_equal [[:notify, 'boom', :error]], @calls
-  end
-
   it 'queues a notify event for every notify' do
     @host.notify('boom', level: :error)
 
     assert_equal [Riffer::Rig::Events::Notify.new('boom', :error)], @host.drain
   end
 
+  it 'forwards notify to the wrapped host' do
+    @host.notify('boom', level: :error)
+
+    assert_equal [[:notify, 'boom', :error]], @calls
+  end
+
   it 'forwards progress to the wrapped host' do
     @host.progress('working') { nil }
+
+    assert_equal [[:progress, 'working']], @calls
+  end
+
+  it 'forwards progress without a block to the wrapped host' do
+    @host.progress('working')
 
     assert_equal [[:progress, 'working']], @calls
   end

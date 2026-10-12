@@ -15,74 +15,93 @@ describe Riffer::Rig::Providers do
     Riffer::Rig::Providers.unregister(:globex_probe)
   end
 
-  it 'registers the class factory with riffer\'s repository' do
-    Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
+  describe '.register' do
+    it 'registers the class factory with riffer\'s repository' do
+      Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
 
-    assert_same GlobexProbeProvider, Riffer::Providers::Repository.find(:globex_probe)
+      assert_same GlobexProbeProvider, Riffer::Providers::Repository.find(:globex_probe)
+    end
+
+    it 'gives a setup-less registration no setup' do
+      Riffer::Rig::Providers.register(:globex_probe) { GlobexProbeProvider }
+
+      assert_nil Riffer::Rig::Providers.setup(:globex_probe)
+    end
+
+    it 'stores a ProviderSetup as given' do
+      Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
+
+      assert_same globex_setup, Riffer::Rig::Providers.setup(:globex_probe)
+    end
+
+    it 'converts a setup hash and stores it' do
+      Riffer::Rig::Providers.register(:globex_probe, setup: { fields: [{ name: :api_key, env: ['GLOBEX_PROBE_API_KEY'] }] }) { GlobexProbeProvider }
+
+      assert_equal [:api_key], Riffer::Rig::Providers.setup(:globex_probe).fields.map(&:name)
+    end
+
+    it 'keeps the class factory when registered again' do
+      Riffer::Rig::Providers.register(:globex_probe) { GlobexProbeProvider }
+      Riffer::Rig::Providers.register(:globex_probe) { GlobexProbeProvider }
+
+      assert_same GlobexProbeProvider, Riffer::Providers::Repository.find(:globex_probe)
+    end
+
+    it 'replaces the setup when registered again' do
+      Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
+      Riffer::Rig::Providers.register(:globex_probe, setup: { fields: [{ name: :token, env: ['GLOBEX_PROBE_TOKEN'] }] }) { GlobexProbeProvider }
+
+      assert_equal [:token], Riffer::Rig::Providers.setup(:globex_probe).fields.map(&:name)
+    end
   end
 
-  it 'converts a setup hash and stores it' do
-    Riffer::Rig::Providers.register(:globex_probe, setup: { fields: [{ name: :api_key, env: ['GLOBEX_PROBE_API_KEY'] }] }) { GlobexProbeProvider }
+  describe '.unregister' do
+    it 'removes the registration on unregister' do
+      Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
+      Riffer::Rig::Providers.unregister(:globex_probe)
 
-    assert_equal [:api_key], Riffer::Rig::Providers.setup(:globex_probe).fields.map(&:name)
+      assert_nil Riffer::Providers::Repository.find(:globex_probe)
+    end
+
+    it 'removes the setup on unregister' do
+      Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
+      Riffer::Rig::Providers.unregister(:globex_probe)
+
+      assert_nil Riffer::Rig::Providers.setup(:globex_probe)
+    end
+
+    it 'drops the identifier from the list on unregister' do
+      Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
+      Riffer::Rig::Providers.unregister(:globex_probe)
+
+      refute_includes Riffer::Rig::Providers.identifiers, :globex_probe
+    end
   end
 
-  it 'stores a ProviderSetup as given' do
-    Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
+  describe '.identifiers' do
+    it 'lists the built-ins without mock plus the registered identifiers' do
+      Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
 
-    assert_same globex_setup, Riffer::Rig::Providers.setup(:globex_probe)
+      assert_equal((Riffer::Providers::Repository::REPO.keys - [:mock]) + [:globex_probe], Riffer::Rig::Providers.identifiers)
+    end
+
+    it 'lists an identifier registered again once' do
+      Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
+      Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
+
+      assert_equal 1, Riffer::Rig::Providers.identifiers.count(:globex_probe)
+    end
+
+    it 'keeps a setup-less registration in the identifier list' do
+      Riffer::Rig::Providers.register(:globex_probe) { GlobexProbeProvider }
+
+      assert_includes Riffer::Rig::Providers.identifiers, :globex_probe
+    end
   end
 
-  it 'gives a setup-less registration no setup' do
-    Riffer::Rig::Providers.register(:globex_probe) { GlobexProbeProvider }
-
-    assert_nil Riffer::Rig::Providers.setup(:globex_probe)
-  end
-
-  it 'keeps a setup-less registration in the identifier list' do
-    Riffer::Rig::Providers.register(:globex_probe) { GlobexProbeProvider }
-
-    assert_includes Riffer::Rig::Providers.identifiers, :globex_probe
-  end
-
-  it 'lists the built-ins without mock plus the registered identifiers' do
-    Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
-
-    assert_equal(
-      %i[amazon_bedrock anthropic azure_openai gemini openai openrouter globex_probe],
-      Riffer::Rig::Providers.identifiers
-    )
-  end
-
-  it 'joins the identifiers into a list' do
-    assert_equal 'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter', Riffer::Rig::Providers.list
-  end
-
-  it 'replaces the setup when registered again' do
-    Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
-    Riffer::Rig::Providers.register(:globex_probe, setup: { fields: [{ name: :token, env: ['GLOBEX_PROBE_TOKEN'] }] }) { GlobexProbeProvider }
-
-    assert_equal [:token], Riffer::Rig::Providers.setup(:globex_probe).fields.map(&:name)
-  end
-
-  it 'removes the registration on unregister' do
-    Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
-    Riffer::Rig::Providers.unregister(:globex_probe)
-
-    assert_nil Riffer::Providers::Repository.find(:globex_probe)
-  end
-
-  it 'removes the setup on unregister' do
-    Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
-    Riffer::Rig::Providers.unregister(:globex_probe)
-
-    assert_nil Riffer::Rig::Providers.setup(:globex_probe)
-  end
-
-  it 'drops the identifier from the list on unregister' do
-    Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
-    Riffer::Rig::Providers.unregister(:globex_probe)
-
-    refute_includes Riffer::Rig::Providers.identifiers, :globex_probe
+  describe '.list' do
+    it 'joins the identifiers into a list' do
+      assert_equal Riffer::Rig::Providers.identifiers.join(', '), Riffer::Rig::Providers.list
+    end
   end
 end

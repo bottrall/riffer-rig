@@ -9,11 +9,11 @@ describe Riffer::Rig::ProviderSetup::Field do
     assert_nil field.fallback
   end
 
-  it 'is frozen' do
-    assert_predicate field, :frozen?
-  end
-
   it 'freezes the env var names' do
     assert_predicate field.env, :frozen?
+  end
+
+  it 'is frozen' do
+    assert_predicate field, :frozen?
   end
 end

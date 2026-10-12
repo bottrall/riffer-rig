@@ -44,6 +44,24 @@ class PreparedSessions
   end
 end
 
+class RecordingAnimator
+  attr_reader :calls
+
+  def initialize
+    @calls = []
+  end
+
+  def reveal(_frames) = nil
+
+  def start(mode = :neutral)
+    @calls << mode
+  end
+
+  def stop
+    @calls << :stop
+  end
+end
+
 describe Riffer::Rig::Terminal do
   before do
     @home = Dir.mktmpdir
@@ -55,26 +73,53 @@ describe Riffer::Rig::Terminal do
     FileUtils.remove_entry(@cwd)
   end
 
+  def cli_sessions(env: { 'MOCK_API_KEY' => 'mock-key' })
+    Riffer::Rig::CLI::Sessions.new(
+      flags: Riffer::Rig::CLI::Flags.new(model: 'mock/test'),
+      env: Riffer::Rig::Env.new(env),
+      cwd: @cwd,
+      home: @home
+    )
+  end
+
   def run_terminal(
     input,
     env: { 'MOCK_API_KEY' => 'mock-key' },
-    model: 'mock/test',
     open_picker: false,
     sessions: nil,
     &
   )
     output = StringIO.new
     input = StringIO.new(input) if input.is_a?(String)
-    sessions ||= Riffer::Rig::CLI::Sessions.new(
-      flags: Riffer::Rig::CLI::Flags.new(model: model),
-      env: Riffer::Rig::Env.new(env),
-      cwd: @cwd,
-      home: @home
-    )
+    sessions ||= cli_sessions(env: env)
     sessions = PreparedSessions.new(sessions, &) if block_given?
     terminal = Riffer::Rig::Terminal.for(input: input, output: output, version: '9.9.9', sessions: sessions)
     @status = terminal.run(open_picker: open_picker)
     output.string
+  end
+
+  def run_with_animator(input, animator, &)
+    output = StringIO.new
+    input = StringIO.new(input)
+    sessions = PreparedSessions.new(cli_sessions, &)
+    theme = Riffer::Rig::Terminal::Theme.for(output, no_color: true)
+    renderer = Riffer::Rig::Terminal::Renderer.new(
+      io: output,
+      theme: theme,
+      smoother: Riffer::Rig::Terminal::Smoother.new(io: output, theme: theme),
+      cursor: Riffer::Rig::Terminal::Cursor.new(io: output, theme: theme)
+    )
+    host = Riffer::Rig::Terminal::Host.new(input: input, renderer: renderer, animator: animator)
+    Riffer::Rig::Terminal.new(
+      input: input,
+      host: host,
+      renderer: renderer,
+      animator: animator,
+      theme: theme,
+      version: '9.9.9',
+      sessions: sessions,
+      picker: Riffer::Rig::Terminal::Picker.new(input: input, renderer: renderer, host: host, sessions: sessions)
+    ).run
   end
 
   def run_with_extension(input, source, &)
@@ -84,18 +129,26 @@ describe Riffer::Rig::Terminal do
     run_terminal(input, &)
   end
 
-  def run_with_interrupter(input, &)
-    run_with_extension(input, <<~RUBY, &)
-      Riffer::Rig.extension('interrupter') do |rig|
-        fired = false
-        rig.on(:stream) do
-          next if fired
+  def run_with_interrupter(input)
+    run_terminal(input) do |runtime|
+      cancelled = Queue.new
+      runtime.define_singleton_method(:cancel) do
+        super()
+        cancelled << true
+      end
+      fired = false
+      runtime.agent.provider.define_singleton_method(:stream_text) do |*args, **options, &block|
+        unless fired
           fired = true
           Process.kill('INT', Process.pid)
-          sleep 0.2
+          # The trap hands the cancel to a thread, which has to land before
+          # the turn reaches the message boundary that honours it.
+          cancelled.pop(timeout: 5)
         end
+        super(*args, **options, &block)
       end
-    RUBY
+      yield runtime if block_given?
+    end
   end
 
   def write_skill(name)
@@ -125,9 +178,8 @@ describe Riffer::Rig::Terminal do
     Dir.glob(File.join(@home, '.riffer', 'sessions', '*', '*.jsonl'))
   end
 
-  def session_file_for(title, cwd: nil)
-    files = cwd ? session_files.select { |path| header_of(path)[:cwd] == cwd } : session_files
-    files.find { |path| header_of(path)[:title] == title }
+  def session_file_for(title, cwd:)
+    session_files.find { |path| header_of(path).values_at(:cwd, :title) == [cwd, title] }
   end
 
   def header_of(path)
@@ -144,6 +196,18 @@ describe Riffer::Rig::Terminal do
     input
   end
 
+  def scripted_input(steps)
+    remaining = steps.dup
+    input = Object.new
+    input.define_singleton_method(:gets) do
+      step = remaining.shift
+      raise Interrupt if step == :interrupt
+
+      step
+    end
+    input
+  end
+
   it 'references no Riffer::Rig constant outside the public host API' do
     sources = [File.expand_path('../../../lib/riffer/rig/terminal.rb', __dir__),
                *Dir[File.expand_path('../../../lib/riffer/rig/terminal/**/*.rb', __dir__)]]
@@ -152,57 +216,58 @@ describe Riffer::Rig::Terminal do
     assert_empty referenced - %w[Terminal Runtime Hosts Loader Events Command Turn]
   end
 
-  it 'renders streamed text' do
-    output = run_terminal("hello\n") { |runtime| runtime.agent.provider.stub_response('Hi from the model') }
+  it 'returns one when the Runtime cannot be built' do
+    run_terminal('', env: {})
 
-    assert_includes output, 'Hi from the model'
+    assert_equal 1, @status
   end
 
-  it 'renders a tool call' do
-    output = run_terminal("read it\n") do |runtime|
-      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'missing.txt' } }])
-      runtime.agent.provider.stub_response('Done.')
-    end
+  it 'returns zero when the session ends' do
+    run_terminal("/exit\n")
 
-    assert_includes output, '⚙ read(path: "missing.txt")'
+    assert_equal 0, @status
   end
 
-  it 'renders nothing for the before_tool_call and after_tool_call events' do
-    output = run_terminal("read it\n") do |runtime|
-      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'missing.txt' } }])
-      runtime.agent.provider.stub_response('Done.')
-    end
-
-    refute_match(/(before|after)_tool_call|Events::/, output)
+  it 'signs off when the input ends' do
+    assert_match(/see you on the next riff\.\n\z/, run_terminal(''))
   end
 
-  it 'renders a tool result once' do
-    File.write(File.join(@cwd, 'note.txt'), 'the note')
-    output = run_terminal("read it\n") do |runtime|
-      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'note.txt' } }])
-      runtime.agent.provider.stub_response('Done.')
+  describe 'bare -r' do
+    it 'opens the picker before the first session' do
+      path = seed_session('fix the login bug')
+
+      run_terminal("\nhello\n", open_picker: true)
+
+      assert_operator File.readlines(path).length, :>, 3
     end
 
-    assert_equal 1, output.scan('↳ ').size
+    it 'starts fresh when the picker is dismissed' do
+      assert_includes run_terminal("/exit\n", open_picker: true), 'No saved sessions.'
+    end
+
+    it 'takes the missing-session wording from the sessions collaborator' do
+      sessions = Object.new
+      sessions.define_singleton_method(:start) { |_host| nil }
+      sessions.define_singleton_method(:resume) { |_host, _id| nil }
+      sessions.define_singleton_method(:list) do |_host, **|
+        [Riffer::Rig::Terminal::Session.new(id: 'nope', title: 'gone', updated: Time.now, cwd: Dir.pwd)]
+      end
+      sessions.define_singleton_method(:missing) { |id| "wording for #{id}" }
+
+      assert_includes run_terminal("\n", open_picker: true, sessions: sessions), 'wording for nope'
+    end
   end
 
-  it 'renders a tool result under its call' do
-    File.write(File.join(@cwd, 'note.txt'), 'the note')
-    output = run_terminal("read it\n") do |runtime|
-      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'note.txt' } }])
-      runtime.agent.provider.stub_response('Done.')
-    end
-
-    assert_includes output, '↳ '
+  it 'refuses a missing credential with the configuration error' do
+    assert_includes run_terminal('', env: {}), 'mock has no api_key'
   end
 
-  it 'renders the cost line from turn_end' do
-    output = run_terminal("hello\n") do |runtime|
-      usage = Riffer::Providers::TokenUsage.new(input_tokens: 10, output_tokens: 5)
-      runtime.agent.provider.stub_response('Hi', token_usage: usage)
-    end
+  it 'returns one when the build is interrupted' do
+    sessions = Object.new
+    sessions.define_singleton_method(:start) { |_host| raise Interrupt }
+    run_terminal('', sessions: sessions)
 
-    assert_includes output, '↑10 · ↓5 · session 15 tok'
+    assert_equal 1, @status
   end
 
   it 'shows the model in the banner' do
@@ -215,8 +280,62 @@ describe Riffer::Rig::Terminal do
     assert_match(/skills\s+1/, run_terminal(''))
   end
 
-  it 'leaves the session row out of the first banner' do
-    refute_match(/▸ session/, run_terminal(''))
+  it 'shows none in the banner without skills' do
+    assert_match(/skills\s+none/, run_terminal(''))
+  end
+
+  it 'hints at the second Ctrl-C after the first at the prompt' do
+    assert_includes run_terminal(interrupting_input(1)), 'Press Ctrl-C again to exit.'
+  end
+
+  it 'exits on a second Ctrl-C at the prompt' do
+    run_terminal(interrupting_input(2))
+
+    assert_equal 0, @status
+  end
+
+  it 'disarms the exit on a line between two Ctrl-Cs' do
+    output = run_terminal(scripted_input([:interrupt, "\n", :interrupt]))
+
+    assert_equal 2, output.scan('Press Ctrl-C again to exit.').length
+  end
+
+  it 'ends the session at /exit' do
+    runtime = nil
+    run_terminal("/exit\nhello\n") { |driven| runtime = driven }
+
+    assert_empty runtime.agent.provider.calls
+  end
+
+  it 'ends the session at /quit' do
+    runtime = nil
+    run_terminal("/quit\nhello\n") { |driven| runtime = driven }
+
+    assert_empty runtime.agent.provider.calls
+  end
+
+  it 'skips a blank line' do
+    runtime = nil
+    run_terminal("\n  \n") { |driven| runtime = driven }
+
+    assert_empty runtime.agent.provider.calls
+  end
+
+  it 'runs a skill command through run_command' do
+    write_skill('tidy')
+    output = run_terminal("/skill:tidy\n") { |runtime| runtime.agent.provider.stub_response('Tidied.') }
+
+    assert_includes output, '✦ skill: tidy'
+  end
+
+  it 'runs an extension command through run_command' do
+    source = <<~RUBY
+      Riffer::Rig.extension('greet') do |rig|
+        rig.command('hello', description: 'Says hello') { |ctx| ctx.say("hello, \#{ctx.args}") }
+      end
+    RUBY
+
+    assert_includes run_with_extension("/hello world\n", source), 'hello, world'
   end
 
   describe 'a /model switch' do
@@ -240,60 +359,97 @@ describe Riffer::Rig::Terminal do
     end
   end
 
-  it 'runs a skill command through run_command' do
-    write_skill('tidy')
-    output = run_terminal("/skill:tidy\n") { |runtime| runtime.agent.provider.stub_response('Tidied.') }
+  describe '/new' do
+    it 'reports the usage for arguments' do
+      output = run_terminal("hello\n/new nope\n")
 
-    assert_includes output, '✦ skill: tidy'
-  end
-
-  it 'sends the skill body as a user turn' do
-    write_skill('tidy')
-    runtime = nil
-    run_terminal("/skill:tidy now\n") do |driven|
-      runtime = driven
-      driven.agent.provider.stub_response('Tidied.')
+      assert_includes output, 'Usage: /new'
     end
 
-    assert_includes runtime.agent.provider.calls.last[:messages].last[:content], 'Do tidy.'
-  end
+    it 'keeps driving the current session when the fresh build fails' do
+      runtime = nil
+      sessions = PreparedSessions.new(cli_sessions) { |driven| runtime = driven }
+      sessions.define_singleton_method(:fresh) { |_host| raise Riffer::Rig::Loader::ConfigurationError, 'no fresh' }
+      run_terminal("/new\nagain\n", sessions: sessions)
 
-  it 'runs an extension command through run_command' do
-    source = <<~RUBY
-      Riffer::Rig.extension('greet') do |rig|
-        rig.command('hello', description: 'Says hello') { |ctx| ctx.say("hello, \#{ctx.args}") }
+      assert_equal 1, runtime.agent.provider.calls.length
+    end
+
+    it 'starts a fresh session with a new id' do
+      run_terminal("hello\n/new\nagain\n") { |runtime| runtime.agent.provider.stub_response('Hi') }
+
+      assert_equal 2, session_files.length
+    end
+
+    it 'leaves the replaced session intact on disk' do
+      run_terminal("hello\n/new\nagain\n") { |runtime| runtime.agent.provider.stub_response('Hi') }
+      replaced = session_files.min_by { |path| File.mtime(path) }
+
+      refute_includes File.read(replaced), 'again'
+    end
+
+    it 'drives the new session' do
+      ids = []
+      run_terminal("hello\n/new\nagain\n") do |runtime|
+        ids << runtime.id
+        runtime.agent.provider.stub_response('Hi')
       end
-    RUBY
+      fresh = session_files.find { |path| File.basename(path, '.jsonl') == ids.last }
 
-    assert_includes run_with_extension("/hello world\n", source), 'hello, world'
+      assert_includes File.read(fresh), 'again'
+    end
   end
 
-  it 'reports an unknown slash command through notify' do
-    assert_includes run_terminal("/nope\n"), 'Unknown command: nope'
-  end
+  describe 'the resume picker' do
+    it 'reports the usage for other arguments' do
+      assert_includes run_terminal("/resume foo\n/exit\n"), 'Usage: /resume [--all]'
+    end
 
-  it 'ends the session at /exit' do
-    runtime = nil
-    run_terminal("/exit\nhello\n") { |driven| runtime = driven }
+    it 'keeps driving the current session when the picker is dismissed' do
+      seed_session('fix the login bug')
+      seed_session('add picker tests')
+      runtime = nil
+      run_terminal("/resume\n\nagain\n") { |driven| runtime ||= driven }
 
-    assert_empty runtime.agent.provider.calls
-  end
+      assert_equal 1, runtime.agent.provider.calls.length
+    end
 
-  it 'ends the session at /quit' do
-    runtime = nil
-    run_terminal("/quit\nhello\n") { |driven| runtime = driven }
+    it 'resumes the session the filter narrows to' do
+      path = seed_session('fix the login bug')
+      seed_session('add picker tests')
 
-    assert_empty runtime.agent.provider.calls
-  end
+      run_terminal("/resume\nlogin\n\ntell me more\n")
 
-  it 'returns zero when the session ends' do
-    run_terminal("/exit\n")
+      assert_operator File.readlines(path).length, :>, 3
+    end
 
-    assert_equal 0, @status
-  end
+    it 'keeps the current session when the picked one is missing' do
+      seed_session('fix the login bug')
+      sessions = cli_sessions
+      sessions.define_singleton_method(:resume) { |_host, _id| nil }
+      sessions.define_singleton_method(:missing) { |_id = nil| 'wording for the picked one' }
 
-  it 'signs off when the input ends' do
-    assert_match(/see you on the next riff\.\n\z/, run_terminal(''))
+      assert_includes run_terminal("/resume\n\n", sessions: sessions), 'wording for the picked one'
+    end
+
+    it 'lists other directories with --all' do
+      other = Dir.mktmpdir
+      seed_session('fix the login bug')
+      seed_session('elsewhere project', cwd: other)
+
+      assert_includes run_terminal("/resume --all\nelsewhere\n\n/exit\n"), 'elsewhere project'
+    ensure
+      FileUtils.remove_entry(other)
+    end
+
+    it 'scopes the picker to the directory without --all' do
+      other = Dir.mktmpdir
+      seed_session('elsewhere project', cwd: other)
+
+      assert_includes run_terminal("/resume\n/exit\n/exit\n"), 'No saved sessions.'
+    ensure
+      FileUtils.remove_entry(other)
+    end
   end
 
   it 'reports a turn error and carries on' do
@@ -326,176 +482,81 @@ describe Riffer::Rig::Terminal do
     assert_equal before, after
   end
 
-  it 'hints at the second Ctrl-C after the first at the prompt' do
-    assert_includes run_terminal(interrupting_input(1)), 'Press Ctrl-C again to exit.'
+  it 'switches the animator to reasoning while the model reasons' do
+    animator = RecordingAnimator.new
+    run_with_animator("hello\n", animator) do |runtime|
+      runtime.agent.provider.stub_response('Hi', reasoning: [{ type: :text, text: 'thinking' }])
+    end
+
+    assert_includes animator.calls, :reasoning
   end
 
-  it 'exits on a second Ctrl-C at the prompt' do
-    run_terminal(interrupting_input(2))
+  it 'returns the animator to neutral when the reasoning is done' do
+    animator = RecordingAnimator.new
+    run_with_animator("hello\n", animator) do |runtime|
+      runtime.agent.provider.stub_response('Hi', reasoning: [{ type: :text, text: 'thinking' }])
+    end
 
-    assert_equal 0, @status
+    assert_includes animator.calls.each_cons(2), %i[reasoning neutral]
   end
 
-  it 'refuses a missing credential with the configuration error' do
-    assert_includes run_terminal('', env: {}), 'mock has no api_key'
+  it 'renders streamed text' do
+    output = run_terminal("hello\n") { |runtime| runtime.agent.provider.stub_response('Hi from the model') }
+
+    assert_includes output, 'Hi from the model'
   end
 
-  it 'returns one when the Runtime cannot be built' do
-    run_terminal('', env: {})
+  it 'renders a tool call' do
+    output = run_terminal("read it\n") do |runtime|
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'missing.txt' } }])
+      runtime.agent.provider.stub_response('Done.')
+    end
 
-    assert_equal 1, @status
+    assert_includes output, '⚙ read(path: "missing.txt")'
   end
 
-  it 'writes the onboarded model to home settings' do
-    run_terminal("mock/test\nmock-key\n/exit\n", env: {}, model: nil)
+  it 'renders nothing for the before_tool_call and after_tool_call events' do
+    output = run_terminal("read it\n") do |runtime|
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'missing.txt' } }])
+      runtime.agent.provider.stub_response('Done.')
+    end
 
-    assert_equal 'mock/test', JSON.parse(File.read(File.join(@home, '.riffer', 'settings.json')))['model']
+    refute_match(/(before|after)_tool_call|Events::/, output)
   end
 
-  it 'writes the pasted key to home auth.json' do
-    run_terminal("mock/test\nmock-key\n/exit\n", env: {}, model: nil)
+  it 'renders the cost line from turn_end' do
+    output = run_terminal("hello\n") do |runtime|
+      usage = Riffer::Providers::TokenUsage.new(input_tokens: 10, output_tokens: 5)
+      runtime.agent.provider.stub_response('Hi', token_usage: usage)
+    end
 
-    assert_equal 'mock-key', JSON.parse(File.read(File.join(@home, '.riffer', 'auth.json')))['mock']['api_key']
+    assert_includes output, '↑10 · ↓5 · session 15 tok'
   end
 
-  describe '/new' do
-    it 'starts a fresh session with a new id' do
-      run_terminal("hello\n/new\nagain\n") { |runtime| runtime.agent.provider.stub_response('Hi') }
+  it 'leaves the animator alone for a message that is not a tool result' do
+    animator = RecordingAnimator.new
+    run_with_animator("hello\n", animator) { |runtime| runtime.agent.provider.stub_response('Hi') }
 
-      assert_equal 2, session_files.length
-    end
-
-    it 'leaves the replaced session intact on disk' do
-      run_terminal("hello\n/new\nagain\n") { |runtime| runtime.agent.provider.stub_response('Hi') }
-      replaced = session_files.min_by { |path| File.mtime(path) }
-
-      refute_includes File.read(replaced), 'again'
-    end
-
-    it 'drives the new session' do
-      ids = []
-      run_terminal("hello\n/new\nagain\n") do |runtime|
-        ids << runtime.id
-        runtime.agent.provider.stub_response('Hi')
-      end
-      fresh = session_files.find { |path| File.basename(path, '.jsonl') == ids.last }
-
-      assert_includes File.read(fresh), 'again'
-    end
-
-    it 'keeps driving the current session when the fresh build fails' do
-      output = run_terminal("hello\n/new nope\n")
-
-      assert_includes output, 'Usage: /new'
-    end
+    assert_equal [:neutral], animator.calls - [:stop]
   end
 
-  describe 'the resume picker' do
-    it 'lists the sessions of the directory' do
-      seed_session('fix the login bug')
-      seed_session('add picker tests')
-
-      assert_includes run_terminal("/resume\n/exit\n/exit\n"), 'add picker tests'
+  it 'renders a tool result once' do
+    File.write(File.join(@cwd, 'note.txt'), 'the note')
+    output = run_terminal("read it\n") do |runtime|
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'note.txt' } }])
+      runtime.agent.provider.stub_response('Done.')
     end
 
-    it 'filters the rows by typed text' do
-      seed_session('fix the login bug')
-      seed_session('add picker tests')
-
-      output = run_terminal("/resume\nlogin\n/exit\n/exit\n")
-
-      assert_equal 2, output.scan('fix the login bug').length
-    end
-
-    it 'resumes the session the filter narrows to' do
-      path = seed_session('fix the login bug')
-      seed_session('add picker tests')
-
-      run_terminal("/resume\nlogin\n\ntell me more\n")
-
-      assert_operator File.readlines(path).length, :>, 3
-    end
-
-    it 'switches to a numbered row' do
-      path = seed_session('fix the login bug', updated: Time.now - 3600)
-      seed_session('add picker tests')
-
-      run_terminal("/resume\n2\ntell me more\n")
-
-      assert_operator File.readlines(path).length, :>, 3
-    end
-
-    it 'shows the relative time on a row' do
-      seed_session('fix the login bug')
-
-      assert_match(/fix the login bug — just now/, run_terminal("/resume\n/exit\n/exit\n"))
-    end
-
-    it 'takes the missing-session wording from the sessions collaborator' do
-      sessions = Object.new
-      sessions.define_singleton_method(:start) { |_host| nil }
-      sessions.define_singleton_method(:resume) { |_host, _id| nil }
-      sessions.define_singleton_method(:list) do |_host, **|
-        [Riffer::Rig::Terminal::Session.new(id: 'nope', title: 'gone', updated: Time.now, cwd: Dir.pwd)]
-      end
-      sessions.define_singleton_method(:missing) { |id| "wording for #{id}" }
-
-      assert_includes run_terminal("\n", open_picker: true, sessions: sessions), 'wording for nope'
-    end
-
-    it 'lists other directories with --all' do
-      other = Dir.mktmpdir
-      seed_session('fix the login bug')
-      seed_session('elsewhere project', cwd: other)
-
-      assert_includes run_terminal("/resume --all\nelsewhere\n\n/exit\n"), 'elsewhere project'
-    ensure
-      FileUtils.remove_entry(other)
-    end
-
-    it 'scopes the picker to the directory without --all' do
-      other = Dir.mktmpdir
-      seed_session('elsewhere project', cwd: other)
-
-      assert_includes run_terminal("/resume\n/exit\n/exit\n"), 'No saved sessions.'
-    ensure
-      FileUtils.remove_entry(other)
-    end
-
-    it 'deletes a session after Ctrl-D and confirm' do
-      seed_session('fix the login bug', updated: Time.now - 3600)
-      seed_session('add picker tests')
-
-      run_terminal("/resume\n\x04\n1\ny\n")
-
-      assert_nil session_file_for('add picker tests')
-    end
-
-    it 'keeps the unconfirmed session' do
-      seed_session('fix the login bug', updated: Time.now - 3600)
-      seed_session('add picker tests')
-
-      run_terminal("/resume\n\x04\n1\nn\n")
-
-      assert_equal 2, session_files.length
-    end
-
-    it 'reports the usage for other arguments' do
-      assert_includes run_terminal("/resume foo\n/exit\n"), 'Usage: /resume [--all]'
-    end
+    assert_equal 1, output.scan('↳ ').size
   end
 
-  describe 'bare -r' do
-    it 'opens the picker before the first session' do
-      path = seed_session('fix the login bug')
-
-      run_terminal("\nhello\n", open_picker: true)
-
-      assert_operator File.readlines(path).length, :>, 3
+  it 'renders a tool result under its call' do
+    File.write(File.join(@cwd, 'note.txt'), 'the note')
+    output = run_terminal("read it\n") do |runtime|
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'note.txt' } }])
+      runtime.agent.provider.stub_response('Done.')
     end
 
-    it 'starts fresh when the picker is dismissed' do
-      assert_includes run_terminal("/exit\n", open_picker: true), 'No saved sessions.'
-    end
+    assert_includes output, '↳ '
   end
 end
