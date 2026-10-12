@@ -6,8 +6,9 @@ class Riffer::Rig::Stores::MessageEntry
 
   typed_value 'message', :message
 
-  # @dynamic message
+  # @dynamic message, recorded_at
   attr_reader :message #: Hash[Symbol, untyped]
+  attr_reader :recorded_at #: Time?
 
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: ::Riffer::Rig::Stores::MessageEntry?
@@ -15,13 +16,20 @@ class Riffer::Rig::Stores::MessageEntry
     message = hash[:message]
     return nil unless message.is_a?(Hash)
 
-    new(message: message)
+    new(message: message, recorded_at: Riffer::Rig::Stores::Timestamp.load(hash[:recorded_at]))
   end
 
   # @rbs message: Hash[Symbol, untyped]
+  # @rbs recorded_at: Time?
   # @rbs return: void
-  def initialize(message:)
+  def initialize(message:, recorded_at: nil)
     @message = message
+    @recorded_at = recorded_at
     freeze
+  end
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h
+    super.merge(recorded_at: Riffer::Rig::Stores::Timestamp.dump(@recorded_at)).compact
   end
 end

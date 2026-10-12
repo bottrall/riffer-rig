@@ -44,4 +44,30 @@ describe Riffer::Rig::Stores::SkillEntry do
       refute_equal entry, entry('b')
     end
   end
+
+  describe 'recorded_at' do
+    def stamped
+      Riffer::Rig::Stores::SkillEntry.new(skill: 'a', recorded_at: Time.utc(2026, 10, 11, 12, 0, 0.5r))
+    end
+
+    it 'is nil unless stamped' do
+      assert_nil entry.recorded_at
+    end
+
+    it 'serialises into the disk line' do
+      assert_equal({ type: 'skill', skill: 'a', recorded_at: '2026-10-11T12:00:00.500Z' }, stamped.to_h)
+    end
+
+    it 'survives a round trip' do
+      assert_equal stamped.recorded_at, Riffer::Rig::Stores::SkillEntry.from_hash(stamped.to_h).recorded_at
+    end
+
+    it 'reads a line written without one as unstamped' do
+      assert_nil Riffer::Rig::Stores::SkillEntry.from_hash({ type: 'skill', skill: 'a' }).recorded_at
+    end
+
+    it 'differs from the same entry unstamped' do
+      refute_equal entry, stamped
+    end
+  end
 end

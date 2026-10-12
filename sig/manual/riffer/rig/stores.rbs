@@ -5,6 +5,10 @@ module Riffer::Rig::Stores
   type entry = Header | MessageEntry | ModelEntry | SkillEntry
   type entry_type = singleton(Header) | singleton(MessageEntry) | singleton(ModelEntry) | singleton(SkillEntry)
 
+  interface _Clock
+    def now: () -> Time
+  end
+
   interface _Store
     def append: (String id, entry entry) -> void
     def read: (String id) -> Array[entry]

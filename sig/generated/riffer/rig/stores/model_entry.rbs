@@ -5,14 +5,20 @@ class Riffer::Rig::Stores::ModelEntry
 
   include Riffer::Rig::Support::TypedValue[String]
 
-  # @dynamic model
+  # @dynamic model, recorded_at
   attr_reader model: String
+
+  attr_reader recorded_at: Time?
 
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: ::Riffer::Rig::Stores::ModelEntry?
   def self.from_hash: (Hash[Symbol, untyped] hash) -> ::Riffer::Rig::Stores::ModelEntry?
 
   # @rbs model: String
+  # @rbs recorded_at: Time?
   # @rbs return: void
-  def initialize: (model: String) -> void
+  def initialize: (model: String, ?recorded_at: Time?) -> void
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
 end
