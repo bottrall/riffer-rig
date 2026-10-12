@@ -236,9 +236,7 @@ class Riffer::Rig::Terminal::Renderer
     parts = ["↑#{usage.input_tokens}", "↓#{usage.output_tokens}"]
     parts << "cache_write:#{usage.cache_write_tokens}" if usage.cache_write_tokens&.positive?
     parts << "cache_read:#{usage.cache_read_tokens}" if usage.cache_read_tokens&.positive?
-    parts << "session #{session.total_tokens} tok"
-    cost = session.cost
-    parts << format('~$%.4f', cost) if cost
+    parts << "session #{Riffer::Rig::Terminal::Tally.call(session)}"
 
     parts.join(' · ')
   end

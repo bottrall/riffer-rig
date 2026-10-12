@@ -30,9 +30,10 @@ module Riffer::Rig::Terminal::Banner
   # @rbs cwd: String
   # @rbs skills: String
   # @rbs version: String
+  # @rbs tally: Riffer::Providers::TokenUsage?
   # @rbs return: String
-  def call(theme, model:, cwd:, skills:, version:)
-    lines(theme, model: model, cwd: cwd, skills: skills, version: version).join("\n")
+  def call(theme, model:, cwd:, skills:, version:, tally: nil)
+    lines(theme, model: model, cwd: cwd, skills: skills, version: version, tally: tally).join("\n")
   end
 
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -40,9 +41,11 @@ module Riffer::Rig::Terminal::Banner
   # @rbs cwd: String
   # @rbs skills: String
   # @rbs version: String
+  # @rbs tally: Riffer::Providers::TokenUsage?
   # @rbs return: Array[String]
-  def lines(theme, model:, cwd:, skills:, version:)
-    [''] + art(theme) + [''] + info(theme, model: model, cwd: cwd, skills: skills, version: version) + ['']
+  def lines(theme, model:, cwd:, skills:, version:, tally:)
+    rows = info(theme, model: model, cwd: cwd, skills: skills, version: version, tally: tally)
+    [''] + art(theme) + [''] + rows + ['']
   end
 
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -57,9 +60,12 @@ module Riffer::Rig::Terminal::Banner
   # @rbs cwd: String
   # @rbs skills: String
   # @rbs version: String
+  # @rbs tally: Riffer::Providers::TokenUsage?
   # @rbs return: Array[String]
-  def info(theme, model:, cwd:, skills:, version:)
-    rows = { model: model, cwd: cwd, skills: skills, version: version }.map do |label, value|
+  def info(theme, model:, cwd:, skills:, version:, tally:)
+    session = tally && Riffer::Rig::Terminal::Tally.call(tally)
+    values = { model: model, cwd: cwd, skills: skills, version: version, session: session }.compact
+    rows = values.map do |label, value|
       "  #{theme.magenta('▸')} #{theme.grey(label.to_s.ljust(INFO_LABEL_WIDTH))}#{value}"
     end
     rows + ['', "  #{theme.dim('type /exit to quit')}"]
