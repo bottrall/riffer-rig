@@ -1,0 +1,18 @@
+# Generated from lib/riffer/rig/hosts/non_interactive.rb with RBS::Inline
+
+module Riffer::Rig::Hosts::NonInteractive
+  # @rbs question: String?
+  # @rbs options: Array[String]?
+  # @rbs secret: bool
+  # @rbs return: String?
+  def ask: (?String? question, ?options: Array[String]?, ?secret: bool) -> String?
+
+  # @rbs question: String?
+  # @rbs return: bool
+  def confirm: (?String? question) -> bool
+
+  # @rbs label: String?
+  # @rbs &block: ? () -> void
+  # @rbs return: void
+  def progress: (?String? label) ?{ () -> void } -> void
+end

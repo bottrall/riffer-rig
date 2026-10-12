@@ -144,6 +144,8 @@ module Riffer::Rig::Credentials
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs return: Hash[Symbol, String]
   def ask_for(fields, identifier, host)
+    return {} unless host.capabilities.include?(:ask)
+
     fields.to_h do |field|
       [field.name, presence(host.ask("#{identifier} #{field.name}", secret: field.secret))]
     end.compact

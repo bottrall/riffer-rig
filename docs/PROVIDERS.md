@@ -148,7 +148,7 @@ resolution.missing # => []
 Riffer::Rig::Credentials.apply(:azure_openai, resolution.values)
 ```
 
-`resolve` asks through the host's `ask` (see [Hosts](HOSTS.md)) and stores what the host answers. A host that declines, as `Riffer::Rig::Hosts::Null` does, leaves `missing` listing the required fields that did not resolve, next to the values that did. A `!command` runs on every `resolve`, so resolve once and keep the result.
+`resolve` asks through the host's `ask` when its `capabilities` include `:ask` (see [Hosts](HOSTS.md)) and stores what the host answers. A host that declines, as `Riffer::Rig::Hosts::Null` does, leaves `missing` listing the required fields that did not resolve, next to the values that did. A `!command` runs on every `resolve`, so resolve once and keep the result.
 
 `apply` touches only the members it was given a value for, and does nothing for a provider `Riffer.config` has no section for.
 

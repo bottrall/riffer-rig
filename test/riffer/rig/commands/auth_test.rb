@@ -9,7 +9,7 @@ class AcmeAuthProvider < Riffer::Providers::Mock; end # rubocop:disable Rig/NoIn
 class AnsweringAuthHost
   extend Forwardable
 
-  def_delegators :@null, :capabilities, :confirm, :notify, :progress
+  def_delegators :@null, :confirm, :notify, :progress
 
   attr_reader :asked
 
@@ -17,6 +17,10 @@ class AnsweringAuthHost
     @null = Riffer::Rig::Hosts::Null.new
     @answer = answer
     @asked = []
+  end
+
+  def capabilities
+    Set[:ask]
   end
 
   def ask(question = nil, options: nil, secret: false)

@@ -9,7 +9,7 @@ class AcmeModelProvider < Riffer::Providers::Mock; end # rubocop:disable Rig/NoI
 class AnsweringModelHost
   extend Forwardable
 
-  def_delegators :@null, :capabilities, :confirm, :notify, :progress
+  def_delegators :@null, :confirm, :notify, :progress
 
   attr_reader :asked #: Array[{ question: String?, secret: bool }]
 
@@ -19,6 +19,11 @@ class AnsweringModelHost
     @null = Riffer::Rig::Hosts::Null.new
     @answer = answer
     @asked = []
+  end
+
+  # @rbs return: Set[Symbol]
+  def capabilities
+    Set[:ask]
   end
 
   # @rbs question: String?

@@ -16,7 +16,7 @@ class PromptingHost
 
   # @rbs return: Set[Symbol]
   def capabilities
-    Set.new
+    Set[:ask]
   end
 
   # @rbs question: String?

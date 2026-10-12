@@ -3,10 +3,13 @@
 require 'test_helper'
 
 class AskRecorder
+  attr_reader :capabilities #: Set[Symbol]
   attr_reader :confirmations #: Array[String?]
 
+  # @rbs capabilities: Set[Symbol]
   # @rbs return: void
-  def initialize
+  def initialize(capabilities = Set[:confirm])
+    @capabilities = capabilities
     @confirmations = []
   end
 
@@ -87,6 +90,17 @@ describe Riffer::Rig::SDK do
           )
         end
       end
+    end
+
+    it 'does not ask a host that cannot confirm' do
+      host = AskRecorder.new(Set[:ask])
+      with_sdk_absent do
+        with_bundler(false) do
+          Riffer::Rig::SDK.ensure('acme-sdk', '~> 1.0', host: host)
+        end
+      end
+
+      assert_empty host.confirmations
     end
 
     it 'asks the host to install an absent gem outside Bundler' do
