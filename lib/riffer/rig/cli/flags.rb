@@ -9,9 +9,6 @@ class Riffer::Rig::CLI::Flags
            riffer acp           serve Runtimes as an ACP agent over stdio
   TEXT
 
-  # The tokens OptionParser reports a missing argument for when -r is bare.
-  BARE_RESUME = %w[-r --resume].freeze #: Array[String]
-
   # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save, verbose, json, prompt, continue, resume
   attr_reader :model #: String?
   attr_reader :extensions, :skills, :agents_md, :help, :verbose, :json #: bool
@@ -22,11 +19,6 @@ class Riffer::Rig::CLI::Flags
   attr_reader :continue #: bool
   attr_reader :resume #: String?
 
-  # A bare -r (no id) only reaches here for the REPL: the parser requires the
-  # id, and the missing-argument error is translated to an empty resume so the
-  # terminal can open the picker instead. Headless keeps the error and prints
-  # it as the usage failure.
-  #
   # @rbs argv: Array[String]
   # @rbs prompt: bool
   # @rbs return: Riffer::Rig::CLI::Flags | String
@@ -35,13 +27,9 @@ class Riffer::Rig::CLI::Flags
     rest = parser.parse(argv, into: values)
     allowed = rest.empty? || (prompt && rest.size == 1)
     return "unexpected argument: #{rest.join(' ')}" unless allowed
+    return 'missing argument: -r' if prompt && values[:resume] == ''
 
     assemble(values, rest.first, prompt: prompt)
-  rescue OptionParser::MissingArgument => e
-    bare = !prompt && BARE_RESUME.include?(e.args.first.to_s)
-    return assemble(values || {}, nil, prompt: prompt, bare_resume: bare) if bare
-
-    e.message
   rescue OptionParser::ParseError => e
     e.message
   end
@@ -76,7 +64,12 @@ class Riffer::Rig::CLI::Flags
       parser.on('--max-steps N', Integer, 'Stop a turn after N model calls')
       parser.on('--no-save', 'Do not save this session')
       parser.on('-c', '--continue', 'Continue the most recent session in this directory')
-      parser.on('-r ID', '--resume ID', String, 'Resume the session with this id; bare -r opens the picker in the REPL')
+      parser.on(
+        '-r [ID]',
+        '--resume [ID]',
+        String,
+        'Resume the session with this id; bare -r opens the picker in the REPL'
+      ) { |id| id || '' }
       parser.on('-p', '--print', 'Run one prompt headless and exit; the prompt is the argument, else stdin')
       parser.on('--verbose', 'With -p, trace each tool call to stderr')
       parser.on('--json', 'With -p, stream every Runtime event as NDJSON to stdout')
@@ -88,9 +81,8 @@ class Riffer::Rig::CLI::Flags
   # @rbs values: Hash[Symbol, untyped]
   # @rbs head: String?
   # @rbs prompt: bool
-  # @rbs bare_resume: bool
   # @rbs return: Riffer::Rig::CLI::Flags
-  def self.assemble(values, head, prompt:, bare_resume: false)
+  def self.assemble(values, head, prompt:)
     new(
       model: values[:model],
       extensions: !values.key?(:'no-extensions'),
@@ -103,7 +95,7 @@ class Riffer::Rig::CLI::Flags
       json: values.key?(:json),
       prompt: prompt ? head : nil,
       continue: values.key?(:continue),
-      resume: bare_resume ? '' : values[:resume],
+      resume: values[:resume],
       help: values.key?(:help)
     )
   end
