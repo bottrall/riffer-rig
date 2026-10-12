@@ -3,29 +3,18 @@
 class Riffer::Rig::Loader
   class ConfigurationError < StandardError; end
 
-  # Raised by a strict load: the reload abandons instead of continuing.
-  class AbandonedError < StandardError; end
-
-  EXTENSION_FEATURE = 'riffer/rig/extension' #: String
-
-  private_constant :EXTENSION_FEATURE
-
   # @rbs @cwd: String
   # @rbs @host: Riffer::Rig::Hosts::_Host
   # @rbs @env: Riffer::Rig::Env
   # @rbs @home: String
   # @rbs @riffer_config: Riffer::Config
   # @rbs @store: Riffer::Rig::Stores::_Store | nil
-  # @rbs @tracked_files: Array[String]
+  # @rbs @source: Riffer::Rig::Loader::ExtensionSource
   # @rbs @stripped: Array[Symbol]
   # @rbs @extensions_enabled: bool
-  # @rbs @gem_extensions: Array[Riffer::Rig::Extension]
   # @rbs @extra_extensions: Array[Riffer::Rig::Extension]
   # @rbs @file_state: Hash[String, Time?]?
   # @rbs @reload_mode: (:auto | :manual | nil)
-
-  # @dynamic tracked_files
-  attr_reader :tracked_files #: Array[String]
 
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -76,10 +65,9 @@ class Riffer::Rig::Loader
     @home = home
     @riffer_config = riffer_config
     @store = store
-    @tracked_files = []
+    @source = Riffer::Rig::Loader::ExtensionSource.new(cwd: cwd, home: home, host: host)
     @stripped = []
     @extensions_enabled = true
-    @gem_extensions = []
     @file_state = nil
     @reload_mode = nil
   end
@@ -95,15 +83,15 @@ class Riffer::Rig::Loader
     selected = select_model(options.model || @env.model || document.model)
     provider = Riffer::Rig::Settings::ModelOptions.provider_for(selected).to_s
     ensure_sdk(provider)
-    credentials = { provider.to_sym => credentials_for(provider) }
+    credentials = install_credentials(provider)
+    raise ConfigurationError, credentials if credentials.is_a?(String)
+
     @extensions_enabled = options.extensions
     @extra_extensions = extra_extensions
     @reload_mode = reload
     @stripped = { skills: options.skills, agents_md: options.agents_md }.reject { |_name, kept| kept }.keys
-    loaded = Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *@stripped).values
-    @tracked_files = []
-    @gem_extensions = []
-    loaded += load_rig_files(document.autoload) if options.extensions
+    loaded = bundled(document)
+    loaded += @source.discover(autoload: document.autoload) if options.extensions
     loaded += @extra_extensions
 
     recorder = recorder_for(document, resumed: !snapshot.nil?)
@@ -117,7 +105,7 @@ class Riffer::Rig::Loader
       host: @host,
       cwd: @cwd,
       max_steps: options.max_steps,
-      credentials: credentials,
+      credentials: { provider.to_sym => credentials },
       env: @env,
       auth_path: home_auth_path,
       pricing: document.models,
@@ -157,7 +145,7 @@ class Riffer::Rig::Loader
     entries = store.read(id)
     return nil if entries.empty?
 
-    runtime(options, snapshot: snapshot_of(entries, id))
+    runtime(options, snapshot: Riffer::Rig::Stores::Entries.snapshot(entries, id))
   end
 
   # A host tier may not name the store, so the messages it replays come from
@@ -168,7 +156,7 @@ class Riffer::Rig::Loader
     store = @store
     return [] unless store
 
-    store.read(id).filter_map { |entry| entry.message if entry.is_a?(Riffer::Rig::Stores::MessageEntry) }
+    Riffer::Rig::Stores::Entries.messages(store.read(id))
   end
 
   # @rbs all: bool
@@ -246,13 +234,16 @@ class Riffer::Rig::Loader
   # @rbs return: (Riffer::Rig::Runtime | String)
   def perform_reload(runtime)
     settings = merged_settings
-    document = Riffer::Rig::Settings::Document.new(settings)
-    extensions = reload_extensions(document, settings)
+    candidates = reload_candidates(Riffer::Rig::Settings::Document.new(settings))
+    return notify_failure(candidates) if candidates.is_a?(String)
 
-    failure = reload_credentials(runtime)
-    return notify_failure(failure) if failure
+    extensions = @source.validated(candidates, settings)
+    provider = runtime.model.partition('/').first
+    credentials = install_credentials(provider)
+    return notify_failure(credentials) if credentials.is_a?(String)
 
-    runtime.rebuild(extensions: validated(extensions, settings), settings: settings)
+    runtime.merge_credentials(provider.to_sym, credentials)
+    runtime.rebuild(extensions: extensions, settings: settings)
     runtime
   rescue StandardError => e
     notify_failure(e.message)
@@ -266,181 +257,24 @@ class Riffer::Rig::Loader
   end
 
   # @rbs document: Riffer::Rig::Settings::Document
-  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: (Array[Riffer::Rig::Extension] | String)
+  def reload_candidates(document)
+    candidates = bundled(document) + @extra_extensions
+    return candidates unless @extensions_enabled
+
+    rediscovered = @source.rediscover
+    rediscovered.is_a?(String) ? rediscovered : candidates + rediscovered
+  end
+
+  # @rbs document: Riffer::Rig::Settings::Document
   # @rbs return: Array[Riffer::Rig::Extension]
-  def reload_extensions(document, settings)
-    candidates = Riffer::Rig::Bundled::BY_NAME.except(
-      *document.disabled.map(&:to_sym),
-      *@stripped
-    ).values + @extra_extensions
-    return validated(candidates, settings) unless @extensions_enabled
-
-    scrub_tracked_features
-    @tracked_files = []
-    candidates.concat(@gem_extensions, rig_recordings)
-    validated(candidates, settings)
-  end
-
-  # @rbs return: Array[Riffer::Rig::Extension]
-  def rig_recordings
-    recorded = [] #: Array[Riffer::Rig::Extension]
-    recorded.concat(load_rig_file(home_rig_path, confirm_trust: false))
-    recorded.concat(load_rig_file(project_rig_path, confirm_trust: true))
-    recorded
-  end
-
-  # @rbs path: String
-  # @rbs confirm_trust: bool
-  # @rbs return: Array[Riffer::Rig::Extension]
-  def load_rig_file(path, confirm_trust:)
-    return [] unless File.file?(path)
-    return [] if confirm_trust && !trusted?(path)
-
-    load_file(path, track: true, strict: true)
-  end
-
-  # @rbs return: void
-  def scrub_tracked_features
-    @tracked_files.each { |path| $LOADED_FEATURES.delete(path) }
-  end
-
-  # Runs each extension against a throwaway registrar so that a failing block
-  # is skipped and reported instead of aborting the rebuild.
-  # @rbs extensions: Array[Riffer::Rig::Extension]
-  # @rbs settings: Hash[Symbol, untyped]
-  # @rbs return: Array[Riffer::Rig::Extension]
-  def validated(extensions, settings)
-    extensions.select do |extension|
-      registrar = Riffer::Rig::Registrar.new(extension.name, settings[extension.name.to_sym] || {})
-      error = extension.load_into(registrar)
-      next true unless error
-
-      @host.notify("Extension #{extension.name} failed to load: #{error.message}", level: :error)
-      false
-    end
-  end
-
-  # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: String?
-  def reload_credentials(runtime)
-    provider = runtime.model.partition('/').first
-    resolution = Riffer::Rig::Credentials.install(
-      provider,
-      host: @host,
-      env: @env,
-      config: @riffer_config,
-      auth_path: home_auth_path,
-      settings_path: home_settings_path
-    )
-    return missing_credentials(provider, resolution.missing) unless resolution.missing.empty?
-
-    runtime.merge_credentials(provider.to_sym, resolution.values)
-    nil
+  def bundled(document)
+    Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *@stripped).values
   end
 
   # @rbs return: Hash[String, Time?]
   def file_state
-    (@tracked_files + rig_paths).uniq.to_h { |path| [path, stamp(path)] }
-  end
-
-  # @rbs return: Array[String]
-  def rig_paths
-    return [] unless @extensions_enabled
-
-    [home_rig_path, project_rig_path]
-  end
-
-  # @rbs path: String
-  # @rbs return: Time?
-  def stamp(path)
-    File.file?(path) ? File.mtime(path) : nil
-  end
-
-  # @rbs return: String
-  def home_rig_path
-    File.expand_path(File.join(@home, '.riffer', 'rig.rb'))
-  end
-
-  # @rbs return: String
-  def project_rig_path
-    File.expand_path(File.join(@cwd, '.riffer', 'rig.rb'))
-  end
-
-  # @rbs autoload: bool
-  # @rbs return: Array[Riffer::Rig::Extension]
-  def load_rig_files(autoload)
-    @gem_extensions = gem_extension_files(autoload).flat_map { |file| load_file(File.expand_path(file), track: false) }
-    recorded = @gem_extensions.dup
-    recorded.concat(load_file(home_rig_path, track: true)) if File.file?(home_rig_path)
-    if File.file?(project_rig_path) && trusted?(project_rig_path)
-      recorded.concat(load_file(project_rig_path, track: true))
-    end
-    recorded
-  end
-
-  # @rbs autoload: bool
-  # @rbs return: Array[String]
-  def gem_extension_files(autoload)
-    return [] unless autoload
-
-    Gem.find_files(EXTENSION_FEATURE)
-  end
-
-  # @rbs path: String
-  # @rbs return: bool
-  def trusted?(path)
-    stored = Riffer::Rig::Trust.read(trust_path)[path]
-    return stored unless stored.nil?
-
-    asked = @host.capabilities.include?(:confirm)
-    decision = asked ? @host.confirm("Trust #{path}?") : false
-    Riffer::Rig::Trust.store(trust_path, path, decision) if asked
-    decision
-  end
-
-  # @rbs return: String
-  def trust_path
-    File.join(@home, '.riffer', 'trust.json')
-  end
-
-  # Loads one file and returns the extensions it recorded. A tracked load adds
-  # the features the load added to the tracked file set. A failure is reported
-  # to the host and yields nothing, unless strict: then it propagates as
-  # AbandonedError for the reload to abandon on.
-  # @rbs path: String
-  # @rbs track: bool
-  # @rbs strict: bool
-  # @rbs return: Array[Riffer::Rig::Extension]
-  def load_file(path, track:, strict: false)
-    before = Riffer::Rig.extensions
-    before_features = $LOADED_FEATURES.dup
-    begin
-      load path
-    rescue StandardError => e
-      track_loaded(before_features, path) if track
-      message = "#{path} failed to load: #{e.message}"
-      raise AbandonedError, message if strict
-
-      @host.notify(message, level: :error)
-      return []
-    end
-    track_loaded(before_features, path) if track
-    Riffer::Rig.extensions.values.reject { |extension| before[extension.name] == extension }
-  end
-
-  # @rbs before_features: Array[String]
-  # @rbs path: String
-  # @rbs return: void
-  def track_loaded(before_features, path)
-    recorded = ($LOADED_FEATURES - before_features) + [path] #: Array[String]
-    @tracked_files.concat(recorded.select { |feature| local?(feature) })
-  end
-
-  # @rbs feature: String
-  # @rbs return: bool
-  def local?(feature)
-    roots = [File.expand_path(File.join(@home, '.riffer')), File.expand_path(@cwd)] #: Array[String]
-    roots.any? { |root| feature.start_with?("#{root}#{File::SEPARATOR}") }
+    @extensions_enabled ? @source.file_state : {}
   end
 
   # @rbs configured: String?
@@ -487,9 +321,9 @@ class Riffer::Rig::Loader
   end
 
   # @rbs provider: String
-  # @rbs return: Hash[Symbol, String]
-  def credentials_for(provider)
-    resolution = Riffer::Rig::Credentials.install(
+  # @rbs return: (Hash[Symbol, String] | String)
+  def install_credentials(provider)
+    Riffer::Rig::Loader::Credentials.install(
       provider,
       host: @host,
       env: @env,
@@ -497,19 +331,6 @@ class Riffer::Rig::Loader
       auth_path: home_auth_path,
       settings_path: home_settings_path
     )
-    raise ConfigurationError, missing_credentials(provider, resolution.missing) unless resolution.missing.empty?
-
-    resolution.values
-  end
-
-  # @rbs provider: String
-  # @rbs missing: Array[Symbol]
-  # @rbs return: String
-  def missing_credentials(provider, missing)
-    setup = Riffer::Rig::ProviderSetup.for(provider)
-    "#{provider} has no #{setup.missing_fields(missing)}; " \
-      'set it in the environment or run riffer interactively to paste it' \
-      "#{" (create one at #{setup.url})" if setup.url}"
   end
 
   # @rbs return: String
@@ -520,18 +341,6 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def home_auth_path
     File.join(@home, '.riffer', 'auth.json')
-  end
-
-  # @rbs entries: Array[Riffer::Rig::Stores::entry]
-  # @rbs id: String
-  # @rbs return: Hash[Symbol, untyped]
-  def snapshot_of(entries, id)
-    {
-      id: id,
-      messages: entries.filter_map { |entry| entry.message if entry.is_a?(Riffer::Rig::Stores::MessageEntry) },
-      model: entries.filter_map { |entry| entry.model if entry.is_a?(Riffer::Rig::Stores::ModelEntry) }.last,
-      skills: entries.filter_map { |entry| entry.skill if entry.is_a?(Riffer::Rig::Stores::SkillEntry) }
-    }
   end
 
   # The store records unless it was declined with store: nil or globally with

@@ -1,0 +1,12 @@
+# Generated from lib/riffer/rig/stores/entries.rb with RBS::Inline
+
+module Riffer::Rig::Stores::Entries
+  # @rbs entries: Array[Riffer::Rig::Stores::entry]
+  # @rbs return: Array[Hash[Symbol, untyped]]
+  def messages: (Array[Riffer::Rig::Stores::entry] entries) -> Array[Hash[Symbol, untyped]]
+
+  # @rbs entries: Array[Riffer::Rig::Stores::entry]
+  # @rbs id: String
+  # @rbs return: Hash[Symbol, untyped]
+  def snapshot: (Array[Riffer::Rig::Stores::entry] entries, String id) -> Hash[Symbol, untyped]
+end

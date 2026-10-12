@@ -3,6 +3,8 @@
 require 'test_helper'
 require 'json'
 require 'forwardable'
+require_relative '../../support/confirming_host'
+require_relative '../../support/rig_files'
 
 class ScriptedHost
   extend Forwardable
@@ -27,55 +29,11 @@ class ScriptedHost
   end
 end
 
-class ConfirmingHost
-  extend Forwardable
-
-  def_delegators :@null, :progress
-
-  attr_reader :questions #: Array[String?]
-  attr_reader :notifications #: Array[[Symbol, String]]
-
-  # @rbs answers: Array[untyped]
-  # @rbs return: void
-  def initialize(answers = [])
-    @null = Riffer::Rig::Hosts::Null.new
-    @answers = answers
-    @questions = []
-    @notifications = []
-  end
-
-  # @rbs return: Set[Symbol]
-  def capabilities
-    Set[:ask, :confirm, :notify]
-  end
-
-  # @rbs question: String?
-  # @rbs options: Array[untyped]?
-  # @rbs secret: bool
-  # @rbs return: untyped
-  def ask(question = nil, options: nil, secret: false)
-    @questions << question
-    @answers.shift
-  end
-
-  # @rbs question: String?
-  # @rbs return: untyped
-  def confirm(question = nil)
-    @questions << question
-    @answers.shift
-  end
-
-  # @rbs message: String
-  # @rbs level: Symbol
-  # @rbs return: void
-  def notify(message, level: :info)
-    @notifications << [level, message]
-  end
-end
-
 LOADER_OPTION_KEYS = %i[model extensions skills agents_md tools max_steps].freeze
 
 describe Riffer::Rig::Loader do
+  include RigFiles
+
   before do
     @home = Dir.mktmpdir
     @cwd = Dir.mktmpdir
@@ -131,24 +89,6 @@ describe Riffer::Rig::Loader do
     File.write(File.join(dir, 'SKILL.md'), "---\nname: #{name}\ndescription: Skill #{name}.\n---\nDo #{name}.\n")
   end
 
-  def write_rig(scope, body)
-    root = scope == :home ? @home : @cwd
-    FileUtils.mkdir_p(File.join(root, '.riffer'))
-    File.write(File.join(root, '.riffer', 'rig.rb'), body)
-  end
-
-  def trust_file
-    File.join(@home, '.riffer', 'trust.json')
-  end
-
-  def project_rig_path
-    File.expand_path(File.join(@cwd, '.riffer', 'rig.rb'))
-  end
-
-  def home_rig_path
-    File.expand_path(File.join(@home, '.riffer', 'rig.rb'))
-  end
-
   def fixture_gem_file
     dir = File.join(@home, 'gems', 'fixture')
     FileUtils.mkdir_p(dir)
@@ -167,14 +107,6 @@ describe Riffer::Rig::Loader do
     Riffer::Rig::Loader.new(
       cwd: @cwd, host: host, env: Riffer::Rig::Env.new(env), home: @home, riffer_config: @config
     )
-  end
-
-  def with_gem_files(paths)
-    original = Gem.method(:find_files)
-    Gem.define_singleton_method(:find_files) { |_glob| paths }
-    yield
-  ensure
-    Gem.define_singleton_method(:find_files, original)
   end
 
   describe '.runtime' do
@@ -393,15 +325,6 @@ describe Riffer::Rig::Loader do
   end
 
   describe 'rig.rb files' do
-    it 'loads the home file before the project file' do
-      write_rig(:home, '')
-      write_rig(:project, '')
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-
-      assert_equal [home_rig_path, project_rig_path], loader.tracked_files
-    end
-
     it 'appends the extensions the files record after the bundle' do
       write_rig(:home, <<~RUBY)
         class ProbeTool < Riffer::Tool
@@ -414,144 +337,6 @@ describe Riffer::Rig::Loader do
       names = tool_names(build(model: 'mock/test'))
 
       assert_operator names.index('probe'), :>, names.index('bash')
-    end
-
-    it 'records a require_relative from rig.rb as a tracked file' do
-      FileUtils.mkdir_p(File.join(@cwd, '.riffer'))
-      File.write(File.join(@cwd, '.riffer', 'local.rb'), 'Riffer::Rig.extension("local") { |rig| }')
-      File.write(project_rig_path, "require_relative 'local'")
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-
-      assert_equal [File.expand_path(File.join(@cwd, '.riffer', 'local.rb')), project_rig_path], loader.tracked_files
-    end
-
-    it 'drops required gem paths from the tracked files' do
-      write_rig(:project, "require 'json'")
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-
-      assert_equal [project_rig_path], loader.tracked_files
-    end
-
-    it 'reports a raising rig.rb through notify' do
-      write_rig(:project, 'raise "boom"')
-      host = ConfirmingHost.new([true])
-      build(host: host, model: 'mock/test')
-
-      assert_equal [[:error, "#{project_rig_path} failed to load: boom"]], host.notifications
-    end
-
-    it "keeps the other file's extensions when one file raises" do
-      write_rig(:home, <<~RUBY)
-        class ProbeTool < Riffer::Tool
-          identifier 'probe'
-          description 'probe'
-          def call(context:) = text('probe')
-        end
-        Riffer::Rig.extension('probe') { |rig| rig.tool ProbeTool }
-      RUBY
-      write_rig(:project, 'raise "boom"')
-
-      assert_includes tool_names(build(host: ConfirmingHost.new([true]), model: 'mock/test')), 'probe'
-    end
-
-    it 'skips the extensions a raising file recorded' do
-      write_rig(:home, <<~RUBY)
-        class DoomedProbeTool < Riffer::Tool
-          identifier 'doomed_probe'
-          description 'doomed'
-          def call(context:) = text('doomed')
-        end
-        Riffer::Rig.extension('doomed') { |rig| rig.tool DoomedProbeTool }
-        raise 'boom'
-      RUBY
-
-      refute_includes tool_names(build(model: 'mock/test')), 'doomed_probe'
-    end
-  end
-
-  describe 'trust' do
-    it 'asks to confirm a project file the first time it is seen' do
-      write_rig(:project, '')
-      host = ConfirmingHost.new([true])
-      build(host: host, model: 'mock/test')
-
-      assert_equal ["Trust #{project_rig_path}?"], host.questions
-    end
-
-    it 'stores the answer by absolute path' do
-      write_rig(:project, '')
-      build(host: ConfirmingHost.new([true]), model: 'mock/test')
-
-      assert_equal({ project_rig_path => true }, JSON.parse(File.read(trust_file)))
-    end
-
-    it 'does not ask again once an answer is stored' do
-      write_rig(:project, '')
-      build(host: ConfirmingHost.new([true]), model: 'mock/test')
-      second = ConfirmingHost.new([true])
-      build(host: second, model: 'mock/test')
-
-      assert_empty second.questions
-    end
-
-    it 'skips a declined project file and its extensions' do
-      write_rig(:project, <<~RUBY)
-        class DeclinedProbeTool < Riffer::Tool
-          identifier 'declined_probe'
-          description 'declined'
-          def call(context:) = text('declined')
-        end
-        Riffer::Rig.extension('declined') { |rig| rig.tool DeclinedProbeTool }
-      RUBY
-
-      refute_includes tool_names(build(host: ConfirmingHost.new([false]), model: 'mock/test')), 'declined_probe'
-    end
-
-    it 'does not re-ask a declined file' do
-      write_rig(:project, '')
-      host = ConfirmingHost.new([false, true])
-      build(host: host, model: 'mock/test')
-      build(host: host, model: 'mock/test')
-
-      assert_equal 1, host.questions.size
-    end
-
-    it 'reports nothing to the host for a declined file' do
-      write_rig(:project, '')
-      host = ConfirmingHost.new([false])
-      build(host: host, model: 'mock/test')
-
-      assert_empty host.notifications
-    end
-
-    it 'never asks about the home file' do
-      write_rig(:home, '')
-      host = ConfirmingHost.new([true])
-      build(host: host, model: 'mock/test')
-
-      assert_empty host.questions
-    end
-
-    it 'skips the project file for a host that cannot confirm' do
-      write_rig(:project, <<~RUBY)
-        class NullProbeTool < Riffer::Tool
-          identifier 'null_probe'
-          description 'null'
-          def call(context:) = text('null')
-        end
-        Riffer::Rig.extension('null_probe') { |rig| rig.tool NullProbeTool }
-      RUBY
-
-      refute_includes tool_names(build(model: 'mock/test')), 'null_probe'
-    end
-
-    it 'does not record a decline from a host that cannot confirm' do
-      write_rig(:project, '')
-      build(model: 'mock/test')
-
-      refute_path_exists trust_file
     end
   end
 
@@ -629,43 +414,11 @@ describe Riffer::Rig::Loader do
   end
 
   describe 'credentials' do
-    let(:gemini) { build(model: 'gemini/gem-2.5-pro', env: { 'GEMINI_API_KEY' => 'sk-gem-env' }) }
-
-    it 'assigns the resolved key to the riffer config' do
-      gemini
-
-      assert_equal 'sk-gem-env', @config.gemini.api_key
-    end
-
     it 'hands the resolved values to the Runtime' do
-      assert_equal({ gemini: { api_key: 'sk-gem-env' } }, gemini.credentials)
-    end
-
-    it 'reads a key stored in the home auth.json' do
-      FileUtils.mkdir_p(File.join(@home, '.riffer'))
-      File.write(
-        File.join(@home, '.riffer', 'auth.json'),
-        JSON.generate({ gemini: { type: 'api_key', api_key: 'sk-gem-stored' } })
-      )
-
-      assert_equal({ api_key: 'sk-gem-stored' }, build(model: 'gemini/gem-2.5-pro', env: {}).credentials[:gemini])
-    end
-
-    it 'asks a host that can ask for a missing key' do
-      host = ScriptedHost.new('sk-gem-pasted')
-
       assert_equal(
-        { api_key: 'sk-gem-pasted' },
-        build(host: host, model: 'gemini/gem-2.5-pro', env: {}).credentials[:gemini]
+        { gemini: { api_key: 'sk-gem-env' } },
+        build(model: 'gemini/gem-2.5-pro', env: { 'GEMINI_API_KEY' => 'sk-gem-env' }).credentials
       )
-    end
-
-    it 'does not ask a host that cannot ask for a missing key' do
-      host = ScriptedHost.new('sk-gem-pasted')
-      host.define_singleton_method(:capabilities) { Set[:confirm] }
-      refusal { build(host: host, model: 'gemini/gem-2.5-pro', env: {}) }
-
-      assert_empty host.questions
     end
 
     it 'raises the configuration error naming a key the null host cannot supply' do
@@ -1446,6 +1199,17 @@ describe 'Loader resume' do
     assert_nil loader.resume('nope')
   end
 
+  it 'replays the messages of a session in recorded order' do
+    saved = save_session('welcome back')
+    contents = loader.messages(saved.id).map { |message| message[:content] }
+
+    assert_equal ['welcome back', 'All done.'], contents
+  end
+
+  it 'replays no messages with a nil store' do
+    assert_empty loader(store: nil).messages('aaa')
+  end
+
   it 'continues nothing when no session matches the cwd' do
     save_entries('other', [header('other', cwd: '/other')])
 
@@ -1484,16 +1248,6 @@ describe 'Loader resume' do
     types = File.readlines(session_path(saved.id)).map { |line| JSON.parse(line, symbolize_names: true)[:type] }
 
     assert_equal 1, types.count('header')
-  end
-
-  it 'lets the last model entry win' do
-    save_entries(
-      'aaa',
-      [header('aaa'), Riffer::Rig::Stores::ModelEntry.new(model: 'mock/one'),
-       Riffer::Rig::Stores::ModelEntry.new(model: 'mock/two')]
-    )
-
-    assert_equal 'mock/two', loader.resume('aaa').to_h[:model]
   end
 
   it 're-applies every recorded skill activation' do

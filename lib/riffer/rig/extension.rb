@@ -30,14 +30,15 @@ class Riffer::Rig::Extension
     @block.call(registrar)
   end
 
-  # @rbs registrar: Riffer::Rig::Registrar
-  # @rbs return: StandardError?
-  def load_into(registrar)
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: (Riffer::Rig::Registrar | StandardError)
+  def trial(settings)
+    registrar = Riffer::Rig::Registrar.new(@name, settings[@name.to_sym] || {})
     rejection = mismatch || registrar.collision
     return rejection if rejection
 
     run(registrar)
-    nil
+    registrar
   rescue StandardError => e
     e
   end

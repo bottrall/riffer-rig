@@ -40,4 +40,44 @@ describe Riffer::Rig::Extension do
   it 'has no mismatch without a requirement' do
     assert_nil Riffer::Rig::Extension.new('git').mismatch
   end
+
+  describe '#trial' do
+    it 'returns the registrar the block ran against' do
+      recorded = nil
+      registrar = Riffer::Rig::Extension.new('git') { |rig| recorded = rig }.trial({})
+
+      assert_same registrar, recorded
+    end
+
+    it "hands the registrar the extension's settings namespace" do
+      extension = Riffer::Rig::Extension.new('git') { |_rig| nil }
+
+      assert_equal({ depth: 3 }, extension.trial({ git: { depth: 3 }, other: { depth: 9 } }).settings)
+    end
+
+    it 'returns the mismatch of an unmet requirement' do
+      extension = Riffer::Rig::Extension.new('git', requires: '>= 99') { |_rig| nil }
+
+      assert_same extension.mismatch, extension.trial({})
+    end
+
+    it 'leaves the block of an unmet requirement unrun' do
+      ran = false
+      Riffer::Rig::Extension.new('git', requires: '>= 99') { |_rig| ran = true }.trial({})
+
+      refute ran
+    end
+
+    it 'returns the collision of a name that is a core settings key' do
+      extension = Riffer::Rig::Extension.new('model') { |_rig| nil }
+
+      assert_instance_of Riffer::Rig::Registrar::NameCollisionError, extension.trial({})
+    end
+
+    it 'returns the error a raising block raised' do
+      extension = Riffer::Rig::Extension.new('git') { |_rig| raise 'boom' }
+
+      assert_equal 'boom', extension.trial({}).message
+    end
+  end
 end

@@ -1,0 +1,89 @@
+# Generated from lib/riffer/rig/loader/extension_source.rb with RBS::Inline
+
+class Riffer::Rig::Loader::ExtensionSource
+  EXTENSION_FEATURE: ::String
+
+  @gem_extensions: Array[Riffer::Rig::Extension]
+
+  @tracked_files: Array[String]
+
+  @host: Riffer::Rig::Hosts::_Host
+
+  @home: String
+
+  @cwd: String
+
+  # @dynamic tracked_files
+  attr_reader tracked_files: Array[String]
+
+  # @rbs cwd: String
+  # @rbs home: String
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs return: void
+  def initialize: (cwd: String, home: String, host: Riffer::Rig::Hosts::_Host) -> void
+
+  # @rbs autoload: bool
+  # @rbs return: Array[Riffer::Rig::Extension]
+  def discover: (autoload: bool) -> Array[Riffer::Rig::Extension]
+
+  # @rbs return: (Array[Riffer::Rig::Extension] | String)
+  def rediscover: () -> (Array[Riffer::Rig::Extension] | String)
+
+  # @rbs extensions: Array[Riffer::Rig::Extension]
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: Array[Riffer::Rig::Extension]
+  def validated: (Array[Riffer::Rig::Extension] extensions, Hash[Symbol, untyped] settings) -> Array[Riffer::Rig::Extension]
+
+  # @rbs return: Hash[String, Time?]
+  def file_state: () -> Hash[String, Time?]
+
+  private
+
+  # @rbs path: String
+  # @rbs return: Time?
+  def stamp: (String path) -> Time?
+
+  # @rbs return: String
+  def home_rig_path: () -> String
+
+  # @rbs return: String
+  def project_rig_path: () -> String
+
+  # @rbs autoload: bool
+  # @rbs return: Array[String]
+  def gem_extension_files: (bool autoload) -> Array[String]
+
+  # @rbs outcome: Array[Riffer::Rig::Extension] | String
+  # @rbs return: Array[Riffer::Rig::Extension]
+  def reported: (Array[Riffer::Rig::Extension] | String outcome) -> Array[Riffer::Rig::Extension]
+
+  # @rbs path: String
+  # @rbs confirm_trust: bool
+  # @rbs return: (Array[Riffer::Rig::Extension] | String)
+  def rig_file: (String path, confirm_trust: bool) -> (Array[Riffer::Rig::Extension] | String)
+
+  # @rbs path: String
+  # @rbs return: bool
+  def trusted?: (String path) -> bool
+
+  # @rbs return: String
+  def trust_path: () -> String
+
+  # @rbs path: String
+  # @rbs track: bool
+  # @rbs return: (Array[Riffer::Rig::Extension] | String)
+  def load_file: (String path, track: bool) -> (Array[Riffer::Rig::Extension] | String)
+
+  # @rbs path: String
+  # @rbs return: StandardError?
+  def attempt: (String path) -> StandardError?
+
+  # @rbs before_features: Array[String]
+  # @rbs path: String
+  # @rbs return: void
+  def track_loaded: (Array[String] before_features, String path) -> void
+
+  # @rbs feature: String
+  # @rbs return: bool
+  def local?: (String feature) -> bool
+end
