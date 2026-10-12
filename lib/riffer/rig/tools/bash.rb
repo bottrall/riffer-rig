@@ -6,6 +6,8 @@ require 'tmpdir'
 
 class Riffer::Rig::Tools::Bash < Riffer::Tool
   include Riffer::Rig::Tools::Bash::KillGroup
+  include Riffer::Rig::Tools::Bash::MonotonicClock
+  include Riffer::Rig::Tools::Bash::Truncation
 
   identifier 'bash'
   description 'Run a shell command in the working directory and return its combined stdout/stderr and exit status. ' \
@@ -99,18 +101,5 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
       return :timed_out if monotonic_now >= deadline
     end
     :exited
-  end
-
-  # @rbs return: Float
-  def monotonic_now
-    Process.clock_gettime(Process::CLOCK_MONOTONIC)
-  end
-
-  # @rbs output: String
-  # @rbs return: String
-  def truncate(output)
-    return output if output.bytesize <= MAX_OUTPUT_BYTES
-
-    "#{output.byteslice(0, MAX_OUTPUT_BYTES)}\n[output truncated to #{MAX_OUTPUT_BYTES} bytes]"
   end
 end

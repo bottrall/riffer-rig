@@ -8,13 +8,15 @@ class Riffer::Rig::Tools::Bash::Job
   # @rbs @started_at: Float
   # @rbs @status: Integer?
   # @rbs @ended_at: Float?
+  # @rbs @offset: Integer
 
-  # @dynamic id, pid, output_path, started_at, status
+  # @dynamic id, pid, output_path, started_at, status, offset
   attr_reader :id #: String
   attr_reader :pid #: Integer
   attr_reader :output_path #: String
   attr_reader :started_at #: Float
   attr_reader :status #: Integer?
+  attr_reader :offset #: Integer
 
   # @rbs id: String
   # @rbs pid: Integer
@@ -22,14 +24,16 @@ class Riffer::Rig::Tools::Bash::Job
   # @rbs started_at: Float
   # @rbs status: Integer?
   # @rbs ended_at: Float?
+  # @rbs offset: Integer
   # @rbs return: void
-  def initialize(id:, pid:, output_path:, started_at:, status: nil, ended_at: nil)
+  def initialize(id:, pid:, output_path:, started_at:, status: nil, ended_at: nil, offset: 0)
     @id = id
     @pid = pid
     @output_path = output_path
     @started_at = started_at
     @status = status
     @ended_at = ended_at
+    @offset = offset
     freeze
   end
 
@@ -53,13 +57,30 @@ class Riffer::Rig::Tools::Bash::Job
   # @rbs ended_at: Float
   # @rbs return: Riffer::Rig::Tools::Bash::Job
   def finish(status, ended_at)
+    copy(status: status, ended_at: ended_at)
+  end
+
+  # @rbs bytes: Integer
+  # @rbs return: Riffer::Rig::Tools::Bash::Job
+  def advance(bytes)
+    copy(offset: offset + bytes)
+  end
+
+  private
+
+  # @rbs status: Integer?
+  # @rbs ended_at: Float?
+  # @rbs offset: Integer
+  # @rbs return: Riffer::Rig::Tools::Bash::Job
+  def copy(status: @status, ended_at: @ended_at, offset: @offset)
     self.class.new(
       id: id,
       pid: pid,
       output_path: output_path,
       started_at: @started_at,
       status: status,
-      ended_at: ended_at
+      ended_at: ended_at,
+      offset: offset
     )
   end
 end

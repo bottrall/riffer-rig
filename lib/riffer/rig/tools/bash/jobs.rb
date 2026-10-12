@@ -5,6 +5,8 @@ require 'securerandom'
 class Riffer::Rig::Tools::Bash::Jobs
   include Riffer::Rig::Tools::Bash::KillGroup
 
+  READ_LIMIT_BYTES = 2 * Riffer::Rig::Tools::Bash::MAX_OUTPUT_BYTES #: Integer
+
   # @rbs @jobs: Hash[String, Riffer::Rig::Tools::Bash::Job]
   # @rbs @mutex: Mutex
 
@@ -39,6 +41,37 @@ class Riffer::Rig::Tools::Bash::Jobs
       sweep
       jobs
     end
+  end
+
+  # @rbs id: String
+  # @rbs return: [Riffer::Rig::Tools::Bash::Job, String]?
+  def poll(id)
+    @mutex.synchronize do
+      job = @jobs[id]
+      reaped = job && reap(job)
+      unless reaped
+        @jobs.delete(id)
+        next
+      end
+
+      # Reaped before the read, so a finished job's last poll carries all it wrote.
+      size = File.size(reaped.output_path)
+      read = File.read(reaped.output_path, READ_LIMIT_BYTES, reaped.offset) #: String?
+      output = (read || +'').force_encoding(Encoding.default_external)
+      # Output past the read limit is dropped rather than queued, so a job writing
+      # faster than it is polled cannot build a backlog; the max covers a file
+      # that grew between the size and the read.
+      polled = reaped.advance([output.bytesize, size - reaped.offset].max)
+      @jobs[id] = polled
+      sweep
+      [polled, output]
+    end
+  end
+
+  # @rbs id: String
+  # @rbs return: Riffer::Rig::Tools::Bash::Job?
+  def kill(id)
+    @mutex.synchronize { @jobs[id]&.tap { |job| kill_group(job.pid) } }
   end
 
   # @rbs return: void

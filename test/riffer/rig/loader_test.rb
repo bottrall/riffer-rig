@@ -199,7 +199,7 @@ describe Riffer::Rig::Loader do
     end
 
     it 'loads the bundled tools' do
-      assert_equal %w[read write edit bash], tool_names(build(model: 'mock/test'))
+      assert_equal %w[read write edit bash bash_poll bash_kill], tool_names(build(model: 'mock/test'))
     end
 
     it 'loads the bundled AGENTS.md section' do

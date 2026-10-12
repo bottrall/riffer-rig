@@ -1,8 +1,8 @@
 # Tools
 
-riffer-rig ships four tools — `read`, `write`, `edit` and `bash` — each registered by its own bundled extension, so a host can pass any subset of them and a later extension can replace any one.
+riffer-rig ships six tools — `read`, `write`, `edit`, `bash` and the two background-job companions of `bash`, `bash_poll` and `bash_kill` — registered by four bundled extensions, so a host can pass any subset of them and a later extension can replace any one.
 
-## The four tools
+## The six tools
 
 | Tool    | Does                                                                                                                                                        | Guidance in its description                                                                          |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -10,6 +10,8 @@ riffer-rig ships four tools — `read`, `write`, `edit` and `bash` — each regi
 | `write` | creates or overwrites a file, making any parent directories                                                                                                 | "Use this for new files or full rewrites; prefer edit for changes to an existing file."             |
 | `edit`  | replaces an exact string, which must be unique unless `replace_all` is set; a missing or ambiguous match is a tool error                                    | "Prefer this over write for existing files; pass enough surrounding text to make old_string unique." |
 | `bash`  | runs a command in the working directory in its own process group and returns combined stdout/stderr; a non-zero exit is a tool error; `timeout_ms` (default 120000) caps each call; output is truncated at 30,000 bytes; a Runtime `cancel` kills the process group; `run_in_background` starts the command as a background job and returns a job id and output path immediately | "Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers."    |
+| `bash_poll` | returns what a background job has written since the last poll, then `[running]` or, once it has finished, `[exited with status N]`; `wait_ms` (default 0) blocks until the job exits; a non-zero exit, a cancelled wait or an unknown job id is a tool error | "Pass wait_ms to block until the job exits rather than polling in a loop." |
+| `bash_kill` | sends `TERM` to a background job's whole process group; an unknown job id is a tool error | "Poll the job afterwards to collect its remaining output and exit status." |
 
 The guidance sentence ends each tool's description. It is the only coding guidance the model gets: the base prompt names no tools, so the guidance travels with the tool and disappears when the tool is left out.
 
@@ -18,6 +20,12 @@ Tools never raise. A bad argument, a missing file or a failing command comes bac
 ## Background jobs
 
 `bash` takes a `run_in_background` flag: instead of waiting, the command runs in its own process group with stdout and stderr redirected to a private temp file, and the call returns a job id and the output path immediately. The job lives in the Runtime's in-process registry — `{pid, output path, started_at}` keyed by job id, with elapsed time and, once reaped, the exit status. Each registry touch reaps finished children and sweeps completed jobs out, so the registry cannot grow unbounded across a session. A Runtime `cancel` or `close` kills every outstanding job's process group.
+
+`bash_poll` collects a job by id. It reads the job's output file from where the last poll stopped, so each call returns only what is new, truncated at 30,000 bytes like `bash`; the whole output stays readable at the output path. The last line is the job's state: `[running]`, or `[exited with status N]` once the job has finished — a job ended by a signal reports status 1. A job has no wall clock of its own; `wait_ms` instead makes one poll block until the job exits. A wait that runs out adds `[timed out after Ns]` above `[running]` and leaves the job running, and a Runtime `cancel` ends the wait and adds `[cancelled]` above the state line — normally `[exited with status 1]`, because `cancel` also kills every outstanding job. The poll that reports the exit status also sweeps the job from the registry, so a later poll of the same id is a tool error.
+
+`bash_kill` ends a job early: it sends `TERM` to the job's process group, so everything the command started goes with it. The job stays in the registry until a poll collects its remaining output and exit status.
+
+All three tools come from the `bash` bundled extension, but the `tools:` allowlist names tools, not extensions: a Runtime allowed `bash` without `bash_poll` and `bash_kill` can start background jobs but neither collect nor stop them.
 
 Relative paths resolve against the Runtime's `cwd:` (and `bash` runs there), not the process directory, so two Runtimes in one process can work in different directories. A tool called outside a Runtime falls back to `Dir.pwd`.
 
@@ -73,4 +81,4 @@ sandbox = Riffer::Rig.extension('sandbox') { |rig| rig.tool SandboxedBash }
 Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', extensions: [*Riffer::Rig.bundled, sandbox])
 ```
 
-The later registration wins and takes the earlier tool's place in the list. The Runtime reports each replacement through the host's `notify` at level `:info` — "Extension sandbox replaces tool bash from bash" — which also reaches the stream as a `notify` event. Nothing is deregistered: `Riffer::Rig.bundled(:bash)` still returns the original. Commands and prompt sections follow the same rule; see [Extensions](EXTENSIONS.md).
+The later registration wins and takes the earlier tool's place in the list. The Runtime reports each replacement through the host's `notify` at level `:info` — "Extension sandbox replaces tool bash from bash" — which also reaches the stream as a `notify` event. Nothing is deregistered: `Riffer::Rig.bundled(:bash)` still returns the original. Replacement is per identifier, so a replaced `bash` leaves `bash_poll` and `bash_kill` registered; they act only on jobs in the Runtime's registry. Commands and prompt sections follow the same rule; see [Extensions](EXTENSIONS.md).

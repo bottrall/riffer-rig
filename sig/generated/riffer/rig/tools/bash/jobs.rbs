@@ -3,6 +3,8 @@
 class Riffer::Rig::Tools::Bash::Jobs
   include Riffer::Rig::Tools::Bash::KillGroup
 
+  READ_LIMIT_BYTES: Integer
+
   @jobs: Hash[String, Riffer::Rig::Tools::Bash::Job]
 
   @mutex: Mutex
@@ -17,6 +19,14 @@ class Riffer::Rig::Tools::Bash::Jobs
 
   # @rbs return: Array[Riffer::Rig::Tools::Bash::Job]
   def list: () -> Array[Riffer::Rig::Tools::Bash::Job]
+
+  # @rbs id: String
+  # @rbs return: [Riffer::Rig::Tools::Bash::Job, String]?
+  def poll: (String id) -> [ Riffer::Rig::Tools::Bash::Job, String ]?
+
+  # @rbs id: String
+  # @rbs return: Riffer::Rig::Tools::Bash::Job?
+  def kill: (String id) -> Riffer::Rig::Tools::Bash::Job?
 
   # @rbs return: void
   def kill_outstanding: () -> void

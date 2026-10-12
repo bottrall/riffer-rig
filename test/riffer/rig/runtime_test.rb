@@ -1021,7 +1021,7 @@ describe Riffer::Rig::Runtime do
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [*tools, replacement])
 
       assert_equal [Riffer::Rig::Tools::Read, Riffer::Rig::Tools::Write, Riffer::Rig::Tools::Edit, sandbox],
-                   runtime.agent.tools
+                   runtime.agent.tools.first(4)
     end
 
     it 'reports the replaced tool through notify at info level' do
@@ -1040,7 +1040,7 @@ describe Riffer::Rig::Runtime do
       registrar = Riffer::Rig::Registrar.new('bash')
       Riffer::Rig.bundled(:bash).run(registrar)
 
-      assert_equal [Riffer::Rig::Tools::Bash], registrar.tools.values
+      assert_equal Riffer::Rig::Tools::Bash, registrar.tools.fetch('bash')
     end
 
     it 'reports a replaced command through notify' do

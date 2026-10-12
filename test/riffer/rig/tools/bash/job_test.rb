@@ -46,4 +46,20 @@ describe Riffer::Rig::Tools::Bash::Job do
     assert_equal [job.id, job.pid, job.output_path, job.started_at],
                  [finished.id, finished.pid, finished.output_path, finished.started_at]
   end
+
+  it 'starts with nothing read' do
+    assert_equal 0, job.offset
+  end
+
+  it 'returns a copy advanced by the bytes read' do
+    assert_equal 12, job.advance(5).advance(7).offset
+  end
+
+  it 'returns an advanced copy that keeps its status' do
+    assert_equal 0, job(status: 0, ended_at: 13.0).advance(5).status
+  end
+
+  it 'returns a completed copy that keeps the offset from finish' do
+    assert_equal 5, job.advance(5).finish(0, 13.0).offset
+  end
 end

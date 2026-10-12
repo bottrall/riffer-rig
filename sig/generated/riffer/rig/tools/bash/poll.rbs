@@ -1,0 +1,28 @@
+# Generated from lib/riffer/rig/tools/bash/poll.rb with RBS::Inline
+
+class Riffer::Rig::Tools::Bash::Poll < Riffer::Tool
+  include Riffer::Rig::Tools::Bash::MonotonicClock
+
+  include Riffer::Rig::Tools::Bash::Truncation
+
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs job_id: String
+  # @rbs wait_ms: Integer
+  # @rbs return: Riffer::Tools::Response
+  def call: (context: Riffer::Agent::Context?, job_id: String, ?wait_ms: Integer) -> Riffer::Tools::Response
+
+  private
+
+  # @rbs jobs: Riffer::Rig::Tools::Bash::Jobs
+  # @rbs job_id: String
+  # @rbs deadline: Float
+  # @rbs cancel_flag: Riffer::Rig::Runtime::CancelFlag?
+  # @rbs return: [Riffer::Rig::Tools::Bash::Job, String]?
+  def await: (Riffer::Rig::Tools::Bash::Jobs jobs, String job_id, Float deadline, Riffer::Rig::Runtime::CancelFlag? cancel_flag) -> [ Riffer::Rig::Tools::Bash::Job, String ]?
+
+  # @rbs job: Riffer::Rig::Tools::Bash::Job
+  # @rbs cancelled: bool?
+  # @rbs wait_seconds: Float
+  # @rbs return: String
+  def state: (Riffer::Rig::Tools::Bash::Job job, bool? cancelled, Float wait_seconds) -> String
+end
