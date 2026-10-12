@@ -1,0 +1,20 @@
+# Generated from lib/riffer/rig/terminal/markdown/span.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Markdown::Span
+  # @dynamic text, styles, url
+  attr_reader text: String
+
+  attr_reader styles: Array[Symbol]
+
+  attr_reader url: String?
+
+  # @rbs text: String
+  # @rbs styles: Array[Symbol]
+  # @rbs url: String?
+  # @rbs return: void
+  def initialize: (text: String, ?styles: Array[Symbol], ?url: String?) -> void
+
+  # @rbs other: Riffer::Rig::Terminal::Markdown::Span
+  # @rbs return: bool
+  def same_style?: (Riffer::Rig::Terminal::Markdown::Span other) -> bool
+end

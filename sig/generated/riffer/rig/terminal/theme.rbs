@@ -55,4 +55,25 @@ class Riffer::Rig::Terminal::Theme
   # @rbs text: String
   # @rbs return: String
   def bold: (String text) -> String
+
+  # @rbs text: String
+  # @rbs return: String
+  def italic: (String text) -> String
+
+  # @rbs text: String
+  # @rbs return: String
+  def underline: (String text) -> String
+
+  # @rbs text: String
+  # @rbs return: String
+  def heading: (String text) -> String
+
+  # @rbs text: String
+  # @rbs return: String
+  def code: (String text) -> String
+
+  # @rbs text: String
+  # @rbs url: String
+  # @rbs return: String
+  def link: (String text, String url) -> String
 end

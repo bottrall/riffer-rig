@@ -1,0 +1,112 @@
+# Generated from lib/riffer/rig/terminal/markdown.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Markdown
+  # Tabs and newlines are the only control characters that survive: the source
+  # is model output, and anything else here could drive the terminal.
+  CONTROL: Regexp
+
+  TAB: String
+
+  RULE_WIDTH: Integer
+
+  BULLET: String
+
+  FLUSH_ITEM: Regexp
+
+  # Quotes and lists render by recursion, so without a ceiling a single line of
+  # quote marks could exhaust the stack.
+  NESTING_LIMIT: Integer
+
+  # Every row is padded to the widest, so without a ceiling one wide row costs
+  # a cell per column on every other row. A row's pipes bound its cells.
+  COLUMN_LIMIT: Integer
+
+  # @rbs source: String
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs return: String
+  def render: (String source, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> String
+
+  private
+
+  # @rbs source_lines: Array[String]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs depth: Integer
+  # @rbs return: Array[String]
+  def lines: (Array[String] source_lines, theme: Riffer::Rig::Terminal::Theme, width: Integer?, depth: Integer) -> Array[String]
+
+  # @rbs chunk: Array[String]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs depth: Integer
+  # @rbs return: Array[String]
+  def block: (Array[String] chunk, theme: Riffer::Rig::Terminal::Theme, width: Integer?, depth: Integer) -> Array[String]
+
+  # @rbs text: String
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs styles: Array[Symbol]
+  # @rbs return: Array[String]
+  def flow: (String text, theme: Riffer::Rig::Terminal::Theme, width: Integer?, ?styles: Array[Symbol]) -> Array[String]
+
+  # @rbs line: String
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs return: Array[String]
+  def heading: (String line, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> Array[String]
+
+  # @rbs chunk: Array[String]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs return: Array[String]
+  def fence: (Array[String] chunk, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> Array[String]
+
+  # @rbs chunk: Array[String]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs depth: Integer
+  # @rbs return: Array[String]
+  def quote: (Array[String] chunk, theme: Riffer::Rig::Terminal::Theme, width: Integer?, depth: Integer) -> Array[String]
+
+  # @rbs chunk: Array[String]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs depth: Integer
+  # @rbs return: Array[String]
+  def list: (Array[String] chunk, theme: Riffer::Rig::Terminal::Theme, width: Integer?, depth: Integer) -> Array[String]
+
+  # @rbs line: String
+  # @rbs return: String
+  def marker: (String line) -> String
+
+  # @rbs source_lines: Array[String]
+  # @rbs pad: Integer
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs depth: Integer
+  # @rbs return: Array[String]
+  def item: (Array[String] source_lines, Integer pad, theme: Riffer::Rig::Terminal::Theme, width: Integer?, depth: Integer) -> Array[String]
+
+  # @rbs chunk: Array[String]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs return: Array[String]
+  def table: (Array[String] chunk, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> Array[String]
+
+  # @rbs source_lines: Array[String]
+  # @rbs by: Integer
+  # @rbs return: Array[String]
+  def dedent: (Array[String] source_lines, Integer by) -> Array[String]
+
+  # @rbs rows: Array[String]
+  # @rbs lead: String
+  # @rbs rest: String
+  # @rbs return: Array[String]
+  def gutter: (Array[String] rows, String lead, ?String rest) -> Array[String]
+
+  # @rbs width: Integer?
+  # @rbs by: Integer
+  # @rbs return: Integer?
+  def narrow: (Integer? width, Integer by) -> Integer?
+end
