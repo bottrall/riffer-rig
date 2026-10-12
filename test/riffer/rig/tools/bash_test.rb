@@ -110,6 +110,24 @@ describe Riffer::Rig::Tools::Bash do
     end
   end
 
+  it 'reads output while the command runs' do
+    response = @tool.call(context: @context, command: 'seq 1 200000', timeout_ms: 2000)
+
+    refute_predicate response, :error?
+  end
+
+  it 'returns when the command exits though a child still holds its output' do
+    response = @tool.call(context: @context, command: '(sleep 2; echo late) & echo hi')
+
+    assert_equal 'hi', response.content
+  end
+
+  it 'waits for a command that closed its output' do
+    response = @tool.call(context: @context, command: 'exec >&- 2>&-; sleep 0.2; exit 3')
+
+    assert_includes response.content, 'Command exited with status 3'
+  end
+
   it 'replaces bytes that are not valid UTF-8' do
     response = @tool.call(context: @context, command: %q(printf 'ok\377ok\n'))
 
@@ -176,5 +194,17 @@ describe Riffer::Rig::Tools::Bash do
     response = @tool.call(context: @context, command: "head -c #{limit + 1} /dev/zero | tr '\\0' x")
 
     assert_equal "#{'x' * limit}\n[output truncated to #{limit} bytes]", response.content
+  end
+
+  it 'keeps the timeout marker after truncated output' do
+    response = @tool.call(context: @context, command: 'yes', timeout_ms: 200)
+
+    assert response.content.end_with?("bytes]\n[timed out after 0.2s]")
+  end
+
+  it 'keeps the cancel marker after truncated output' do
+    response = with_cancel_after(0.2) { |context| @tool.call(context: context, command: 'yes') }
+
+    assert response.content.end_with?("bytes]\n[cancelled]")
   end
 end
