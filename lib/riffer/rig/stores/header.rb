@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Stores::Header
-  TYPE = 'header' #: String
+  extend Riffer::Rig::Support::TypedValue::Schema #[String]
+  include Riffer::Rig::Support::TypedValue #[String]
 
-  include Riffer::Rig::Support::Equatable
+  typed_value 'header', :schema_version, :id, :cwd, :created_at, :model, :riffer_rig_version, :riffer_version, :title
 
   # @rbs @schema_version: Integer
   # @rbs @id: String
@@ -88,20 +89,5 @@ class Riffer::Rig::Stores::Header
     @title = title
     @updated = updated
     freeze
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    {
-      type: TYPE,
-      schema_version: @schema_version,
-      id: @id,
-      cwd: @cwd,
-      created_at: @created_at,
-      model: @model,
-      riffer_rig_version: @riffer_rig_version,
-      riffer_version: @riffer_version,
-      title: @title
-    }
   end
 end

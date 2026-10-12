@@ -1,8 +1,6 @@
 # Generated from lib/riffer/rig/stores/model_entry.rb with RBS::Inline
 
 class Riffer::Rig::Stores::ModelEntry
-  TYPE: String
-
   extend Riffer::Rig::Support::TypedValue::Schema[String]
 
   include Riffer::Rig::Support::TypedValue[String]

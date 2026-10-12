@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Stores::SkillEntry
-  TYPE = 'skill' #: String
-
   extend Riffer::Rig::Support::TypedValue::Schema #[String]
   include Riffer::Rig::Support::TypedValue #[String]
 
-  typed_value TYPE, :skill
+  typed_value 'skill', :skill
 
   # @dynamic skill
   attr_reader :skill #: String

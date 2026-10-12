@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Stores::MessageEntry
-  TYPE = 'message' #: String
-
   extend Riffer::Rig::Support::TypedValue::Schema #[String]
   include Riffer::Rig::Support::TypedValue #[String]
 
-  typed_value TYPE, :message
+  typed_value 'message', :message
 
   # @dynamic message
   attr_reader :message #: Hash[Symbol, untyped]

@@ -7,10 +7,10 @@ class Riffer::Rig::Stores::JSONL
   HEADER_VERSION = 1 #: Integer
 
   ENTRY_TYPES = {
-    Riffer::Rig::Stores::Header::TYPE => Riffer::Rig::Stores::Header,
-    Riffer::Rig::Stores::MessageEntry::TYPE => Riffer::Rig::Stores::MessageEntry,
-    Riffer::Rig::Stores::ModelEntry::TYPE => Riffer::Rig::Stores::ModelEntry,
-    Riffer::Rig::Stores::SkillEntry::TYPE => Riffer::Rig::Stores::SkillEntry
+    Riffer::Rig::Stores::Header.type => Riffer::Rig::Stores::Header,
+    Riffer::Rig::Stores::MessageEntry.type => Riffer::Rig::Stores::MessageEntry,
+    Riffer::Rig::Stores::ModelEntry.type => Riffer::Rig::Stores::ModelEntry,
+    Riffer::Rig::Stores::SkillEntry.type => Riffer::Rig::Stores::SkillEntry
   }.freeze #: Hash[String, Riffer::Rig::Stores::entry_type]
 
   # @rbs @home: String
@@ -117,7 +117,7 @@ class Riffer::Rig::Stores::JSONL
   def header_of(path)
     line = File.foreach(path).first
     hash = parse(line) if line
-    return nil unless hash && hash[:type] == Riffer::Rig::Stores::Header::TYPE
+    return nil unless hash && hash[:type] == Riffer::Rig::Stores::Header.type
 
     Riffer::Rig::Stores::Header.from_hash(hash, updated: File.mtime(path))
   end
