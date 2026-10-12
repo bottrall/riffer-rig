@@ -6,6 +6,10 @@ class Riffer::Rig::Terminal::LineEditor
   # C1 has no pictures of its own: tr pads the set with its last character.
   CONTROL_PICTURES: String
 
+  ELIDE_FROM: Integer
+
+  @pastes: Array[String]
+
   @draft: String
 
   @recall: Integer
@@ -22,8 +26,9 @@ class Riffer::Rig::Terminal::LineEditor
   # @rbs history: Array[String]
   # @rbs recall: Integer
   # @rbs draft: String
+  # @rbs pastes: Array[String]
   # @rbs return: void
-  def initialize: (?before: String, ?after: String, ?history: Array[String], ?recall: Integer, ?draft: String) -> void
+  def initialize: (?before: String, ?after: String, ?history: Array[String], ?recall: Integer, ?draft: String, ?pastes: Array[String]) -> void
 
   # @rbs return: String
   def text: () -> String
@@ -47,8 +52,23 @@ class Riffer::Rig::Terminal::LineEditor
   # @rbs after: String
   # @rbs recall: Integer
   # @rbs draft: String
+  # @rbs pastes: Array[String]
   # @rbs return: Riffer::Rig::Terminal::LineEditor
-  def with: (?before: String, ?after: String, ?recall: Integer, ?draft: String) -> Riffer::Rig::Terminal::LineEditor
+  def with: (?before: String, ?after: String, ?recall: Integer, ?draft: String, ?pastes: Array[String]) -> Riffer::Rig::Terminal::LineEditor
+
+  # @rbs text: String
+  # @rbs return: String
+  def printable: (String text) -> String
+
+  # @rbs text: String
+  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  def paste: (String text) -> Riffer::Rig::Terminal::LineEditor
+
+  # @rbs return: String
+  def unit_before: () -> String
+
+  # @rbs return: String
+  def unit_after: () -> String
 
   # @rbs return: Riffer::Rig::Terminal::LineEditor
   def left: () -> Riffer::Rig::Terminal::LineEditor
