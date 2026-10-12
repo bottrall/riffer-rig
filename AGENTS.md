@@ -39,6 +39,8 @@ Never: a restatement of the code (appending "so that…" doesn't rescue it), typ
 
 Documentation lives in the guides, not in comments. What a signature can't express — what a method raises, ordering guarantees, what an implementer must honour — is documented there.
 
+The guides in `docs/` are written for consumers: people running `riffer`, embedding rig, or writing a host, provider, or extension. A guide documents only what a consumer can use or observe. Internal modules, implementation limits, and behaviour nothing public reaches yet are not documented anywhere — tests and names carry them. If a change has no consumer-visible effect, it changes no guide.
+
 # Typing policy
 
 Steep runs `D::Ruby.all_error`: every diagnostic Steep can emit is an error, including the hints and informations that editors surface via the language server — there are no advisory severities. No method body may fall back to `untyped` for lack of an annotation. The bar applies to every change, not just new code.
