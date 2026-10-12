@@ -16,20 +16,12 @@ describe Riffer::Rig::CLI::Flags do
       assert_equal 'unexpected argument: hello extra', Riffer::Rig::CLI::Flags.parse(%w[-p hello extra], prompt: true)
     end
 
-    it 'opens the picker for a bare -r' do
-      assert_equal '', parse('-r').resume
-    end
-
-    it 'opens the picker for a bare --resume' do
-      assert_equal '', parse('--resume').resume
-    end
-
-    it 'keeps the flags parsed before a bare -r' do
-      refute parse('--no-save', '-r').save
-    end
-
     it 'refuses a bare -r with -p' do
       assert_equal 'missing argument: -r', Riffer::Rig::CLI::Flags.parse(%w[-p -r], prompt: true)
+    end
+
+    it 'refuses a bare -r followed by a flag with -p' do
+      assert_equal 'missing argument: -r', Riffer::Rig::CLI::Flags.parse(%w[-r -p hello], prompt: true)
     end
 
     it 'refuses any other flag missing its argument' do
@@ -104,6 +96,42 @@ describe Riffer::Rig::CLI::Flags do
 
     it 'reads --resume with an id' do
       assert_equal 'abc', parse('--resume', 'abc').resume
+    end
+
+    it 'reads -r with an id' do
+      assert_equal 'abc', parse('-r', 'abc').resume
+    end
+
+    it 'reads --resume=ID' do
+      assert_equal 'abc', parse('--resume=abc').resume
+    end
+
+    it 'reads -r with an id under -p' do
+      assert_equal 'abc', Riffer::Rig::CLI::Flags.parse(%w[-p -r abc], prompt: true).resume
+    end
+
+    it 'opens the picker for a bare -r' do
+      assert_equal '', parse('-r').resume
+    end
+
+    it 'opens the picker for a bare --resume' do
+      assert_equal '', parse('--resume').resume
+    end
+
+    it 'keeps the flags parsed before a bare -r' do
+      refute parse('--no-save', '-r').save
+    end
+
+    it 'opens the picker for a bare -r followed by a flag' do
+      assert_equal '', parse('-r', '--no-save').resume
+    end
+
+    it 'opens the picker for a bare --resume followed by a flag' do
+      assert_equal '', parse('--resume', '--no-save').resume
+    end
+
+    it 'reads the flag after a bare -r' do
+      refute parse('-r', '--no-save').save
     end
 
     it 'reads --help' do
