@@ -571,6 +571,29 @@ describe Riffer::Rig::Loader do
     it 'installs the reload command' do
       assert_includes build(model: 'mock/test').commands.map(&:name), 'reload'
     end
+
+    it 'installs /trace over the store it records to' do
+      runtime = build(store: Riffer::Rig::Stores::JSONL.new(home: @home), model: 'mock/test')
+      runtime.agent.provider.stub_response('Done.')
+      runtime.ask('read them')
+      events = []
+      runtime.run_command('trace') { |event| events << event }
+
+      assert_includes events.first.text, 'read them'
+    end
+
+    it 'installs no /trace with store: nil' do
+      runtime = build(store: nil, model: 'mock/test')
+
+      refute_includes runtime.commands.map(&:name), 'trace'
+    end
+
+    it 'installs no /trace when sessions.save is false' do
+      write_settings(@home, { sessions: { save: false } })
+      runtime = build(store: RecordingStore.new, model: 'mock/test')
+
+      refute_includes runtime.commands.map(&:name), 'trace'
+    end
   end
 
   describe '#continue' do

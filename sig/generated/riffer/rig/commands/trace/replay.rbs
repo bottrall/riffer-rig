@@ -1,0 +1,53 @@
+# Generated from lib/riffer/rig/commands/trace/replay.rb with RBS::Inline
+
+module Riffer::Rig::Commands::Trace::Replay
+  SILENCE_THRESHOLD: Float
+
+  TIME_FORMAT: ::String
+
+  UNSTAMPED: String
+
+  LABEL_WIDTH: ::Integer
+
+  # Prompts, prose and tool arguments are replayed verbatim, and hosts print
+  # command output raw: anything but tabs and newlines could drive a terminal.
+  CONTROL: Regexp
+
+  # @rbs entries: Array[Riffer::Rig::Stores::entry]
+  # @rbs return: Array[String]
+  def lines: (Array[Riffer::Rig::Stores::entry] entries) -> Array[String]
+
+  private
+
+  # @rbs entries: Array[Riffer::Rig::Stores::entry]
+  # @rbs return: Array[Riffer::Rig::Stores::MessageEntry]
+  def last_turn: (Array[Riffer::Rig::Stores::entry] entries) -> Array[Riffer::Rig::Stores::MessageEntry]
+
+  # @rbs entry: Riffer::Rig::Stores::MessageEntry
+  # @rbs return: Riffer::Messages::Base
+  def message: (Riffer::Rig::Stores::MessageEntry entry) -> Riffer::Messages::Base
+
+  # @rbs previous: Riffer::Rig::Stores::MessageEntry?
+  # @rbs entry: Riffer::Rig::Stores::MessageEntry
+  # @rbs return: String?
+  def silence: (Riffer::Rig::Stores::MessageEntry? previous, Riffer::Rig::Stores::MessageEntry entry) -> String?
+
+  # @rbs entry: Riffer::Rig::Stores::MessageEntry
+  # @rbs return: Array[String]
+  def activity: (Riffer::Rig::Stores::MessageEntry entry) -> Array[String]
+
+  # @rbs time: Time?
+  # @rbs message: Riffer::Messages::Assistant
+  # @rbs return: Array[String]
+  def prose: (Time? time, Riffer::Messages::Assistant message) -> Array[String]
+
+  # @rbs time: Time?
+  # @rbs label: String
+  # @rbs text: String
+  # @rbs return: String
+  def line: (Time? time, String label, String text) -> String
+
+  # @rbs text: String
+  # @rbs return: String
+  def first_line: (String text) -> String
+end

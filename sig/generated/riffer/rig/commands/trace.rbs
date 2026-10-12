@@ -1,0 +1,14 @@
+# Generated from lib/riffer/rig/commands/trace.rb with RBS::Inline
+
+module Riffer::Rig::Commands::Trace
+  NO_TURN: ::String
+
+  # @rbs store: Riffer::Rig::Stores::_Reader
+  # @rbs return: Riffer::Rig::Command
+  def command: (Riffer::Rig::Stores::_Reader store) -> Riffer::Rig::Command
+
+  # @rbs store: Riffer::Rig::Stores::_Reader
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs return: void
+  def run: (Riffer::Rig::Stores::_Reader store, Riffer::Rig::Command::Context ctx) -> void
+end
