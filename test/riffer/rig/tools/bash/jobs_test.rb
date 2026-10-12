@@ -124,6 +124,13 @@ describe Riffer::Rig::Tools::Bash::Jobs do
       assert_equal '', @jobs.read(job.id)&.last
     end
 
+    it 'reads a missing output file as an empty string' do
+      job = start('sleep 5', output: 'hello')
+      File.delete(job.output_path)
+
+      assert_equal '', @jobs.read(job.id)&.last
+    end
+
     it 'reads output in the default external encoding' do
       job = start('sleep 5', output: 'hello')
 
@@ -132,6 +139,14 @@ describe Riffer::Rig::Tools::Bash::Jobs do
 
     it 'returns the job advanced past what it read' do
       job = start('sleep 5', output: 'hello')
+
+      assert_equal 5, @jobs.read(job.id)&.first&.offset
+    end
+
+    it 'keeps the offset of a job whose output file goes missing' do
+      job = start('sleep 5', output: 'hello')
+      @jobs.read(job.id)
+      File.delete(job.output_path)
 
       assert_equal 5, @jobs.read(job.id)&.first&.offset
     end
@@ -303,6 +318,14 @@ describe Riffer::Rig::Tools::Bash::Jobs do
 
     it 'completes a job that wrote nothing with an empty tail' do
       start('true')
+
+      assert_equal '', @inbox.await&.tail
+    end
+
+    it 'completes a job whose output file is missing with an empty tail' do
+      job = start('sleep 30', output: 'hello')
+      File.delete(job.output_path)
+      @jobs.kill(job.id)
 
       assert_equal '', @inbox.await&.tail
     end
