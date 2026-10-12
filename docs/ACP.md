@@ -29,7 +29,7 @@ Everything loads exactly as the REPL does — settings from both scopes, credent
 - `session/prompt` streams text as `agent_message_chunk` updates and reports each tool call as a `tool_call` update, in progress, once its arguments are complete, then a `tool_call_update` for the same `toolCallId` when the call finishes: `completed`, or `failed` when its result is an error — a call an extension blocked or whose arguments did not parse included. The update carries the status and the result's text as its content; it is the stream's [`after_tool_call`](EMBEDDING.md#tool-call-events), and `before_tool_call` has no update of its own. Prompt blocks arrive as text and resource links; a resource link is included as its name and URI. A completed turn answers `end_turn`, a step cap `max_turn_requests`, and a turn that stopped for tokens, the context window or a blocked output `max_tokens`.
 - `available_commands_update` lists the Runtime's commands — `/reload`, `/auth`, `/model` and every skill — right after `session/new`.
 - Notify lines ([Extensions](EXTENSIONS.md#error-isolation)) reach the client as `agent_message_chunk` updates. Load-time ones flush right after the `session/new` reply.
-- Tool calls always run: the agent never sends `session/request_permission`, so no tool call waits on the client.
+- Tool calls always run: no tool call waits on the client. The agent sends `session/request_permission` only for a question, and only when it [relays questions](#relaying-questions-to-the-client).
 - `session/list` maps the saved sessions of the store — scoped to the `cwd` the client sends, all of them when it sends none — to ACP session info: the session id, the cwd, the first prompt as the title, and the session file's last update as `updated_at`.
 - `session/load` restores a saved session: a [Loader](EMBEDDING.md#building-a-runtime-with-the-loader) at the request's `cwd` reads the stored entries and rebuilds the Runtime, the stored messages replay as updates in the order they were recorded — user turns as `user_message_chunk`, the assistant's text as `agent_message_chunk`, and each tool result as its completed `tool_call` (the result as its content; the arguments are not replayed) — and then the request answers. A following `session/prompt` continues the conversation; an unknown id fails with resource not found.
 - MCP servers the client sends on `session/new` in stdio shape are declared to the Runtime through the [`rig.mcp` seam](MCP.md#declaring-servers-from-an-extension) as if an extension had declared them, so a reload rebuild keeps them and a same-name declaration replaces them. See [MCP](MCP.md#servers-over-acp) for the stdio limit.
@@ -38,7 +38,28 @@ Everything loads exactly as the REPL does — settings from both scopes, credent
 
 - The other session-lifecycle methods: `session/resume`, `session/close`, `session/delete` and `authenticate` are not offered. [Sessions](SESSIONS.md) are still recorded to the store for the terminal to resume.
 - MCP servers in `http` or `sse` shape are skipped with a warning; only the stdio shape is read.
-- Terminal delegation (`terminal/*`) and file delegation (`fs/*`) to the client are never requested, and neither is elicitation.
+- Terminal delegation (`terminal/*`) and file delegation (`fs/*`) to the client are never requested. Elicitation is requested only when the agent [relays questions](#relaying-questions-to-the-client).
 - Prompt blocks of other kinds than text and resource links are not advertised in `promptCapabilities`, so a compliant client does not send them.
 
-A project `rig.rb` loads over ACP only once a terminal session has trusted it: the host declines `confirm`, so an untrusted file is stored as not trusted and never asked about again.
+Unless the agent [relays questions](#relaying-questions-to-the-client), a project `rig.rb` loads over ACP only once a terminal session has trusted it: the host declines `confirm`, so an untrusted file is stored as not trusted and never asked about again.
+
+## Relaying questions to the client
+
+By default the host refuses every question, and `riffer acp` keeps that default. An embedder serving the agent itself opts in with `relay: true`, and the host's `ask` and `confirm` then reach the client:
+
+```ruby
+Riffer::Rig::ACP.for(input: $stdin, output: $stdout, env: Riffer::Rig::Env.load, home: Dir.home, relay: true).run
+```
+
+Each question blocks the turn until the client answers:
+
+- `confirm` sends `session/request_permission` with two options, `Yes` (`allow_once`) and `No` (`reject_once`). Only `Yes` confirms.
+- `ask` with `options:` sends `session/request_permission` with one `allow_once` option per choice and answers with the one the client selects.
+- `ask` without options sends `elicitation/create` in form mode, scoped to the session, for one required string field named `answer`, and answers with what the client submits. A client that does not advertise `elicitation.form` is not sent the request, and the ask is declined.
+- `ask` with `secret: true` is always declined: ACP forbids asking for a secret in a form.
+
+A permission request has to name a tool call and a question has none, so each one carries a tool call of its own — a fresh `toolCallId`, `pending`, with the question as its `title`.
+
+Anything but a selected option or an accepted form — the client cancels, declines, answers with an error, or the connection closes — declines the question: `confirm` is `false` and `ask` is `nil`.
+
+A question can only be relayed once the client knows the session id. While `session/new` is building the Runtime it does not, so the host reports only `:notify` until the reply is sent and build-time questions are declined as they are without `relay:`. `session/load` names its session up front, so the questions of its build — trusting a project `rig.rb` included — are relayed.

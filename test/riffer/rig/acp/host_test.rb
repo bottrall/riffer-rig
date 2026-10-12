@@ -4,66 +4,269 @@ require 'test_helper'
 require 'acp/sdk'
 
 describe Riffer::Rig::ACP::Host do
+  let(:relay) { false }
+
   before do
     sent = [] #: Array[[String, ACP::Types::SessionUpdate::t]]
+    permissions = [] #: Array[ACP::Types::RequestPermissionRequest]
+    elicitations = [] #: Array[ACP::Types::CreateElicitationRequest]
+    replies = @replies = { permission: selected('yes'), elicitation: accepted('answer' => 'Ada') }
     client = Object.new
     client.define_singleton_method(:update) { |session_id, update| sent << [session_id, update] }
-    @host = Riffer::Rig::ACP::Host.new(client: client)
+    client.define_singleton_method(:request_permission) do |request|
+      permissions << request
+      replies.fetch(:permission)
+    end
+    client.define_singleton_method(:create_elicitation) do |request|
+      elicitations << request
+      replies.fetch(:elicitation)
+    end
+    @host = Riffer::Rig::ACP::Host.new(client: client, relay: relay)
     @sent = sent
+    @permissions = permissions
+    @elicitations = elicitations
   end
 
   attr_reader :sent
 
-  it 'reports only notify' do
-    assert_equal Set[:notify], @host.capabilities
+  def selected(option_id)
+    ACP::Types::RequestPermissionResponse.new(
+      outcome: ACP::Types::RequestPermissionOutcome::Selected.new(option_id: option_id)
+    )
   end
 
-  it 'buffers a notify until it knows the session id' do
-    @host.notify('Buffered', level: :warning)
-
-    assert_empty sent
+  def cancelled
+    ACP::Types::RequestPermissionResponse.new(outcome: ACP::Types::RequestPermissionOutcome::Cancelled.new)
   end
 
-  it 'sends a notify after the session id as an agent message chunk with its text' do
-    @host.session_id = 'session-1'
-    @host.notify('Live')
-
-    assert_equal 'Live', sent.first.last.content.text
+  def accepted(content)
+    ACP::Types::CreateElicitationResponse.new(
+      action: ACP::Types::CreateElicitationResponse::Action::Accept.new(content: content)
+    )
   end
 
-  it 'sends a notify on the session id it was given' do
-    @host.session_id = 'session-1'
-    @host.notify('Live')
+  describe '#capabilities' do
+    it 'reports only notify' do
+      assert_equal Set[:notify], @host.capabilities
+    end
 
-    assert_equal 'session-1', sent.first.first
+    it 'reports only notify once it knows the session id' do
+      @host.session_id = 'session-1'
+
+      assert_equal Set[:notify], @host.capabilities
+    end
+
+    describe 'with relay' do
+      let(:relay) { true }
+
+      it 'reports only notify before it knows the session id' do
+        assert_equal Set[:notify], @host.capabilities
+      end
+
+      it 'reports ask and confirm too once it knows the session id' do
+        @host.session_id = 'session-1'
+
+        assert_equal Set[:notify, :ask, :confirm], @host.capabilities
+      end
+    end
   end
 
-  it 'notifies the progress label' do
-    @host.session_id = 'session-1'
-    @host.progress('Installing')
+  describe '#ask' do
+    it 'declines without eliciting from the client' do
+      @host.session_id = 'session-1'
+      @host.ask('Which model?')
 
-    assert_equal 'Installing', sent.first.last.content.text
+      assert_empty @elicitations
+    end
+
+    describe 'with relay' do
+      let(:relay) { true }
+
+      it 'declines without eliciting before it knows the session id' do
+        @host.ask('Which model?')
+
+        assert_empty @elicitations
+      end
+
+      describe 'once it knows the session id' do
+        before { @host.session_id = 'session-1' }
+
+        it 'declines a secret ask without eliciting it' do
+          @host.ask('API key?', secret: true)
+
+          assert_empty @elicitations
+        end
+
+        it 'declines a secret ask with options without asking permission' do
+          @host.ask('Key?', options: %w[a b], secret: true)
+
+          assert_empty @permissions
+        end
+
+        it 'elicits a free-text ask on its session' do
+          @host.ask('Name?')
+
+          assert_equal 'session-1', @elicitations.first.mode.scope.session_id
+        end
+
+        it 'elicits a free-text ask with the question as its message' do
+          @host.ask('Name?')
+
+          assert_equal 'Name?', @elicitations.first.message
+        end
+
+        it 'answers a free-text ask with the elicited answer' do
+          assert_equal 'Ada', @host.ask('Name?')
+        end
+
+        it 'declines a free-text ask the client declines' do
+          @replies[:elicitation] = ACP::Types::CreateElicitationResponse.new(
+            action: ACP::Types::CreateElicitationResponse::Action::Decline.new
+          )
+
+          assert_nil @host.ask('Name?')
+        end
+
+        it 'declines a free-text ask the client cannot elicit' do
+          @replies[:elicitation] = ACP::RequestError.unadvertised('elicitation.form')
+
+          assert_nil @host.ask('Name?')
+        end
+
+        it 'offers the options of an ask as permission options' do
+          @host.ask('Colour?', options: %w[red blue])
+
+          assert_equal(%w[red blue], @permissions.first.options.map(&:name))
+        end
+
+        it 'answers an ask with options with the selected option' do
+          @replies[:permission] = selected('blue')
+
+          assert_equal 'blue', @host.ask('Colour?', options: %w[red blue])
+        end
+
+        it 'declines an ask whose selected option was never offered' do
+          assert_nil @host.ask('Colour?', options: %w[red blue])
+        end
+
+        it 'declines an ask with options when the client cancels the request' do
+          @replies[:permission] = cancelled
+
+          assert_nil @host.ask('Colour?', options: %w[red blue])
+        end
+      end
+    end
   end
 
-  it 'sends nothing from progress without a label' do
-    @host.session_id = 'session-1'
-    @host.progress { nil }
+  describe '#confirm' do
+    it 'declines without asking the client for permission' do
+      @host.session_id = 'session-1'
+      @host.confirm('Trust this project?')
 
-    assert_empty sent
+      assert_empty @permissions
+    end
+
+    describe 'with relay' do
+      let(:relay) { true }
+
+      it 'declines without asking permission before it knows the session id' do
+        @host.confirm('Trust this project?')
+
+        assert_empty @permissions
+      end
+
+      describe 'once it knows the session id' do
+        before { @host.session_id = 'session-1' }
+
+        it 'asks permission on its session' do
+          @host.confirm('Trust this project?')
+
+          assert_equal 'session-1', @permissions.first.session_id
+        end
+
+        it 'offers yes and no' do
+          @host.confirm('Trust this project?')
+
+          assert_equal(%w[Yes No], @permissions.first.options.map(&:name))
+        end
+
+        it 'confirms when the client selects yes' do
+          assert @host.confirm('Trust this project?')
+        end
+
+        it 'declines when the client selects no' do
+          @replies[:permission] = selected('no')
+
+          refute @host.confirm('Trust this project?')
+        end
+
+        it 'declines when the client cancels the request' do
+          @replies[:permission] = cancelled
+
+          refute @host.confirm('Trust this project?')
+        end
+
+        it 'declines when the request fails' do
+          @replies[:permission] = ACP::RequestError.new(code: ACP::RequestError::INTERNAL_ERROR, message: 'closed')
+
+          refute @host.confirm('Trust this project?')
+        end
+      end
+    end
   end
 
-  it 'yields to the block given to progress' do
-    yielded = false
-    @host.progress('Installing') { yielded = true }
+  describe '#notify' do
+    it 'buffers a notify until it knows the session id' do
+      @host.notify('Buffered', level: :warning)
 
-    assert yielded
+      assert_empty sent
+    end
+
+    it 'sends a notify after the session id as an agent message chunk with its text' do
+      @host.session_id = 'session-1'
+      @host.notify('Live')
+
+      assert_equal 'Live', sent.first.last.content.text
+    end
+
+    it 'sends a notify on the session id it was given' do
+      @host.session_id = 'session-1'
+      @host.notify('Live')
+
+      assert_equal 'session-1', sent.first.first
+    end
   end
 
-  it 'flushes the buffered notifies in order when the session id arrives' do
-    @host.notify('First')
-    @host.notify('Second', level: :error)
-    @host.session_id = 'session-1'
+  describe '#progress' do
+    it 'notifies the progress label' do
+      @host.session_id = 'session-1'
+      @host.progress('Installing')
 
-    assert_equal(%w[First Second], sent.map { |_, update| update.content.text })
+      assert_equal 'Installing', sent.first.last.content.text
+    end
+
+    it 'sends nothing from progress without a label' do
+      @host.session_id = 'session-1'
+      @host.progress { nil }
+
+      assert_empty sent
+    end
+
+    it 'yields to the block given to progress' do
+      yielded = false
+      @host.progress('Installing') { yielded = true }
+
+      assert yielded
+    end
+  end
+
+  describe '#session_id=' do
+    it 'flushes the buffered notifies in order when the session id arrives' do
+      @host.notify('First')
+      @host.notify('Second', level: :error)
+      @host.session_id = 'session-1'
+
+      assert_equal(%w[First Second], sent.map { |_, update| update.content.text })
+    end
   end
 end

@@ -5,12 +5,12 @@ class Riffer::Rig::Hosts::Mirror
 
   @queue: Array[Riffer::Rig::Events::_Event]
 
-  # @dynamic capabilities
-  attr_reader capabilities: Set[Symbol]
-
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs return: void
   def initialize: (Riffer::Rig::Hosts::_Host host) -> void
+
+  # @rbs return: Set[Symbol]
+  def capabilities: () -> Set[Symbol]
 
   # @rbs question: String?
   # @rbs options: Array[String]?

@@ -4,6 +4,8 @@ require 'test_helper'
 require 'acp/sdk'
 
 describe Riffer::Rig::ACP do
+  let(:relay) { false }
+
   before do
     @home = Dir.mktmpdir
     @cwd = Dir.mktmpdir
@@ -20,7 +22,7 @@ describe Riffer::Rig::ACP do
       @built_runtimes << runtime
       runtime
     end
-    @agent, @connection = serve(@env, build: build)
+    @agent, @connection = serve(@env, build: build, relay: relay)
   end
 
   after do
@@ -33,10 +35,12 @@ describe Riffer::Rig::ACP do
     FileUtils.remove_entry(@cwd)
   end
 
-  def serve(env, build: nil)
+  def serve(env, build: nil, relay: false)
     agent_input_r, agent_input_w = IO.pipe
     agent_output_r, agent_output_w = IO.pipe
-    agent = Riffer::Rig::ACP.for(input: agent_input_r, output: agent_output_w, env: env, home: @home, build: build)
+    agent = Riffer::Rig::ACP.for(
+      input: agent_input_r, output: agent_output_w, env: env, home: @home, build: build, relay: relay
+    )
     @served << [agent_input_w, Thread.new { agent.run }, agent_output_w]
     connection = ACP::ClientConnection.new(
       transport: ACP::Transport::Stdio.new(input: agent_output_r, output: agent_input_w),
@@ -224,6 +228,17 @@ describe Riffer::Rig::ACP do
       assert_equal @built_runtimes.last.id, session.session_id
     end
 
+    describe 'with relay' do
+      let(:relay) { true }
+
+      it 'gives the session a host that relays' do
+        new_session
+        wait_for { @updates.any? }
+
+        assert_includes @built_runtimes.last.host.capabilities, :confirm
+      end
+    end
+
     it 'answers a failed build with its message' do
       error = invalid_env_connection.new_session(ACP::Types::NewSessionRequest.new(cwd: @cwd, mcp_servers: []))
 
@@ -382,6 +397,19 @@ describe Riffer::Rig::ACP do
       prompt(session.session_id, 'again')
 
       assert_equal 2, @built_runtimes.last.agent.provider.calls.size
+    end
+
+    describe 'with relay' do
+      let(:relay) { true }
+
+      it 'relays a question of the loaded session to the client' do
+        session = save_session('first prompt')
+        FileUtils.mkdir_p(File.join(@cwd, '.riffer'))
+        File.write(File.join(@cwd, '.riffer', 'rig.rb'), '')
+        load(session.session_id)
+
+        assert_equal [session.session_id], @permissions.map(&:session_id)
+      end
     end
 
     it 'answers a failed load with its message' do

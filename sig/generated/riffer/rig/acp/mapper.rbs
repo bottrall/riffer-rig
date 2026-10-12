@@ -3,6 +3,12 @@
 module Riffer::Rig::ACP::Mapper
   TOOL_KINDS: Hash[String, String]
 
+  CONFIRMED: String
+
+  CONFIRM_OPTIONS: Array[::ACP::Types::PermissionOption]
+
+  ANSWER_FIELD: String
+
   # Text and resource links are ACP's must-support prompt blocks; the client
   # cannot send the others unless the agent advertised them.
   # @rbs blocks: Array[::ACP::Types::ContentBlock::t]
@@ -30,6 +36,31 @@ module Riffer::Rig::ACP::Mapper
   # @rbs stop_reason: Symbol?
   # @rbs return: String
   def stop_reason_of: (Symbol? stop_reason) -> String
+
+  # @rbs options: Array[String]
+  # @rbs return: Array[::ACP::Types::PermissionOption]
+  def choices: (Array[String] options) -> Array[::ACP::Types::PermissionOption]
+
+  # A permission request must name a tool call, and a host question has none.
+  # @rbs session_id: String
+  # @rbs tool_call_id: String
+  # @rbs question: String
+  # @rbs options: Array[::ACP::Types::PermissionOption]
+  # @rbs return: ::ACP::Types::RequestPermissionRequest
+  def permission_request: (String session_id, String tool_call_id, String question, Array[::ACP::Types::PermissionOption] options) -> ::ACP::Types::RequestPermissionRequest
+
+  # @rbs response: ::ACP::Types::RequestPermissionResponse | ::ACP::RequestError
+  # @rbs return: String?
+  def selected_option: (::ACP::Types::RequestPermissionResponse | ::ACP::RequestError response) -> String?
+
+  # @rbs session_id: String
+  # @rbs question: String
+  # @rbs return: ::ACP::Types::CreateElicitationRequest
+  def elicitation_request: (String session_id, String question) -> ::ACP::Types::CreateElicitationRequest
+
+  # @rbs response: ::ACP::Types::CreateElicitationResponse | ::ACP::RequestError
+  # @rbs return: String?
+  def elicited_answer: (::ACP::Types::CreateElicitationResponse | ::ACP::RequestError response) -> String?
 
   private
 

@@ -10,6 +10,15 @@ module Riffer::Rig::ACP::Mapper
     'bash' => ::ACP::Types::ToolKind::EXECUTE
   }.freeze #: Hash[String, String]
 
+  CONFIRMED = 'yes' #: String
+  CONFIRM_OPTIONS = [
+    ::ACP::Types::PermissionOption.new(
+      option_id: CONFIRMED, name: 'Yes', kind: ::ACP::Types::PermissionOptionKind::ALLOW_ONCE
+    ),
+    ::ACP::Types::PermissionOption.new(option_id: 'no', name: 'No', kind: ::ACP::Types::PermissionOptionKind::REJECT_ONCE)
+  ].freeze #: Array[::ACP::Types::PermissionOption]
+  ANSWER_FIELD = 'answer' #: String
+
   # Text and resource links are ACP's must-support prompt blocks; the client
   # cannot send the others unless the agent advertised them.
   # @rbs blocks: Array[::ACP::Types::ContentBlock::t]
@@ -70,6 +79,75 @@ module Riffer::Rig::ACP::Mapper
       stopped = Riffer::Rig::Runtime::STOPPED_WITHOUT_COMPLETING.include?(stop_reason)
       stopped ? ::ACP::Types::StopReason::MAX_TOKENS : ::ACP::Types::StopReason::REFUSAL
     end
+  end
+
+  # @rbs options: Array[String]
+  # @rbs return: Array[::ACP::Types::PermissionOption]
+  def choices(options)
+    options.map do |option|
+      ::ACP::Types::PermissionOption.new(
+        option_id: option, name: option, kind: ::ACP::Types::PermissionOptionKind::ALLOW_ONCE
+      )
+    end
+  end
+
+  # A permission request must name a tool call, and a host question has none.
+  # @rbs session_id: String
+  # @rbs tool_call_id: String
+  # @rbs question: String
+  # @rbs options: Array[::ACP::Types::PermissionOption]
+  # @rbs return: ::ACP::Types::RequestPermissionRequest
+  def permission_request(session_id, tool_call_id, question, options)
+    ::ACP::Types::RequestPermissionRequest.new(
+      session_id: session_id,
+      tool_call: ::ACP::Types::ToolCallUpdate.new(
+        tool_call_id: tool_call_id,
+        title: question,
+        kind: ::ACP::Types::ToolKind::OTHER,
+        status: ::ACP::Types::ToolCallStatus::PENDING
+      ),
+      options: options
+    )
+  end
+
+  # @rbs response: ::ACP::Types::RequestPermissionResponse | ::ACP::RequestError
+  # @rbs return: String?
+  def selected_option(response)
+    return nil unless response.is_a?(::ACP::Types::RequestPermissionResponse)
+
+    outcome = response.outcome
+    outcome.option_id if outcome.is_a?(::ACP::Types::RequestPermissionOutcome::Selected)
+  end
+
+  # @rbs session_id: String
+  # @rbs question: String
+  # @rbs return: ::ACP::Types::CreateElicitationRequest
+  def elicitation_request(session_id, question)
+    ::ACP::Types::CreateElicitationRequest.new(
+      message: question,
+      mode: ::ACP::Types::CreateElicitationRequest::Mode::Form.new(
+        requested_schema: ::ACP::Types::ElicitationSchema.new(
+          type: ::ACP::Types::ElicitationSchemaType::OBJECT,
+          properties: {
+            ANSWER_FIELD => ::ACP::Types::ElicitationPropertySchema::StringPropertySchema.new(title: question)
+          },
+          required: [ANSWER_FIELD]
+        ),
+        scope: ::ACP::Types::ElicitationSessionScope.new(session_id: session_id)
+      )
+    )
+  end
+
+  # @rbs response: ::ACP::Types::CreateElicitationResponse | ::ACP::RequestError
+  # @rbs return: String?
+  def elicited_answer(response)
+    return nil unless response.is_a?(::ACP::Types::CreateElicitationResponse)
+
+    action = response.action
+    return nil unless action.is_a?(::ACP::Types::CreateElicitationResponse::Action::Accept)
+
+    answer = action.content&.fetch(ANSWER_FIELD, nil)
+    answer if answer.is_a?(String)
   end
 
   private

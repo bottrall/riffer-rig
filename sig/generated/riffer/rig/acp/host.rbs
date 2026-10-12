@@ -5,18 +5,36 @@ class Riffer::Rig::ACP::Host
 
   CAPABILITIES: Set[Symbol]
 
-  @client: ::ACP::AgentConnection::_Client
-
-  @session_id: String?
+  RELAY_CAPABILITIES: Set[Symbol]
 
   @buffered: Array[String]
 
-  # @rbs client: ::ACP::AgentConnection::_Client
-  # @rbs return: void
-  def initialize: (client: ::ACP::AgentConnection::_Client) -> void
+  @session_id: String?
 
+  @relay: bool
+
+  @client: ::ACP::AgentConnection::_Client
+
+  # @rbs client: ::ACP::AgentConnection::_Client
+  # @rbs relay: bool
+  # @rbs return: void
+  def initialize: (client: ::ACP::AgentConnection::_Client, ?relay: bool) -> void
+
+  # A request to the client names its session, and the client learns the id
+  # of a new one only from the session/new reply, so nothing can be relayed
+  # while that session is still building.
   # @rbs return: Set[Symbol]
   def capabilities: () -> Set[Symbol]
+
+  # @rbs question: String?
+  # @rbs options: Array[String]?
+  # @rbs secret: bool
+  # @rbs return: String?
+  def ask: (?String? question, ?options: Array[String]?, ?secret: bool) -> String?
+
+  # @rbs question: String?
+  # @rbs return: bool
+  def confirm: (?String? question) -> bool
 
   # @rbs message: String?
   # @rbs level: Symbol
@@ -37,6 +55,17 @@ class Riffer::Rig::ACP::Host
   def session_id=: (String id) -> void
 
   private
+
+  # @rbs id: String
+  # @rbs question: String
+  # @rbs options: Array[::ACP::Types::PermissionOption]
+  # @rbs return: String?
+  def permit: (String id, String question, Array[::ACP::Types::PermissionOption] options) -> String?
+
+  # @rbs id: String
+  # @rbs question: String
+  # @rbs return: String?
+  def elicit: (String id, String question) -> String?
 
   # @rbs id: String
   # @rbs message: String
