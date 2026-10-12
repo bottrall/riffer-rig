@@ -10,11 +10,4 @@ module Riffer::Rig::Trust
   # @rbs decision: bool
   # @rbs return: void
   def store: (String path, String file, bool decision) -> void
-
-  private
-
-  # @rbs path: String
-  # @rbs document: Hash[String, bool]
-  # @rbs return: void
-  def write: (String path, Hash[String, bool] document) -> void
 end

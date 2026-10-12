@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require 'json'
-require 'fileutils'
-
 module Riffer::Rig::Settings
   extend self
 
@@ -29,12 +26,7 @@ module Riffer::Rig::Settings
   # @rbs path: String
   # @rbs return: Hash[Symbol, untyped]
   def read(path)
-    return {} unless File.file?(path)
-
-    source = JSON.parse(File.read(path), symbolize_names: true)
-    source.is_a?(Hash) ? source : {}
-  rescue JSON::ParserError
-    {}
+    Riffer::Rig::Support::JsonFile.read(path, symbolize_names: true)
   end
 
   # MCP servers merge by name, whole, so a home server's headers never reach a
@@ -85,7 +77,7 @@ module Riffer::Rig::Settings
   # @rbs path: String
   # @rbs return: void
   def store_model(model, path: PATH)
-    write(path, read(path).merge(model: model))
+    Riffer::Rig::Support::JsonFile.write(path, read(path).merge(model: model))
   end
 
   # @rbs identifier: String
@@ -132,15 +124,8 @@ module Riffer::Rig::Settings
     providers = yield current
     return if providers == current
 
-    write(path, providers.empty? ? source.except(:providers) : source.merge(providers: providers))
-  end
-
-  # @rbs path: String
-  # @rbs document: Hash[Symbol, untyped]
-  # @rbs return: void
-  def write(path, document)
-    FileUtils.mkdir_p(File.dirname(path), mode: 0o700)
-    File.write(path, JSON.pretty_generate(document))
+    document = providers.empty? ? source.except(:providers) : source.merge(providers: providers)
+    Riffer::Rig::Support::JsonFile.write(path, document)
   end
 
   # @rbs provider: String?

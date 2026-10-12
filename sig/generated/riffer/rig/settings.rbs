@@ -70,11 +70,6 @@ module Riffer::Rig::Settings
   # @rbs return: void
   def update_providers: (String path) { (Hash[String, Hash[String, String]]) -> Hash[String, Hash[String, String]] } -> void
 
-  # @rbs path: String
-  # @rbs document: Hash[Symbol, untyped]
-  # @rbs return: void
-  def write: (String path, Hash[Symbol, untyped] document) -> void
-
   # @rbs provider: String?
   # @rbs return: Hash[Symbol, untyped]
   def base_options: (String? provider) -> Hash[Symbol, untyped]

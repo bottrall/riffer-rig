@@ -1,0 +1,14 @@
+# Generated from lib/riffer/rig/support/json_file.rb with RBS::Inline
+
+module Riffer::Rig::Support::JsonFile
+  # @rbs path: String
+  # @rbs symbolize_names: bool
+  # @rbs return: Hash[untyped, untyped]
+  def read: (String path, ?symbolize_names: bool) -> Hash[untyped, untyped]
+
+  # @rbs path: String
+  # @rbs document: Hash[untyped, untyped]
+  # @rbs mode: Integer
+  # @rbs return: void
+  def write: (String path, Hash[untyped, untyped] document, ?mode: Integer) -> void
+end
