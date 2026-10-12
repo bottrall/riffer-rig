@@ -9,7 +9,7 @@ describe Riffer::Rig::Runtime::Hooks do
   end
 
   it 'passes the payload through with no hooks' do
-    assert_equal({ command: 'ls' }, hooks_for.before_tool_call('bash', { command: 'ls' }))
+    assert_equal({ command: 'ls' }, hooks_for.before_tool_call('call_1', 'bash', { command: 'ls' }, 1.5))
   end
 
   it "feeds a hook's replacement to the next hook" do
@@ -20,7 +20,7 @@ describe Riffer::Rig::Runtime::Hooks do
         ->(event) { seen = event.args[:command] }
       ]
     )
-    hooks.before_tool_call('bash', { command: 'ls' })
+    hooks.before_tool_call('call_1', 'bash', { command: 'ls' }, 1.5)
 
     assert_equal 'pwd', seen
   end
@@ -40,19 +40,29 @@ describe Riffer::Rig::Runtime::Hooks do
   it 'blocks with the reason a hook gives' do
     hooks = hooks_for(before_tool_call: [->(_event) { [:block, 'no force pushes'] }])
 
-    assert_equal 'no force pushes', hooks.before_tool_call('bash', { command: 'git push --force' }).reason
+    blocked = hooks.before_tool_call('call_1', 'bash', { command: 'git push --force' }, 1.5)
+
+    assert_equal 'no force pushes', blocked.reason
+  end
+
+  it 'identifies and stamps the call on the event each hook receives' do
+    seen = [] #: Array[Riffer::Rig::Events::_Event]
+    probe = ->(event) { seen << event }
+    hooks_for(before_tool_call: [probe, probe]).before_tool_call('call_1', 'bash', { command: 'ls' }, 1.5)
+
+    assert_equal [Riffer::Rig::Events::BeforeToolCall.new('call_1', 'bash', { command: 'ls' }, 1.5)] * 2, seen
   end
 
   it 'blocks on a bare :block with a default reason' do
     hooks = hooks_for(before_tool_call: [->(_event) { :block }])
 
-    assert_equal 'blocked by a before_tool_call hook', hooks.before_tool_call('bash', {}).reason
+    assert_equal 'blocked by a before_tool_call hook', hooks.before_tool_call('call_1', 'bash', {}, 1.5).reason
   end
 
   it 'stops at the first block' do
     later = false
     hooks = hooks_for(before_tool_call: [->(_event) { :block }, ->(_event) { later = true }])
-    hooks.before_tool_call('bash', {})
+    hooks.before_tool_call('call_1', 'bash', {}, 1.5)
 
     refute later
   end
@@ -66,7 +76,7 @@ describe Riffer::Rig::Runtime::Hooks do
 
   it 'leaves a blocked tool call to the caller' do
     host = Riffer::Rig::Hosts::Mirror.new(Riffer::Rig::Hosts::Null.new)
-    hooks_for(host, before_tool_call: [->(_event) { :block }]).before_tool_call('bash', {})
+    hooks_for(host, before_tool_call: [->(_event) { :block }]).before_tool_call('call_1', 'bash', {}, 1.5)
 
     assert_empty host.drain
   end

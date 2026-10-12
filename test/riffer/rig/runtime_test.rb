@@ -2010,4 +2010,194 @@ describe Riffer::Rig::Runtime do
       assert_empty Riffer::Mcp.registrations.keys & %w[web alt]
     end
   end
+
+  describe 'tool call events' do
+    before do
+      @ran = ran = []
+      echo = Class.new(Riffer::Tool) do
+        identifier 'echo'
+        description 'Echoes its text'
+
+        params do
+          required :text, String
+        end
+
+        define_method(:call) do |context:, text:| # rubocop:disable Lint/UnusedBlockArgument -- riffer passes context: to every call
+          ran << text
+          text("echo: #{text}")
+        end
+      end
+      @echo = Riffer::Rig::Extension.new('echo') { |rig| rig.tool echo }
+      @seen = seen = []
+      @observer = Riffer::Rig::Extension.new('observer') do |rig|
+        %i[before_tool_call after_tool_call].each { |name| rig.on(name) { |event| seen << event } }
+      end
+    end
+
+    def batch_runtime(*extensions, calls: %w[one two].map { |text| echo_call(text) }, **)
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@echo, *extensions], **)
+      runtime.agent.provider.stub_response('', tool_calls: calls)
+      runtime.agent.provider.stub_response('All done.')
+      runtime
+    end
+
+    def echo_call(text)
+      { name: 'echo', arguments: { text: text }.to_json }
+    end
+
+    def tool_event?(event)
+      [Riffer::Rig::Events::BeforeToolCall, Riffer::Rig::Events::AfterToolCall].include?(event.class)
+    end
+
+    def tool_events(events)
+      events.select { |event| tool_event?(event) }
+    end
+
+    def outcomes(events)
+      tool_events(events).map do |event|
+        event.is_a?(Riffer::Rig::Events::AfterToolCall) ? [event.type, event.result.error_type] : event.type
+      end
+    end
+
+    def blocker
+      Riffer::Rig::Extension.new('blocker') { |rig| rig.on(:before_tool_call) { |_e| next :block, 'no' } }
+    end
+
+    it 'streams each call of a batch as a before and an after, one call at a time' do
+      events = tool_events(batch_runtime.prompt('go'))
+
+      assert_equal(
+        [%w[before_tool_call mock_call_0], %w[after_tool_call mock_call_0],
+         %w[before_tool_call mock_call_1], %w[after_tool_call mock_call_1]],
+        events.map { |event| [event.type.to_s, event.call_id] }
+      )
+    end
+
+    it 'starts the batch after the last tool call of the response' do
+      events = batch_runtime.prompt('go').to_a
+      first = events.index { |event| tool_event?(event) }
+
+      assert_empty events[first..].grep(Riffer::StreamEvents::ToolCallDone)
+    end
+
+    it 'keeps every tool call event ahead of the response that follows the batch' do
+      events = batch_runtime.prompt('go').to_a
+      text = events.index { |event| event.is_a?(Riffer::StreamEvents::TextDelta) }
+
+      assert_empty tool_events(events[text..])
+    end
+
+    it 'hands a block each event as it happens, before the next tool runs' do
+      progress = []
+      batch_runtime.prompt('go') { |event| progress << [event.type, @ran.dup] if tool_event?(event) }
+
+      assert_equal(
+        [[:before_tool_call, []], [:after_tool_call, ['one']],
+         [:before_tool_call, ['one']], [:after_tool_call, %w[one two]]],
+        progress
+      )
+    end
+
+    it 'hands an enumerator consumer a before event before its tool has run' do
+      stream = batch_runtime.prompt('go')
+      loop { break if stream.next.is_a?(Riffer::Rig::Events::BeforeToolCall) }
+
+      assert_empty @ran
+    end
+
+    it 'hands an enumerator consumer an after event before the next tool has run' do
+      stream = batch_runtime.prompt('go')
+      loop { break if stream.next.is_a?(Riffer::Rig::Events::AfterToolCall) }
+
+      assert_equal ['one'], @ran
+    end
+
+    it 'times each call with the injected clock' do
+      ticks = 10.0.step(by: 0.5)
+      events = tool_events(batch_runtime(clock: -> { ticks.next }).prompt('go'))
+
+      assert_equal(
+        [10.5, [11.0, 0.5], 12.0, [12.5, 0.5]],
+        events.map { |event| event.is_a?(Riffer::Rig::Events::AfterToolCall) ? [event.at, event.duration] : event.at }
+      )
+    end
+
+    it 'streams the arguments a hook rewrote' do
+      rewriter = Riffer::Rig::Extension.new('rewriter') do |rig|
+        rig.on(:before_tool_call) { |e| e.args.merge(text: 'replaced') }
+      end
+      events = tool_events(batch_runtime(rewriter, calls: [echo_call('one')]).prompt('go'))
+
+      assert_equal [{ text: 'replaced' }, { text: 'replaced' }], events.map(&:args)
+    end
+
+    it 'finishes a call to an unknown tool' do
+      events = batch_runtime(calls: [{ name: 'missing', arguments: '{}' }]).prompt('go')
+
+      assert_equal [:before_tool_call, %i[after_tool_call unknown_tool]], outcomes(events)
+    end
+
+    it 'finishes a blocked call without starting it' do
+      events = batch_runtime(blocker).prompt('go')
+
+      assert_equal [%i[after_tool_call blocked]] * 2, outcomes(events)
+    end
+
+    it 'finishes a call whose arguments are not JSON without starting it' do
+      events = batch_runtime(calls: [{ name: 'echo', arguments: '{not json' }]).prompt('go')
+
+      assert_equal [%i[after_tool_call validation_error]], outcomes(events)
+    end
+
+    it 'finishes a call whose arguments are not an object without starting it' do
+      events = batch_runtime(calls: [{ name: 'echo', arguments: '[1]' }]).prompt('go')
+
+      assert_equal [%i[after_tool_call validation_error]], outcomes(events)
+    end
+
+    it 'hands after_tool_call a blocked call' do
+      batch_runtime(@observer, blocker).ask('go')
+
+      assert_equal [:before_tool_call, %i[after_tool_call blocked]] * 2, outcomes(@seen)
+    end
+
+    it 'hands after_tool_call a call whose arguments did not parse, with empty args' do
+      batch_runtime(@observer, calls: [{ name: 'echo', arguments: '{not json' }]).ask('go')
+
+      assert_equal([[:after_tool_call, {}]], @seen.map { |event| [event.type, event.args] })
+    end
+
+    it 'streams a notify raised inside a tool call next to that call' do
+      raiser = Riffer::Rig::Extension.new('raiser') { |rig| rig.on(:before_tool_call) { |_e| raise 'boom' } }
+      types = batch_runtime(raiser).prompt('go').filter_map { |event| event.type if event.respond_to?(:type) }
+
+      assert_equal %i[before_tool_call notify after_tool_call], types[types.index(:before_tool_call), 3]
+    end
+
+    it 'fires each hook once per call' do
+      batch_runtime(@observer).prompt('go').to_a
+
+      assert_equal %i[before_tool_call after_tool_call] * 2, @seen.map(&:type)
+    end
+
+    it 'streams the after events the hooks observed' do
+      events = batch_runtime(@observer).prompt('go').grep(Riffer::Rig::Events::AfterToolCall)
+
+      assert_equal @seen.grep(Riffer::Rig::Events::AfterToolCall), events
+    end
+
+    it 'keeps the tool call events out of the stream hook' do
+      seen = []
+      observer = Riffer::Rig::Extension.new('observer') { |rig| rig.on(:stream) { |event| seen << event } }
+      batch_runtime(observer).ask('go')
+
+      assert_empty tool_events(seen)
+    end
+
+    it 'runs the tools under ask, where no one reads the stream' do
+      batch_runtime.ask('go')
+
+      assert_equal %w[one two], @ran
+    end
+  end
 end

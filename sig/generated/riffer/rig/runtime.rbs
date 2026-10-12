@@ -26,6 +26,8 @@ class Riffer::Rig::Runtime
   # tests and embedders can exercise the switches.
   NATIVE_TOOLS_BY_PROVIDER: Hash[Symbol, Hash[Symbol, bool]]
 
+  @model_observers: Array[^(String) -> void]
+
   @message_observers: Array[^(Riffer::Messages::Base) -> void]
 
   @model_override: String?
@@ -52,8 +54,6 @@ class Riffer::Rig::Runtime
 
   @agent: Riffer::Agent
 
-  @model_observers: Array[^(String) -> void]
-
   @system_prompt: Riffer::Rig::Runtime::SystemPrompt
 
   @commands: Hash[String, Riffer::Rig::Command]
@@ -75,6 +75,10 @@ class Riffer::Rig::Runtime
   @native_tools: Hash[Symbol, untyped]
 
   @reload_check: (^(::Riffer::Rig::Runtime) -> void)?
+
+  @clock: ^() -> Float
+
+  @yielder: Enumerator::Yielder?
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader agent: Riffer::Agent
@@ -108,9 +112,10 @@ class Riffer::Rig::Runtime
   # @rbs max_steps: Integer?
   # @rbs model_options: Hash[Symbol, untyped]
   # @rbs native_tools: Hash[Symbol, untyped]
+  # @rbs clock: ^() -> Float
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
-  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?env: Riffer::Rig::Env, ?auth_path: String, ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?native_tools: Hash[Symbol, untyped], ?snapshot: Hash[Symbol, untyped]?) -> void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?env: Riffer::Rig::Env, ?auth_path: String, ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?native_tools: Hash[Symbol, untyped], ?clock: ^() -> Float, ?snapshot: Hash[Symbol, untyped]?) -> void
 
   # @rbs text: String
   # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
@@ -264,6 +269,15 @@ class Riffer::Rig::Runtime
   # @rbs event: ::Riffer::StreamEvents::Base
   # @rbs return: void
   def pass_through: (Enumerator::Yielder yielder, ::Riffer::StreamEvents::Base event) -> void
+
+  # @rbs event: Riffer::Rig::Events::_Event
+  # @rbs return: void
+  def emit: (Riffer::Rig::Events::_Event event) -> void
+
+  # @rbs yielder: Enumerator::Yielder
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: void
+  def forward: (Enumerator::Yielder yielder, ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
 
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void

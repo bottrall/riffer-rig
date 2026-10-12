@@ -60,13 +60,15 @@ describe Riffer::Rig::Events do
   end
 
   it 'types and round-trips a before_tool_call' do
-    event = Riffer::Rig::Events::BeforeToolCall.new('bash', { command: 'ls' })
+    event = Riffer::Rig::Events::BeforeToolCall.new('call_1', 'bash', { command: 'ls' }, 1.5)
 
-    assert_equal({ tool: 'bash', args: { command: 'ls' }, type: :before_tool_call }, event.to_h)
+    assert_equal(
+      { type: :before_tool_call, call_id: 'call_1', tool: 'bash', args: { command: 'ls' }, at: 1.5 }, event.to_h
+    )
   end
 
   it 'freezes the args of a before_tool_call' do
-    event = Riffer::Rig::Events::BeforeToolCall.new('bash', { command: 'ls' })
+    event = Riffer::Rig::Events::BeforeToolCall.new('call_1', 'bash', { command: 'ls' }, 1.5)
 
     assert_predicate event.args, :frozen?
   end
@@ -86,9 +88,19 @@ describe Riffer::Rig::Events do
 
   it 'types and round-trips an after_tool_call' do
     result = Riffer::Tools::Response.text('ok')
-    event = Riffer::Rig::Events::AfterToolCall.new('bash', { command: 'ls' }, result)
+    event = Riffer::Rig::Events::AfterToolCall.new('call_1', 'bash', { command: 'ls' }, result, 4.5, 2.5)
 
-    assert_equal({ tool: 'bash', args: { command: 'ls' }, result: result, type: :after_tool_call }, event.to_h)
+    assert_equal(
+      { type: :after_tool_call, call_id: 'call_1', tool: 'bash', args: { command: 'ls' }, result: result, at: 4.5,
+        duration: 2.5 },
+      event.to_h
+    )
+  end
+
+  it 'freezes the args of an after_tool_call' do
+    event = Riffer::Rig::Events::AfterToolCall.new('call_1', 'bash', {}, Riffer::Tools::Response.text('ok'), 4.5, 2.5)
+
+    assert_predicate event.args, :frozen?
   end
 
   it 'types and round-trips an after_response' do

@@ -3,9 +3,15 @@
 class Riffer::Rig::Runtime::ToolRuntime < Riffer::Tools::Runtime
   @hooks: Riffer::Rig::Runtime::Hooks
 
+  @emit: ^(Riffer::Rig::Events::_Event) -> void
+
+  @clock: ^() -> Float
+
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs emit: ^(Riffer::Rig::Events::_Event) -> void
+  # @rbs clock: ^() -> Float
   # @rbs return: void
-  def initialize: (Riffer::Rig::Runtime::Hooks hooks) -> void
+  def initialize: (Riffer::Rig::Runtime::Hooks hooks, emit: ^(Riffer::Rig::Events::_Event) -> void, clock: ^() -> Float) -> void
 
   private
 
@@ -15,6 +21,16 @@ class Riffer::Rig::Runtime::ToolRuntime < Riffer::Tools::Runtime
   # @rbs assistant_message: Riffer::Messages::Assistant?
   # @rbs return: Riffer::Tools::Response
   def dispatch_tool_call: (Riffer::Messages::Assistant::ToolCall tool_call, tools: Array[singleton(Riffer::Tool)], context: Riffer::Agent::Context?, ?assistant_message: Riffer::Messages::Assistant?) -> Riffer::Tools::Response
+
+  # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
+  # @rbs args: Hash[Symbol, untyped]
+  # @rbs response: Riffer::Tools::Response
+  # @rbs return: Riffer::Tools::Response
+  def never_ran: (Riffer::Messages::Assistant::ToolCall tool_call, Hash[Symbol, untyped] args, Riffer::Tools::Response response) -> Riffer::Tools::Response
+
+  # @rbs event: Riffer::Rig::Events::AfterToolCall
+  # @rbs return: Riffer::Tools::Response
+  def finish: (Riffer::Rig::Events::AfterToolCall event) -> Riffer::Tools::Response
 
   # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
   # @rbs args: Hash[Symbol, untyped]

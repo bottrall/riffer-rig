@@ -19,10 +19,12 @@ class Riffer::Rig::Runtime::Hooks
   # @rbs return: String | Riffer::Rig::Runtime::Blocked
   def before_prompt: (String text) -> (String | Riffer::Rig::Runtime::Blocked)
 
+  # @rbs call_id: String
   # @rbs tool: String
   # @rbs args: Hash[Symbol, untyped]
+  # @rbs at: Float
   # @rbs return: Hash[Symbol, untyped] | Riffer::Rig::Runtime::Blocked
-  def before_tool_call: (String tool, Hash[Symbol, untyped] args) -> (Hash[Symbol, untyped] | Riffer::Rig::Runtime::Blocked)
+  def before_tool_call: (String call_id, String tool, Hash[Symbol, untyped] args, Float at) -> (Hash[Symbol, untyped] | Riffer::Rig::Runtime::Blocked)
 
   # @rbs messages: Array[::Riffer::Messages::Base]
   # @rbs return: Array[::Riffer::Messages::Base] | Riffer::Rig::Runtime::Blocked

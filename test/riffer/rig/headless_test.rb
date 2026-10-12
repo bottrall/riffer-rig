@@ -261,6 +261,15 @@ describe Riffer::Rig::Headless do
     refute_match(/tool_call/, @error.string)
   end
 
+  it 'prints nothing for the tool call events in text mode' do
+    run_headless(prompt: 'read it') do |runtime|
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
+      runtime.agent.provider.stub_response('Done.')
+    end
+
+    assert_equal ["Done. \n", ''], [@output.string, @error.string]
+  end
+
   describe 'with --json' do
     def records
       @output.string.lines.map { |line| JSON.parse(line) }
@@ -301,6 +310,41 @@ describe Riffer::Rig::Headless do
       stream_events = %w[tool_call_delta tool_call_done text_done text_delta]
 
       assert_equal stream_events, types.intersection(stream_events)
+    end
+
+    it 'streams the tool call events between the tool call and the next response' do
+      turn
+
+      tool_call = %w[tool_call_done before_tool_call after_tool_call text_delta]
+
+      assert_equal tool_call, types.intersection(tool_call)
+    end
+
+    it 'carries the call and its arguments on before_tool_call' do
+      turn
+      before = records.find { |record| record.fetch('type') == 'before_tool_call' }
+
+      assert_equal(
+        { 'type' => 'before_tool_call', 'call_id' => 'mock_call_0', 'tool' => 'read',
+          'args' => { 'path' => '/tmp/x' } },
+        before.except('at')
+      )
+    end
+
+    it 'carries the call and its timing on after_tool_call' do
+      turn
+      after = records.find { |record| record.fetch('type') == 'after_tool_call' }
+
+      assert_equal(
+        [%w[args at call_id duration result tool type], 'mock_call_0'], [after.keys.sort, after.fetch('call_id')]
+      )
+    end
+
+    it 'carries the result as its content and error on after_tool_call' do
+      turn
+      after = records.find { |record| record.fetch('type') == 'after_tool_call' }
+
+      assert_equal %w[content error error_type], after.fetch('result').keys
     end
 
     it 'parses every line as JSON' do
