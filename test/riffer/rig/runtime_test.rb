@@ -2002,6 +2002,17 @@ describe Riffer::Rig::Runtime do
       )
     end
 
+    it 'reports a stdio server with auth as unregistrable rather than raising' do
+      stdio = Riffer::Rig::Extension.new('serves_stdio') do |rig|
+        rig.mcp('local', command: 'echo', auth: { api_key: 'LOCAL_KEY' })
+      end
+
+      assert_equal(
+        [Riffer::Rig::Events::Notify.new('MCP server local runs over stdio, which riffer cannot register yet', :error)],
+        notifies(runtime([stdio], env: Riffer::Rig::Env.new({ 'LOCAL_KEY' => 'k' }), auth_path: @auth_path))
+      )
+    end
+
     it 'adds each server tool under riffer MCP naming' do
       assert_equal %w[web__echo web__token], tool_names(runtime([serving]))
     end
