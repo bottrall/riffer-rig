@@ -1,0 +1,39 @@
+# Generated from lib/riffer/rig/tools/bash/capture.rb with RBS::Inline
+
+class Riffer::Rig::Tools::Bash::Capture
+  CHUNK_BYTES: Integer
+
+  @stream: IO
+
+  @limit: Integer
+
+  @buffer: String
+
+  @ended: bool
+
+  # @rbs stream: IO
+  # @rbs limit: Integer
+  # @rbs return: void
+  def initialize: (IO stream, Integer limit) -> void
+
+  # @rbs timeout: Float
+  # @rbs return: void
+  def read: (Float timeout) -> void
+
+  # @rbs return: void
+  def drain: () -> void
+
+  # @rbs return: bool
+  def ended?: () -> bool
+
+  # @rbs return: String
+  def to_s: () -> String
+
+  private
+
+  # @rbs return: (String | :wait_readable)?
+  def take: () -> (String | :wait_readable)?
+
+  # @rbs return: bool
+  def within_limit?: () -> bool
+end

@@ -44,7 +44,6 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
     cancel_flag = context&.[](:cancel_flag) #: Riffer::Rig::Runtime::CancelFlag?
     cwd = context&.[](:cwd) #: String
     output, status = run(command, cwd, timeout_ms / 1000.0, cancel_flag)
-    output = truncate(output.rstrip)
 
     return error("Command exited with status #{status}\n#{output}", type: :command_failed) unless status.zero?
 
@@ -77,10 +76,14 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
     stdin, stdout_and_stderr, wait_thread = Open3.popen2e(command, chdir: cwd, pgroup: true)
     stdin.close
 
-    ending = await(wait_thread, monotonic_now + timeout_seconds, cancel_flag)
+    capture = Riffer::Rig::Tools::Bash::Capture.new(stdout_and_stderr, MAX_OUTPUT_BYTES)
+    ending = await(wait_thread, capture, monotonic_now + timeout_seconds, cancel_flag)
     kill_group(wait_thread.pid) unless ending == :exited
-    output = stdout_and_stderr.read.scrub
+    capture.drain
     stdout_and_stderr.close
+    # Cut before stripping: the capture stops just past the limit, so
+    # whitespace at its end may be followed by output it dropped.
+    output = truncate(capture.to_s).rstrip
 
     case ending
     when :timed_out then ["#{output}\n[timed out after #{format('%gs', timeout_seconds)}]", 124]
@@ -90,15 +93,18 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
   end
 
   # @rbs wait_thread: Process::Waiter
+  # @rbs capture: Riffer::Rig::Tools::Bash::Capture
   # @rbs deadline: Float
   # @rbs cancel_flag: Riffer::Rig::Runtime::CancelFlag?
   # @rbs return: Symbol
-  def await(wait_thread, deadline, cancel_flag)
+  def await(wait_thread, capture, deadline, cancel_flag)
     # Upstream candidate: a cancel token on riffer's run loop would reach a
     # running tool directly; until then the flag is polled from the context.
-    until wait_thread.join(POLL_SECONDS)
+    while wait_thread.alive?
       return :cancelled if cancel_flag&.set?
       return :timed_out if monotonic_now >= deadline
+
+      capture.ended? ? wait_thread.join(POLL_SECONDS) : capture.read(POLL_SECONDS)
     end
     :exited
   end
