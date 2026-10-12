@@ -1,0 +1,62 @@
+# Generated from lib/riffer/rig/terminal/line_editor.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::LineEditor
+  CONTROLS: String
+
+  # C1 has no pictures of its own: tr pads the set with its last character.
+  CONTROL_PICTURES: String
+
+  @draft: String
+
+  @recall: Integer
+
+  # @dynamic before, after, history
+  attr_reader before: String
+
+  attr_reader after: String
+
+  attr_reader history: Array[String]
+
+  # @rbs before: String
+  # @rbs after: String
+  # @rbs history: Array[String]
+  # @rbs recall: Integer
+  # @rbs draft: String
+  # @rbs return: void
+  def initialize: (?before: String, ?after: String, ?history: Array[String], ?recall: Integer, ?draft: String) -> void
+
+  # @rbs return: String
+  def text: () -> String
+
+  # @rbs return: String
+  def printable_before: () -> String
+
+  # @rbs return: String
+  def printable_after: () -> String
+
+  # @rbs key: Riffer::Rig::Terminal::Key
+  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  def press: (Riffer::Rig::Terminal::Key key) -> Riffer::Rig::Terminal::LineEditor
+
+  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  def submit: () -> Riffer::Rig::Terminal::LineEditor
+
+  private
+
+  # @rbs before: String
+  # @rbs after: String
+  # @rbs recall: Integer
+  # @rbs draft: String
+  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  def with: (?before: String, ?after: String, ?recall: Integer, ?draft: String) -> Riffer::Rig::Terminal::LineEditor
+
+  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  def left: () -> Riffer::Rig::Terminal::LineEditor
+
+  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  def right: () -> Riffer::Rig::Terminal::LineEditor
+
+  # @rbs step: Integer
+  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  def recall: (Integer step) -> Riffer::Rig::Terminal::LineEditor
+end
