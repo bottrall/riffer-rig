@@ -150,12 +150,132 @@ describe Riffer::Rig::Terminal::LineEditor do
     assert_equal 'b', editor([:paste, large], 'b', :home, :right).after
   end
 
+  it 'moves to the start of the word on Ctrl-Left' do
+    assert_equal 'foo ', editor(:ctrl_left, from: typed('foo bar')).before
+  end
+
+  it 'moves to the start of the word on Alt-Left' do
+    assert_equal 'foo ', editor(:alt_left, from: typed('foo bar')).before
+  end
+
+  it 'moves to the start of the word on Alt-B' do
+    assert_equal 'foo ', editor(:alt_b, from: typed('foo bar')).before
+  end
+
+  it 'skips the punctuation before a word when moving a word left' do
+    assert_equal 'foo.', editor(:ctrl_left, :ctrl_left, from: typed('foo.bar(baz)')).before
+  end
+
+  it 'stays at the start when moving a word left past it' do
+    assert_equal 'foo', editor(:ctrl_left, :ctrl_left, from: typed('foo')).after
+  end
+
+  it 'moves a word left over multi-codepoint graphemes whole' do
+    assert_equal 'a ', editor(:ctrl_left, from: typed("a cafe\u0301 👍🏽")).before
+  end
+
+  it 'moves to the end of the word on Ctrl-Right' do
+    assert_equal 'foo', editor(:home, :ctrl_right, from: typed('foo bar')).before
+  end
+
+  it 'moves to the end of the word on Alt-Right' do
+    assert_equal 'foo', editor(:home, :alt_right, from: typed('foo bar')).before
+  end
+
+  it 'moves to the end of the word on Alt-F' do
+    assert_equal 'foo', editor(:home, :alt_f, from: typed('foo bar')).before
+  end
+
+  it 'skips the punctuation before a word when moving a word right' do
+    assert_equal 'foo.bar(baz', editor(:home, :ctrl_right, :ctrl_right, :ctrl_right, from: typed('foo.bar(baz)')).before
+  end
+
+  it 'stays at the end when moving a word right past it' do
+    assert_equal 'foo', editor(:ctrl_right, from: typed('foo')).before
+  end
+
+  it 'moves a word right over multi-codepoint graphemes whole' do
+    assert_equal ' b', editor(:home, :ctrl_right, from: typed("👍🏽 cafe\u0301 b")).after
+  end
+
   it 'moves the cursor to the start on Home' do
     assert_equal 'abc', editor(:home, from: typed('abc')).after
   end
 
   it 'moves the cursor to the end on End' do
     assert_equal 'abc', editor(:home, :end, from: typed('abc')).before
+  end
+
+  it 'kills the word before the cursor on Ctrl-W' do
+    assert_equal 'foo ', editor(:ctrl_w, from: typed('foo bar')).text
+  end
+
+  it 'kills the whitespace between the word and the cursor on Ctrl-W' do
+    assert_equal 'foo ', editor(:ctrl_w, from: typed('foo bar  ')).text
+  end
+
+  it 'kills punctuation as part of the word on Ctrl-W' do
+    assert_equal 'a ', editor(:ctrl_w, from: typed('a foo.bar(baz)')).text
+  end
+
+  it 'keeps the text after the cursor on Ctrl-W' do
+    assert_equal 'foo r', editor(:left, :ctrl_w, from: typed('foo bar')).text
+  end
+
+  it 'kills a multi-codepoint grapheme whole on Ctrl-W' do
+    assert_equal 'a ', editor(:ctrl_w, from: typed('a 👍🏽')).text
+  end
+
+  it 'ignores Ctrl-W at the start' do
+    assert_equal 'abc', editor(:home, :ctrl_w, from: typed('abc')).text
+  end
+
+  it 'kills to the start of the line on Ctrl-U' do
+    assert_equal 'c', editor(:left, :ctrl_u, from: typed('a bc')).text
+  end
+
+  it 'kills to the end of the line on Ctrl-K' do
+    assert_equal 'a', editor(:home, :right, :ctrl_k, from: typed('a bc')).text
+  end
+
+  it 'ignores Ctrl-K at the end' do
+    assert_equal 'abc', editor(:ctrl_k, from: typed('abc')).text
+  end
+
+  it 'yanks the word Ctrl-W killed at the cursor' do
+    assert_equal 'barfoo ', editor(:ctrl_w, :home, :ctrl_y, from: typed('foo bar')).text
+  end
+
+  it 'yanks the text Ctrl-U killed at the cursor' do
+    assert_equal 'ca b', editor(:left, :ctrl_u, :end, :ctrl_y, from: typed('a bc')).text
+  end
+
+  it 'yanks the text Ctrl-K killed at the cursor' do
+    assert_equal ' bca', editor(:home, :right, :ctrl_k, :home, :ctrl_y, from: typed('a bc')).text
+  end
+
+  it 'leaves the cursor after the yanked text' do
+    assert_equal 'bar', editor(:ctrl_w, :home, :ctrl_y, from: typed('foo bar')).before
+  end
+
+  it 'yanks the same text again on a repeated Ctrl-Y' do
+    assert_equal 'abcabc', editor(:ctrl_u, :ctrl_y, :ctrl_y, from: typed('abc')).text
+  end
+
+  it 'yanks only the latest kill' do
+    assert_equal 'foo ', editor(:ctrl_w, :ctrl_w, :ctrl_y, from: typed('foo bar')).text
+  end
+
+  it 'keeps the killed text when Ctrl-W has nothing to kill' do
+    assert_equal 'abc', editor(:ctrl_u, :ctrl_w, :ctrl_y, from: typed('abc')).text
+  end
+
+  it 'keeps the killed text when Ctrl-K has nothing to kill' do
+    assert_equal 'abc', editor(:ctrl_u, :ctrl_k, :ctrl_y, from: typed('abc')).text
+  end
+
+  it 'ignores Ctrl-Y before anything is killed' do
+    assert_equal 'abc', editor(:ctrl_y, from: typed('abc')).text
   end
 
   it 'ignores keys it does not edit with' do
@@ -183,6 +303,10 @@ describe Riffer::Rig::Terminal::LineEditor do
 
     it 'keeps a blank line out of the history' do
       assert_empty typed('  ').submit.history
+    end
+
+    it 'keeps the killed text for the next line' do
+      assert_equal 'abc', editor(:ctrl_y, from: editor(:ctrl_u, from: typed('abc')).submit).text
     end
   end
 

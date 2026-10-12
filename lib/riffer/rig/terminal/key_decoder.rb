@@ -8,6 +8,12 @@ class Riffer::Rig::Terminal::KeyDecoder
     'H' => :home, 'F' => :end, 'Z' => :shift_tab
   }.freeze #: Hash[String, Symbol]
 
+  MODIFIED_CSI_KEYS = {
+    '3C' => :alt_right, '3D' => :alt_left, '5C' => :ctrl_right, '5D' => :ctrl_left
+  }.freeze #: Hash[String, Symbol]
+
+  META_KEYS = { 'b' => :alt_b, 'f' => :alt_f }.freeze #: Hash[String, Symbol]
+
   TILDE_KEYS = {
     '1' => :home, '2' => :insert, '3' => :delete, '4' => :end,
     '5' => :page_up, '6' => :page_down, '7' => :home, '8' => :end
@@ -108,7 +114,8 @@ class Riffer::Rig::Terminal::KeyDecoder
       []
     else
       @state = :ground
-      [Riffer::Rig::Terminal::Key.new(:escape), *ground(char)]
+      name = META_KEYS.fetch(char, nil)
+      name ? [Riffer::Rig::Terminal::Key.new(name)] : [Riffer::Rig::Terminal::Key.new(:escape), *ground(char)]
     end
   end
 
@@ -133,9 +140,7 @@ class Riffer::Rig::Terminal::KeyDecoder
   # @rbs return: Array[Riffer::Rig::Terminal::Key]
   def finish_csi(final)
     @state = :ground
-    # stdlib types Array#first as non-nil, but an empty sequence yields nil.
-    # @type var param: String?
-    param = @sequence.split(/[;<]/).first
+    param, modifier = @sequence.split(/[;<]/)
     @sequence = +''
     if final == '~'
       if param == PASTE_START
@@ -145,7 +150,7 @@ class Riffer::Rig::Terminal::KeyDecoder
 
       name = param ? TILDE_KEYS[param] : nil
     else
-      name = CSI_KEYS[final]
+      name = MODIFIED_CSI_KEYS.fetch("#{modifier}#{final}") { CSI_KEYS[final] }
     end
     name ? [Riffer::Rig::Terminal::Key.new(name)] : []
   end

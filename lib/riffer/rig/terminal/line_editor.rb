@@ -8,9 +8,12 @@ class Riffer::Rig::Terminal::LineEditor
 
   ELIDE_FROM = 1000 #: Integer
 
+  WORD = /[[:alnum:]]/ #: Regexp
+
   # @rbs @recall: Integer
   # @rbs @draft: String
   # @rbs @pastes: Array[String]
+  # @rbs @kill: String
 
   # @dynamic before, after, history
   attr_reader :before #: String
@@ -23,14 +26,16 @@ class Riffer::Rig::Terminal::LineEditor
   # @rbs recall: Integer
   # @rbs draft: String
   # @rbs pastes: Array[String]
+  # @rbs kill: String
   # @rbs return: void
-  def initialize(before: '', after: '', history: [], recall: history.size, draft: '', pastes: [])
+  def initialize(before: '', after: '', history: [], recall: history.size, draft: '', pastes: [], kill: '')
     @before = before
     @after = after
     @history = history
     @recall = recall
     @draft = draft
     @pastes = pastes
+    @kill = kill
     freeze
   end
 
@@ -59,8 +64,14 @@ class Riffer::Rig::Terminal::LineEditor
     when :delete then with(after: after.delete_prefix(unit_after))
     when :left then left
     when :right then right
+    when :ctrl_left, :alt_left, :alt_b then word_left
+    when :ctrl_right, :alt_right, :alt_f then word_right
     when :home then with(before: '', after: text)
     when :end then with(before: text, after: '')
+    when :ctrl_w then kill_before(word_before(/\S/))
+    when :ctrl_u then kill_before(before)
+    when :ctrl_k then after.empty? ? self : with(after: '', kill: after)
+    when :ctrl_y then with(before: before + @kill)
     when :up then recall(-1)
     when :down then recall(1)
     else self
@@ -69,7 +80,7 @@ class Riffer::Rig::Terminal::LineEditor
 
   # @rbs return: Riffer::Rig::Terminal::LineEditor
   def submit
-    self.class.new(history: text.strip.empty? ? history : [*history, text])
+    self.class.new(history: text.strip.empty? ? history : [*history, text], kill: @kill)
   end
 
   private
@@ -79,9 +90,12 @@ class Riffer::Rig::Terminal::LineEditor
   # @rbs recall: Integer
   # @rbs draft: String
   # @rbs pastes: Array[String]
+  # @rbs kill: String
   # @rbs return: Riffer::Rig::Terminal::LineEditor
-  def with(before: @before, after: @after, recall: @recall, draft: @draft, pastes: @pastes)
-    self.class.new(before: before, after: after, history: history, recall: recall, draft: draft, pastes: pastes)
+  def with(before: @before, after: @after, recall: @recall, draft: @draft, pastes: @pastes, kill: @kill)
+    self.class.new(
+      before: before, after: after, history: history, recall: recall, draft: draft, pastes: pastes, kill: kill
+    )
   end
 
   # @rbs text: String
@@ -120,6 +134,40 @@ class Riffer::Rig::Terminal::LineEditor
   def right
     unit = unit_after
     with(before: before + unit, after: after.delete_prefix(unit))
+  end
+
+  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  def word_left
+    word = word_before(WORD)
+    with(before: before.delete_suffix(word), after: word + after)
+  end
+
+  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  def word_right
+    word = leading_word(after.grapheme_clusters, WORD).join
+    with(before: before + word, after: after.delete_prefix(word))
+  end
+
+  # @rbs killed: String
+  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  def kill_before(killed)
+    return self if killed.empty?
+
+    with(before: before.delete_suffix(killed), kill: killed)
+  end
+
+  # @rbs pattern: Regexp
+  # @rbs return: String
+  def word_before(pattern)
+    leading_word(before.grapheme_clusters.reverse, pattern).reverse.join
+  end
+
+  # @rbs clusters: Array[String]
+  # @rbs pattern: Regexp
+  # @rbs return: Array[String]
+  def leading_word(clusters, pattern)
+    gap = clusters.take_while { |cluster| !cluster.match?(pattern) }
+    gap + clusters.drop(gap.size).take_while { |cluster| cluster.match?(pattern) }
   end
 
   # @rbs step: Integer

@@ -54,6 +54,10 @@ describe Riffer::Rig::Terminal::KeyDecoder do
       assert_equal [[:text, 'é'], [:text, '🜁']], pairs('é🜁')
     end
 
+    it 'decodes escape followed by b or f as Alt chords' do
+      assert_equal [[:alt_b, nil], [:alt_f, nil]], pairs("\eb\ef")
+    end
+
     it 'decodes escape followed by a character as escape then text' do
       assert_equal [[:escape, nil], [:text, 'a']], pairs("\ea")
     end
@@ -70,8 +74,16 @@ describe Riffer::Rig::Terminal::KeyDecoder do
       assert_equal [[:up, nil], [:down, nil], [:right, nil], [:left, nil]], pairs("\e[A\e[B\e[C\e[D")
     end
 
-    it 'decodes modified sequences by the final byte' do
-      assert_equal [[:right, nil], [:shift_tab, nil]], pairs("\e[1;5C\e[Z")
+    it 'decodes Ctrl with the horizontal arrows as chords' do
+      assert_equal [[:ctrl_right, nil], [:ctrl_left, nil]], pairs("\e[1;5C\e[1;5D")
+    end
+
+    it 'decodes Alt with the horizontal arrows as chords' do
+      assert_equal [[:alt_right, nil], [:alt_left, nil]], pairs("\e[1;3C\e[1;3D")
+    end
+
+    it 'decodes other modified sequences by the final byte' do
+      assert_equal [[:right, nil], [:up, nil], [:shift_tab, nil]], pairs("\e[1;2C\e[1;5A\e[Z")
     end
 
     it 'decodes tilde-terminated CSI sequences' do
