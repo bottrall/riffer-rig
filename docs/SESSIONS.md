@@ -64,6 +64,8 @@ The Loader picks the session to drive; hosts never see the store:
 | `list(all: false)` | the header entries, the build's cwd only unless `all: true` escapes the scope |
 | `delete(id)`     | removes the session; an unknown id is a no-op                                   |
 
+`continue` and `resume` build as `runtime` does and take the same [`Loader::Options`](EMBEDDING.md#loader-options) as an optional argument: `continue(options)`, `resume(id, options)`.
+
 A listed header carries the session's update time as `updated`, stamped by the store while it holds the physical artifact — for `Stores::JSONL` the file's mtime, which its last append set; `continue` picks the most recently `updated` session wherever `list` happens to place it.
 
 On the command line, `riffer -c` continues the most recent session in the directory and `riffer -r <id>` resumes by id. With no match the REPL tells you and starts fresh. Bare `riffer -r` opens the [picker](#the-picker) before the first session starts; picking a session resumes it, leaving the picker starts a fresh one.

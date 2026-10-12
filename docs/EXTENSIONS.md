@@ -171,7 +171,7 @@ Declares a key under the extension's namespace of the settings: `"git": { "depth
 
 - When the Runtime's `settings:` hash lacks the key, the declared default applies; a provided value overrides it. `runtime.settings` holds the result, so a prompt section reads the same values through `ctx.settings[:git]`.
 - A command's `ctx.settings` is its own extension's namespace only; core keys and other extensions' namespaces are not in it. Keys present in the namespace but never declared are passed through unchanged.
-- `runtime.declared_settings` lists what each extension declared, extension name → key → default, so a host can render a table of them. Nothing else in core reads it.
+- `runtime.declared_settings` lists what each extension declared — extension name → key → default, names and keys as Symbols — so a host can render a table of them. Nothing else in core reads it.
 - A later declaration of the same key replaces the earlier default.
 - While the block runs, `rig.settings` is the same namespace — the Runtime's `settings:` values over the defaults declared so far — so an extension can register according to its settings.
 

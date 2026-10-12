@@ -49,6 +49,7 @@ Riffer::Rig::ACP.for(input: input, output: output, env: env, home: Dir.home, cwd
 end
 ```
 
+- `input:` and `output:` are the connection's IO pair. `env:` — a `Riffer::Rig::Env`, or what `Riffer::Rig::Env.load` returned — and `home:` are what every session's Loader is built with, and `cwd:` is the working directory the agent falls back to when a `session/list` names none. All five are required.
 - `build:` replaces how `session/new` builds its Runtime. It receives the request's `cwd`, the session's host and the client's MCP declarations, and returns the Runtime; `Riffer::Rig::ACP.build_runtime` is the default.
 - `adopt:` lets a Runtime outlive the connection that built it. `session/load` calls it with the session id before reading the store: a Runtime it returns serves the session as it is — nothing is rebuilt and the request's MCP servers are not declared, so a client that reconnects reaches the Runtime still running its turn, and its `session/cancel` cancels that turn — and `nil` restores the session from the store as usual. The stored messages replay either way. An adopted Runtime's notify lines and [relayed questions](#relaying-questions-to-the-client) move to the adopting connection; a turn an earlier connection started keeps streaming to that one. The hook runs on a request thread, so guard what it reads.
 - `run` blocks until the client disconnects, then yields the `ACP::AgentConnection` to its block, if one is given, and returns `0`. Requests still running when the client disconnects are not waited for.

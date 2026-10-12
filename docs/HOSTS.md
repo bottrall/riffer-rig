@@ -39,11 +39,12 @@ A host uses only the public API of the Runtime, the hosts, the Loader and the ev
 
 ### Building the Runtime
 
-Build the Runtime with [`Loader.runtime`](EMBEDDING.md#building-a-runtime-with-the-loader), passing your host object as `host:`. Command-line flags are Loader keywords (`model:`, `extensions:`, `skills:`, `agents_md:`, `tools:`, `max_steps:`); a host translates its arguments into them and does nothing else with configuration. Onboarding and credential prompts reach the host through `ask` (with `secret: true` for a key), and only when `capabilities` includes `:ask`; the offer to install a provider's SDK gem reaches it through `confirm`, and only when `capabilities` includes `:confirm`. `Riffer::Rig::Loader::ConfigurationError` carries a message written for the user: the terminal prints it and exits with status 1.
+Build the Runtime with [`Loader.runtime`](EMBEDDING.md#building-a-runtime-with-the-loader), passing your host object as `host:`. Command-line flags are [`Loader::Options`](EMBEDDING.md#loader-options) keywords (`model:`, `extensions:`, `skills:`, `agents_md:`, `tools:`, `max_steps:`); a host translates its arguments into an `Options`, passes it as `options:`, and does nothing else with configuration. Onboarding and credential prompts reach the host through `ask` (with `secret: true` for a key), and only when `capabilities` includes `:ask`; the offer to install a provider's SDK gem reaches it through `confirm`, and only when `capabilities` includes `:confirm`. `Riffer::Rig::Loader::ConfigurationError` carries a message written for the user: the terminal prints it and exits with status 1.
 
 ```ruby
 host = MyHost.new
-runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: host, model: 'anthropic/claude-sonnet-4-6', skills: false)
+options = Riffer::Rig::Loader::Options.new(model: 'anthropic/claude-sonnet-4-6', skills: false)
+runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: host, options: options)
 ```
 
 ### Driving it
