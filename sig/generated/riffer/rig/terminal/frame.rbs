@@ -1,0 +1,74 @@
+# Generated from lib/riffer/rig/terminal/frame.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Frame
+  PROMPT: String
+
+  PROMPT_COLUMNS: Integer
+
+  STATUS_INDENT: String
+
+  # The cursor rests on the input line, the footer's first row, so this wipes
+  # the whole footer.
+  ERASE: String
+
+  @previous_resize: Signal::trap_command
+
+  @mutex: Mutex
+
+  @active: bool
+
+  @width: Integer
+
+  @status: String
+
+  @editor: Riffer::Rig::Terminal::LineEditor
+
+  @theme: Riffer::Rig::Terminal::Theme
+
+  @io: IO
+
+  # @rbs io: IO
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs editor: Riffer::Rig::Terminal::LineEditor
+  # @rbs return: void
+  def initialize: (io: IO, theme: Riffer::Rig::Terminal::Theme, ?editor: Riffer::Rig::Terminal::LineEditor) -> void
+
+  # @rbs return: void
+  def start: () -> void
+
+  # @rbs content: String
+  # @rbs return: void
+  def append: (String content) -> void
+
+  # @rbs editor: Riffer::Rig::Terminal::LineEditor
+  # @rbs return: void
+  def input: (Riffer::Rig::Terminal::LineEditor editor) -> void
+
+  # @rbs status: String
+  # @rbs return: void
+  def status: (String status) -> void
+
+  # @rbs return: void
+  def stop: () -> void
+
+  private
+
+  # @rbs return: void
+  def resize: () -> void
+
+  # winsize raises on ttys with no queryable window size and some pty
+  # wrappers report zero columns; a footer that cannot be fitted to the
+  # width would wrap and strand the cursor, so neither gets one.
+  # @rbs return: Integer?
+  def measure: () -> Integer?
+
+  # @rbs return: void
+  def redraw: () -> void
+
+  # @rbs return: String
+  def footer: () -> String
+
+  # @rbs bytes: String
+  # @rbs return: void
+  def write: (String bytes) -> void
+end

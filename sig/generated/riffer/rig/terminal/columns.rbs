@@ -1,0 +1,43 @@
+# Generated from lib/riffer/rig/terminal/columns.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Columns
+  STYLE: Regexp
+
+  TOKEN: Regexp
+
+  WIDE: Regexp
+
+  ZERO: Regexp
+
+  # @rbs text: String
+  # @rbs return: Integer
+  def width: (String text) -> Integer
+
+  # @rbs text: String
+  # @rbs columns: Integer
+  # @rbs return: String
+  def head: (String text, Integer columns) -> String
+
+  # @rbs text: String
+  # @rbs columns: Integer
+  # @rbs return: String
+  def tail: (String text, Integer columns) -> String
+
+  private
+
+  # gsub without a block enumerates its matches as Strings, where scan types
+  # each one as String | Array.
+  # @rbs text: String
+  # @rbs return: Array[String]
+  def tokens: (String text) -> Array[String]
+
+  # Styles survive past the cut so a clipped span still reaches its reset.
+  # @rbs tokens: Array[String]
+  # @rbs columns: Integer
+  # @rbs return: Array[String]
+  def fit: (Array[String] tokens, Integer columns) -> Array[String]
+
+  # @rbs token: String
+  # @rbs return: Integer
+  def span: (String token) -> Integer
+end
