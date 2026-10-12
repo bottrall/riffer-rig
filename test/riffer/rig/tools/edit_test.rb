@@ -7,11 +7,27 @@ describe Riffer::Rig::Tools::Edit do
     @tool = Riffer::Rig::Tools::Edit.new
   end
 
-  it 'replaces a unique string' do
-    with_file('foo bar baz') do
-      @tool.call(context: nil, path: 'f.txt', old_string: 'bar', new_string: 'QUX')
+  it 'ends its description with its guidance sentence' do
+    assert Riffer::Rig::Tools::Edit.description.end_with?(
+      'Prefer this over write for existing files; pass enough surrounding text to make old_string unique.'
+    )
+  end
 
-      assert_equal 'foo QUX baz', File.read('f.txt')
+  it 'resolves a relative path against the cwd in its context' do
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, 'note.txt'), 'hello world')
+      context = Riffer::Agent::Context.new(cwd: dir)
+      @tool.call(context: context, path: 'note.txt', old_string: 'world', new_string: 'rig')
+
+      assert_equal 'hello rig', File.read(File.join(dir, 'note.txt'))
+    end
+  end
+
+  it 'missing file returns error' do
+    with_file('foo bar') do
+      response = @tool.call(context: nil, path: 'missing.txt', old_string: 'foo', new_string: 'x')
+
+      assert_predicate response, :error?
     end
   end
 
@@ -31,6 +47,14 @@ describe Riffer::Rig::Tools::Edit do
     end
   end
 
+  it 'replaces a unique string' do
+    with_file('foo bar baz') do
+      @tool.call(context: nil, path: 'f.txt', old_string: 'bar', new_string: 'QUX')
+
+      assert_equal 'foo QUX baz', File.read('f.txt')
+    end
+  end
+
   it 'replace all replaces every occurrence' do
     with_file('x x x') do
       @tool.call(context: nil, path: 'f.txt', old_string: 'x', new_string: 'y', replace_all: true)
@@ -47,6 +71,30 @@ describe Riffer::Rig::Tools::Edit do
     end
   end
 
+  it 'reports a single replacement for a unique match' do
+    with_file('foo bar baz') do
+      response = @tool.call(context: nil, path: 'f.txt', old_string: 'bar', new_string: 'QUX')
+
+      assert_equal 'Edited f.txt (1 replacement)', response.content
+    end
+  end
+
+  it 'reports a single replacement when replace all matches once' do
+    with_file('foo bar baz') do
+      response = @tool.call(context: nil, path: 'f.txt', old_string: 'bar', new_string: 'QUX', replace_all: true)
+
+      assert_equal 'Edited f.txt (1 replacement)', response.content
+    end
+  end
+
+  it 'reports the count of replacements when replace all matches several times' do
+    with_file('x x x') do
+      response = @tool.call(context: nil, path: 'f.txt', old_string: 'x', new_string: 'y', replace_all: true)
+
+      assert_equal 'Edited f.txt (3 replacements)', response.content
+    end
+  end
+
   private
 
   def with_file(content)
@@ -55,22 +103,6 @@ describe Riffer::Rig::Tools::Edit do
         File.write('f.txt', content)
         yield
       end
-    end
-  end
-
-  it 'ends its description with its guidance sentence' do
-    assert Riffer::Rig::Tools::Edit.description.end_with?(
-      'Prefer this over write for existing files; pass enough surrounding text to make old_string unique.'
-    )
-  end
-
-  it 'resolves a relative path against the cwd in its context' do
-    Dir.mktmpdir do |dir|
-      File.write(File.join(dir, 'note.txt'), 'hello world')
-      context = Riffer::Agent::Context.new(cwd: dir)
-      @tool.call(context: context, path: 'note.txt', old_string: 'world', new_string: 'rig')
-
-      assert_equal 'hello rig', File.read(File.join(dir, 'note.txt'))
     end
   end
 end

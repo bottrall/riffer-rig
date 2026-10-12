@@ -29,6 +29,54 @@ class ScriptedHost
   end
 end
 
+class RecordingStore
+  attr_reader :appended #: Array[[String, Hash[Symbol, untyped]]]
+
+  def initialize
+    @appended = [] #: Array[[String, Riffer::Rig::Stores::entry]]
+  end
+
+  def append(id, entry)
+    @appended << [id, entry]
+  end
+
+  def read(_id)
+    []
+  end
+
+  def list(_cwd: nil)
+    []
+  end
+
+  def delete(_id)
+    nil
+  end
+end
+
+# A store whose listing order is the reverse of the wrapped store's, proving
+# the Loader picks by the header's `updated` and not by position.
+class ReversedStore
+  def initialize(store)
+    @store = store
+  end
+
+  def append(id, entry)
+    @store.append(id, entry)
+  end
+
+  def read(id)
+    @store.read(id)
+  end
+
+  def list(cwd: nil)
+    @store.list(cwd: cwd).reverse
+  end
+
+  def delete(id)
+    @store.delete(id)
+  end
+end
+
 LOADER_OPTION_KEYS = %i[model extensions skills agents_md tools max_steps].freeze
 
 describe Riffer::Rig::Loader do
@@ -109,25 +157,317 @@ describe Riffer::Rig::Loader do
     )
   end
 
+  def loader(store: Riffer::Rig::Stores::JSONL.new(home: @home), host: Riffer::Rig::Hosts::Null.new)
+    Riffer::Rig::Loader.new(
+      cwd: @cwd,
+      host: host,
+      env: Riffer::Rig::Env.new({ 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test' }),
+      home: @home,
+      riffer_config: @config,
+      store: store
+    )
+  end
+
+  def turn(runtime, text = 'hello')
+    runtime.agent.provider.stub_response('All done.')
+    runtime.ask(text)
+  end
+
+  def save_session(text = 'hello')
+    runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
+    turn(runtime, text)
+    runtime
+  end
+
+  def save_entries(id, entries)
+    store = Riffer::Rig::Stores::JSONL.new(home: @home)
+    entries.each { |entry| store.append(id, entry) }
+  end
+
+  def header(id, model = 'mock/test', cwd: @cwd)
+    Riffer::Rig::Stores::Header.new(
+      schema_version: 1,
+      id: id,
+      cwd: cwd,
+      created_at: '2026-01-01T00:00:00Z',
+      model: model,
+      riffer_rig_version: '0.9.0',
+      riffer_version: '0.49.0',
+      title: 'hello'
+    )
+  end
+
+  def session_path(id)
+    Dir.glob(File.join(@home, '.riffer', 'sessions', '*', "#{id}.jsonl")).first
+  end
+
+  def age(path, seconds)
+    time = Time.at(seconds)
+    File.utime(time, time, path)
+  end
+
+  def recorded(id)
+    File.readlines(session_path(id)).filter_map { |line| JSON.parse(line, symbolize_names: true)[:recorded_at] }
+  end
+
+  def save_unstamped(id)
+    save_entries(id, [header(id)])
+    lines = [
+      { type: 'message', message: { role: 'user', content: 'hi' } },
+      { type: 'message', message: { role: 'assistant', content: 'yo' } }
+    ]
+    File.write(session_path(id), lines.map { |line| "#{JSON.generate(line)}\n" }.join, mode: 'a')
+  end
+
   describe '.runtime' do
     it 'returns a Runtime for the working directory' do
       assert_equal @cwd, build(model: 'mock/test').cwd
     end
+  end
 
-    it 'loads extra extensions with the bundle' do
-      extra = Riffer::Rig::Extension.new('extra_loader') { |rig| rig.command('ping', description: 'Pings') { |_ctx| nil } }
-      runtime = build(model: 'mock/test', extra_extensions: [extra])
+  describe '#initialize' do
+    it 'rejects a bare RIFFER_MODEL' do
+      message = refusal do
+        Riffer::Rig::Loader.new(
+          cwd: @cwd,
+          host: Riffer::Rig::Hosts::Null.new,
+          env: Riffer::Rig::Env.load('RIFFER_MODEL' => 'sonnet')
+        )
+      end
 
-      assert(runtime.commands.any? { |command| command.name == 'ping' })
+      assert_match(%r{\ARIFFER_MODEL: sonnet is not a provider/name model string}, message)
+    end
+  end
+
+  describe '#runtime' do
+    describe 'model selection' do
+      it 'takes the model from home settings' do
+        write_settings(@home, { model: 'mock/home' })
+
+        assert_equal 'mock/home', build.model
+      end
+
+      it 'prefers the project settings model over home' do
+        write_settings(@home, { model: 'mock/home' })
+        write_settings(@cwd, { model: 'mock/project' })
+
+        assert_equal 'mock/project', build.model
+      end
+
+      it 'prefers RIFFER_MODEL over settings' do
+        write_settings(@cwd, { model: 'mock/project' })
+
+        assert_equal 'mock/env', build(env: { 'MOCK_API_KEY' => 'k', 'RIFFER_MODEL' => 'mock/env' }).model
+      end
+
+      it 'prefers the model keyword over RIFFER_MODEL' do
+        assert_equal 'mock/flag',
+                     build(model: 'mock/flag', env: { 'MOCK_API_KEY' => 'k', 'RIFFER_MODEL' => 'mock/env' }).model
+      end
+
+      it 'rejects a bare model keyword' do
+        assert_match(
+          %r{\Asonnet is not a provider/name model string; the provider is one of: },
+          refusal do
+            build(model: 'sonnet')
+          end
+        )
+      end
+
+      it 'rejects a bare settings model' do
+        write_settings(@home, { model: 'sonnet' })
+
+        assert_raises(Riffer::Rig::Loader::ConfigurationError) { build }
+      end
     end
 
-    it 'keeps extra extensions through a reload' do
-      extra = Riffer::Rig::Extension.new('extra_loader') { |rig| rig.command('ping', description: 'Pings') { |_ctx| nil } }
-      loader = new_loader
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'), extra_extensions: [extra])
-      loader.reload(runtime, force: true)
+    describe 'onboarding' do
+      it 'raises the configuration error when the null host declines' do
+        assert_raises(Riffer::Rig::Loader::ConfigurationError) { build }
+      end
 
-      assert(runtime.commands.any? { |command| command.name == 'ping' })
+      it 'says how to set a model when the host declines' do
+        assert_match(/RIFFER_MODEL/, refusal { build })
+      end
+
+      it 'asks the host for a model string listing the providers' do
+        host = ScriptedHost.new('mock/chosen')
+        build(host: host)
+
+        assert_equal 'Which model should riffer use? Enter provider/name, with a provider from: ' \
+                     'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter',
+                     host.questions.first
+      end
+
+      it 'does not ask a host that cannot ask' do
+        host = ScriptedHost.new('mock/chosen')
+        host.define_singleton_method(:capabilities) { Set[:confirm] }
+        refusal { build(host: host) }
+
+        assert_empty host.questions
+      end
+
+      it 'builds the Runtime with the answer' do
+        assert_equal 'mock/chosen', build(host: ScriptedHost.new('mock/chosen')).model
+      end
+
+      it 'writes the answer to home settings' do
+        build(host: ScriptedHost.new('mock/chosen'))
+
+        assert_equal 'mock/chosen', home_settings['model']
+      end
+
+      it 'keeps the other home settings when writing the answer' do
+        write_settings(@home, { reasoning: 'low' })
+        build(host: ScriptedHost.new('mock/chosen'))
+
+        assert_equal 'low', home_settings['reasoning']
+      end
+
+      it 'rejects a bare answer' do
+        assert_raises(Riffer::Rig::Loader::ConfigurationError) { build(host: ScriptedHost.new('sonnet')) }
+      end
+
+      it 'writes nothing for a bare answer' do
+        refusal { build(host: ScriptedHost.new('sonnet')) }
+
+        refute_path_exists File.join(@home, '.riffer', 'settings.json')
+      end
+
+      it 'does not ask when a model is set' do
+        host = ScriptedHost.new
+        build(host: host, model: 'mock/test')
+
+        assert_empty host.questions
+      end
+    end
+
+    describe 'sdk' do
+      def with_sdk_absent_and_installable
+        gem_specs = Gem::Specification.method(:find_by_name)
+        bundler = Riffer::Rig::SDK.method(:bundler?)
+        Gem::Specification.define_singleton_method(:find_by_name) { |*_args| raise Gem::LoadError, 'not installed' }
+        Riffer::Rig::SDK.define_singleton_method(:bundler?) { false }
+        yield
+      ensure
+        Gem::Specification.define_singleton_method(:find_by_name, gem_specs)
+        Riffer::Rig::SDK.define_singleton_method(:bundler?, bundler)
+      end
+
+      it 'builds the Runtime for a provider that needs no SDK gem' do
+        with_sdk_absent_and_installable do
+          runtime = build(model: 'gemini/gem-2.5-pro', env: { 'GEMINI_API_KEY' => 'k' })
+
+          assert_equal 'gemini/gem-2.5-pro', runtime.model
+        end
+      end
+
+      it 'builds the Runtime once the SDK gem is present' do
+        assert_equal 'openai/o3', build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' }).model
+      end
+
+      it 'reports a declined install instead of building the Runtime' do
+        with_sdk_absent_and_installable do
+          assert_match(
+            /\Aopenai is not installed; install it with gem install openai/,
+            refusal { build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' }) }
+          )
+        end
+      end
+    end
+
+    describe 'credentials' do
+      it 'hands the resolved values to the Runtime' do
+        assert_equal(
+          { gemini: { api_key: 'sk-gem-env' } },
+          build(model: 'gemini/gem-2.5-pro', env: { 'GEMINI_API_KEY' => 'sk-gem-env' }).credentials
+        )
+      end
+
+      it 'raises the configuration error naming a key the null host cannot supply' do
+        assert_match(
+          /\Agemini has no api_key \(GEMINI_API_KEY\)/,
+          refusal { build(model: 'gemini/gem-2.5-pro', env: {}) }
+        )
+      end
+    end
+
+    describe 'extension providers' do
+      after do
+        Riffer::Rig::Providers.unregister(:acme)
+        Riffer::Rig::Providers.unregister(:globex)
+      end
+
+      def write_provider_rig(identifier, class_name, setup)
+        fields = setup ? ", setup: #{setup}" : ''
+        write_rig(:home, <<~RUBY)
+          class #{class_name} < Riffer::Providers::Mock
+            attr_reader :credentials
+
+            private
+
+            def build_request_params(messages, model, options)
+              @credentials = Riffer::Rig.credentials(#{identifier.to_s.inspect})
+              super
+            end
+          end
+          Riffer::Rig.extension('#{identifier}') { |rig| rig.provider(#{identifier.to_s.inspect}#{fields}) { #{class_name} } }
+        RUBY
+      end
+
+      it 'resolves a registered provider\'s setup field from its env var' do
+        write_provider_rig(
+          :acme,
+          'AcmeRigProvider',
+          "{ fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }"
+        )
+        build(model: 'mock/test')
+
+        assert_equal(
+          { acme: { api_key: 'sk-acme' } },
+          build(model: 'acme/foo', env: { 'ACME_API_KEY' => 'sk-acme' }).credentials
+        )
+      end
+
+      it 'reads the credentials through Riffer::Rig.credentials during a request' do
+        write_provider_rig(
+          :acme,
+          'AcmeRigProvider',
+          "{ fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }"
+        )
+        build(model: 'mock/test')
+        runtime = build(model: 'acme/foo', env: { 'ACME_API_KEY' => 'sk-acme' })
+        runtime.agent.provider.stub_response('All done.')
+        runtime.ask('hello')
+
+        assert_equal({ api_key: 'sk-acme' }, runtime.agent.provider.credentials)
+      end
+
+      it 'resolves a setup-less provider through the generic fallback' do
+        write_provider_rig(:globex, 'GlobexRigProvider', nil)
+        build(model: 'mock/test')
+
+        assert_equal(
+          { api_key: 'sk-globex' },
+          build(model: 'globex/foo', env: { 'GLOBEX_API_KEY' => 'sk-globex' }).credentials[:globex]
+        )
+      end
+
+      it 'keeps one entry when a reload registers the provider again' do
+        write_provider_rig(:acme, 'AcmeRigProvider', nil)
+        build(model: 'mock/test')
+        second = build(model: 'acme/foo', env: { 'ACME_API_KEY' => 'sk-acme' })
+
+        assert_same second.agent.provider.class, Riffer::Providers::Repository.find(:acme)
+      end
+
+      it 'lists extension providers in the onboarding question' do
+        Riffer::Rig::Registrar.new('acme').provider(:acme) { Riffer::Providers::Mock }
+        host = ScriptedHost.new('mock/test')
+        build(host: host)
+
+        assert_match(/with a provider from: .*acme/, host.questions.first)
+      end
     end
 
     it 'loads the bundled tools' do
@@ -171,6 +511,195 @@ describe Riffer::Rig::Loader do
       refute_includes system_message(build(model: 'mock/test', agents_md: false)), 'PROJECT_RULES'
     end
 
+    describe 'rig.rb files' do
+      it 'appends the extensions the files record after the bundle' do
+        write_rig(:home, <<~RUBY)
+          class ProbeTool < Riffer::Tool
+            identifier 'probe'
+            description 'probe'
+            def call(context:) = text('probe')
+          end
+          Riffer::Rig.extension('probe') { |rig| rig.tool ProbeTool }
+        RUBY
+        names = tool_names(build(model: 'mock/test'))
+
+        assert_operator names.index('probe'), :>, names.index('bash')
+      end
+    end
+
+    describe 'autoload' do
+      it 'requires riffer/rig/extension from the gems Gem.find_files finds' do
+        write_settings(@home, { extensions: { autoload: true } })
+        gem_file = fixture_gem_file
+        runtime = nil
+        with_gem_files([gem_file]) { runtime = build(model: 'mock/test') }
+
+        assert_includes tool_names(runtime), 'fixture_probe'
+      end
+
+      it 'stays off by default' do
+        fixture_gem_file
+        build(model: 'mock/test')
+
+        refute_includes tool_names(build(model: 'mock/test')), 'fixture_probe'
+      end
+
+      it 'skips the rig.rb files with extensions: false' do
+        write_rig(:home, <<~RUBY)
+          class SkippedProbeTool < Riffer::Tool
+            identifier 'skipped_probe'
+            description 'skipped'
+            def call(context:) = text('skipped')
+          end
+          Riffer::Rig.extension('skipped') { |rig| rig.tool SkippedProbeTool }
+        RUBY
+        write_rig(:project, '')
+        host = ConfirmingHost.new([true])
+        runtime = build(host: host, model: 'mock/test', extensions: false)
+
+        refute_includes tool_names(runtime), 'skipped_probe'
+      end
+
+      it 'skips autoload with extensions: false' do
+        write_settings(@home, { extensions: { autoload: true } })
+        gem_file = fixture_gem_file
+        runtime = nil
+        with_gem_files([gem_file]) { runtime = build(model: 'mock/test', extensions: false) }
+
+        refute_includes tool_names(runtime), 'fixture_probe'
+      end
+    end
+
+    it 'loads extra extensions with the bundle' do
+      extra = Riffer::Rig::Extension.new('extra_loader') { |rig| rig.command('ping', description: 'Pings') { |_ctx| nil } }
+      runtime = build(model: 'mock/test', extra_extensions: [extra])
+
+      assert(runtime.commands.any? { |command| command.name == 'ping' })
+    end
+
+    describe 'session store' do
+      before { @store = RecordingStore.new }
+
+      def types(store)
+        store.appended.map { |_id, entry| entry.to_h[:type] }
+      end
+
+      def entries
+        @store.appended.map { |_id, entry| entry }
+      end
+
+      it 'appends the header then one entry per message' do
+        runtime = build(store: @store, model: 'mock/test')
+        turn(runtime)
+        turn(runtime, 'again')
+
+        assert_equal %w[header message message message message], types(@store)
+      end
+
+      it 'keys every entry by the runtime id' do
+        runtime = build(store: @store, model: 'mock/test')
+        turn(runtime)
+
+        assert(@store.appended.all? { |(id, _entry)| id == runtime.id })
+      end
+
+      it 'writes the header first' do
+        runtime = build(store: @store, model: 'mock/test')
+        turn(runtime)
+
+        assert_equal 'header', @store.appended.first[1].to_h[:type]
+      end
+
+      it 'titles the header with the first prompt, one line' do
+        runtime = build(store: @store, model: 'mock/test')
+        turn(runtime, "first line\nsecond line")
+
+        assert_equal 'first line', @store.appended.first[1].title
+      end
+
+      it 'names the session cwd in the header' do
+        runtime = build(store: @store, model: 'mock/test')
+        turn(runtime)
+
+        assert_equal @cwd, @store.appended.first[1].cwd
+      end
+
+      it 'carries the model entries of a /model switch, after the header' do
+        runtime = build(store: @store, model: 'mock/test')
+        runtime.run_command('model', 'mock/other')
+        turn(runtime)
+
+        assert_equal %w[header model message message], types(@store)
+      end
+
+      it 'records a model switch with the new model string' do
+        runtime = build(store: @store, model: 'mock/test')
+        runtime.run_command('model', 'mock/other')
+        turn(runtime)
+
+        switch = entries.grep(Riffer::Rig::Stores::ModelEntry).first
+
+        assert_equal 'mock/other', switch.model
+      end
+
+      it 'records the model skill activations' do
+        write_skill('a')
+        runtime = build(store: @store, model: 'mock/test')
+        runtime.agent.provider.stub_response('', tool_calls: [{ name: 'skill_activate', arguments: '{"name":"a"}' }])
+        runtime.agent.provider.stub_response('Done.')
+        runtime.ask('use skill a')
+
+        assert_equal(['a'], entries.grep(Riffer::Rig::Stores::SkillEntry).map(&:skill))
+      end
+
+      it 'leaves a user-run /skill: out of the entries' do
+        write_skill('a')
+        runtime = build(store: @store, model: 'mock/test')
+        runtime.agent.provider.stub_response('On it.')
+        runtime.run_command('skill:a')
+        turn(runtime)
+
+        assert_empty(entries.grep(Riffer::Rig::Stores::SkillEntry))
+      end
+
+      it 'writes a default-store file whose lines all parse' do
+        runtime = build(model: 'mock/test')
+        turn(runtime)
+        path = File.join(Dir.home, '.riffer', 'sessions', '*', "#{runtime.id}.jsonl")
+
+        assert_equal(
+          %w[header message message],
+          File.readlines(Dir.glob(path).first).map do |line|
+            JSON.parse(line, symbolize_names: true)[:type]
+          end
+        )
+      end
+
+      it 'names the default-store file after the runtime id' do
+        runtime = build(model: 'mock/test')
+        turn(runtime)
+        path = File.join(Dir.home, '.riffer', 'sessions', '*', "#{runtime.id}.jsonl")
+
+        refute_empty Dir.glob(path)
+      end
+
+      it 'writes nothing with store: nil' do
+        runtime = build(store: nil, model: 'mock/test')
+        turn(runtime)
+
+        assert_empty Dir.glob(File.join(@home, '.riffer', 'sessions', '**', '*'))
+      end
+
+      it 'writes nothing when sessions.save is false' do
+        FileUtils.mkdir_p(File.join(@home, '.riffer'))
+        File.write(File.join(@home, '.riffer', 'settings.json'), JSON.generate({ sessions: { save: false } }))
+        runtime = build(store: @store, model: 'mock/test')
+        turn(runtime)
+
+        assert_empty @store.appended
+      end
+    end
+
     it 'hands tools: to the Runtime' do
       assert_equal %w[read], tool_names(build(model: 'mock/test', tools: %w[read]))
     end
@@ -210,300 +739,178 @@ describe Riffer::Rig::Loader do
     end
   end
 
-  describe 'model selection' do
-    it 'takes the model from home settings' do
-      write_settings(@home, { model: 'mock/home' })
-
-      assert_equal 'mock/home', build.model
+  describe '#continue' do
+    it 'continues nothing with a nil store' do
+      assert_nil loader(store: nil).continue
     end
 
-    it 'prefers the project settings model over home' do
-      write_settings(@home, { model: 'mock/home' })
-      write_settings(@cwd, { model: 'mock/project' })
+    it 'continues nothing when no session matches the cwd' do
+      save_entries('other', [header('other', cwd: '/other')])
 
-      assert_equal 'mock/project', build.model
+      assert_nil loader.continue
     end
 
-    it 'prefers RIFFER_MODEL over settings' do
-      write_settings(@cwd, { model: 'mock/project' })
+    it 'continues the most recently updated session' do
+      first = save_session('first')
+      second = save_session('second')
+      age(session_path(first.id), 1000)
 
-      assert_equal 'mock/env', build(env: { 'MOCK_API_KEY' => 'k', 'RIFFER_MODEL' => 'mock/env' }).model
+      assert_equal second.id, loader.continue.id
     end
 
-    it 'prefers the model keyword over RIFFER_MODEL' do
-      assert_equal 'mock/flag',
-                   build(model: 'mock/flag', env: { 'MOCK_API_KEY' => 'k', 'RIFFER_MODEL' => 'mock/env' }).model
+    it 'continues the most recently updated even when list is unordered' do
+      first = save_session('first')
+      second = save_session('second')
+      age(session_path(first.id), 1000)
+
+      assert_equal second.id, loader(store: ReversedStore.new(Riffer::Rig::Stores::JSONL.new(home: @home))).continue.id
     end
 
-    it 'rejects a bare model keyword' do
-      assert_match(
-        %r{\Asonnet is not a provider/name model string; the provider is one of: },
-        refusal do
-          build(model: 'sonnet')
-        end
-      )
-    end
+    it 'continues with the session history' do
+      save_session('welcome back')
+      resumed = loader.continue
+      contents = resumed.agent.session.messages.map(&:content)
 
-    it 'rejects a bare settings model' do
-      write_settings(@home, { model: 'sonnet' })
-
-      assert_raises(Riffer::Rig::Loader::ConfigurationError) { build }
-    end
-
-    it 'rejects a bare RIFFER_MODEL' do
-      message = refusal do
-        Riffer::Rig::Loader.new(
-          cwd: @cwd,
-          host: Riffer::Rig::Hosts::Null.new,
-          env: Riffer::Rig::Env.load('RIFFER_MODEL' => 'sonnet')
-        )
-      end
-
-      assert_match(%r{\ARIFFER_MODEL: sonnet is not a provider/name model string}, message)
+      assert_equal ['welcome back', 'All done.'], contents
     end
   end
 
-  describe 'onboarding' do
-    it 'raises the configuration error when the null host declines' do
-      assert_raises(Riffer::Rig::Loader::ConfigurationError) { build }
+  describe '#resume' do
+    it 'resumes nothing with a nil store' do
+      assert_nil loader(store: nil).resume('aaa')
     end
 
-    it 'says how to set a model when the host declines' do
-      assert_match(/RIFFER_MODEL/, refusal { build })
+    it 'returns nil for an unknown id' do
+      assert_nil loader.resume('nope')
     end
 
-    it 'asks the host for a model string listing the providers' do
-      host = ScriptedHost.new('mock/chosen')
-      build(host: host)
+    it 'resumes a session by id' do
+      saved = save_session
 
-      assert_equal 'Which model should riffer use? Enter provider/name, with a provider from: ' \
-                   'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter',
-                   host.questions.first
+      assert_equal saved.id, loader.resume(saved.id).id
     end
 
-    it 'does not ask a host that cannot ask' do
-      host = ScriptedHost.new('mock/chosen')
-      host.define_singleton_method(:capabilities) { Set[:confirm] }
-      refusal { build(host: host) }
+    it 'resumes with the recorded model switch' do
+      saved = save_session
+      saved.run_command('model', 'mock/other')
+      turn(saved, 'again')
 
-      assert_empty host.questions
+      assert_equal 'mock/other', loader.resume(saved.id).to_h[:model]
     end
 
-    it 'builds the Runtime with the answer' do
-      assert_equal 'mock/chosen', build(host: ScriptedHost.new('mock/chosen')).model
+    it 're-applies every recorded skill activation' do
+      write_skill('a')
+      write_skill('b')
+      save_entries(
+        'aaa',
+        [header('aaa'),
+         Riffer::Rig::Stores::SkillEntry.new(skill: 'a'),
+         Riffer::Rig::Stores::SkillEntry.new(skill: 'b'),
+         Riffer::Rig::Stores::MessageEntry.new(message: { role: 'user', content: 'hi' })]
+      )
+
+      assert_equal %w[a b], loader.resume('aaa').to_h[:skills]
     end
 
-    it 'writes the answer to home settings' do
-      build(host: ScriptedHost.new('mock/chosen'))
+    it 'heals a file cut mid-turn' do
+      saved = save_session
+      call = Riffer::Messages::Assistant::ToolCall.new(call_id: 'orphan', name: 'read', arguments: '{"path":"/tmp/x"}')
+      save_entries(
+        saved.id,
+        [Riffer::Rig::Stores::MessageEntry.new(message: Riffer::Messages::Assistant.new('', tool_calls: [call]).to_h)]
+      )
+      healed = loader.resume(saved.id).agent.session.messages.last
 
-      assert_equal 'mock/chosen', home_settings['model']
+      assert_equal ['orphan', :interrupted], [healed.tool_call_id, healed.error_type]
     end
 
-    it 'keeps the other home settings when writing the answer' do
-      write_settings(@home, { reasoning: 'low' })
-      build(host: ScriptedHost.new('mock/chosen'))
+    it 'resumes a session written before entries were stamped' do
+      save_unstamped('aaa')
 
-      assert_equal 'low', home_settings['reasoning']
+      assert_equal %w[hi yo], loader.resume('aaa').agent.session.messages.map(&:content)
     end
 
-    it 'rejects a bare answer' do
-      assert_raises(Riffer::Rig::Loader::ConfigurationError) { build(host: ScriptedHost.new('sonnet')) }
+    it 'leaves the lines of an unstamped session untouched when resuming it' do
+      save_unstamped('aaa')
+      before = File.readlines(session_path('aaa'))
+      turn(loader.resume('aaa'), 'again')
+
+      assert_equal before, File.readlines(session_path('aaa')).first(before.size)
     end
 
-    it 'writes nothing for a bare answer' do
-      refusal { build(host: ScriptedHost.new('sonnet')) }
+    it 'rewrites no header when resuming' do
+      saved = save_session
+      resumed = loader.resume(saved.id)
+      turn(resumed, 'again')
 
-      refute_path_exists File.join(@home, '.riffer', 'settings.json')
+      types = File.readlines(session_path(saved.id)).map { |line| JSON.parse(line, symbolize_names: true)[:type] }
+
+      assert_equal 1, types.count('header')
     end
 
-    it 'does not ask when a model is set' do
-      host = ScriptedHost.new
-      build(host: host, model: 'mock/test')
+    it 'stamps every entry it records' do
+      saved = save_session
 
-      assert_empty host.questions
+      assert_equal 2, recorded(saved.id).size
+    end
+
+    it 'keeps the stamps in order across a resume' do
+      saved = save_session
+      turn(loader.resume(saved.id), 'again')
+      stamps = recorded(saved.id)
+
+      assert_equal stamps.sort, stamps
     end
   end
 
-  describe 'rig.rb files' do
-    it 'appends the extensions the files record after the bundle' do
-      write_rig(:home, <<~RUBY)
-        class ProbeTool < Riffer::Tool
-          identifier 'probe'
-          description 'probe'
-          def call(context:) = text('probe')
-        end
-        Riffer::Rig.extension('probe') { |rig| rig.tool ProbeTool }
-      RUBY
-      names = tool_names(build(model: 'mock/test'))
+  describe '#messages' do
+    it 'replays no messages with a nil store' do
+      assert_empty loader(store: nil).messages('aaa')
+    end
 
-      assert_operator names.index('probe'), :>, names.index('bash')
+    it 'replays the messages of a session in recorded order' do
+      saved = save_session('welcome back')
+      contents = loader.messages(saved.id).map { |message| message[:content] }
+
+      assert_equal ['welcome back', 'All done.'], contents
+    end
+
+    it 'replays a session written before entries were stamped' do
+      save_unstamped('aaa')
+
+      assert_equal(%w[hi yo], loader.messages('aaa').map { |message| message[:content] })
     end
   end
 
-  describe 'autoload' do
-    it 'requires riffer/rig/extension from the gems Gem.find_files finds' do
-      write_settings(@home, { extensions: { autoload: true } })
-      gem_file = fixture_gem_file
-      runtime = nil
-      with_gem_files([gem_file]) { runtime = build(model: 'mock/test') }
-
-      assert_includes tool_names(runtime), 'fixture_probe'
+  describe '#list' do
+    it 'lists nothing with a nil store' do
+      assert_empty loader(store: nil).list
     end
 
-    it 'stays off by default' do
-      fixture_gem_file
-      build(model: 'mock/test')
+    it 'lists the sessions of this cwd' do
+      save_session
 
-      refute_includes tool_names(build(model: 'mock/test')), 'fixture_probe'
+      assert_equal([@cwd], loader.list.map(&:cwd))
     end
 
-    it 'skips the rig.rb files with extensions: false' do
-      write_rig(:home, <<~RUBY)
-        class SkippedProbeTool < Riffer::Tool
-          identifier 'skipped_probe'
-          description 'skipped'
-          def call(context:) = text('skipped')
-        end
-        Riffer::Rig.extension('skipped') { |rig| rig.tool SkippedProbeTool }
-      RUBY
-      write_rig(:project, '')
-      host = ConfirmingHost.new([true])
-      runtime = build(host: host, model: 'mock/test', extensions: false)
+    it 'escapes the cwd scope with all: true' do
+      save_session
+      save_entries('elsewhere', [header('elsewhere', cwd: '/elsewhere')])
 
-      refute_includes tool_names(runtime), 'skipped_probe'
-    end
-
-    it 'skips autoload with extensions: false' do
-      write_settings(@home, { extensions: { autoload: true } })
-      gem_file = fixture_gem_file
-      runtime = nil
-      with_gem_files([gem_file]) { runtime = build(model: 'mock/test', extensions: false) }
-
-      refute_includes tool_names(runtime), 'fixture_probe'
+      assert_equal ['/elsewhere', @cwd], loader.list(all: true).map(&:cwd).sort
     end
   end
 
-  describe 'sdk' do
-    def with_sdk_absent_and_installable
-      gem_specs = Gem::Specification.method(:find_by_name)
-      bundler = Riffer::Rig::SDK.method(:bundler?)
-      Gem::Specification.define_singleton_method(:find_by_name) { |*_args| raise Gem::LoadError, 'not installed' }
-      Riffer::Rig::SDK.define_singleton_method(:bundler?) { false }
-      yield
-    ensure
-      Gem::Specification.define_singleton_method(:find_by_name, gem_specs)
-      Riffer::Rig::SDK.define_singleton_method(:bundler?, bundler)
+  describe '#delete' do
+    it 'deletes nothing with a nil store' do
+      assert_nil loader(store: nil).delete('aaa')
     end
 
-    it 'builds the Runtime for a provider that needs no SDK gem' do
-      with_sdk_absent_and_installable do
-        runtime = build(model: 'gemini/gem-2.5-pro', env: { 'GEMINI_API_KEY' => 'k' })
+    it 'deletes a session' do
+      saved = save_session
+      loader.delete(saved.id)
 
-        assert_equal 'gemini/gem-2.5-pro', runtime.model
-      end
-    end
-
-    it 'reports a declined install instead of building the Runtime' do
-      with_sdk_absent_and_installable do
-        assert_match(
-          /\Aopenai is not installed; install it with gem install openai/,
-          refusal { build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' }) }
-        )
-      end
-    end
-  end
-
-  describe 'credentials' do
-    it 'hands the resolved values to the Runtime' do
-      assert_equal(
-        { gemini: { api_key: 'sk-gem-env' } },
-        build(model: 'gemini/gem-2.5-pro', env: { 'GEMINI_API_KEY' => 'sk-gem-env' }).credentials
-      )
-    end
-
-    it 'raises the configuration error naming a key the null host cannot supply' do
-      assert_match(
-        /\Agemini has no api_key \(GEMINI_API_KEY\)/,
-        refusal { build(model: 'gemini/gem-2.5-pro', env: {}) }
-      )
-    end
-  end
-
-  describe 'extension providers' do
-    after do
-      Riffer::Rig::Providers.unregister(:acme)
-      Riffer::Rig::Providers.unregister(:globex)
-    end
-
-    def write_provider_rig(identifier, class_name, setup)
-      fields = setup ? ", setup: #{setup}" : ''
-      write_rig(:home, <<~RUBY)
-        class #{class_name} < Riffer::Providers::Mock
-          attr_reader :credentials
-
-          private
-
-          def build_request_params(messages, model, options)
-            @credentials = Riffer::Rig.credentials(#{identifier.to_s.inspect})
-            super
-          end
-        end
-        Riffer::Rig.extension('#{identifier}') { |rig| rig.provider(#{identifier.to_s.inspect}#{fields}) { #{class_name} } }
-      RUBY
-    end
-
-    it 'resolves a registered provider\'s setup field from its env var' do
-      write_provider_rig(
-        :acme,
-        'AcmeRigProvider',
-        "{ fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }"
-      )
-      build(model: 'mock/test')
-
-      assert_equal(
-        { acme: { api_key: 'sk-acme' } },
-        build(model: 'acme/foo', env: { 'ACME_API_KEY' => 'sk-acme' }).credentials
-      )
-    end
-
-    it 'reads the credentials through Riffer::Rig.credentials during a request' do
-      write_provider_rig(
-        :acme,
-        'AcmeRigProvider',
-        "{ fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }"
-      )
-      build(model: 'mock/test')
-      runtime = build(model: 'acme/foo', env: { 'ACME_API_KEY' => 'sk-acme' })
-      runtime.agent.provider.stub_response('All done.')
-      runtime.ask('hello')
-
-      assert_equal({ api_key: 'sk-acme' }, runtime.agent.provider.credentials)
-    end
-
-    it 'resolves a setup-less provider through the generic fallback' do
-      write_provider_rig(:globex, 'GlobexRigProvider', nil)
-      build(model: 'mock/test')
-
-      assert_equal(
-        { api_key: 'sk-globex' },
-        build(model: 'globex/foo', env: { 'GLOBEX_API_KEY' => 'sk-globex' }).credentials[:globex]
-      )
-    end
-
-    it 'keeps one entry when a reload registers the provider again' do
-      write_provider_rig(:acme, 'AcmeRigProvider', nil)
-      build(model: 'mock/test')
-      second = build(model: 'acme/foo', env: { 'ACME_API_KEY' => 'sk-acme' })
-
-      assert_same second.agent.provider.class, Riffer::Providers::Repository.find(:acme)
-    end
-
-    it 'lists extension providers in the onboarding question' do
-      Riffer::Rig::Registrar.new('acme').provider(:acme) { Riffer::Providers::Mock }
-      host = ScriptedHost.new('mock/test')
-      build(host: host)
-
-      assert_match(/with a provider from: .*acme/, host.questions.first)
+      assert_nil session_path(saved.id)
     end
   end
 
@@ -557,6 +964,117 @@ describe Riffer::Rig::Loader do
       assert_includes build(model: 'mock/test').commands.map(&:name), 'reload'
     end
 
+    it 'skips the reload when no tracked file changed' do
+      write_rig(:project, probe_rig('probe'))
+      host = ConfirmingHost.new([true])
+      loader = new_loader(host: host)
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
+      marker = File.join(@cwd, 'reload_marker')
+      File.write(project_rig_path, "File.write(#{marker.inspect}, 'attempted')\nraise 'boom'")
+      bump(project_rig_path)
+      loader.reload(runtime)
+      FileUtils.rm_f(marker)
+      loader.reload(runtime)
+
+      refute_path_exists marker
+    end
+
+    it 'tracks no files with extensions: false' do
+      write_settings(@home, { git: { depth: 10 } })
+      loader = new_loader
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test', extensions: false))
+      write_settings(@home, { git: { depth: 3 } })
+      write_rig(:project, probe_rig('probe'))
+      loader.reload(runtime)
+
+      assert_equal({ depth: 10 }, runtime.settings[:git])
+    end
+
+    it 'reloads without force when a tracked file changed' do
+      loader, runtime, = tool_added
+      bump(project_rig_path)
+      loader.reload(runtime)
+
+      assert_includes tool_names(runtime), 'probe_next'
+    end
+
+    it 're-reads settings changed on disk' do
+      write_settings(@home, { git: { depth: 10 } })
+      loader = new_loader
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
+      write_settings(@home, { git: { depth: 3 } })
+      loader.reload(runtime, force: true)
+
+      assert_equal({ depth: 3 }, runtime.settings[:git])
+    end
+
+    it 'keeps extra extensions through a reload' do
+      extra = Riffer::Rig::Extension.new('extra_loader') { |rig| rig.command('ping', description: 'Pings') { |_ctx| nil } }
+      loader = new_loader
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'), extra_extensions: [extra])
+      loader.reload(runtime, force: true)
+
+      assert(runtime.commands.any? { |command| command.name == 'ping' })
+    end
+
+    it 'skips rediscovery with extensions: false' do
+      loader = new_loader(host: ConfirmingHost.new([true]))
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test', extensions: false))
+      write_rig(:project, probe_rig('probe'))
+      loader.reload(runtime, force: true)
+
+      assert_empty tool_names(runtime).grep(/\Aprobe/)
+    end
+
+    it 'drops the extensions of a deleted rig.rb' do
+      write_rig(:project, probe_rig('probe'))
+      loader = new_loader(host: ConfirmingHost.new([true]))
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
+      FileUtils.rm(project_rig_path)
+      loader.reload(runtime, force: true)
+
+      assert_empty tool_names(runtime).grep(/\Aprobe/)
+    end
+
+    it 'confirms a project rig.rb appearing mid-session' do
+      host = ConfirmingHost.new([true])
+      loader = new_loader(host: host)
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
+      write_rig(:project, probe_rig('probe'))
+      loader.reload(runtime, force: true)
+
+      assert_equal ["Trust #{project_rig_path}?"], host.questions
+    end
+
+    it 'abandons the reload when a rig.rb raises' do
+      loader, runtime, = raising_rig
+      reloaded = loader.reload(runtime, force: true)
+
+      assert_match(/failed to load: boom\z/, reloaded)
+    end
+
+    it 'keeps the live registrar when a rig.rb raises on reload' do
+      loader, runtime, = raising_rig
+      loader.reload(runtime, force: true)
+
+      assert_equal ['probe'], tool_names(runtime).grep(/\Aprobe/)
+    end
+
+    it 'notifies once when a rig.rb raises on reload' do
+      loader, runtime, host = raising_rig
+      loader.reload(runtime, force: true)
+
+      assert_equal [[:error, "#{project_rig_path} failed to load: boom"]], host.notifications
+    end
+
+    it 'reports credentials the reload cannot resolve' do
+      loader = new_loader
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
+      runtime.model = 'gemini/gem-2.5-pro'
+
+      assert_match(/\Agemini has no api_key \(GEMINI_API_KEY\)/, loader.reload(runtime, force: true))
+    end
+
     it 'registers a tool added to a tracked file' do
       loader, runtime, = tool_added
       loader.reload(runtime, force: true)
@@ -600,102 +1118,6 @@ describe Riffer::Rig::Loader do
       assert_equal ['probe_next'], tool_names(runtime).grep(/\Aprobe/)
     end
 
-    it 'reloads without force when a tracked file changed' do
-      loader, runtime, = tool_added
-      bump(project_rig_path)
-      loader.reload(runtime)
-
-      assert_includes tool_names(runtime), 'probe_next'
-    end
-
-    it 'skips the reload when no tracked file changed' do
-      write_rig(:project, probe_rig('probe'))
-      host = ConfirmingHost.new([true])
-      loader = new_loader(host: host)
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      marker = File.join(@cwd, 'reload_marker')
-      File.write(project_rig_path, "File.write(#{marker.inspect}, 'attempted')\nraise 'boom'")
-      bump(project_rig_path)
-      loader.reload(runtime)
-      FileUtils.rm_f(marker)
-      loader.reload(runtime)
-
-      refute_path_exists marker
-    end
-
-    it 'abandons the reload when a rig.rb raises' do
-      loader, runtime, = raising_rig
-      reloaded = loader.reload(runtime, force: true)
-
-      assert_match(/failed to load: boom\z/, reloaded)
-    end
-
-    it 'keeps the live registrar when a rig.rb raises on reload' do
-      loader, runtime, = raising_rig
-      loader.reload(runtime, force: true)
-
-      assert_equal ['probe'], tool_names(runtime).grep(/\Aprobe/)
-    end
-
-    it 'notifies once when a rig.rb raises on reload' do
-      loader, runtime, host = raising_rig
-      loader.reload(runtime, force: true)
-
-      assert_equal [[:error, "#{project_rig_path} failed to load: boom"]], host.notifications
-    end
-
-    it 're-reads settings changed on disk' do
-      write_settings(@home, { git: { depth: 10 } })
-      loader = new_loader
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      write_settings(@home, { git: { depth: 3 } })
-      loader.reload(runtime, force: true)
-
-      assert_equal({ depth: 3 }, runtime.settings[:git])
-    end
-
-    it 'drops the extensions of a deleted rig.rb' do
-      write_rig(:project, probe_rig('probe'))
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      FileUtils.rm(project_rig_path)
-      loader.reload(runtime, force: true)
-
-      assert_empty tool_names(runtime).grep(/\Aprobe/)
-    end
-
-    it 'confirms a project rig.rb appearing mid-session' do
-      host = ConfirmingHost.new([true])
-      loader = new_loader(host: host)
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      write_rig(:project, probe_rig('probe'))
-      loader.reload(runtime, force: true)
-
-      assert_equal ["Trust #{project_rig_path}?"], host.questions
-    end
-
-    it 'reports Reloaded from /reload' do
-      write_rig(:project, probe_rig('probe'))
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      File.write(project_rig_path, probe_rig('probe_next'))
-      events = []
-      runtime.run_command('reload') { |event| events << event }
-
-      assert_equal [Riffer::Rig::Events::CommandOutput.new('reload', 'Reloaded')], events
-    end
-
-    it 'stays installed after the rebuild it triggers' do
-      write_rig(:project, probe_rig('probe'))
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      runtime.run_command('reload')
-      events = []
-      runtime.run_command('reload') { |event| events << event }
-
-      assert_equal [Riffer::Rig::Events::CommandOutput.new('reload', 'Reloaded')], events
-    end
-
     it 'reports a raise during the reload instead of propagating it' do
       write_rig(:project, probe_rig('probe'))
       loader = new_loader(host: ConfirmingHost.new([true]))
@@ -719,6 +1141,28 @@ describe Riffer::Rig::Loader do
       loader.reload(runtime)
 
       refute_path_exists marker
+    end
+
+    it 'reports Reloaded from /reload' do
+      write_rig(:project, probe_rig('probe'))
+      loader = new_loader(host: ConfirmingHost.new([true]))
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
+      File.write(project_rig_path, probe_rig('probe_next'))
+      events = []
+      runtime.run_command('reload') { |event| events << event }
+
+      assert_equal [Riffer::Rig::Events::CommandOutput.new('reload', 'Reloaded')], events
+    end
+
+    it 'stays installed after the rebuild it triggers' do
+      write_rig(:project, probe_rig('probe'))
+      loader = new_loader(host: ConfirmingHost.new([true]))
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
+      runtime.run_command('reload')
+      events = []
+      runtime.run_command('reload') { |event| events << event }
+
+      assert_equal [Riffer::Rig::Events::CommandOutput.new('reload', 'Reloaded')], events
     end
   end
 
@@ -760,11 +1204,6 @@ describe Riffer::Rig::Loader do
       loader = new_loader(host: host)
       runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'), **keywords)
       [loader, runtime]
-    end
-
-    def turn(runtime)
-      runtime.agent.provider.stub_response('All done.')
-      runtime.ask('hello')
     end
 
     it 'registers a tool added to a tracked file mid-turn' do
@@ -883,441 +1322,5 @@ describe Riffer::Rig::Loader do
 
       assert_empty tool_names(runtime).grep(/\Aprobe_next/)
     end
-  end
-end
-
-class RecordingStore
-  attr_reader :appended #: Array[[String, Hash[Symbol, untyped]]]
-
-  def initialize
-    @appended = [] #: Array[[String, Riffer::Rig::Stores::entry]]
-  end
-
-  def append(id, entry)
-    @appended << [id, entry]
-  end
-
-  def read(_id)
-    []
-  end
-
-  def list(_cwd: nil)
-    []
-  end
-
-  def delete(_id)
-    nil
-  end
-end
-
-describe 'Loader session store' do
-  before do
-    @home = Dir.mktmpdir
-    @cwd = Dir.mktmpdir
-    @config = Riffer::Config.new
-    @store = RecordingStore.new
-  end
-
-  after do
-    FileUtils.remove_entry(@home)
-    FileUtils.remove_entry(@cwd)
-  end
-
-  def build(host: Riffer::Rig::Hosts::Null.new, **keywords)
-    Riffer::Rig::Loader.runtime(
-      cwd: @cwd,
-      host: host,
-      env: Riffer::Rig::Env.new({ 'MOCK_API_KEY' => 'mock-key' }),
-      home: @home,
-      riffer_config: @config,
-      options: Riffer::Rig::Loader::Options.new(**keywords.slice(*LOADER_OPTION_KEYS)),
-      **keywords.except(*LOADER_OPTION_KEYS)
-    )
-  end
-
-  def types(store)
-    store.appended.map { |_id, entry| entry.to_h[:type] }
-  end
-
-  def entries
-    @store.appended.map { |_id, entry| entry }
-  end
-
-  def write_skill(name)
-    dir = File.join(@cwd, '.agents', 'skills', name)
-    FileUtils.mkdir_p(dir)
-    File.write(File.join(dir, 'SKILL.md'), "---\nname: #{name}\ndescription: Skill #{name}.\n---\nDo #{name}.\n")
-  end
-
-  def turn(runtime, text = 'hello')
-    runtime.agent.provider.stub_response('All done.')
-    runtime.ask(text)
-  end
-
-  it 'appends the header then one entry per message' do
-    runtime = build(store: @store, model: 'mock/test')
-    turn(runtime)
-    turn(runtime, 'again')
-
-    assert_equal %w[header message message message message], types(@store)
-  end
-
-  it 'keys every entry by the runtime id' do
-    runtime = build(store: @store, model: 'mock/test')
-    turn(runtime)
-
-    assert(@store.appended.all? { |(id, _entry)| id == runtime.id })
-  end
-
-  it 'writes the header first' do
-    runtime = build(store: @store, model: 'mock/test')
-    turn(runtime)
-
-    assert_equal 'header', @store.appended.first[1].to_h[:type]
-  end
-
-  it 'titles the header with the first prompt, one line' do
-    runtime = build(store: @store, model: 'mock/test')
-    turn(runtime, "first line\nsecond line")
-
-    assert_equal 'first line', @store.appended.first[1].title
-  end
-
-  it 'names the session cwd in the header' do
-    runtime = build(store: @store, model: 'mock/test')
-    turn(runtime)
-
-    assert_equal @cwd, @store.appended.first[1].cwd
-  end
-
-  it 'carries the model entries of a /model switch, after the header' do
-    runtime = build(store: @store, model: 'mock/test')
-    runtime.run_command('model', 'mock/other')
-    turn(runtime)
-
-    assert_equal %w[header model message message], types(@store)
-  end
-
-  it 'records a model switch with the new model string' do
-    runtime = build(store: @store, model: 'mock/test')
-    runtime.run_command('model', 'mock/other')
-    turn(runtime)
-
-    switch = entries.grep(Riffer::Rig::Stores::ModelEntry).first
-
-    assert_equal 'mock/other', switch.model
-  end
-
-  it 'records the model skill activations' do
-    write_skill('a')
-    runtime = build(store: @store, model: 'mock/test')
-    runtime.agent.provider.stub_response('', tool_calls: [{ name: 'skill_activate', arguments: '{"name":"a"}' }])
-    runtime.agent.provider.stub_response('Done.')
-    runtime.ask('use skill a')
-
-    assert_equal(['a'], entries.grep(Riffer::Rig::Stores::SkillEntry).map(&:skill))
-  end
-
-  it 'leaves a user-run /skill: out of the entries' do
-    write_skill('a')
-    runtime = build(store: @store, model: 'mock/test')
-    runtime.agent.provider.stub_response('On it.')
-    runtime.run_command('skill:a')
-    turn(runtime)
-
-    assert_empty(entries.grep(Riffer::Rig::Stores::SkillEntry))
-  end
-
-  it 'writes a default-store file whose lines all parse' do
-    runtime = build(model: 'mock/test')
-    turn(runtime)
-    path = File.join(Dir.home, '.riffer', 'sessions', '*', "#{runtime.id}.jsonl")
-
-    assert_equal(
-      %w[header message message],
-      File.readlines(Dir.glob(path).first).map do |line|
-        JSON.parse(line, symbolize_names: true)[:type]
-      end
-    )
-  end
-
-  it 'names the default-store file after the runtime id' do
-    runtime = build(model: 'mock/test')
-    turn(runtime)
-    path = File.join(Dir.home, '.riffer', 'sessions', '*', "#{runtime.id}.jsonl")
-
-    refute_empty Dir.glob(path)
-  end
-
-  it 'writes nothing with store: nil' do
-    runtime = build(store: nil, model: 'mock/test')
-    turn(runtime)
-
-    assert_empty Dir.glob(File.join(@home, '.riffer', 'sessions', '**', '*'))
-  end
-
-  it 'writes nothing when sessions.save is false' do
-    FileUtils.mkdir_p(File.join(@home, '.riffer'))
-    File.write(File.join(@home, '.riffer', 'settings.json'), JSON.generate({ sessions: { save: false } }))
-    runtime = build(store: @store, model: 'mock/test')
-    turn(runtime)
-
-    assert_empty @store.appended
-  end
-end
-
-# A store whose listing order is the reverse of the wrapped store's, proving
-# the Loader picks by the header's `updated` and not by position.
-class ReversedStore
-  def initialize(store)
-    @store = store
-  end
-
-  def append(id, entry)
-    @store.append(id, entry)
-  end
-
-  def read(id)
-    @store.read(id)
-  end
-
-  def list(cwd: nil)
-    @store.list(cwd: cwd).reverse
-  end
-
-  def delete(id)
-    @store.delete(id)
-  end
-end
-
-describe 'Loader resume' do
-  before do
-    @home = Dir.mktmpdir
-    @cwd = Dir.mktmpdir
-    @config = Riffer::Config.new
-  end
-
-  after do
-    FileUtils.remove_entry(@home)
-    FileUtils.remove_entry(@cwd)
-  end
-
-  def loader(store: Riffer::Rig::Stores::JSONL.new(home: @home), host: Riffer::Rig::Hosts::Null.new)
-    Riffer::Rig::Loader.new(
-      cwd: @cwd,
-      host: host,
-      env: Riffer::Rig::Env.new({ 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test' }),
-      home: @home,
-      riffer_config: @config,
-      store: store
-    )
-  end
-
-  def turn(runtime, text = 'hello')
-    runtime.agent.provider.stub_response('All done.')
-    runtime.ask(text)
-  end
-
-  def save_session(text = 'hello')
-    runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-    turn(runtime, text)
-    runtime
-  end
-
-  def write_skill(name)
-    dir = File.join(@cwd, '.agents', 'skills', name)
-    FileUtils.mkdir_p(dir)
-    File.write(File.join(dir, 'SKILL.md'), "---\nname: #{name}\ndescription: Skill #{name}.\n---\nDo #{name}.\n")
-  end
-
-  def save_entries(id, entries)
-    store = Riffer::Rig::Stores::JSONL.new(home: @home)
-    entries.each { |entry| store.append(id, entry) }
-  end
-
-  def header(id, model = 'mock/test', cwd: @cwd)
-    Riffer::Rig::Stores::Header.new(
-      schema_version: 1,
-      id: id,
-      cwd: cwd,
-      created_at: '2026-01-01T00:00:00Z',
-      model: model,
-      riffer_rig_version: '0.9.0',
-      riffer_version: '0.49.0',
-      title: 'hello'
-    )
-  end
-
-  def session_path(id)
-    Dir.glob(File.join(@home, '.riffer', 'sessions', '*', "#{id}.jsonl")).first
-  end
-
-  def age(path, seconds)
-    time = Time.at(seconds)
-    File.utime(time, time, path)
-  end
-
-  it 'continues the most recently updated session' do
-    first = save_session('first')
-    second = save_session('second')
-    age(session_path(first.id), 1000)
-
-    assert_equal second.id, loader.continue.id
-  end
-
-  it 'continues the most recently updated even when list is unordered' do
-    first = save_session('first')
-    second = save_session('second')
-    age(session_path(first.id), 1000)
-
-    assert_equal second.id, loader(store: ReversedStore.new(Riffer::Rig::Stores::JSONL.new(home: @home))).continue.id
-  end
-
-  it 'continues with the session history' do
-    save_session('welcome back')
-    resumed = loader.continue
-    contents = resumed.agent.session.messages.map(&:content)
-
-    assert_equal ['welcome back', 'All done.'], contents
-  end
-
-  it 'resumes a session by id' do
-    saved = save_session
-
-    assert_equal saved.id, loader.resume(saved.id).id
-  end
-
-  it 'resumes with the recorded model switch' do
-    saved = save_session
-    saved.run_command('model', 'mock/other')
-    turn(saved, 'again')
-
-    assert_equal 'mock/other', loader.resume(saved.id).to_h[:model]
-  end
-
-  it 'returns nil for an unknown id' do
-    assert_nil loader.resume('nope')
-  end
-
-  it 'replays the messages of a session in recorded order' do
-    saved = save_session('welcome back')
-    contents = loader.messages(saved.id).map { |message| message[:content] }
-
-    assert_equal ['welcome back', 'All done.'], contents
-  end
-
-  it 'replays no messages with a nil store' do
-    assert_empty loader(store: nil).messages('aaa')
-  end
-
-  it 'continues nothing when no session matches the cwd' do
-    save_entries('other', [header('other', cwd: '/other')])
-
-    assert_nil loader.continue
-  end
-
-  it 'continues nothing with a nil store' do
-    assert_nil loader(store: nil).continue
-  end
-
-  it 'lists the sessions of this cwd' do
-    save_session
-
-    assert_equal([@cwd], loader.list.map(&:cwd))
-  end
-
-  it 'escapes the cwd scope with all: true' do
-    save_session
-    save_entries('elsewhere', [header('elsewhere', cwd: '/elsewhere')])
-
-    assert_equal ['/elsewhere', @cwd], loader.list(all: true).map(&:cwd).sort
-  end
-
-  it 'deletes a session' do
-    saved = save_session
-    loader.delete(saved.id)
-
-    assert_nil session_path(saved.id)
-  end
-
-  it 'rewrites no header when resuming' do
-    saved = save_session
-    resumed = loader.resume(saved.id)
-    turn(resumed, 'again')
-
-    types = File.readlines(session_path(saved.id)).map { |line| JSON.parse(line, symbolize_names: true)[:type] }
-
-    assert_equal 1, types.count('header')
-  end
-
-  def recorded(id)
-    File.readlines(session_path(id)).filter_map { |line| JSON.parse(line, symbolize_names: true)[:recorded_at] }
-  end
-
-  def save_unstamped(id)
-    save_entries(id, [header(id)])
-    lines = [
-      { type: 'message', message: { role: 'user', content: 'hi' } },
-      { type: 'message', message: { role: 'assistant', content: 'yo' } }
-    ]
-    File.write(session_path(id), lines.map { |line| "#{JSON.generate(line)}\n" }.join, mode: 'a')
-  end
-
-  it 'stamps every entry it records' do
-    saved = save_session
-
-    assert_equal 2, recorded(saved.id).size
-  end
-
-  it 'keeps the stamps in order across a resume' do
-    saved = save_session
-    turn(loader.resume(saved.id), 'again')
-    stamps = recorded(saved.id)
-
-    assert_equal stamps.sort, stamps
-  end
-
-  it 'resumes a session written before entries were stamped' do
-    save_unstamped('aaa')
-
-    assert_equal %w[hi yo], loader.resume('aaa').agent.session.messages.map(&:content)
-  end
-
-  it 'replays a session written before entries were stamped' do
-    save_unstamped('aaa')
-
-    assert_equal(%w[hi yo], loader.messages('aaa').map { |message| message[:content] })
-  end
-
-  it 'leaves the lines of an unstamped session untouched when resuming it' do
-    save_unstamped('aaa')
-    before = File.readlines(session_path('aaa'))
-    turn(loader.resume('aaa'), 'again')
-
-    assert_equal before, File.readlines(session_path('aaa')).first(before.size)
-  end
-
-  it 're-applies every recorded skill activation' do
-    write_skill('a')
-    write_skill('b')
-    save_entries(
-      'aaa',
-      [header('aaa'), Riffer::Rig::Stores::SkillEntry.new(skill: 'a'), Riffer::Rig::Stores::SkillEntry.new(skill: 'b'),
-       Riffer::Rig::Stores::MessageEntry.new(message: { role: 'user', content: 'hi' })]
-    )
-
-    assert_equal %w[a b], loader.resume('aaa').to_h[:skills]
-  end
-
-  it 'heals a file cut mid-turn' do
-    saved = save_session
-    call = Riffer::Messages::Assistant::ToolCall.new(call_id: 'orphan', name: 'read', arguments: '{"path":"/tmp/x"}')
-    save_entries(
-      saved.id,
-      [Riffer::Rig::Stores::MessageEntry.new(message: Riffer::Messages::Assistant.new('', tool_calls: [call]).to_h)]
-    )
-    healed = loader.resume(saved.id).agent.session.messages.last
-
-    assert_equal ['orphan', :interrupted], [healed.tool_call_id, healed.error_type]
   end
 end

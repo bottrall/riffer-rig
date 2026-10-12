@@ -2,7 +2,20 @@
 
 require 'test_helper'
 require 'fileutils'
-require 'json'
+
+class ReloadOutcomeLoader
+  attr_reader :calls
+
+  def initialize(outcome)
+    @outcome = outcome
+    @calls = []
+  end
+
+  def reload(_runtime, force: false)
+    @calls << { force: force }
+    @outcome
+  end
+end
 
 describe Riffer::Rig::Commands::Reload do
   before do
@@ -33,8 +46,27 @@ describe Riffer::Rig::Commands::Reload do
     events
   end
 
-  it 'is installed by the Loader' do
-    assert_includes build_runtime.commands.map(&:name), 'reload'
+  def run_with(loader, runtime)
+    events = []
+    ctx = Riffer::Rig::Command::Context.new(
+      'reload',
+      '',
+      runtime: runtime,
+      host: Riffer::Rig::Hosts::Null.new,
+      settings: {},
+      emit: ->(event) { events << event },
+      turn: ->(_text) {}
+    )
+    Riffer::Rig::Commands::Reload.run(loader, ctx)
+    events
+  end
+
+  it 'forces the reload' do
+    runtime = build_runtime
+    loader = ReloadOutcomeLoader.new(runtime)
+    run_with(loader, runtime)
+
+    assert_equal [{ force: true }], loader.calls
   end
 
   it 'reports Reloaded' do
@@ -43,38 +75,9 @@ describe Riffer::Rig::Commands::Reload do
     assert_equal [Riffer::Rig::Events::CommandOutput.new('reload', 'Reloaded')], run_reload(runtime)
   end
 
-  it 'reloads the tracked file set' do
-    rig_path = File.expand_path(File.join(@cwd, '.riffer', 'rig.rb'))
-    FileUtils.mkdir_p(File.join(@home, '.riffer'))
-    File.write(File.join(@home, '.riffer', 'trust.json'), JSON.generate({ rig_path => true }))
-    FileUtils.mkdir_p(File.join(@cwd, '.riffer'))
-    File.write(File.join(@cwd, '.riffer', 'rig.rb'), <<~RUBY)
-      class ProbeTool < Riffer::Tool
-        identifier 'probe'
-        description 'probe'
-        def call(context:) = text('probe')
-      end
-      Riffer::Rig.extension('probe') { |rig| rig.tool ProbeTool }
-    RUBY
-    runtime = build_runtime
-    File.write(File.join(@cwd, '.riffer', 'rig.rb'), <<~RUBY)
-      class ProbeTool < Riffer::Tool
-        identifier 'probe_next'
-        description 'probe'
-        def call(context:) = text('probe')
-      end
-      Riffer::Rig.extension('probe') { |rig| rig.tool ProbeTool }
-    RUBY
-    run_reload(runtime)
+  it 'reports nothing when the reload fails' do
+    events = run_with(ReloadOutcomeLoader.new('boom'), build_runtime)
 
-    assert_includes runtime.agent.tools.map(&:identifier), 'probe_next'
-  end
-
-  it 'stays installed after the rebuild it triggers' do
-    runtime = build_runtime
-    run_reload(runtime)
-    events = run_reload(runtime)
-
-    assert_equal [Riffer::Rig::Events::CommandOutput.new('reload', 'Reloaded')], events
+    assert_empty events
   end
 end

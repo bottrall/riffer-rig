@@ -58,43 +58,6 @@ describe Riffer::Rig::Loader::ExtensionSource do
   end
 
   describe '#discover' do
-    it 'returns the home extensions before the project ones' do
-      write_rig(:home, recording('es_home'))
-      write_rig(:project, recording('es_project'))
-
-      assert_equal %w[es_home es_project], source.discover(autoload: false).map(&:name)
-    end
-
-    it 'returns nothing without a rig.rb' do
-      assert_empty source.discover(autoload: false)
-    end
-
-    it 'tracks the home file before the project file' do
-      write_rig(:home, '')
-      write_rig(:project, '')
-      discovered = source
-      discovered.discover(autoload: false)
-
-      assert_equal [home_rig_path, project_rig_path], discovered.tracked_files
-    end
-
-    it 'tracks a require_relative from rig.rb' do
-      local = write_local('local', recording('es_local'))
-      write_rig(:project, "require_relative 'local'")
-      discovered = source
-      discovered.discover(autoload: false)
-
-      assert_equal [local, project_rig_path], discovered.tracked_files
-    end
-
-    it 'leaves required gem paths untracked' do
-      write_rig(:project, "require 'json'")
-      discovered = source
-      discovered.discover(autoload: false)
-
-      assert_equal [project_rig_path], discovered.tracked_files
-    end
-
     it 'tracks the files of the latest discovery alone' do
       write_rig(:home, '')
       discovered = source
@@ -105,32 +68,39 @@ describe Riffer::Rig::Loader::ExtensionSource do
       assert_empty discovered.tracked_files
     end
 
-    it 'reports a raising rig.rb through notify' do
-      write_rig(:project, 'raise "boom"')
-      source.discover(autoload: false)
+    describe 'autoload' do
+      it 'leaves the gems alone without autoload' do
+        gem_file = write_gem_file(recording('es_gem'))
 
-      assert_equal [[:error, "#{project_rig_path} failed to load: boom"]], @host.notifications
+        assert_empty(with_gem_files([gem_file]) { source.discover(autoload: false) })
+      end
+
+      it 'returns the gem extensions before the rig.rb ones' do
+        gem_file = write_gem_file(recording('es_gem'))
+        write_rig(:home, recording('es_home'))
+        names = with_gem_files([gem_file]) { source.discover(autoload: true).map(&:name) }
+
+        assert_equal %w[es_gem es_home], names
+      end
+
+      it 'leaves the gem files untracked' do
+        gem_file = write_gem_file(recording('es_gem'))
+        discovered = source
+        with_gem_files([gem_file]) { discovered.discover(autoload: true) }
+
+        assert_empty discovered.tracked_files
+      end
+
+      it 'reports a raising gem file through notify' do
+        gem_file = write_gem_file('raise "boom"')
+        with_gem_files([gem_file]) { source.discover(autoload: true) }
+
+        assert_equal [[:error, "#{gem_file} failed to load: boom"]], @host.notifications
+      end
     end
 
-    it "keeps the other file's extensions when one file raises" do
-      write_rig(:home, recording('es_home'))
-      write_rig(:project, 'raise "boom"')
-
-      assert_equal %w[es_home], source.discover(autoload: false).map(&:name)
-    end
-
-    it 'skips the extensions a raising file recorded' do
-      write_rig(:home, "#{recording('es_doomed')}raise 'boom'")
-
+    it 'returns nothing without a rig.rb' do
       assert_empty source.discover(autoload: false)
-    end
-
-    it 'tracks a raising file' do
-      write_rig(:home, 'raise "boom"')
-      discovered = source
-      discovered.discover(autoload: false)
-
-      assert_equal [home_rig_path], discovered.tracked_files
     end
 
     describe 'trust' do
@@ -209,35 +179,65 @@ describe Riffer::Rig::Loader::ExtensionSource do
       end
     end
 
-    describe 'autoload' do
-      it 'returns the gem extensions before the rig.rb ones' do
-        gem_file = write_gem_file(recording('es_gem'))
-        write_rig(:home, recording('es_home'))
-        names = with_gem_files([gem_file]) { source.discover(autoload: true).map(&:name) }
+    it 'returns the home extensions before the project ones' do
+      write_rig(:home, recording('es_home'))
+      write_rig(:project, recording('es_project'))
 
-        assert_equal %w[es_gem es_home], names
-      end
+      assert_equal %w[es_home es_project], source.discover(autoload: false).map(&:name)
+    end
 
-      it 'leaves the gems alone without autoload' do
-        gem_file = write_gem_file(recording('es_gem'))
+    it 'tracks the home file before the project file' do
+      write_rig(:home, '')
+      write_rig(:project, '')
+      discovered = source
+      discovered.discover(autoload: false)
 
-        assert_empty(with_gem_files([gem_file]) { source.discover(autoload: false) })
-      end
+      assert_equal [home_rig_path, project_rig_path], discovered.tracked_files
+    end
 
-      it 'leaves the gem files untracked' do
-        gem_file = write_gem_file(recording('es_gem'))
-        discovered = source
-        with_gem_files([gem_file]) { discovered.discover(autoload: true) }
+    it 'tracks a require_relative from rig.rb' do
+      local = write_local('local', recording('es_local'))
+      write_rig(:project, "require_relative 'local'")
+      discovered = source
+      discovered.discover(autoload: false)
 
-        assert_empty discovered.tracked_files
-      end
+      assert_equal [local, project_rig_path], discovered.tracked_files
+    end
 
-      it 'reports a raising gem file through notify' do
-        gem_file = write_gem_file('raise "boom"')
-        with_gem_files([gem_file]) { source.discover(autoload: true) }
+    it 'leaves required gem paths untracked' do
+      write_rig(:project, "require 'json'")
+      discovered = source
+      discovered.discover(autoload: false)
 
-        assert_equal [[:error, "#{gem_file} failed to load: boom"]], @host.notifications
-      end
+      assert_equal [project_rig_path], discovered.tracked_files
+    end
+
+    it 'reports a raising rig.rb through notify' do
+      write_rig(:project, 'raise "boom"')
+      source.discover(autoload: false)
+
+      assert_equal [[:error, "#{project_rig_path} failed to load: boom"]], @host.notifications
+    end
+
+    it "keeps the other file's extensions when one file raises" do
+      write_rig(:home, recording('es_home'))
+      write_rig(:project, 'raise "boom"')
+
+      assert_equal %w[es_home], source.discover(autoload: false).map(&:name)
+    end
+
+    it 'skips the extensions a raising file recorded' do
+      write_rig(:home, "#{recording('es_doomed')}raise 'boom'")
+
+      assert_empty source.discover(autoload: false)
+    end
+
+    it 'tracks a raising file' do
+      write_rig(:home, 'raise "boom"')
+      discovered = source
+      discovered.discover(autoload: false)
+
+      assert_equal [home_rig_path], discovered.tracked_files
     end
   end
 
@@ -248,45 +248,12 @@ describe Riffer::Rig::Loader::ExtensionSource do
       built
     end
 
-    it 'returns the extensions a rewritten rig.rb records' do
-      write_rig(:home, recording('es_home'))
-      rediscovering = discovered
-      write_rig(:home, recording('es_home_next'))
-
-      assert_equal %w[es_home_next], rediscovering.rediscover.map(&:name)
-    end
-
     it 'runs a tracked require_relative again' do
       write_local('counted', appending(marker))
       write_rig(:project, "require_relative 'counted'")
       discovered.rediscover
 
       assert_equal 'xx', File.read(marker)
-    end
-
-    it 'keeps the gem extensions' do
-      gem_file = write_gem_file(recording('es_gem'))
-      rediscovering = source
-      with_gem_files([gem_file]) { rediscovering.discover(autoload: true) }
-
-      assert_equal %w[es_gem], rediscovering.rediscover.map(&:name)
-    end
-
-    it 'does not load the gem files again' do
-      gem_file = write_gem_file(appending(marker))
-      rediscovering = source
-      with_gem_files([gem_file]) { rediscovering.discover(autoload: true) }
-      with_gem_files([gem_file]) { rediscovering.rediscover }
-
-      assert_equal 'x', File.read(marker)
-    end
-
-    it 'drops the extensions of a deleted rig.rb' do
-      write_rig(:home, recording('es_home'))
-      rediscovering = discovered
-      FileUtils.rm(home_rig_path)
-
-      assert_empty rediscovering.rediscover
     end
 
     it 'tracks the files of the rediscovery alone' do
@@ -296,14 +263,6 @@ describe Riffer::Rig::Loader::ExtensionSource do
       rediscovering.rediscover
 
       assert_empty rediscovering.tracked_files
-    end
-
-    it 'confirms a project rig.rb appearing after the discovery' do
-      rediscovering = discovered
-      write_rig(:project, '')
-      rediscovering.rediscover
-
-      assert_equal ["Trust #{project_rig_path}?"], @host.questions
     end
 
     it 'reports a raising rig.rb as its message' do
@@ -329,6 +288,55 @@ describe Riffer::Rig::Loader::ExtensionSource do
       source.rediscover
 
       refute_path_exists marker
+    end
+
+    it 'confirms a project rig.rb appearing after the discovery' do
+      rediscovering = discovered
+      write_rig(:project, '')
+      rediscovering.rediscover
+
+      assert_equal ["Trust #{project_rig_path}?"], @host.questions
+    end
+
+    it 'reports a raising project rig.rb as its message' do
+      write_rig(:project, '')
+      rediscovering = discovered
+      write_rig(:project, 'raise "boom"')
+
+      assert_equal "#{project_rig_path} failed to load: boom", rediscovering.rediscover
+    end
+
+    it 'returns the extensions a rewritten rig.rb records' do
+      write_rig(:home, recording('es_home'))
+      rediscovering = discovered
+      write_rig(:home, recording('es_home_next'))
+
+      assert_equal %w[es_home_next], rediscovering.rediscover.map(&:name)
+    end
+
+    it 'drops the extensions of a deleted rig.rb' do
+      write_rig(:home, recording('es_home'))
+      rediscovering = discovered
+      FileUtils.rm(home_rig_path)
+
+      assert_empty rediscovering.rediscover
+    end
+
+    it 'keeps the gem extensions' do
+      gem_file = write_gem_file(recording('es_gem'))
+      rediscovering = source
+      with_gem_files([gem_file]) { rediscovering.discover(autoload: true) }
+
+      assert_equal %w[es_gem], rediscovering.rediscover.map(&:name)
+    end
+
+    it 'does not load the gem files again' do
+      gem_file = write_gem_file(appending(marker))
+      rediscovering = source
+      with_gem_files([gem_file]) { rediscovering.discover(autoload: true) }
+      with_gem_files([gem_file]) { rediscovering.rediscover }
+
+      assert_equal 'x', File.read(marker)
     end
   end
 

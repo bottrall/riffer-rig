@@ -7,16 +7,16 @@ describe Riffer::Rig::Hosts::Null do
     assert_empty Riffer::Rig::Hosts::Null.new.capabilities
   end
 
+  it 'treats notify as a no-op' do
+    assert_nil Riffer::Rig::Hosts::Null.new.notify('hi', level: :warn)
+  end
+
   it 'answers nil from ask' do
     assert_nil Riffer::Rig::Hosts::Null.new.ask('hello')
   end
 
   it 'answers false from confirm' do
     refute Riffer::Rig::Hosts::Null.new.confirm('sure?')
-  end
-
-  it 'treats notify as a no-op' do
-    assert_nil Riffer::Rig::Hosts::Null.new.notify('hi', level: :warn)
   end
 
   it 'yields from progress' do

@@ -7,6 +7,12 @@ describe Riffer::Rig::Terminal::Banner do
     @theme = Riffer::Rig::Terminal::Theme.new(enabled: false)
   end
 
+  it 'emits no ansi escapes when theme disabled' do
+    banner = Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: 'none', version: '1')
+
+    refute_includes banner, "\e["
+  end
+
   it 'includes the provided info values' do
     banner = Riffer::Rig::Terminal::Banner.call(
       @theme,
@@ -31,28 +37,10 @@ describe Riffer::Rig::Terminal::Banner do
     assert_includes banner, 'anthropic/claude-x'
   end
 
-  it 'includes the skills label' do
-    banner = Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: '3', version: '1')
-
-    assert_includes banner, 'skills'
-  end
-
   it 'includes the skills count' do
     banner = Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: '3', version: '1')
 
     assert_includes banner, '3'
-  end
-
-  it 'shows none when no skills' do
-    banner = Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: 'none', version: '1')
-
-    assert_includes banner, 'none'
-  end
-
-  it 'emits no ansi escapes when theme disabled' do
-    banner = Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: 'none', version: '1')
-
-    refute_includes banner, "\e["
   end
 
   describe 'the session row' do

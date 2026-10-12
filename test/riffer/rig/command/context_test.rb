@@ -13,6 +13,10 @@ describe Riffer::Rig::Command::Context do
       end
       define_method(:confirm) { |_question = nil| true }
     end.new
+    @silent = Class.new(Riffer::Rig::Hosts::Null) do
+      define_method(:ask) { |*_args, **_options| 'answered' }
+      define_method(:confirm) { |_question = nil| true }
+    end.new
   end
 
   def context(host: Riffer::Rig::Hosts::Null.new)
@@ -29,10 +33,6 @@ describe Riffer::Rig::Command::Context do
 
   it 'reads the args' do
     assert_equal '-n 3', context.args
-  end
-
-  it 'reads the settings' do
-    assert_equal({ depth: 3 }, context.settings)
   end
 
   it 'emits a command_output event from say' do
@@ -65,8 +65,8 @@ describe Riffer::Rig::Command::Context do
     assert_nil context.prompt('Review this diff')
   end
 
-  it 'returns nil from ask when the host declines it' do
-    assert_nil context.ask('Which branch?')
+  it 'returns nil from ask when the host lacks the ask capability' do
+    assert_nil context(host: @silent).ask('Which branch?')
   end
 
   it 'forwards ask to a host that supports it' do
@@ -74,8 +74,8 @@ describe Riffer::Rig::Command::Context do
                  context(host: @capable).ask('Which branch?', options: %w[main dev], secret: true)
   end
 
-  it 'returns false from confirm when the host declines it' do
-    refute context.confirm('Push?')
+  it 'returns false from confirm when the host lacks the confirm capability' do
+    refute context(host: @silent).confirm('Push?')
   end
 
   it 'forwards confirm to a host that supports it' do

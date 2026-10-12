@@ -27,7 +27,7 @@ describe Riffer::Rig::Tools::Bash::KillGroup do
       spawn_sleeper
       pgid = host.kill_group(@pid)
 
-      refute_equal Process.getpgid(Process.pid), pgid
+      assert_equal @pid, pgid
     end
 
     it 'returns a positive process group id' do

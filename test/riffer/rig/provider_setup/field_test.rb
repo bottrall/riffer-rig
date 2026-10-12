@@ -9,6 +9,15 @@ describe Riffer::Rig::ProviderSetup::Field do
     assert_nil field.fallback
   end
 
+  it 'keeps the fallback it is given' do
+    fallback = -> { 'us-east-1' }
+    field = Riffer::Rig::ProviderSetup::Field.new(
+      name: :region, env: ['ACME_REGION'], secret: false, required: false, fallback: fallback
+    )
+
+    assert_same fallback, field.fallback
+  end
+
   it 'is frozen' do
     assert_predicate field, :frozen?
   end

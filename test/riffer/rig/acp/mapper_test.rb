@@ -69,6 +69,14 @@ describe Riffer::Rig::ACP::Mapper do
       assert_equal %w[c1 read read completed], [update.tool_call_id, update.title, update.name, update.status]
     end
 
+    it 'maps a replayed built-in tool to its ACP kind' do
+      assert_equal 'execute', Riffer::Rig::ACP::Mapper.replay_of(tool_message('bash')).kind
+    end
+
+    it 'maps any other replayed tool to the other kind' do
+      assert_equal 'other', Riffer::Rig::ACP::Mapper.replay_of(tool_message('mcp__stub__ping')).kind
+    end
+
     it 'attaches the stored result to a replayed tool call' do
       update = Riffer::Rig::ACP::Mapper.replay_of(tool_message('read'))
 

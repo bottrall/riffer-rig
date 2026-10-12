@@ -24,31 +24,11 @@ describe Riffer::Rig::Runtime::Snapshot do
     Riffer::Messages::Assistant.new('', tool_calls: [call])
   end
 
-  describe '#to_h' do
-    it 'holds the id, messages, model and skills' do
-      assert_equal %i[id messages model skills], snapshot.to_h.keys
-    end
-
-    it 'holds the id' do
-      assert_equal 'session-1', snapshot.to_h[:id]
-    end
-
-    it 'holds the messages as riffer hashes' do
-      messages = conversation
-
-      assert_equal messages.map(&:to_h), snapshot(messages: messages).to_h[:messages]
-    end
-
-    it 'holds the model' do
-      assert_equal 'mock/other', snapshot(model: 'mock/other').to_h[:model]
-    end
-
-    it 'holds the skills' do
-      assert_equal %w[a], snapshot(skills: %w[a]).to_h[:skills]
-    end
-  end
-
   describe '.from_h' do
+    it 'raises on a hash that is not a snapshot' do
+      assert_raises(KeyError) { Riffer::Rig::Runtime::Snapshot.from_h({ id: 'session-1' }) }
+    end
+
     it 'reads back what to_h wrote' do
       saved = snapshot(model: 'mock/other', skills: %w[a]).to_h
 
@@ -60,9 +40,14 @@ describe Riffer::Rig::Runtime::Snapshot do
 
       assert_equal ['hello', 'Hi there.'], Riffer::Rig::Runtime::Snapshot.from_h(saved).messages.map(&:content)
     end
+  end
 
-    it 'raises on a hash that is not a snapshot' do
-      assert_raises(KeyError) { Riffer::Rig::Runtime::Snapshot.from_h({ id: 'session-1' }) }
+  describe '#to_h' do
+    it 'holds the id, the messages as riffer hashes, the model and the skills' do
+      messages = conversation
+      expected = { id: 'session-1', messages: messages.map(&:to_h), model: 'mock/other', skills: %w[a] }
+
+      assert_equal expected, snapshot(messages: messages, model: 'mock/other', skills: %w[a]).to_h
     end
   end
 
@@ -102,6 +87,16 @@ describe Riffer::Rig::Runtime::Snapshot do
   end
 
   describe '#restorable_model' do
+    it 'is nil when there is no saved model' do
+      assert_nil snapshot.restorable_model({ mock: {} }, @host, 'mock/test')
+    end
+
+    it 'does not notify when there is no saved model' do
+      snapshot.restorable_model({}, @host, 'mock/test')
+
+      assert_empty @host.drain
+    end
+
     it 'is the saved model when its provider has credentials' do
       assert_equal 'mock/other', snapshot(model: 'mock/other').restorable_model({ mock: {} }, @host, 'mock/test')
     end
@@ -121,16 +116,6 @@ describe Riffer::Rig::Runtime::Snapshot do
       notice = 'Not restoring model mock/other: mock has no credentials; using mock/test'
 
       assert_equal [Riffer::Rig::Events::Notify.new(notice, :warning)], @host.drain
-    end
-
-    it 'is nil when there is no saved model' do
-      assert_nil snapshot.restorable_model({ mock: {} }, @host, 'mock/test')
-    end
-
-    it 'does not notify when there is no saved model' do
-      snapshot.restorable_model({}, @host, 'mock/test')
-
-      assert_empty @host.drain
     end
   end
 end

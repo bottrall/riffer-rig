@@ -19,6 +19,14 @@ describe Riffer::Rig::Settings::Document do
     assert_equal 'high', Riffer::Rig::Settings::Document.new({ reasoning: 'high' }).reasoning
   end
 
+  it 'ignores a reasoning level that is not a string' do
+    assert_nil Riffer::Rig::Settings::Document.new({ reasoning: 3 }).reasoning
+  end
+
+  it 'has no pricing when the models block is not an object' do
+    assert_empty Riffer::Rig::Settings::Document.new({ models: 'anthropic' }).models
+  end
+
   it 'keys the pricing table by model string' do
     assert_equal ['anthropic/claude-sonnet-4-6'], Riffer::Rig::Settings::Document.new(pricing).models.keys
   end
@@ -33,6 +41,21 @@ describe Riffer::Rig::Settings::Document do
 
   it 'ignores a pricing entry that is not an object' do
     assert_empty Riffer::Rig::Settings::Document.new({ models: { 'openai/o3': 3 } }).models
+  end
+
+  it 'has no provider blocks when the providers block is not an object' do
+    assert_empty Riffer::Rig::Settings::Document.new({ providers: 'azure_openai' }).providers
+  end
+
+  it 'ignores a provider block that is not an object' do
+    assert_empty Riffer::Rig::Settings::Document.new({ providers: { azure_openai: 'https://azure.test' } }).providers
+  end
+
+  it 'drops provider fields that are not strings' do
+    fields = { endpoint: 'https://azure.test', timeout: 30 }
+    document = Riffer::Rig::Settings::Document.new({ providers: { azure_openai: fields } })
+
+    assert_equal({ 'azure_openai' => { 'endpoint' => 'https://azure.test' } }, document.providers)
   end
 
   it 'keys the provider blocks by identifier and field name' do

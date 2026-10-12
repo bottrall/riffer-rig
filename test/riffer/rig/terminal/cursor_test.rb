@@ -21,20 +21,30 @@ describe Riffer::Rig::Terminal::Cursor do
     assert_equal '', @io.string
   end
 
-  it 'hide prints the hide sequence when enabled' do
-    @cursor = Riffer::Rig::Terminal::Cursor.new(io: tty_io, theme: Riffer::Rig::Terminal::Theme.new(enabled: true))
+  it 'hide is a no op when the theme is disabled on a tty' do
+    @cursor = Riffer::Rig::Terminal::Cursor.new(io: tty_io, theme: Riffer::Rig::Terminal::Theme.new(enabled: false))
 
     @cursor.hide
 
-    assert_equal "\e[?25l", @io.string
+    assert_equal '', @io.string
   end
 
-  it 'show prints the show sequence when enabled' do
+  it 'hide is a no op when the theme is enabled but the io is not a tty' do
+    @io = StringIO.new
+    @cursor = Riffer::Rig::Terminal::Cursor.new(io: @io, theme: Riffer::Rig::Terminal::Theme.new(enabled: true))
+
+    @cursor.hide
+
+    assert_equal '', @io.string
+  end
+
+  it 'show then hide print their sequences when enabled' do
     @cursor = Riffer::Rig::Terminal::Cursor.new(io: tty_io, theme: Riffer::Rig::Terminal::Theme.new(enabled: true))
 
     @cursor.show
+    @cursor.hide
 
-    assert_equal "\e[?25h", @io.string
+    assert_equal "\e[?25h\e[?25l", @io.string
   end
 
   private

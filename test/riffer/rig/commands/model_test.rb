@@ -71,57 +71,42 @@ describe Riffer::Rig::Commands::Model do
     Riffer::Rig::Events::CommandOutput.new('model', text)
   end
 
-  it 'is listed in the Runtime commands' do
-    assert_includes Riffer::Rig::Runtime.new('mock/test').commands.map(&:name), 'model'
+  def write_home_settings(data)
+    FileUtils.mkdir_p(File.dirname(Riffer::Rig::Settings::File::PATH))
+    File.write(Riffer::Rig::Settings::File::PATH, JSON.generate(data))
   end
 
-  it 'switches the Runtime model' do
-    runtime = Riffer::Rig::Runtime.new('mock/test')
-    command_events(runtime, 'mock/other')
+  def saved_settings
+    return {} unless File.file?(Riffer::Rig::Settings::File::PATH)
 
-    assert_equal 'mock/other', runtime.model
-  end
-
-  it 'reports the new model' do
-    assert_equal [output('Model: mock/other')], command_events(Riffer::Rig::Runtime.new('mock/test'), 'mock/other')
+    JSON.parse(File.read(Riffer::Rig::Settings::File::PATH))
   end
 
   it 'reports the current model without arguments' do
     assert_equal [output('Model: mock/test')], command_events(Riffer::Rig::Runtime.new('mock/test'), '')
   end
 
-  it 'sends the next request to the new model' do
-    runtime = Riffer::Rig::Runtime.new('mock/test')
-    command_events(runtime, 'mock/other')
-    runtime.agent.provider.stub_response('All done.')
-    runtime.ask('hello')
+  describe 'save' do
+    it 'saves the current model to the home settings' do
+      write_home_settings(model: 'gemini/gem-2.5-pro', reasoning: 'high')
+      command_events(Riffer::Rig::Runtime.new('mock/test'), '--save')
 
-    assert_equal 'other', runtime.agent.provider.calls.last[:model]
-  end
+      assert_equal 'mock/test', saved_settings['model']
+    end
 
-  it 'keeps the conversation history' do
-    runtime = Riffer::Rig::Runtime.new('mock/test')
-    runtime.agent.provider.stub_response('First.')
-    runtime.ask('hello')
-    command_events(runtime, 'mock/other')
-    runtime.agent.provider.stub_response('Second.')
-    runtime.ask('again')
+    it 'leaves the other settings keys unchanged' do
+      write_home_settings(model: 'gemini/gem-2.5-pro', reasoning: 'high')
+      command_events(Riffer::Rig::Runtime.new('mock/test'), '--save')
 
-    assert_equal(
-      %w[hello First. again],
-      runtime.agent.provider.calls.last[:messages].drop(1).map { |message| message[:content] }
-    )
-  end
+      assert_equal 'high', saved_settings['reasoning']
+    end
 
-  it 'keeps the tally' do
-    runtime = Riffer::Rig::Runtime.new('mock/test')
-    runtime.agent.provider.stub_response(
-      'First.', token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 10, output_tokens: 5)
-    )
-    runtime.ask('hello')
-    command_events(runtime, 'mock/other')
-
-    assert_equal 10, runtime.tally.input_tokens
+    it 'reports the saved model' do
+      assert_equal(
+        [output('Saved mock/test to settings')],
+        command_events(Riffer::Rig::Runtime.new('mock/test'), '--save')
+      )
+    end
   end
 
   it 'rejects a bare name with the providers in the command output' do
@@ -149,106 +134,6 @@ describe Riffer::Rig::Commands::Model do
       )],
       command_events(Riffer::Rig::Runtime.new('mock/test'), 'acme/fast')
     )
-  end
-
-  describe 'switching to a provider without credentials' do
-    def with_openai_sdk_present
-      specs = Gem::Specification.method(:find_by_name)
-      requirable = Riffer::Rig::SDK.method(:require_gem)
-      Gem::Specification.define_singleton_method(:find_by_name) { |*_args| Object.new }
-      Riffer::Rig::SDK.define_singleton_method(:require_gem) { |_gem| true }
-      yield
-    ensure
-      Gem::Specification.define_singleton_method(:find_by_name, specs)
-      Riffer::Rig::SDK.define_singleton_method(:require_gem, requirable)
-    end
-
-    it 'asks for the missing field with hidden input' do
-      host = AnsweringModelHost.new('sk-new')
-      runtime = Riffer::Rig::Runtime.new('mock/test', host: host)
-      command_events(runtime, 'gemini/gem-2.5-pro')
-
-      assert_equal [{ question: 'gemini api_key', secret: true }], host.asked
-    end
-
-    it 'stores the answered key in auth.json' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', host: AnsweringModelHost.new('sk-new'))
-      command_events(runtime, 'gemini/gem-2.5-pro')
-
-      assert_equal 'sk-new', JSON.parse(File.read(Riffer::Rig::Credentials::PATH)).dig('gemini', 'api_key')
-    end
-
-    it 'applies the answered key to the provider config' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', host: AnsweringModelHost.new('sk-new'))
-      command_events(runtime, 'gemini/gem-2.5-pro')
-
-      assert_equal 'sk-new', Riffer.config.gemini.api_key
-    end
-
-    it 'updates the Runtime credentials' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', host: AnsweringModelHost.new('sk-new'))
-      command_events(runtime, 'gemini/gem-2.5-pro')
-
-      assert_equal({ api_key: 'sk-new' }, runtime.credentials[:gemini])
-    end
-
-    it 'switches the Runtime model' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', host: AnsweringModelHost.new('sk-new'))
-      command_events(runtime, 'gemini/gem-2.5-pro')
-
-      assert_equal 'gemini/gem-2.5-pro', runtime.model
-    end
-
-    it 'refuses with one notify when the host cannot ask' do
-      events = command_events(Riffer::Rig::Runtime.new('mock/test'), 'gemini/gem-2.5-pro')
-
-      assert_equal(
-        [Riffer::Rig::Events::Notify.new(
-          'Not switching to gemini/gem-2.5-pro: gemini has no api_key (GEMINI_API_KEY)', :error
-        )],
-        events
-      )
-    end
-
-    it 'keeps the model after refusing' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
-      command_events(runtime, 'gemini/gem-2.5-pro')
-
-      assert_equal 'mock/test', runtime.model
-    end
-
-    it 'refuses a provider missing one of its required fields' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', credentials: { azure_openai: { api_key: 'key' } })
-      events = nil
-      with_openai_sdk_present { events = command_events(runtime, 'azure_openai/gpt-5') }
-
-      assert_equal 'Not switching to azure_openai/gpt-5: azure_openai has no endpoint (AZURE_OPENAI_ENDPOINT)',
-                   events.first.message
-    end
-
-    it 'succeeds when the Runtime already holds part of the required credentials' do
-      ENV['AZURE_OPENAI_ENDPOINT'] = 'https://azure.test'
-      runtime = Riffer::Rig::Runtime.new('mock/test', credentials: { azure_openai: { api_key: 'key' } })
-      with_openai_sdk_present { command_events(runtime, 'azure_openai/gpt-5') }
-
-      assert_equal 'azure_openai/gpt-5', runtime.model
-    end
-
-    it 'merges the resolved fields into the Runtime credentials it already holds' do
-      ENV['AZURE_OPENAI_ENDPOINT'] = 'https://azure.test'
-      runtime = Riffer::Rig::Runtime.new('mock/test', credentials: { azure_openai: { api_key: 'key' } })
-      with_openai_sdk_present { command_events(runtime, 'azure_openai/gpt-5') }
-
-      assert_equal({ api_key: 'key', endpoint: 'https://azure.test' }, runtime.credentials[:azure_openai])
-    end
-
-    it 'does not ask when the Runtime already has the credentials' do
-      host = AnsweringModelHost.new('sk-new')
-      runtime = Riffer::Rig::Runtime.new('mock/test', host: host, credentials: { gemini: { api_key: 'stored' } })
-      command_events(runtime, 'gemini/gem-2.5-pro')
-
-      assert_empty host.asked
-    end
   end
 
   describe 'missing sdk' do
@@ -284,52 +169,115 @@ describe Riffer::Rig::Commands::Model do
     end
   end
 
-  describe 'save' do
-    def write_home_settings(data)
-      FileUtils.mkdir_p(File.dirname(Riffer::Rig::Settings::File::PATH))
-      File.write(Riffer::Rig::Settings::File::PATH, JSON.generate(data))
+  describe 'switching to a provider without credentials' do
+    def with_openai_sdk_present
+      specs = Gem::Specification.method(:find_by_name)
+      requirable = Riffer::Rig::SDK.method(:require_gem)
+      Gem::Specification.define_singleton_method(:find_by_name) { |*_args| Object.new }
+      Riffer::Rig::SDK.define_singleton_method(:require_gem) { |_gem| true }
+      yield
+    ensure
+      Gem::Specification.define_singleton_method(:find_by_name, specs)
+      Riffer::Rig::SDK.define_singleton_method(:require_gem, requirable)
     end
 
-    def saved_settings
-      return {} unless File.file?(Riffer::Rig::Settings::File::PATH)
+    it 'does not ask when the Runtime already has the credentials' do
+      host = AnsweringModelHost.new('sk-new')
+      runtime = Riffer::Rig::Runtime.new('mock/test', host: host, credentials: { gemini: { api_key: 'stored' } })
+      command_events(runtime, 'gemini/gem-2.5-pro')
 
-      JSON.parse(File.read(Riffer::Rig::Settings::File::PATH))
+      assert_empty host.asked
     end
 
-    it 'saves the current model to the home settings' do
-      write_home_settings(model: 'gemini/gem-2.5-pro', reasoning: 'high')
-      command_events(Riffer::Rig::Runtime.new('mock/test'), '--save')
+    it 'asks for the missing field with hidden input' do
+      host = AnsweringModelHost.new('sk-new')
+      runtime = Riffer::Rig::Runtime.new('mock/test', host: host)
+      command_events(runtime, 'gemini/gem-2.5-pro')
 
-      assert_equal 'mock/test', saved_settings['model']
+      assert_equal [{ question: 'gemini api_key', secret: true }], host.asked
     end
 
-    it 'leaves the other settings keys unchanged' do
-      write_home_settings(model: 'gemini/gem-2.5-pro', reasoning: 'high')
-      command_events(Riffer::Rig::Runtime.new('mock/test'), '--save')
+    it 'refuses with one notify when the host cannot ask' do
+      events = command_events(Riffer::Rig::Runtime.new('mock/test'), 'gemini/gem-2.5-pro')
 
-      assert_equal 'high', saved_settings['reasoning']
-    end
-
-    it 'saves a new model after switching' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', credentials: { gemini: { api_key: 'stored' } })
-      command_events(runtime, 'gemini/gem-2.5-pro --save')
-
-      assert_equal 'gemini/gem-2.5-pro', saved_settings['model']
-    end
-
-    it 'does not save when the switch is refused' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
-      command_events(runtime, 'openai/gpt-5 --save')
-
-      assert_nil saved_settings['model']
-    end
-
-    it 'reports the saved model' do
       assert_equal(
-        [output('Saved mock/test to settings')],
-        command_events(Riffer::Rig::Runtime.new('mock/test'), '--save')
+        [Riffer::Rig::Events::Notify.new(
+          'Not switching to gemini/gem-2.5-pro: gemini has no api_key (GEMINI_API_KEY)', :error
+        )],
+        events
       )
     end
+
+    it 'keeps the model after refusing' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      command_events(runtime, 'gemini/gem-2.5-pro')
+
+      assert_equal 'mock/test', runtime.model
+    end
+
+    it 'refuses a provider missing one of its required fields' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', credentials: { azure_openai: { api_key: 'key' } })
+      events = nil
+      with_openai_sdk_present { events = command_events(runtime, 'azure_openai/gpt-5') }
+
+      assert_equal 'Not switching to azure_openai/gpt-5: azure_openai has no endpoint (AZURE_OPENAI_ENDPOINT)',
+                   events.first.message
+    end
+
+    it 'updates the Runtime credentials' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', host: AnsweringModelHost.new('sk-new'))
+      command_events(runtime, 'gemini/gem-2.5-pro')
+
+      assert_equal({ api_key: 'sk-new' }, runtime.credentials[:gemini])
+    end
+
+    it 'merges the resolved fields into the Runtime credentials it already holds' do
+      ENV['AZURE_OPENAI_ENDPOINT'] = 'https://azure.test'
+      runtime = Riffer::Rig::Runtime.new('mock/test', credentials: { azure_openai: { api_key: 'key' } })
+      with_openai_sdk_present { command_events(runtime, 'azure_openai/gpt-5') }
+
+      assert_equal({ api_key: 'key', endpoint: 'https://azure.test' }, runtime.credentials[:azure_openai])
+    end
+
+    it 'switches the Runtime model' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', host: AnsweringModelHost.new('sk-new'))
+      command_events(runtime, 'gemini/gem-2.5-pro')
+
+      assert_equal 'gemini/gem-2.5-pro', runtime.model
+    end
+
+    it 'succeeds when the Runtime already holds part of the required credentials' do
+      ENV['AZURE_OPENAI_ENDPOINT'] = 'https://azure.test'
+      runtime = Riffer::Rig::Runtime.new('mock/test', credentials: { azure_openai: { api_key: 'key' } })
+      with_openai_sdk_present { command_events(runtime, 'azure_openai/gpt-5') }
+
+      assert_equal 'azure_openai/gpt-5', runtime.model
+    end
+  end
+
+  it 'does not save when the switch is refused' do
+    runtime = Riffer::Rig::Runtime.new('mock/test')
+    command_events(runtime, 'openai/gpt-5 --save')
+
+    assert_nil saved_settings['model']
+  end
+
+  it 'switches the Runtime model' do
+    runtime = Riffer::Rig::Runtime.new('mock/test')
+    command_events(runtime, 'mock/other')
+
+    assert_equal 'mock/other', runtime.model
+  end
+
+  it 'saves a new model after switching' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', credentials: { gemini: { api_key: 'stored' } })
+    command_events(runtime, 'gemini/gem-2.5-pro --save')
+
+    assert_equal 'gemini/gem-2.5-pro', saved_settings['model']
+  end
+
+  it 'reports the new model' do
+    assert_equal [output('Model: mock/other')], command_events(Riffer::Rig::Runtime.new('mock/test'), 'mock/other')
   end
 
   describe 'with a registered extension provider' do

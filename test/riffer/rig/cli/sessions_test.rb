@@ -47,6 +47,12 @@ describe Riffer::Rig::CLI::Sessions do
     Dir.glob(File.join(@home, '.riffer', 'sessions', '*', "#{id}.jsonl")).first
   end
 
+  def write_skill(name)
+    dir = File.join(@cwd, '.agents', 'skills', name)
+    FileUtils.mkdir_p(dir)
+    File.write(File.join(dir, 'SKILL.md'), "---\nname: #{name}\ndescription: Skill #{name}.\n---\nDo #{name}.\n")
+  end
+
   describe '#initialize' do
     it 'reads no saved session under --no-save' do
       save('aaa')
@@ -89,6 +95,22 @@ describe Riffer::Rig::CLI::Sessions do
 
     it 'starts fresh when the asked session is missing' do
       assert_instance_of Riffer::Rig::Runtime, sessions('-c').start(@host)
+    end
+
+    it 'hands --model to the Loader' do
+      assert_equal 'mock/flagged', sessions('--model', 'mock/flagged').start(@host).model
+    end
+
+    it 'loads the skills of the cwd by default' do
+      write_skill('tidy')
+
+      assert_equal %w[tidy], sessions.start(@host).agent.context.skills.skills.keys
+    end
+
+    it 'hands --no-skills to the Loader' do
+      write_skill('tidy')
+
+      assert_nil sessions('--no-skills').start(@host).agent.context.skills
     end
   end
 

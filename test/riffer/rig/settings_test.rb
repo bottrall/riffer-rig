@@ -22,6 +22,12 @@ describe Riffer::Rig::Settings do
       assert_equal 'off', merged[:git]
     end
 
+    it 'takes a project namespace whole over a home value that is not a namespace' do
+      merged = Riffer::Rig::Settings.merge({ git: 'off' }, { git: { depth: 3 } })
+
+      assert_equal({ depth: 3 }, merged[:git])
+    end
+
     it 'replaces a home MCP server of the same name whole' do
       home = { mcp: { servers: { docs: { url: 'https://home.test', headers: { Authorization: 'secret' } } } } }
       project = { mcp: { servers: { docs: { url: 'https://project.test' } } } }
@@ -30,6 +36,12 @@ describe Riffer::Rig::Settings do
         { url: 'https://project.test' },
         Riffer::Rig::Settings.merge(home, project).dig(:mcp, :servers, :docs)
       )
+    end
+
+    it 'takes a project mcp value whole when it is not a server table' do
+      merged = Riffer::Rig::Settings.merge({ mcp: { servers: { docs: { url: 'https://home.test' } } } }, { mcp: 'off' })
+
+      assert_equal 'off', merged[:mcp]
     end
 
     it 'adds up the disabled lists of both scopes' do
@@ -48,6 +60,12 @@ describe Riffer::Rig::Settings do
       )
 
       assert merged.dig(:extensions, :autoload)
+    end
+
+    it 'keeps the home disabled list when the project extensions is not a namespace' do
+      merged = Riffer::Rig::Settings.merge({ extensions: { disabled: %w[mcp] } }, { extensions: 'off' })
+
+      assert_equal %w[mcp], merged.dig(:extensions, :disabled)
     end
   end
 end

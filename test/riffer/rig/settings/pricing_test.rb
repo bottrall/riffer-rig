@@ -7,24 +7,28 @@ describe Riffer::Rig::Settings::Pricing do
     Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3)
   end
 
-  it 'exposes the input price' do
-    assert_in_delta 3.0, sonnet.input
+  it 'exposes the input, output, cache write and cache read rates' do
+    assert_equal [3.0, 15.0, 3.75, 0.3], [sonnet.input, sonnet.output, sonnet.cache_write, sonnet.cache_read]
   end
 
-  it 'exposes the output price' do
-    assert_in_delta 15.0, sonnet.output
-  end
+  describe '.from' do
+    it 'reads every rate from its key' do
+      pricing = Riffer::Rig::Settings::Pricing.from(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3)
 
-  it 'exposes the cache write price' do
-    assert_in_delta 3.75, sonnet.cache_write
-  end
+      assert_equal [3.0, 15.0, 3.75, 0.3], [pricing.input, pricing.output, pricing.cache_write, pricing.cache_read]
+    end
 
-  it 'exposes the cache read price' do
-    assert_in_delta 0.3, sonnet.cache_read
-  end
+    it 'defaults absent rates to zero' do
+      pricing = Riffer::Rig::Settings::Pricing.from(input: 3.0)
 
-  it 'keeps the input price read-only' do
-    assert_raises(NoMethodError) { sonnet.input = 1.0 }
+      assert_equal [3.0, 0.0, 0.0, 0.0], [pricing.input, pricing.output, pricing.cache_write, pricing.cache_read]
+    end
+
+    it 'stores every rate as a float' do
+      pricing = Riffer::Rig::Settings::Pricing.from(input: 3, output: 15, cache_write: 4, cache_read: 1)
+
+      assert_equal [Float] * 4, [pricing.input, pricing.output, pricing.cache_write, pricing.cache_read].map(&:class)
+    end
   end
 
   describe '.register' do

@@ -50,6 +50,111 @@ describe Riffer::Rig::Runtime::ToolRuntime do
     ->(_event) { [:block, 'no'] }
   end
 
+  it 'runs a batch one call at a time' do
+    execute(tool_runtime, call('a'), call('b'))
+
+    assert_equal(
+      [[:before_tool_call, 'a'], [:after_tool_call, 'a'], [:before_tool_call, 'b'], [:after_tool_call, 'b']],
+      @emitted.map { |event| [event.type, event.call_id] }
+    )
+  end
+
+  it 'fires each hook once per call' do
+    execute(tool_runtime, call('a'), call('b'))
+
+    assert_equal %i[before_tool_call after_tool_call] * 2, @hooked.map(&:type)
+  end
+
+  describe 'a call with invalid JSON arguments' do
+    before { execute(tool_runtime, call('a', arguments: '{not json')) }
+
+    it 'fires the after hook alone' do
+      assert_equal [%i[after_tool_call validation_error]], shape(@hooked)
+    end
+
+    it 'emits the after event alone' do
+      assert_equal [%i[after_tool_call validation_error]], shape(@emitted)
+    end
+
+    it 'carries empty arguments' do
+      assert_empty @emitted.last.args
+    end
+
+    it 'reports no time spent in the tool' do
+      assert_in_delta 0.0, @emitted.last.duration
+    end
+  end
+
+  describe 'a call with non-object arguments' do
+    before { execute(tool_runtime, call('a', arguments: '[1]')) }
+
+    it 'fires the after hook alone' do
+      assert_equal [%i[after_tool_call validation_error]], shape(@hooked)
+    end
+
+    it 'emits the after event alone' do
+      assert_equal [%i[after_tool_call validation_error]], shape(@emitted)
+    end
+
+    it 'carries empty arguments' do
+      assert_empty @emitted.last.args
+    end
+
+    it 'reports no time spent in the tool' do
+      assert_in_delta 0.0, @emitted.last.duration
+    end
+  end
+
+  describe 'a call a before_tool_call hook blocks' do
+    before { @results = execute(tool_runtime(before_tool_call: [blocker]), call('a')) }
+
+    it 'fires the after hook with the blocked result' do
+      assert_equal [:before_tool_call, %i[after_tool_call blocked]], shape(@hooked)
+    end
+
+    it 'emits the after event alone' do
+      assert_equal [%i[after_tool_call blocked]], shape(@emitted)
+    end
+
+    it 'carries the arguments the model sent' do
+      assert_equal({ text: 'hi' }, @emitted.last.args)
+    end
+
+    it 'reports no time spent in the tool' do
+      assert_in_delta 0.0, @emitted.last.duration
+    end
+
+    it 'returns the blocked result' do
+      assert_equal(['no'], @results.map { |_tool_call, response| response.content })
+    end
+  end
+
+  describe 'a hook that rewrites the arguments' do
+    before do
+      rewrite = ->(event) { event.args.merge(text: 'replaced') }
+      @results = execute(tool_runtime(before_tool_call: [rewrite]), call('a'))
+    end
+
+    it 'runs the tool with them' do
+      assert_equal(['echo: replaced'], @results.map { |_tool_call, response| response.content })
+    end
+
+    it 'emits a single before event carrying them' do
+      assert_equal [{ text: 'replaced' }], @emitted.grep(Riffer::Rig::Events::BeforeToolCall).map(&:args)
+    end
+
+    it 'carries them on the after event' do
+      assert_equal({ text: 'replaced' }, @emitted.last.args)
+    end
+  end
+
+  it 'emits the before event after the before_tool_call hooks and before the tool runs' do
+    emitted_at_hook = nil
+    execute(tool_runtime(before_tool_call: [->(_event) { emitted_at_hook = @emitted.dup }]), call('a'))
+
+    assert_empty emitted_at_hook
+  end
+
   describe 'a call that succeeds' do
     before { execute(tool_runtime, call('a')) }
 
@@ -98,68 +203,10 @@ describe Riffer::Rig::Runtime::ToolRuntime do
     end
   end
 
-  describe 'a call a before_tool_call hook blocks' do
-    before { @results = execute(tool_runtime(before_tool_call: [blocker]), call('a')) }
+  it "returns riffer's results unchanged" do
+    results = execute(tool_runtime, call('a'))
 
-    it 'fires the after hook with the blocked result' do
-      assert_equal [:before_tool_call, %i[after_tool_call blocked]], shape(@hooked)
-    end
-
-    it 'emits the after event alone' do
-      assert_equal [%i[after_tool_call blocked]], shape(@emitted)
-    end
-
-    it 'carries the arguments the model sent' do
-      assert_equal({ text: 'hi' }, @emitted.last.args)
-    end
-
-    it 'reports no time spent in the tool' do
-      assert_in_delta 0.0, @emitted.last.duration
-    end
-
-    it 'returns the blocked result' do
-      assert_equal(['no'], @results.map { |_tool_call, response| response.content })
-    end
-  end
-
-  describe 'a call with invalid JSON arguments' do
-    before { execute(tool_runtime, call('a', arguments: '{not json')) }
-
-    it 'fires the after hook alone' do
-      assert_equal [%i[after_tool_call validation_error]], shape(@hooked)
-    end
-
-    it 'emits the after event alone' do
-      assert_equal [%i[after_tool_call validation_error]], shape(@emitted)
-    end
-
-    it 'carries empty arguments' do
-      assert_empty @emitted.last.args
-    end
-
-    it 'reports no time spent in the tool' do
-      assert_in_delta 0.0, @emitted.last.duration
-    end
-  end
-
-  describe 'a call with non-object arguments' do
-    before { execute(tool_runtime, call('a', arguments: '[1]')) }
-
-    it 'fires the after hook alone' do
-      assert_equal [%i[after_tool_call validation_error]], shape(@hooked)
-    end
-
-    it 'emits the after event alone' do
-      assert_equal [%i[after_tool_call validation_error]], shape(@emitted)
-    end
-
-    it 'carries empty arguments' do
-      assert_empty @emitted.last.args
-    end
-
-    it 'reports no time spent in the tool' do
-      assert_in_delta 0.0, @emitted.last.duration
-    end
+    assert_equal(['echo: hi'], results.map { |_tool_call, response| response.content })
   end
 
   describe 'timing' do
@@ -202,52 +249,5 @@ describe Riffer::Rig::Runtime::ToolRuntime do
 
       assert_in_delta 1.0, @emitted.last.duration
     end
-  end
-
-  describe 'a hook that rewrites the arguments' do
-    before do
-      rewrite = ->(event) { event.args.merge(text: 'replaced') }
-      @results = execute(tool_runtime(before_tool_call: [rewrite]), call('a'))
-    end
-
-    it 'runs the tool with them' do
-      assert_equal(['echo: replaced'], @results.map { |_tool_call, response| response.content })
-    end
-
-    it 'emits a single before event carrying them' do
-      assert_equal [{ text: 'replaced' }], @emitted.grep(Riffer::Rig::Events::BeforeToolCall).map(&:args)
-    end
-
-    it 'carries them on the after event' do
-      assert_equal({ text: 'replaced' }, @emitted.last.args)
-    end
-  end
-
-  it 'runs a batch one call at a time' do
-    execute(tool_runtime, call('a'), call('b'))
-
-    assert_equal(
-      [[:before_tool_call, 'a'], [:after_tool_call, 'a'], [:before_tool_call, 'b'], [:after_tool_call, 'b']],
-      @emitted.map { |event| [event.type, event.call_id] }
-    )
-  end
-
-  it 'fires each hook once per call' do
-    execute(tool_runtime, call('a'), call('b'))
-
-    assert_equal %i[before_tool_call after_tool_call] * 2, @hooked.map(&:type)
-  end
-
-  it 'emits the before event after the before_tool_call hooks and before the tool runs' do
-    emitted_at_hook = nil
-    execute(tool_runtime(before_tool_call: [->(_event) { emitted_at_hook = @emitted.dup }]), call('a'))
-
-    assert_empty emitted_at_hook
-  end
-
-  it "returns riffer's results unchanged" do
-    results = execute(tool_runtime, call('a'))
-
-    assert_equal(['echo: hi'], results.map { |_tool_call, response| response.content })
   end
 end

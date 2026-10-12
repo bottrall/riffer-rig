@@ -22,6 +22,29 @@ describe Riffer::Rig::Runtime::SystemPrompt do
     )
   end
 
+  describe '.new' do
+    it 'renders the base and environment block when no sections are given' do
+      rendering = Riffer::Rig::Runtime::SystemPrompt.new('BASE', '/tmp/proj')
+
+      assert_equal "BASE\n\n#{@environment}", rendering.render(@runtime)
+    end
+  end
+
+  describe '#with_sections' do
+    it 'renders the sections it is given' do
+      swapped = prompt({ old: ->(_runtime) { 'OLD_SECTION' } }).with_sections({ new: ->(_runtime) { 'NEW_SECTION' } })
+
+      assert_equal "BASE\n\nNEW_SECTION\n\n#{@environment}", swapped.render(@runtime)
+    end
+
+    it 'leaves the receiver rendering its own sections' do
+      original = prompt({ old: ->(_runtime) { 'OLD_SECTION' } })
+      original.with_sections({ new: ->(_runtime) { 'NEW_SECTION' } })
+
+      assert_equal "BASE\n\nOLD_SECTION\n\n#{@environment}", original.render(@runtime)
+    end
+  end
+
   describe '#bare' do
     it 'carries the date and cwd in the environment block under the base' do
       assert_equal "BASE\n\n#{@environment}", prompt.bare
@@ -57,21 +80,6 @@ describe Riffer::Rig::Runtime::SystemPrompt do
 
     it 'skips a section that renders nothing' do
       assert_equal "BASE\n\n#{@environment}", prompt({ skills: ->(_runtime) {} }).render(@runtime)
-    end
-  end
-
-  describe '#with_sections' do
-    it 'renders the sections it is given' do
-      swapped = prompt({ old: ->(_runtime) { 'OLD_SECTION' } }).with_sections({ new: ->(_runtime) { 'NEW_SECTION' } })
-
-      assert_equal "BASE\n\nNEW_SECTION\n\n#{@environment}", swapped.render(@runtime)
-    end
-
-    it 'leaves the receiver rendering its own sections' do
-      original = prompt({ old: ->(_runtime) { 'OLD_SECTION' } })
-      original.with_sections({ new: ->(_runtime) { 'NEW_SECTION' } })
-
-      assert_equal "BASE\n\nOLD_SECTION\n\n#{@environment}", original.render(@runtime)
     end
   end
 

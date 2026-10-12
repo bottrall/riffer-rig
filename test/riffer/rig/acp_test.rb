@@ -12,35 +12,47 @@ describe Riffer::Rig::ACP do
     @built_runtimes = [] #: Array[Riffer::Rig::Runtime]
     @servers = nil #: Hash[String, Riffer::Rig::Mcp::Declaration]?
 
-    agent_input_r, @agent_input_w = IO.pipe
-    @agent_output_r, @agent_output_w = IO.pipe
-    env = Riffer::Rig::Env.new('MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test')
+    @served = [] #: Array[[IO, Thread, IO]]
+    @env = Riffer::Rig::Env.new('MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test')
     build = lambda do |cwd, host, servers|
       @servers = servers
-      runtime = Riffer::Rig::ACP.build_runtime(cwd, host, servers, env: env, home: @home)
+      runtime = Riffer::Rig::ACP.build_runtime(cwd, host, servers, env: @env, home: @home)
       @built_runtimes << runtime
       runtime
     end
-    @agent = Riffer::Rig::ACP.for(input: agent_input_r, output: @agent_output_w, env: env, home: @home, build: build)
-    @agent_thread = Thread.new { @agent.run }
-    @connection = ACP::ClientConnection.new(
-      transport: ACP::Transport::Stdio.new(input: @agent_output_r, output: @agent_input_w),
+    @agent, @connection = serve(@env, build: build)
+  end
+
+  after do
+    @served.each do |input, thread, output|
+      input.close unless input.closed?
+      thread.join(5)
+      output.close unless output.closed?
+    end
+    FileUtils.remove_entry(@home)
+    FileUtils.remove_entry(@cwd)
+  end
+
+  def serve(env, build: nil)
+    agent_input_r, agent_input_w = IO.pipe
+    agent_output_r, agent_output_w = IO.pipe
+    agent = Riffer::Rig::ACP.for(input: agent_input_r, output: agent_output_w, env: env, home: @home, build: build)
+    @served << [agent_input_w, Thread.new { agent.run }, agent_output_w]
+    connection = ACP::ClientConnection.new(
+      transport: ACP::Transport::Stdio.new(input: agent_output_r, output: agent_input_w),
       permission: lambda { |request|
         @permissions << request
         allow
       },
       updates: ->(notification) { @updates << notification }
     )
-    @connection.start
-    @connection.connect(ACP::Types::InitializeRequest.new(protocol_version: 1))
+    connection.start
+    connection.connect(ACP::Types::InitializeRequest.new(protocol_version: 1))
+    [agent, connection]
   end
 
-  after do
-    @agent_input_w.close unless @agent_input_w.closed?
-    @agent_thread.join(5)
-    @agent_output_w.close unless @agent_output_w.closed?
-    FileUtils.remove_entry(@home)
-    FileUtils.remove_entry(@cwd)
+  def invalid_env_connection
+    serve(Riffer::Rig::Env::Invalid.new('RIFFER_MODEL: rejected')).last
   end
 
   def allow
@@ -91,6 +103,17 @@ describe Riffer::Rig::ACP do
     @built_runtimes.last.agent.provider.stub_response(content, tool_calls: tool_calls)
   end
 
+  def hold_provider
+    started = Queue.new
+    gate = Queue.new
+    @built_runtimes.last.agent.provider.define_singleton_method(:build_request_params) do |messages, model, options|
+      started << true
+      gate.pop
+      super(messages, model, options)
+    end
+    [started, gate]
+  end
+
   def wait_for(timeout: 5)
     deadline = Time.now + timeout
     until yield
@@ -106,219 +129,355 @@ describe Riffer::Rig::ACP do
     File.write(File.join(dir, 'SKILL.md'), "---\nname: #{name}\ndescription: Skill #{name}.\n---\nDo #{name}.\n")
   end
 
+  def skipped_server_warning(name)
+    wait_for { message_texts.any? { |text| text.include?("Skipped MCP server #{name}") } }
+    message_texts.find { |text| text.include?("Skipped MCP server #{name}") }
+  end
+
   def message_texts
     @updates.filter_map do |notification|
       notification.update.content.text if notification.update.is_a?(ACP::Types::SessionUpdate::AgentMessageChunk)
     end
   end
 
-  it 'returns the Runtime UUID as the sessionId' do
-    session = new_session
+  describe '.build_runtime' do
+    it 'declares the client servers to the Runtime it builds' do
+      notified = [] #: Array[String]
+      host = Riffer::Rig::Hosts::Null.new
+      host.define_singleton_method(:notify) { |message = nil, **| notified << message.to_s }
+      declaration = Riffer::Rig::Mcp::Declaration.new(command: File.join(@cwd, 'mcp_stub.rb'))
+      Riffer::Rig::ACP.build_runtime(@cwd, host, { 'acp-build-stub' => declaration }, env: @env, home: @home).close
 
-    assert_equal @built_runtimes.last.id, session.session_id
+      # riffer cannot register a stdio server yet, so the Runtime's refusal is
+      # the only trace that the declaration reached it.
+      assert(notified.any? { |message| message.include?('acp-build-stub') })
+    end
   end
 
-  it 'answers an unknown session with resource not found' do
-    error = @connection.prompt_session(prompt_request('missing', 'hello'))
-
-    assert_equal ACP::RequestError::RESOURCE_NOT_FOUND, error.code
-  end
-
-  it 'streams the turn as agent message chunks' do
-    session = new_session
-    reply('Hi from ACP.')
-    _response, updates = prompt(session.session_id, 'hello')
-    text = updates
-           .filter_map do |update|
-             update.content.text if update.is_a?(ACP::Types::SessionUpdate::AgentMessageChunk)
-           end
-           .join
-
-    assert_includes text, 'Hi from ACP'
-  end
-
-  it 'ends a completed turn with end_turn' do
-    session = new_session
-    reply('Hi from ACP.')
-    response, = prompt(session.session_id, 'hello')
-
-    assert_equal 'end_turn', response.stop_reason
-  end
-
-  it 'reports a tool call' do
-    session = new_session
-    File.write(File.join(@cwd, 'subject.txt'), 'contents')
-    reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
-    reply('All done.')
-    _response, updates = prompt(session.session_id, 'read it')
-    tool_call = updates.find { |update| update.is_a?(ACP::Types::SessionUpdate::ToolCall) }
-
-    assert_equal 'read', tool_call&.name
-  end
-
-  it 'completes a tool call once it has run' do
-    session = new_session
-    File.write(File.join(@cwd, 'subject.txt'), 'contents')
-    reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
-    reply('All done.')
-    _response, updates = prompt(session.session_id, 'read it')
-    statuses = updates.filter_map do |update|
-      [update.tool_call_id, update.status] if update.is_a?(ACP::Types::SessionUpdate::ToolCallUpdate)
+  describe '.session_extension' do
+    it 'builds no extension without servers' do
+      assert_nil Riffer::Rig::ACP.session_extension({})
     end
 
-    assert_equal [%w[mock_call_0 completed]], statuses
-  end
+    it 'declares each server through rig.mcp' do
+      declaration = Riffer::Rig::Mcp::Declaration.new(command: 'stub', args: ['--flag'], env: { 'TOKEN' => 't' })
+      registrar = Riffer::Rig::ACP.session_extension({ 'stub' => declaration }).trial({})
 
-  it 'completes a tool call after reporting it' do
-    session = new_session
-    File.write(File.join(@cwd, 'subject.txt'), 'contents')
-    reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
-    reply('All done.')
-    _response, updates = prompt(session.session_id, 'read it')
-    tool_updates = updates.map { |update| update.class.name.to_s.split('::').last }.grep(/\AToolCall/)
-
-    assert_equal %w[ToolCall ToolCallUpdate], tool_updates
-  end
-
-  it 'runs a tool call without asking the client for permission' do
-    session = new_session
-    File.write(File.join(@cwd, 'subject.txt'), 'contents')
-    reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
-    reply('All done.')
-    prompt(session.session_id, 'read it')
-
-    assert_empty @permissions
-  end
-
-  it 'ends a tool-call turn with end_turn' do
-    session = new_session
-    File.write(File.join(@cwd, 'subject.txt'), 'contents')
-    reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
-    reply('All done.')
-    response, = prompt(session.session_id, 'read it')
-
-    assert_equal 'end_turn', response.stop_reason
-  end
-
-  it 'ends a turn the client cancelled with cancelled' do
-    session = new_session
-    reply('Slow hello.')
-    provider = @built_runtimes.last.agent.provider
-    started = Queue.new
-    provider.define_singleton_method(:build_request_params) do |messages, model, options|
-      started << true
-      sleep 0.5
-      super(messages, model, options)
+      assert_equal({ 'stub' => declaration }, registrar.mcp_servers)
     end
-    response = Thread.new do
-      @connection.prompt_session(prompt_request(session.session_id, 'hello')) { |update| @updates << update }
-    end
-    started.pop
-    @connection.cancel_session(ACP::Types::CancelNotification.new(session_id: session.session_id))
-
-    assert_equal 'cancelled', response.value.stop_reason
   end
 
-  it 'sends the runtime commands as available_commands_update' do
-    write_skill('tidy')
-    new_session
-    wait_for do
-      @updates.any? do |notification|
+  describe '#run' do
+    it 'returns 0 once the client closes stdin' do
+      input, thread, = @served.first
+      input.close
+
+      assert_equal 0, thread.join(5)&.value
+    end
+  end
+
+  describe '#new_session' do
+    it 'warns about a client-supplied non-stdio mcpServer' do
+      new_session(
+        mcp_servers: [{
+          'name' => 'httpdocs', 'type' => 'http', 'url' => 'https://docs.example/mcp', 'headers' => []
+        }]
+      )
+      wait_for { message_texts.any? { |text| text.include?('Skipped MCP server httpdocs') } }
+
+      assert(message_texts.any? { |text| text.include?('only stdio servers are supported') })
+    end
+
+    it 'names a skipped sse mcpServer in the warning' do
+      new_session(
+        mcp_servers: [{ 'name' => 'ssedocs', 'type' => 'sse', 'url' => 'https://docs.example/sse', 'headers' => [] }]
+      )
+
+      assert_includes skipped_server_warning('ssedocs'), 'only stdio servers are supported'
+    end
+
+    it 'names a skipped mcpServer of an unknown type in the warning' do
+      new_session(mcp_servers: [{ 'name' => 'odd', 'type' => 'websocket' }])
+
+      assert_includes skipped_server_warning('odd'), 'only stdio servers are supported'
+    end
+
+    it 'turns client-supplied stdio mcpServers into rig.mcp declarations' do
+      script = File.join(@cwd, 'mcp_stub.rb')
+      File.write(script, '#!/usr/bin/env ruby')
+      new_session(
+        mcp_servers: [{
+          'name' => 'stub', 'command' => script, 'args' => ['--flag'],
+          'env' => [{ 'name' => 'TOKEN', 'value' => 't' }]
+        }]
+      )
+
+      assert_equal(
+        { 'stub' => Riffer::Rig::Mcp::Declaration.new(command: script, args: ['--flag'], env: { 'TOKEN' => 't' }) },
+        @servers
+      )
+    end
+
+    it 'returns the Runtime UUID as the sessionId' do
+      session = new_session
+
+      assert_equal @built_runtimes.last.id, session.session_id
+    end
+
+    it 'answers a failed build with its message' do
+      error = invalid_env_connection.new_session(ACP::Types::NewSessionRequest.new(cwd: @cwd, mcp_servers: []))
+
+      assert_equal 'RIFFER_MODEL: rejected', error.message
+    end
+  end
+
+  describe '#prompt' do
+    it 'answers an unknown session with resource not found' do
+      error = @connection.prompt_session(prompt_request('missing', 'hello'))
+
+      assert_equal ACP::RequestError::RESOURCE_NOT_FOUND, error.code
+    end
+
+    it 'streams the turn as agent message chunks' do
+      session = new_session
+      reply('Hi from ACP.')
+      _response, updates = prompt(session.session_id, 'hello')
+      text = updates
+             .filter_map do |update|
+               update.content.text if update.is_a?(ACP::Types::SessionUpdate::AgentMessageChunk)
+             end
+             .join
+
+      assert_includes text, 'Hi from ACP'
+    end
+
+    it 'ends a completed turn with end_turn' do
+      session = new_session
+      reply('Hi from ACP.')
+      response, = prompt(session.session_id, 'hello')
+
+      assert_equal 'end_turn', response.stop_reason
+    end
+
+    it 'reports a tool call' do
+      session = new_session
+      File.write(File.join(@cwd, 'subject.txt'), 'contents')
+      reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
+      reply('All done.')
+      _response, updates = prompt(session.session_id, 'read it')
+      tool_call = updates.find { |update| update.is_a?(ACP::Types::SessionUpdate::ToolCall) }
+
+      assert_equal 'read', tool_call&.name
+    end
+
+    it 'completes a tool call once it has run' do
+      session = new_session
+      File.write(File.join(@cwd, 'subject.txt'), 'contents')
+      reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
+      reply('All done.')
+      _response, updates = prompt(session.session_id, 'read it')
+      statuses = updates.filter_map do |update|
+        [update.tool_call_id, update.status] if update.is_a?(ACP::Types::SessionUpdate::ToolCallUpdate)
+      end
+
+      assert_equal [%w[mock_call_0 completed]], statuses
+    end
+
+    it 'completes a tool call after reporting it' do
+      session = new_session
+      File.write(File.join(@cwd, 'subject.txt'), 'contents')
+      reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
+      reply('All done.')
+      _response, updates = prompt(session.session_id, 'read it')
+      tool_updates = updates.map { |update| update.class.name.to_s.split('::').last }.grep(/\AToolCall/)
+
+      assert_equal %w[ToolCall ToolCallUpdate], tool_updates
+    end
+
+    it 'runs a tool call without asking the client for permission' do
+      session = new_session
+      File.write(File.join(@cwd, 'subject.txt'), 'contents')
+      reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
+      reply('All done.')
+      prompt(session.session_id, 'read it')
+
+      assert_empty @permissions
+    end
+
+    it 'ends a tool-call turn with end_turn' do
+      session = new_session
+      File.write(File.join(@cwd, 'subject.txt'), 'contents')
+      reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
+      reply('All done.')
+      response, = prompt(session.session_id, 'read it')
+
+      assert_equal 'end_turn', response.stop_reason
+    end
+
+    it 'answers a prompt on a busy session with the runtime error' do
+      session = new_session
+      reply('Slow hello.')
+      started, gate = hold_provider
+      first = Thread.new { prompt(session.session_id, 'hello') }
+      started.pop
+      # The client connection refuses a second stream on a session itself, so
+      # only a direct call reaches the Runtime's own refusal.
+      error = @agent.prompt(prompt_request(session.session_id, 'again'))
+      gate << true
+      first.join
+
+      assert_includes error.message, 'already running'
+    end
+
+    it 'answers a prompt on a closed session with the runtime error' do
+      session = new_session
+      @built_runtimes.last.close
+      error = @connection.prompt_session(prompt_request(session.session_id, 'hello'))
+
+      assert_includes error.message, 'closed'
+    end
+  end
+
+  describe '#load_session' do
+    it 'answers an unknown session id with resource not found' do
+      error = @connection.load_session(
+        ACP::Types::LoadSessionRequest.new(cwd: @cwd, mcp_servers: [], session_id: 'missing')
+      )
+
+      assert_equal ACP::RequestError::RESOURCE_NOT_FOUND, error.code
+    end
+
+    it 'sends a build-time notify as an update for the loaded session' do
+      session = save_session('first prompt')
+      FileUtils.mkdir_p(File.join(@home, '.riffer'))
+      File.write(File.join(@home, '.riffer', 'rig.rb'), "raise 'broken rig'\n")
+      _response, updates = load(session.session_id)
+      texts = updates.filter_map do |update|
+        update.content.text if update.is_a?(ACP::Types::SessionUpdate::AgentMessageChunk)
+      end
+
+      assert(texts.any? { |text| text.include?('broken rig') })
+    end
+
+    it 'replays the stored messages of a loaded session in order' do
+      session = tool_turn
+
+      _response, updates = load(session.session_id)
+
+      replay = updates.map do |update|
+        text = update.is_a?(ACP::Types::SessionUpdate::ToolCall) ? update.name : update.content.text
+        [update.class.name.split('::').last, text]
+      end
+
+      assert_equal(
+        [['UserMessageChunk', 'hello'], ['AgentMessageChunk', 'Reading.'],
+         ['ToolCall', 'read'], ['AgentMessageChunk', 'All done.']],
+        replay
+      )
+    end
+
+    it 'continues the conversation after a load' do
+      session = tool_turn
+      load(session.session_id)
+      prompt(session.session_id, 'again')
+
+      assert_equal 2, @built_runtimes.last.agent.provider.calls.size
+    end
+
+    it 'answers a failed load with its message' do
+      error = invalid_env_connection.load_session(
+        ACP::Types::LoadSessionRequest.new(cwd: @cwd, mcp_servers: [], session_id: 'any')
+      )
+
+      assert_equal 'RIFFER_MODEL: rejected', error.message
+    end
+  end
+
+  describe '#list_sessions' do
+    it 'lists the saved sessions of the cwd' do
+      first = save_session('first prompt')
+      second = save_session('second prompt')
+
+      response = @connection.list_sessions(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
+
+      assert_equal [first.session_id, second.session_id].sort, response.sessions.map(&:session_id).sort
+    end
+
+    it 'titles a listed session with its first prompt' do
+      session = save_session("first prompt\nsecond line")
+
+      response = @connection.list_sessions(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
+      listed = response.sessions.find { |info| info.session_id == session.session_id }
+
+      assert_equal 'first prompt', listed&.title
+    end
+
+    it 'stamps a listed session with its last update' do
+      session = save_session('first prompt')
+
+      response = @connection.list_sessions(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
+      listed = response.sessions.find { |info| info.session_id == session.session_id }
+
+      assert(Time.iso8601(listed&.updated_at.to_s))
+    end
+
+    it 'lists the saved sessions of every cwd when the request names none' do
+      session = save_session('first prompt')
+
+      response = @connection.list_sessions(ACP::Types::ListSessionsRequest.new)
+
+      assert_includes response.sessions.map(&:session_id), session.session_id
+    end
+
+    it 'answers a failed listing with its message' do
+      error = invalid_env_connection.list_sessions(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
+
+      assert_equal 'RIFFER_MODEL: rejected', error.message
+    end
+  end
+
+  describe '#cancel' do
+    it 'ignores a cancel for an unknown session' do
+      assert_nil @agent.cancel(ACP::Types::CancelNotification.new(session_id: 'missing'))
+    end
+
+    it 'ends a turn the client cancelled with cancelled' do
+      session = new_session
+      reply('Slow hello.')
+      started, gate = hold_provider
+      response = Thread.new do
+        @connection.prompt_session(prompt_request(session.session_id, 'hello')) { |update| @updates << update }
+      end
+      started.pop
+      @connection.cancel_session(ACP::Types::CancelNotification.new(session_id: session.session_id))
+      # The agent handles notifications in arrival order on its reader thread,
+      # so this reply proves the cancel landed before the provider resumes.
+      @connection.prompt_session(prompt_request('missing', 'flush'))
+      gate << true
+
+      assert_equal 'cancelled', response.value.stop_reason
+    end
+  end
+
+  describe '#session_created' do
+    it 'sends nothing for a session it never created' do
+      assert_nil @agent.session_created(ACP::Types::NewSessionResponse.new(session_id: 'missing'))
+    end
+
+    it 'sends the runtime commands as available_commands_update' do
+      write_skill('tidy')
+      new_session
+      wait_for do
+        @updates.any? do |notification|
+          notification.update.is_a?(ACP::Types::SessionUpdate::AvailableCommandsUpdate)
+        end
+      end
+      update = @updates.find do |notification|
         notification.update.is_a?(ACP::Types::SessionUpdate::AvailableCommandsUpdate)
       end
+
+      assert_equal %w[auth model skill:tidy reload], update.update.available_commands.map(&:name)
     end
-    update = @updates.find do |notification|
-      notification.update.is_a?(ACP::Types::SessionUpdate::AvailableCommandsUpdate)
-    end
-
-    assert_equal %w[auth model skill:tidy reload], update.update.available_commands.map(&:name)
-  end
-
-  it 'turns client-supplied stdio mcpServers into rig.mcp declarations' do
-    script = File.join(@cwd, 'mcp_stub.rb')
-    File.write(script, '#!/usr/bin/env ruby')
-    new_session(
-      mcp_servers: [{
-        'name' => 'stub', 'command' => script, 'args' => ['--flag'],
-        'env' => [{ 'name' => 'TOKEN', 'value' => 't' }]
-      }]
-    )
-
-    assert_equal(
-      { 'stub' => Riffer::Rig::Mcp::Declaration.new(command: script, args: ['--flag'], env: { 'TOKEN' => 't' }) },
-      @servers
-    )
-  end
-
-  it 'warns about a client-supplied non-stdio mcpServer' do
-    new_session(
-      mcp_servers: [{
-        'name' => 'httpdocs', 'type' => 'http', 'url' => 'https://docs.example/mcp', 'headers' => []
-      }]
-    )
-    wait_for { message_texts.any? { |text| text.include?('Skipped MCP server httpdocs') } }
-
-    assert(message_texts.any? { |text| text.include?('only stdio servers are supported') })
-  end
-
-  it 'lists the saved sessions of the cwd' do
-    first = save_session('first prompt')
-    second = save_session('second prompt')
-
-    response = @connection.list_sessions(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
-
-    assert_equal [first.session_id, second.session_id].sort, response.sessions.map(&:session_id).sort
-  end
-
-  it 'titles a listed session with its first prompt' do
-    session = save_session("first prompt\nsecond line")
-
-    response = @connection.list_sessions(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
-    listed = response.sessions.find { |info| info.session_id == session.session_id }
-
-    assert_equal 'first prompt', listed&.title
-  end
-
-  it 'stamps a listed session with its last update' do
-    session = save_session('first prompt')
-
-    response = @connection.list_sessions(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
-    listed = response.sessions.find { |info| info.session_id == session.session_id }
-
-    assert(Time.iso8601(listed&.updated_at.to_s))
-  end
-
-  it 'replays the stored messages of a loaded session in order' do
-    session = tool_turn
-
-    _response, updates = load(session.session_id)
-
-    replay = updates.map do |update|
-      text = update.is_a?(ACP::Types::SessionUpdate::ToolCall) ? update.name : update.content.text
-      [update.class.name.split('::').last, text]
-    end
-
-    assert_equal(
-      [['UserMessageChunk', 'hello'], ['AgentMessageChunk', 'Reading.'],
-       ['ToolCall', 'read'], ['AgentMessageChunk', 'All done.']],
-      replay
-    )
-  end
-
-  it 'continues the conversation after a load' do
-    session = tool_turn
-    load(session.session_id)
-    prompt(session.session_id, 'again')
-
-    assert_equal 2, @built_runtimes.last.agent.provider.calls.size
-  end
-
-  it 'answers an unknown session id with resource not found' do
-    error = @connection.load_session(
-      ACP::Types::LoadSessionRequest.new(cwd: @cwd, mcp_servers: [], session_id: 'missing')
-    )
-
-    assert_equal ACP::RequestError::RESOURCE_NOT_FOUND, error.code
   end
 
   describe 'namespace' do

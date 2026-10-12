@@ -18,9 +18,9 @@ describe Riffer::Rig::Loader::Credentials do
     File.join(@home, '.riffer', 'auth.json')
   end
 
-  def install(host: Riffer::Rig::Hosts::Null.new, env: {})
+  def install(provider: 'gemini', host: Riffer::Rig::Hosts::Null.new, env: {})
     Riffer::Rig::Loader::Credentials.install(
-      'gemini',
+      provider,
       host: host,
       env: Riffer::Rig::Env.new(env),
       config: @config,
@@ -56,6 +56,14 @@ describe Riffer::Rig::Loader::Credentials do
         'gemini has no api_key (GEMINI_API_KEY); set it in the environment or run riffer interactively ' \
         'to paste it (create one at https://aistudio.google.com/app/apikey)',
         install
+      )
+    end
+
+    it 'omits the console link when the provider has none' do
+      assert_equal(
+        'mystery has no api_key (MYSTERY_API_KEY); set it in the environment or run riffer interactively ' \
+        'to paste it',
+        install(provider: 'mystery')
       )
     end
 

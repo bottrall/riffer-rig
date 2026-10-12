@@ -11,12 +11,8 @@ describe Riffer::Rig::Terminal::Markdown::Span do
     assert_predicate span, :frozen?
   end
 
-  it 'defaults to no styles' do
-    assert_empty span.styles
-  end
-
-  it 'defaults to no url' do
-    assert_nil span.url
+  it 'defaults to no styles and no url' do
+    assert span.same_style?(span(styles: [], url: nil))
   end
 
   it 'shares a style with a span of the same styles and url' do

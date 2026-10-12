@@ -147,6 +147,14 @@ describe Riffer::Rig::Mcp::Auth do
   end
 
   describe '.expand' do
+    it 'raises when a placeholder is not an auth field' do
+      error = assert_raises(Riffer::Rig::Mcp::Auth::Error) do
+        Riffer::Rig::Mcp::Auth.expand({ 'Authorization' => 'Bearer ${token}' }, { api_key: 'secret' })
+      end
+
+      assert_equal 'header references ${token}, which the auth block does not declare', error.message
+    end
+
     it 'substitutes every declared field into the headers' do
       headers = { 'Authorization' => 'Bearer ${api_key}', 'X-Org' => '${org}' }
 
@@ -158,14 +166,6 @@ describe Riffer::Rig::Mcp::Auth do
 
     it 'keeps text without placeholders as written' do
       assert_equal({ 'X-Token' => 'plain' }, Riffer::Rig::Mcp::Auth.expand({ 'X-Token' => 'plain' }, {}))
-    end
-
-    it 'raises when a placeholder is not an auth field' do
-      error = assert_raises(Riffer::Rig::Mcp::Auth::Error) do
-        Riffer::Rig::Mcp::Auth.expand({ 'Authorization' => 'Bearer ${token}' }, { api_key: 'secret' })
-      end
-
-      assert_equal 'header references ${token}, which the auth block does not declare', error.message
     end
   end
 

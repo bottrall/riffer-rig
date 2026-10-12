@@ -11,15 +11,7 @@ describe Riffer::Rig::Stores::SkillEntry do
     assert_equal 'a', entry.skill
   end
 
-  it 'is frozen' do
-    assert_predicate entry, :frozen?
-  end
-
   describe '.from_hash' do
-    it 'rebuilds the entry' do
-      assert_equal entry, Riffer::Rig::Stores::SkillEntry.from_hash(entry.to_h)
-    end
-
     it 'returns nil when the skill is missing' do
       assert_nil Riffer::Rig::Stores::SkillEntry.from_hash({ type: 'skill' })
     end
@@ -27,6 +19,14 @@ describe Riffer::Rig::Stores::SkillEntry do
     it 'returns nil when the skill is not a string' do
       assert_nil Riffer::Rig::Stores::SkillEntry.from_hash({ type: 'skill', skill: 123 })
     end
+
+    it 'rebuilds the entry' do
+      assert_equal entry, Riffer::Rig::Stores::SkillEntry.from_hash(entry.to_h)
+    end
+  end
+
+  it 'is frozen' do
+    assert_predicate entry, :frozen?
   end
 
   describe '#to_h' do

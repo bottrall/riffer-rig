@@ -8,8 +8,8 @@ describe Riffer::Rig::Terminal::Markdown::Table do
     Riffer::Rig::Terminal::Markdown::Table.lines(source.lines(chomp: true), theme: theme)
   end
 
-  it 'pads each column to its widest cell' do
-    assert_equal ['a    │ b', '─────┼──', 'long │ 2'], lines("| a | b |\n|---|---|\n| long | 2 |")
+  it 'returns nothing for a grid wider than the limit' do
+    assert_nil lines("|#{'a' * 497}|b|\n|-|-|")
   end
 
   it 'reads rows without outer pipes' do
@@ -18,6 +18,10 @@ describe Riffer::Rig::Terminal::Markdown::Table do
 
   it 'ignores the alignment marks of the divider' do
     assert_equal ['a │ b', '──┼──', '1 │ 2'], lines("| a | b |\n|:--|--:|\n| 1 | 2 |")
+  end
+
+  it 'keeps an escaped pipe inside its cell' do
+    assert_equal ['a | b │ c', '──────┼──'], lines("| a \\| b | c |\n|---|---|")
   end
 
   it 'fills a short row with empty cells' do
@@ -32,8 +36,8 @@ describe Riffer::Rig::Terminal::Markdown::Table do
     assert_equal ['a │ b', '──┼──'], lines("| a | b |\n|---|---|")
   end
 
-  it 'keeps an escaped pipe inside its cell' do
-    assert_equal ['a | b │ c', '──────┼──'], lines("| a \\| b | c |\n|---|---|")
+  it 'pads each column to its widest cell' do
+    assert_equal ['a    │ b', '─────┼──', 'long │ 2'], lines("| a | b |\n|---|---|\n| long | 2 |")
   end
 
   it 'measures a cell by its visible text' do
@@ -47,9 +51,5 @@ describe Riffer::Rig::Terminal::Markdown::Table do
 
   it 'keeps the backticks of a code cell without colour' do
     assert_equal ['a', '───', '`x`'], lines("| a |\n|---|\n| `x` |")
-  end
-
-  it 'returns nothing for a grid wider than the limit' do
-    assert_nil lines("|#{'a' * 497}|b|\n|-|-|")
   end
 end

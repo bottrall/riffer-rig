@@ -27,6 +27,10 @@ describe Riffer::Rig::Terminal::Wrapper do
     assert_equal "  hello\n", wrapper << 'hello world'
   end
 
+  it 'hard-splits an overfull word that has no space to break on' do
+    assert_equal "  #{'a' * 8}\n", wrapper << ('a' * 12)
+  end
+
   it 'flushes the pending line' do
     subject = wrapper
     subject << 'hello'

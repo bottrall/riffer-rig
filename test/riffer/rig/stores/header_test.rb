@@ -21,36 +21,26 @@ describe Riffer::Rig::Stores::Header do
     )
   end
 
-  it 'exposes the schema version' do
-    assert_equal 1, header.schema_version
-  end
+  describe '.from_hash' do
+    it 'returns nil when the schema version is not an integer' do
+      assert_nil Riffer::Rig::Stores::Header.from_hash(header.to_h.merge(schema_version: '1'))
+    end
 
-  it 'exposes the session id' do
-    assert_equal 'aaa', header.id
-  end
+    it 'returns nil when a string field is missing' do
+      assert_nil Riffer::Rig::Stores::Header.from_hash(header.to_h.except(:title))
+    end
 
-  it 'exposes the session cwd' do
-    assert_equal '/project', header.cwd
-  end
+    it 'returns nil when a field is not a string' do
+      assert_nil Riffer::Rig::Stores::Header.from_hash(header.to_h.merge(model: 123))
+    end
 
-  it 'exposes the creation time' do
-    assert_equal '2026-01-01T00:00:00Z', header.created_at
-  end
+    it 'rebuilds the entry' do
+      assert_equal header, Riffer::Rig::Stores::Header.from_hash(header.to_h)
+    end
 
-  it 'exposes the model' do
-    assert_equal 'mock/test', header.model
-  end
-
-  it 'exposes the riffer rig version' do
-    assert_equal '0.9.0', header.riffer_rig_version
-  end
-
-  it 'exposes the riffer version' do
-    assert_equal '0.49.0', header.riffer_version
-  end
-
-  it 'exposes the title' do
-    assert_equal 'hello', header.title
+    it 'stamps the entry with the store-supplied updated' do
+      assert_equal updated_time, Riffer::Rig::Stores::Header.from_hash(header.to_h, updated: updated_time).updated
+    end
   end
 
   it 'defaults updated to nil' do
@@ -63,28 +53,6 @@ describe Riffer::Rig::Stores::Header do
 
   it 'is frozen' do
     assert_predicate header, :frozen?
-  end
-
-  describe '.from_hash' do
-    it 'rebuilds the entry' do
-      assert_equal header, Riffer::Rig::Stores::Header.from_hash(header.to_h)
-    end
-
-    it 'stamps the entry with the store-supplied updated' do
-      assert_equal updated_time, Riffer::Rig::Stores::Header.from_hash(header.to_h, updated: updated_time).updated
-    end
-
-    it 'returns nil when a string field is missing' do
-      assert_nil Riffer::Rig::Stores::Header.from_hash(header.to_h.except(:title))
-    end
-
-    it 'returns nil when a field is not a string' do
-      assert_nil Riffer::Rig::Stores::Header.from_hash(header.to_h.merge(model: 123))
-    end
-
-    it 'returns nil when the schema version is not an integer' do
-      assert_nil Riffer::Rig::Stores::Header.from_hash(header.to_h.merge(schema_version: '1'))
-    end
   end
 
   describe '#to_h' do

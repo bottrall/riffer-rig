@@ -4,132 +4,87 @@ require 'test_helper'
 class GlobexSetupProvider < Riffer::Providers::Mock; end # rubocop:disable Rig/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
 
 describe Riffer::Rig::ProviderSetup do
-  it "covers riffer's six providers" do
-    expected = %i[anthropic openai gemini openrouter azure_openai amazon_bedrock]
-
-    assert_equal expected, Riffer::Rig::ProviderSetup::TABLE.keys
+  let(:registered_setup) do
+    Riffer::Rig::ProviderSetup.new(
+      fields: [Riffer::Rig::ProviderSetup::Field.new(
+        name: :api_key,
+        env: ['GLOBEX_SETUP_API_KEY'],
+        secret: true,
+        required: true
+      )]
+    )
   end
 
-  it 'names only settable fields of the provider config' do
-    unknown = Riffer::Rig::ProviderSetup::TABLE.flat_map do |identifier, setup|
-      provider_config = Riffer.config.public_send(identifier)
-      setup.fields.map(&:name).reject { |name| provider_config.respond_to?(:"#{name}=") }
+  after do
+    Riffer::Rig::Providers.unregister(:globex_setup)
+  end
+
+  describe '#initialize' do
+    it 'offers no credential chain by default' do
+      refute Riffer::Rig::ProviderSetup.new(fields: []).chain
     end
 
-    assert_empty unknown
+    it 'has no SDK by default' do
+      assert_nil Riffer::Rig::ProviderSetup.new(fields: []).sdk
+    end
+
+    it 'freezes the sdk pair' do
+      assert_predicate Riffer::Rig::ProviderSetup.new(fields: [], sdk: ['acme-sdk', '~> 1.0']).sdk, :frozen?
+    end
+
+    it 'freezes the fields' do
+      assert_predicate Riffer::Rig::ProviderSetup.new(fields: []).fields, :frozen?
+    end
+
+    it 'freezes a setup' do
+      assert_predicate Riffer::Rig::ProviderSetup.new(fields: []), :frozen?
+    end
   end
 
-  it 'looks an entry up by string identifier' do
-    assert_same Riffer::Rig::ProviderSetup::TABLE[:anthropic], Riffer::Rig::ProviderSetup.registered_setup('anthropic')
+  describe 'TABLE' do
+    it 'names only settable fields of the provider config' do
+      unknown = Riffer::Rig::ProviderSetup::TABLE.flat_map do |identifier, setup|
+        provider_config = Riffer.config.public_send(identifier)
+        setup.fields.map(&:name).reject { |name| provider_config.respond_to?(:"#{name}=") }
+      end
+
+      assert_empty unknown
+    end
   end
 
-  it 'returns nil from registered_setup for an unknown identifier' do
-    assert_nil Riffer::Rig::ProviderSetup.registered_setup(:acme)
-  end
-
-  it 'returns the built-in setup from for' do
-    assert_same Riffer::Rig::ProviderSetup::TABLE[:gemini], Riffer::Rig::ProviderSetup.for(:gemini)
-  end
-
-  it 'reads the generic fallback key from <IDENTIFIER>_API_KEY' do
-    assert_equal [['ACME_API_KEY']], Riffer::Rig::ProviderSetup.for(:acme).fields.map(&:env)
-  end
-
-  it 'requires the generic fallback key' do
-    assert Riffer::Rig::ProviderSetup.for(:acme).fields.all?(&:required)
-  end
-
-  it 'treats the generic fallback key as a secret' do
-    assert Riffer::Rig::ProviderSetup.for(:acme).fields.all?(&:secret)
-  end
-
-  it 'offers no credential chain by default' do
-    refute Riffer::Rig::ProviderSetup.for(:acme).chain
-  end
-
-  it 'maps each provider to its SDK gem and requirement' do
-    expected = {
-      anthropic: ['anthropic', '~> 1.69'],
-      openai: ['openai', '~> 0.80'],
-      openrouter: ['openai', '~> 0.80'],
-      azure_openai: ['openai', '~> 0.80'],
-      gemini: nil,
-      amazon_bedrock: ['aws-sdk-bedrockruntime', '~> 1.0']
-    }
-
-    assert_equal expected, Riffer::Rig::ProviderSetup::TABLE.transform_values(&:sdk)
-  end
-
-  it 'gives the generic fallback entry no SDK' do
-    assert_nil Riffer::Rig::ProviderSetup.for(:acme).sdk
-  end
-
-  it 'freezes the sdk pair' do
-    assert_predicate Riffer::Rig::ProviderSetup.registered_setup(:anthropic).sdk, :frozen?
-  end
-
-  it 'freezes a setup' do
-    assert_predicate Riffer::Rig::ProviderSetup.for(:acme), :frozen?
-  end
-
-  it 'freezes the fields' do
-    assert_predicate Riffer::Rig::ProviderSetup.for(:acme).fields, :frozen?
-  end
-
-  it 'never prompts for the OpenAI base_url' do
-    base_url = Riffer::Rig::ProviderSetup.registered_setup(:openai).fields.find { |field| field.name == :base_url }
-
-    refute base_url.required
-  end
-
-  it 'marks Bedrock as offering the credential chain' do
-    assert Riffer::Rig::ProviderSetup.registered_setup(:amazon_bedrock).chain
-  end
-
-  it 'reads the Bedrock region from both AWS env vars' do
-    region = Riffer::Rig::ProviderSetup.registered_setup(:amazon_bedrock).fields.find { |field| field.name == :region }
-
-    assert_equal %w[AWS_REGION AWS_DEFAULT_REGION], region.env
-  end
-
-  it 'gives the Bedrock region a fallback' do
-    region = Riffer::Rig::ProviderSetup.registered_setup(:amazon_bedrock).fields.find { |field| field.name == :region }
-
-    assert_respond_to region.fallback, :call
-  end
-
-  describe 'a registered setup' do
-    let(:registered_setup) do
+  describe '#missing_fields' do
+    let(:acme_setup) do
       Riffer::Rig::ProviderSetup.new(
-        fields: [Riffer::Rig::ProviderSetup::Field.new(
-          name: :api_key,
-          env: ['GLOBEX_SETUP_API_KEY'],
-          secret: true,
-          required: true
-        )]
+        fields: [
+          Riffer::Rig::ProviderSetup::Field.new(
+            name: :region, env: %w[ACME_REGION ACME_DEFAULT_REGION], secret: false, required: true
+          ),
+          Riffer::Rig::ProviderSetup::Field.new(name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true)
+        ]
       )
     end
 
-    after do
-      Riffer::Rig::Providers.unregister(:globex_setup)
+    it 'is empty when nothing is missing' do
+      assert_equal '', acme_setup.missing_fields([])
     end
 
-    it 'wins the registered_setup lookup over the table' do
-      Riffer::Rig::Providers.register(:globex_setup, setup: registered_setup) { GlobexSetupProvider }
-
-      assert_same registered_setup, Riffer::Rig::ProviderSetup.registered_setup(:globex_setup)
+    it 'leaves out the fields that are not missing' do
+      assert_equal 'api_key (ACME_API_KEY)', acme_setup.missing_fields([:api_key])
     end
 
-    it 'wins the for lookup over the generic fallback' do
-      Riffer::Rig::Providers.register(:globex_setup, setup: registered_setup) { GlobexSetupProvider }
-
-      assert_same registered_setup, Riffer::Rig::ProviderSetup.for(:globex_setup)
+    it 'ignores a missing name the setup has no field for' do
+      assert_equal 'api_key (ACME_API_KEY)', acme_setup.missing_fields(%i[api_key endpoint])
     end
 
-    it 'leaves a registered provider without a setup on the generic fallback' do
-      Riffer::Rig::Providers.register(:globex_setup) { GlobexSetupProvider }
+    it 'joins the env alternatives of a field' do
+      assert_equal 'region (ACME_REGION or ACME_DEFAULT_REGION)', acme_setup.missing_fields([:region])
+    end
 
-      assert_equal [['GLOBEX_SETUP_API_KEY']], Riffer::Rig::ProviderSetup.for(:globex_setup).fields.map(&:env)
+    it 'lists the missing fields in field order' do
+      assert_equal(
+        'region (ACME_REGION or ACME_DEFAULT_REGION), api_key (ACME_API_KEY)',
+        acme_setup.missing_fields(%i[api_key region])
+      )
     end
   end
 
@@ -175,6 +130,52 @@ describe Riffer::Rig::ProviderSetup do
       setup = from(fields: [{ name: :api_key, env: ['ACME_API_KEY'] }])
 
       assert_predicate setup, :frozen?
+    end
+  end
+
+  describe '.registered_setup' do
+    it 'prefers a registered setup over the table' do
+      Riffer::Rig::Providers.register(:globex_setup, setup: registered_setup) { GlobexSetupProvider }
+
+      assert_same registered_setup, Riffer::Rig::ProviderSetup.registered_setup(:globex_setup)
+    end
+
+    it 'looks an entry up by string identifier' do
+      assert_same Riffer::Rig::ProviderSetup::TABLE[:anthropic], Riffer::Rig::ProviderSetup.registered_setup('anthropic')
+    end
+
+    it 'returns nil for an unknown identifier' do
+      assert_nil Riffer::Rig::ProviderSetup.registered_setup(:acme)
+    end
+  end
+
+  describe '.for' do
+    it 'prefers a registered setup over the generic fallback' do
+      Riffer::Rig::Providers.register(:globex_setup, setup: registered_setup) { GlobexSetupProvider }
+
+      assert_same registered_setup, Riffer::Rig::ProviderSetup.for(:globex_setup)
+    end
+
+    it 'returns the built-in setup' do
+      assert_same Riffer::Rig::ProviderSetup::TABLE[:gemini], Riffer::Rig::ProviderSetup.for(:gemini)
+    end
+
+    it 'leaves a registered provider without a setup on the generic fallback' do
+      Riffer::Rig::Providers.register(:globex_setup) { GlobexSetupProvider }
+
+      assert_equal [['GLOBEX_SETUP_API_KEY']], Riffer::Rig::ProviderSetup.for(:globex_setup).fields.map(&:env)
+    end
+
+    it 'reads the generic fallback key from <IDENTIFIER>_API_KEY' do
+      assert_equal [['ACME_API_KEY']], Riffer::Rig::ProviderSetup.for(:acme).fields.map(&:env)
+    end
+
+    it 'requires the generic fallback key' do
+      assert Riffer::Rig::ProviderSetup.for(:acme).fields.all?(&:required)
+    end
+
+    it 'treats the generic fallback key as a secret' do
+      assert Riffer::Rig::ProviderSetup.for(:acme).fields.all?(&:secret)
     end
   end
 end

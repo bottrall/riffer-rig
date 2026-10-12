@@ -46,6 +46,10 @@ describe Riffer::Rig::Settings::ModelOptions do
       Riffer::Rig::Settings::ModelOptions.model_options(model, reasoning)
     end
 
+    it 'ignores reasoning for a model without a provider' do
+      assert_empty model_options('sonnet', 'high')
+    end
+
     it 'includes cache control for an anthropic model' do
       assert_equal({ type: :ephemeral }, model_options('anthropic/claude-sonnet-4-6', nil)[:cache_control])
     end

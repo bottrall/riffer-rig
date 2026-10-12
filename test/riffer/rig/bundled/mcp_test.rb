@@ -13,6 +13,14 @@ describe 'Riffer::Rig::Bundled::Mcp' do
     assert_equal 'mcp', Riffer::Rig::Bundled::Mcp.name
   end
 
+  it 'declares nothing without servers' do
+    assert_empty registered({}).mcp_servers
+  end
+
+  it 'fails to load a server without a url' do
+    assert_raises(KeyError) { registered({ servers: { docs: { headers: {} } } }) }
+  end
+
   it 'declares every server under servers' do
     settings = { servers: { docs: { url: 'https://docs.example/mcp' }, web: { url: 'https://web.example/mcp' } } }
 
@@ -28,6 +36,10 @@ describe 'Riffer::Rig::Bundled::Mcp' do
     )
   end
 
+  it 'gives a server without headers none' do
+    assert_empty registered({ servers: { web: { url: 'https://web.example/mcp' } } }).mcp_servers.fetch('web').headers
+  end
+
   it 'passes the auth block through' do
     settings = { servers: { web: { url: 'https://web.example/mcp', auth: { api_key: 'WEB_API_KEY' } } } }
 
@@ -39,17 +51,5 @@ describe 'Riffer::Rig::Bundled::Mcp' do
       ),
       registered(settings).mcp_servers.fetch('web')
     )
-  end
-
-  it 'gives a server without headers none' do
-    assert_empty registered({ servers: { web: { url: 'https://web.example/mcp' } } }).mcp_servers.fetch('web').headers
-  end
-
-  it 'declares nothing without servers' do
-    assert_empty registered({}).mcp_servers
-  end
-
-  it 'fails to load a server without a url' do
-    assert_raises(KeyError) { registered({ servers: { docs: { headers: {} } } }) }
   end
 end
