@@ -196,6 +196,31 @@ describe Riffer::Rig::Terminal do
     assert_match(/skills\s+1/, run_terminal(''))
   end
 
+  it 'leaves the session row out of the first banner' do
+    refute_match(/▸ session/, run_terminal(''))
+  end
+
+  describe 'a /model switch' do
+    def switch(input)
+      run_terminal(input) do |runtime|
+        usage = Riffer::Providers::TokenUsage.new(input_tokens: 10, output_tokens: 5)
+        runtime.agent.provider.stub_response('Hi', token_usage: usage)
+      end
+    end
+
+    it 're-renders the banner with the new model' do
+      assert_match(%r{▸ model\s+mock/other}, switch("/model mock/other\n"))
+    end
+
+    it 'shows the session total in the re-rendered banner' do
+      assert_match(/▸ session\s+15 tok$/, switch("hello\n/model mock/other\n"))
+    end
+
+    it 'leaves the banner alone when the model is unchanged' do
+      assert_equal 1, switch("/model\n").scan('▸ model').length
+    end
+  end
+
   it 'runs a skill command through run_command' do
     write_skill('tidy')
     output = run_terminal("/skill:tidy\n") { |runtime| runtime.agent.provider.stub_response('Tidied.') }

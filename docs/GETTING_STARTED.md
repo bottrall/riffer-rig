@@ -39,7 +39,7 @@ A pasted key is saved to `~/.riffer/auth.json` (permissions `600`) and reused fr
 
 ## The session
 
-The banner shows the model, the working directory, how many skills were found and the version. Type a prompt and press Enter:
+The banner shows the model, the working directory, how many skills were found and the version. It is drawn again when the session or its model changes — `/new`, `/resume`, `/model provider/name` — and once the session has used tokens it adds a `session` row with the total so far, and its cost once the model is priced. Type a prompt and press Enter:
 
 - the reply streams in, with each tool call (`⚙ read(path: "lib/app.rb")`) and the first line of its result;
 - each turn ends with a token line, and the session cost once the model is priced ([Configuration](CONFIGURATION.md#models));
