@@ -3,7 +3,8 @@
 class Riffer::Rig::CLI::Flags
   BANNER: String
 
-  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save, verbose, json, prompt, continue, resume
+  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, save, verbose, json, headless, prompt
+  # @dynamic continue, resume
   attr_reader model: String?
 
   attr_reader extensions: bool
@@ -18,6 +19,8 @@ class Riffer::Rig::CLI::Flags
 
   attr_reader json: bool
 
+  attr_reader headless: bool
+
   attr_reader tools: Array[String]?
 
   attr_reader max_steps: Integer?
@@ -31,9 +34,8 @@ class Riffer::Rig::CLI::Flags
   attr_reader resume: String?
 
   # @rbs argv: Array[String]
-  # @rbs prompt: bool
   # @rbs return: Riffer::Rig::CLI::Flags | String
-  def self.parse: (Array[String] argv, ?prompt: bool) -> (Riffer::Rig::CLI::Flags | String)
+  def self.parse: (Array[String] argv) -> (Riffer::Rig::CLI::Flags | String)
 
   # @rbs return: String
   def self.usage: () -> String
@@ -45,10 +47,9 @@ class Riffer::Rig::CLI::Flags
   def self.parser: () -> OptionParser
 
   # @rbs values: Hash[Symbol, untyped]
-  # @rbs head: String?
-  # @rbs prompt: bool
+  # @rbs prompt: String?
   # @rbs return: Riffer::Rig::CLI::Flags
-  def self.assemble: (Hash[Symbol, untyped] values, String? head, prompt: bool) -> Riffer::Rig::CLI::Flags
+  def self.assemble: (Hash[Symbol, untyped] values, String? prompt) -> Riffer::Rig::CLI::Flags
 
   # @rbs model: String?
   # @rbs extensions: bool
@@ -59,10 +60,11 @@ class Riffer::Rig::CLI::Flags
   # @rbs save: bool
   # @rbs verbose: bool
   # @rbs json: bool
+  # @rbs headless: bool
   # @rbs prompt: String?
   # @rbs continue: bool
   # @rbs resume: String?
   # @rbs help: bool
   # @rbs return: void
-  def initialize: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?verbose: bool, ?json: bool, ?prompt: String?, ?continue: bool, ?resume: String?, ?help: bool) -> void
+  def initialize: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?verbose: bool, ?json: bool, ?headless: bool, ?prompt: String?, ?continue: bool, ?resume: String?, ?help: bool) -> void
 end

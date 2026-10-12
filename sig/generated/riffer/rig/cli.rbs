@@ -1,8 +1,6 @@
 # Generated from lib/riffer/rig/cli.rb with RBS::Inline
 
 module Riffer::Rig::CLI
-  PRINT_FLAGS: Array[String]
-
   ACP_COMMAND: ::String
 
   USAGE_ERROR: ::Integer
