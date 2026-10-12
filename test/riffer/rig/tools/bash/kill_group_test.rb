@@ -44,6 +44,19 @@ describe Riffer::Rig::Tools::Bash::KillGroup do
       assert_equal Signal.list.fetch('KILL'), Process.wait2(@pid).last.termsig
     end
 
+    it 'signals the processes the child started' do
+      IO.pipe do |reader, writer|
+        @pid = Process.spawn('sleep 30 & echo started; wait', pgroup: true, out: writer)
+        writer.close
+        reader.gets
+        host.kill_group(@pid)
+
+        # The pipe reaches end of file only once every process holding its write
+        # end has exited, the backgrounded sleep included.
+        assert reader.wait_readable(5)
+      end
+    end
+
     it 'returns zero when the group is gone' do
       assert_equal 0, host.kill_group(-1)
     end
