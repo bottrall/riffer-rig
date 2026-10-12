@@ -57,32 +57,6 @@ runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: host, model: 'anthropi
 
 The terminal renders `TextDelta` as streamed prose, `ToolCallDone` as the call, `SkillActivation` and the rig `skill_activated` event as a skill line, `command_output` as a line of its own, and `Interrupt` as a note. `turn_end` carries the turn's `usage`, which the terminal prints with `runtime.tally` (every turn so far) and its `cost`. It skips the stream's `notify` events: the mirror queues one for each `host.notify`, which the terminal's host has already printed.
 
-### Rendering markdown
-
-`Riffer::Rig::Terminal::Markdown.render(source, theme:, width:)` turns markdown into the text a terminal prints, one `"\n"`-terminated line per row; the terminal does not route answers through it yet. It is a pure function: the `Theme` decides the styling and `width` is the columns available, or `nil` to leave lines unwrapped.
-
-| Construct | Rendered as |
-| --------- | ----------- |
-| Headings (`#` to `######`) | bold and coloured, marks dropped |
-| Paragraphs | lines joined and wrapped through the `Wrapper` |
-| Bold, italic, inline code | the matching style, markers dropped |
-| Links and images | the label as an OSC 8 hyperlink, underlined |
-| Lists | `•` for unordered items, the source number for ordered ones, nested by indentation |
-| Fenced code | the language as a label, then each line behind a `│` gutter |
-| Block quotes | the quoted blocks behind a `┃` gutter |
-| Horizontal rules | a line across the width |
-| Tables | a plain grid: columns padded to their widest cell, a rule under the header |
-
-A disabled theme (not a TTY, or `--no-color`) writes no escape sequence at all, and keeps what colour would have carried: a heading keeps its `#` marks, inline code keeps its backticks, and a link prints as `label (target)`.
-
-The source is model output, so nothing in it reaches the terminal as an instruction. Control characters other than the newline are removed before parsing (a tab becomes four spaces), which leaves an escape sequence as inert text; HTML is printed as written; and a link becomes a hyperlink only when its target is `http`, `https` or `mailto` and made of printable ASCII, so it cannot end the OSC 8 sequence early. Any other target prints as `label (target)`. A source in another encoding is transcoded to UTF-8, and a byte that is not valid text becomes `�` rather than raising.
-
-Width is counted in characters, as the `Wrapper` counts it. A code line longer than the width is cut rather than word-wrapped, because wrapping would fold its indentation. A table is not fitted to the width: a grid wider than the terminal overflows.
-
-Four limits bound the work a source can ask for, and what exceeds one prints as text rather than being dropped. Whatever sits inside more than 16 nested quotes or list items prints as text. A table with more than 32 pipes on any line, or whose grid would be wider than 500 characters, prints as a paragraph instead of a grid. A bold or italic span, an inline code span, or a link label, longer than 1000 characters prints with its markers.
-
-Left as written: setext headings, indented code blocks, reference-style links, hard line breaks, and strikethrough.
-
 ### The terminal's host
 
 `Riffer::Rig::Terminal::Host` reports all four capabilities:
