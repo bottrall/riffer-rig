@@ -128,8 +128,10 @@ describe Riffer::Rig::Tools::Bash::Jobs do
   end
 
   def poll_until_completed(id)
+    output = +''
     50.times do
-      job, output = @jobs.poll(id)
+      job, chunk = @jobs.poll(id)
+      output << chunk
       return [job, output] if job.completed?
 
       sleep 0.02
