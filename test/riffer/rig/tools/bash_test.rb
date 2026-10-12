@@ -110,10 +110,22 @@ describe Riffer::Rig::Tools::Bash do
     end
   end
 
+  it 'replaces bytes that are not valid UTF-8' do
+    response = @tool.call(context: @context, command: %q(printf 'ok\377ok\n'))
+
+    assert_equal "ok\u{FFFD}ok", response.content
+  end
+
   it 'times out long running commands' do
     response = @tool.call(context: @context, command: 'sleep 5', timeout_ms: 200)
 
-    assert_includes response.content, 'timed out'
+    assert_includes response.content, '[timed out after 0.2s]'
+  end
+
+  it 'reports a whole second timeout without a decimal' do
+    response = @tool.call(context: @context, command: 'sleep 5', timeout_ms: 1000)
+
+    assert_includes response.content, '[timed out after 1s]'
   end
 
   def with_cancel_after(seconds)

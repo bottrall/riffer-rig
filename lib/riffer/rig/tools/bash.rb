@@ -79,11 +79,11 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
 
     ending = await(wait_thread, monotonic_now + timeout_seconds, cancel_flag)
     kill_group(wait_thread.pid) unless ending == :exited
-    output = stdout_and_stderr.read
+    output = stdout_and_stderr.read.scrub
     stdout_and_stderr.close
 
     case ending
-    when :timed_out then ["#{output}\n[timed out after #{timeout_seconds.round}s]", 124]
+    when :timed_out then ["#{output}\n[timed out after #{format('%gs', timeout_seconds)}]", 124]
     when :cancelled then ["#{output}\n[cancelled]", 130]
     else [output, wait_thread.value.exitstatus || 1]
     end

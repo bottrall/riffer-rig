@@ -7,6 +7,6 @@ module Riffer::Rig::Tools::Bash::Truncation
     max = Riffer::Rig::Tools::Bash::MAX_OUTPUT_BYTES
     return output if output.bytesize <= max
 
-    "#{output.byteslice(0, max)}\n[output truncated to #{max} bytes]"
+    "#{output.byteslice(0, max)&.scrub('')}\n[output truncated to #{max} bytes]"
   end
 end

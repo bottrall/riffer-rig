@@ -19,4 +19,8 @@ describe Riffer::Rig::Tools::Bash::Truncation do
   it 'marks output it cut' do
     assert @truncation.truncate('a' * (@max + 1)).end_with?("[output truncated to #{@max} bytes]")
   end
+
+  it 'drops a character the limit falls inside' do
+    assert @truncation.truncate("a#{'é' * (@max / 2)}").start_with?("a#{'é' * ((@max / 2) - 1)}\n")
+  end
 end
