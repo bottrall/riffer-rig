@@ -11,31 +11,52 @@ module Riffer::Rig::SDK
 
   DECLINED_MESSAGE = "%s is not installed; install it with gem install %s -v '%s' or add it to a Gemfile" #: String
 
+  INSTALL_FAILED_MESSAGE = '%s could not be installed: %s' #: String
+
   FAILED_MESSAGE = '%s was installed but could not be loaded' #: String
 
-  private_constant :CONFIRM_QUESTION, :PROGRESS_LABEL, :BUNDLER_MESSAGE, :DECLINED_MESSAGE, :FAILED_MESSAGE
+  private_constant :CONFIRM_QUESTION,
+                   :PROGRESS_LABEL,
+                   :BUNDLER_MESSAGE,
+                   :DECLINED_MESSAGE,
+                   :INSTALL_FAILED_MESSAGE,
+                   :FAILED_MESSAGE
 
   # @rbs gem: String
   # @rbs requirement: String
   # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs installer: Riffer::Rig::SDK::_Installer
   # @rbs return: String?
-  def ensure(gem, requirement, host:)
+  def ensure(gem, requirement, host:, installer: Gem)
     return nil if installed?(gem, requirement) && require_gem(gem)
     return format(BUNDLER_MESSAGE, gem, gem, requirement) if bundler?
 
     confirmed = host.capabilities.include?(:confirm) && host.confirm(format(CONFIRM_QUESTION, gem))
     return format(DECLINED_MESSAGE, gem, gem, requirement) unless confirmed
 
-    host.progress(format(PROGRESS_LABEL, gem, requirement)) do
-      Gem.install(gem, Gem::Requirement.new(requirement))
-      Gem.clear_paths
-    end
+    failure = install(gem, requirement, host: host, installer: installer)
+    return failure if failure
     return nil if require_gem(gem)
 
     format(FAILED_MESSAGE, gem)
   end
 
   private
+
+  # @rbs gem: String
+  # @rbs requirement: String
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs installer: Riffer::Rig::SDK::_Installer
+  # @rbs return: String?
+  def install(gem, requirement, host:, installer:)
+    host.progress(format(PROGRESS_LABEL, gem, requirement)) do
+      installer.install(gem, Gem::Requirement.new(requirement))
+      installer.clear_paths
+    end
+    nil
+  rescue Gem::Exception => e
+    format(INSTALL_FAILED_MESSAGE, gem, e.message)
+  end
 
   # @rbs gem: String
   # @rbs requirement: String
