@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Events::ToolDispatched
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema #[Symbol]
+  include Riffer::Rig::Support::TypedValue #[Symbol]
+
+  typed_value :tool_dispatched, :call_id, :tool, :at
 
   # @dynamic call_id, tool, at
   attr_reader :call_id #: String
@@ -17,15 +20,5 @@ class Riffer::Rig::Events::ToolDispatched
     @tool = tool
     @at = at
     freeze
-  end
-
-  # @rbs return: Symbol
-  def type
-    :tool_dispatched
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    { type: type, call_id: call_id, tool: tool, at: at }
   end
 end

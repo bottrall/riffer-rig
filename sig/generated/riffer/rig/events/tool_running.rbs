@@ -1,7 +1,9 @@
 # Generated from lib/riffer/rig/events/tool_running.rb with RBS::Inline
 
 class Riffer::Rig::Events::ToolRunning
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema[Symbol]
+
+  include Riffer::Rig::Support::TypedValue[Symbol]
 
   # @dynamic call_id, tool, at
   attr_reader call_id: String
@@ -15,10 +17,4 @@ class Riffer::Rig::Events::ToolRunning
   # @rbs at: Float
   # @rbs return: void
   def initialize: (String call_id, String tool, Float at) -> void
-
-  # @rbs return: Symbol
-  def type: () -> Symbol
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h: () -> Hash[Symbol, untyped]
 end
