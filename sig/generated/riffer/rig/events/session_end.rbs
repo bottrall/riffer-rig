@@ -1,7 +1,9 @@
 # Generated from lib/riffer/rig/events/session_end.rb with RBS::Inline
 
 class Riffer::Rig::Events::SessionEnd
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema[Symbol]
+
+  include Riffer::Rig::Support::TypedValue[Symbol]
 
   # @dynamic reason
   attr_reader reason: Symbol
@@ -9,10 +11,4 @@ class Riffer::Rig::Events::SessionEnd
   # @rbs reason: Symbol
   # @rbs return: void
   def initialize: (Symbol reason) -> void
-
-  # @rbs return: Symbol
-  def type: () -> Symbol
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h: () -> Hash[Symbol, untyped]
 end

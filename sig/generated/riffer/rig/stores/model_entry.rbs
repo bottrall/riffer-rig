@@ -3,7 +3,9 @@
 class Riffer::Rig::Stores::ModelEntry
   TYPE: String
 
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema[String]
+
+  include Riffer::Rig::Support::TypedValue[String]
 
   # @dynamic model
   attr_reader model: String
@@ -15,7 +17,4 @@ class Riffer::Rig::Stores::ModelEntry
   # @rbs model: String
   # @rbs return: void
   def initialize: (model: String) -> void
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h: () -> Hash[Symbol, untyped]
 end

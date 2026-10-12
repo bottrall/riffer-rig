@@ -3,7 +3,10 @@
 class Riffer::Rig::Stores::MessageEntry
   TYPE = 'message' #: String
 
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema #[String]
+  include Riffer::Rig::Support::TypedValue #[String]
+
+  typed_value TYPE, :message
 
   # @dynamic message
   attr_reader :message #: Hash[Symbol, untyped]
@@ -22,10 +25,5 @@ class Riffer::Rig::Stores::MessageEntry
   def initialize(message:)
     @message = message
     freeze
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    { type: TYPE, message: @message }
   end
 end

@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Events::Notify
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema #[Symbol]
+  include Riffer::Rig::Support::TypedValue #[Symbol]
+
+  typed_value :notify, :message, :level
 
   # @dynamic message, level
   attr_reader :message #: String?
@@ -14,15 +17,5 @@ class Riffer::Rig::Events::Notify
     @message = message
     @level = level
     freeze
-  end
-
-  # @rbs return: Symbol
-  def type
-    :notify
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    { type: type, message: message, level: level }
   end
 end

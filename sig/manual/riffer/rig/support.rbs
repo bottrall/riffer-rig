@@ -5,4 +5,14 @@ module Riffer::Rig::Support
   interface _ToH
     def to_h: () -> Hash[Symbol, untyped]
   end
+
+  interface _TypedValue[T]
+    def class: () -> _Schema[T]
+    def public_send: (Symbol name) -> untyped
+  end
+
+  interface _Schema[T]
+    def type: () -> T
+    def attributes: () -> Array[Symbol]
+  end
 end

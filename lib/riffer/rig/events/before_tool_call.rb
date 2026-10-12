@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Events::BeforeToolCall
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema #[Symbol]
+  include Riffer::Rig::Support::TypedValue #[Symbol]
+
+  typed_value :before_tool_call, :tool, :args
 
   # @dynamic tool, args
   attr_reader :tool #: String
@@ -14,15 +17,5 @@ class Riffer::Rig::Events::BeforeToolCall
     @tool = tool
     @args = args.dup.freeze
     freeze
-  end
-
-  # @rbs return: Symbol
-  def type
-    :before_tool_call
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    { type: type, tool: tool, args: args }
   end
 end

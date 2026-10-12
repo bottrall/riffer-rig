@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Events::TurnEnd
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema #[Symbol]
+  include Riffer::Rig::Support::TypedValue #[Symbol]
+
+  typed_value :turn_end, :stop_reason, :usage
 
   # @dynamic stop_reason, usage
   attr_reader :stop_reason #: Symbol
@@ -19,15 +22,5 @@ class Riffer::Rig::Events::TurnEnd
   # @rbs return: Float?
   def cost
     usage&.cost
-  end
-
-  # @rbs return: Symbol
-  def type
-    :turn_end
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    { type: type, stop_reason: stop_reason, usage: usage }
   end
 end

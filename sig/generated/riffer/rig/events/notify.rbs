@@ -1,7 +1,9 @@
 # Generated from lib/riffer/rig/events/notify.rb with RBS::Inline
 
 class Riffer::Rig::Events::Notify
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema[Symbol]
+
+  include Riffer::Rig::Support::TypedValue[Symbol]
 
   # @dynamic message, level
   attr_reader message: String?
@@ -12,10 +14,4 @@ class Riffer::Rig::Events::Notify
   # @rbs level: Symbol
   # @rbs return: void
   def initialize: (String? message, Symbol level) -> void
-
-  # @rbs return: Symbol
-  def type: () -> Symbol
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h: () -> Hash[Symbol, untyped]
 end

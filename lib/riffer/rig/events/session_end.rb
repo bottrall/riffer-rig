@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Events::SessionEnd
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema #[Symbol]
+  include Riffer::Rig::Support::TypedValue #[Symbol]
+
+  typed_value :session_end, :reason
 
   # @dynamic reason
   attr_reader :reason #: Symbol
@@ -11,15 +14,5 @@ class Riffer::Rig::Events::SessionEnd
   def initialize(reason)
     @reason = reason
     freeze
-  end
-
-  # @rbs return: Symbol
-  def type
-    :session_end
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    { type: type, reason: reason }
   end
 end

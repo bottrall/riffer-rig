@@ -3,7 +3,10 @@
 class Riffer::Rig::Stores::SkillEntry
   TYPE = 'skill' #: String
 
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema #[String]
+  include Riffer::Rig::Support::TypedValue #[String]
+
+  typed_value TYPE, :skill
 
   # @dynamic skill
   attr_reader :skill #: String
@@ -22,10 +25,5 @@ class Riffer::Rig::Stores::SkillEntry
   def initialize(skill:)
     @skill = skill
     freeze
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    { type: TYPE, skill: @skill }
   end
 end
