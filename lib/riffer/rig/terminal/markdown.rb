@@ -99,8 +99,9 @@ module Riffer::Rig::Terminal::Markdown
     closed = Blocks.closing(opening[Blocks::FENCE, :fence].to_s).match?(chunk.fetch(-1))
     code = (closed ? chunk[1...-1] : chunk.drop(1)) || []
     limit = narrow(width, 2)
-    # The Wrapper folds runs of spaces, which would destroy code's indentation,
-    # so a long code line is cut at the width instead of wrapped through it.
+    # The Wrapper folds the runs of spaces inside a line, which would destroy
+    # code's alignment, so a long code line is cut at the width instead of
+    # wrapped through it.
     pieces = dedent(code, indent).flat_map do |row|
       limit && row.length > limit ? row.chars.each_slice(limit).map(&:join) : [row]
     end

@@ -21,24 +21,25 @@ class Riffer::Rig::Terminal::Wrapper
 
   private
 
-  # @rbs return: String?
-  def take_line: () -> String?
+  # @rbs text: String
+  # @rbs return: Array[String]
+  def wrap: (String text) -> Array[String]
+
+  # @rbs text: String
+  # @rbs limit: Integer
+  # @rbs return: Array[String]
+  def words: (String text, Integer limit) -> Array[String]
+
+  # @rbs units: Array[String]
+  # @rbs limit: Integer
+  # @rbs separator: String
+  # @rbs return: Array[String]
+  def pack: (Array[String] units, Integer limit, String separator) -> Array[String]
+
+  # @rbs lines: Array[String]
+  # @rbs return: String
+  def indented: (Array[String] lines) -> String
 
   # @rbs return: Integer?
   def usable_width: () -> Integer?
-
-  # @rbs limit: Integer
-  # @rbs return: String
-  def take_overfull_head: (Integer limit) -> String
-
-  # @rbs logical: String
-  # @rbs return: String
-  def physical_lines: (String logical) -> String
-
-  # @rbs return: String
-  def indent: () -> String
-
-  # @rbs text: String
-  # @rbs return: Array[String]
-  def wrap_words: (String text) -> Array[String]
 end
