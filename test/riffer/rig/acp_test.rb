@@ -50,7 +50,7 @@ describe Riffer::Rig::ACP do
   end
 
   def new_session(mcp_servers: [])
-    @connection.session_new(ACP::Types::NewSessionRequest.new(cwd: @cwd, mcp_servers: mcp_servers))
+    @connection.new_session(ACP::Types::NewSessionRequest.new(cwd: @cwd, mcp_servers: mcp_servers))
   end
 
   def prompt_request(session_id, text)
@@ -59,7 +59,7 @@ describe Riffer::Rig::ACP do
 
   def prompt(session_id, text)
     updates = [] #: Array[ACP::Types::SessionUpdate::t]
-    response = @connection.session_prompt(prompt_request(session_id, text)) { |update| updates << update }
+    response = @connection.prompt_session(prompt_request(session_id, text)) { |update| updates << update }
     [response, updates]
   end
 
@@ -72,7 +72,7 @@ describe Riffer::Rig::ACP do
 
   def load(session_id)
     updates = [] #: Array[ACP::Types::SessionUpdate::t]
-    response = @connection.session_load(
+    response = @connection.load_session(
       ACP::Types::LoadSessionRequest.new(cwd: @cwd, mcp_servers: [], session_id: session_id)
     ) { |update| updates << update }
     [response, updates]
@@ -119,7 +119,7 @@ describe Riffer::Rig::ACP do
   end
 
   it 'answers an unknown session with resource not found' do
-    error = @connection.session_prompt(prompt_request('missing', 'hello'))
+    error = @connection.prompt_session(prompt_request('missing', 'hello'))
 
     assert_equal ACP::RequestError::RESOURCE_NOT_FOUND, error.code
   end
@@ -211,10 +211,10 @@ describe Riffer::Rig::ACP do
       super(messages, model, options)
     end
     response = Thread.new do
-      @connection.session_prompt(prompt_request(session.session_id, 'hello')) { |update| @updates << update }
+      @connection.prompt_session(prompt_request(session.session_id, 'hello')) { |update| @updates << update }
     end
     started.pop
-    @connection.session_cancel(ACP::Types::CancelNotification.new(session_id: session.session_id))
+    @connection.cancel_session(ACP::Types::CancelNotification.new(session_id: session.session_id))
 
     assert_equal 'cancelled', response.value.stop_reason
   end
@@ -265,7 +265,7 @@ describe Riffer::Rig::ACP do
     first = save_session('first prompt')
     second = save_session('second prompt')
 
-    response = @connection.session_list(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
+    response = @connection.list_sessions(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
 
     assert_equal [first.session_id, second.session_id].sort, response.sessions.map(&:session_id).sort
   end
@@ -273,7 +273,7 @@ describe Riffer::Rig::ACP do
   it 'titles a listed session with its first prompt' do
     session = save_session("first prompt\nsecond line")
 
-    response = @connection.session_list(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
+    response = @connection.list_sessions(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
     listed = response.sessions.find { |info| info.session_id == session.session_id }
 
     assert_equal 'first prompt', listed&.title
@@ -282,7 +282,7 @@ describe Riffer::Rig::ACP do
   it 'stamps a listed session with its last update' do
     session = save_session('first prompt')
 
-    response = @connection.session_list(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
+    response = @connection.list_sessions(ACP::Types::ListSessionsRequest.new(cwd: @cwd))
     listed = response.sessions.find { |info| info.session_id == session.session_id }
 
     assert(Time.iso8601(listed&.updated_at.to_s))
@@ -314,7 +314,7 @@ describe Riffer::Rig::ACP do
   end
 
   it 'answers an unknown session id with resource not found' do
-    error = @connection.session_load(
+    error = @connection.load_session(
       ACP::Types::LoadSessionRequest.new(cwd: @cwd, mcp_servers: [], session_id: 'missing')
     )
 

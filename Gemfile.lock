@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     riffer-rig (0.12.0)
-      acp-sdk (~> 0.9)
+      acp-sdk (~> 0.11)
       base64 (~> 0.2)
       event_stream_parser (~> 1.0)
       faraday (~> 2.14)
@@ -13,7 +13,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    acp-sdk (0.10.0)
+    acp-sdk (0.11.0)
       zeitwerk (~> 2.8)
     anthropic (1.76.0)
       base64 (~> 0.1)
