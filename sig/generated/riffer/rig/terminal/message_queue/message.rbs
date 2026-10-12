@@ -1,0 +1,10 @@
+# Generated from lib/riffer/rig/terminal/message_queue/message.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::MessageQueue::Message
+  # @dynamic text
+  attr_reader text: String
+
+  # @rbs text: String
+  # @rbs return: void
+  def initialize: (text: String) -> void
+end

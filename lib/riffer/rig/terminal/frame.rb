@@ -9,6 +9,10 @@ class Riffer::Rig::Terminal::Frame
 
   STATUS_INDENT = '  ' #: String
 
+  # The first column is the cursor's own cell when it rests at the end of the
+  # text.
+  QUEUED_GAP = '   ' #: String
+
   # The cursor rests on the input line, the footer's first row, so this wipes
   # the whole footer.
   ERASE = "\r\e[J" #: String
@@ -17,6 +21,7 @@ class Riffer::Rig::Terminal::Frame
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @editor: Riffer::Rig::Terminal::LineEditor
   # @rbs @status: String
+  # @rbs @queued: Integer
   # @rbs @width: Integer
   # @rbs @active: bool
   # @rbs @mutex: Mutex
@@ -31,6 +36,7 @@ class Riffer::Rig::Terminal::Frame
     @theme = theme
     @editor = editor
     @status = ''
+    @queued = 0
     @width = 0
     @active = false
     @mutex = Mutex.new
@@ -76,6 +82,15 @@ class Riffer::Rig::Terminal::Frame
   def status(status)
     @mutex.synchronize do
       @status = status
+      redraw
+    end
+  end
+
+  # @rbs count: Integer
+  # @rbs return: void
+  def queued(count)
+    @mutex.synchronize do
+      @queued = count
       redraw
     end
   end
@@ -130,10 +145,23 @@ class Riffer::Rig::Terminal::Frame
       @editor.printable_after,
       typing - Riffer::Rig::Terminal::Columns.width(before)
     )
-    input = Riffer::Rig::Terminal::Columns.head("#{@theme.pink(PROMPT)} #{before}#{after}", room)
+    typed = "#{before}#{after}"
+    spare = typing - Riffer::Rig::Terminal::Columns.width(typed)
+    input = Riffer::Rig::Terminal::Columns.head("#{@theme.pink(PROMPT)} #{typed}#{chip(spare)}", room)
     status = Riffer::Rig::Terminal::Columns.head("#{STATUS_INDENT}#{@status}", room)
     column = [PROMPT_COLUMNS + Riffer::Rig::Terminal::Columns.width(before), room].min
     "#{input}\r\n#{status}\e[1A\e[#{column + 1}G"
+  end
+
+  # @rbs room: Integer
+  # @rbs return: String
+  def chip(room)
+    label = "· #{@queued} queued"
+    # A count cut short would read as a smaller queue, so the chip is drawn
+    # whole or not at all.
+    return '' if @queued.zero? || QUEUED_GAP.size + label.size > room
+
+    "#{QUEUED_GAP}#{@theme.dim(label)}"
   end
 
   # @rbs bytes: String

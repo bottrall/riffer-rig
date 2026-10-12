@@ -202,6 +202,33 @@ describe Riffer::Rig::Terminal::Frame do
     end
   end
 
+  describe '#queued' do
+    it 'draws nothing when there is no footer' do
+      io = StringIO.new
+
+      started(io).queued(2)
+
+      assert_equal '', io.string
+    end
+
+    it 'redraws the footer with the count after the input line' do
+      io = tty(80)
+
+      started(io).queued(2)
+
+      assert_equal "#{empty_footer}\r\e[J›    · 2 queued\r\n  \e[1A\e[3G", io.string
+    end
+
+    it 'leaves the cursor at the edit point' do
+      frame = on_pty
+      frame.input(editing('hi', 'yo'))
+
+      frame.queued(2)
+
+      assert_equal [0, 4], [@pty.screen.row, @pty.screen.column]
+    end
+  end
+
   describe '#stop' do
     it 'writes nothing when there is no footer' do
       io = StringIO.new
@@ -315,6 +342,50 @@ describe Riffer::Rig::Terminal::Frame do
       started(io).status("\e[2mworking\e[0m")
 
       assert_operator io.string, :end_with?, "\r\n  \e[2mworki\e[0m\e[1A\e[3G"
+    end
+  end
+
+  describe '#chip' do
+    it 'is left out once nothing is queued' do
+      io = tty(80)
+      frame = started(io)
+
+      frame.queued(2)
+      frame.queued(0)
+
+      assert_operator io.string, :end_with?, "\e[J#{empty_footer}"
+    end
+
+    it 'is left out rather than cut short when the width has no room for it' do
+      io = tty(17)
+
+      started(io, editor: editing('hi')).queued(2)
+
+      assert_operator io.string, :end_with?, "\e[J› hi\r\n  \e[1A\e[5G"
+    end
+
+    it 'is dimmed when color is on' do
+      io = tty(80)
+
+      started(io, color: true).queued(2)
+
+      assert_operator io.string, :end_with?, "\e[0m    \e[2m· 2 queued\e[0m\r\n  \e[1A\e[3G"
+    end
+
+    it 'follows the text either side of the cursor' do
+      io = tty(80)
+
+      started(io, editor: editing('hi', 'yo')).queued(2)
+
+      assert_operator io.string, :end_with?, "› hiyo   · 2 queued\r\n  \e[1A\e[5G"
+    end
+
+    it 'fills the input line up to the free last column' do
+      io = tty(18)
+
+      started(io, editor: editing('hi')).queued(2)
+
+      assert_operator io.string, :end_with?, "› hi   · 2 queued\r\n  \e[1A\e[5G"
     end
   end
 end
