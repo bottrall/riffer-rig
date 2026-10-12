@@ -12,7 +12,7 @@ class Riffer::Rig::Env
   def self.load(source = ENV.to_h)
     env = new(source)
     model = env.model
-    rejection = model && Riffer::Rig::Settings.rejection(model)
+    rejection = model && Riffer::Rig::Settings::ModelOptions.rejection(model)
     rejection ? Invalid.new("RIFFER_MODEL: #{rejection}") : env
   end
 

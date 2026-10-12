@@ -98,7 +98,7 @@ class Riffer::Rig::Loader
   # the entry point the automatic trigger (#133) calls. The snapshot advances
   # on every attempt, failed ones included, so a failure does not retry every
   # request. Failures are notified once and reported as the message, the way
-  # Settings.rejection reports a rejection; the Runtime is the success value.
+  # Settings::ModelOptions.rejection reports a rejection; the Runtime is the success value.
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs force: bool
   # @rbs return: (Riffer::Rig::Runtime | String)

@@ -93,7 +93,7 @@ class Riffer::Rig::Loader
     settings = merged_settings
     document = Riffer::Rig::Settings::Document.new(settings)
     selected = select_model(options.model || @env.model || document.model)
-    provider = Riffer::Rig::Settings.provider_for(selected).to_s
+    provider = Riffer::Rig::Settings::ModelOptions.provider_for(selected).to_s
     ensure_sdk(provider)
     credentials = { provider.to_sym => credentials_for(provider) }
     @extensions_enabled = options.extensions
@@ -122,7 +122,7 @@ class Riffer::Rig::Loader
       auth_path: home_auth_path,
       pricing: document.models,
       riffer_config: @riffer_config,
-      model_options: Riffer::Rig::Settings.model_options(selected, document.reasoning),
+      model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected, document.reasoning),
       native_tools: document.native_tools,
       snapshot: snapshot
     )
@@ -194,7 +194,7 @@ class Riffer::Rig::Loader
   # the entry point the automatic trigger (#133) calls. The snapshot advances
   # on every attempt, failed ones included, so a failure does not retry every
   # request. Failures are notified once and reported as the message, the way
-  # Settings.rejection reports a rejection; the Runtime is the success value.
+  # Settings::ModelOptions.rejection reports a rejection; the Runtime is the success value.
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs force: bool
   # @rbs return: (Riffer::Rig::Runtime | String)
@@ -233,8 +233,8 @@ class Riffer::Rig::Loader
   # @rbs return: Hash[Symbol, untyped]
   def merged_settings
     Riffer::Rig::Settings.merge(
-      Riffer::Rig::Settings.read(home_settings_path),
-      Riffer::Rig::Settings.read(File.join(@cwd, '.riffer', 'settings.json'))
+      Riffer::Rig::Settings::File.read(home_settings_path),
+      Riffer::Rig::Settings::File.read(File.join(@cwd, '.riffer', 'settings.json'))
     )
   end
 
@@ -447,10 +447,10 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def select_model(configured)
     model = configured || ask_for_model
-    rejection = Riffer::Rig::Settings.rejection(model)
+    rejection = Riffer::Rig::Settings::ModelOptions.rejection(model)
     raise ConfigurationError, rejection if rejection
 
-    Riffer::Rig::Settings.store_model(model, path: home_settings_path) unless configured
+    Riffer::Rig::Settings::File.store_model(model, path: home_settings_path) unless configured
     model
   end
 
@@ -466,13 +466,13 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def onboarding_question
     'Which model should riffer use? Enter provider/name, ' \
-      "with a provider from: #{Riffer::Rig::Settings.provider_list}"
+      "with a provider from: #{Riffer::Rig::Providers.list}"
   end
 
   # @rbs return: String
   def no_model
     'No model is set: pass --model provider/name, set RIFFER_MODEL, or set "model" in ' \
-      "~/.riffer/settings.json, with a provider from: #{Riffer::Rig::Settings.provider_list}"
+      "~/.riffer/settings.json, with a provider from: #{Riffer::Rig::Providers.list}"
   end
 
   # @rbs provider: String

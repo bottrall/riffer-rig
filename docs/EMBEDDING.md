@@ -73,7 +73,7 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `name:`         | the name interpolated into the [base prompt](INSTRUCTIONS.md)               | `"riffer"`              |
 | `instructions:` | replaces the base prompt; sections and the environment block still apply    | `nil` (use the base)    |
 | `max_steps:`    | agent-loop step limit; `nil` runs the loop without a limit                  | `nil`                   |
-| `model_options:` | riffer `model_options` sent with every model call (`{ reasoning: 'high' }`, `{ cache_control: { type: :ephemeral } }`); `Riffer::Rig::Settings.model_options(model, reasoning)` builds them from the settings | `{}` |
+| `model_options:` | riffer `model_options` sent with every model call (`{ reasoning: 'high' }`, `{ cache_control: { type: :ephemeral } }`); `Riffer::Rig::Settings::ModelOptions.model_options(model, reasoning)` builds them from the settings | `{}` |
 | `credentials:`  | provider → resolved field values (`{ anthropic: { api_key: "…" } }`), stored as given and exposed; read by `/model` and a restore | `{}` |
 | `pricing:`      | model → `Riffer::Rig::Settings::Pricing` entries (USD per million tokens), registered into riffer's pricing when the Runtime is built; see [tally](#token-tally-and-cost) | `{}` |
 | `riffer_config:` | the `Riffer::Config` whose `pricing` receives the `pricing:` entries      | `Riffer.config`         |

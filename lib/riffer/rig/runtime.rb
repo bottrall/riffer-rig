@@ -383,7 +383,7 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def rederive_options(model)
     reasoning = Riffer::Rig::Settings::Document.new(@settings).reasoning
-    @model_options = Riffer::Rig::Settings.model_options(model, reasoning).merge(native_options(model))
+    @model_options = Riffer::Rig::Settings::ModelOptions.model_options(model, reasoning).merge(native_options(model))
     @agent.config.model_options = @model_options
   end
 
@@ -393,7 +393,7 @@ class Riffer::Rig::Runtime
   # @rbs model: String
   # @rbs return: Hash[Symbol, untyped]
   def native_options(model)
-    provider = Riffer::Rig::Settings.provider_for(model)&.to_sym
+    provider = Riffer::Rig::Settings::ModelOptions.provider_for(model)&.to_sym
     @native_tools.filter_map do |tool, switch|
       next unless provider && NATIVE_TOOLS_BY_PROVIDER[tool]&.key?(provider)
 

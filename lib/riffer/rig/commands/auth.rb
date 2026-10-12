@@ -30,12 +30,12 @@ module Riffer::Rig::Commands::Auth
   # @rbs return: String
   def hint
     'Use /auth <provider> or /auth remove <provider>, with a provider from: ' \
-      "#{Riffer::Rig::Settings.provider_list}"
+      "#{Riffer::Rig::Providers.list}"
   end
 
   # @rbs return: String
   def list
-    statuses = Riffer::Rig::Settings.providers.to_h do |identifier|
+    statuses = Riffer::Rig::Providers.identifiers.to_h do |identifier|
       [identifier, Riffer::Rig::Credentials.status(identifier)]
     end
     width = statuses.keys.map { |identifier| identifier.to_s.length }.max || 0

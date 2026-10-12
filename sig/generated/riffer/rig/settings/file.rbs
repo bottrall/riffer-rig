@@ -1,0 +1,14 @@
+# Generated from lib/riffer/rig/settings/file.rb with RBS::Inline
+
+module Riffer::Rig::Settings::File
+  PATH: String
+
+  # @rbs path: String
+  # @rbs return: Hash[Symbol, untyped]
+  def read: (String path) -> Hash[Symbol, untyped]
+
+  # @rbs model: String
+  # @rbs path: String
+  # @rbs return: void
+  def store_model: (String model, ?path: String) -> void
+end

@@ -20,6 +20,9 @@ module Riffer::Rig::Providers
   # @rbs return: Array[Symbol]
   def identifiers: () -> Array[Symbol]
 
+  # @rbs return: String
+  def list: () -> String
+
   private
 
   # @rbs setup: Riffer::Rig::ProviderSetup | Hash[Symbol, untyped]

@@ -41,13 +41,13 @@ describe Riffer::Rig::Commands::Auth do
     @saved_env = secret_env_vars.to_h { |name| [name, ENV.fetch(name, nil)] }
     secret_env_vars.each { |name| ENV[name] = nil }
     FileUtils.rm_f(Riffer::Rig::Credentials::PATH)
-    FileUtils.rm_f(Riffer::Rig::Settings::PATH)
+    FileUtils.rm_f(Riffer::Rig::Settings::File::PATH)
   end
 
   after do
     @saved_env.each { |name, value| ENV[name] = value }
     FileUtils.rm_f(Riffer::Rig::Credentials::PATH)
-    FileUtils.rm_f(Riffer::Rig::Settings::PATH)
+    FileUtils.rm_f(Riffer::Rig::Settings::File::PATH)
   end
 
   def command_events(runtime, args)
@@ -179,7 +179,7 @@ describe Riffer::Rig::Commands::Auth do
       runtime = Riffer::Rig::Runtime.new('mock/test')
       command_events(runtime, 'remove openai')
 
-      assert_nil JSON.parse(File.read(Riffer::Rig::Settings::PATH))['providers']
+      assert_nil JSON.parse(File.read(Riffer::Rig::Settings::File::PATH))['providers']
     end
 
     it 'reports the removal' do
