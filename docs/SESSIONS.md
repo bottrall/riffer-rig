@@ -27,6 +27,32 @@ Every entry but the header also holds `recorded_at`, the wall-clock time the Loa
 
 Every Loader-built session is saved, one-shots included. Skip one run with `store: nil` — `--no-save` on the command line — or all of them with `"sessions": {"save": false}` in settings ([Configuration](CONFIGURATION.md)).
 
+## Tracing the last turn
+
+`/trace` replays the last turn from the store. The Loader installs it as a runtime command on every build that records, so it works the same in every host and is absent when the session is not saved ([Opting out](#opting-out)). The turn runs from the session's last user message to its last entry, so a resumed session can be traced before its next prompt. The command's `command_output` holds one line per recorded step — the time, what happened, and the detail:
+
+```
+02:00:01.000  prompt    Fix the failing test
+02:00:02.250  preamble  I'll read both files.
+02:00:02.250  dispatch  read {"path":"a.rb"}
+02:00:02.250  dispatch  read {"path":"b.rb"}
+              silent    6.8s
+02:00:09.050  finish    read
+02:00:09.051  finish    read (execution_error)
+02:00:10.500  answer    Fixed.
+```
+
+| Step       | Shows                                                                                                   |
+| ---------- | ------------------------------------------------------------------------------------------------------- |
+| `prompt`   | the first line of the user message that started the turn                                                |
+| `preamble` | the first line of the text the assistant sent with tool calls                                           |
+| `dispatch` | one line per tool call of that request: the tool's name and its arguments as the model sent them        |
+| `finish`   | one line per tool result, in call order: the tool's name, and the error type in parentheses when it failed |
+| `answer`   | the first line of the text of a request that called no tool                                             |
+| `silent`   | a stretch of 5 seconds or more between two consecutive messages, with its length                        |
+
+The times are the entries' `recorded_at`, in UTC; an entry without one has a blank time and bounds no `silent` stretch. The tool results of one request are recorded together, once the last of its calls returns, so a `dispatch` carries its request's time and the `finish` lines of one request share the moment the whole batch ended — each call's own timing is on the stream's [`after_tool_call`](EMBEDDING.md#tool-call-events). A session with no user message yet answers `No turn recorded yet`.
+
 ## Resuming
 
 The Loader picks the session to drive; hosts never see the store:

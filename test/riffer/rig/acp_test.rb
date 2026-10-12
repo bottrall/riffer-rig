@@ -614,7 +614,7 @@ describe Riffer::Rig::ACP do
         notification.update.is_a?(ACP::Types::SessionUpdate::AvailableCommandsUpdate)
       end
 
-      assert_equal %w[auth model skill:tidy reload], update.update.available_commands.map(&:name)
+      assert_equal %w[auth model skill:tidy reload trace], update.update.available_commands.map(&:name)
     end
   end
 

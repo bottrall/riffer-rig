@@ -115,6 +115,8 @@ class Riffer::Rig::Loader
       snapshot: snapshot
     )
     built.install_command(Riffer::Rig::Commands::Reload.command(self))
+    store = @store
+    built.install_command(Riffer::Rig::Commands::Trace.command(store)) if store && recorder
     built.install_reload_check(->(runtime) { automatic_reload(runtime) }) unless reload_mode(document) == :manual
     @file_state = file_state
     recorder&.attach(built)

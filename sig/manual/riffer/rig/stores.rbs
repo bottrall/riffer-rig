@@ -13,6 +13,10 @@ module Riffer::Rig::Stores
     def recorded_at: () -> String?
   end
 
+  interface _Reader
+    def read: (String id) -> Array[entry]
+  end
+
   interface _Store
     def append: (String id, entry entry) -> void
     def read: (String id) -> Array[entry]
