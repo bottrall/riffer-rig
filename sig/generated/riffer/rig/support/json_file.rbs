@@ -8,7 +8,7 @@ module Riffer::Rig::Support::JsonFile
 
   # @rbs path: String
   # @rbs document: Hash[untyped, untyped]
-  # @rbs mode: Integer
+  # @rbs mode: Integer?
   # @rbs return: void
-  def write: (String path, Hash[untyped, untyped] document, ?mode: Integer) -> void
+  def write: (String path, Hash[untyped, untyped] document, ?mode: Integer?) -> void
 end

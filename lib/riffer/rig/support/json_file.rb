@@ -20,10 +20,14 @@ module Riffer::Rig::Support::JsonFile
 
   # @rbs path: String
   # @rbs document: Hash[untyped, untyped]
-  # @rbs mode: Integer
+  # @rbs mode: Integer?
   # @rbs return: void
-  def write(path, document, mode: 0o666)
+  def write(path, document, mode: nil)
     FileUtils.mkdir_p(File.dirname(path), mode: 0o700)
-    File.open(path, 'w', mode) { |file| file.write(JSON.pretty_generate(document)) }
+    File.open(path, 'w', mode || 0o666) do |file|
+      # open applies its permissions only to a file it creates
+      file.chmod(mode) if mode
+      file.write(JSON.pretty_generate(document))
+    end
   end
 end
