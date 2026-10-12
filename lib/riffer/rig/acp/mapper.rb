@@ -119,6 +119,16 @@ module Riffer::Rig::ACP::Mapper
     outcome.option_id if outcome.is_a?(::ACP::Types::RequestPermissionOutcome::Selected)
   end
 
+  # @rbs tool_call_id: String
+  # @rbs selected: String?
+  # @rbs return: ::ACP::Types::SessionUpdate::ToolCallUpdate
+  def permission_done(tool_call_id, selected)
+    ::ACP::Types::SessionUpdate::ToolCallUpdate.new(
+      tool_call_id: tool_call_id,
+      status: selected ? ::ACP::Types::ToolCallStatus::COMPLETED : ::ACP::Types::ToolCallStatus::FAILED
+    )
+  end
+
   # @rbs session_id: String
   # @rbs question: String
   # @rbs return: ::ACP::Types::CreateElicitationRequest

@@ -20,6 +20,7 @@ describe Riffer::Rig::ACP::Host do
       replies.fetch(:elicitation)
     end
     @host = Riffer::Rig::ACP::Host.new(client: client)
+    @client = client
     @sent = sent
     @permissions = permissions
     @elicitations = elicitations
@@ -107,6 +108,12 @@ describe Riffer::Rig::ACP::Host do
         assert_equal(%w[red blue], @permissions.first.options.map(&:name))
       end
 
+      it 'closes the tool call of an ask with options once the client answers' do
+        @host.ask('Colour?', options: %w[red blue])
+
+        assert_equal([@permissions.first.tool_call.tool_call_id], sent.map { |_, update| update.tool_call_id })
+      end
+
       it 'answers an ask with options with the selected option' do
         @replies[:permission] = selected('blue')
 
@@ -145,6 +152,27 @@ describe Riffer::Rig::ACP::Host do
         @host.confirm('Trust this project?')
 
         assert_equal(%w[Yes No], @permissions.first.options.map(&:name))
+      end
+
+      it 'closes the tool call of its question on its session' do
+        @host.confirm('Trust this project?')
+
+        assert_equal(
+          [['session-1', @permissions.first.tool_call.tool_call_id]],
+          sent.map { |session_id, update| [session_id, update.tool_call_id] }
+        )
+      end
+
+      it 'closes the tool call on the client it asked when another adopts the session meanwhile' do
+        host = @host
+        reply = selected('yes')
+        @client.define_singleton_method(:request_permission) do |_request|
+          host.client = Object.new
+          reply
+        end
+        @host.confirm('Trust this project?')
+
+        assert_equal 1, sent.size
       end
 
       it 'confirms when the client selects yes' do
