@@ -31,6 +31,14 @@ All wrappers delegate to the Rakefile under the hood.
 
 `bin/rake <task>` is the escape hatch for any rake task without a named wrapper.
 
+# Testing
+
+- Every module of behaviour gets a test file, even if it's only a smoke test. A unit with no behaviour — pure constants, data definitions — needs no test file.
+- Only test what can change. Static code — generated files, constants, trivial accessors — gets at most a smoke test. Generated code is pinned at its generator: test the generator, not each generated output.
+- A test file tests only the concerns of the unit it's mapped to. If testing X requires driving Y's entry point, either the behaviour belongs in X's own file with collaborators injected, or Y's file is covering for a missing X test. Integration tests live apart from the mirror, named for what they integrate — not for a unit that doesn't exist.
+- Order tests the way the code is ordered: they follow the source's structure, and within a routine they follow execution order (validation behaviour first).
+- Test all branches in reason: every early return, conditional, and error path gets a test — unless the branch is dead or a programmer-error tripwire.
+
 # Comments and documentation
 
 **The default is no comment.** Names, types, and structure carry the meaning; when they don't, fix them rather than explain them. Delete the comment and read the code cold: if the intent is still recoverable, it stays deleted. Keep only a _why_ the code can't show — a non-local constraint, an external quirk, a deliberate tradeoff, a safety invariant — and put it at the line it explains, not in a header.

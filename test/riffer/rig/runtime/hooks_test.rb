@@ -37,6 +37,20 @@ describe Riffer::Rig::Runtime::Hooks do
     assert_equal 'hi', hooks.before_prompt('hi')
   end
 
+  it 'accepts a replacement list of messages for a request' do
+    replacement = [Riffer::Messages::User.new('hi'), Riffer::Messages::User.new('note')]
+    hooks = hooks_for(before_request: [->(_event) { replacement }])
+
+    assert_same replacement, hooks.before_request([Riffer::Messages::User.new('hi')])
+  end
+
+  it 'ignores a request replacement that holds anything but messages' do
+    messages = [Riffer::Messages::User.new('hi')]
+    hooks = hooks_for(before_request: [->(event) { [*event.messages, 'note'] }])
+
+    assert_same messages, hooks.before_request(messages)
+  end
+
   it 'blocks with the reason a hook gives' do
     hooks = hooks_for(before_tool_call: [->(_event) { [:block, 'no force pushes'] }])
 
@@ -72,6 +86,13 @@ describe Riffer::Rig::Runtime::Hooks do
     hooks_for(host, before_prompt: [->(_event) { [:block, 'not today'] }]).before_prompt('hi')
 
     assert_equal [Riffer::Rig::Events::Notify.new('not today', :warning)], host.drain
+  end
+
+  it 'notifies the host when a request is blocked' do
+    host = Riffer::Rig::Hosts::Mirror.new(Riffer::Rig::Hosts::Null.new)
+    hooks_for(host, before_request: [->(_event) { [:block, 'offline'] }]).before_request([])
+
+    assert_equal [Riffer::Rig::Events::Notify.new('offline', :warning)], host.drain
   end
 
   it 'leaves a blocked tool call to the caller' do

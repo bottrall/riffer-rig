@@ -250,4 +250,10 @@ describe Riffer::Rig::Runtime::ToolRuntime do
 
     assert_equal(['echo: hi'], results.map { |_tool_call, response| response.content })
   end
+
+  it 'ignores what an after_tool_call hook returns' do
+    results = execute(tool_runtime(after_tool_call: [->(_event) { 'IGNORED' }]), call('a'))
+
+    assert_equal(['echo: hi'], results.map { |_tool_call, response| response.content })
+  end
 end

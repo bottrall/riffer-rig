@@ -1133,10 +1133,6 @@ describe Riffer::Rig::Runtime do
       runtime.agent.provider.stub_response('All done.')
     end
 
-    def tool_result(runtime)
-      runtime.agent.session.messages.grep(Riffer::Messages::Tool).last
-    end
-
     it 'turns a blocked tool call into a tool error the model sees' do
       runtime = runtime_with { |rig| rig.on(:before_tool_call) { |_e| next :block, 'no echoes' } }
       stub_tool_turn(runtime)
@@ -1144,34 +1140,6 @@ describe Riffer::Rig::Runtime do
       sent = runtime.agent.provider.calls.last[:messages].find { |message| message[:role].to_s == 'tool' }
 
       assert_equal 'no echoes', sent[:content]
-    end
-
-    it 'marks a blocked tool call as an error' do
-      runtime = runtime_with { |rig| rig.on(:before_tool_call) { |_e| next :block, 'no echoes' } }
-      stub_tool_turn(runtime)
-      runtime.ask('go')
-
-      assert_equal :blocked, tool_result(runtime).error_type
-    end
-
-    it 'feeds a replacement tool payload to the next hook' do
-      seen = nil
-      runtime = runtime_with do |rig|
-        rig.on(:before_tool_call) { |e| e.args.merge(text: 'replaced') }
-        rig.on(:before_tool_call) { |e| seen = e.args[:text] }
-      end
-      stub_tool_turn(runtime)
-      runtime.ask('go')
-
-      assert_equal 'replaced', seen
-    end
-
-    it 'runs the tool with the replacement payload' do
-      runtime = runtime_with { |rig| rig.on(:before_tool_call) { |e| e.args.merge(text: 'replaced') } }
-      stub_tool_turn(runtime)
-      runtime.ask('go')
-
-      assert_equal 'echo: replaced', tool_result(runtime).content
     end
 
     it 'fires before_request before each LLM call in a two-step tool turn' do
@@ -1258,23 +1226,6 @@ describe Riffer::Rig::Runtime do
       notifies = runtime.prompt('go').grep(Riffer::Rig::Events::Notify)
 
       assert_equal [Riffer::Rig::Events::Notify.new('not now', :warning)], notifies
-    end
-
-    it 'ignores what after_tool_call returns' do
-      runtime = runtime_with { |rig| rig.on(:after_tool_call) { |_e| 'IGNORED' } }
-      stub_tool_turn(runtime)
-      runtime.ask('go')
-
-      assert_equal 'echo: hi', tool_result(runtime).content
-    end
-
-    it 'hands after_tool_call the tool result' do
-      result = nil
-      runtime = runtime_with { |rig| rig.on(:after_tool_call) { |e| result = e.result.content } }
-      stub_tool_turn(runtime)
-      runtime.ask('go')
-
-      assert_equal 'echo: hi', result
     end
 
     it 'ignores what after_response returns' do
@@ -1365,14 +1316,6 @@ describe Riffer::Rig::Runtime do
       notifies = runtime.prompt('go').grep(Riffer::Rig::Events::Notify)
 
       assert_equal [Riffer::Rig::Events::Notify.new('before_tool_call hook failed: boom', :error)], notifies
-    end
-
-    it 'continues the turn after a hook raises' do
-      runtime = runtime_with { |rig| rig.on(:before_tool_call) { |_e| raise 'boom' } }
-      stub_tool_turn(runtime)
-      runtime.ask('go')
-
-      assert_equal 'echo: hi', tool_result(runtime).content
     end
 
     it 'runs hooks in load order across extensions' do
