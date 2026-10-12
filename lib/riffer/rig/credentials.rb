@@ -28,7 +28,7 @@ module Riffer::Rig::Credentials
     env: Riffer::Rig::Env.new,
     config: Riffer.config,
     auth_path: PATH,
-    settings_path: Riffer::Rig::Settings::PATH,
+    settings_path: Riffer::Rig::Settings::File::PATH,
     known: {}
   )
     resolution = resolve(identifier, host:, setup:, env:, auth_path:, settings_path:)
@@ -68,7 +68,7 @@ module Riffer::Rig::Credentials
     values,
     setup: Riffer::Rig::ProviderSetup.for(identifier),
     auth_path: PATH,
-    settings_path: Riffer::Rig::Settings::PATH
+    settings_path: Riffer::Rig::Settings::File::PATH
   )
     secret_names = setup.fields.select(&:secret).map { |field| field.name.to_s }
     fields = values.transform_keys(&:to_s)
@@ -81,17 +81,17 @@ module Riffer::Rig::Credentials
       end
       write_auth(auth_path, entries)
     end
-    Riffer::Rig::Settings.store_provider(identifier.to_s, plain, path: settings_path) unless plain.empty?
+    ProviderFields.store(identifier.to_s, plain, path: settings_path) unless plain.empty?
   end
 
   # @rbs identifier: String | Symbol
   # @rbs auth_path: String
   # @rbs settings_path: String
   # @rbs return: void
-  def remove(identifier, auth_path: PATH, settings_path: Riffer::Rig::Settings::PATH)
+  def remove(identifier, auth_path: PATH, settings_path: Riffer::Rig::Settings::File::PATH)
     entries = read_auth(auth_path)
     write_auth(auth_path, entries.except(identifier.to_s)) if entries.key?(identifier.to_s)
-    Riffer::Rig::Settings.remove_provider(identifier.to_s, path: settings_path)
+    ProviderFields.remove(identifier.to_s, path: settings_path)
   end
 
   # @rbs identifier: String | Symbol
@@ -124,10 +124,10 @@ module Riffer::Rig::Credentials
     setup: Riffer::Rig::ProviderSetup.for(identifier),
     env: Riffer::Rig::Env.new,
     auth_path: PATH,
-    settings_path: Riffer::Rig::Settings::PATH
+    settings_path: Riffer::Rig::Settings::File::PATH
   )
     secrets = stored_secrets(identifier, auth_path)
-    plain = Riffer::Rig::Settings.provider_fields(identifier.to_s, path: settings_path)
+    plain = ProviderFields.read(identifier.to_s, path: settings_path)
     found = setup.fields.to_h do |field|
       [field.name, env.value_for(field) || stored_value(field, secrets, plain, env) || field.fallback&.call]
     end.compact

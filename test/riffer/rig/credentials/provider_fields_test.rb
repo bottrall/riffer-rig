@@ -1,0 +1,84 @@
+# frozen_string_literal: true
+
+require 'test_helper'
+require 'json'
+
+describe Riffer::Rig::Credentials::ProviderFields do
+  def settings_file(dir, data)
+    path = File.join(dir, 'settings.json')
+    File.write(path, JSON.generate(data))
+    path
+  end
+
+  describe '.read' do
+    it 'returns the providers block for one provider' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(dir, { 'providers' => { 'azure_openai' => { 'endpoint' => 'https://azure.test' } } })
+
+        assert_equal(
+          { 'endpoint' => 'https://azure.test' },
+          Riffer::Rig::Credentials::ProviderFields.read('azure_openai', path: path)
+        )
+      end
+    end
+
+    it 'is empty for a provider without a block' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(dir, { 'providers' => 'not a hash' })
+
+        assert_empty Riffer::Rig::Credentials::ProviderFields.read('azure_openai', path: path)
+      end
+    end
+  end
+
+  describe '.store' do
+    it 'merges fields into an existing block' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(dir, { 'providers' => { 'openai' => { 'base_url' => 'https://old.test' } } })
+
+        Riffer::Rig::Credentials::ProviderFields.store('openai', { 'base_url' => 'https://new.test' }, path: path)
+
+        assert_equal(
+          { 'base_url' => 'https://new.test' },
+          Riffer::Rig::Credentials::ProviderFields.read('openai', path: path)
+        )
+      end
+    end
+
+    it 'keeps the other keys' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(dir, { 'model' => 'openai/o3' })
+
+        Riffer::Rig::Credentials::ProviderFields.store('openai', { 'base_url' => 'https://new.test' }, path: path)
+
+        assert_equal 'openai/o3', JSON.parse(File.read(path))['model']
+      end
+    end
+  end
+
+  describe '.remove' do
+    it 'keeps the other blocks' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(
+          dir,
+          { 'providers' => { 'openai' => { 'base_url' => 'https://proxy.test' },
+                             'amazon_bedrock' => { 'region' => 'us-west-2' } } }
+        )
+
+        Riffer::Rig::Credentials::ProviderFields.remove('openai', path: path)
+
+        assert_equal({ 'amazon_bedrock' => { 'region' => 'us-west-2' } }, JSON.parse(File.read(path))['providers'])
+      end
+    end
+
+    it 'writes nothing when the provider has no block' do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, 'settings.json')
+
+        Riffer::Rig::Credentials::ProviderFields.remove('openai', path: path)
+
+        refute_path_exists path
+      end
+    end
+  end
+end

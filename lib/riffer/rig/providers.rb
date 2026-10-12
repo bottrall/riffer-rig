@@ -38,6 +38,11 @@ module Riffer::Rig::Providers
     (::Riffer::Providers::Repository::REPO.keys - [:mock]) | @setups.keys
   end
 
+  # @rbs return: String
+  def list
+    identifiers.join(', ')
+  end
+
   private
 
   # @rbs setup: Riffer::Rig::ProviderSetup | Hash[Symbol, untyped]

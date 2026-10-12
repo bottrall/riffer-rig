@@ -24,16 +24,16 @@ module Riffer::Rig::Commands::Model
     if model.empty?
       return ctx.say("Model: #{ctx.runtime.model}") unless save
 
-      Riffer::Rig::Settings.store_model(ctx.runtime.model)
+      Riffer::Rig::Settings::File.store_model(ctx.runtime.model)
       return ctx.say("Saved #{ctx.runtime.model} to settings")
     end
 
-    provider = Riffer::Rig::Settings.provider_for(model)
+    provider = Riffer::Rig::Settings::ModelOptions.provider_for(model)
     return ctx.say(hint) unless provider && Riffer::Providers::Repository.find(provider)
     return unless ready?(ctx, model, provider)
 
     ctx.runtime.model = model
-    Riffer::Rig::Settings.store_model(model) if save
+    Riffer::Rig::Settings::File.store_model(model) if save
     ctx.say("Model: #{model}")
   end
 
@@ -41,7 +41,7 @@ module Riffer::Rig::Commands::Model
 
   # @rbs return: String
   def hint
-    "Use /model provider/name, with a provider from: #{Riffer::Rig::Settings.provider_list}"
+    "Use /model provider/name, with a provider from: #{Riffer::Rig::Providers.list}"
   end
 
   # The same setup flows the Loader runs when it builds a Runtime: the

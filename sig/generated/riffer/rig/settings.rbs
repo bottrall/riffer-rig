@@ -1,22 +1,6 @@
 # Generated from lib/riffer/rig/settings.rb with RBS::Inline
 
 module Riffer::Rig::Settings
-  PATH: String
-
-  REASONING_LEVELS_BY_PROVIDER: Hash[String, Array[String]]
-
-  MODEL_STRING: Regexp
-
-  # @rbs return: Array[Symbol]
-  def providers: () -> Array[Symbol]
-
-  # @rbs return: String
-  def provider_list: () -> String
-
-  # @rbs path: String
-  # @rbs return: Hash[Symbol, untyped]
-  def read: (String path) -> Hash[Symbol, untyped]
-
   # MCP servers merge by name, whole, so a home server's headers never reach a
   # project server's url.
   # @rbs home: Hash[Symbol, untyped]
@@ -24,58 +8,10 @@ module Riffer::Rig::Settings
   # @rbs return: Hash[Symbol, untyped]
   def merge: (Hash[Symbol, untyped] home, Hash[Symbol, untyped] project) -> Hash[Symbol, untyped]
 
-  # @rbs model: String
-  # @rbs return: String?
-  def provider_for: (String model) -> String?
-
-  # @rbs model: String
-  # @rbs return: String?
-  def rejection: (String model) -> String?
-
-  # @rbs model: String
-  # @rbs reasoning: String?
-  # @rbs return: Hash[Symbol, untyped]
-  def model_options: (String model, String? reasoning) -> Hash[Symbol, untyped]
-
-  # @rbs model: String
-  # @rbs path: String
-  # @rbs return: void
-  def store_model: (String model, ?path: String) -> void
-
-  # @rbs identifier: String
-  # @rbs path: String
-  # @rbs return: Hash[String, String]
-  def provider_fields: (String identifier, ?path: String) -> Hash[String, String]
-
-  # @rbs identifier: String
-  # @rbs fields: Hash[String, String]
-  # @rbs path: String
-  # @rbs return: void
-  def store_provider: (String identifier, Hash[String, String] fields, ?path: String) -> void
-
-  # @rbs identifier: String
-  # @rbs path: String
-  # @rbs return: void
-  def remove_provider: (String identifier, ?path: String) -> void
-
   private
 
   # @rbs home: Hash[Symbol, untyped]
   # @rbs project: Hash[Symbol, untyped]
   # @rbs return: Hash[Symbol, untyped]
   def deep_merge: (Hash[Symbol, untyped] home, Hash[Symbol, untyped] project) -> Hash[Symbol, untyped]
-
-  # @rbs path: String
-  # @rbs &: (Hash[String, Hash[String, String]]) -> Hash[String, Hash[String, String]]
-  # @rbs return: void
-  def update_providers: (String path) { (Hash[String, Hash[String, String]]) -> Hash[String, Hash[String, String]] } -> void
-
-  # @rbs provider: String?
-  # @rbs return: Hash[Symbol, untyped]
-  def base_options: (String? provider) -> Hash[Symbol, untyped]
-
-  # @rbs level: String?
-  # @rbs provider: String?
-  # @rbs return: Hash[Symbol, untyped]
-  def reasoning_options: (String? level, String? provider) -> Hash[Symbol, untyped]
 end

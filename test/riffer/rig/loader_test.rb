@@ -263,10 +263,10 @@ describe Riffer::Rig::Loader do
 
     it 'hands the model options to the Runtime' do
       write_settings(@home, { reasoning: 'high' })
-      options = Riffer::Rig::Settings.method(:model_options)
-      Riffer::Rig::Settings.define_singleton_method(:model_options) { |*_args| { reasoning: 'high' } }
+      options = Riffer::Rig::Settings::ModelOptions.method(:model_options)
+      Riffer::Rig::Settings::ModelOptions.define_singleton_method(:model_options) { |*_args| { reasoning: 'high' } }
       model_options = build(model: 'mock/test').agent.config.model_options
-      Riffer::Rig::Settings.define_singleton_method(:model_options, options)
+      Riffer::Rig::Settings::ModelOptions.define_singleton_method(:model_options, options)
 
       assert_equal({ reasoning: 'high' }, model_options)
     end

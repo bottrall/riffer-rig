@@ -54,6 +54,10 @@ describe Riffer::Rig::Providers do
     )
   end
 
+  it 'joins the identifiers into a list' do
+    assert_equal 'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter', Riffer::Rig::Providers.list
+  end
+
   it 'replaces the setup when registered again' do
     Riffer::Rig::Providers.register(:globex_probe, setup: globex_setup) { GlobexProbeProvider }
     Riffer::Rig::Providers.register(:globex_probe, setup: { fields: [{ name: :token, env: ['GLOBEX_PROBE_TOKEN'] }] }) { GlobexProbeProvider }

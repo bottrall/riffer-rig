@@ -49,7 +49,7 @@ describe Riffer::Rig::Commands::Model do
     secret_env_vars.each { |name| ENV[name] = nil }
     @saved_keys = { openai: Riffer.config.openai.api_key, gemini: Riffer.config.gemini.api_key }
     FileUtils.rm_f(Riffer::Rig::Credentials::PATH)
-    FileUtils.rm_f(Riffer::Rig::Settings::PATH)
+    FileUtils.rm_f(Riffer::Rig::Settings::File::PATH)
   end
 
   after do
@@ -58,7 +58,7 @@ describe Riffer::Rig::Commands::Model do
       Riffer.config.public_send(provider).api_key = key
     end
     FileUtils.rm_f(Riffer::Rig::Credentials::PATH)
-    FileUtils.rm_f(Riffer::Rig::Settings::PATH)
+    FileUtils.rm_f(Riffer::Rig::Settings::File::PATH)
   end
 
   def command_events(runtime, args)
@@ -286,14 +286,14 @@ describe Riffer::Rig::Commands::Model do
 
   describe 'save' do
     def write_home_settings(data)
-      FileUtils.mkdir_p(File.dirname(Riffer::Rig::Settings::PATH))
-      File.write(Riffer::Rig::Settings::PATH, JSON.generate(data))
+      FileUtils.mkdir_p(File.dirname(Riffer::Rig::Settings::File::PATH))
+      File.write(Riffer::Rig::Settings::File::PATH, JSON.generate(data))
     end
 
     def saved_settings
-      return {} unless File.file?(Riffer::Rig::Settings::PATH)
+      return {} unless File.file?(Riffer::Rig::Settings::File::PATH)
 
-      JSON.parse(File.read(Riffer::Rig::Settings::PATH))
+      JSON.parse(File.read(Riffer::Rig::Settings::File::PATH))
     end
 
     it 'saves the current model to the home settings' do
