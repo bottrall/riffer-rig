@@ -137,8 +137,7 @@ describe Riffer::Rig::Credentials do
 
     it 'ignores the old flat file shape' do
       in_tmp_home do |paths|
-        FileUtils.mkdir_p(File.dirname(paths[:auth_path]))
-        File.write(paths[:auth_path], JSON.generate('anthropic' => 'sk-ant-flat'))
+        write_auth(paths, 'anthropic' => 'sk-ant-flat')
 
         resolution = Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, config: nil, **paths)
 
@@ -148,8 +147,7 @@ describe Riffer::Rig::Credentials do
 
     it 'ignores an entry of another type' do
       in_tmp_home do |paths|
-        FileUtils.mkdir_p(File.dirname(paths[:auth_path]))
-        File.write(paths[:auth_path], JSON.generate('anthropic' => { 'type' => 'oauth', 'api_key' => 'sk-oauth' }))
+        write_auth(paths, 'anthropic' => { 'type' => 'oauth', 'api_key' => 'sk-oauth' })
 
         resolution = Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, config: nil, **paths)
 
@@ -159,8 +157,7 @@ describe Riffer::Rig::Credentials do
 
     it 'ignores a stored value that is not a string' do
       in_tmp_home do |paths|
-        FileUtils.mkdir_p(File.dirname(paths[:auth_path]))
-        File.write(paths[:auth_path], JSON.generate('anthropic' => { 'type' => 'api_key', 'api_key' => 42 }))
+        write_auth(paths, 'anthropic' => { 'type' => 'api_key', 'api_key' => 42 })
 
         resolution = Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, config: nil, **paths)
 
@@ -539,6 +536,41 @@ describe Riffer::Rig::Credentials do
       end
     end
 
+    it 'replaces an entry of another type stored for the provider' do
+      in_tmp_home do |paths|
+        write_auth(paths, 'anthropic' => { 'type' => 'oauth', 'token' => 't' })
+
+        Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-ant' }, **paths)
+
+        assert_equal(
+          { 'type' => 'api_key', 'api_key' => 'sk-ant' },
+          JSON.parse(File.read(paths[:auth_path]))['anthropic']
+        )
+      end
+    end
+
+    it 'leaves the entries it does not recognise untouched' do
+      in_tmp_home do |paths|
+        unrecognised = { 'legacy' => 'sk-flat', 'other' => { 'type' => 'oauth', 'token' => 't' } }
+        write_auth(paths, unrecognised)
+
+        Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-ant' }, **paths)
+
+        assert_equal unrecognised, JSON.parse(File.read(paths[:auth_path])).except('anthropic')
+      end
+    end
+
+    it 'leaves the non-string values of another provider untouched' do
+      in_tmp_home do |paths|
+        openai = { 'type' => 'api_key', 'api_key' => 'sk-oai', 'n' => 5 }
+        write_auth(paths, 'openai' => openai)
+
+        Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-ant' }, **paths)
+
+        assert_equal openai, JSON.parse(File.read(paths[:auth_path]))['openai']
+      end
+    end
+
     it 'leaves auth.json unwritten when no field is secret' do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:azure_openai, { endpoint: 'https://azure.test' }, **paths)
@@ -607,6 +639,38 @@ describe Riffer::Rig::Credentials do
       end
     end
 
+    it 'deletes an entry of another type stored for the provider' do
+      in_tmp_home do |paths|
+        write_auth(paths, 'anthropic' => { 'type' => 'oauth', 'token' => 't' })
+
+        Riffer::Rig::Credentials.remove(:anthropic, **paths)
+
+        refute_includes JSON.parse(File.read(paths[:auth_path])), 'anthropic'
+      end
+    end
+
+    it 'leaves the entries it does not recognise untouched' do
+      in_tmp_home do |paths|
+        unrecognised = { 'legacy' => 'sk-flat', 'other' => { 'type' => 'oauth', 'token' => 't' } }
+        write_auth(paths, unrecognised.merge('anthropic' => { 'type' => 'api_key', 'api_key' => 'sk-ant' }))
+
+        Riffer::Rig::Credentials.remove(:anthropic, **paths)
+
+        assert_equal unrecognised, JSON.parse(File.read(paths[:auth_path]))
+      end
+    end
+
+    it 'leaves the non-string values of another provider untouched' do
+      in_tmp_home do |paths|
+        openai = { 'type' => 'api_key', 'api_key' => 'sk-oai', 'n' => 5 }
+        write_auth(paths, 'openai' => openai, 'anthropic' => { 'type' => 'api_key', 'api_key' => 'sk-ant' })
+
+        Riffer::Rig::Credentials.remove(:anthropic, **paths)
+
+        assert_equal openai, JSON.parse(File.read(paths[:auth_path]))['openai']
+      end
+    end
+
     describe 'without path arguments' do
       before do
         Riffer::Rig::Credentials.store(:azure_openai, { endpoint: 'https://azure.test', api_key: 'azure-key' })
@@ -666,6 +730,11 @@ describe Riffer::Rig::Credentials do
 
   def env(vars = {})
     Riffer::Rig::Env.new(vars)
+  end
+
+  def write_auth(paths, document)
+    FileUtils.mkdir_p(File.dirname(paths[:auth_path]))
+    File.write(paths[:auth_path], JSON.generate(document))
   end
 
   def in_tmp_home

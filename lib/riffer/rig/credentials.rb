@@ -76,10 +76,10 @@ module Riffer::Rig::Credentials
     plain = fields.except(*secret_names)
 
     unless secrets.empty?
-      entries = read_auth(auth_path).merge(identifier.to_s => secrets) do |_identifier, stored, given|
-        stored.merge(given)
-      end
-      write_auth(auth_path, entries)
+      document = Riffer::Rig::Support::JsonFile.read(auth_path)
+      stored = document[identifier.to_s]
+      entry = (api_key_entry?(stored) ? stored : { 'type' => ENTRY_TYPE }).merge(secrets)
+      write_auth(auth_path, document.merge(identifier.to_s => entry))
     end
     ProviderFields.store(identifier.to_s, plain, path: settings_path) unless plain.empty?
   end
@@ -89,8 +89,8 @@ module Riffer::Rig::Credentials
   # @rbs settings_path: String
   # @rbs return: void
   def remove(identifier, auth_path: PATH, settings_path: Riffer::Rig::Settings::File::PATH)
-    entries = read_auth(auth_path)
-    write_auth(auth_path, entries.except(identifier.to_s)) if entries.key?(identifier.to_s)
+    document = Riffer::Rig::Support::JsonFile.read(auth_path)
+    write_auth(auth_path, document.except(identifier.to_s)) if document.key?(identifier.to_s)
     ProviderFields.remove(identifier.to_s, path: settings_path)
   end
 
@@ -197,15 +197,20 @@ module Riffer::Rig::Credentials
   def read_auth(path)
     Riffer::Rig::Support::JsonFile
       .read(path)
-      .select { |_identifier, entry| entry.is_a?(Hash) && entry['type'] == ENTRY_TYPE }
+      .select { |_identifier, entry| api_key_entry?(entry) }
       .transform_values { |entry| entry.except('type').select { |_name, value| value.is_a?(String) } }
   end
 
+  # @rbs entry: untyped
+  # @rbs return: bool
+  def api_key_entry?(entry)
+    entry.is_a?(Hash) && entry['type'] == ENTRY_TYPE
+  end
+
   # @rbs path: String
-  # @rbs entries: Hash[String, Hash[String, String]]
+  # @rbs document: Hash[untyped, untyped]
   # @rbs return: void
-  def write_auth(path, entries)
-    data = entries.transform_values { |fields| { 'type' => ENTRY_TYPE }.merge(fields) }
-    Riffer::Rig::Support::JsonFile.write(path, data, mode: 0o600)
+  def write_auth(path, document)
+    Riffer::Rig::Support::JsonFile.write(path, document, mode: 0o600)
   end
 end
