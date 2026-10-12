@@ -1,9 +1,9 @@
 # Generated from lib/riffer/rig/stores/header.rb with RBS::Inline
 
 class Riffer::Rig::Stores::Header
-  TYPE: String
+  extend Riffer::Rig::Support::TypedValue::Schema[String]
 
-  include Riffer::Rig::Support::Equatable
+  include Riffer::Rig::Support::TypedValue[String]
 
   @updated: Time?
 
@@ -61,7 +61,4 @@ class Riffer::Rig::Stores::Header
   # @rbs updated: Time?
   # @rbs return: void
   def initialize: (schema_version: Integer, id: String, cwd: String, created_at: String, model: String, riffer_rig_version: String, riffer_version: String, title: String, ?updated: Time?) -> void
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h: () -> Hash[Symbol, untyped]
 end

@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Stores::MessageEntry
-  TYPE = 'message' #: String
+  extend Riffer::Rig::Support::TypedValue::Schema #[String]
+  include Riffer::Rig::Support::TypedValue #[String]
 
-  include Riffer::Rig::Support::Equatable
+  typed_value 'message', :message
 
   # @dynamic message
   attr_reader :message #: Hash[Symbol, untyped]
@@ -22,10 +23,5 @@ class Riffer::Rig::Stores::MessageEntry
   def initialize(message:)
     @message = message
     freeze
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    { type: TYPE, message: @message }
   end
 end

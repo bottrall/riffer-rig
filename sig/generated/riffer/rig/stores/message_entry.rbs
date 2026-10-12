@@ -1,9 +1,9 @@
 # Generated from lib/riffer/rig/stores/message_entry.rb with RBS::Inline
 
 class Riffer::Rig::Stores::MessageEntry
-  TYPE: String
+  extend Riffer::Rig::Support::TypedValue::Schema[String]
 
-  include Riffer::Rig::Support::Equatable
+  include Riffer::Rig::Support::TypedValue[String]
 
   # @dynamic message
   attr_reader message: Hash[Symbol, untyped]
@@ -15,7 +15,4 @@ class Riffer::Rig::Stores::MessageEntry
   # @rbs message: Hash[Symbol, untyped]
   # @rbs return: void
   def initialize: (message: Hash[Symbol, untyped]) -> void
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h: () -> Hash[Symbol, untyped]
 end

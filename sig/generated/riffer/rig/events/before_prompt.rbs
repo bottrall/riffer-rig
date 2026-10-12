@@ -1,7 +1,9 @@
 # Generated from lib/riffer/rig/events/before_prompt.rb with RBS::Inline
 
 class Riffer::Rig::Events::BeforePrompt
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema[Symbol]
+
+  include Riffer::Rig::Support::TypedValue[Symbol]
 
   # @dynamic text
   attr_reader text: String
@@ -9,10 +11,4 @@ class Riffer::Rig::Events::BeforePrompt
   # @rbs text: String
   # @rbs return: void
   def initialize: (String text) -> void
-
-  # @rbs return: Symbol
-  def type: () -> Symbol
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h: () -> Hash[Symbol, untyped]
 end

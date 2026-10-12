@@ -1,7 +1,9 @@
 # Generated from lib/riffer/rig/events/after_response.rb with RBS::Inline
 
 class Riffer::Rig::Events::AfterResponse
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema[Symbol]
+
+  include Riffer::Rig::Support::TypedValue[Symbol]
 
   # @dynamic message
   attr_reader message: ::Riffer::Messages::Assistant
@@ -9,10 +11,4 @@ class Riffer::Rig::Events::AfterResponse
   # @rbs message: ::Riffer::Messages::Assistant
   # @rbs return: void
   def initialize: (::Riffer::Messages::Assistant message) -> void
-
-  # @rbs return: Symbol
-  def type: () -> Symbol
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h: () -> Hash[Symbol, untyped]
 end

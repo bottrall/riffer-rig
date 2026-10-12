@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Stores::SkillEntry
-  TYPE = 'skill' #: String
+  extend Riffer::Rig::Support::TypedValue::Schema #[String]
+  include Riffer::Rig::Support::TypedValue #[String]
 
-  include Riffer::Rig::Support::Equatable
+  typed_value 'skill', :skill
 
   # @dynamic skill
   attr_reader :skill #: String
@@ -22,10 +23,5 @@ class Riffer::Rig::Stores::SkillEntry
   def initialize(skill:)
     @skill = skill
     freeze
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    { type: TYPE, skill: @skill }
   end
 end

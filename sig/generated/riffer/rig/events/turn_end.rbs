@@ -1,7 +1,9 @@
 # Generated from lib/riffer/rig/events/turn_end.rb with RBS::Inline
 
 class Riffer::Rig::Events::TurnEnd
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema[Symbol]
+
+  include Riffer::Rig::Support::TypedValue[Symbol]
 
   # @dynamic stop_reason, usage
   attr_reader stop_reason: Symbol
@@ -15,10 +17,4 @@ class Riffer::Rig::Events::TurnEnd
 
   # @rbs return: Float?
   def cost: () -> Float?
-
-  # @rbs return: Symbol
-  def type: () -> Symbol
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h: () -> Hash[Symbol, untyped]
 end

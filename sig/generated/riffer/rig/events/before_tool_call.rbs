@@ -1,7 +1,9 @@
 # Generated from lib/riffer/rig/events/before_tool_call.rb with RBS::Inline
 
 class Riffer::Rig::Events::BeforeToolCall
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema[Symbol]
+
+  include Riffer::Rig::Support::TypedValue[Symbol]
 
   # @dynamic tool, args
   attr_reader tool: String
@@ -12,10 +14,4 @@ class Riffer::Rig::Events::BeforeToolCall
   # @rbs args: Hash[Symbol, untyped]
   # @rbs return: void
   def initialize: (String tool, Hash[Symbol, untyped] args) -> void
-
-  # @rbs return: Symbol
-  def type: () -> Symbol
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h: () -> Hash[Symbol, untyped]
 end

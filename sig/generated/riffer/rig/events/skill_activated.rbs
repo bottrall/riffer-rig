@@ -1,7 +1,9 @@
 # Generated from lib/riffer/rig/events/skill_activated.rb with RBS::Inline
 
 class Riffer::Rig::Events::SkillActivated
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema[Symbol]
+
+  include Riffer::Rig::Support::TypedValue[Symbol]
 
   # @dynamic name
   attr_reader name: String
@@ -9,10 +11,4 @@ class Riffer::Rig::Events::SkillActivated
   # @rbs name: String
   # @rbs return: void
   def initialize: (String name) -> void
-
-  # @rbs return: Symbol
-  def type: () -> Symbol
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h: () -> Hash[Symbol, untyped]
 end

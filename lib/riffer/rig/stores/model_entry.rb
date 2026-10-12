@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Stores::ModelEntry
-  TYPE = 'model' #: String
+  extend Riffer::Rig::Support::TypedValue::Schema #[String]
+  include Riffer::Rig::Support::TypedValue #[String]
 
-  include Riffer::Rig::Support::Equatable
+  typed_value 'model', :model
 
   # @dynamic model
   attr_reader :model #: String
@@ -22,10 +23,5 @@ class Riffer::Rig::Stores::ModelEntry
   def initialize(model:)
     @model = model
     freeze
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    { type: TYPE, model: @model }
   end
 end

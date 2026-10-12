@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Events::BeforePrompt
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema #[Symbol]
+  include Riffer::Rig::Support::TypedValue #[Symbol]
+
+  typed_value :before_prompt, :text
 
   # @dynamic text
   attr_reader :text #: String
@@ -11,15 +14,5 @@ class Riffer::Rig::Events::BeforePrompt
   def initialize(text)
     @text = text
     freeze
-  end
-
-  # @rbs return: Symbol
-  def type
-    :before_prompt
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    { type: type, text: text }
   end
 end

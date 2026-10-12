@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Events::CommandOutput
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema #[Symbol]
+  include Riffer::Rig::Support::TypedValue #[Symbol]
+
+  typed_value :command_output, :command, :text
 
   # @dynamic command, text
   attr_reader :command #: String
@@ -14,15 +17,5 @@ class Riffer::Rig::Events::CommandOutput
     @command = command
     @text = text
     freeze
-  end
-
-  # @rbs return: Symbol
-  def type
-    :command_output
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    { type: type, command: command, text: text }
   end
 end

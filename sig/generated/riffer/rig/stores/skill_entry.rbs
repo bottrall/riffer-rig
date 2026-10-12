@@ -1,9 +1,9 @@
 # Generated from lib/riffer/rig/stores/skill_entry.rb with RBS::Inline
 
 class Riffer::Rig::Stores::SkillEntry
-  TYPE: String
+  extend Riffer::Rig::Support::TypedValue::Schema[String]
 
-  include Riffer::Rig::Support::Equatable
+  include Riffer::Rig::Support::TypedValue[String]
 
   # @dynamic skill
   attr_reader skill: String
@@ -15,7 +15,4 @@ class Riffer::Rig::Stores::SkillEntry
   # @rbs skill: String
   # @rbs return: void
   def initialize: (skill: String) -> void
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h: () -> Hash[Symbol, untyped]
 end

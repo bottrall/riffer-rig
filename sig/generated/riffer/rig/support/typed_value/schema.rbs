@@ -1,0 +1,14 @@
+# Generated from lib/riffer/rig/support/typed_value/schema.rb with RBS::Inline
+
+# @rbs generic T
+module Riffer::Rig::Support::TypedValue::Schema[T]
+  # @dynamic type, attributes
+  attr_reader type: T
+
+  attr_reader attributes: Array[Symbol]
+
+  # @rbs type: T
+  # @rbs *attributes: Symbol
+  # @rbs return: void
+  def typed_value: (T type, *Symbol attributes) -> void
+end

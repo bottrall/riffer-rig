@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Events::AfterResponse
-  include Riffer::Rig::Support::Equatable
+  extend Riffer::Rig::Support::TypedValue::Schema #[Symbol]
+  include Riffer::Rig::Support::TypedValue #[Symbol]
+
+  typed_value :after_response, :message
 
   # @dynamic message
   attr_reader :message #: ::Riffer::Messages::Assistant
@@ -11,15 +14,5 @@ class Riffer::Rig::Events::AfterResponse
   def initialize(message)
     @message = message
     freeze
-  end
-
-  # @rbs return: Symbol
-  def type
-    :after_response
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    { type: type, message: message }
   end
 end
