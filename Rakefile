@@ -100,10 +100,19 @@ end
 desc 'Build the full deployable docs tree (site + API reference) into _site/'
 task docs: %w[docs:site rdoc]
 
+namespace :gemspec do
+  desc 'Fail if the gemspec depends on a provider SDK at runtime'
+  task :check do
+    sdks = Gem::Specification.load('riffer-rig.gemspec').runtime_dependencies.map(&:name) &
+           %w[anthropic openai aws-sdk-bedrockruntime]
+    abort "riffer-rig.gemspec depends on a provider SDK: #{sdks.join(', ')}" unless sdks.empty?
+  end
+end
+
 desc 'Check RBS signatures are current, then type-check'
 task typecheck: %w[rbs:check rbs:collection_check rbs:lint_manual steep:check]
 
 desc 'Run everything CI runs'
-task ci: %i[test rubocop typecheck docs:check]
+task ci: %i[test rubocop typecheck gemspec:check docs docs:check]
 
 task default: :ci

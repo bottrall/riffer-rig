@@ -4,15 +4,29 @@ on:
   - pull_request
 
 jobs:
-  lint:
+  check:
     runs-on: ubuntu-latest
+    name: ${{ matrix.name }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: lint
+            run: bin/lint
+          - name: typecheck
+            run: bin/typecheck
+          - name: gemspec
+            run: bundle exec rake gemspec:check
+          - name: docs
+            run: bundle exec rake docs docs:check
 
     steps:
       - uses: actions/checkout@v7
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-      - run: bin/lint
+      - run: ${{ matrix.run }}
 
   test:
     runs-on: ubuntu-latest
@@ -31,23 +45,3 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
       - run: bin/test
-
-  typecheck:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-      - run: bin/typecheck
-
-  docs:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-      - run: bundle exec rake docs:check
