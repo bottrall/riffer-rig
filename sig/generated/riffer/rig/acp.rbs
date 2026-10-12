@@ -17,6 +17,8 @@ class Riffer::Rig::ACP
 
   @client: ::ACP::AgentConnection::_Client?
 
+  @adopt: (^(String) -> Riffer::Rig::Runtime?)?
+
   @build: ^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime
 
   @home: String
@@ -32,8 +34,9 @@ class Riffer::Rig::ACP
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
   # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
+  # @rbs adopt: (^(String) -> Riffer::Rig::Runtime?)?
   # @rbs return: Riffer::Rig::ACP
-  def self.for: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?) -> Riffer::Rig::ACP
+  def self.for: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?, ?adopt: (^(String) -> Riffer::Rig::Runtime?)?) -> Riffer::Rig::ACP
 
   # Builds the Runtime a session runs on: the client's MCP servers flow
   # through the rig.mcp seam as a synthetic extension, so a reload rebuild
@@ -56,13 +59,15 @@ class Riffer::Rig::ACP
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
   # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
+  # @rbs adopt: (^(String) -> Riffer::Rig::Runtime?)?
   # @rbs return: void
-  def initialize: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?) -> void
+  def initialize: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?, ?adopt: (^(String) -> Riffer::Rig::Runtime?)?) -> void
 
   # Serves the connection until the client closes stdin; then the reader
   # thread ends and run returns.
+  # @rbs &block: ? (::ACP::AgentConnection) -> void
   # @rbs return: Integer
-  def run: () -> Integer
+  def run: () ?{ (::ACP::AgentConnection) -> void } -> Integer
 
   # @rbs request: ::ACP::Types::NewSessionRequest
   # @rbs return: (::ACP::Types::NewSessionResponse | ::ACP::RequestError)
@@ -102,6 +107,10 @@ class Riffer::Rig::ACP
   # @rbs id: String
   # @rbs return: Riffer::Rig::Runtime?
   def session: (String id) -> Riffer::Rig::Runtime?
+
+  # @rbs id: String
+  # @rbs return: Riffer::Rig::Runtime?
+  def adopted: (String id) -> Riffer::Rig::Runtime?
 
   # @rbs servers: Array[::ACP::Types::McpServer::t]
   # @rbs host: Riffer::Rig::ACP::Host

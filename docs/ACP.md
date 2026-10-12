@@ -34,6 +34,25 @@ Everything loads exactly as the REPL does — settings from both scopes, credent
 - `session/load` restores a saved session: a [Loader](EMBEDDING.md#building-a-runtime-with-the-loader) at the request's `cwd` reads the stored entries and rebuilds the Runtime, the stored messages replay as updates in the order they were recorded — user turns as `user_message_chunk`, the assistant's text as `agent_message_chunk`, and each tool result as its completed `tool_call` (the result as its content; the arguments are not replayed) — and then the request answers. A following `session/prompt` continues the conversation; an unknown id fails with resource not found.
 - MCP servers the client sends on `session/new` in stdio shape are declared to the Runtime through the [`rig.mcp` seam](MCP.md#declaring-servers-from-an-extension) as if an extension had declared them, so a reload rebuild keeps them and a same-name declaration replaces them. See [MCP](MCP.md#servers-over-acp) for the stdio limit.
 
+## Serving connections from your own process
+
+`riffer acp` serves one connection on stdio and exits. A Ruby process that owns its transports builds the agent itself, one per connection, over that connection's IO pair:
+
+```ruby
+live = {}
+build = lambda do |cwd, host, servers|
+  Riffer::Rig::ACP.build_runtime(cwd, host, servers, env: env, home: Dir.home).tap { |runtime| live[runtime.id] = runtime }
+end
+
+Riffer::Rig::ACP.for(input: input, output: output, env: env, home: Dir.home, build: build, adopt: ->(id) { live[id] }).run do |connection|
+  # the client has disconnected; the process moves on when this block returns
+end
+```
+
+- `build:` replaces how `session/new` builds its Runtime. It receives the request's `cwd`, the session's host and the client's MCP declarations, and returns the Runtime; `Riffer::Rig::ACP.build_runtime` is the default.
+- `adopt:` lets a Runtime outlive the connection that built it. `session/load` calls it with the session id before reading the store: a Runtime it returns serves the session as it is — nothing is rebuilt, so a client that reconnects reaches the Runtime still running its turn, and its `session/cancel` cancels that turn — and `nil` restores the session from the store as usual. The stored messages replay either way. An adopted Runtime's notify lines and [relayed questions](#relaying-questions-to-the-client) move to the adopting connection; a turn an earlier connection started keeps streaming to that one. The hook runs on a request thread, so guard what it reads.
+- `run` blocks until the client disconnects, then yields the `ACP::AgentConnection` to its block, if one is given, and returns `0`. Requests still running when the client disconnects are not waited for.
+
 ## What it skips
 
 - The other session-lifecycle methods: `session/resume`, `session/close`, `session/delete` and `authenticate` are not offered. [Sessions](SESSIONS.md) are still recorded to the store for the terminal to resume.

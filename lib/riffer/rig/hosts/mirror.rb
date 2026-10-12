@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Hosts::Mirror
-  # @rbs @host: Riffer::Rig::Hosts::_Host
   # @rbs @queue: Array[Riffer::Rig::Events::_Event]
+
+  # @dynamic host
+  attr_reader :host #: Riffer::Rig::Hosts::_Host
 
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs return: void

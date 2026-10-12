@@ -14,29 +14,40 @@ describe Riffer::Rig::ACP do
 
     @served = [] #: Array[[IO, Thread, IO]]
     @env = Riffer::Rig::Env.new('MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test')
-    build = lambda do |cwd, host, servers|
+    @build = lambda do |cwd, host, servers|
       @servers = servers
       runtime = Riffer::Rig::ACP.build_runtime(cwd, host, servers, env: @env, home: @home)
       @built_runtimes << runtime
       runtime
     end
-    @agent, @connection = serve(@env, build: build)
+    @agent, @connection = serve(@env, build: @build)
   end
 
   after do
+    hang_up
+    FileUtils.remove_entry(@home)
+    FileUtils.remove_entry(@cwd)
+  end
+
+  def hang_up
     @served.each do |input, thread, output|
       input.close unless input.closed?
       thread.join(5)
       output.close unless output.closed?
     end
-    FileUtils.remove_entry(@home)
-    FileUtils.remove_entry(@cwd)
   end
 
-  def serve(env, build: nil)
+  def reconnect(adopt:)
+    hang_up
+    @agent, @connection = serve(@env, build: @build, adopt: adopt)
+  end
+
+  def serve(env, build: nil, adopt: nil)
     agent_input_r, agent_input_w = IO.pipe
     agent_output_r, agent_output_w = IO.pipe
-    agent = Riffer::Rig::ACP.for(input: agent_input_r, output: agent_output_w, env: env, home: @home, build: build)
+    agent = Riffer::Rig::ACP.for(
+      input: agent_input_r, output: agent_output_w, env: env, home: @home, build: build, adopt: adopt
+    )
     @served << [agent_input_w, Thread.new { agent.run }, agent_output_w]
     connection = ACP::ClientConnection.new(
       transport: ACP::Transport::Stdio.new(input: agent_output_r, output: agent_input_w),
@@ -88,6 +99,16 @@ describe Riffer::Rig::ACP do
       ACP::Types::LoadSessionRequest.new(cwd: @cwd, mcp_servers: [], session_id: session_id)
     ) { |update| updates << update }
     [response, updates]
+  end
+
+  def adopt_session
+    session = save_session('hello')
+    reconnect(adopt: ->(id) { @built_runtimes.find { |runtime| runtime.id == id } })
+    session
+  end
+
+  def prompts_seen_by(runtime)
+    runtime.to_h[:messages].filter_map { |message| message[:content] if message[:role] == :user }
   end
 
   def tool_turn
@@ -168,6 +189,17 @@ describe Riffer::Rig::ACP do
   end
 
   describe '#run' do
+    it 'yields the connection once the client closes stdin' do
+      input, client = IO.pipe
+      client.close
+      yielded = nil
+      Riffer::Rig::ACP.for(input: input, output: StringIO.new, env: @env, home: @home).run do |connection|
+        yielded = connection
+      end
+
+      assert_instance_of ACP::AgentConnection, yielded
+    end
+
     it 'returns 0 once the client closes stdin' do
       input, thread, = @served.first
       input.close
@@ -352,6 +384,67 @@ describe Riffer::Rig::ACP do
       )
 
       assert_equal ACP::RequestError::RESOURCE_NOT_FOUND, error.code
+    end
+
+    it 'replays the stored messages of an adopted session' do
+      session = adopt_session
+      _response, updates = load(session.session_id)
+
+      assert_equal(%w[hello Reply.], updates.map { |update| update.content.text })
+    end
+
+    it 'runs a prompt from a later connection on the adopted runtime' do
+      session = adopt_session
+      load(session.session_id)
+      reply('Again.')
+      prompt(session.session_id, 'again')
+
+      assert_equal %w[hello again], prompts_seen_by(@built_runtimes.last)
+    end
+
+    it 'reaches the adopted runtime with a cancel from a later connection' do
+      session = adopt_session
+      cancelled = Queue.new
+      @built_runtimes.last.define_singleton_method(:cancel) do
+        cancelled << true
+        super()
+      end
+      load(session.session_id)
+      @connection.cancel_session(ACP::Types::CancelNotification.new(session_id: session.session_id))
+
+      assert cancelled.pop(timeout: 5)
+    end
+
+    it 'sends the notifies of an adopted runtime to the later connection' do
+      session = adopt_session
+      @updates.clear
+      load(session.session_id)
+      @built_runtimes.last.host.notify('still here')
+      wait_for { message_texts.include?('still here') }
+
+      assert_includes message_texts, 'still here'
+    end
+
+    it 'adopts a runtime whose host is not an ACP host' do
+      session = save_session('hello')
+      runtime = Riffer::Rig::ACP.build_runtime(@cwd, Riffer::Rig::Hosts::Null.new, {}, env: @env, home: @home)
+      reconnect(adopt: ->(_id) { runtime })
+      load(session.session_id)
+      runtime.agent.provider.stub_response('Again.')
+      prompt(session.session_id, 'again')
+      runtime.close
+
+      assert_equal %w[again], prompts_seen_by(runtime)
+    end
+
+    it 'restores from the store when the hook declines the session' do
+      session = save_session('hello')
+      reconnect(adopt: ->(_id) {})
+      load(session.session_id)
+      reply('Again.')
+      prompt(session.session_id, 'again')
+
+      assert_equal %w[hello], prompts_seen_by(@built_runtimes.first)
     end
 
     it 'sends a build-time notify as an update for the loaded session' do

@@ -13,6 +13,9 @@ class Riffer::Rig::ACP::Host
 
   @client: ::ACP::AgentConnection::_Client
 
+  # @dynamic client=
+  attr_writer client: ::ACP::AgentConnection::_Client
+
   # @rbs client: ::ACP::AgentConnection::_Client
   # @rbs return: void
   def initialize: (client: ::ACP::AgentConnection::_Client) -> void

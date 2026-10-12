@@ -16,6 +16,7 @@ class Riffer::Rig::ACP
   # @rbs @env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs @home: String
   # @rbs @build: ^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime
+  # @rbs @adopt: (^(String) -> Riffer::Rig::Runtime?)?
   # @rbs @client: ::ACP::AgentConnection::_Client?
   # @rbs @sessions: Hash[String, Riffer::Rig::Runtime]
   # @rbs @hosts: Hash[String, Riffer::Rig::ACP::Host]
@@ -26,9 +27,10 @@ class Riffer::Rig::ACP
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
   # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
+  # @rbs adopt: (^(String) -> Riffer::Rig::Runtime?)?
   # @rbs return: Riffer::Rig::ACP
-  def self.for(input:, output:, env:, home:, build: nil)
-    new(input: input, output: output, env: env, home: home, build: build)
+  def self.for(input:, output:, env:, home:, build: nil, adopt: nil)
+    new(input: input, output: output, env: env, home: home, build: build, adopt: adopt)
   end
 
   # Builds the Runtime a session runs on: the client's MCP servers flow
@@ -63,13 +65,15 @@ class Riffer::Rig::ACP
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
   # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
+  # @rbs adopt: (^(String) -> Riffer::Rig::Runtime?)?
   # @rbs return: void
-  def initialize(input:, output:, env:, home:, build: nil)
+  def initialize(input:, output:, env:, home:, build: nil, adopt: nil)
     @input = input
     @output = output
     @env = env
     @home = home
     @build = build || ->(cwd, host, servers) { self.class.build_runtime(cwd, host, servers, env: @env, home: @home) }
+    @adopt = adopt
     @client = nil
     @sessions = {}
     @hosts = {}
@@ -78,6 +82,7 @@ class Riffer::Rig::ACP
 
   # Serves the connection until the client closes stdin; then the reader
   # thread ends and run returns.
+  # @rbs &block: ? (::ACP::AgentConnection) -> void
   # @rbs return: Integer
   def run
     connection = ::ACP::AgentConnection.new(
@@ -92,6 +97,7 @@ class Riffer::Rig::ACP
       self
     end
     connection.start.join
+    yield connection if block_given?
     0
   end
 
@@ -143,13 +149,10 @@ class Riffer::Rig::ACP
     host = Riffer::Rig::ACP::Host.new(client: client)
     host.session_id = request.session_id
     loader = Riffer::Rig::Loader.new(cwd: request.cwd, host: host, env: @env, home: @home)
-    runtime = loader.resume(request.session_id)
+    runtime = adopted(request.session_id) || loader.resume(request.session_id)
     return ::ACP::RequestError.resource_not_found unless runtime
 
-    @lock.synchronize do
-      @sessions[request.session_id] = runtime
-      @hosts[request.session_id] = host
-    end
+    @lock.synchronize { @sessions[request.session_id] = runtime }
     loader.messages(request.session_id)
           .filter_map { |message| Riffer::Rig::ACP::Mapper.replay_of(message) }
           .each { |update| client.update(request.session_id, update) }
@@ -215,6 +218,18 @@ class Riffer::Rig::ACP
   # @rbs return: Riffer::Rig::Runtime?
   def session(id)
     @lock.synchronize { @sessions[id] }
+  end
+
+  # @rbs id: String
+  # @rbs return: Riffer::Rig::Runtime?
+  def adopted(id)
+    runtime = @adopt&.call(id)
+    # The Loader that built the Runtime holds this same host, so it is
+    # re-pointed in place rather than replaced.
+    case (host = runtime&.host&.host)
+    when Riffer::Rig::ACP::Host then host.client = client
+    end
+    runtime
   end
 
   # @rbs servers: Array[::ACP::Types::McpServer::t]
