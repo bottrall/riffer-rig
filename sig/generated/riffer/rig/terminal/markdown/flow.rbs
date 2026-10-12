@@ -3,6 +3,8 @@
 module Riffer::Rig::Terminal::Markdown::Flow
   UNSTYLED: Riffer::Rig::Terminal::Markdown::Span
 
+  VISIBLE: Regexp
+
   # @rbs spans: Array[Riffer::Rig::Terminal::Markdown::Span]
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs width: Integer?
@@ -16,6 +18,10 @@ module Riffer::Rig::Terminal::Markdown::Flow
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs return: String
   def paint: (String line, Array[Riffer::Rig::Terminal::Markdown::Span] owners, Riffer::Rig::Terminal::Theme theme) -> String
+
+  # @rbs slots: Array[Riffer::Rig::Terminal::Markdown::Span?]
+  # @rbs return: Array[Riffer::Rig::Terminal::Markdown::Span?]
+  def nearest: (Array[Riffer::Rig::Terminal::Markdown::Span?] slots) -> Array[Riffer::Rig::Terminal::Markdown::Span?]
 
   # @rbs left: Riffer::Rig::Terminal::Markdown::Span?
   # @rbs right: Riffer::Rig::Terminal::Markdown::Span?

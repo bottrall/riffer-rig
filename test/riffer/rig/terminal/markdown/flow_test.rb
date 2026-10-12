@@ -40,6 +40,16 @@ describe Riffer::Rig::Terminal::Markdown::Flow do
     assert_equal ["\e[1ma\e[0m "], lines([span('a ', styles: [:bold])], width: nil)
   end
 
+  it 'paints a run of spaces inside a styled span when no width is known' do
+    assert_equal ["\e[1ma  b\e[0m"], lines([span('a  b', styles: [:bold])], width: nil)
+  end
+
+  it 'leaves a run of spaces between two styles unpainted when no width is known' do
+    spans = [span('a ', styles: [:bold]), span(' b', styles: [:italic])]
+
+    assert_equal ["\e[1ma\e[0m  \e[3mb\e[0m"], lines(spans, width: nil)
+  end
+
   it 'joins neighbouring spans of one style into one run' do
     assert_equal ["\e[1ma*b\e[0m"], lines([span('a', styles: [:bold]), span('*b', styles: [:bold])])
   end
@@ -50,6 +60,22 @@ describe Riffer::Rig::Terminal::Markdown::Flow do
 
   it 'hard-splits a word longer than the width and keeps its style' do
     assert_equal ["\e[1mabcd\e[0m", "\e[1mef\e[0m"], lines([span('abcdef', styles: [:bold])], width: 4)
+  end
+
+  it 'keeps the style of a span that follows a tab' do
+    assert_equal ["\e[1ma b\e[0m\e[3mc\e[0m"], lines([span("a\tb", styles: [:bold]), span('c', styles: [:italic])])
+  end
+
+  it 'keeps the style of a span that follows a tab when no width is known' do
+    spans = [span("a\tb", styles: [:bold]), span('c', styles: [:italic])]
+
+    assert_equal ["\e[1ma\tb\e[0m\e[3mc\e[0m"], lines(spans, width: nil)
+  end
+
+  it 'keeps the style of a span that follows a newline' do
+    spans = [span("a\nb", styles: [:bold]), span('c', styles: [:italic])]
+
+    assert_equal ["\e[1ma\e[0m", "\e[1mb\e[0m\e[3mc\e[0m"], lines(spans)
   end
 
   it 'paints a word split across two styles without a space' do
