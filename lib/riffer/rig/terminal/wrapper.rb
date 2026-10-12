@@ -39,22 +39,20 @@ class Riffer::Rig::Terminal::Wrapper
   def take_line
     if (index = @line.index("\n"))
       @line.slice!(0, index + 1).to_s.chomp
-    elsif overfull?
-      take_overfull_head
+    elsif (limit = usable_width) && @line.length > limit
+      take_overfull_head(limit)
     end
   end
 
-  # @rbs return: bool
-  def overfull?
+  # @rbs return: Integer?
+  def usable_width
     width = @width
-    return false unless width
-
-    @line.length > width - @indent
+    [width - @indent, 1].max if width
   end
 
+  # @rbs limit: Integer
   # @rbs return: String
-  def take_overfull_head
-    limit = (@width || 0) - @indent
+  def take_overfull_head(limit)
     head = @line[0, limit].to_s
     if (space = head.rindex(' '))
       @line.slice!(0, space + 1)
@@ -80,8 +78,7 @@ class Riffer::Rig::Terminal::Wrapper
   # @rbs text: String
   # @rbs return: Array[String]
   def wrap_words(text)
-    width = @width
-    limit = width ? width - @indent : nil
+    limit = usable_width
     return [text] unless limit
 
     out = [] #: Array[String]

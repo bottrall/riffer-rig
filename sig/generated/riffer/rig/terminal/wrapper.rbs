@@ -24,11 +24,12 @@ class Riffer::Rig::Terminal::Wrapper
   # @rbs return: String?
   def take_line: () -> String?
 
-  # @rbs return: bool
-  def overfull?: () -> bool
+  # @rbs return: Integer?
+  def usable_width: () -> Integer?
 
+  # @rbs limit: Integer
   # @rbs return: String
-  def take_overfull_head: () -> String
+  def take_overfull_head: (Integer limit) -> String
 
   # @rbs logical: String
   # @rbs return: String
