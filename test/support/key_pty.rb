@@ -22,8 +22,8 @@ class KeyPty
     @master.write(bytes)
   end
 
-  def written
-    @master.readpartial(64)
+  def written(length)
+    @master.read(length)
   end
 
   def key

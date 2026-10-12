@@ -52,6 +52,10 @@ describe Riffer::Rig::Terminal::LineEditor do
     assert_equal 'a␦␦␦b', editor([:paste, "a\u0080\u009b\u009fb"], :home).printable_after
   end
 
+  it 'prints a paste under the elision size in full' do
+    assert_equal 'x' * 999, editor([:paste, 'x' * 999]).printable_before
+  end
+
   it 'elides a large paste before the cursor' do
     assert_equal 'a[pasted 4.2k chars]b', editor('a', [:paste, large], 'b').printable_before
   end
@@ -64,10 +68,6 @@ describe Riffer::Rig::Terminal::LineEditor do
     longer = "#{large}#{'y' * 1800}"
 
     assert_equal '[pasted 6.0k chars]', editor([:paste, large], :backspace, [:paste, longer]).printable_before
-  end
-
-  it 'prints a paste under the elision size in full' do
-    assert_equal 'x' * 999, editor([:paste, 'x' * 999]).printable_before
   end
 
   it 'inserts typed characters' do

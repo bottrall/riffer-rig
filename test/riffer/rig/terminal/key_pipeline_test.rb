@@ -55,7 +55,7 @@ describe Riffer::Rig::Terminal::KeyPipeline do
     end
 
     it 'turns bracketed paste on' do
-      assert_equal "\e[?2004h", @pty.written
+      assert_equal "\e[?2004h", @pty.written(8)
     end
   end
 
@@ -75,7 +75,7 @@ describe Riffer::Rig::Terminal::KeyPipeline do
     it 'turns bracketed paste off' do
       @pty.pipeline.stop
 
-      assert_equal "\e[?2004h\e[?2004l", @pty.written
+      assert_equal "\e[?2004h\e[?2004l", @pty.written(16)
     end
   end
 
