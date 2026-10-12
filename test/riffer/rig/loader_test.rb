@@ -1486,6 +1486,53 @@ describe 'Loader resume' do
     assert_equal 1, types.count('header')
   end
 
+  def recorded(id)
+    File.readlines(session_path(id)).filter_map { |line| JSON.parse(line, symbolize_names: true)[:recorded_at] }
+  end
+
+  def save_unstamped(id)
+    save_entries(id, [header(id)])
+    lines = [
+      { type: 'message', message: { role: 'user', content: 'hi' } },
+      { type: 'message', message: { role: 'assistant', content: 'yo' } }
+    ]
+    File.write(session_path(id), lines.map { |line| "#{JSON.generate(line)}\n" }.join, mode: 'a')
+  end
+
+  it 'stamps every entry it records' do
+    saved = save_session
+
+    assert_equal 2, recorded(saved.id).size
+  end
+
+  it 'keeps the stamps in order across a resume' do
+    saved = save_session
+    turn(loader.resume(saved.id), 'again')
+    stamps = recorded(saved.id)
+
+    assert_equal stamps.sort, stamps
+  end
+
+  it 'resumes a session written before entries were stamped' do
+    save_unstamped('aaa')
+
+    assert_equal %w[hi yo], loader.resume('aaa').agent.session.messages.map(&:content)
+  end
+
+  it 'replays a session written before entries were stamped' do
+    save_unstamped('aaa')
+
+    assert_equal(%w[hi yo], loader.messages('aaa').map { |message| message[:content] })
+  end
+
+  it 'leaves the lines of an unstamped session untouched when resuming it' do
+    save_unstamped('aaa')
+    before = File.readlines(session_path('aaa'))
+    turn(loader.resume('aaa'), 'again')
+
+    assert_equal before, File.readlines(session_path('aaa')).first(before.size)
+  end
+
   it 'lets the last model entry win' do
     save_entries(
       'aaa',

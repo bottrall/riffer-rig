@@ -5,14 +5,19 @@ class Riffer::Rig::Stores::SkillEntry
 
   include Riffer::Rig::Support::TypedValue[String]
 
-  # @dynamic skill
+  include Riffer::Rig::Stores::Stamped
+
+  # @dynamic skill, recorded_at
   attr_reader skill: String
+
+  attr_reader recorded_at: String?
 
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: ::Riffer::Rig::Stores::SkillEntry?
   def self.from_hash: (Hash[Symbol, untyped] hash) -> ::Riffer::Rig::Stores::SkillEntry?
 
   # @rbs skill: String
+  # @rbs recorded_at: String?
   # @rbs return: void
-  def initialize: (skill: String) -> void
+  def initialize: (skill: String, ?recorded_at: String?) -> void
 end

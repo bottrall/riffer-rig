@@ -3,11 +3,13 @@
 class Riffer::Rig::Stores::SkillEntry
   extend Riffer::Rig::Support::TypedValue::Schema #[String]
   include Riffer::Rig::Support::TypedValue #[String]
+  include Riffer::Rig::Stores::Stamped
 
-  typed_value 'skill', :skill
+  typed_value 'skill', :skill, :recorded_at
 
-  # @dynamic skill
+  # @dynamic skill, recorded_at
   attr_reader :skill #: String
+  attr_reader :recorded_at #: String?
 
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: ::Riffer::Rig::Stores::SkillEntry?
@@ -15,13 +17,15 @@ class Riffer::Rig::Stores::SkillEntry
     skill = hash[:skill]
     return nil unless skill.is_a?(String)
 
-    new(skill: skill)
+    new(skill: skill, recorded_at: Riffer::Rig::Stores::Timestamp.dump(Riffer::Rig::Stores::Timestamp.load(hash[:recorded_at])))
   end
 
   # @rbs skill: String
+  # @rbs recorded_at: String?
   # @rbs return: void
-  def initialize(skill:)
+  def initialize(skill:, recorded_at: nil)
     @skill = skill
+    @recorded_at = recorded_at
     freeze
   end
 end

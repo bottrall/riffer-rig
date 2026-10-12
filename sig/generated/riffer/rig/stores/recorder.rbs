@@ -3,6 +3,8 @@
 class Riffer::Rig::Stores::Recorder
   EXTENSION_NAME: String
 
+  @last_recorded_at: Time?
+
   @title: String?
 
   @pending: Array[Riffer::Rig::Stores::entry]
@@ -10,6 +12,8 @@ class Riffer::Rig::Stores::Recorder
   @header_written: bool
 
   @runtime: Riffer::Rig::Runtime?
+
+  @clock: Riffer::Rig::Stores::_Clock
 
   @resumed: bool
 
@@ -23,8 +27,9 @@ class Riffer::Rig::Stores::Recorder
   # no header.
   # @rbs store: Riffer::Rig::Stores::_Store
   # @rbs resumed: bool
+  # @rbs clock: Riffer::Rig::Stores::_Clock
   # @rbs return: void
-  def initialize: (store: Riffer::Rig::Stores::_Store, ?resumed: bool) -> void
+  def initialize: (store: Riffer::Rig::Stores::_Store, ?resumed: bool, ?clock: Riffer::Rig::Stores::_Clock) -> void
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void
@@ -60,6 +65,13 @@ class Riffer::Rig::Stores::Recorder
 
   # @rbs return: ::Riffer::Rig::Stores::Header
   def header_entry: () -> ::Riffer::Rig::Stores::Header
+
+  # @rbs return: Time
+  def stamp: () -> Time
+
+  # @rbs id: String
+  # @rbs return: Time?
+  def last_recorded_at: (String id) -> Time?
 
   # @rbs content: String
   # @rbs return: String

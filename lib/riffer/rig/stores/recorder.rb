@@ -7,10 +7,12 @@ class Riffer::Rig::Stores::Recorder
 
   # @rbs @store: Riffer::Rig::Stores::_Store
   # @rbs @resumed: bool
+  # @rbs @clock: Riffer::Rig::Stores::_Clock
   # @rbs @runtime: Riffer::Rig::Runtime?
   # @rbs @header_written: bool
   # @rbs @pending: Array[Riffer::Rig::Stores::entry]
   # @rbs @title: String?
+  # @rbs @last_recorded_at: Time?
 
   # Records one Loader-built session into the store: the header on the first
   # message (its title needs the first prompt), one entry per message, one per
@@ -20,20 +22,24 @@ class Riffer::Rig::Stores::Recorder
   # no header.
   # @rbs store: Riffer::Rig::Stores::_Store
   # @rbs resumed: bool
+  # @rbs clock: Riffer::Rig::Stores::_Clock
   # @rbs return: void
-  def initialize(store:, resumed: false)
+  def initialize(store:, resumed: false, clock: Time)
     @store = store
     @resumed = resumed
+    @clock = clock
     @runtime = nil
     @header_written = false
     @pending = []
     @title = nil
+    @last_recorded_at = nil
   end
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void
   def attach(runtime)
     @runtime = runtime
+    @last_recorded_at = last_recorded_at(runtime.id) if @resumed
     runtime.on_message { |message| message(message) }
     runtime.on_model_change { |model| switched(model) }
   end
@@ -41,7 +47,7 @@ class Riffer::Rig::Stores::Recorder
   # @rbs event: Riffer::StreamEvents::SkillActivation
   # @rbs return: void
   def skill(event)
-    record(Riffer::Rig::Stores::SkillEntry.new(skill: event.name))
+    record(Riffer::Rig::Stores::SkillEntry.new(skill: event.name, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
   end
 
   # @rbs message: Riffer::Messages::Base
@@ -49,13 +55,13 @@ class Riffer::Rig::Stores::Recorder
   def message(message)
     @title ||= one_line(message.content) if message.is_a?(Riffer::Messages::User)
     write_header unless @header_written
-    record(Riffer::Rig::Stores::MessageEntry.new(message: message.to_h))
+    record(Riffer::Rig::Stores::MessageEntry.new(message: message.to_h, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
   end
 
   # @rbs model: String
   # @rbs return: void
   def switched(model)
-    record(Riffer::Rig::Stores::ModelEntry.new(model: model))
+    record(Riffer::Rig::Stores::ModelEntry.new(model: model, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
   end
 
   # The extension rides the build as its last extension, so its :stream hook
@@ -100,12 +106,26 @@ class Riffer::Rig::Stores::Recorder
       schema_version: Riffer::Rig::Stores::JSONL::HEADER_VERSION,
       id: runtime.id,
       cwd: runtime.cwd,
-      created_at: Time.now.utc.iso8601,
+      created_at: @clock.now.getutc.iso8601,
       model: runtime.model,
       riffer_rig_version: Riffer::Rig::VERSION,
       riffer_version: Riffer::VERSION,
       title: @title.to_s
     )
+  end
+
+  # @rbs return: Time
+  def stamp
+    now = @clock.now
+    last = @last_recorded_at
+    # A wall clock can step backwards; the entries of one session never do.
+    @last_recorded_at = last && last > now ? last : now
+  end
+
+  # @rbs id: String
+  # @rbs return: Time?
+  def last_recorded_at(id)
+    @store.read(id).filter_map { |entry| entry.recorded_time unless entry.is_a?(Riffer::Rig::Stores::Header) }.max
   end
 
   # @rbs content: String

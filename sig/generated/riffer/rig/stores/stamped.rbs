@@ -1,0 +1,7 @@
+# Generated from lib/riffer/rig/stores/stamped.rb with RBS::Inline
+
+# @rbs module-self Riffer::Rig::Stores::_Stamped
+module Riffer::Rig::Stores::Stamped : Riffer::Rig::Stores::_Stamped
+  # @rbs return: Time?
+  def recorded_time: () -> Time?
+end

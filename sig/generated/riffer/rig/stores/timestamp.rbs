@@ -1,0 +1,13 @@
+# Generated from lib/riffer/rig/stores/timestamp.rb with RBS::Inline
+
+module Riffer::Rig::Stores::Timestamp
+  FRACTION_DIGITS: Integer
+
+  # @rbs time: Time?
+  # @rbs return: String?
+  def dump: (Time? time) -> String?
+
+  # @rbs value: untyped
+  # @rbs return: Time?
+  def load: (untyped value) -> Time?
+end

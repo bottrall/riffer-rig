@@ -70,6 +70,31 @@ describe Riffer::Rig::Stores::JSONL do
     assert_equal entries, @store.read('aaa')
   end
 
+  it 'round-trips the recorded_at of a stamped entry' do
+    stamped = Riffer::Rig::Stores::ModelEntry.new(model: 'mock/one', recorded_at: '2026-10-11T12:00:00.500Z')
+    @store.append('aaa', header('aaa'))
+    @store.append('aaa', stamped)
+
+    assert_equal stamped.recorded_at, @store.read('aaa').last.recorded_at
+  end
+
+  it 'reads a file written before entries carried recorded_at' do
+    @store.append('aaa', header('aaa'))
+    append_line({ type: 'message', message: { role: 'user', content: 'hello' } })
+    append_line({ type: 'model', model: 'mock/one' })
+    append_line({ type: 'skill', skill: 'a' })
+
+    assert_equal(
+      [
+        header('aaa'),
+        message_entry('hello'),
+        Riffer::Rig::Stores::ModelEntry.new(model: 'mock/one'),
+        Riffer::Rig::Stores::SkillEntry.new(skill: 'a')
+      ],
+      @store.read('aaa')
+    )
+  end
+
   it 'reads an unknown session as empty' do
     assert_empty @store.read('nope')
   end
