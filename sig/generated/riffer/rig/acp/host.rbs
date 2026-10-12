@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/acp/host.rb with RBS::Inline
 
 class Riffer::Rig::ACP::Host
+  include Riffer::Rig::Hosts::NonInteractive
+
   CAPABILITIES: Set[Symbol]
 
   @client: ::ACP::AgentConnection::_Client
@@ -15,16 +17,6 @@ class Riffer::Rig::ACP::Host
 
   # @rbs return: Set[Symbol]
   def capabilities: () -> Set[Symbol]
-
-  # @rbs question: String?
-  # @rbs options: Array[String]?
-  # @rbs secret: bool
-  # @rbs return: String?
-  def ask: (?String? question, ?options: Array[String]?, ?secret: bool) -> String?
-
-  # @rbs question: String?
-  # @rbs return: bool
-  def confirm: (?untyped _question) -> bool
 
   # @rbs message: String?
   # @rbs level: Symbol

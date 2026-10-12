@@ -23,7 +23,8 @@ module Riffer::Rig::SDK
     return nil if installed?(gem, requirement) && require_gem(gem)
     return format(BUNDLER_MESSAGE, gem, gem, requirement) if bundler?
 
-    return format(DECLINED_MESSAGE, gem, gem, requirement) unless host.confirm(format(CONFIRM_QUESTION, gem))
+    confirmed = host.capabilities.include?(:confirm) && host.confirm(format(CONFIRM_QUESTION, gem))
+    return format(DECLINED_MESSAGE, gem, gem, requirement) unless confirmed
 
     host.progress(format(PROGRESS_LABEL, gem, requirement)) do
       Gem.install(gem, Gem::Requirement.new(requirement))

@@ -239,9 +239,6 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def missing_credentials: (String provider, Array[Symbol] missing) -> String
 
-  # @rbs return: Riffer::Rig::Hosts::_Host
-  def asking_host: () -> Riffer::Rig::Hosts::_Host
-
   # @rbs return: String
   def home_settings_path: () -> String
 

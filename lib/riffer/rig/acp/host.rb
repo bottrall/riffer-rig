@@ -3,6 +3,8 @@
 require 'acp/sdk'
 
 class Riffer::Rig::ACP::Host
+  include Riffer::Rig::Hosts::NonInteractive
+
   CAPABILITIES = Set[:notify].freeze #: Set[Symbol]
 
   # @rbs @client: ::ACP::AgentConnection::_Client
@@ -20,20 +22,6 @@ class Riffer::Rig::ACP::Host
   # @rbs return: Set[Symbol]
   def capabilities
     CAPABILITIES
-  end
-
-  # @rbs question: String?
-  # @rbs options: Array[String]?
-  # @rbs secret: bool
-  # @rbs return: String?
-  def ask(question = nil, options: nil, secret: false)
-    nil
-  end
-
-  # @rbs question: String?
-  # @rbs return: bool
-  def confirm(_question = nil)
-    false
   end
 
   # @rbs message: String?

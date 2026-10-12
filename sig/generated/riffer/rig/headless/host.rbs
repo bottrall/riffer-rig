@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/headless/host.rb with RBS::Inline
 
 class Riffer::Rig::Headless::Host
+  include Riffer::Rig::Hosts::NonInteractive
+
   CAPABILITIES: Set[Symbol]
 
   @error: IO
@@ -14,16 +16,6 @@ class Riffer::Rig::Headless::Host
 
   # @rbs return: Set[Symbol]
   def capabilities: () -> Set[Symbol]
-
-  # @rbs question: String?
-  # @rbs options: Array[String]?
-  # @rbs secret: bool
-  # @rbs return: String?
-  def ask: (?String? question, ?options: Array[String]?, ?secret: bool) -> String?
-
-  # @rbs question: String?
-  # @rbs return: bool
-  def confirm: (?String? question) -> bool
 
   # @rbs message: String?
   # @rbs level: Symbol

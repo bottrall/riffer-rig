@@ -349,6 +349,14 @@ describe Riffer::Rig::Loader do
                    host.questions.first
     end
 
+    it 'does not ask a host that cannot ask' do
+      host = ScriptedHost.new('mock/chosen')
+      host.define_singleton_method(:capabilities) { Set[:confirm] }
+      refusal { build(host: host) }
+
+      assert_empty host.questions
+    end
+
     it 'builds the Runtime with the answer' do
       assert_equal 'mock/chosen', build(host: ScriptedHost.new('mock/chosen')).model
     end
@@ -650,6 +658,14 @@ describe Riffer::Rig::Loader do
         { api_key: 'sk-gem-pasted' },
         build(host: host, model: 'gemini/gem-2.5-pro', env: {}).credentials[:gemini]
       )
+    end
+
+    it 'does not ask a host that cannot ask for a missing key' do
+      host = ScriptedHost.new('sk-gem-pasted')
+      host.define_singleton_method(:capabilities) { Set[:confirm] }
+      refusal { build(host: host, model: 'gemini/gem-2.5-pro', env: {}) }
+
+      assert_empty host.questions
     end
 
     it 'raises the configuration error naming a key the null host cannot supply' do

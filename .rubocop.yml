@@ -43,12 +43,9 @@ Lint/UnusedMethodArgument:
     # rbs-inline leaves a `_`-prefixed parameter untyped, so the null host
     # keeps the contract's parameter names.
     - "lib/riffer/rig/hosts/null.rb"
-    # Same reason: the headless host writes out its declines with the
-    # contract's parameter names.
-    - "lib/riffer/rig/headless/host.rb"
-    # Same reason: the ACP host writes out its declines with the contract's
+    # Same reason: the mixin writes out its declines with the contract's
     # parameter names.
-    - "lib/riffer/rig/acp/host.rb"
+    - "lib/riffer/rig/hosts/non_interactive.rb"
 
 Metrics:
   Enabled: false

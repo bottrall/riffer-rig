@@ -2056,7 +2056,10 @@ describe Riffer::Rig::Runtime do
     end
 
     it 'prompts once for a missing credential and sends the answer' do
-      host = Class.new(Riffer::Rig::Hosts::Null) { define_method(:ask) { |*| 'pasted' } }.new
+      host = Class.new(Riffer::Rig::Hosts::Null) do
+        define_method(:capabilities) { Set[:ask].freeze }
+        define_method(:ask) { |*| 'pasted' }
+      end.new
       built = runtime(
         [serving(headers: { 'X-Token' => 'Bearer ${api_key}' }, auth: { api_key: 'KAGI_API_KEY' })],
         host: host,

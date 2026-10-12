@@ -326,7 +326,7 @@ class Riffer::Rig::Loader
     provider = runtime.model.partition('/').first
     resolution = Riffer::Rig::Credentials.install(
       provider,
-      host: asking_host,
+      host: @host,
       env: @env,
       config: @riffer_config,
       auth_path: home_auth_path,
@@ -456,7 +456,8 @@ class Riffer::Rig::Loader
 
   # @rbs return: String
   def ask_for_model
-    answer = asking_host.ask(onboarding_question).to_s.strip
+    reply = @host.ask(onboarding_question) if @host.capabilities.include?(:ask)
+    answer = reply.to_s.strip
     raise ConfigurationError, no_model if answer.empty?
 
     answer
@@ -481,7 +482,7 @@ class Riffer::Rig::Loader
     return unless sdk
 
     gem, requirement = sdk
-    message = Riffer::Rig::SDK.ensure(gem, requirement, host: asking_host)
+    message = Riffer::Rig::SDK.ensure(gem, requirement, host: @host)
     raise ConfigurationError, message if message
   end
 
@@ -490,7 +491,7 @@ class Riffer::Rig::Loader
   def credentials_for(provider)
     resolution = Riffer::Rig::Credentials.install(
       provider,
-      host: asking_host,
+      host: @host,
       env: @env,
       config: @riffer_config,
       auth_path: home_auth_path,
@@ -509,11 +510,6 @@ class Riffer::Rig::Loader
     "#{provider} has no #{setup.missing_fields(missing)}; " \
       'set it in the environment or run riffer interactively to paste it' \
       "#{" (create one at #{setup.url})" if setup.url}"
-  end
-
-  # @rbs return: Riffer::Rig::Hosts::_Host
-  def asking_host
-    @host.capabilities.include?(:ask) ? @host : Riffer::Rig::Hosts::Null.new
   end
 
   # @rbs return: String

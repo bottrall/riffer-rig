@@ -8,7 +8,7 @@ class AcmeCredentialProvider < Riffer::Providers::Mock; end # rubocop:disable Ri
 class AnsweringHost
   extend Forwardable
 
-  def_delegators :@null, :capabilities, :confirm, :notify, :progress
+  def_delegators :@null, :confirm, :notify, :progress
 
   attr_reader :asked
 
@@ -16,6 +16,10 @@ class AnsweringHost
     @null = Riffer::Rig::Hosts::Null.new
     @answer = answer
     @asked = []
+  end
+
+  def capabilities
+    Set[:ask]
   end
 
   def ask(question = nil, options: nil, secret: false)
@@ -132,6 +136,16 @@ describe Riffer::Rig::Credentials do
         )
 
         assert_equal({ api_key: 'sk-asked' }, resolution.values)
+      end
+    end
+
+    it 'does not ask a host that cannot ask' do
+      in_tmp_home do |paths|
+        host = AnsweringHost.new('sk-asked')
+        host.define_singleton_method(:capabilities) { Set[:confirm] }
+        Riffer::Rig::Credentials.install(:anthropic, host: host, env:, config: nil, **paths)
+
+        assert_empty host.asked
       end
     end
 
