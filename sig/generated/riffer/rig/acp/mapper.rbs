@@ -1,0 +1,53 @@
+# Generated from lib/riffer/rig/acp/mapper.rb with RBS::Inline
+
+module Riffer::Rig::ACP::Mapper
+  TOOL_KINDS: Hash[String, String]
+
+  # Text and resource links are ACP's must-support prompt blocks; the client
+  # cannot send the others unless the agent advertised them.
+  # @rbs blocks: Array[::ACP::Types::ContentBlock::t]
+  # @rbs return: String
+  def prompt_text: (Array[::ACP::Types::ContentBlock::t] blocks) -> String
+
+  # @rbs content: String
+  # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
+  def message_chunk: (String content) -> ::ACP::Types::SessionUpdate::AgentMessageChunk
+
+  # @rbs message: Hash[Symbol, untyped]
+  # @rbs return: ::ACP::Types::SessionUpdate::t?
+  def replay_of: (Hash[Symbol, untyped] message) -> ::ACP::Types::SessionUpdate::t?
+
+  # @rbs event: Riffer::StreamEvents::ToolCallDone
+  # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
+  def tool_call: (Riffer::StreamEvents::ToolCallDone event) -> ::ACP::Types::SessionUpdate::ToolCall
+
+  # @rbs event: Riffer::Rig::Events::AfterToolCall
+  # @rbs return: ::ACP::Types::SessionUpdate::ToolCallUpdate
+  def tool_call_done: (Riffer::Rig::Events::AfterToolCall event) -> ::ACP::Types::SessionUpdate::ToolCallUpdate
+
+  # riffer's failure reasons (:error, :other, :guardrail_blocked) have no ACP
+  # counterpart; refusal is the closest signal that the turn did not complete.
+  # @rbs stop_reason: Symbol?
+  # @rbs return: String
+  def stop_reason_of: (Symbol? stop_reason) -> String
+
+  private
+
+  # @rbs block: ::ACP::Types::ContentBlock::t
+  # @rbs return: String?
+  def prompt_text_of: (::ACP::Types::ContentBlock::t block) -> String?
+
+  # @rbs text: String
+  # @rbs return: ::ACP::Types::ContentBlock::Text
+  def text_block: (String text) -> ::ACP::Types::ContentBlock::Text
+
+  # The stored result is all a replayed call has: the arguments live in the
+  # assistant message's tool_calls, so the title is the name alone.
+  # @rbs message: Hash[Symbol, untyped]
+  # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
+  def replayed_tool_call: (Hash[Symbol, untyped] message) -> ::ACP::Types::SessionUpdate::ToolCall
+
+  # @rbs text: String
+  # @rbs return: Array[::ACP::Types::ToolCallContent::t]
+  def tool_content: (String text) -> Array[::ACP::Types::ToolCallContent::t]
+end

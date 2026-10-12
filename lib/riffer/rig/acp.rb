@@ -11,13 +11,6 @@ class Riffer::Rig::ACP
 
   SESSION_EXTENSION = 'acp' #: String
 
-  TOOL_KINDS = {
-    'read' => ::ACP::Types::ToolKind::READ,
-    'write' => ::ACP::Types::ToolKind::EDIT,
-    'edit' => ::ACP::Types::ToolKind::EDIT,
-    'bash' => ::ACP::Types::ToolKind::EXECUTE
-  }.freeze #: Hash[String, String]
-
   # @rbs @input: IO
   # @rbs @output: IO
   # @rbs @env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
@@ -125,19 +118,19 @@ class Riffer::Rig::ACP
 
     # @type var stop_reason: Symbol?
     stop_reason = nil
-    runtime.prompt(prompt_text(request.prompt)) do |event|
+    runtime.prompt(Riffer::Rig::ACP::Mapper.prompt_text(request.prompt)) do |event|
       case event
       when Riffer::StreamEvents::TextDelta
-        client.update(request.session_id, message_chunk(event.content))
+        client.update(request.session_id, Riffer::Rig::ACP::Mapper.message_chunk(event.content))
       when Riffer::StreamEvents::ToolCallDone
-        client.update(request.session_id, tool_call(event))
+        client.update(request.session_id, Riffer::Rig::ACP::Mapper.tool_call(event))
       when Riffer::Rig::Events::AfterToolCall
-        client.update(request.session_id, tool_call_done(event))
+        client.update(request.session_id, Riffer::Rig::ACP::Mapper.tool_call_done(event))
       when Riffer::Rig::Events::TurnEnd
         stop_reason = event.stop_reason
       end
     end
-    ::ACP::Types::PromptResponse.new(stop_reason: stop_reason_of(stop_reason))
+    ::ACP::Types::PromptResponse.new(stop_reason: Riffer::Rig::ACP::Mapper.stop_reason_of(stop_reason))
   rescue Riffer::Rig::Runtime::BusyError, Riffer::Rig::Runtime::ClosedError => e
     ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: e.message)
   end
@@ -158,7 +151,7 @@ class Riffer::Rig::ACP
       @hosts[request.session_id] = host
     end
     loader.messages(request.session_id)
-          .filter_map { |message| replay_of(message) }
+          .filter_map { |message| Riffer::Rig::ACP::Mapper.replay_of(message) }
           .each { |update| client.update(request.session_id, update) }
     ::ACP::Types::LoadSessionResponse.new
   rescue StandardError => e
@@ -260,104 +253,6 @@ class Riffer::Rig::ACP
   # @rbs return: Hash[String, String]
   def stdio_env(server)
     server.env.to_h { |variable| [variable.name, variable.value] }
-  end
-
-  # Text and resource links are ACP's must-support prompt blocks; the client
-  # cannot send the others unless the agent advertised them.
-  # @rbs blocks: Array[::ACP::Types::ContentBlock::t]
-  # @rbs return: String
-  def prompt_text(blocks)
-    blocks.filter_map { |block| prompt_text_of(block) }.join("\n\n")
-  end
-
-  # @rbs block: ::ACP::Types::ContentBlock::t
-  # @rbs return: String?
-  def prompt_text_of(block)
-    case block
-    when ::ACP::Types::ContentBlock::Text then block.text
-    when ::ACP::Types::ContentBlock::ResourceLink then "#{block.title || block.name} #{block.uri}"
-    end
-  end
-
-  # @rbs content: String
-  # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
-  def message_chunk(content)
-    ::ACP::Types::SessionUpdate::AgentMessageChunk.new(content: text_block(content))
-  end
-
-  # @rbs text: String
-  # @rbs return: ::ACP::Types::ContentBlock::Text
-  def text_block(text)
-    ::ACP::Types::ContentBlock::Text.new(text: text)
-  end
-
-  # @rbs message: Hash[Symbol, untyped]
-  # @rbs return: ::ACP::Types::SessionUpdate::t?
-  def replay_of(message)
-    case message[:role]
-    when 'user' then ::ACP::Types::SessionUpdate::UserMessageChunk.new(content: text_block(message[:content].to_s))
-    when 'assistant' then message_chunk(message[:content].to_s)
-    when 'tool' then replayed_tool_call(message)
-    end
-  end
-
-  # The stored result is all a replayed call has: the arguments live in the
-  # assistant message's tool_calls, so the title is the name alone.
-  # @rbs message: Hash[Symbol, untyped]
-  # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
-  def replayed_tool_call(message)
-    name = message[:name].to_s
-    ::ACP::Types::SessionUpdate::ToolCall.new(
-      tool_call_id: message[:tool_call_id].to_s,
-      title: name,
-      name: name,
-      kind: TOOL_KINDS.fetch(name, ::ACP::Types::ToolKind::OTHER),
-      status: ::ACP::Types::ToolCallStatus::COMPLETED,
-      content: tool_content(message[:content].to_s)
-    )
-  end
-
-  # @rbs event: Riffer::StreamEvents::ToolCallDone
-  # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
-  def tool_call(event)
-    ::ACP::Types::SessionUpdate::ToolCall.new(
-      tool_call_id: event.call_id,
-      title: "#{event.name}(#{event.arguments})",
-      name: event.name,
-      kind: TOOL_KINDS.fetch(event.name, ::ACP::Types::ToolKind::OTHER),
-      status: ::ACP::Types::ToolCallStatus::IN_PROGRESS
-    )
-  end
-
-  # @rbs event: Riffer::Rig::Events::AfterToolCall
-  # @rbs return: ::ACP::Types::SessionUpdate::ToolCallUpdate
-  def tool_call_done(event)
-    result = event.result
-    ::ACP::Types::SessionUpdate::ToolCallUpdate.new(
-      tool_call_id: event.call_id,
-      status: result.error? ? ::ACP::Types::ToolCallStatus::FAILED : ::ACP::Types::ToolCallStatus::COMPLETED,
-      content: tool_content(result.content)
-    )
-  end
-
-  # @rbs text: String
-  # @rbs return: Array[::ACP::Types::ToolCallContent::t]
-  def tool_content(text)
-    [::ACP::Types::ToolCallContent::Content.new(content: text_block(text))]
-  end
-
-  # riffer's failure reasons (:error, :other, :guardrail_blocked) have no ACP
-  # counterpart; refusal is the closest signal that the turn did not complete.
-  # @rbs stop_reason: Symbol?
-  # @rbs return: String
-  def stop_reason_of(stop_reason)
-    case stop_reason
-    when :completed then ::ACP::Types::StopReason::END_TURN
-    when Riffer::Rig::Runtime::INTERRUPT_CANCELLED then ::ACP::Types::StopReason::CANCELLED
-    when :max_steps then ::ACP::Types::StopReason::MAX_TURN_REQUESTS
-    when :context_window, :length, :content_filter, :malformed_output then ::ACP::Types::StopReason::MAX_TOKENS
-    else ::ACP::Types::StopReason::REFUSAL
-    end
   end
 
   # @rbs runtime: Riffer::Rig::Runtime

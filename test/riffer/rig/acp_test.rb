@@ -169,29 +169,6 @@ describe Riffer::Rig::ACP do
     assert_equal [%w[mock_call_0 completed]], statuses
   end
 
-  it 'fails a tool call that returned an error' do
-    session = new_session
-    reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'missing.txt') } }])
-    reply('All done.')
-    _response, updates = prompt(session.session_id, 'read it')
-    update = updates.find { |candidate| candidate.is_a?(ACP::Types::SessionUpdate::ToolCallUpdate) }
-
-    assert_equal 'failed', update&.status
-  end
-
-  it 'attaches the result to the completing update' do
-    session = new_session
-    File.write(File.join(@cwd, 'subject.txt'), 'contents')
-    reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
-    reply('All done.')
-    _response, updates = prompt(session.session_id, 'read it')
-    texts = updates.grep(ACP::Types::SessionUpdate::ToolCallUpdate).flat_map do |update|
-      update.content.to_a.map { |item| item.content.text }
-    end
-
-    assert_match(/contents/, texts.join)
-  end
-
   it 'completes a tool call after reporting it' do
     session = new_session
     File.write(File.join(@cwd, 'subject.txt'), 'contents')

@@ -3,13 +3,6 @@
 class Riffer::Rig::Headless
   USAGE_ERROR = 2 #: Integer
 
-  # The plan's exit-3 set: the cap plus the provider stop reasons that mean the
-  # turn ended without completing. Riffer's remaining stop reasons (:error,
-  # :other, :guardrail_blocked) are runtime failures and map to 1.
-  STOPPED_WITHOUT_COMPLETING = %i[
-    max_steps context_window length content_filter malformed_output
-  ].freeze #: Array[Symbol]
-
   # @rbs @input: IO
   # @rbs @output: IO
   # @rbs @error: IO
@@ -150,7 +143,7 @@ class Riffer::Rig::Headless
 
     @error.puts("turn ended: #{stop_reason}") if stop_reason
     return 130 if stop_reason == Riffer::Rig::Runtime::INTERRUPT_CANCELLED
-    return 3 if stop_reason && STOPPED_WITHOUT_COMPLETING.include?(stop_reason)
+    return 3 if stop_reason && Riffer::Rig::Runtime::STOPPED_WITHOUT_COMPLETING.include?(stop_reason)
 
     1
   end
