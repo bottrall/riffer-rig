@@ -13,6 +13,9 @@ class Riffer::Rig::ACP::Host
   # @rbs @session_id: String?
   # @rbs @buffered: Array[String]
 
+  # @dynamic client=
+  attr_writer :client #: ::ACP::AgentConnection::_Client
+
   # @rbs client: ::ACP::AgentConnection::_Client
   # @rbs return: void
   def initialize(client:)

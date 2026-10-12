@@ -1,9 +1,10 @@
 # Generated from lib/riffer/rig/hosts/mirror.rb with RBS::Inline
 
 class Riffer::Rig::Hosts::Mirror
-  @host: Riffer::Rig::Hosts::_Host
-
   @queue: Array[Riffer::Rig::Events::_Event]
+
+  # @dynamic host
+  attr_reader host: Riffer::Rig::Hosts::_Host
 
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs return: void
