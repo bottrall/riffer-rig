@@ -30,6 +30,7 @@ module Riffer::Rig::CLI
     flags = Flags.parse(argv)
     return refuse(flags, error) if flags.is_a?(String)
     return help(output) if flags.help
+    return version(output) if flags.version
     return refuse('--verbose is only available with -p', error) if flags.verbose && !flags.headless
     return refuse('--json is only available with -p', error) if flags.json && !flags.headless
 
@@ -104,6 +105,13 @@ module Riffer::Rig::CLI
   # @rbs return: Integer
   def help(output)
     output.puts(Flags.usage)
+    0
+  end
+
+  # @rbs output: IO
+  # @rbs return: Integer
+  def version(output)
+    output.puts("riffer-rig #{Riffer::Rig::VERSION}")
     0
   end
 end

@@ -50,6 +50,7 @@ The model is the first of these that is set: `--model`, `RIFFER_MODEL`, `model` 
 | `-c`, `--continue`      | continues the most recent session in this directory ([Sessions](docs/SESSIONS.md#resuming)) |
 | `-r [ID]`, `--resume [ID]` | resumes the session with id `ID`; bare `-r` opens the [picker](docs/SESSIONS.md#the-picker) ([Sessions](docs/SESSIONS.md#resuming)) |
 | `-h`, `--help`          | prints the usage                                                            |
+| `-v`, `--version`       | prints the version                                                          |
 
 An editor registers the agent as `riffer acp`, the same Runtimes over the [Agent Client Protocol](https://agentclientprotocol.com) on stdio ([ACP](docs/ACP.md)).
 
