@@ -1,0 +1,6 @@
+class Riffer::Rig::Terminal::SuspendableCursor
+  interface _Process
+    def kill: (String signal, Integer pid) -> Integer
+    def pid: () -> Integer
+  end
+end

@@ -1,0 +1,35 @@
+# Generated from lib/riffer/rig/terminal/suspendable_cursor.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::SuspendableCursor
+  @cursor: Riffer::Rig::Terminal::_Cursor
+
+  @process: _Process
+
+  @mutex: Mutex
+
+  @replaced: Hash[String, Signal::trap_command]
+
+  # @rbs cursor: Riffer::Rig::Terminal::_Cursor
+  # @rbs process: _Process
+  # @rbs return: void
+  def initialize: (cursor: Riffer::Rig::Terminal::_Cursor, process: _Process) -> void
+
+  # @rbs return: void
+  def hide: () -> void
+
+  # @rbs return: void
+  def show: () -> void
+
+  private
+
+  # @rbs signal: String
+  # @rbs &block: () -> void
+  # @rbs return: Signal::trap_command
+  def on: (String signal) { () -> void } -> Signal::trap_command
+
+  # @rbs return: void
+  def suspend: () -> void
+
+  # @rbs return: void
+  def resume: () -> void
+end
