@@ -4,25 +4,17 @@ class Riffer::Rig::Loader
   class ConfigurationError < StandardError
   end
 
-  # Raised by a strict load: the reload abandons instead of continuing.
-  class AbandonedError < StandardError
-  end
-
-  EXTENSION_FEATURE: String
-
   @reload_mode: :auto | :manual | nil
 
   @file_state: Hash[String, Time?]?
 
   @extra_extensions: Array[Riffer::Rig::Extension]
 
-  @gem_extensions: Array[Riffer::Rig::Extension]
-
   @extensions_enabled: bool
 
   @stripped: Array[Symbol]
 
-  @tracked_files: Array[String]
+  @source: Riffer::Rig::Loader::ExtensionSource
 
   @store: Riffer::Rig::Stores::_Store | nil
 
@@ -35,9 +27,6 @@ class Riffer::Rig::Loader
   @host: Riffer::Rig::Hosts::_Host
 
   @cwd: String
-
-  # @dynamic tracked_files
-  attr_reader tracked_files: Array[String]
 
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -137,81 +126,15 @@ class Riffer::Rig::Loader
   def notify_failure: (String message) -> String
 
   # @rbs document: Riffer::Rig::Settings::Document
-  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: (Array[Riffer::Rig::Extension] | String)
+  def reload_candidates: (Riffer::Rig::Settings::Document document) -> (Array[Riffer::Rig::Extension] | String)
+
+  # @rbs document: Riffer::Rig::Settings::Document
   # @rbs return: Array[Riffer::Rig::Extension]
-  def reload_extensions: (Riffer::Rig::Settings::Document document, Hash[Symbol, untyped] settings) -> Array[Riffer::Rig::Extension]
-
-  # @rbs return: Array[Riffer::Rig::Extension]
-  def rig_recordings: () -> Array[Riffer::Rig::Extension]
-
-  # @rbs path: String
-  # @rbs confirm_trust: bool
-  # @rbs return: Array[Riffer::Rig::Extension]
-  def load_rig_file: (String path, confirm_trust: bool) -> Array[Riffer::Rig::Extension]
-
-  # @rbs return: void
-  def scrub_tracked_features: () -> void
-
-  # Runs each extension against a throwaway registrar so that a failing block
-  # is skipped and reported instead of aborting the rebuild.
-  # @rbs extensions: Array[Riffer::Rig::Extension]
-  # @rbs settings: Hash[Symbol, untyped]
-  # @rbs return: Array[Riffer::Rig::Extension]
-  def validated: (Array[Riffer::Rig::Extension] extensions, Hash[Symbol, untyped] settings) -> Array[Riffer::Rig::Extension]
-
-  # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: String?
-  def reload_credentials: (Riffer::Rig::Runtime runtime) -> String?
+  def bundled: (Riffer::Rig::Settings::Document document) -> Array[Riffer::Rig::Extension]
 
   # @rbs return: Hash[String, Time?]
   def file_state: () -> Hash[String, Time?]
-
-  # @rbs return: Array[String]
-  def rig_paths: () -> Array[String]
-
-  # @rbs path: String
-  # @rbs return: Time?
-  def stamp: (String path) -> Time?
-
-  # @rbs return: String
-  def home_rig_path: () -> String
-
-  # @rbs return: String
-  def project_rig_path: () -> String
-
-  # @rbs autoload: bool
-  # @rbs return: Array[Riffer::Rig::Extension]
-  def load_rig_files: (bool autoload) -> Array[Riffer::Rig::Extension]
-
-  # @rbs autoload: bool
-  # @rbs return: Array[String]
-  def gem_extension_files: (bool autoload) -> Array[String]
-
-  # @rbs path: String
-  # @rbs return: bool
-  def trusted?: (String path) -> bool
-
-  # @rbs return: String
-  def trust_path: () -> String
-
-  # Loads one file and returns the extensions it recorded. A tracked load adds
-  # the features the load added to the tracked file set. A failure is reported
-  # to the host and yields nothing, unless strict: then it propagates as
-  # AbandonedError for the reload to abandon on.
-  # @rbs path: String
-  # @rbs track: bool
-  # @rbs strict: bool
-  # @rbs return: Array[Riffer::Rig::Extension]
-  def load_file: (String path, track: bool, ?strict: bool) -> Array[Riffer::Rig::Extension]
-
-  # @rbs before_features: Array[String]
-  # @rbs path: String
-  # @rbs return: void
-  def track_loaded: (Array[String] before_features, String path) -> void
-
-  # @rbs feature: String
-  # @rbs return: bool
-  def local?: (String feature) -> bool
 
   # @rbs configured: String?
   # @rbs return: String
@@ -231,24 +154,14 @@ class Riffer::Rig::Loader
   def ensure_sdk: (String provider) -> void
 
   # @rbs provider: String
-  # @rbs return: Hash[Symbol, String]
-  def credentials_for: (String provider) -> Hash[Symbol, String]
-
-  # @rbs provider: String
-  # @rbs missing: Array[Symbol]
-  # @rbs return: String
-  def missing_credentials: (String provider, Array[Symbol] missing) -> String
+  # @rbs return: (Hash[Symbol, String] | String)
+  def install_credentials: (String provider) -> (Hash[Symbol, String] | String)
 
   # @rbs return: String
   def home_settings_path: () -> String
 
   # @rbs return: String
   def home_auth_path: () -> String
-
-  # @rbs entries: Array[Riffer::Rig::Stores::entry]
-  # @rbs id: String
-  # @rbs return: Hash[Symbol, untyped]
-  def snapshot_of: (Array[Riffer::Rig::Stores::entry] entries, String id) -> Hash[Symbol, untyped]
 
   # The store records unless it was declined with store: nil or globally with
   # "sessions": {"save": false}.

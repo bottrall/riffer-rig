@@ -632,11 +632,10 @@ class Riffer::Rig::Runtime
   # @rbs return: Array[Riffer::Rig::Registrar]
   def build_registrars(extensions, settings)
     extensions.filter_map do |extension|
-      registrar = Riffer::Rig::Registrar.new(extension.name, settings[extension.name.to_sym] || {})
-      error = extension.load_into(registrar)
-      next registrar unless error
+      outcome = extension.trial(settings)
+      next outcome if outcome.is_a?(Riffer::Rig::Registrar)
 
-      yield(extension, error)
+      yield(extension, outcome)
       nil
     end
   end
