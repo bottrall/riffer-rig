@@ -1,0 +1,37 @@
+# Generated from lib/riffer/rig/runtime/system_prompt.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::SystemPrompt
+  @base: String
+
+  @cwd: String
+
+  @sections: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+
+  # @rbs base: String
+  # @rbs cwd: String
+  # @rbs sections: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+  # @rbs return: void
+  def initialize: (String base, String cwd, ?Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?] sections) -> void
+
+  # @rbs sections: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+  # @rbs return: Riffer::Rig::Runtime::SystemPrompt
+  def with_sections: (Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?] sections) -> Riffer::Rig::Runtime::SystemPrompt
+
+  # @rbs return: String
+  def bare: () -> String
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: String
+  def render: (Riffer::Rig::Runtime runtime) -> String
+
+  # @rbs session: Riffer::Agent::Session
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def refresh: (Riffer::Agent::Session session, Riffer::Rig::Runtime runtime) -> void
+
+  private
+
+  # @rbs sections: Array[String]
+  # @rbs return: String
+  def compose: (Array[String] sections) -> String
+end

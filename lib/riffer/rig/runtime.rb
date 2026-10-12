@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'date'
 require 'securerandom'
 
 # Never renders, prints or reads the filesystem: anything a host needs is a
@@ -39,7 +38,6 @@ class Riffer::Rig::Runtime
   }.freeze #: Hash[Symbol, Hash[Symbol, bool]]
 
   # @rbs @agent: Riffer::Agent
-  # @rbs @base_prompt: String
   # @rbs @cancel_flag: Riffer::Rig::Runtime::CancelFlag
   # @rbs @jobs: Riffer::Rig::Tools::Bash::Jobs
   # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
@@ -47,26 +45,20 @@ class Riffer::Rig::Runtime
   # @rbs @host: Riffer::Rig::Hosts::Mirror
   # @rbs @id: String
   # @rbs @settings: Hash[Symbol, untyped]
-  # @rbs @busy: bool
-  # @rbs @closed: bool
+  # @rbs @concurrency: Riffer::Rig::Runtime::Concurrency
   # @rbs @session_start_pending: bool
   # @rbs @session_start_reason: Symbol
   # @rbs @model_override: String?
   # @rbs @message_observers: Array[^(Riffer::Messages::Base) -> void]
   # @rbs @model_observers: Array[^(String) -> void]
-  # @rbs @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+  # @rbs @system_prompt: Riffer::Rig::Runtime::SystemPrompt
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
   # @rbs @core_commands: Array[Riffer::Rig::Command]
-  # @rbs @claim_depth: Integer
-  # @rbs @claim_thread: Thread?
   # @rbs @declared_settings: Hash[Symbol, Hash[Symbol, untyped]]
   # @rbs @errors: Array[Riffer::Rig::Extension::Failure]
   # @rbs @hooks: Riffer::Rig::Runtime::Hooks
   # @rbs @tool_allowlist: Array[String]?
-  # @rbs @mcp_registry: Riffer::Rig::Mcp::_Registry
-  # @rbs @mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
-  # @rbs @env: Riffer::Rig::Env
-  # @rbs @auth_path: String
+  # @rbs @mcp: Riffer::Rig::Runtime::McpRegistrar
   # @rbs @model_options: Hash[Symbol, untyped]
   # @rbs @native_tools: Hash[Symbol, untyped]
   # @rbs @reload_check: (^(::Riffer::Rig::Runtime) -> void)?
@@ -123,18 +115,14 @@ class Riffer::Rig::Runtime
     clock: -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) },
     snapshot: nil
   )
+    saved = snapshot && Riffer::Rig::Runtime::Snapshot.from_h(snapshot)
     # Doubles as the snapshot id and ACP sessionId.
-    @id = snapshot ? snapshot.fetch(:id) : ::SecureRandom.uuid_v7
+    @id = saved ? saved.id : ::SecureRandom.uuid_v7
     @host = Riffer::Rig::Hosts::Mirror.new(host)
     @cwd = cwd || Dir.pwd
     @credentials = credentials
-    @env = env
-    @auth_path = auth_path
 
-    @busy = false
-    @closed = false
-    @claim_depth = 0
-    @claim_thread = nil
+    @concurrency = Riffer::Rig::Runtime::Concurrency.new
     @core_commands = []
     @reload_check = nil
     @clock = clock
@@ -142,7 +130,7 @@ class Riffer::Rig::Runtime
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
     @jobs = Riffer::Rig::Tools::Bash::Jobs.new
     @session_start_pending = true
-    @session_start_reason = snapshot ? :restore : :new
+    @session_start_reason = saved ? :restore : :new
     @message_observers = []
     @model_observers = []
     Riffer::Rig::Settings::Pricing.register(pricing, riffer_config.pricing)
@@ -150,15 +138,19 @@ class Riffer::Rig::Runtime
     @tool_allowlist = tools
     @native_tools = native_tools
     @model_options = model_options.merge(native_options(model))
-    @base_prompt = instructions || format(BASE_PROMPT_TEMPLATE, name: name)
-    @mcp_registry = mcp_registry
-    @mcp_servers = {}
+    @system_prompt = Riffer::Rig::Runtime::SystemPrompt.new(
+      instructions || format(BASE_PROMPT_TEMPLATE, name: name), @cwd
+    )
+    @mcp = Riffer::Rig::Runtime::McpRegistrar.new(
+      @id, registry: mcp_registry, host: @host, env: env, auth_path: auth_path
+    )
     registrars = build_registrars(extensions, settings) { |extension, error| record_error(extension, error) }
-    mcp_servers = register_mcp_servers(registrars)
+    mcp_servers = @mcp.register(mcp_declarations(registrars))
     hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
     config = agent_config(registrars, hooks, max_steps)
-    agent = snapshot ? restore(snapshot, model, config) : build_agent(model, config)
-    install(registrars, mcp_servers, settings, hooks, agent)
+    agent = saved ? restore(saved, model, config) : build_agent(model, config)
+    install(registrars, settings, hooks, agent)
+    @mcp.retain(mcp_servers)
     @agent.session.on_message { |message| observe_message(message) }
   end
 
@@ -166,7 +158,7 @@ class Riffer::Rig::Runtime
   # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
   def prompt(text, &block)
-    claim
+    @concurrency.claim
     begin
       if block
         turn(text).each(&block)
@@ -175,18 +167,18 @@ class Riffer::Rig::Runtime
         turn(text)
       end
     ensure
-      release
+      @concurrency.release
     end
   end
 
   # @rbs text: String
   # @rbs return: Riffer::Agent::Response
   def ask(text)
-    claim
+    @concurrency.claim
     begin
       turn(text).each { |event| event }
     ensure
-      release
+      @concurrency.release
     end
   end
 
@@ -220,12 +212,12 @@ class Riffer::Rig::Runtime
   # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: nil
   def run_command(name, args = '', &block)
-    claim
+    @concurrency.claim
     emit = block || ->(_event) {} #: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
     begin
       execute(name, args, emit)
     ensure
-      release
+      @concurrency.release
     end
     @host.drain.each(&emit)
     nil
@@ -264,27 +256,28 @@ class Riffer::Rig::Runtime
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs return: nil
   def rebuild(extensions:, settings:)
-    claim_rebuild
+    @concurrency.claim_rebuild
     begin
       registrars = build_registrars(extensions, settings) { |_extension, error| raise error }
-      mcp_servers = register_mcp_servers(registrars)
+      mcp_servers = @mcp.register(mcp_declarations(registrars))
       hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
       agent = successor(model, agent_config(registrars, hooks, @agent.config.max_steps))
       lifecycle(:session_end, Riffer::Rig::Events::SessionEnd.new(:reload))
       @errors = []
-      dropped = @mcp_servers.except(*mcp_servers.keys)
-      install(registrars, mcp_servers, settings, hooks, agent)
-      unregister_mcp_servers(dropped)
+      install(registrars, settings, hooks, agent)
+      @mcp.retain(mcp_servers)
       lifecycle(:session_start, Riffer::Rig::Events::SessionStart.new(@id, :reload))
     ensure
-      release
+      @concurrency.release
     end
     nil
   end
 
   # @rbs return: Hash[Symbol, untyped]
   def to_h
-    { id: @id, messages: @agent.session.messages.map(&:to_h), model: @model_override, skills: activated_skills }
+    Riffer::Rig::Runtime::Snapshot.new(
+      id: @id, messages: @agent.session.messages, model: @model_override, skills: activated_skills
+    ).to_h
   end
 
   # @rbs &block: (Riffer::Messages::Base) -> void
@@ -315,48 +308,15 @@ class Riffer::Rig::Runtime
 
   # @rbs return: void
   def close
-    return if @closed
+    return if @concurrency.closed?
 
-    @closed = true
+    @concurrency.close
     @jobs.kill_outstanding
-    unregister_mcp_servers(@mcp_servers)
+    @mcp.retain({})
     @hooks.observe(:session_end, Riffer::Rig::Events::SessionEnd.new(:close)) unless @session_start_pending
   end
 
   private
-
-  # @rbs return: void
-  def claim
-    raise BusyError, 'a prompt is already running on this Runtime' if @busy
-    raise ClosedError, 'this Runtime is closed' if @closed
-
-    @busy = true
-    @claim_depth += 1
-    @claim_thread = Thread.current
-  end
-
-  # Rebuild is a configuration swap at a quiet boundary, not a turn entry, so
-  # it may run nested under the thread that holds the Runtime — the /reload
-  # command and the automatic reload check both do. Another thread is still
-  # refused while work runs.
-  # @rbs return: void
-  def claim_rebuild
-    raise BusyError, 'a prompt is already running on this Runtime' if @busy && @claim_thread != Thread.current
-    raise ClosedError, 'this Runtime is closed' if @closed
-
-    @busy = true
-    @claim_depth += 1
-    @claim_thread = Thread.current
-  end
-
-  # @rbs return: void
-  def release
-    @claim_depth -= 1
-    return if @claim_depth.positive?
-
-    @busy = false
-    @claim_thread = nil
-  end
 
   # @rbs model: String
   # @rbs config: Riffer::Agent::Config
@@ -415,7 +375,7 @@ class Riffer::Rig::Runtime
     config = Riffer::Agent::Config.new(
       model: ->(context) { context[:model] },
       model_options: @model_options,
-      instructions: system_prompt([]),
+      instructions: @system_prompt.bare,
       tools_config: select_tools(registrars.flat_map { |registrar| registrar.tools.to_a }.to_h.values, @tool_allowlist),
       max_steps: max_steps,
       tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(hooks, emit: ->(event) { emit(event) }, clock: @clock),
@@ -424,7 +384,7 @@ class Riffer::Rig::Runtime
     config.add_guardrail(:before, klass: Riffer::Rig::Runtime::RequestGuardrail, options: { hooks: hooks })
     # Upstream candidate: riffer resolves MCP tools inside the agent, after
     # tools_config, so the tools: allowlist never sees them.
-    config.add_mcp(mcp_tag, progressive: false)
+    config.add_mcp(@mcp.tag, progressive: false)
     config
   end
 
@@ -439,18 +399,16 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs agent: Riffer::Agent
   # @rbs return: void
-  def install(registrars, mcp_servers, settings, hooks, agent)
+  def install(registrars, settings, hooks, agent)
     overrides(registrars).each { |message| @host.notify(message, level: :info) }
-    @mcp_servers = mcp_servers
     @declared_settings = registrars.to_h { |registrar| [registrar.extension.to_sym, registrar.declared_settings] }
                                    .reject { |_extension, declared| declared.empty? }
     @settings = with_declared_defaults(settings)
-    @prompts = registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h
+    @system_prompt = @system_prompt.with_sections(registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h)
     skills = agent.context.skills&.skills&.values || []
     commands = [
       *@core_commands,
@@ -481,7 +439,7 @@ class Riffer::Rig::Runtime
   def start_turn(text)
     @cancel_flag.clear
     @reload_check&.call(self)
-    refresh_system_message
+    @system_prompt.refresh(@agent.session, self)
     prompt = @hooks.before_prompt(text)
     return blocked_turn(prompt.reason) if prompt.is_a?(Riffer::Rig::Runtime::Blocked)
 
@@ -633,45 +591,16 @@ class Riffer::Rig::Runtime
     cancelled ? INTERRUPT_CANCELLED : outcome.reason
   end
 
-  # @rbs snapshot: Hash[Symbol, untyped]
+  # @rbs snapshot: Riffer::Rig::Runtime::Snapshot
   # @rbs model: String
   # @rbs config: Riffer::Agent::Config
   # @rbs return: Riffer::Agent
   def restore(snapshot, model, config)
-    @model_override = restorable_model(snapshot.fetch(:model), model)
-    # Upstream candidate: riffer's Serializer carries an agent's config, never
-    # its history, so this and to_h round-trip the session message by message;
-    # a Session.from_h could also heal orphaned tool calls on load.
-    messages = snapshot.fetch(:messages).map { |message| Riffer::Messages::Base.from_hash(message) }
-    session = Riffer::Agent::Session.new(messages: messages)
-    session.discard_pending_tool_calls
-    agent = build_agent(@model_override || model, config, session: session)
-    agent.context.token_usage = usage_of(messages)
-    reactivate(agent.context.skills, snapshot.fetch(:skills))
+    @model_override = snapshot.restorable_model(@credentials, @host, model)
+    agent = build_agent(@model_override || model, config, session: snapshot.session)
+    agent.context.token_usage = snapshot.usage
+    reactivate(agent.context.skills, snapshot.skills)
     agent
-  end
-
-  # @rbs saved: String?
-  # @rbs model: String
-  # @rbs return: String?
-  def restorable_model(saved, model)
-    return nil unless saved
-
-    provider = saved.split('/', 2).first.to_s
-    return saved if @credentials.key?(provider.to_sym)
-
-    @host.notify("Not restoring model #{saved}: #{provider} has no credentials; using #{model}", level: :warning)
-    nil
-  end
-
-  # @rbs messages: Array[Riffer::Messages::Base]
-  # @rbs return: Riffer::Providers::TokenUsage?
-  def usage_of(messages)
-    # Upstream candidate: a nil-aware TokenUsage.sum, which riffer's own
-    # Agent::Run and evals also hand-roll; a loaded session could restore its
-    # own tally.
-    messages.filter_map { |message| message.token_usage if message.is_a?(Riffer::Messages::Assistant) }
-            .reduce { |total, usage| total + usage } # rubocop:disable Performance/Sum -- TokenUsage has no zero, and no usage must stay nil
   end
 
   # @rbs skills: Riffer::Skills::Context?
@@ -744,70 +673,10 @@ class Riffer::Rig::Runtime
     end
   end
 
-  # Upstream candidate: riffer's MCP registry is process-wide and keyed by
-  # server name alone, so each Runtime tags its registrations, and two
-  # Runtimes declaring the same name replace each other's.
-  # @rbs return: Symbol
-  def mcp_tag
-    :"riffer_rig_#{@id}"
-  end
-
   # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Hash[String, Riffer::Rig::Mcp::Server]
-  def register_mcp_servers(registrars)
-    declarations = registrars.flat_map { |registrar| registrar.mcp_servers.to_a }.to_h
-    declarations.filter_map do |name, declaration|
-      resolved = resolve_declaration(name, declaration)
-      next nil unless resolved
-
-      live = @mcp_servers[name]
-      server = live && live.declaration == resolved ? live : register_mcp_server(name, resolved)
-      [name, server] if server
-    end.to_h
-  end
-
-  # The stored declaration is the resolved one, so a rebuild compares resolved
-  # headers and re-registers when the credentials changed.
-  # @rbs name: String
-  # @rbs declaration: Riffer::Rig::Mcp::Declaration
-  # @rbs return: Riffer::Rig::Mcp::Declaration?
-  def resolve_declaration(name, declaration)
-    return declaration if declaration.auth.empty?
-
-    values = Riffer::Rig::Mcp::Auth.resolve(name, declaration.auth, host: @host, env: @env, auth_path: @auth_path)
-    declaration.with_headers(Riffer::Rig::Mcp::Auth.expand(declaration.headers, values))
-  rescue Riffer::Rig::Mcp::Auth::Error => e
-    @host.notify("MCP server #{name} failed to register: #{e.message}", level: :error)
-    nil
-  end
-
-  # @rbs name: String
-  # @rbs declaration: Riffer::Rig::Mcp::Declaration
-  # @rbs return: Riffer::Rig::Mcp::Server?
-  def register_mcp_server(name, declaration)
-    unless declaration.url
-      # Upstream candidate: riffer's MCP registry speaks HTTPS only, so a
-      # stdio declaration reaches the Runtime but cannot be registered until
-      # riffer grows a stdio client.
-      @host.notify("MCP server #{name} runs over stdio, which riffer cannot register yet", level: :error)
-      return nil
-    end
-
-    registration = @mcp_registry.register(
-      name: name, endpoint: declaration.url, tags: [mcp_tag], discovery_headers: declaration.headers
-    )
-    Riffer::Rig::Mcp::Server.new(declaration: declaration, registration: registration)
-  rescue StandardError => e
-    @host.notify("MCP server #{name} failed to register: #{e.message}", level: :error)
-    nil
-  end
-
-  # A retired registration was replaced under the same name, by another
-  # Runtime or a later declaration, and is no longer this Runtime's to remove.
-  # @rbs servers: Hash[String, Riffer::Rig::Mcp::Server]
-  # @rbs return: void
-  def unregister_mcp_servers(servers)
-    servers.each { |name, server| @mcp_registry.unregister(name) unless server.registration.retired? }
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::Declaration]
+  def mcp_declarations(registrars)
+    registrars.flat_map { |registrar| registrar.mcp_servers.to_a }.to_h
   end
 
   # @rbs registered: Array[singleton(Riffer::Tool)]
@@ -817,24 +686,5 @@ class Riffer::Rig::Runtime
     return registered if allowlist.nil?
 
     registered.select { |klass| allowlist.include?(klass.name) }
-  end
-
-  # @rbs return: void
-  def refresh_system_message
-    # Upstream candidate: riffer resolves `instructions` once, in Agent.new, so
-    # a per-turn system message has to be swapped into the session by hand.
-    session = @agent.session
-    session.set([Riffer::Messages::System.new(system_prompt(rendered_sections)), *session.messages.drop(1)])
-  end
-
-  # @rbs return: Array[String]
-  def rendered_sections
-    @prompts.each_value.map { |section| section.call(self).to_s }.reject(&:empty?)
-  end
-
-  # @rbs sections: Array[String]
-  # @rbs return: String
-  def system_prompt(sections)
-    [@base_prompt, *sections, "Current date: #{Date.today}\nCurrent working directory: #{@cwd}"].join("\n\n")
   end
 end

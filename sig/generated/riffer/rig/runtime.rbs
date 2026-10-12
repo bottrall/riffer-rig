@@ -26,8 +26,6 @@ class Riffer::Rig::Runtime
   # tests and embedders can exercise the switches.
   NATIVE_TOOLS_BY_PROVIDER: Hash[Symbol, Hash[Symbol, bool]]
 
-  @prompts: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
-
   @model_observers: Array[^(String) -> void]
 
   @message_observers: Array[^(Riffer::Messages::Base) -> void]
@@ -38,9 +36,7 @@ class Riffer::Rig::Runtime
 
   @session_start_pending: bool
 
-  @closed: bool
-
-  @busy: bool
+  @concurrency: Riffer::Rig::Runtime::Concurrency
 
   @settings: Hash[Symbol, untyped]
 
@@ -56,43 +52,33 @@ class Riffer::Rig::Runtime
 
   @cancel_flag: Riffer::Rig::Runtime::CancelFlag
 
-  @base_prompt: String
-
   @agent: Riffer::Agent
 
-  @yielder: Enumerator::Yielder?
+  @system_prompt: Riffer::Rig::Runtime::SystemPrompt
 
-  @clock: ^() -> Float
-
-  @reload_check: (^(::Riffer::Rig::Runtime) -> void)?
-
-  @native_tools: Hash[Symbol, untyped]
-
-  @model_options: Hash[Symbol, untyped]
-
-  @auth_path: String
-
-  @env: Riffer::Rig::Env
-
-  @mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
-
-  @mcp_registry: Riffer::Rig::Mcp::_Registry
-
-  @tool_allowlist: Array[String]?
-
-  @hooks: Riffer::Rig::Runtime::Hooks
-
-  @errors: Array[Riffer::Rig::Extension::Failure]
-
-  @declared_settings: Hash[Symbol, Hash[Symbol, untyped]]
-
-  @claim_thread: Thread?
-
-  @claim_depth: Integer
+  @commands: Hash[String, Riffer::Rig::Command]
 
   @core_commands: Array[Riffer::Rig::Command]
 
-  @commands: Hash[String, Riffer::Rig::Command]
+  @declared_settings: Hash[Symbol, Hash[Symbol, untyped]]
+
+  @errors: Array[Riffer::Rig::Extension::Failure]
+
+  @hooks: Riffer::Rig::Runtime::Hooks
+
+  @tool_allowlist: Array[String]?
+
+  @mcp: Riffer::Rig::Runtime::McpRegistrar
+
+  @model_options: Hash[Symbol, untyped]
+
+  @native_tools: Hash[Symbol, untyped]
+
+  @reload_check: (^(::Riffer::Rig::Runtime) -> void)?
+
+  @clock: ^() -> Float
+
+  @yielder: Enumerator::Yielder?
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader agent: Riffer::Agent
@@ -204,19 +190,6 @@ class Riffer::Rig::Runtime
 
   private
 
-  # @rbs return: void
-  def claim: () -> void
-
-  # Rebuild is a configuration swap at a quiet boundary, not a turn entry, so
-  # it may run nested under the thread that holds the Runtime — the /reload
-  # command and the automatic reload check both do. Another thread is still
-  # refused while work runs.
-  # @rbs return: void
-  def claim_rebuild: () -> void
-
-  # @rbs return: void
-  def release: () -> void
-
   # @rbs model: String
   # @rbs config: Riffer::Agent::Config
   # @rbs session: Riffer::Agent::Session?
@@ -255,12 +228,11 @@ class Riffer::Rig::Runtime
   def skills_config: (Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend] sources) -> Riffer::Skills::Config?
 
   # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs mcp_servers: Hash[String, Riffer::Rig::Mcp::Server]
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs agent: Riffer::Agent
   # @rbs return: void
-  def install: (Array[Riffer::Rig::Registrar] registrars, Hash[String, Riffer::Rig::Mcp::Server] mcp_servers, Hash[Symbol, untyped] settings, Riffer::Rig::Runtime::Hooks hooks, Riffer::Agent agent) -> void
+  def install: (Array[Riffer::Rig::Registrar] registrars, Hash[Symbol, untyped] settings, Riffer::Rig::Runtime::Hooks hooks, Riffer::Agent agent) -> void
 
   # A session that has not started yet opens with session_start(:new) on its
   # first turn instead.
@@ -325,20 +297,11 @@ class Riffer::Rig::Runtime
   # @rbs return: Symbol
   def stop_reason: (Riffer::Agent::Outcome outcome) -> Symbol
 
-  # @rbs snapshot: Hash[Symbol, untyped]
+  # @rbs snapshot: Riffer::Rig::Runtime::Snapshot
   # @rbs model: String
   # @rbs config: Riffer::Agent::Config
   # @rbs return: Riffer::Agent
-  def restore: (Hash[Symbol, untyped] snapshot, String model, Riffer::Agent::Config config) -> Riffer::Agent
-
-  # @rbs saved: String?
-  # @rbs model: String
-  # @rbs return: String?
-  def restorable_model: (String? saved, String model) -> String?
-
-  # @rbs messages: Array[Riffer::Messages::Base]
-  # @rbs return: Riffer::Providers::TokenUsage?
-  def usage_of: (Array[Riffer::Messages::Base] messages) -> Riffer::Providers::TokenUsage?
+  def restore: (Riffer::Rig::Runtime::Snapshot snapshot, String model, Riffer::Agent::Config config) -> Riffer::Agent
 
   # @rbs skills: Riffer::Skills::Context?
   # @rbs names: Array[String]
@@ -370,46 +333,12 @@ class Riffer::Rig::Runtime
   # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
   def merge_hooks: (untyped registrars) -> Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
 
-  # Upstream candidate: riffer's MCP registry is process-wide and keyed by
-  # server name alone, so each Runtime tags its registrations, and two
-  # Runtimes declaring the same name replace each other's.
-  # @rbs return: Symbol
-  def mcp_tag: () -> Symbol
-
   # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Hash[String, Riffer::Rig::Mcp::Server]
-  def register_mcp_servers: (Array[Riffer::Rig::Registrar] registrars) -> Hash[String, Riffer::Rig::Mcp::Server]
-
-  # The stored declaration is the resolved one, so a rebuild compares resolved
-  # headers and re-registers when the credentials changed.
-  # @rbs name: String
-  # @rbs declaration: Riffer::Rig::Mcp::Declaration
-  # @rbs return: Riffer::Rig::Mcp::Declaration?
-  def resolve_declaration: (String name, Riffer::Rig::Mcp::Declaration declaration) -> Riffer::Rig::Mcp::Declaration?
-
-  # @rbs name: String
-  # @rbs declaration: Riffer::Rig::Mcp::Declaration
-  # @rbs return: Riffer::Rig::Mcp::Server?
-  def register_mcp_server: (String name, Riffer::Rig::Mcp::Declaration declaration) -> Riffer::Rig::Mcp::Server?
-
-  # A retired registration was replaced under the same name, by another
-  # Runtime or a later declaration, and is no longer this Runtime's to remove.
-  # @rbs servers: Hash[String, Riffer::Rig::Mcp::Server]
-  # @rbs return: void
-  def unregister_mcp_servers: (Hash[String, Riffer::Rig::Mcp::Server] servers) -> void
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::Declaration]
+  def mcp_declarations: (Array[Riffer::Rig::Registrar] registrars) -> Hash[String, Riffer::Rig::Mcp::Declaration]
 
   # @rbs registered: Array[singleton(Riffer::Tool)]
   # @rbs allowlist: Array[String]?
   # @rbs return: Array[singleton(Riffer::Tool)]
   def select_tools: (Array[singleton(Riffer::Tool)] registered, Array[String]? allowlist) -> Array[singleton(Riffer::Tool)]
-
-  # @rbs return: void
-  def refresh_system_message: () -> void
-
-  # @rbs return: Array[String]
-  def rendered_sections: () -> Array[String]
-
-  # @rbs sections: Array[String]
-  # @rbs return: String
-  def system_prompt: (Array[String] sections) -> String
 end
