@@ -41,9 +41,10 @@ module Riffer::Rig::CLI
   # @rbs input: IO
   # @rbs output: IO
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  # @rbs cwd: String
   # @rbs home: String
   # @rbs return: Integer
-  def acp: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String) -> Integer
+  def acp: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, cwd: String, home: String) -> Integer
 
   # @rbs message: String
   # @rbs error: IO

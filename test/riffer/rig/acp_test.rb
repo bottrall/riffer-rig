@@ -46,7 +46,7 @@ describe Riffer::Rig::ACP do
     agent_input_r, agent_input_w = IO.pipe
     agent_output_r, agent_output_w = IO.pipe
     agent = Riffer::Rig::ACP.for(
-      input: agent_input_r, output: agent_output_w, env: env, home: @home, build: build, adopt: adopt
+      input: agent_input_r, output: agent_output_w, env: env, home: @home, cwd: @cwd, build: build, adopt: adopt
     )
     @served << [agent_input_w, Thread.new { agent.run }, agent_output_w]
     connection = ACP::ClientConnection.new(
@@ -93,10 +93,10 @@ describe Riffer::Rig::ACP do
     session
   end
 
-  def load(session_id)
+  def load(session_id, mcp_servers: [])
     updates = [] #: Array[ACP::Types::SessionUpdate::t]
     response = @connection.load_session(
-      ACP::Types::LoadSessionRequest.new(cwd: @cwd, mcp_servers: [], session_id: session_id)
+      ACP::Types::LoadSessionRequest.new(cwd: @cwd, mcp_servers: mcp_servers, session_id: session_id)
     ) { |update| updates << update }
     [response, updates]
   end
@@ -155,10 +155,18 @@ describe Riffer::Rig::ACP do
     message_texts.find { |text| text.include?("Skipped MCP server #{name}") }
   end
 
-  def message_texts
-    @updates.filter_map do |notification|
-      notification.update.content.text if notification.update.is_a?(ACP::Types::SessionUpdate::AgentMessageChunk)
+  def texts_of(updates)
+    updates.filter_map do |update|
+      update.content.text if update.is_a?(ACP::Types::SessionUpdate::AgentMessageChunk)
     end
+  end
+
+  def http_server(name)
+    { 'name' => name, 'type' => 'http', 'url' => 'https://docs.example/mcp', 'headers' => [] }
+  end
+
+  def message_texts
+    texts_of(@updates.map(&:update))
   end
 
   describe '.build_runtime' do
@@ -175,14 +183,14 @@ describe Riffer::Rig::ACP do
     end
   end
 
-  describe '.session_extension' do
+  describe '.session_extensions' do
     it 'builds no extension without servers' do
-      assert_nil Riffer::Rig::ACP.session_extension({})
+      assert_empty Riffer::Rig::ACP.session_extensions({})
     end
 
     it 'declares each server through rig.mcp' do
       declaration = Riffer::Rig::Mcp::Declaration.new(command: 'stub', args: ['--flag'], env: { 'TOKEN' => 't' })
-      registrar = Riffer::Rig::ACP.session_extension({ 'stub' => declaration }).trial({})
+      registrar = Riffer::Rig::ACP.session_extensions({ 'stub' => declaration }).first.trial({})
 
       assert_equal({ 'stub' => declaration }, registrar.mcp_servers)
     end
@@ -193,7 +201,7 @@ describe Riffer::Rig::ACP do
       input, client = IO.pipe
       client.close
       yielded = nil
-      Riffer::Rig::ACP.for(input: input, output: StringIO.new, env: @env, home: @home).run do |connection|
+      Riffer::Rig::ACP.for(input: input, output: StringIO.new, env: @env, home: @home, cwd: @cwd).run do |connection|
         yielded = connection
       end
 
@@ -437,6 +445,13 @@ describe Riffer::Rig::ACP do
       assert_equal %w[again], prompts_seen_by(runtime)
     end
 
+    it 'declares no client mcpServer on an adopted runtime' do
+      session = adopt_session
+      _response, updates = load(session.session_id, mcp_servers: [http_server('httpdocs')])
+
+      assert_empty(texts_of(updates).grep(/Skipped MCP server/))
+    end
+
     it 'restores from the store when the hook declines the session' do
       session = save_session('hello')
       reconnect(adopt: ->(_id) {})
@@ -452,11 +467,25 @@ describe Riffer::Rig::ACP do
       FileUtils.mkdir_p(File.join(@home, '.riffer'))
       File.write(File.join(@home, '.riffer', 'rig.rb'), "raise 'broken rig'\n")
       _response, updates = load(session.session_id)
-      texts = updates.filter_map do |update|
-        update.content.text if update.is_a?(ACP::Types::SessionUpdate::AgentMessageChunk)
-      end
 
-      assert(texts.any? { |text| text.include?('broken rig') })
+      assert(texts_of(updates).any? { |text| text.include?('broken rig') })
+    end
+
+    it 'warns about a client-supplied non-stdio mcpServer of a loaded session' do
+      session = save_session('first prompt')
+      _response, updates = load(session.session_id, mcp_servers: [http_server('httpdocs')])
+
+      assert_includes texts_of(updates), 'Skipped MCP server httpdocs: only stdio servers are supported'
+    end
+
+    it 'declares the client stdio mcpServers to the Runtime it restores' do
+      session = save_session('first prompt')
+      stub = { 'name' => 'acp-load-stub', 'command' => File.join(@cwd, 'mcp_stub.rb'), 'args' => [], 'env' => [] }
+      _response, updates = load(session.session_id, mcp_servers: [stub])
+
+      # riffer cannot register a stdio server yet, so the Runtime's refusal is
+      # the only trace that the declaration reached it.
+      assert(texts_of(updates).any? { |text| text.include?('acp-load-stub runs over stdio') })
     end
 
     it 'replays the stored messages of a loaded session in order' do

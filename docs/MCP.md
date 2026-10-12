@@ -94,6 +94,6 @@ Two Runtimes in one process must not declare servers of the same name: the later
 
 ## Servers over ACP
 
-An [ACP](ACP.md) client supplies its own MCP servers with `session/new`, in stdio shape only: a command, its args and an env map. The agent declares each one through the `rig.mcp` seam, so it reaches the Runtime as if an extension named `acp` had declared it, keeps it through a reload rebuild, and can be replaced by a same-name declaration. A server in `http` or `sse` shape is skipped with one warning notify.
+An [ACP](ACP.md) client supplies its own MCP servers with `session/new` and `session/load`, in stdio shape only: a command, its args and an env map. The agent declares each one through the `rig.mcp` seam, so it reaches the Runtime as if an extension named `acp` had declared it, keeps it through a reload rebuild, and can be replaced by a same-name declaration. A server in `http` or `sse` shape is skipped with one warning notify.
 
 A stdio declaration still cannot be registered: riffer's MCP client speaks HTTPS only, so the Runtime reports "MCP server NAME runs over stdio, which riffer cannot register yet" through `notify` at level `:error` and runs without its tools.

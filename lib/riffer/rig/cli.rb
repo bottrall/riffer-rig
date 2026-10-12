@@ -27,7 +27,7 @@ module Riffer::Rig::CLI
     home: Dir.home
   )
     return refuse("#{ACP_COMMAND} takes no arguments", error) if argv.first == ACP_COMMAND && argv.length > 1
-    return acp(input: input, output: output, env: env, home: home) if argv.first == ACP_COMMAND
+    return acp(input:, output:, env:, cwd:, home:) if argv.first == ACP_COMMAND
 
     headless_mode = argv.intersect?(PRINT_FLAGS)
     flags = Flags.parse(argv, prompt: headless_mode)
@@ -87,10 +87,11 @@ module Riffer::Rig::CLI
   # @rbs input: IO
   # @rbs output: IO
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
+  # @rbs cwd: String
   # @rbs home: String
   # @rbs return: Integer
-  def acp(input:, output:, env:, home:)
-    Riffer::Rig::ACP.for(input: input, output: output, env: env, home: home).run
+  def acp(input:, output:, env:, cwd:, home:)
+    Riffer::Rig::ACP.for(input: input, output: output, env: env, home: home, cwd: cwd).run
   end
 
   # @rbs message: String

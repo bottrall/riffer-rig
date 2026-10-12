@@ -15,6 +15,7 @@ class Riffer::Rig::ACP
   # @rbs @output: IO
   # @rbs @env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs @home: String
+  # @rbs @cwd: String
   # @rbs @build: ^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime
   # @rbs @adopt: (^(String) -> Riffer::Rig::Runtime?)?
   # @rbs @client: ::ACP::AgentConnection::_Client?
@@ -26,11 +27,12 @@ class Riffer::Rig::ACP
   # @rbs output: IO
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
+  # @rbs cwd: String
   # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
   # @rbs adopt: (^(String) -> Riffer::Rig::Runtime?)?
   # @rbs return: Riffer::Rig::ACP
-  def self.for(input:, output:, env:, home:, build: nil, adopt: nil)
-    new(input: input, output: output, env: env, home: home, build: build, adopt: adopt)
+  def self.for(input:, output:, env:, home:, cwd:, build: nil, adopt: nil)
+    new(input: input, output: output, env: env, home: home, cwd: cwd, build: build, adopt: adopt)
   end
 
   # Builds the Runtime a session runs on: the client's MCP servers flow
@@ -44,34 +46,36 @@ class Riffer::Rig::ACP
   # @rbs home: String
   # @rbs return: Riffer::Rig::Runtime
   def self.build_runtime(cwd, host, servers, env:, home:)
-    extension = session_extension(servers)
     Riffer::Rig::Loader.runtime(
-      cwd: cwd, host: host, env: env, home: home, extra_extensions: extension ? [extension] : []
+      cwd: cwd, host: host, env: env, home: home, extra_extensions: session_extensions(servers)
     )
   end
 
   # @rbs servers: Hash[String, Riffer::Rig::Mcp::Declaration]
-  # @rbs return: Riffer::Rig::Extension?
-  def self.session_extension(servers)
-    return nil if servers.empty?
+  # @rbs return: Array[Riffer::Rig::Extension]
+  def self.session_extensions(servers)
+    return [] if servers.empty?
 
-    Riffer::Rig::Extension.new(SESSION_EXTENSION) do |rig|
+    extension = Riffer::Rig::Extension.new(SESSION_EXTENSION) do |rig|
       servers.each { |name, server| rig.mcp(name, command: server.command, args: server.args, env: server.env) }
     end
+    [extension]
   end
 
   # @rbs input: IO
   # @rbs output: IO
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs home: String
+  # @rbs cwd: String
   # @rbs build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?
   # @rbs adopt: (^(String) -> Riffer::Rig::Runtime?)?
   # @rbs return: void
-  def initialize(input:, output:, env:, home:, build: nil, adopt: nil)
+  def initialize(input:, output:, env:, home:, cwd:, build: nil, adopt: nil)
     @input = input
     @output = output
     @env = env
     @home = home
+    @cwd = cwd
     @build = build || ->(cwd, host, servers) { self.class.build_runtime(cwd, host, servers, env: @env, home: @home) }
     @adopt = adopt
     @client = nil
@@ -149,7 +153,10 @@ class Riffer::Rig::ACP
     host = Riffer::Rig::ACP::Host.new(client: client)
     host.session_id = request.session_id
     loader = Riffer::Rig::Loader.new(cwd: request.cwd, host: host, env: @env, home: @home)
-    runtime = adopted(request.session_id) || loader.resume(request.session_id)
+    runtime = adopted(request.session_id) || loader.resume(
+      request.session_id,
+      extra_extensions: self.class.session_extensions(declarations(request.mcp_servers, host))
+    )
     return ::ACP::RequestError.resource_not_found unless runtime
 
     @lock.synchronize { @sessions[request.session_id] = runtime }
@@ -165,7 +172,7 @@ class Riffer::Rig::ACP
   # @rbs return: (::ACP::Types::ListSessionsResponse | ::ACP::RequestError)
   def list_sessions(request)
     loader = Riffer::Rig::Loader.new(
-      cwd: request.cwd || Dir.pwd,
+      cwd: request.cwd || @cwd,
       host: Riffer::Rig::Hosts::Null.new,
       env: @env,
       home: @home

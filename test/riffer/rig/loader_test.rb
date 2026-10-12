@@ -224,6 +224,12 @@ describe Riffer::Rig::Loader do
 
       assert_match(%r{\ARIFFER_MODEL: sonnet is not a provider/name model string}, message)
     end
+
+    it 'roots the default store at home' do
+      saved = save_session
+
+      assert_equal [saved.id], new_loader.list.map(&:id)
+    end
   end
 
   describe '#runtime' do
@@ -508,7 +514,7 @@ describe Riffer::Rig::Loader do
       it 'names the default-store file after the runtime id' do
         runtime = build(model: 'mock/test')
         turn(runtime)
-        path = File.join(Dir.home, '.riffer', 'sessions', '*', "#{runtime.id}.jsonl")
+        path = File.join(@home, '.riffer', 'sessions', '*', "#{runtime.id}.jsonl")
 
         refute_empty Dir.glob(path)
       end
@@ -622,6 +628,14 @@ describe Riffer::Rig::Loader do
       saved = save_session
 
       assert_equal saved.id, loader.resume(saved.id).id
+    end
+
+    it 'loads extra extensions into the resumed session' do
+      saved = save_session
+      extra = Riffer::Rig::Extension.new('extra_resume') { |rig| rig.command('ping', description: 'Pings') { |_ctx| nil } }
+      resumed = loader.resume(saved.id, extra_extensions: [extra])
+
+      assert(resumed.commands.any? { |command| command.name == 'ping' })
     end
 
     it 'rewrites no header when resuming' do
