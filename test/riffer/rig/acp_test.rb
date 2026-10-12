@@ -224,6 +224,13 @@ describe Riffer::Rig::ACP do
       assert_equal @built_runtimes.last.id, session.session_id
     end
 
+    it 'gives the session a host that relays its questions' do
+      new_session
+      wait_for { @updates.any? }
+
+      assert_includes @built_runtimes.last.host.capabilities, :confirm
+    end
+
     it 'answers a failed build with its message' do
       error = invalid_env_connection.new_session(ACP::Types::NewSessionRequest.new(cwd: @cwd, mcp_servers: []))
 
@@ -382,6 +389,15 @@ describe Riffer::Rig::ACP do
       prompt(session.session_id, 'again')
 
       assert_equal 2, @built_runtimes.last.agent.provider.calls.size
+    end
+
+    it 'relays a question of the loaded session to the client' do
+      session = save_session('first prompt')
+      FileUtils.mkdir_p(File.join(@cwd, '.riffer'))
+      File.write(File.join(@cwd, '.riffer', 'rig.rb'), '')
+      load(session.session_id)
+
+      assert_equal [session.session_id], @permissions.map(&:session_id)
     end
 
     it 'answers a failed load with its message' do

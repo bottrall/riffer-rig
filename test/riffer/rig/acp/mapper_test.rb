@@ -150,4 +150,106 @@ describe Riffer::Rig::ACP::Mapper do
       assert_equal %w[refusal], reasons.map { |reason| Riffer::Rig::ACP::Mapper.stop_reason_of(reason) }.uniq
     end
   end
+
+  describe '.choices' do
+    it 'offers each option under its own text as the id' do
+      assert_equal(%w[red blue], Riffer::Rig::ACP::Mapper.choices(%w[red blue]).map(&:option_id))
+    end
+  end
+
+  describe '.permission_request' do
+    def request
+      Riffer::Rig::ACP::Mapper.permission_request('s1', 'c1', 'Proceed?', Riffer::Rig::ACP::Mapper::CONFIRM_OPTIONS)
+    end
+
+    it 'names the session' do
+      assert_equal 's1', request.session_id
+    end
+
+    it 'carries the question as the title of a pending tool call' do
+      call = request.tool_call
+
+      assert_equal %w[c1 Proceed? pending], [call.tool_call_id, call.title, call.status]
+    end
+
+    it 'offers the options it was given' do
+      assert_equal Riffer::Rig::ACP::Mapper::CONFIRM_OPTIONS, request.options
+    end
+  end
+
+  describe '.selected_option' do
+    it 'reads nothing from a request error' do
+      assert_nil Riffer::Rig::ACP::Mapper.selected_option(ACP::RequestError.resource_not_found)
+    end
+
+    it 'reads nothing from a cancelled outcome' do
+      response = ACP::Types::RequestPermissionResponse.new(outcome: ACP::Types::RequestPermissionOutcome::Cancelled.new)
+
+      assert_nil Riffer::Rig::ACP::Mapper.selected_option(response)
+    end
+
+    it 'reads the option id of a selected outcome' do
+      response = ACP::Types::RequestPermissionResponse.new(
+        outcome: ACP::Types::RequestPermissionOutcome::Selected.new(option_id: 'yes')
+      )
+
+      assert_equal 'yes', Riffer::Rig::ACP::Mapper.selected_option(response)
+    end
+  end
+
+  describe '.elicitation_request' do
+    def request
+      Riffer::Rig::ACP::Mapper.elicitation_request('s1', 'Name?')
+    end
+
+    it 'carries the question as its message' do
+      assert_equal 'Name?', request.message
+    end
+
+    it 'scopes a form to the session' do
+      assert_equal 's1', request.mode.scope.session_id
+    end
+
+    it 'asks for a string answer titled with the question' do
+      answer = request.mode.requested_schema.properties.fetch('answer')
+
+      assert_equal [ACP::Types::ElicitationPropertySchema::StringPropertySchema, 'Name?'], [answer.class, answer.title]
+    end
+
+    it 'requires the answer' do
+      assert_equal ['answer'], request.mode.requested_schema.required
+    end
+  end
+
+  describe '.elicited_answer' do
+    def accepted(content)
+      ACP::Types::CreateElicitationResponse.new(
+        action: ACP::Types::CreateElicitationResponse::Action::Accept.new(content: content)
+      )
+    end
+
+    it 'reads nothing from a request error' do
+      assert_nil Riffer::Rig::ACP::Mapper.elicited_answer(ACP::RequestError.resource_not_found)
+    end
+
+    it 'reads nothing from a cancelled form' do
+      response = ACP::Types::CreateElicitationResponse.new(
+        action: ACP::Types::CreateElicitationResponse::Action::Cancel.new
+      )
+
+      assert_nil Riffer::Rig::ACP::Mapper.elicited_answer(response)
+    end
+
+    it 'reads nothing from an accepted form without content' do
+      assert_nil Riffer::Rig::ACP::Mapper.elicited_answer(accepted(nil))
+    end
+
+    it 'reads nothing from an answer that is not a string' do
+      assert_nil Riffer::Rig::ACP::Mapper.elicited_answer(accepted('answer' => 3))
+    end
+
+    it 'reads the answer field of an accepted form' do
+      assert_equal 'Ada', Riffer::Rig::ACP::Mapper.elicited_answer(accepted('answer' => 'Ada'))
+    end
+  end
 end

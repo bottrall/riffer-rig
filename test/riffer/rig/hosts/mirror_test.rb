@@ -28,6 +28,15 @@ describe Riffer::Rig::Hosts::Mirror do
     assert_equal Set[:ask, :notify], @host.capabilities
   end
 
+  it 'reports a capability the wrapped host gains after wrapping' do
+    capabilities = Set[:notify]
+    @wrapped.define_singleton_method(:capabilities) { capabilities }
+    host = Riffer::Rig::Hosts::Mirror.new(@wrapped)
+    capabilities << :confirm
+
+    assert_includes host.capabilities, :confirm
+  end
+
   it 'forwards ask to the wrapped host' do
     @host.ask('token?', options: %w[a b], secret: true)
 
