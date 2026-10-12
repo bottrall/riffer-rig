@@ -37,7 +37,7 @@ class Riffer::Rig::Mcp::Declaration
   # @rbs headers: Hash[String, String]
   # @rbs return: Riffer::Rig::Mcp::Declaration
   def with_headers(headers)
-    self.class.new(url: url, headers: headers, auth: auth)
+    self.class.new(url: url, headers: headers, auth: auth, command: command, args: args, env: env)
   end
 
   # @rbs return: Hash[Symbol, untyped]
