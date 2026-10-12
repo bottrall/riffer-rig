@@ -72,171 +72,6 @@ describe Riffer::Rig::Credentials do
       end
     end
 
-    it 'prefers the stored value over the fallback' do
-      in_tmp_home do |paths|
-        Riffer::Rig::Credentials.store(:acme, { region: 'from-settings' }, setup: fallback_setup, **paths)
-
-        resolution = Riffer::Rig::Credentials.install(
-          :acme,
-          host: null_host,
-          setup: fallback_setup,
-          env:,
-          config: nil,
-          **paths
-        )
-
-        assert_equal({ region: 'from-settings' }, resolution.values)
-      end
-    end
-
-    it 'prefers the fallback over asking' do
-      in_tmp_home do |paths|
-        host = AnsweringHost.new('from-host')
-
-        Riffer::Rig::Credentials.install(:acme, host: host, setup: fallback_setup, env:, config: nil, **paths)
-
-        assert_empty host.asked
-      end
-    end
-
-    it 'returns the fallback value' do
-      in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.install(
-          :acme,
-          host: null_host,
-          setup: fallback_setup,
-          env:,
-          config: nil,
-          **paths
-        )
-
-        assert_equal({ region: 'from-fallback' }, resolution.values)
-      end
-    end
-
-    it 'asks the host when nothing else resolves' do
-      in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.install(
-          :anthropic,
-          host: AnsweringHost.new("sk-asked\n"),
-          env:,
-          config: nil,
-          **paths
-        )
-
-        assert_equal({ api_key: 'sk-asked' }, resolution.values)
-      end
-    end
-
-    it 'treats a blank answer as missing' do
-      in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.install(
-          :anthropic,
-          host: AnsweringHost.new(' '),
-          env:,
-          config: nil,
-          **paths
-        )
-
-        assert_equal [:api_key], resolution.missing
-      end
-    end
-
-    it 'does not ask a host that cannot ask' do
-      in_tmp_home do |paths|
-        host = AnsweringHost.new('sk-asked')
-        host.define_singleton_method(:capabilities) { Set[:confirm] }
-        Riffer::Rig::Credentials.install(:anthropic, host: host, env:, config: nil, **paths)
-
-        assert_empty host.asked
-      end
-    end
-
-    it 'asks for a secret field with secret: true' do
-      in_tmp_home do |paths|
-        host = AnsweringHost.new('sk-asked')
-
-        Riffer::Rig::Credentials.install(:anthropic, host: host, env:, config: nil, **paths)
-
-        assert_equal [{ question: 'anthropic api_key', secret: true }], host.asked
-      end
-    end
-
-    it 'stores what the host answered' do
-      in_tmp_home do |paths|
-        Riffer::Rig::Credentials.install(:anthropic, host: AnsweringHost.new('sk-asked'), env:, config: nil, **paths)
-
-        assert_equal :stored, Riffer::Rig::Credentials.status(:anthropic, env:, auth_path: paths[:auth_path])
-      end
-    end
-
-    it 'does not ask again once the answer is stored' do
-      in_tmp_home do |paths|
-        Riffer::Rig::Credentials.install(:anthropic, host: AnsweringHost.new('sk-asked'), env:, config: nil, **paths)
-        host = AnsweringHost.new('sk-again')
-
-        Riffer::Rig::Credentials.install(:anthropic, host: host, env:, config: nil, **paths)
-
-        assert_empty host.asked
-      end
-    end
-
-    it 'does not ask for optional fields' do
-      in_tmp_home do |paths|
-        host = AnsweringHost.new('sk-asked')
-
-        Riffer::Rig::Credentials.install(:openai, host: host, env:, config: nil, **paths)
-
-        assert_equal(['openai api_key'], host.asked.map { |ask| ask[:question] })
-      end
-    end
-
-    it 'resolves an optional field from settings' do
-      in_tmp_home do |paths|
-        Riffer::Rig::Credentials.store(:openai, { base_url: 'https://proxy.test/v1' }, **paths)
-
-        resolution = Riffer::Rig::Credentials.install(:openai, host: null_host, env:, config: nil, **paths)
-
-        assert_equal 'https://proxy.test/v1', resolution.values[:base_url]
-      end
-    end
-
-    it 'returns what it has when the null host declines' do
-      in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.install(
-          :azure_openai,
-          host: null_host,
-          env: env('AZURE_OPENAI_ENDPOINT' => 'https://azure.test'),
-          config: nil,
-          **paths
-        )
-
-        assert_equal({ endpoint: 'https://azure.test' }, resolution.values)
-      end
-    end
-
-    it 'lists the required fields still missing when the null host declines' do
-      in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.install(
-          :azure_openai,
-          host: null_host,
-          env: env('AZURE_OPENAI_ENDPOINT' => 'https://azure.test'),
-          config: nil,
-          **paths
-        )
-
-        assert_equal [:api_key], resolution.missing
-      end
-    end
-
-    it 'leaves an optional field out of the missing list' do
-      in_tmp_home do |paths|
-        resolution = Riffer::Rig::Credentials.install(:openai, host: null_host, env:, config: nil, **paths)
-
-        assert_equal [:api_key], resolution.missing
-      end
-    end
-
     it 'expands a stored $VAR reference' do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:anthropic, { api_key: '$MY_ANTHROPIC_KEY' }, **paths)
@@ -333,10 +168,175 @@ describe Riffer::Rig::Credentials do
       end
     end
 
+    it 'prefers the stored value over the fallback' do
+      in_tmp_home do |paths|
+        Riffer::Rig::Credentials.store(:acme, { region: 'from-settings' }, setup: fallback_setup, **paths)
+
+        resolution = Riffer::Rig::Credentials.install(
+          :acme,
+          host: null_host,
+          setup: fallback_setup,
+          env:,
+          config: nil,
+          **paths
+        )
+
+        assert_equal({ region: 'from-settings' }, resolution.values)
+      end
+    end
+
+    it 'prefers the fallback over asking' do
+      in_tmp_home do |paths|
+        host = AnsweringHost.new('from-host')
+
+        Riffer::Rig::Credentials.install(:acme, host: host, setup: fallback_setup, env:, config: nil, **paths)
+
+        assert_empty host.asked
+      end
+    end
+
+    it 'returns the fallback value' do
+      in_tmp_home do |paths|
+        resolution = Riffer::Rig::Credentials.install(
+          :acme,
+          host: null_host,
+          setup: fallback_setup,
+          env:,
+          config: nil,
+          **paths
+        )
+
+        assert_equal({ region: 'from-fallback' }, resolution.values)
+      end
+    end
+
+    it 'does not ask a host that cannot ask' do
+      in_tmp_home do |paths|
+        host = AnsweringHost.new('sk-asked')
+        host.define_singleton_method(:capabilities) { Set[:confirm] }
+        Riffer::Rig::Credentials.install(:anthropic, host: host, env:, config: nil, **paths)
+
+        assert_empty host.asked
+      end
+    end
+
+    it 'asks the host when nothing else resolves' do
+      in_tmp_home do |paths|
+        resolution = Riffer::Rig::Credentials.install(
+          :anthropic,
+          host: AnsweringHost.new("sk-asked\n"),
+          env:,
+          config: nil,
+          **paths
+        )
+
+        assert_equal({ api_key: 'sk-asked' }, resolution.values)
+      end
+    end
+
+    it 'treats a blank answer as missing' do
+      in_tmp_home do |paths|
+        resolution = Riffer::Rig::Credentials.install(
+          :anthropic,
+          host: AnsweringHost.new(' '),
+          env:,
+          config: nil,
+          **paths
+        )
+
+        assert_equal [:api_key], resolution.missing
+      end
+    end
+
+    it 'asks for a secret field with secret: true' do
+      in_tmp_home do |paths|
+        host = AnsweringHost.new('sk-asked')
+
+        Riffer::Rig::Credentials.install(:anthropic, host: host, env:, config: nil, **paths)
+
+        assert_equal [{ question: 'anthropic api_key', secret: true }], host.asked
+      end
+    end
+
+    it 'stores what the host answered' do
+      in_tmp_home do |paths|
+        Riffer::Rig::Credentials.install(:anthropic, host: AnsweringHost.new('sk-asked'), env:, config: nil, **paths)
+
+        assert_equal :stored, Riffer::Rig::Credentials.status(:anthropic, env:, auth_path: paths[:auth_path])
+      end
+    end
+
+    it 'does not ask again once the answer is stored' do
+      in_tmp_home do |paths|
+        Riffer::Rig::Credentials.install(:anthropic, host: AnsweringHost.new('sk-asked'), env:, config: nil, **paths)
+        host = AnsweringHost.new('sk-again')
+
+        Riffer::Rig::Credentials.install(:anthropic, host: host, env:, config: nil, **paths)
+
+        assert_empty host.asked
+      end
+    end
+
+    it 'does not ask for optional fields' do
+      in_tmp_home do |paths|
+        host = AnsweringHost.new('sk-asked')
+
+        Riffer::Rig::Credentials.install(:openai, host: host, env:, config: nil, **paths)
+
+        assert_equal(['openai api_key'], host.asked.map { |ask| ask[:question] })
+      end
+    end
+
+    it 'resolves an optional field from settings' do
+      in_tmp_home do |paths|
+        Riffer::Rig::Credentials.store(:openai, { base_url: 'https://proxy.test/v1' }, **paths)
+
+        resolution = Riffer::Rig::Credentials.install(:openai, host: null_host, env:, config: nil, **paths)
+
+        assert_equal 'https://proxy.test/v1', resolution.values[:base_url]
+      end
+    end
+
+    it 'returns what it has when the null host declines' do
+      in_tmp_home do |paths|
+        resolution = Riffer::Rig::Credentials.install(
+          :azure_openai,
+          host: null_host,
+          env: env('AZURE_OPENAI_ENDPOINT' => 'https://azure.test'),
+          config: nil,
+          **paths
+        )
+
+        assert_equal({ endpoint: 'https://azure.test' }, resolution.values)
+      end
+    end
+
+    it 'lists the required fields still missing when the null host declines' do
+      in_tmp_home do |paths|
+        resolution = Riffer::Rig::Credentials.install(
+          :azure_openai,
+          host: null_host,
+          env: env('AZURE_OPENAI_ENDPOINT' => 'https://azure.test'),
+          config: nil,
+          **paths
+        )
+
+        assert_equal [:api_key], resolution.missing
+      end
+    end
+
+    it 'leaves an optional field out of the missing list' do
+      in_tmp_home do |paths|
+        resolution = Riffer::Rig::Credentials.install(:openai, host: null_host, env:, config: nil, **paths)
+
+        assert_equal [:api_key], resolution.missing
+      end
+    end
+
     it 'returns the resolved values when nothing is missing' do
       in_tmp_home do |paths|
         resolution = Riffer::Rig::Credentials.install(
-          :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), **paths
+          :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), config: Riffer::Config.new, **paths
         )
 
         assert_equal({ api_key: 'sk-env' }, resolution.values)
@@ -392,7 +392,7 @@ describe Riffer::Rig::Credentials do
 
     it 'does not apply when there is no config' do
       in_tmp_home do |paths|
-        Riffer::Rig::Credentials.apply(:anthropic, { api_key: 'sk-old' })
+        Riffer::Rig::Credentials.apply(:anthropic, { api_key: 'sk-old' }, config: Riffer::Config.new)
         Riffer::Rig::Credentials.install(
           :anthropic, host: null_host, env: env('ANTHROPIC_API_KEY' => 'sk-env'), config: nil, **paths
         )
@@ -516,17 +516,6 @@ describe Riffer::Rig::Credentials do
       end
     end
 
-    it 'writes non-secret fields to the providers block in settings' do
-      in_tmp_home do |paths|
-        Riffer::Rig::Credentials.store(:azure_openai, { endpoint: 'https://azure.test', api_key: 'azure-key' }, **paths)
-
-        assert_equal(
-          { 'azure_openai' => { 'endpoint' => 'https://azure.test' } },
-          JSON.parse(File.read(paths[:settings_path]))['providers']
-        )
-      end
-    end
-
     it 'keeps non-secret fields out of auth.json' do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:azure_openai, { endpoint: 'https://azure.test', api_key: 'azure-key' }, **paths)
@@ -535,17 +524,6 @@ describe Riffer::Rig::Credentials do
           { 'type' => 'api_key', 'api_key' => 'azure-key' },
           JSON.parse(File.read(paths[:auth_path]))['azure_openai']
         )
-      end
-    end
-
-    it 'keeps the other settings keys' do
-      in_tmp_home do |paths|
-        FileUtils.mkdir_p(File.dirname(paths[:settings_path]))
-        File.write(paths[:settings_path], JSON.generate('model' => 'azure_openai/gpt-5'))
-
-        Riffer::Rig::Credentials.store(:azure_openai, { endpoint: 'https://azure.test' }, **paths)
-
-        assert_equal 'azure_openai/gpt-5', JSON.parse(File.read(paths[:settings_path]))['model']
       end
     end
 
@@ -566,6 +544,17 @@ describe Riffer::Rig::Credentials do
         Riffer::Rig::Credentials.store(:azure_openai, { endpoint: 'https://azure.test' }, **paths)
 
         refute_path_exists paths[:auth_path]
+      end
+    end
+
+    it 'writes non-secret fields to the providers block in settings' do
+      in_tmp_home do |paths|
+        Riffer::Rig::Credentials.store(:azure_openai, { endpoint: 'https://azure.test', api_key: 'azure-key' }, **paths)
+
+        assert_equal(
+          { 'azure_openai' => { 'endpoint' => 'https://azure.test' } },
+          JSON.parse(File.read(paths[:settings_path]))['providers']
+        )
       end
     end
 

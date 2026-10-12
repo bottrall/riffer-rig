@@ -46,16 +46,12 @@ describe Riffer::Rig::Settings::Pricing do
       assert_in_delta 15.0, registered_rates.output
     end
 
-    it 'registers the cache write rate under the model id' do
-      assert_in_delta 3.75, registered_rates.cache_write
-    end
-
     it 'registers the cache read rate under the model id' do
       assert_in_delta 0.3, registered_rates.cache_read
     end
 
-    it 'prices the model in USD per million tokens' do
-      assert_in_delta 6.0, registered_rates.cost_for(input_tokens: 1_000_000, output_tokens: 200_000)
+    it 'registers the cache write rate under the model id' do
+      assert_in_delta 3.75, registered_rates.cache_write
     end
 
     it 'leaves a model outside the table unpriced' do

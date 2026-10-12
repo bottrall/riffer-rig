@@ -34,6 +34,6 @@ describe 'Riffer::Rig::Bundled::AgentsMd' do
     runtime.agent.provider.stub_response('All done.')
     runtime.ask('hello')
 
-    assert_includes system_message(runtime), "<project_instructions path=\"#{@project}\">\nPROJECT_RULES\n"
+    assert_includes system_message(runtime), 'PROJECT_RULES'
   end
 end

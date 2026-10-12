@@ -100,25 +100,6 @@ describe Riffer::Rig::Stores::Recorder do
   end
 
   describe '#attach' do
-    it 'records the messages the runtime announces' do
-      store = SeededStore.new
-      runtime = ObservedRuntime.new
-      Riffer::Rig::Stores::Recorder.new(store: store, clock: SteppingClock.new([at(1), at(2)])).attach(runtime)
-      runtime.announce(user)
-
-      assert_equal [user.to_h], store.appended.grep(Riffer::Rig::Stores::MessageEntry).map(&:message)
-    end
-
-    it 'records the model changes the runtime announces' do
-      store = SeededStore.new
-      runtime = ObservedRuntime.new
-      Riffer::Rig::Stores::Recorder.new(store: store, clock: SteppingClock.new([at(1), at(2), at(3)])).attach(runtime)
-      runtime.announce(user)
-      runtime.switch('mock/other')
-
-      assert_equal ['mock/other'], store.appended.grep(Riffer::Rig::Stores::ModelEntry).map(&:model)
-    end
-
     it 'starts a fresh session on the clock, whatever the store holds' do
       seeded = [Riffer::Rig::Stores::MessageEntry.new(message: user.to_h, recorded_at: Riffer::Rig::Stores::Timestamp.dump(at(9)))]
       store = SeededStore.new(seeded)
@@ -149,6 +130,25 @@ describe Riffer::Rig::Stores::Recorder do
       recorder(store, [at(3)], resumed: true).message(user)
 
       assert_equal [at(3)], stamps(store)
+    end
+
+    it 'records the messages the runtime announces' do
+      store = SeededStore.new
+      runtime = ObservedRuntime.new
+      Riffer::Rig::Stores::Recorder.new(store: store, clock: SteppingClock.new([at(1), at(2)])).attach(runtime)
+      runtime.announce(user)
+
+      assert_equal [user.to_h], store.appended.grep(Riffer::Rig::Stores::MessageEntry).map(&:message)
+    end
+
+    it 'records the model changes the runtime announces' do
+      store = SeededStore.new
+      runtime = ObservedRuntime.new
+      Riffer::Rig::Stores::Recorder.new(store: store, clock: SteppingClock.new([at(1), at(2), at(3)])).attach(runtime)
+      runtime.announce(user)
+      runtime.switch('mock/other')
+
+      assert_equal ['mock/other'], store.appended.grep(Riffer::Rig::Stores::ModelEntry).map(&:model)
     end
   end
 

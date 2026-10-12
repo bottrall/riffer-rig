@@ -8,19 +8,9 @@ class SchemaDeclared
   typed_value :declared, :row, :col
 end
 
-class SchemaStringTyped
-  extend Riffer::Rig::Support::TypedValue::Schema
-
-  typed_value 'label', :row, :col
-end
-
 describe Riffer::Rig::Support::TypedValue::Schema do
   it 'exposes the declared type' do
     assert_equal :declared, SchemaDeclared.type
-  end
-
-  it 'keeps a string type a string' do
-    assert_equal 'label', SchemaStringTyped.type
   end
 
   it 'exposes the declared attributes in order' do

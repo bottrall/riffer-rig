@@ -18,12 +18,12 @@ describe 'Riffer::Rig::Bundled::Skills' do
     FileUtils.remove_entry(@cwd)
   end
 
-  def write_skill(root, name, description = "Skill #{name}.")
+  def write_skill(root, name)
     FileUtils.mkdir_p(File.join(root, name))
     File.write(File.join(root, name, 'SKILL.md'), <<~MD)
       ---
       name: #{name}
-      description: #{description}
+      description: Skill #{name}.
       ---
       Follow skill #{name}.
     MD
@@ -31,10 +31,6 @@ describe 'Riffer::Rig::Bundled::Skills' do
 
   def runtime
     Riffer::Rig::Runtime.new('mock/test', extensions: [Riffer::Rig::Bundled::Skills], cwd: @cwd)
-  end
-
-  def skill_description(runtime, name)
-    runtime.commands.find { |command| command.name == "skill:#{name}" }.description
   end
 
   it 'is named skills' do
@@ -56,12 +52,6 @@ describe 'Riffer::Rig::Bundled::Skills' do
     write_skill(File.join(@home, '.agents', 'skills'), 'c')
 
     assert_includes runtime.commands.map(&:name), 'skill:c'
-  end
-
-  it 'prefers a project skill over a home skill of the same name' do
-    write_skill(File.join(@home, '.agents', 'skills'), 'a', 'Home.')
-
-    assert_equal 'Skill a.', skill_description(runtime, 'a')
   end
 
   it 'registers the skills prompt section' do

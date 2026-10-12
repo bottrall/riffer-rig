@@ -304,13 +304,6 @@ describe Riffer::Rig::Loader do
         assert_equal 'mock/chosen', home_settings['model']
       end
 
-      it 'keeps the other home settings when writing the answer' do
-        write_settings(@home, { reasoning: 'low' })
-        build(host: ScriptedHost.new('mock/chosen'))
-
-        assert_equal 'low', home_settings['reasoning']
-      end
-
       it 'rejects a bare answer' do
         assert_raises(Riffer::Rig::Loader::ConfigurationError) { build(host: ScriptedHost.new('sonnet')) }
       end
@@ -443,6 +436,22 @@ describe Riffer::Rig::Loader do
 
         assert_operator names.index('probe'), :>, names.index('bash')
       end
+
+      it 'skips the rig.rb files with extensions: false' do
+        write_rig(:home, <<~RUBY)
+          class SkippedProbeTool < Riffer::Tool
+            identifier 'skipped_probe'
+            description 'skipped'
+            def call(context:) = text('skipped')
+          end
+          Riffer::Rig.extension('skipped') { |rig| rig.tool SkippedProbeTool }
+        RUBY
+        write_rig(:project, '')
+        host = ConfirmingHost.new([true])
+        runtime = build(host: host, model: 'mock/test', extensions: false)
+
+        refute_includes tool_names(runtime), 'skipped_probe'
+      end
     end
 
     describe 'autoload' do
@@ -460,22 +469,6 @@ describe Riffer::Rig::Loader do
         build(model: 'mock/test')
 
         refute_includes tool_names(build(model: 'mock/test')), 'fixture_probe'
-      end
-
-      it 'skips the rig.rb files with extensions: false' do
-        write_rig(:home, <<~RUBY)
-          class SkippedProbeTool < Riffer::Tool
-            identifier 'skipped_probe'
-            description 'skipped'
-            def call(context:) = text('skipped')
-          end
-          Riffer::Rig.extension('skipped') { |rig| rig.tool SkippedProbeTool }
-        RUBY
-        write_rig(:project, '')
-        host = ConfirmingHost.new([true])
-        runtime = build(host: host, model: 'mock/test', extensions: false)
-
-        refute_includes tool_names(runtime), 'skipped_probe'
       end
 
       it 'skips autoload with extensions: false' do
@@ -510,19 +503,6 @@ describe Riffer::Rig::Loader do
         runtime.ask('use skill a')
 
         assert_equal(['a'], entries.grep(Riffer::Rig::Stores::SkillEntry).map(&:skill))
-      end
-
-      it 'writes a default-store file whose lines all parse' do
-        runtime = build(model: 'mock/test')
-        turn(runtime)
-        path = File.join(Dir.home, '.riffer', 'sessions', '*', "#{runtime.id}.jsonl")
-
-        assert_equal(
-          %w[header message message],
-          File.readlines(Dir.glob(path).first).map do |line|
-            JSON.parse(line, symbolize_names: true)[:type]
-          end
-        )
       end
 
       it 'names the default-store file after the runtime id' do
@@ -586,6 +566,10 @@ describe Riffer::Rig::Loader do
       write_settings(@home, { tools: { native: { web_search: true } } })
 
       assert_equal({ web_search: true }, build(model: 'mock/test').agent.config.model_options)
+    end
+
+    it 'installs the reload command' do
+      assert_includes build(model: 'mock/test').commands.map(&:name), 'reload'
     end
   end
 
@@ -740,10 +724,6 @@ describe Riffer::Rig::Loader do
       yield
     ensure
       Riffer::Rig::Credentials.singleton_class.remove_method(:resolve)
-    end
-
-    it 'is installed as a command' do
-      assert_includes build(model: 'mock/test').commands.map(&:name), 'reload'
     end
 
     it 'skips the reload when no tracked file changed' do

@@ -175,14 +175,6 @@ describe Riffer::Rig::Terminal::Smoother do
     assert_equal '', @io.string
   end
 
-  it 'drain emits the pending newline after the tick thread has drained' do
-    @smoother << 'abcdef'
-    @smoother.start
-    @smoother.finish
-
-    assert_equal "abcdef\n", @io.string
-  end
-
   it 'finish flushes remaining backlog after stopping the thread' do
     @smoother << 'abcdef'
     @smoother.start

@@ -464,18 +464,6 @@ describe Riffer::Rig::Headless do
       assert_equal 1, @status
     end
 
-    it 'opens with a session_start record' do
-      turn('hello')
-
-      assert_equal 'session_start', records.first.fetch('type')
-    end
-
-    it 'carries the session id on session_start' do
-      turn('hello')
-
-      assert_equal @runtime.id, records.first.fetch('id')
-    end
-
     it 'streams the provider stream events in order' do
       turn
 

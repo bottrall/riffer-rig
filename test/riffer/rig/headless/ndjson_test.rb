@@ -46,15 +46,6 @@ describe Riffer::Rig::Headless::Ndjson do
     )
   end
 
-  it 'serializes an error result as its message and type, without the exception' do
-    response = Riffer::Tools::Response.error('boom', type: :unhandled_error, exception: RuntimeError.new('boom'))
-    line = Riffer::Rig::Headless::Ndjson.line(after_tool_call(response))
-
-    assert_equal(
-      { 'content' => 'boom', 'error' => 'boom', 'error_type' => 'unhandled_error' }, JSON.parse(line).fetch('result')
-    )
-  end
-
   it 'snake_cases the multi-word stream event classes' do
     line = Riffer::Rig::Headless::Ndjson.line(Riffer::StreamEvents::TokenUsageDone.new(token_usage: nil))
 

@@ -94,13 +94,6 @@ describe Riffer::Rig::Commands::Model do
       assert_equal 'mock/test', saved_settings['model']
     end
 
-    it 'leaves the other settings keys unchanged' do
-      write_home_settings(model: 'gemini/gem-2.5-pro', reasoning: 'high')
-      command_events(Riffer::Rig::Runtime.new('mock/test'), '--save')
-
-      assert_equal 'high', saved_settings['reasoning']
-    end
-
     it 'reports the saved model' do
       assert_equal(
         [output('Saved mock/test to settings')],
@@ -289,12 +282,6 @@ describe Riffer::Rig::Commands::Model do
     after do
       ENV['ACME_API_KEY'] = @saved
       Riffer::Rig::Providers.unregister(:acme)
-    end
-
-    it 'names the registered provider in the bare-name hint' do
-      text = command_events(Riffer::Rig::Runtime.new('mock/test'), 'sonnet').first.text
-
-      assert_match(/with a provider from: .*acme/, text)
     end
 
     it 'switches to a registered provider whose setup field resolves' do

@@ -38,13 +38,6 @@ describe Riffer::Rig::ACP::Host do
     assert_equal 'session-1', sent.first.first
   end
 
-  it 'yields to the block given to progress' do
-    yielded = false
-    @host.progress('Installing') { yielded = true }
-
-    assert yielded
-  end
-
   it 'notifies the progress label' do
     @host.session_id = 'session-1'
     @host.progress('Installing')
@@ -57,6 +50,13 @@ describe Riffer::Rig::ACP::Host do
     @host.progress { nil }
 
     assert_empty sent
+  end
+
+  it 'yields to the block given to progress' do
+    yielded = false
+    @host.progress('Installing') { yielded = true }
+
+    assert yielded
   end
 
   it 'flushes the buffered notifies in order when the session id arrives' do

@@ -46,12 +46,10 @@ describe Riffer::Rig::Terminal::Host do
     assert_includes @output.string, 'Which model?'
   end
 
-  it 'answers the typed line without its newline' do
-    assert_equal 'mock/test', host("  mock/test \n").ask('Which model?')
-  end
+  it 'lists the options' do
+    host("1\n").ask('Sign in with?', options: %w[chain token])
 
-  it 'answers nil at the end of input' do
-    assert_nil host.ask('Which model?')
+    assert_includes @output.string, '2. token'
   end
 
   it 'reads a secret answer' do
@@ -68,10 +66,12 @@ describe Riffer::Rig::Terminal::Host do
     assert_match(/\n\z/, @output.string)
   end
 
-  it 'lists the options' do
-    host("1\n").ask('Sign in with?', options: %w[chain token])
+  it 'answers nil at the end of input' do
+    assert_nil host.ask('Which model?')
+  end
 
-    assert_includes @output.string, '2. token'
+  it 'answers the typed line without its newline' do
+    assert_equal 'mock/test', host("  mock/test \n").ask('Which model?')
   end
 
   it 'maps an option number to the option' do

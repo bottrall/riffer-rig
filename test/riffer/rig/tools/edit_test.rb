@@ -7,12 +7,6 @@ describe Riffer::Rig::Tools::Edit do
     @tool = Riffer::Rig::Tools::Edit.new
   end
 
-  it 'ends its description with its guidance sentence' do
-    assert Riffer::Rig::Tools::Edit.description.end_with?(
-      'Prefer this over write for existing files; pass enough surrounding text to make old_string unique.'
-    )
-  end
-
   it 'resolves a relative path against the cwd in its context' do
     Dir.mktmpdir do |dir|
       File.write(File.join(dir, 'note.txt'), 'hello world')

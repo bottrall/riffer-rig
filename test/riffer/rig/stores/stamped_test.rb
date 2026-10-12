@@ -15,8 +15,10 @@ end
 
 describe Riffer::Rig::Stores::Stamped do
   describe '#recorded_time' do
-    it 'parses the recorded_at string' do
-      assert_equal Time.utc(2026, 10, 11, 2, 0, 0.123r), StampedNote.new('2026-10-11T02:00:00.123Z').recorded_time
+    it 'reads recorded_at back as the time it was stamped with' do
+      time = Time.utc(2026, 10, 11, 2)
+
+      assert_equal time, StampedNote.new(Riffer::Rig::Stores::Timestamp.dump(time)).recorded_time
     end
   end
 end

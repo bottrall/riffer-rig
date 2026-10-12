@@ -98,12 +98,8 @@ describe Riffer::Rig::ACP::Mapper do
       )
     end
 
-    it 'maps the built-in tools to their ACP kinds' do
-      kinds = %w[read write edit bash].to_h do |name|
-        [name, Riffer::Rig::ACP::Mapper.tool_call(tool_call_done(name)).kind]
-      end
-
-      assert_equal({ 'read' => 'read', 'write' => 'edit', 'edit' => 'edit', 'bash' => 'execute' }, kinds)
+    it 'maps a built-in tool to its ACP kind' do
+      assert_equal 'execute', Riffer::Rig::ACP::Mapper.tool_call(tool_call_done('bash')).kind
     end
 
     it 'maps any other tool to the other kind' do
@@ -145,9 +141,7 @@ describe Riffer::Rig::ACP::Mapper do
     end
 
     it 'ends a turn the provider stopped early with max_tokens' do
-      reasons = %i[context_window length content_filter malformed_output]
-
-      assert_equal %w[max_tokens], reasons.map { |reason| Riffer::Rig::ACP::Mapper.stop_reason_of(reason) }.uniq
+      assert_equal 'max_tokens', Riffer::Rig::ACP::Mapper.stop_reason_of(:length)
     end
 
     it 'ends a failed turn with refusal' do

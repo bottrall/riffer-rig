@@ -46,6 +46,18 @@ describe Riffer::Rig::Extension do
   end
 
   describe '#trial' do
+    it "hands the registrar the extension's settings namespace" do
+      extension = Riffer::Rig::Extension.new('git') { |_rig| nil }
+
+      assert_equal({ depth: 3 }, extension.trial({ git: { depth: 3 }, other: { depth: 9 } }).settings)
+    end
+
+    it 'hands the registrar empty settings when the namespace is absent' do
+      extension = Riffer::Rig::Extension.new('git') { |_rig| nil }
+
+      assert_equal({}, extension.trial({ other: { depth: 9 } }).settings)
+    end
+
     it 'returns the mismatch of an unmet requirement' do
       extension = Riffer::Rig::Extension.new('git', requires: '>= 99') { |_rig| nil }
 
@@ -77,18 +89,6 @@ describe Riffer::Rig::Extension do
       registrar = Riffer::Rig::Extension.new('git') { |rig| recorded = rig }.trial({})
 
       assert_same registrar, recorded
-    end
-
-    it "hands the registrar the extension's settings namespace" do
-      extension = Riffer::Rig::Extension.new('git') { |_rig| nil }
-
-      assert_equal({ depth: 3 }, extension.trial({ git: { depth: 3 }, other: { depth: 9 } }).settings)
-    end
-
-    it 'hands the registrar empty settings when the namespace is absent' do
-      extension = Riffer::Rig::Extension.new('git') { |_rig| nil }
-
-      assert_equal({}, extension.trial({ other: { depth: 9 } }).settings)
     end
 
     it 'returns the error a raising block raised' do

@@ -22,10 +22,10 @@ describe Riffer::Rig::Providers do
       assert_same GlobexProbeProvider, Riffer::Providers::Repository.find(:globex_probe)
     end
 
-    it 'converts a setup hash and stores it' do
-      Riffer::Rig::Providers.register(:globex_probe, setup: { fields: [{ name: :api_key, env: ['GLOBEX_PROBE_API_KEY'] }] }) { GlobexProbeProvider }
+    it 'gives a setup-less registration no setup' do
+      Riffer::Rig::Providers.register(:globex_probe) { GlobexProbeProvider }
 
-      assert_equal [:api_key], Riffer::Rig::Providers.setup(:globex_probe).fields.map(&:name)
+      assert_nil Riffer::Rig::Providers.setup(:globex_probe)
     end
 
     it 'stores a ProviderSetup as given' do
@@ -34,10 +34,10 @@ describe Riffer::Rig::Providers do
       assert_same globex_setup, Riffer::Rig::Providers.setup(:globex_probe)
     end
 
-    it 'gives a setup-less registration no setup' do
-      Riffer::Rig::Providers.register(:globex_probe) { GlobexProbeProvider }
+    it 'converts a setup hash and stores it' do
+      Riffer::Rig::Providers.register(:globex_probe, setup: { fields: [{ name: :api_key, env: ['GLOBEX_PROBE_API_KEY'] }] }) { GlobexProbeProvider }
 
-      assert_nil Riffer::Rig::Providers.setup(:globex_probe)
+      assert_equal [:api_key], Riffer::Rig::Providers.setup(:globex_probe).fields.map(&:name)
     end
 
     it 'keeps the class factory when registered again' do

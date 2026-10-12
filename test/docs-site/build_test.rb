@@ -4,11 +4,9 @@ require 'test_helper'
 require 'open3'
 require 'yaml'
 
-describe 'bin/docs' do
+describe 'docs-site/build.rb' do
   root = File.expand_path('../..', __dir__)
-  site = File.join(root, '_site')
-
-  define_singleton_method(:build) { @build ||= Open3.capture2e('bin/docs', chdir: root) }
+  built = nil
 
   define_method(:manifest_slugs) do
     YAML.load_file(File.join(root, 'docs-site', 'manifest.yml'))
@@ -28,34 +26,39 @@ describe 'bin/docs' do
     end
   end
 
+  define_method(:site_files) do |dir|
+    site = File.join(dir, '_site')
+    Dir.glob('**/*', base: site)
+       .select { |path| File.file?(File.join(site, path)) }
+       .to_h { |path| [path, File.read(File.join(site, path))] }
+  end
+
+  define_method(:build) { built ||= build_copy { |dir, _output, status| [status, site_files(dir)] } }
+
+  define_method(:guide_html) { |slug| build.last.fetch("guides/#{slug}/index.html") }
+
   define_method(:build_output) { |edit| build_copy(edit: edit) { |_dir, output, _status| output } }
 
   define_method(:append_to_tools) { |dir, text| File.write(File.join(dir, 'docs', 'TOOLS.md'), text, mode: 'a') }
 
-  before { self.class.build }
-
   it 'exits successfully' do
-    assert_predicate self.class.build.last, :success?
-  end
-
-  it 'builds a page for every manifest entry' do
-    assert_empty(manifest_slugs.reject { |slug| File.file?(File.join(site, 'guides', slug, 'index.html')) })
+    assert_predicate build.first, :success?
   end
 
   it 'copies the CNAME' do
-    assert_equal "riffer.bottrall.dev\n", File.read(File.join(site, 'CNAME'))
+    assert_equal "riffer.bottrall.dev\n", build.last['CNAME']
+  end
+
+  it 'builds a page for every manifest entry' do
+    assert_empty(manifest_slugs.reject { |slug| build.last.key?("guides/#{slug}/index.html") })
   end
 
   it 'gives the first guide no previous link' do
-    html = File.read(File.join(site, 'guides', manifest_slugs.first, 'index.html'))
-
-    refute_includes html, 'class="doc" href='
+    refute_includes guide_html(manifest_slugs.first), 'class="doc" href='
   end
 
   it 'links each guide back to the one before it' do
-    html = File.read(File.join(site, 'guides', manifest_slugs[1], 'index.html'))
-
-    assert_includes html, %(class="doc" href="/guides/#{manifest_slugs.first}/")
+    assert_includes guide_html(manifest_slugs[1]), %(class="doc" href="/guides/#{manifest_slugs.first}/")
   end
 
   it 'aborts when a manifest entry has no source file' do

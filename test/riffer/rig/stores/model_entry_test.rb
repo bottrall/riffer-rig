@@ -50,16 +50,16 @@ describe Riffer::Rig::Stores::ModelEntry do
   end
 
   describe '.from_hash' do
-    it 'rebuilds the entry' do
-      assert_equal entry, Riffer::Rig::Stores::ModelEntry.from_hash(entry.to_h)
-    end
-
     it 'returns nil when the model is missing' do
       assert_nil Riffer::Rig::Stores::ModelEntry.from_hash({ type: 'model' })
     end
 
     it 'returns nil when the model is not a string' do
       assert_nil Riffer::Rig::Stores::ModelEntry.from_hash({ type: 'model', model: 123 })
+    end
+
+    it 'rebuilds the entry' do
+      assert_equal entry, Riffer::Rig::Stores::ModelEntry.from_hash(entry.to_h)
     end
   end
 

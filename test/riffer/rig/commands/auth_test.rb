@@ -138,6 +138,13 @@ describe Riffer::Rig::Commands::Auth do
       )
     end
 
+    it 'removes the stored credentials' do
+      Riffer::Rig::Credentials.store(:openai, { api_key: 'sk-openai' })
+      command_events(Riffer::Rig::Runtime.new('mock/test'), 'remove openai')
+
+      assert_equal :missing, Riffer::Rig::Credentials.status(:openai)
+    end
+
     it 'reports the removal' do
       runtime = Riffer::Rig::Runtime.new('mock/test')
 

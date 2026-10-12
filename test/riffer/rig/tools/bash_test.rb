@@ -54,51 +54,54 @@ describe Riffer::Rig::Tools::Bash do
     assert_predicate response, :error?
   end
 
-  it 'returns a job id and output path when run_in_background is set' do
-    response = @tool.call(
-      context: background_context(Riffer::Rig::Tools::Bash::Jobs.new),
-      command: 'echo hello',
-      run_in_background: true
-    )
+  def output_path(response)
+    response.content.split("\n").last.delete_prefix('Output: ')
+  end
 
-    assert_match(/\AJob \h{8} started in background\nOutput: \S+\z/, response.content)
+  def with_background_job(command)
+    jobs = Riffer::Rig::Tools::Bash::Jobs.new
+    response = @tool.call(context: background_context(jobs), command: command, run_in_background: true)
+    yield response, jobs
+  ensure
+    jobs.kill_outstanding
+    FileUtils.rm_f(output_path(response)) if response
+  end
+
+  it 'returns a job id and output path when run_in_background is set' do
+    with_background_job('echo hello') do |response, _jobs|
+      assert_match(/\AJob \h{8} started in background\nOutput: \S+\z/, response.content)
+    end
   end
 
   it 'returns before a background job finishes' do
-    jobs = Riffer::Rig::Tools::Bash::Jobs.new
     started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    @tool.call(context: background_context(jobs), command: 'sleep 5', run_in_background: true)
 
-    assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - started, :<, 5
-  ensure
-    jobs&.kill_outstanding
+    with_background_job('sleep 5') do
+      assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - started, :<, 5
+    end
   end
 
   it 'collects a background job output at the returned path' do
-    jobs = Riffer::Rig::Tools::Bash::Jobs.new
-    response = @tool.call(context: background_context(jobs), command: 'echo hello', run_in_background: true)
-    path = response.content.split("\n").last.delete_prefix('Output: ')
-    content = ''
-    50.times do
-      content = File.exist?(path) ? File.read(path) : ''
-      break if content.include?('hello')
+    with_background_job('echo hello') do |response, _jobs|
+      path = output_path(response)
+      content = ''
+      50.times do
+        content = File.exist?(path) ? File.read(path) : ''
+        break if content.include?('hello')
 
-      sleep 0.02
+        sleep 0.02
+      end
+
+      assert_includes content, 'hello'
     end
-
-    assert_includes content, 'hello'
-  ensure
-    jobs&.kill_outstanding
   end
 
   it 'registers a background job in the context registry' do
-    jobs = Riffer::Rig::Tools::Bash::Jobs.new
-    response = @tool.call(context: background_context(jobs), command: 'echo hello', run_in_background: true)
-    job_id = response.content[/\AJob (\h{8})/, 1]
+    with_background_job('echo hello') do |response, jobs|
+      job_id = response.content[/\AJob (\h{8})/, 1]
 
-    assert_includes jobs.list.map(&:id), job_id
-  ensure
-    jobs&.kill_outstanding
+      assert_includes jobs.list.map(&:id), job_id
+    end
   end
 
   it 'times out long running commands' do

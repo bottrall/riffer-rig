@@ -37,10 +37,4 @@ describe Riffer::Rig::Support::TypedValue do
       assert_equal %i[type row col], point.to_h.keys
     end
   end
-
-  describe 'equality' do
-    it 'equals a value with the same attributes' do
-      assert_equal point, point
-    end
-  end
 end

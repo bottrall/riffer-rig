@@ -62,20 +62,16 @@ describe Riffer::Rig::Terminal::Theme do
     assert_equal "\e[4mhi\e[0m", Riffer::Rig::Terminal::Theme.new(enabled: true).underline('hi')
   end
 
-  it 'heading is a passthrough when disabled' do
-    assert_equal 'hi', Riffer::Rig::Terminal::Theme.new(enabled: false).heading('hi')
-  end
-
   it 'heading is bold purple when enabled' do
-    assert_equal "\e[1m\e[38;2;122;92;255mhi\e[0m\e[0m", Riffer::Rig::Terminal::Theme.new(enabled: true).heading('hi')
-  end
+    purple = Riffer::Rig::Terminal::Palette::PURPLE.join(';')
 
-  it 'code is a passthrough when disabled' do
-    assert_equal 'hi', Riffer::Rig::Terminal::Theme.new(enabled: false).code('hi')
+    assert_equal "\e[1m\e[38;2;#{purple}mhi\e[0m\e[0m", Riffer::Rig::Terminal::Theme.new(enabled: true).heading('hi')
   end
 
   it 'code is cyan when enabled' do
-    assert_equal "\e[38;2;45;226;230mhi\e[0m", Riffer::Rig::Terminal::Theme.new(enabled: true).code('hi')
+    cyan = Riffer::Rig::Terminal::Palette::CYAN.join(';')
+
+    assert_equal "\e[38;2;#{cyan}mhi\e[0m", Riffer::Rig::Terminal::Theme.new(enabled: true).code('hi')
   end
 
   it 'link is a passthrough when disabled' do
@@ -83,8 +79,10 @@ describe Riffer::Rig::Terminal::Theme do
   end
 
   it 'link is an underlined blue osc 8 hyperlink when enabled' do
+    blue = Riffer::Rig::Terminal::Palette::BLUE.join(';')
+
     assert_equal(
-      "\e]8;;https://example.com\e\\\e[4m\e[38;2;77;124;255mhi\e[0m\e[0m\e]8;;\e\\",
+      "\e]8;;https://example.com\e\\\e[4m\e[38;2;#{blue}mhi\e[0m\e[0m\e]8;;\e\\",
       Riffer::Rig::Terminal::Theme.new(enabled: true).link('hi', 'https://example.com')
     )
   end

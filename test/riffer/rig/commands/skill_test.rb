@@ -49,16 +49,22 @@ describe Riffer::Rig::Commands::Skill do
     assert_equal [Riffer::Rig::Events::Notify.new('Skill review is no longer available', :error)], events
   end
 
-  it 'prompts with the skill body rendered as an activation' do
+  it 'leaves the skill out of the model activations' do
     run_skill
 
-    assert_equal "<skill_content name=\"review\">\nReview it.\n\n</skill_content>", @prompts.first
+    refute @runtime.agent.context.skills.activated?('review')
   end
 
   it 'emits SkillActivated for the skill' do
     run_skill
 
     assert_equal [Riffer::Rig::Events::SkillActivated.new('review')], @events
+  end
+
+  it 'prompts with the skill body rendered as an activation' do
+    run_skill
+
+    assert_equal "<skill_content name=\"review\">\nReview it.\n\n</skill_content>", @prompts.first
   end
 
   it 'appends the stripped args after the skill content, separated by a blank line' do
@@ -71,11 +77,5 @@ describe Riffer::Rig::Commands::Skill do
     run_skill
 
     refute @prompts.first.end_with?("\n")
-  end
-
-  it 'leaves the skill out of the model activations' do
-    run_skill
-
-    refute @runtime.agent.context.skills.activated?('review')
   end
 end

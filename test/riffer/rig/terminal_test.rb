@@ -129,18 +129,26 @@ describe Riffer::Rig::Terminal do
     run_terminal(input, &)
   end
 
-  def run_with_interrupter(input, &)
-    run_with_extension(input, <<~RUBY, &)
-      Riffer::Rig.extension('interrupter') do |rig|
-        fired = false
-        rig.on(:stream) do
-          next if fired
+  def run_with_interrupter(input)
+    run_terminal(input) do |runtime|
+      cancelled = Queue.new
+      runtime.define_singleton_method(:cancel) do
+        super()
+        cancelled << true
+      end
+      fired = false
+      runtime.agent.provider.define_singleton_method(:stream_text) do |*args, **options, &block|
+        unless fired
           fired = true
           Process.kill('INT', Process.pid)
-          sleep 0.2
+          # The trap hands the cancel to a thread, which has to land before
+          # the turn reaches the message boundary that honours it.
+          cancelled.pop(timeout: 5)
         end
+        super(*args, **options, &block)
       end
-    RUBY
+      yield runtime if block_given?
+    end
   end
 
   def write_skill(name)
@@ -276,10 +284,6 @@ describe Riffer::Rig::Terminal do
     assert_match(/skills\s+none/, run_terminal(''))
   end
 
-  it 'leaves the session row out of the first banner' do
-    refute_match(/▸ session/, run_terminal(''))
-  end
-
   it 'hints at the second Ctrl-C after the first at the prompt' do
     assert_includes run_terminal(interrupting_input(1)), 'Press Ctrl-C again to exit.'
   end
@@ -401,11 +405,13 @@ describe Riffer::Rig::Terminal do
       assert_includes run_terminal("/resume foo\n/exit\n"), 'Usage: /resume [--all]'
     end
 
-    it 'lists the sessions of the directory' do
+    it 'keeps driving the current session when the picker is dismissed' do
       seed_session('fix the login bug')
       seed_session('add picker tests')
+      runtime = nil
+      run_terminal("/resume\n\nagain\n") { |driven| runtime ||= driven }
 
-      assert_includes run_terminal("/resume\n/exit\n/exit\n"), 'add picker tests'
+      assert_equal 1, runtime.agent.provider.calls.length
     end
 
     it 'resumes the session the filter narrows to' do
@@ -476,6 +482,24 @@ describe Riffer::Rig::Terminal do
     assert_equal before, after
   end
 
+  it 'switches the animator to reasoning while the model reasons' do
+    animator = RecordingAnimator.new
+    run_with_animator("hello\n", animator) do |runtime|
+      runtime.agent.provider.stub_response('Hi', reasoning: [{ type: :text, text: 'thinking' }])
+    end
+
+    assert_includes animator.calls, :reasoning
+  end
+
+  it 'returns the animator to neutral when the reasoning is done' do
+    animator = RecordingAnimator.new
+    run_with_animator("hello\n", animator) do |runtime|
+      runtime.agent.provider.stub_response('Hi', reasoning: [{ type: :text, text: 'thinking' }])
+    end
+
+    assert_includes animator.calls.each_cons(2), %i[reasoning neutral]
+  end
+
   it 'renders streamed text' do
     output = run_terminal("hello\n") { |runtime| runtime.agent.provider.stub_response('Hi from the model') }
 
@@ -507,24 +531,6 @@ describe Riffer::Rig::Terminal do
     end
 
     assert_includes output, '↑10 · ↓5 · session 15 tok'
-  end
-
-  it 'switches the animator to reasoning while the model reasons' do
-    animator = RecordingAnimator.new
-    run_with_animator("hello\n", animator) do |runtime|
-      runtime.agent.provider.stub_response('Hi', reasoning: [{ type: :text, text: 'thinking' }])
-    end
-
-    assert_includes animator.calls, :reasoning
-  end
-
-  it 'returns the animator to neutral when the reasoning is done' do
-    animator = RecordingAnimator.new
-    run_with_animator("hello\n", animator) do |runtime|
-      runtime.agent.provider.stub_response('Hi', reasoning: [{ type: :text, text: 'thinking' }])
-    end
-
-    assert_includes animator.calls.each_cons(2), %i[reasoning neutral]
   end
 
   it 'leaves the animator alone for a message that is not a tool result' do

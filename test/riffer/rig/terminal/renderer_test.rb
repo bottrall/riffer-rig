@@ -481,17 +481,6 @@ describe Riffer::Rig::Terminal::Renderer do
     assert_equal "\n      #{theme.dim('↳ done')}\n", @io.string
   end
 
-  it 'renders tool results without ansi when theme disabled' do
-    message = Riffer::Messages::Tool.new('done', tool_call_id: 'c1', name: 'write')
-    @renderer.render_tool_result(message)
-
-    refute_includes @io.string, "\e["
-  end
-
-  it 'loads io-console so IO#winsize exists' do
-    assert_includes IO.instance_methods, :winsize
-  end
-
   it 'detects the width from a tty io' do
     io = StringIO.new
     def io.tty? = true

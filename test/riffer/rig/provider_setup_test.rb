@@ -41,6 +41,12 @@ describe Riffer::Rig::ProviderSetup do
     end
   end
 
+  describe 'AWS_SHARED_CONFIG_REGION' do
+    it 'has no region when the AWS SDK is not installed' do
+      assert_nil Riffer::Rig::ProviderSetup::AWS_SHARED_CONFIG_REGION.call
+    end
+  end
+
   describe 'TABLE' do
     it 'names only settable fields of the provider config' do
       unknown = Riffer::Rig::ProviderSetup::TABLE.flat_map do |identifier, setup|

@@ -15,12 +15,6 @@ describe Riffer::Rig::Terminal::Cursor do
     assert_equal '', @io.string
   end
 
-  it 'show is a no op when not a tty' do
-    @cursor.show
-
-    assert_equal '', @io.string
-  end
-
   it 'hide is a no op when the theme is disabled on a tty' do
     @cursor = Riffer::Rig::Terminal::Cursor.new(io: tty_io, theme: Riffer::Rig::Terminal::Theme.new(enabled: false))
 
@@ -34,6 +28,12 @@ describe Riffer::Rig::Terminal::Cursor do
     @cursor = Riffer::Rig::Terminal::Cursor.new(io: @io, theme: Riffer::Rig::Terminal::Theme.new(enabled: true))
 
     @cursor.hide
+
+    assert_equal '', @io.string
+  end
+
+  it 'show is a no op when not a tty' do
+    @cursor.show
 
     assert_equal '', @io.string
   end

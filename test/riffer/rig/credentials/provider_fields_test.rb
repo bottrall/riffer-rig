@@ -24,7 +24,7 @@ describe Riffer::Rig::Credentials::ProviderFields do
 
     it 'is empty for a provider without a block' do
       Dir.mktmpdir do |dir|
-        path = settings_file(dir, { 'providers' => 'not a hash' })
+        path = settings_file(dir, { 'providers' => { 'amazon_bedrock' => { 'region' => 'us-west-2' } } })
 
         assert_empty Riffer::Rig::Credentials::ProviderFields.read('azure_openai', path: path)
       end
@@ -95,6 +95,16 @@ describe Riffer::Rig::Credentials::ProviderFields do
   end
 
   describe '.remove' do
+    it 'writes nothing when the provider has no block' do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, 'settings.json')
+
+        Riffer::Rig::Credentials::ProviderFields.remove('openai', path: path)
+
+        refute_path_exists path
+      end
+    end
+
     it 'keeps the other blocks' do
       Dir.mktmpdir do |dir|
         path = settings_file(
@@ -106,16 +116,6 @@ describe Riffer::Rig::Credentials::ProviderFields do
         Riffer::Rig::Credentials::ProviderFields.remove('openai', path: path)
 
         assert_equal({ 'amazon_bedrock' => { 'region' => 'us-west-2' } }, JSON.parse(File.read(path))['providers'])
-      end
-    end
-
-    it 'writes nothing when the provider has no block' do
-      Dir.mktmpdir do |dir|
-        path = File.join(dir, 'settings.json')
-
-        Riffer::Rig::Credentials::ProviderFields.remove('openai', path: path)
-
-        refute_path_exists path
       end
     end
 

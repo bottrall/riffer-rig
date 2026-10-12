@@ -27,8 +27,7 @@ describe Riffer::Rig::Settings::ModelOptions do
 
     it 'rejects a bare model with the providers to choose from' do
       assert_equal(
-        'sonnet is not a provider/name model string; the provider is one of: ' \
-        'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter',
+        "sonnet is not a provider/name model string; the provider is one of: #{Riffer::Rig::Providers.list}",
         Riffer::Rig::Settings::ModelOptions.rejection('sonnet')
       )
     end
@@ -48,6 +47,18 @@ describe Riffer::Rig::Settings::ModelOptions do
 
     it 'ignores reasoning for a model without a provider' do
       assert_empty model_options('sonnet', 'high')
+    end
+
+    it 'ignores reasoning for a provider without support' do
+      assert_empty model_options('gemini/gemini-2.5-flash', 'high')
+    end
+
+    it 'ignores an unrecognised reasoning value' do
+      refute model_options('openai/o3', 'turbo').key?(:reasoning)
+    end
+
+    it 'ignores max reasoning for openai' do
+      refute model_options('openai/o3', 'max').key?(:reasoning)
     end
 
     it 'includes cache control for an anthropic model' do
@@ -76,18 +87,6 @@ describe Riffer::Rig::Settings::ModelOptions do
 
     it 'sets reasoning effort for openrouter' do
       assert_equal 'xhigh', model_options('openrouter/anthropic/claude-sonnet-4.6', 'xhigh')[:reasoning]
-    end
-
-    it 'ignores an unrecognised reasoning value' do
-      refute model_options('openai/o3', 'turbo').key?(:reasoning)
-    end
-
-    it 'ignores max reasoning for openai' do
-      refute model_options('openai/o3', 'max').key?(:reasoning)
-    end
-
-    it 'ignores reasoning for a provider without support' do
-      assert_empty model_options('gemini/gemini-2.5-flash', 'high')
     end
   end
 end

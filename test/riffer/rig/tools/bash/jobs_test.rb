@@ -106,18 +106,18 @@ describe Riffer::Rig::Tools::Bash::Jobs do
     assert_equal 1, killed_job&.status
   end
 
+  it 'reports a finished job with elapsed time to its completion' do
+    _job, completed = completed_job('sleep 0.3')
+
+    assert_operator completed.elapsed(Process.clock_gettime(Process::CLOCK_MONOTONIC)), :>=, 0.2
+  end
+
   it 'drops a job whose process can no longer be waited on' do
     pid = spawn_pgroup('true')
     Process.wait(pid)
     registered = @jobs.register(pid, output_path)
 
     refute_includes @jobs.list.map(&:id), registered.id
-  end
-
-  it 'reports a finished job with elapsed time to its completion' do
-    _job, completed = completed_job('sleep 0.3')
-
-    assert_operator completed.elapsed(Process.clock_gettime(Process::CLOCK_MONOTONIC)), :>=, 0.2
   end
 
   it 'sweeps completed jobs so later touches no longer list them' do

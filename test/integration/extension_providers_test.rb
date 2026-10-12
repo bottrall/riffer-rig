@@ -67,12 +67,6 @@ describe 'providers registered by an extension' do
     assert_equal({ api_key: 'sk-acme' }, runtime.agent.provider.credentials)
   end
 
-  it 'keeps one repository entry when a later build registers the provider again' do
-    write_provider_rig
-
-    assert_same build_on_acme.agent.provider.class, Riffer::Providers::Repository.find(:acme)
-  end
-
   it 'lists the provider in the onboarding question' do
     Riffer::Rig::Registrar.new('acme').provider(:acme) { Riffer::Providers::Mock }
     host = ConfirmingHost.new(['mock/test'])

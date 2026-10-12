@@ -36,12 +36,12 @@ describe Riffer::Rig::Terminal::LineEditor do
     assert_equal 'one␊two␛', editor([:paste, "one\ntwo\e"]).printable_before
   end
 
-  it 'prints control characters after the cursor as one-column pictures' do
-    assert_equal '␉a␡', editor([:paste, "\ta\u007f"], :home).printable_after
-  end
-
   it 'prints C1 control characters before the cursor as placeholders' do
     assert_equal 'a␦␦␦b', editor([:paste, "a\u0080\u009b\u009fb"]).printable_before
+  end
+
+  it 'prints control characters after the cursor as one-column pictures' do
+    assert_equal '␉a␡', editor([:paste, "\ta\u007f"], :home).printable_after
   end
 
   it 'prints C1 control characters after the cursor as placeholders' do

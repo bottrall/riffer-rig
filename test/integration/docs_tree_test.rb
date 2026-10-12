@@ -5,13 +5,28 @@ require 'open3'
 
 describe 'the deployable docs tree' do
   root = File.expand_path('../..', __dir__)
-  site = File.join(root, '_site')
+  sources = %w[bin docs docs-site lib Rakefile Gemfile Gemfile.lock riffer-rig.gemspec README.md CHANGELOG.md
+               LICENSE.txt]
 
-  define_singleton_method(:build) { @build ||= Open3.capture2e('bin/docs', chdir: root) }
+  # Built in a copy: the checkout's _site/ is gitignored and survives between runs, so a stale tree would pass.
+  define_singleton_method(:build) do
+    @build ||= Dir.mktmpdir do |dir|
+      FileUtils.cp_r(sources.map { |path| File.join(root, path) }, dir)
+      _, built = Open3.capture2e('bin/docs', chdir: dir)
+      _, checked = Open3.capture2e(RbConfig.ruby, 'docs-site/check.rb', chdir: dir)
+      { built: built, checked: checked, api: File.exist?(File.join(dir, '_site', 'api', 'index.html')) }
+    end
+  end
 
-  before { self.class.build }
+  it 'builds with bin/docs' do
+    assert_predicate self.class.build.fetch(:built), :success?
+  end
 
   it 'builds the API reference at /api/ alongside the site' do
-    assert_path_exists File.join(site, 'api', 'index.html')
+    assert self.class.build.fetch(:api)
+  end
+
+  it 'passes the link check on the current guides' do
+    assert_predicate self.class.build.fetch(:checked), :success?
   end
 end
