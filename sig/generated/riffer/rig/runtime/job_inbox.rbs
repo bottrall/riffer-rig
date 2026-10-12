@@ -1,0 +1,28 @@
+# Generated from lib/riffer/rig/runtime/job_inbox.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::JobInbox
+  @mutex: Thread::Mutex
+
+  @pending: Array[Riffer::Rig::Runtime::JobCompletion]
+
+  @subscribers: Array[^(Riffer::Rig::Runtime::JobCompletion) -> void]
+
+  @closed: bool
+
+  # @rbs return: void
+  def initialize: () -> void
+
+  # @rbs &block: (Riffer::Rig::Runtime::JobCompletion) -> void
+  # @rbs return: void
+  def subscribe: () { (Riffer::Rig::Runtime::JobCompletion) -> void } -> void
+
+  # @rbs completion: Riffer::Rig::Runtime::JobCompletion
+  # @rbs return: void
+  def push: (Riffer::Rig::Runtime::JobCompletion completion) -> void
+
+  # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
+  def drain: () -> Array[Riffer::Rig::Runtime::JobCompletion]
+
+  # @rbs return: void
+  def close: () -> void
+end

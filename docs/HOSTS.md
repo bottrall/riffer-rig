@@ -52,6 +52,7 @@ runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: host, model: 'anthropi
 - A line starting with `/` is `runtime.run_command(name, args) { |event| ... }`; the names come from `runtime.commands`. An unknown name is reported through the host's `notify`, so a host needs no list of its own. Only commands that end or replace the Runtime stay in the host: the terminal's are `/exit` and `/quit`.
 - `runtime.cancel` stops the running turn at the next message boundary; the terminal calls it on Ctrl-C (from a thread, since the cancel flag takes a lock that Ruby refuses inside a signal handler). The turn ends with riffer's `Interrupt` event and a `turn_end` whose `stop_reason` is `:cancelled`.
 - `runtime.on_message` delivers each message as the session records it; the terminal renders tool results from it.
+- `runtime.on_job_exit` delivers each [background job](EMBEDDING.md#background-jobs) as it exits, on a background thread, and `runtime.running_job_count` is how many are still running. A host that replaces its Runtime subscribes again on the new one; the closed one delivers nothing more.
 - `runtime.close` when the session ends.
 
 ### Rendering the stream

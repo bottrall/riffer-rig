@@ -5,128 +5,321 @@ require 'test_helper'
 
 describe Riffer::Rig::Tools::Bash::Jobs do
   def setup
-    @jobs = Riffer::Rig::Tools::Bash::Jobs.new
+    @inbox = Class.new do
+      def initialize
+        @completions = Queue.new
+      end
+
+      def push(completion)
+        @completions << completion
+      end
+
+      def drain
+        Array.new(@completions.size) { @completions.pop }
+      end
+
+      def await
+        @completions.pop(timeout: 5)
+      end
+    end.new
+    @jobs = Riffer::Rig::Tools::Bash::Jobs.new(@inbox)
+    @paths = []
   end
 
-  def spawn_pgroup(command)
-    Process.spawn(command, pgroup: true)
+  def teardown
+    @jobs.shutdown(0.0)
+    FileUtils.rm_f(@paths)
   end
 
-  def output_path
-    File.join(Dir.tmpdir, "riffer-rig-job-test-#{SecureRandom.hex(4)}")
+  def start(command, output: '')
+    path = File.join(Dir.tmpdir, "riffer-rig-job-test-#{SecureRandom.hex(4)}")
+    @paths << path
+    File.binwrite(path, output)
+    @jobs.register(Process.spawn(command, pgroup: true, out: [path, 'a'], err: %i[child out]), command, path)
   end
 
-  def stop_group(pid)
-    Process.kill('KILL', -Process.getpgid(pid))
-  rescue Errno::ESRCH
-    nil
+  def listed(job)
+    @jobs.list.find { |candidate| candidate.id == job.id }
   end
 
-  def await_completed(job)
-    completed = nil
-    50.times do
-      completed = @jobs.list.find { |candidate| candidate.id == job.id && candidate.completed? }
-      break if completed
+  describe '#register' do
+    it 'registers a job with the spawned pid' do
+      pid = Process.spawn('sleep 5', pgroup: true)
 
-      sleep 0.02
+      assert_equal pid, @jobs.register(pid, 'sleep 5', File::NULL).pid
     end
-    completed
+
+    it 'registers a job with the given command' do
+      assert_equal 'sleep 5', start('sleep 5').command
+    end
+
+    it 'registers a job with the given output path' do
+      job = start('sleep 5')
+
+      assert_equal @paths.last, job.output_path
+    end
+
+    it 'registers a job as active' do
+      assert_predicate start('sleep 5'), :active?
+    end
+
+    it 'keys each job by a distinct id' do
+      refute_equal start('sleep 5').id, start('sleep 5').id
+    end
   end
 
-  def completed_job(command)
-    pid = spawn_pgroup(command)
-    job = @jobs.register(pid, output_path)
-    [job, await_completed(job)]
-  ensure
-    stop_group(pid)
+  describe '#list' do
+    it 'lists the registered jobs' do
+      job = start('sleep 5')
+
+      assert_equal [job.id], @jobs.list.map(&:id)
+    end
+
+    it 'keeps a finished job until its completion is consumed' do
+      job = start('true')
+      @inbox.await
+
+      assert_predicate listed(job), :completed?
+    end
   end
 
-  def killed_job
-    pid = spawn_pgroup('sleep 30')
-    job = @jobs.register(pid, output_path)
-    @jobs.kill_outstanding
-    await_completed(job)
-  ensure
-    stop_group(pid)
+  describe '#read' do
+    it 'reads an unknown job as nil' do
+      assert_nil @jobs.read('missing1')
+    end
+
+    it 'reads the output a job has written' do
+      job = start('echo hello')
+      @inbox.await
+
+      assert_equal "hello\n", @jobs.read(job.id)&.last
+    end
+
+    it 'reads only the output written since the last read' do
+      job = start('sleep 5', output: 'first')
+      @jobs.read(job.id)
+      File.write(job.output_path, 'second', mode: 'a')
+
+      assert_equal 'second', @jobs.read(job.id)&.last
+    end
+
+    it 'reads no more than the read limit at once' do
+      limit = Riffer::Rig::Tools::Bash::Jobs::READ_LIMIT_BYTES
+      job = start('sleep 5', output: "#{'a' * limit}skipped")
+
+      assert_equal 'a' * limit, @jobs.read(job.id)&.last
+    end
+
+    it 'skips the output beyond the read limit on the next read' do
+      job = start('sleep 5', output: 'a' * (Riffer::Rig::Tools::Bash::Jobs::READ_LIMIT_BYTES + 7))
+      @jobs.read(job.id)
+      File.write(job.output_path, 'tail', mode: 'a')
+
+      assert_equal 'tail', @jobs.read(job.id)&.last
+    end
+
+    it 'reads nothing new as an empty string' do
+      job = start('sleep 5')
+
+      assert_equal '', @jobs.read(job.id)&.last
+    end
+
+    it 'reads output in the default external encoding' do
+      job = start('sleep 5', output: 'hello')
+
+      assert_equal Encoding.default_external, @jobs.read(job.id)&.last&.encoding
+    end
+
+    it 'returns the job advanced past what it read' do
+      job = start('sleep 5', output: 'hello')
+
+      assert_equal 5, @jobs.read(job.id)&.first&.offset
+    end
+
+    it 'keeps the offset of a job that finishes after a read' do
+      job = start('sleep 0.2', output: 'hello')
+      @jobs.read(job.id)
+      @inbox.await
+
+      assert_equal 5, listed(job).offset
+    end
   end
 
-  it 'registers a job with the spawned pid' do
-    pid = spawn_pgroup('sleep 5')
-    registered = @jobs.register(pid, output_path)
+  describe '#kill' do
+    it 'kills an unknown job as nil' do
+      assert_nil @jobs.kill('missing1')
+    end
 
-    assert_equal pid, registered.pid
-  ensure
-    stop_group(pid)
+    it 'kills the job' do
+      job = start('sleep 30')
+      @jobs.kill(job.id)
+
+      assert_equal job.id, @inbox.await&.job_id
+    end
+
+    it 'returns the job it killed' do
+      job = start('sleep 30')
+
+      assert_equal job.id, @jobs.kill(job.id)&.id
+    end
+
+    it 'returns a completed job' do
+      job = start('true')
+      @inbox.await
+
+      assert_predicate @jobs.kill(job.id), :completed?
+    end
   end
 
-  it 'registers a job with the given output path' do
-    pid = spawn_pgroup('sleep 5')
-    path = output_path
-    registered = @jobs.register(pid, path)
+  describe '#kill_outstanding' do
+    it 'kills every active job' do
+      2.times { start('sleep 30') }
+      @jobs.kill_outstanding
 
-    assert_equal path, registered.output_path
-  ensure
-    stop_group(pid)
+      assert_equal [1, 1], Array.new(2) { @inbox.await&.exit_status }
+    end
   end
 
-  it 'registers a job as active' do
-    pid = spawn_pgroup('sleep 5')
-    registered = @jobs.register(pid, output_path)
+  describe '#consume' do
+    it 'returns the completions in the inbox' do
+      job = start('true')
+      @jobs.shutdown
 
-    assert_predicate registered, :active?
-  ensure
-    stop_group(pid)
+      assert_equal [job.id], @jobs.consume.map(&:job_id)
+    end
+
+    it 'drops the consumed jobs from the registry' do
+      start('true')
+      @jobs.shutdown
+      @jobs.consume
+
+      assert_empty @jobs.list
+    end
+
+    it 'keeps the jobs still running' do
+      job = start('sleep 30')
+      @jobs.consume
+
+      assert_equal [job.id], @jobs.list.map(&:id)
+    end
   end
 
-  it 'keys each job by a distinct id' do
-    first = @jobs.register(spawn_pgroup('sleep 5'), output_path)
-    second = @jobs.register(spawn_pgroup('sleep 5'), output_path)
+  describe '#shutdown' do
+    it 'kills the active jobs' do
+      job = start('sleep 30')
+      @jobs.shutdown
 
-    refute_equal first.id, second.id
-  ensure
-    @jobs.kill_outstanding
+      assert_predicate listed(job), :completed?
+    end
+
+    it 'kills a job that ignores TERM' do
+      job = start('trap "" TERM; echo ready; sleep 30')
+      sleep 0.01 until File.size?(job.output_path)
+      @jobs.shutdown(0.1)
+
+      assert_predicate listed(job), :completed?
+    end
+
+    it 'leaves no watcher thread' do
+      threads = Thread.list
+      start('sleep 30')
+      @jobs.shutdown
+
+      assert_empty Thread.list - threads
+    end
+
+    it 'leaves no zombie process' do
+      job = start('sleep 30')
+      @jobs.shutdown
+
+      assert_raises(Errno::ECHILD) { Process.wait(job.pid) }
+    end
   end
 
-  it 'lists the registered jobs' do
-    pid = spawn_pgroup('sleep 5')
-    registered = @jobs.register(pid, output_path)
+  describe 'watcher' do
+    it 'records a zero exit without a registry read' do
+      start('true')
 
-    assert_includes @jobs.list.map(&:id), registered.id
-  ensure
-    stop_group(pid)
-  end
+      assert_equal 0, @inbox.await&.exit_status
+    end
 
-  it 'reports a finished job as completed with its exit status' do
-    _job, completed = completed_job('true')
+    it 'records a non-zero exit' do
+      start('exit 3')
 
-    assert_equal 0, completed&.status
-  end
+      assert_equal 3, @inbox.await&.exit_status
+    end
 
-  it 'reports a job ended by a signal with status 1' do
-    assert_equal 1, killed_job&.status
-  end
+    it 'records a job ended by a signal with status 1' do
+      job = start('sleep 30')
+      Process.kill('KILL', job.pid)
 
-  it 'reports a finished job with elapsed time to its completion' do
-    _job, completed = completed_job('sleep 0.3')
+      assert_equal 1, @inbox.await&.exit_status
+    end
 
-    assert_operator completed.elapsed(Process.clock_gettime(Process::CLOCK_MONOTONIC)), :>=, 0.2
-  end
+    it 'records the exit status on the registered job' do
+      job = start('exit 3')
+      @inbox.await
 
-  it 'drops a job whose process can no longer be waited on' do
-    pid = spawn_pgroup('true')
-    Process.wait(pid)
-    registered = @jobs.register(pid, output_path)
+      assert_equal 3, listed(job).status
+    end
 
-    refute_includes @jobs.list.map(&:id), registered.id
-  end
+    it 'puts one completion in the inbox per job' do
+      start('true')
+      @jobs.shutdown
 
-  it 'sweeps completed jobs so later touches no longer list them' do
-    job, _completed = completed_job('true')
+      assert_equal 1, @inbox.drain.size
+    end
 
-    refute_includes @jobs.list.map(&:id), job.id
-  end
+    it 'completes a job with its id' do
+      job = start('true')
 
-  it 'kills outstanding process groups' do
-    assert killed_job
+      assert_equal job.id, @inbox.await&.job_id
+    end
+
+    it 'completes a job with its command' do
+      start('exit 0')
+
+      assert_equal 'exit 0', @inbox.await&.command
+    end
+
+    it 'completes a job with its duration' do
+      start('sleep 0.3')
+
+      assert_operator @inbox.await&.duration, :>=, 0.2
+    end
+
+    it 'completes a job with its output path' do
+      job = start('true')
+
+      assert_equal job.output_path, @inbox.await&.output_path
+    end
+
+    it 'completes a job with the tail of its output' do
+      tail = 'b' * Riffer::Rig::Tools::Bash::Jobs::TAIL_BYTES
+      start('true', output: "aaa#{tail}")
+
+      assert_equal tail, @inbox.await&.tail
+    end
+
+    it 'completes a job that wrote nothing with an empty tail' do
+      start('true')
+
+      assert_equal '', @inbox.await&.tail
+    end
+
+    it 'scrubs a multibyte character split by the tail cut' do
+      start('true', output: "é#{'b' * (Riffer::Rig::Tools::Bash::Jobs::TAIL_BYTES - 1)}")
+
+      assert_predicate @inbox.await&.tail, :valid_encoding?
+    end
+
+    it 'drops a job whose process can no longer be waited on' do
+      pid = Process.spawn('true')
+      Process.wait(pid)
+      @jobs.register(pid, 'true', File::NULL)
+      @jobs.shutdown
+
+      assert_empty @jobs.list
+    end
   end
 end

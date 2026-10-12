@@ -37,6 +37,13 @@ describe Riffer::Rig::Tools::Bash::KillGroup do
       assert_operator pgid, :positive?
     end
 
+    it 'sends the given signal' do
+      spawn_sleeper
+      host.kill_group(@pid, 'KILL')
+
+      assert_equal Signal.list.fetch('KILL'), Process.wait2(@pid).last.termsig
+    end
+
     it 'returns zero when the group is gone' do
       assert_equal 0, host.kill_group(-1)
     end

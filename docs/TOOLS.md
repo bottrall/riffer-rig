@@ -17,7 +17,7 @@ Tools never raise. A bad argument, a missing file or a failing command comes bac
 
 ## Background jobs
 
-`bash` takes a `run_in_background` flag: instead of waiting, the command runs in its own process group with stdout and stderr redirected to a private temp file, and the call returns a job id and the output path immediately. The job lives in the Runtime's in-process registry — `{pid, output path, started_at}` keyed by job id, with elapsed time and, once reaped, the exit status. Each registry touch reaps finished children and sweeps completed jobs out, so the registry cannot grow unbounded across a session. A Runtime `cancel` or `close` kills every outstanding job's process group.
+`bash` takes a `run_in_background` flag: instead of waiting, the command runs in its own process group with stdout and stderr redirected to a private temp file, and the call returns a job id and the output path immediately. The Runtime watches each job and reports its exit to the host as it happens; see [Background jobs](EMBEDDING.md#background-jobs). A Runtime `cancel` or `close` sends `TERM` to every outstanding job's process group. `close` then waits for the jobs to exit, and sends `KILL` to any still running after two seconds.
 
 Relative paths resolve against the Runtime's `cwd:` (and `bash` runs there), not the process directory, so two Runtimes in one process can work in different directories. A tool called outside a Runtime falls back to `Dir.pwd`.
 

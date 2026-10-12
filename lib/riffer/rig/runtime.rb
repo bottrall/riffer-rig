@@ -45,6 +45,7 @@ class Riffer::Rig::Runtime
 
   # @rbs @agent: Riffer::Agent
   # @rbs @cancel_flag: Riffer::Rig::Runtime::CancelFlag
+  # @rbs @job_inbox: Riffer::Rig::Runtime::JobInbox
   # @rbs @jobs: Riffer::Rig::Tools::Bash::Jobs
   # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs @cwd: String
@@ -134,7 +135,8 @@ class Riffer::Rig::Runtime
     @clock = clock
     @yielder = nil
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
-    @jobs = Riffer::Rig::Tools::Bash::Jobs.new
+    @job_inbox = Riffer::Rig::Runtime::JobInbox.new
+    @jobs = Riffer::Rig::Tools::Bash::Jobs.new(@job_inbox)
     @session_start_pending = true
     @session_start_reason = saved ? :restore : :new
     @message_observers = []
@@ -300,6 +302,18 @@ class Riffer::Rig::Runtime
     nil
   end
 
+  # @rbs &: (Riffer::Rig::Runtime::JobCompletion) -> void
+  # @rbs return: nil
+  def on_job_exit(&)
+    @job_inbox.subscribe(&)
+    nil
+  end
+
+  # @rbs return: Integer
+  def running_job_count
+    @jobs.list.count(&:active?)
+  end
+
   # @rbs return: nil
   def cancel
     @cancel_flag.set
@@ -317,7 +331,8 @@ class Riffer::Rig::Runtime
     return if @concurrency.closed?
 
     @concurrency.close
-    @jobs.kill_outstanding
+    @job_inbox.close
+    @jobs.shutdown
     @mcp.retain({})
     @hooks.observe(:session_end, Riffer::Rig::Events::SessionEnd.new(:close)) unless @session_start_pending
   end
