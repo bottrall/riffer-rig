@@ -53,6 +53,11 @@ module Riffer::Rig::ACP::Mapper
   # @rbs return: String?
   def selected_option: (::ACP::Types::RequestPermissionResponse | ::ACP::RequestError response) -> String?
 
+  # @rbs tool_call_id: String
+  # @rbs selected: String?
+  # @rbs return: ::ACP::Types::SessionUpdate::ToolCallUpdate
+  def permission_done: (String tool_call_id, String? selected) -> ::ACP::Types::SessionUpdate::ToolCallUpdate
+
   # @rbs session_id: String
   # @rbs question: String
   # @rbs return: ::ACP::Types::CreateElicitationRequest

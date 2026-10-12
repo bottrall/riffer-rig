@@ -197,6 +197,18 @@ describe Riffer::Rig::ACP::Mapper do
     end
   end
 
+  describe '.permission_done' do
+    it 'completes the tool call of a question the client answered, no included' do
+      update = Riffer::Rig::ACP::Mapper.permission_done('c1', 'no')
+
+      assert_equal %w[c1 completed], [update.tool_call_id, update.status]
+    end
+
+    it 'fails the tool call of a question the client left unanswered' do
+      assert_equal 'failed', Riffer::Rig::ACP::Mapper.permission_done('c1', nil).status
+    end
+  end
+
   describe '.elicitation_request' do
     def request
       Riffer::Rig::ACP::Mapper.elicitation_request('s1', 'Name?')

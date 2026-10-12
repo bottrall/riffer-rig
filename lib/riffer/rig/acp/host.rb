@@ -94,8 +94,14 @@ class Riffer::Rig::ACP::Host
   # @rbs options: Array[::ACP::Types::PermissionOption]
   # @rbs return: String?
   def permit(id, question, options)
-    request = Riffer::Rig::ACP::Mapper.permission_request(id, SecureRandom.uuid, question, options)
-    Riffer::Rig::ACP::Mapper.selected_option(@client.request_permission(request))
+    # An adopting connection can replace @client while the question is out, and
+    # only the client that was asked knows the tool call to close.
+    client = @client
+    call_id = SecureRandom.uuid
+    request = Riffer::Rig::ACP::Mapper.permission_request(id, call_id, question, options)
+    selected = Riffer::Rig::ACP::Mapper.selected_option(client.request_permission(request))
+    client.update(id, Riffer::Rig::ACP::Mapper.permission_done(call_id, selected))
+    selected
   end
 
   # @rbs id: String
