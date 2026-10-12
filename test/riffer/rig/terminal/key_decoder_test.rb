@@ -109,19 +109,23 @@ describe Riffer::Rig::Terminal::KeyDecoder do
   end
 
   describe '#flush' do
+    it 'flushes nothing from an unterminated paste' do
+      assert_empty fed("\e[200~hel").flush
+    end
+
+    it 'keeps an unterminated paste open' do
+      decoder = fed("\e[200~hel")
+      decoder.flush
+      events = "lo\e[201~".chars.flat_map { |char| decoder.push(char) }
+
+      assert_equal [Riffer::Rig::Terminal::Key.new(:paste, 'hello')], events
+    end
+
     it 'decodes a lone escape once the reader gives up on a sequence' do
       decoder = Riffer::Rig::Terminal::KeyDecoder.new
       decoder.push("\e")
 
       assert_equal [Riffer::Rig::Terminal::Key.new(:escape)], decoder.flush
-    end
-
-    it 'flushes an unterminated paste as text' do
-      assert_equal [Riffer::Rig::Terminal::Key.new(:text, 'hel')], fed("\e[200~hel").flush
-    end
-
-    it 'flushes nothing from a paste that has no content yet' do
-      assert_empty fed("\e[200~").flush
     end
 
     it 'flushes nothing from an unterminated CSI sequence' do

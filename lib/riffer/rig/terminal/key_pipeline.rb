@@ -6,17 +6,24 @@ require 'io/wait'
 class Riffer::Rig::Terminal::KeyPipeline
   IDLE_SECONDS = 0.05 #: Float
 
+  BRACKETED_PASTE_ON = "\e[?2004h" #: String
+
+  BRACKETED_PASTE_OFF = "\e[?2004l" #: String
+
   # @rbs @input: IO
+  # @rbs @output: IO
   # @rbs @decoder: Riffer::Rig::Terminal::KeyDecoder
   # @rbs @queue: Thread::Queue[Riffer::Rig::Terminal::Key]
   # @rbs @thread: Thread?
   # @rbs @stopping: bool
 
   # @rbs input: IO
+  # @rbs output: IO
   # @rbs decoder: Riffer::Rig::Terminal::KeyDecoder
   # @rbs return: void
-  def initialize(input:, decoder: Riffer::Rig::Terminal::KeyDecoder.new)
+  def initialize(input:, output:, decoder: Riffer::Rig::Terminal::KeyDecoder.new)
     @input = input
+    @output = output
     @decoder = decoder
     @queue = Queue.new
     @thread = nil
@@ -32,6 +39,7 @@ class Riffer::Rig::Terminal::KeyPipeline
   def start
     return unless @input.tty?
 
+    write(BRACKETED_PASTE_ON)
     @thread = Thread.new { read_loop }
   end
 
@@ -43,6 +51,7 @@ class Riffer::Rig::Terminal::KeyPipeline
 
     @stopping = true
     thread.join
+    write(BRACKETED_PASTE_OFF)
   end
 
   private
@@ -84,5 +93,12 @@ class Riffer::Rig::Terminal::KeyPipeline
   # @rbs return: void
   def emit(events)
     events.each { |key| @queue << key }
+  end
+
+  # @rbs sequence: String
+  # @rbs return: void
+  def write(sequence)
+    @output.print(sequence)
+    @output.flush
   end
 end

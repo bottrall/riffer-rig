@@ -17,6 +17,10 @@ describe Riffer::Rig::Terminal::LineEditor do
     editor(*text.chars)
   end
 
+  def large
+    "diff\n#{'x' * 4195}"
+  end
+
   it 'starts empty' do
     assert_equal '', editor.text
   end
@@ -48,6 +52,24 @@ describe Riffer::Rig::Terminal::LineEditor do
     assert_equal 'a␦␦␦b', editor([:paste, "a\u0080\u009b\u009fb"], :home).printable_after
   end
 
+  it 'elides a large paste before the cursor' do
+    assert_equal 'a[pasted 4.2k chars]b', editor('a', [:paste, large], 'b').printable_before
+  end
+
+  it 'elides a large paste after the cursor' do
+    assert_equal '[pasted 4.2k chars]b', editor([:paste, large], 'b', :home).printable_after
+  end
+
+  it 'elides a paste that begins with an earlier large paste as one' do
+    longer = "#{large}#{'y' * 1800}"
+
+    assert_equal '[pasted 6.0k chars]', editor([:paste, large], :backspace, [:paste, longer]).printable_before
+  end
+
+  it 'prints a paste under the elision size in full' do
+    assert_equal 'x' * 999, editor([:paste, 'x' * 999]).printable_before
+  end
+
   it 'inserts typed characters' do
     assert_equal 'abc', typed('abc').text
   end
@@ -68,6 +90,10 @@ describe Riffer::Rig::Terminal::LineEditor do
     assert_equal "one\ntwo", editor([:paste, "one\ntwo"]).text
   end
 
+  it 'keeps an elided paste whole in the text' do
+    assert_equal "a#{large}b", editor('a', [:paste, large], 'b').text
+  end
+
   it 'deletes the character before the cursor on Backspace' do
     assert_equal 'ac', editor(:left, :backspace, from: typed('abc')).text
   end
@@ -80,12 +106,20 @@ describe Riffer::Rig::Terminal::LineEditor do
     assert_equal 'a', editor(:backspace, from: typed('a👍🏽')).text
   end
 
+  it 'deletes an elided paste before the cursor as one unit' do
+    assert_equal 'ab', editor('a', [:paste, large], :backspace, 'b').text
+  end
+
   it 'deletes the character under the cursor on Delete' do
     assert_equal 'ac', editor(:home, :right, :delete, from: typed('abc')).text
   end
 
   it 'ignores Delete at the end' do
     assert_equal 'abc', editor(:delete, from: typed('abc')).text
+  end
+
+  it 'deletes an elided paste under the cursor as one unit' do
+    assert_equal 'ab', editor('a', [:paste, large], 'b', :home, :right, :delete).text
   end
 
   it 'moves the cursor left' do
@@ -100,12 +134,20 @@ describe Riffer::Rig::Terminal::LineEditor do
     assert_equal 'a', editor(:left, from: typed('a👍🏽')).before
   end
 
+  it 'moves left over an elided paste as one unit' do
+    assert_equal 'a', editor('a', [:paste, large], :left).before
+  end
+
   it 'moves the cursor right' do
     assert_equal 'ab', editor(:home, :right, :right, from: typed('abc')).before
   end
 
   it 'stays at the end when moving right past it' do
     assert_equal 'a', editor(:right, from: typed('a')).before
+  end
+
+  it 'moves right over an elided paste as one unit' do
+    assert_equal 'b', editor([:paste, large], 'b', :home, :right).after
   end
 
   it 'moves the cursor to the start on Home' do
@@ -133,6 +175,10 @@ describe Riffer::Rig::Terminal::LineEditor do
       first = typed('one').submit
 
       assert_equal %w[one two], editor('t', 'w', 'o', from: first).submit.history
+    end
+
+    it 'records an elided paste whole' do
+      assert_equal [large], editor([:paste, large]).submit.history
     end
 
     it 'keeps a blank line out of the history' do

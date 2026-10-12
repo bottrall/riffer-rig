@@ -45,9 +45,12 @@ class Riffer::Rig::Terminal::KeyDecoder
 
   # @rbs return: Array[Riffer::Rig::Terminal::Key]
   def flush
+    # An idle gap inside a paste must not end it: the rest would decode as
+    # keystrokes, and its newlines would submit.
+    return [] if @state == :paste
+
     events = [] #: Array[Riffer::Rig::Terminal::Key]
     events << Riffer::Rig::Terminal::Key.new(:escape) if @state == :escape
-    events << Riffer::Rig::Terminal::Key.new(:text, @sequence) if @state == :paste && !@sequence.empty?
     @state = :ground
     @sequence = +''
     events
