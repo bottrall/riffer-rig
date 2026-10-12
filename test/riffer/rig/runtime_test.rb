@@ -240,8 +240,8 @@ describe Riffer::Rig::Runtime do
       @server.stop
     end
 
-    def serving(name = 'web', url: @server.url)
-      Riffer::Rig::Extension.new("serves_#{name}") { |rig| rig.mcp(name, url: url) }
+    def serving(name = 'web', url: @server.url, **)
+      Riffer::Rig::Extension.new("serves_#{name}") { |rig| rig.mcp(name, url: url, **) }
     end
 
     def runtime(extensions, **)
@@ -255,6 +255,13 @@ describe Riffer::Rig::Runtime do
     def notifies(runtime)
       runtime.agent.provider.stub_response('Done.')
       runtime.prompt('go').grep(Riffer::Rig::Events::Notify)
+    end
+
+    it 'resolves the auth block of a server from its env' do
+      authed = serving(headers: { 'X-Token' => 'Bearer ${api_key}' }, auth: { api_key: 'KAGI_API_KEY' })
+      tools = runtime([authed], env: Riffer::Rig::Env.new({ 'KAGI_API_KEY' => 'kagi-key' })).agent.tools
+
+      assert_equal 'Bearer kagi-key', tools.find { |klass| klass.name == 'web__token' }.new.call(context: nil).content
     end
 
     it 'adds each server tool under riffer MCP naming' do

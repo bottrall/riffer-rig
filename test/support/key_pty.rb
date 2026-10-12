@@ -11,7 +11,6 @@ class KeyPty
   def initialize
     @master, @slave = PTY.open
     @master.timeout = TIMEOUT_SECONDS
-    @printed = 0
     @pipeline = Riffer::Rig::Terminal::KeyPipeline.new(input: @slave)
     @pipeline.start
     # Bytes typed before the reader switches the tty to raw mode would be
@@ -25,18 +24,6 @@ class KeyPty
 
   def key
     @pipeline.keys.pop(timeout: TIMEOUT_SECONDS) || raise("no key within #{TIMEOUT_SECONDS}s")
-  end
-
-  def keys_until(name)
-    Enumerator.produce { key }.lazy.take_while { |key| key.name != name }
-  end
-
-  def print(output)
-    @printed += @slave.write(output)
-  end
-
-  def output
-    @master.read(@printed).tap { @printed = 0 }
   end
 
   def close
