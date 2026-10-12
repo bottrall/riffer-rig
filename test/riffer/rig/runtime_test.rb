@@ -2206,4 +2206,149 @@ describe Riffer::Rig::Runtime do
       assert_equal [:"riffer_rig_#{second.id}"], registration.manifest.tags
     end
   end
+
+  describe 'tool lifecycle events' do
+    before do
+      @ran = ran = []
+      echo = Class.new(Riffer::Tool) do
+        identifier 'echo'
+        description 'Echoes its text'
+
+        params do
+          required :text, String
+        end
+
+        define_method(:call) do |context:, text:| # rubocop:disable Lint/UnusedBlockArgument -- riffer passes context: to every call
+          ran << text
+          text("echo: #{text}")
+        end
+      end
+      @echo = Riffer::Rig::Extension.new('echo') { |rig| rig.tool echo }
+    end
+
+    def batch_runtime(*extensions, **)
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@echo, *extensions], **)
+      runtime.agent.provider.stub_response(
+        '', tool_calls: %w[one two].map { |text| { name: 'echo', arguments: { text: text }.to_json } }
+      )
+      runtime.agent.provider.stub_response('All done.')
+      runtime
+    end
+
+    def lifecycle?(event)
+      [
+        Riffer::Rig::Events::ToolDispatched, Riffer::Rig::Events::ToolRunning, Riffer::Rig::Events::ToolDone
+      ].include?(event.class)
+    end
+
+    def lifecycle(events)
+      events.select { |event| lifecycle?(event) }
+    end
+
+    it 'streams a batch as all dispatched, then each call running and done in turn' do
+      events = lifecycle(batch_runtime.prompt('go'))
+
+      assert_equal(
+        [%w[tool_dispatched mock_call_0], %w[tool_dispatched mock_call_1],
+         %w[tool_running mock_call_0], %w[tool_done mock_call_0],
+         %w[tool_running mock_call_1], %w[tool_done mock_call_1]],
+        events.map { |event| [event.type.to_s, event.call_id] }
+      )
+    end
+
+    it 'names the tool on each event' do
+      events = lifecycle(batch_runtime.prompt('go'))
+
+      assert_equal ['echo'], events.map(&:tool).uniq
+    end
+
+    it 'starts the batch after the last tool call of the response' do
+      events = batch_runtime.prompt('go').to_a
+      dispatched = events.index { |event| event.is_a?(Riffer::Rig::Events::ToolDispatched) }
+
+      assert_empty events[dispatched..].grep(Riffer::StreamEvents::ToolCallDone)
+    end
+
+    it 'keeps every lifecycle event ahead of the response that follows the batch' do
+      events = batch_runtime.prompt('go').to_a
+      text = events.index { |event| event.is_a?(Riffer::StreamEvents::TextDelta) }
+
+      assert_empty lifecycle(events[text..])
+    end
+
+    it 'hands a block each event as it happens, before the next tool runs' do
+      progress = []
+      batch_runtime.prompt('go') { |event| progress << [event.type, @ran.dup] if lifecycle?(event) }
+
+      assert_equal(
+        [[:tool_dispatched, []], [:tool_dispatched, []], [:tool_running, []], [:tool_done, ['one']],
+         [:tool_running, ['one']], [:tool_done, %w[one two]]],
+        progress
+      )
+    end
+
+    it 'hands an enumerator consumer a running event before its tool has run' do
+      stream = batch_runtime.prompt('go')
+      loop { break if stream.next.is_a?(Riffer::Rig::Events::ToolRunning) }
+
+      assert_empty @ran
+    end
+
+    it 'times each stage with the injected clock' do
+      ticks = 10.0.step(by: 0.5)
+      events = lifecycle(batch_runtime(clock: -> { ticks.next }).prompt('go'))
+
+      assert_equal(
+        [10.0, 10.5, 11.0, [11.5, 0.5], 12.0, [12.5, 0.5]],
+        events.map { |event| event.is_a?(Riffer::Rig::Events::ToolDone) ? [event.at, event.duration] : event.at }
+      )
+    end
+
+    it 'finishes a call to an unknown tool as an error' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@echo])
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'missing', arguments: '{}' }])
+      runtime.agent.provider.stub_response('All done.')
+
+      assert lifecycle(runtime.prompt('go')).last.error
+    end
+
+    it 'finishes a blocked call as an error' do
+      blocker = Riffer::Rig::Extension.new('blocker') { |rig| rig.on(:before_tool_call) { |_e| next :block, 'no' } }
+
+      done = batch_runtime(blocker).prompt('go').grep(Riffer::Rig::Events::ToolDone)
+
+      assert_equal [true, true], done.map(&:error)
+    end
+
+    it 'streams a notify raised inside a tool call next to that call' do
+      raiser = Riffer::Rig::Extension.new('raiser') { |rig| rig.on(:before_tool_call) { |_e| raise 'boom' } }
+      types = batch_runtime(raiser).prompt('go').filter_map { |event| event.type if event.respond_to?(:type) }
+
+      assert_equal %i[tool_running tool_done notify], types[types.index(:tool_running), 3]
+    end
+
+    it 'lets an extension observe each stage by name' do
+      seen = []
+      observer = Riffer::Rig::Extension.new('observer') do |rig|
+        %i[tool_dispatched tool_running tool_done].each { |name| rig.on(name) { |event| seen << event } }
+      end
+      events = lifecycle(batch_runtime(observer).prompt('go'))
+
+      assert_equal events, seen
+    end
+
+    it 'keeps the lifecycle events out of the stream hook' do
+      seen = []
+      observer = Riffer::Rig::Extension.new('observer') { |rig| rig.on(:stream) { |event| seen << event } }
+      batch_runtime(observer).ask('go')
+
+      assert_empty lifecycle(seen)
+    end
+
+    it 'runs the tools under ask, where no one reads the stream' do
+      batch_runtime.ask('go')
+
+      assert_equal %w[one two], @ran
+    end
+  end
 end

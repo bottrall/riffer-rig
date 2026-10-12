@@ -45,7 +45,7 @@ A script that only needs success or failure can therefore test the code alone; a
 
 ## The NDJSON stream (`--json`)
 
-`--json` replaces the streamed text with one JSON object per line on stdout, one record for every event the Runtime yields: riffer's [StreamEvents](https://github.com/bottrall/riffer) plus the rig-level events (`session_start`, `notify`, `turn_end`). The envelope is flat — the event's `to_h` fields, plus a `"type"` of the snake_case event class (`text_delta`, `tool_call_done`, `session_start`, `turn_end`, …). Nested riffer values (a `TokenUsage`, an assistant message, a tool response) serialize through their own `to_h`.
+`--json` replaces the streamed text with one JSON object per line on stdout, one record for every event the Runtime yields: riffer's [StreamEvents](https://github.com/bottrall/riffer) plus the rig-level events (`session_start`, `notify`, `tool_dispatched`, `tool_running`, `tool_done`, `turn_end`). The envelope is flat — the event's `to_h` fields, plus a `"type"` of the snake_case event class (`text_delta`, `tool_call_done`, `session_start`, `turn_end`, …). Nested riffer values (a `TokenUsage`, an assistant message, a tool response) serialize through their own `to_h`.
 
 ```json
 {"type":"session_start","id":"0198…","reason":"new"}
@@ -55,10 +55,13 @@ A script that only needs success or failure can therefore test the code alone; a
 {"role":"assistant","item_id":"call_1","name":"read","arguments_delta":"{\"path\":\"x\"}","type":"tool_call_delta"}
 {"role":"assistant","item_id":"call_1","call_id":"call_1","name":"read","arguments":"{\"path\":\"x\"}","type":"tool_call_done"}
 {"role":"assistant","token_usage":{"input_tokens":1423,"output_tokens":89},"type":"token_usage_done"}
+{"type":"tool_dispatched","call_id":"call_1","tool":"read","at":81234.512}
+{"type":"tool_running","call_id":"call_1","tool":"read","at":81234.513}
+{"type":"tool_done","call_id":"call_1","tool":"read","at":81234.531,"duration":0.018,"error":false}
 {"stop_reason":"completed","usage":{"input_tokens":1423,"output_tokens":89},"type":"turn_end"}
 ```
 
-`session_start` is the first record, carrying the session id. The remaining StreamEvents follow the turn in order — the ones a tool-using turn produces are shown above; reasoning (`reasoning_delta`, `reasoning_done`), web search (`web_search_status`, `web_search_done`), finish reasons, guardrails and interrupts serialize the same way whenever the provider emits them. `turn_end` is always the last record of a prompt: `stop_reason` is riffer's outcome vocabulary (`completed`, `length`, `max_steps`, `cancelled`, …), `usage` is the run's token totals, and `cost` (USD, present when the model is priced) rides on `usage`. A consumer that only reads the last line still knows how the turn ended and what it cost.
+`session_start` is the first record, carrying the session id. The remaining StreamEvents follow the turn in order — the ones a tool-using turn produces are shown above; reasoning (`reasoning_delta`, `reasoning_done`), web search (`web_search_status`, `web_search_done`), finish reasons, guardrails and interrupts serialize the same way whenever the provider emits them. Each tool call is also traced by three records, written as they happen: a `tool_dispatched` for every call of the batch, then per call a `tool_running` when it starts and a `tool_done` when it finishes. `call_id` matches the `tool_call_done` record, `at` is a monotonic timestamp in seconds (comparable only within the run), `duration` is the seconds the call ran, and `error` says whether its result was an error; see [tool lifecycle events](EMBEDDING.md#tool-lifecycle-events). `turn_end` is always the last record of a prompt: `stop_reason` is riffer's outcome vocabulary (`completed`, `length`, `max_steps`, `cancelled`, …), `usage` is the run's token totals, and `cost` (USD, present when the model is priced) rides on `usage`. A consumer that only reads the last line still knows how the turn ended and what it cost.
 
 Warnings and notify lines that headless prints on stderr in text mode ride the stream as `notify` records in `--json`; `progress` and the `--verbose` tool trace stay on stderr. The `before_prompt`, `before_tool_call`, `before_request`, `after_response` and `after_tool_call` events are extension-hook traffic, not Runtime output, so they never appear on the stream.
 

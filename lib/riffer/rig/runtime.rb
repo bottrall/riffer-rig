@@ -70,6 +70,8 @@ class Riffer::Rig::Runtime
   # @rbs @model_options: Hash[Symbol, untyped]
   # @rbs @native_tools: Hash[Symbol, untyped]
   # @rbs @reload_check: (^(::Riffer::Rig::Runtime) -> void)?
+  # @rbs @clock: ^() -> Float
+  # @rbs @yielder: Enumerator::Yielder?
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader :agent #: Riffer::Agent
@@ -97,6 +99,7 @@ class Riffer::Rig::Runtime
   # @rbs max_steps: Integer?
   # @rbs model_options: Hash[Symbol, untyped]
   # @rbs native_tools: Hash[Symbol, untyped]
+  # @rbs clock: ^() -> Float
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
   def initialize(
@@ -117,6 +120,7 @@ class Riffer::Rig::Runtime
     max_steps: DEFAULT_MAX_STEPS,
     model_options: {},
     native_tools: {},
+    clock: -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) },
     snapshot: nil
   )
     # Doubles as the snapshot id and ACP sessionId.
@@ -133,6 +137,8 @@ class Riffer::Rig::Runtime
     @claim_thread = nil
     @core_commands = []
     @reload_check = nil
+    @clock = clock
+    @yielder = nil
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
     @jobs = Riffer::Rig::Tools::Bash::Jobs.new
     @session_start_pending = true
@@ -412,7 +418,7 @@ class Riffer::Rig::Runtime
       instructions: system_prompt([]),
       tools_config: select_tools(registrars.flat_map { |registrar| registrar.tools.to_a }.to_h.values, @tool_allowlist),
       max_steps: max_steps,
-      tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(hooks),
+      tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(hooks, emit: ->(event) { emit(event) }, clock: @clock),
       skills_config: skills_config(registrars.flat_map(&:skill_sources))
     )
     config.add_guardrail(:before, klass: Riffer::Rig::Runtime::RequestGuardrail, options: { hooks: hooks })
@@ -533,6 +539,7 @@ class Riffer::Rig::Runtime
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
   def turn(text)
     Enumerator.new do |yielder|
+      @yielder = yielder
       if @session_start_pending
         @session_start_pending = false
         session_start = Riffer::Rig::Events::SessionStart.new(@id, @session_start_reason)
@@ -540,24 +547,34 @@ class Riffer::Rig::Runtime
         yielder << session_start
       end
       @host.drain.each { |queued| yielder << queued }
-      response = start_turn(text).each { |event| pass_through(yielder, event) }
+      response = start_turn(text).each { |event| pass_through(yielder, :stream, event) }
       turn_end = Riffer::Rig::Events::TurnEnd.new(stop_reason(response.outcome), response.token_usage)
       @hooks.observe(:turn_end, turn_end)
       @host.drain.each { |queued| yielder << queued }
       yielder << turn_end
       response
+    ensure
+      @yielder = nil
     end
   end
 
   # @rbs yielder: Enumerator::Yielder
-  # @rbs event: ::Riffer::StreamEvents::Base
+  # @rbs hook: Symbol
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
   # @rbs return: void
-  def pass_through(yielder, event)
-    @hooks.observe(:stream, event)
+  def pass_through(yielder, hook, event)
+    @hooks.observe(hook, event)
     yielder << event
     # Mid-turn notifies (a failing hook, a blocked request) reach the stream
     # next to the event that raised them, not at the next turn.
     @host.drain.each { |queued| yielder << queued }
+  end
+
+  # @rbs event: Riffer::Rig::Events::_Event
+  # @rbs return: void
+  def emit(event)
+    yielder = @yielder
+    pass_through(yielder, event.type, event) if yielder
   end
 
   # @rbs message: Riffer::Messages::Base

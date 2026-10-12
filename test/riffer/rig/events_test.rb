@@ -109,4 +109,30 @@ describe Riffer::Rig::Events do
 
     assert_equal Riffer::Rig::Events::Notify.new('x', :info), event
   end
+
+  it 'types and round-trips a tool_dispatched' do
+    event = Riffer::Rig::Events::ToolDispatched.new('call_1', 'bash', 1.5)
+
+    assert_equal({ type: :tool_dispatched, call_id: 'call_1', tool: 'bash', at: 1.5 }, event.to_h)
+  end
+
+  it 'types and round-trips a tool_running' do
+    event = Riffer::Rig::Events::ToolRunning.new('call_1', 'bash', 2.0)
+
+    assert_equal({ type: :tool_running, call_id: 'call_1', tool: 'bash', at: 2.0 }, event.to_h)
+  end
+
+  it 'types and round-trips a tool_done' do
+    event = Riffer::Rig::Events::ToolDone.new('call_1', 'bash', 4.5, 2.5, true)
+
+    assert_equal(
+      { type: :tool_done, call_id: 'call_1', tool: 'bash', at: 4.5, duration: 2.5, error: true }, event.to_h
+    )
+  end
+
+  it 'tells the stages of one call apart' do
+    dispatched = Riffer::Rig::Events::ToolDispatched.new('call_1', 'bash', 1.5)
+
+    refute_equal Riffer::Rig::Events::ToolRunning.new('call_1', 'bash', 1.5), dispatched
+  end
 end

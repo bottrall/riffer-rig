@@ -106,6 +106,9 @@ Adds a hook for one event of the Runtime's lifecycle or loop. The block receives
 | `before_request`   | vetoable    | `messages` (the whole request)                     | before every LLM call: at the start of the turn and again after each round of tool results |
 | `before_tool_call` | vetoable    | `tool` (the identifier), `args` (symbol keys)      | before each tool runs                                                 |
 | `after_tool_call`  | observe     | `tool`, `args` (as run), `result` (the tool's `Riffer::Tools::Response`) | after each tool runs                        |
+| `tool_dispatched`  | observe     | `call_id`, `tool`, `at`                            | for every tool call of a batch, before the first one runs             |
+| `tool_running`     | observe     | `call_id`, `tool`, `at`                            | as each tool call starts, before its `before_tool_call` hooks         |
+| `tool_done`        | observe     | `call_id`, `tool`, `at`, `duration`, `error`       | as each tool call finishes, after its `after_tool_call` hooks         |
 | `after_response`   | observe     | `message` (the `Riffer::Messages::Assistant`)      | after each model response is added to the session                     |
 | `turn_end`         | observe     | `stop_reason`, `usage`, `cost`                     | as each turn ends, `ask` included                                     |
 | `stream`           | passthrough | the riffer `StreamEvent` itself                    | for every riffer stream event of a turn, `ask` included               |
@@ -119,7 +122,7 @@ A vetoable hook may return:
 
 A replacement request is written back to the session, so later requests carry it too. A replacement tool payload changes what the tool runs with; the model's own tool call in the history is left as it sent it.
 
-Observe and passthrough hooks change nothing: their return values are ignored, and a `stream` hook sees each riffer event unchanged, the same object the host receives.
+Observe and passthrough hooks change nothing: their return values are ignored, and a `stream` hook sees each riffer event unchanged, the same object the host receives. The `tool_dispatched`, `tool_running` and `tool_done` hooks receive the [tool lifecycle events](EMBEDDING.md#tool-lifecycle-events) the host receives, just before it does; unlike `before_tool_call` and `after_tool_call` they fire for every call, including one to an unknown tool or with unparseable arguments, and they carry the call's id and timing. They are rig events, so the `stream` hook does not see them.
 
 Hooks run on the thread running the turn, one at a time — tools run sequentially so their hooks never overlap.
 

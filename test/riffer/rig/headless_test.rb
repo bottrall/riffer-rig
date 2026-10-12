@@ -261,6 +261,15 @@ describe Riffer::Rig::Headless do
     refute_match(/tool_call/, @error.string)
   end
 
+  it 'prints nothing for the tool lifecycle in text mode' do
+    run_headless(prompt: 'read it') do |runtime|
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
+      runtime.agent.provider.stub_response('Done.')
+    end
+
+    assert_equal ["Done. \n", ''], [@output.string, @error.string]
+  end
+
   describe 'with --json' do
     def records
       @output.string.lines.map { |line| JSON.parse(line) }
@@ -301,6 +310,24 @@ describe Riffer::Rig::Headless do
       stream_events = %w[tool_call_delta tool_call_done text_done text_delta]
 
       assert_equal stream_events, types.intersection(stream_events)
+    end
+
+    it 'streams the tool lifecycle between the tool call and the next response' do
+      turn
+
+      lifecycle = %w[tool_call_done tool_dispatched tool_running tool_done text_delta]
+
+      assert_equal lifecycle, types.intersection(lifecycle)
+    end
+
+    it 'carries the call, its timing and its outcome on tool_done' do
+      turn
+      done = records.find { |record| record.fetch('type') == 'tool_done' }
+
+      assert_equal(
+        [%w[at call_id duration error tool type], 'mock_call_0', 'read'],
+        [done.keys.sort, done.fetch('call_id'), done.fetch('tool')]
+      )
     end
 
     it 'parses every line as JSON' do

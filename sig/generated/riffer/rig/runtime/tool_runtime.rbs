@@ -3,9 +3,30 @@
 class Riffer::Rig::Runtime::ToolRuntime < Riffer::Tools::Runtime
   @hooks: Riffer::Rig::Runtime::Hooks
 
+  @emit: ^(Riffer::Rig::Events::_Event) -> void
+
+  @clock: ^() -> Float
+
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
+  # @rbs emit: ^(Riffer::Rig::Events::_Event) -> void
+  # @rbs clock: ^() -> Float
   # @rbs return: void
-  def initialize: (Riffer::Rig::Runtime::Hooks hooks) -> void
+  def initialize: (Riffer::Rig::Runtime::Hooks hooks, emit: ^(Riffer::Rig::Events::_Event) -> void, clock: ^() -> Float) -> void
+
+  # @rbs tool_calls: Array[Riffer::Messages::Assistant::ToolCall]
+  # @rbs tools: Array[singleton(Riffer::Tool)]
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs assistant_message: Riffer::Messages::Assistant?
+  # @rbs tags: Hash[String, String]
+  # @rbs return: Array[[Riffer::Messages::Assistant::ToolCall, Riffer::Tools::Response]]
+  def execute: (Array[Riffer::Messages::Assistant::ToolCall] tool_calls, tools: Array[singleton(Riffer::Tool)], context: Riffer::Agent::Context?, ?assistant_message: Riffer::Messages::Assistant?, ?tags: Hash[String, String]) -> Array[[ Riffer::Messages::Assistant::ToolCall, Riffer::Tools::Response ]]
+
+  # @rbs tool_call: Riffer::Messages::Assistant::ToolCall
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs assistant_message: Riffer::Messages::Assistant?
+  # @rbs &: () -> Riffer::Tools::Response
+  # @rbs return: Riffer::Tools::Response
+  def around_tool_call: (Riffer::Messages::Assistant::ToolCall tool_call, context: Riffer::Agent::Context?, ?assistant_message: Riffer::Messages::Assistant?) { () -> Riffer::Tools::Response } -> Riffer::Tools::Response
 
   private
 

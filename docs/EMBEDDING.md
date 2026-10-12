@@ -149,9 +149,22 @@ The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-
 | `command_output`  | `command`, `text`                | a command called `ctx.say`                                        |
 | `skill_activated` | `name`                           | a skill was activated by command                                  |
 | `notify`          | `message`, `level`               | mirrors every `host.notify`, so a stream consumer sees extension errors too |
+| `tool_dispatched` | `call_id`, `tool`, `at`          | once per tool call of a batch, all of them before the first call runs |
+| `tool_running`    | `call_id`, `tool`, `at`          | as a tool call starts                                             |
+| `tool_done`       | `call_id`, `tool`, `at`, `duration`, `error` | as a tool call finishes                               |
 | `turn_end`        | `stop_reason`, `usage`, `cost`   | the last event of every `prompt`; `stop_reason` is riffer's outcome reason, or `:cancelled` after a `cancel`; `usage` is riffer's `TokenUsage` and `cost` its USD figure, `nil` when unpriced |
 
 `session_start` carries `:new`, `:restore` on a Runtime built from a [snapshot](#snapshots), or `:reload` after a [rebuild](#rebuilding-after-a-code-reload); `session_end` carries `:reload` or `:close`. `close` refuses further prompts and asks with `Riffer::Rig::Runtime::ClosedError` and unregisters every [MCP server](MCP.md) the Runtime registered; its `session_end` reaches extension hooks but not the stream, since no prompt follows it.
+
+### Tool lifecycle events
+
+Every tool call the model makes moves through three events, each yielded at the moment it happens rather than when the batch returns: `tool_dispatched` for every call of the batch as soon as the model's response is in, then for each call a `tool_running` when it starts and a `tool_done` when it finishes. They sit in the stream after the response's `ToolCallDone` events and before the first event of the next response, so a consumer can show a batch in flight.
+
+`call_id` is riffer's id for the call — the one on `ToolCallDone` and on the tool message — and `tool` is the tool's name. `at` is a monotonic timestamp in seconds, comparable only with the other `at` values of the same process; `duration` is the seconds between the call's `tool_running` and its `tool_done`. `error` is `true` when the call's `Riffer::Tools::Response` is an error. Summing the `duration`s of a batch gives its serial cost, and the span from its first `tool_dispatched` to its last `tool_done` its wall time.
+
+Every dispatched call gets exactly one `tool_running` and one `tool_done`, whatever became of it: a tool that returned an error, an unknown tool, arguments that are not a JSON object, and a call a `before_tool_call` hook blocked all finish with `error: true`. Tools run one at a time, so a call's `tool_done` precedes the next call's `tool_running`. The exception is a turn that ends inside the batch — a tool that raises outside `StandardError` — which takes the remaining events with it.
+
+The timestamps come from the Runtime's `clock:`, a callable returning seconds as a `Float`; it defaults to the process's monotonic clock, and a test passes its own.
 
 Every `prompt` ends with `turn_end` — with a block or as an Enumerator — so a stream consumer never needs `ask` to learn how the turn ended and what it cost. The headless host prints this same stream as NDJSON; see [Headless mode](HEADLESS.md) for the wire shape.
 

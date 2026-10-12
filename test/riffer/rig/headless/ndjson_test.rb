@@ -46,4 +46,14 @@ describe Riffer::Rig::Headless::Ndjson do
 
     assert_equal "{\"type\":\"error\",\"message\":\"boom\"}\n", line
   end
+
+  it 'serializes a tool lifecycle event with its timing' do
+    line = Riffer::Rig::Headless::Ndjson.line(Riffer::Rig::Events::ToolDone.new('call_1', 'read', 4.5, 2.5, false))
+
+    assert_equal(
+      { 'type' => 'tool_done', 'call_id' => 'call_1', 'tool' => 'read', 'at' => 4.5, 'duration' => 2.5,
+        'error' => false },
+      JSON.parse(line)
+    )
+  end
 end

@@ -151,11 +151,13 @@ class Riffer::Rig::ACP
   # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
   def replayed_tool_call: (Hash[Symbol, untyped] message) -> ::ACP::Types::SessionUpdate::ToolCall
 
-  # riffer's stream has no completion boundary for a tool call, so a call goes
-  # out once, in progress, when its arguments are complete.
   # @rbs event: Riffer::StreamEvents::ToolCallDone
   # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
   def tool_call: (Riffer::StreamEvents::ToolCallDone event) -> ::ACP::Types::SessionUpdate::ToolCall
+
+  # @rbs event: Riffer::Rig::Events::ToolDone
+  # @rbs return: ::ACP::Types::SessionUpdate::ToolCallUpdate
+  def tool_call_done: (Riffer::Rig::Events::ToolDone event) -> ::ACP::Types::SessionUpdate::ToolCallUpdate
 
   # riffer's failure reasons (:error, :other, :guardrail_blocked) have no ACP
   # counterpart; refusal is the closest signal that the turn did not complete.

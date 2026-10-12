@@ -131,6 +131,8 @@ class Riffer::Rig::ACP
         client.update(request.session_id, message_chunk(event.content))
       when Riffer::StreamEvents::ToolCallDone
         client.update(request.session_id, tool_call(event))
+      when Riffer::Rig::Events::ToolDone
+        client.update(request.session_id, tool_call_done(event))
       when Riffer::Rig::Events::TurnEnd
         stop_reason = event.stop_reason
       end
@@ -315,8 +317,6 @@ class Riffer::Rig::ACP
     )
   end
 
-  # riffer's stream has no completion boundary for a tool call, so a call goes
-  # out once, in progress, when its arguments are complete.
   # @rbs event: Riffer::StreamEvents::ToolCallDone
   # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
   def tool_call(event)
@@ -327,6 +327,13 @@ class Riffer::Rig::ACP
       kind: TOOL_KINDS.fetch(event.name, ::ACP::Types::ToolKind::OTHER),
       status: ::ACP::Types::ToolCallStatus::IN_PROGRESS
     )
+  end
+
+  # @rbs event: Riffer::Rig::Events::ToolDone
+  # @rbs return: ::ACP::Types::SessionUpdate::ToolCallUpdate
+  def tool_call_done(event)
+    status = event.error ? ::ACP::Types::ToolCallStatus::FAILED : ::ACP::Types::ToolCallStatus::COMPLETED
+    ::ACP::Types::SessionUpdate::ToolCallUpdate.new(tool_call_id: event.call_id, status: status)
   end
 
   # riffer's failure reasons (:error, :other, :guardrail_blocked) have no ACP
