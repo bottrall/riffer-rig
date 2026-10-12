@@ -68,6 +68,14 @@ describe Riffer::Rig::Headless::Ndjson do
     assert_equal [1, 'a'], Riffer::Rig::Headless::Ndjson.json_value([1, :a])
   end
 
+  it 'serializes a range as an array of its elements' do
+    assert_equal [1, 2], Riffer::Rig::Headless::Ndjson.json_value(1..2)
+  end
+
+  it 'serializes a set as an array of its elements' do
+    assert_equal [1, 'a'], Riffer::Rig::Headless::Ndjson.json_value(Set[1, :a])
+  end
+
   it 'falls back to the string form of a value with no to_h' do
     assert_equal '1970-01-01 00:00:00 UTC', Riffer::Rig::Headless::Ndjson.json_value(Time.at(0).utc)
   end
