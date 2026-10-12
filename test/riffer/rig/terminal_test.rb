@@ -284,6 +284,15 @@ describe Riffer::Rig::Terminal do
     assert_match(/skills\s+none/, run_terminal(''))
   end
 
+  it 'shows the session total in the banner of a resumed session' do
+    output = run_terminal("hello\n/resume\n\n") do |runtime|
+      usage = Riffer::Providers::TokenUsage.new(input_tokens: 10, output_tokens: 5)
+      runtime.agent.provider.stub_response('Hi', token_usage: usage)
+    end
+
+    assert_match(/▸ session\s+15 tok$/, output)
+  end
+
   it 'hints at the second Ctrl-C after the first at the prompt' do
     assert_includes run_terminal(interrupting_input(1)), 'Press Ctrl-C again to exit.'
   end
@@ -338,25 +347,8 @@ describe Riffer::Rig::Terminal do
     assert_includes run_with_extension("/hello world\n", source), 'hello, world'
   end
 
-  describe 'a /model switch' do
-    def switch(input)
-      run_terminal(input) do |runtime|
-        usage = Riffer::Providers::TokenUsage.new(input_tokens: 10, output_tokens: 5)
-        runtime.agent.provider.stub_response('Hi', token_usage: usage)
-      end
-    end
-
-    it 're-renders the banner with the new model' do
-      assert_match(%r{▸ model\s+mock/other}, switch("/model mock/other\n"))
-    end
-
-    it 'shows the session total in the re-rendered banner' do
-      assert_match(/▸ session\s+15 tok$/, switch("hello\n/model mock/other\n"))
-    end
-
-    it 'leaves the banner alone when the model is unchanged' do
-      assert_equal 1, switch("/model\n").scan('▸ model').length
-    end
+  it 'draws no banner on a /model switch' do
+    assert_equal 1, run_terminal("/model mock/other\n").scan('▸ model').length
   end
 
   describe '/new' do
