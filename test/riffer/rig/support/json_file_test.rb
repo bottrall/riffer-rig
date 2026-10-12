@@ -66,6 +66,35 @@ describe Riffer::Rig::Support::JsonFile do
       end
     end
 
+    it 'creates the file with the default mode when none is given' do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, 'document.json')
+        Riffer::Rig::Support::JsonFile.write(path, {})
+
+        assert_equal 0o666 & ~File.umask, File.stat(path).mode & 0o777
+      end
+    end
+
+    it 'applies the given mode to an existing file' do
+      Dir.mktmpdir do |dir|
+        path = json_file(dir, '{}')
+        File.chmod(0o644, path)
+        Riffer::Rig::Support::JsonFile.write(path, {}, mode: 0o600)
+
+        assert_equal 0o600, File.stat(path).mode & 0o777
+      end
+    end
+
+    it 'keeps the mode of an existing file when none is given' do
+      Dir.mktmpdir do |dir|
+        path = json_file(dir, '{}')
+        File.chmod(0o640, path)
+        Riffer::Rig::Support::JsonFile.write(path, {})
+
+        assert_equal 0o640, File.stat(path).mode & 0o777
+      end
+    end
+
     it 'writes the document as json' do
       Dir.mktmpdir do |dir|
         path = File.join(dir, 'document.json')
