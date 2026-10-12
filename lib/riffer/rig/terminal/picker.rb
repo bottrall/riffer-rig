@@ -85,7 +85,8 @@ class Riffer::Rig::Terminal::Picker
   def number(line, shown)
     return nil unless line.match?(/\A\d+\z/)
 
-    shown[line.to_i - 1]
+    index = line.to_i
+    shown[index - 1] if index.positive?
   end
 
   # @rbs shown: Array[Riffer::Rig::Terminal::Session]

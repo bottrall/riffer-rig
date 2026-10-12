@@ -167,6 +167,12 @@ describe Riffer::Rig::Terminal::Picker do
       assert_same route, pick([session('alpha'), route], ['66', ''])
     end
 
+    it 'treats zero as filter text' do
+      route = session('route 00')
+
+      assert_same route, pick([route, session('alpha')], ['00', ''])
+    end
+
     it 'returns nothing when interrupted outside the prompt' do
       assert_nil pick([session('alpha')], [ctrl_d, '1', '1'], host: PickerInterruptedHost.new)
     end
@@ -197,6 +203,12 @@ describe Riffer::Rig::Terminal::Picker do
 
     it 'deletes nothing on an out-of-range number' do
       pick([session('alpha')], [ctrl_d, '7', ''], host: ConfirmingHost.new([true]))
+
+      assert_empty @sessions.deleted
+    end
+
+    it 'deletes nothing on zero' do
+      pick([session('alpha'), session('beta')], [ctrl_d, '0', ''], host: ConfirmingHost.new([true]))
 
       assert_empty @sessions.deleted
     end
