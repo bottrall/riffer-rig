@@ -1,0 +1,6 @@
+class Riffer::Rig::Terminal::Autocomplete
+  interface _Command
+    def name: () -> String
+    def description: () -> String
+  end
+end

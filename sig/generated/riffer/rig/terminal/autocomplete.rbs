@@ -1,0 +1,60 @@
+# Generated from lib/riffer/rig/terminal/autocomplete.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Autocomplete
+  TRIGGER: ::String
+
+  QUERY: Regexp
+
+  @dismissed: bool
+
+  @index: Integer
+
+  @commands: Array[_Command]
+
+  # @dynamic editor, matches
+  attr_reader editor: Riffer::Rig::Terminal::LineEditor
+
+  attr_reader matches: Array[_Command]
+
+  # @rbs commands: Array[_Command]
+  # @rbs editor: Riffer::Rig::Terminal::LineEditor
+  # @rbs index: Integer
+  # @rbs dismissed: bool
+  # @rbs return: void
+  def initialize: (commands: Array[_Command], ?editor: Riffer::Rig::Terminal::LineEditor, ?index: Integer, ?dismissed: bool) -> void
+
+  # @rbs return: bool
+  def open?: () -> bool
+
+  # @rbs return: _Command?
+  def selected: () -> _Command?
+
+  # @rbs return: String
+  def ghost: () -> String
+
+  # @rbs key: Riffer::Rig::Terminal::Key
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete
+  def press: (Riffer::Rig::Terminal::Key key) -> Riffer::Rig::Terminal::Autocomplete
+
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete
+  def submit: () -> Riffer::Rig::Terminal::Autocomplete
+
+  private
+
+  # @rbs editor: Riffer::Rig::Terminal::LineEditor
+  # @rbs index: Integer
+  # @rbs dismissed: bool
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete
+  def with: (?editor: Riffer::Rig::Terminal::LineEditor, ?index: Integer, ?dismissed: bool) -> Riffer::Rig::Terminal::Autocomplete
+
+  # @rbs query: String?
+  # @rbs return: Array[_Command]
+  def ranked: (String? query) -> Array[_Command]
+
+  # @rbs key: Riffer::Rig::Terminal::Key
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete
+  def edit: (Riffer::Rig::Terminal::Key key) -> Riffer::Rig::Terminal::Autocomplete
+
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete
+  def accept: () -> Riffer::Rig::Terminal::Autocomplete
+end
