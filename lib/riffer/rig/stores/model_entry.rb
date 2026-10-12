@@ -3,12 +3,12 @@
 class Riffer::Rig::Stores::ModelEntry
   extend Riffer::Rig::Support::TypedValue::Schema #[String]
   include Riffer::Rig::Support::TypedValue #[String]
+  include Riffer::Rig::Stores::Stamped
 
   typed_value 'model', :model
 
-  # @dynamic model, recorded_at
+  # @dynamic model
   attr_reader :model #: String
-  attr_reader :recorded_at #: Time?
 
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: ::Riffer::Rig::Stores::ModelEntry?
@@ -26,10 +26,5 @@ class Riffer::Rig::Stores::ModelEntry
     @model = model
     @recorded_at = recorded_at
     freeze
-  end
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h
-    super.merge(recorded_at: Riffer::Rig::Stores::Timestamp.dump(@recorded_at)).compact
   end
 end

@@ -1,0 +1,10 @@
+# Generated from lib/riffer/rig/stores/stamped.rb with RBS::Inline
+
+# @rbs module-self Riffer::Rig::Support::_ToH
+module Riffer::Rig::Stores::Stamped : Riffer::Rig::Support::_ToH
+  # @dynamic recorded_at
+  attr_reader recorded_at: Time?
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

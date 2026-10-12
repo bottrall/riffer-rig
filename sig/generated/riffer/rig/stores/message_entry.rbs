@@ -5,10 +5,10 @@ class Riffer::Rig::Stores::MessageEntry
 
   include Riffer::Rig::Support::TypedValue[String]
 
-  # @dynamic message, recorded_at
-  attr_reader message: Hash[Symbol, untyped]
+  include Riffer::Rig::Stores::Stamped
 
-  attr_reader recorded_at: Time?
+  # @dynamic message
+  attr_reader message: Hash[Symbol, untyped]
 
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: ::Riffer::Rig::Stores::MessageEntry?
@@ -18,7 +18,4 @@ class Riffer::Rig::Stores::MessageEntry
   # @rbs recorded_at: Time?
   # @rbs return: void
   def initialize: (message: Hash[Symbol, untyped], ?recorded_at: Time?) -> void
-
-  # @rbs return: Hash[Symbol, untyped]
-  def to_h: () -> Hash[Symbol, untyped]
 end
