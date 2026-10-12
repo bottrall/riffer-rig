@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'test_helper'
+require 'timeout'
 
 describe Riffer::Rig::Terminal::Wrapper do
   def wrapper(width: 10, indent: 2)
@@ -23,6 +24,12 @@ describe Riffer::Rig::Terminal::Wrapper do
     assert_equal "  #{'a' * 8}\n", wrapper << ('a' * 12)
   end
 
+  it 'hard-splits an overfull line to one column when the width equals the indent' do
+    output = Timeout.timeout(1) { wrapper(width: 2) << 'ab' }
+
+    assert_equal "  a\n", output
+  end
+
   it 'keeps blank lines between paragraphs' do
     assert_equal "  a\n\n  b\n", wrapper << "a\n\nb\n"
   end
@@ -41,6 +48,12 @@ describe Riffer::Rig::Terminal::Wrapper do
 
   it 'hard-splits words longer than the width' do
     assert_equal "  aaaaaaaa\n  aaaa\n", wrapper << "#{'a' * 12}\n"
+  end
+
+  it 'hard-splits words to one column when the width is below the indent' do
+    output = Timeout.timeout(1) { wrapper(width: 1) << "hello\n" }
+
+    assert_equal "  h\n  e\n  l\n  l\n  o\n", output
   end
 
   it 'emits no line for the leading whitespace of an overfull line' do
