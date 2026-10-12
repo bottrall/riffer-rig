@@ -1,0 +1,57 @@
+# Generated from lib/riffer/rig/terminal/markdown/blocks.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Markdown::Blocks
+  FENCE: Regexp
+
+  HEADING: Regexp
+
+  RULE: Regexp
+
+  QUOTE: Regexp
+
+  MARKER: Regexp
+
+  ITEM: Regexp
+
+  DIVIDER: Regexp
+
+  # @rbs lines: Array[String]
+  # @rbs return: Array[Array[String]]
+  def split: (Array[String] lines) -> Array[Array[String]]
+
+  # @rbs lines: Array[String]
+  # @rbs index: Integer
+  # @rbs return: Symbol
+  def kind: (Array[String] lines, Integer index) -> Symbol
+
+  # @rbs fence: String
+  # @rbs return: Regexp
+  def closing: (String fence) -> Regexp
+
+  private
+
+  # @rbs lines: Array[String]
+  # @rbs start: Integer
+  # @rbs return: Integer
+  def boundary: (Array[String] lines, Integer start) -> Integer
+
+  # @rbs lines: Array[String]
+  # @rbs from: Integer
+  # @rbs &block: (Integer) -> bool
+  # @rbs return: Integer
+  def extend_while: (Array[String] lines, Integer from) { (Integer) -> bool } -> Integer
+
+  # @rbs lines: Array[String]
+  # @rbs start: Integer
+  # @rbs return: Integer
+  def fence_boundary: (Array[String] lines, Integer start) -> Integer
+
+  # @rbs line: String
+  # @rbs return: bool
+  def list_line?: (String line) -> bool
+
+  # @rbs lines: Array[String]
+  # @rbs index: Integer
+  # @rbs return: bool
+  def table?: (Array[String] lines, Integer index) -> bool
+end

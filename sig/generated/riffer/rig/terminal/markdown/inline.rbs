@@ -1,0 +1,39 @@
+# Generated from lib/riffer/rig/terminal/markdown/inline.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Markdown::Inline
+  # An opener with no closer is searched for one as far as its span may run,
+  # so without a ceiling a paragraph of openers costs quadratic time.
+  SPAN_LIMIT: Integer
+
+  # The trailing alternative matches whatever the others don't, so the matches
+  # tile the text and a scan sees every character exactly once.
+  TOKEN: Regexp
+
+  # A target is written into an OSC 8 sequence only when every byte is
+  # printable ASCII, so it cannot terminate the sequence early, and only for
+  # schemes that are safe to hand to the system opener.
+  HYPERLINK: Regexp
+
+  # @rbs text: String
+  # @rbs plain: bool
+  # @rbs styles: Array[Symbol]
+  # @rbs url: String?
+  # @rbs return: Array[Riffer::Rig::Terminal::Markdown::Span]
+  def parse: (String text, plain: bool, ?styles: Array[Symbol], ?url: String?) -> Array[Riffer::Rig::Terminal::Markdown::Span]
+
+  private
+
+  # @rbs match: MatchData
+  # @rbs plain: bool
+  # @rbs styles: Array[Symbol]
+  # @rbs url: String?
+  # @rbs return: Array[Riffer::Rig::Terminal::Markdown::Span]
+  def token: (MatchData match, plain: bool, styles: Array[Symbol], url: String?) -> Array[Riffer::Rig::Terminal::Markdown::Span]
+
+  # @rbs label: String
+  # @rbs target: String
+  # @rbs plain: bool
+  # @rbs styles: Array[Symbol]
+  # @rbs return: Array[Riffer::Rig::Terminal::Markdown::Span]
+  def link: (String label, String target, plain: bool, styles: Array[Symbol]) -> Array[Riffer::Rig::Terminal::Markdown::Span]
+end

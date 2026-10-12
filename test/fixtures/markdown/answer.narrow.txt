@@ -1,0 +1,48 @@
+# Release notes
+
+The parser now handles
+nested emphasis, `inline
+code`, and links
+(https://example.com/doc
+s) in one pass. A loud
+word and a
+snake_case_name pass
+through.
+
+## Steps
+
+1. Install the gem
+   • run `bundle
+     install`
+   • check the lockfile
+2. Configure it:
+
+   ruby
+   │ Rig.configure do |c
+   │ onfig|
+   │   config.model = "a
+   │ nthropic/claude-son
+   │ net"
+   │ end
+3. Ship
+
+┃ Quoted advice that is
+┃ long enough to wrap
+┃ onto a second line
+┃ when narrow.
+┃
+┃ • a quoted bullet
+
+────────────────────────
+
+│ no language here
+
+Flag         │ Meaning
+─────────────┼───────────
+`-p`         │ print once
+`--no-color` │ plain
+
+<b>HTML</b> stays
+literal, and see the
+local guide
+(docs/HOSTS.md).

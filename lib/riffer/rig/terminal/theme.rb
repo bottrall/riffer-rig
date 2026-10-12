@@ -71,4 +71,37 @@ class Riffer::Rig::Terminal::Theme
 
     "\e[1m#{text}\e[0m"
   end
+
+  # @rbs text: String
+  # @rbs return: String
+  def italic(text)
+    return text unless enabled
+
+    "\e[3m#{text}\e[0m"
+  end
+
+  # @rbs text: String
+  # @rbs return: String
+  def underline(text)
+    return text unless enabled
+
+    "\e[4m#{text}\e[0m"
+  end
+
+  # @rbs text: String
+  # @rbs return: String
+  def heading(text) = bold(purple(text))
+
+  # @rbs text: String
+  # @rbs return: String
+  def code(text) = cyan(text)
+
+  # @rbs text: String
+  # @rbs url: String
+  # @rbs return: String
+  def link(text, url)
+    return text unless enabled
+
+    "\e]8;;#{url}\e\\#{underline(blue(text))}\e]8;;\e\\"
+  end
 end

@@ -1,0 +1,28 @@
+# Generated from lib/riffer/rig/terminal/markdown/table.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Markdown::Table
+  # Every row is padded to the grid's width, so without a ceiling one long
+  # cell costs its length again on every other row.
+  WIDTH_LIMIT: Integer
+
+  # @rbs chunk: Array[String]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: Array[String]?
+  def lines: (Array[String] chunk, theme: Riffer::Rig::Terminal::Theme) -> Array[String]?
+
+  private
+
+  # @rbs line: String
+  # @rbs return: Array[String]
+  def cells: (String line) -> Array[String]
+
+  # @rbs spans: Array[Riffer::Rig::Terminal::Markdown::Span]
+  # @rbs return: Integer
+  def length: (Array[Riffer::Rig::Terminal::Markdown::Span] spans) -> Integer
+
+  # @rbs row: Array[Array[Riffer::Rig::Terminal::Markdown::Span]]
+  # @rbs widths: Array[Integer]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: String
+  def join: (Array[Array[Riffer::Rig::Terminal::Markdown::Span]] row, Array[Integer] widths, Riffer::Rig::Terminal::Theme theme) -> String
+end
