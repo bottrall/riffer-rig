@@ -13,6 +13,7 @@ class Riffer::Rig::Loader
   # @rbs @stripped: Array[Symbol]
   # @rbs @extensions_enabled: bool
   # @rbs @extra_extensions: Array[Riffer::Rig::Extension]
+  # @rbs @recorder_extensions: Array[Riffer::Rig::Extension]
   # @rbs @file_state: Hash[String, Time?]?
   # @rbs @reload_mode: (:auto | :manual | nil)
 
@@ -68,6 +69,7 @@ class Riffer::Rig::Loader
     @source = Riffer::Rig::Loader::ExtensionSource.new(cwd: cwd, home: home, host: host)
     @stripped = []
     @extensions_enabled = true
+    @recorder_extensions = []
     @file_state = nil
     @reload_mode = nil
   end
@@ -95,7 +97,8 @@ class Riffer::Rig::Loader
     loaded += @extra_extensions
 
     recorder = recorder_for(document, resumed: !snapshot.nil?)
-    loaded << Riffer::Rig::Stores::Recorder.extension(recorder) if recorder
+    @recorder_extensions = recorder ? [Riffer::Rig::Stores::Recorder.extension(recorder)] : []
+    loaded += @recorder_extensions
 
     built = Riffer::Rig::Runtime.new(
       selected,
@@ -240,7 +243,7 @@ class Riffer::Rig::Loader
     candidates = reload_candidates(Riffer::Rig::Settings::Document.new(settings))
     return notify_failure(candidates) if candidates.is_a?(String)
 
-    extensions = @source.validated(candidates, settings)
+    extensions = @source.validated(candidates + @recorder_extensions, settings)
     provider = runtime.model.partition('/').first
     credentials = install_credentials(provider)
     return notify_failure(credentials) if credentials.is_a?(String)

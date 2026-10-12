@@ -8,6 +8,8 @@ class Riffer::Rig::Loader
 
   @file_state: Hash[String, Time?]?
 
+  @recorder_extensions: Array[Riffer::Rig::Extension]
+
   @extra_extensions: Array[Riffer::Rig::Extension]
 
   @extensions_enabled: bool

@@ -846,6 +846,19 @@ describe Riffer::Rig::Loader do
       assert_equal [[:error, "#{project_rig_path} failed to load: boom"]], host.notifications
     end
 
+    it 'keeps recording skill activations after a reload' do
+      write_skill('a')
+      store = RecordingStore.new
+      loader = loader(store: store)
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
+      loader.reload(runtime, force: true)
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'skill_activate', arguments: '{"name":"a"}' }])
+      runtime.agent.provider.stub_response('Done.')
+      runtime.ask('use skill a')
+
+      assert_equal(['a'], store.appended.map(&:last).grep(Riffer::Rig::Stores::SkillEntry).map(&:skill))
+    end
+
     it 'reports credentials the reload cannot resolve' do
       loader = new_loader
       runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
