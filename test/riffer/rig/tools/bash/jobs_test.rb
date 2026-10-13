@@ -24,11 +24,19 @@ describe Riffer::Rig::Tools::Bash::Jobs do
     end.new
     @jobs = Riffer::Rig::Tools::Bash::Jobs.new(@inbox)
     @paths = []
+    @strays = []
   end
 
   def teardown
     @jobs.shutdown(0.0)
+    @strays.each { |pid| kill_stray(pid) }
     FileUtils.rm_f(@paths)
+  end
+
+  def kill_stray(pid)
+    Process.kill('KILL', pid)
+  rescue Errno::ESRCH
+    nil
   end
 
   def start(command, output: '')
@@ -40,6 +48,34 @@ describe Riffer::Rig::Tools::Bash::Jobs do
 
   def listed(job)
     @jobs.list.find { |candidate| candidate.id == job.id }
+  end
+
+  def child_of(job)
+    sleep 0.01 until File.size?(job.output_path)
+    Integer(File.read(job.output_path)).tap { |pid| @strays << pid }
+  end
+
+  def orphan(lifetime = 30)
+    job = start("sleep #{lifetime} & echo $!")
+    @inbox.await
+    child_of(job)
+  end
+
+  def alive?(pid)
+    Process.kill(0, pid)
+    true
+  rescue Errno::ESRCH
+    false
+  end
+
+  def eventually
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
+    sleep 0.01 until yield || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+    yield
+  end
+
+  def exited?(pid)
+    eventually { !alive?(pid) }
   end
 
   describe '#register' do
@@ -193,6 +229,23 @@ describe Riffer::Rig::Tools::Bash::Jobs do
 
       assert_equal [1, 1], Array.new(2) { @inbox.await&.exit_status }
     end
+
+    it 'kills a group that outlived its leader' do
+      pid = orphan
+      @jobs.kill_outstanding
+
+      assert exited?(pid)
+    end
+
+    it 'kills a group that outlived its leader after the job is consumed' do
+      job = start('sleep 30 & echo $!')
+      @inbox.push(@inbox.await)
+      pid = child_of(job)
+      @jobs.consume
+      @jobs.kill_outstanding
+
+      assert exited?(pid)
+    end
   end
 
   describe '#consume' do
@@ -227,12 +280,44 @@ describe Riffer::Rig::Tools::Bash::Jobs do
       assert_predicate listed(job), :completed?
     end
 
+    it 'kills a group that outlived its leader' do
+      pid = orphan
+      @jobs.shutdown
+
+      assert exited?(pid)
+    end
+
+    it 'lets a group that outlived its leader exit on TERM' do
+      job = start("(trap 'echo termed; exit' TERM; echo ready; sleep 5; :) &")
+      sleep 0.01 until File.size?(job.output_path)
+      @inbox.await
+      @jobs.shutdown
+
+      assert_includes File.read(job.output_path), 'termed'
+    end
+
     it 'kills a job that ignores TERM' do
       job = start('trap "" TERM; echo ready; sleep 30')
       sleep 0.01 until File.size?(job.output_path)
       @jobs.shutdown(0.1)
 
       assert_predicate listed(job), :completed?
+    end
+
+    it 'kills a group that ignores TERM after TERM ends its leader' do
+      pid = child_of(start('trap "" TERM; sleep 30 & trap - TERM; echo $!; wait'))
+      @jobs.shutdown(0.1)
+
+      assert exited?(pid)
+    end
+
+    it 'returns while a killed group still holds an unreaped process' do
+      job = start('sleep 30')
+      unreaped = Process.spawn('true', pgroup: job.pid)
+
+      assert Thread.new { @jobs.shutdown(0.0) }.join(5)
+    ensure
+      Process.wait(unreaped)
     end
 
     it 'leaves no watcher thread' do
@@ -334,6 +419,21 @@ describe Riffer::Rig::Tools::Bash::Jobs do
       start('true', output: "é#{'b' * (Riffer::Rig::Tools::Bash::Jobs::TAIL_BYTES - 1)}")
 
       assert_predicate @inbox.await&.tail, :valid_encoding?
+    end
+
+    it 'keeps watching a group that outlived its leader' do
+      threads = Thread.list
+      orphan
+
+      assert_equal 1, (Thread.list - threads).size
+    end
+
+    it 'stops watching a group once it is empty' do
+      threads = Thread.list
+      orphan(0.2)
+      eventually { (Thread.list - threads).empty? }
+
+      assert_empty Thread.list - threads
     end
 
     it 'drops a job whose process can no longer be waited on' do

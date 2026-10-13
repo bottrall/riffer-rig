@@ -15,6 +15,8 @@ class Riffer::Rig::Tools::Bash::Jobs
 
   @mutex: Mutex
 
+  @groups: Array[Integer]
+
   @jobs: Hash[String, Riffer::Rig::Tools::Bash::Job]
 
   @inbox: Riffer::Rig::Tools::Bash::_Inbox
@@ -56,6 +58,15 @@ class Riffer::Rig::Tools::Bash::Jobs
   # @rbs job: Riffer::Rig::Tools::Bash::Job
   # @rbs return: void
   def watch: (Riffer::Rig::Tools::Bash::Job job) -> void
+
+  # @rbs pgid: Integer
+  # @rbs return: bool
+  def retain: (Integer pgid) -> bool
+
+  # @rbs pgid: Integer
+  # @rbs signal: String | Integer
+  # @rbs return: bool
+  def signal_group: (Integer pgid, String | Integer signal) -> bool
 
   # @rbs job: Riffer::Rig::Tools::Bash::Job
   # @rbs exit_status: Integer

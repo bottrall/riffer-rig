@@ -14,6 +14,7 @@ class Riffer::Rig::Tools::Bash::Jobs
 
   # @rbs @inbox: Riffer::Rig::Tools::Bash::_Inbox
   # @rbs @jobs: Hash[String, Riffer::Rig::Tools::Bash::Job]
+  # @rbs @groups: Array[Integer]
   # @rbs @mutex: Mutex
   # @rbs @watchers: ThreadGroup
 
@@ -22,6 +23,7 @@ class Riffer::Rig::Tools::Bash::Jobs
   def initialize(inbox)
     @inbox = inbox
     @jobs = {}
+    @groups = []
     @mutex = Mutex.new
     @watchers = ThreadGroup.new
   end
@@ -38,7 +40,10 @@ class Riffer::Rig::Tools::Bash::Jobs
       output_path: output_path,
       started_at: monotonic_now
     )
-    @mutex.synchronize { @jobs[job.id] = job }
+    @mutex.synchronize do
+      @jobs[job.id] = job
+      @groups << pid
+    end
     @watchers.add(Thread.new { watch(job) })
     job
   end
@@ -76,7 +81,7 @@ class Riffer::Rig::Tools::Bash::Jobs
   # @rbs signal: String
   # @rbs return: void
   def kill_outstanding(signal = 'TERM')
-    @mutex.synchronize { @jobs.each_value.select(&:active?).each { |job| kill_group(job.pid, signal) } }
+    @mutex.synchronize { @groups.each { |pgid| signal_group(pgid, signal) } }
   end
 
   # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
@@ -94,6 +99,10 @@ class Riffer::Rig::Tools::Bash::Jobs
     @watchers.list.each { |watcher| watcher.join([deadline - monotonic_now, 0.0].max) }
     # A job that ignores TERM would otherwise hold its watcher, and this join, forever.
     kill_outstanding('KILL')
+    # A killed process stays in its group until its parent reaps it. Once the
+    # leader is gone that parent is not this process and may never do so, so
+    # the watchers are released rather than left polling.
+    @mutex.synchronize { @groups.clear }
     @watchers.list.each(&:join)
   end
 
@@ -105,11 +114,38 @@ class Riffer::Rig::Tools::Bash::Jobs
     # The only reap of a job: a second reaper would take the exit status and
     # leave this wait with ECHILD.
     _pid, status = Process.wait2(job.pid)
+    # Once reaped, the leader's pid is reserved only while its group has
+    # members. An emptied group is forgotten before the number can name one
+    # that is not ours: here, ahead of the subscribers, and by the poll below.
+    retain(job.pid)
     exit_status = status.exitstatus || 1
     finished = @mutex.synchronize { @jobs[job.id] = @jobs.fetch(job.id).finish(exit_status, monotonic_now) }
     @inbox.push(completion(finished, exit_status))
+    sleep(Riffer::Rig::Tools::Bash::POLL_SECONDS) while retain(job.pid)
   rescue Errno::ECHILD
-    @mutex.synchronize { @jobs.delete(job.id) }
+    @mutex.synchronize do
+      @jobs.delete(job.id)
+      @groups.delete(job.pid)
+    end
+  end
+
+  # @rbs pgid: Integer
+  # @rbs return: bool
+  def retain(pgid)
+    @mutex.synchronize do
+      @groups.delete(pgid) unless signal_group(pgid, 0)
+      @groups.include?(pgid)
+    end
+  end
+
+  # @rbs pgid: Integer
+  # @rbs signal: String | Integer
+  # @rbs return: bool
+  def signal_group(pgid, signal)
+    Process.kill(signal, -pgid)
+    true
+  rescue Errno::ESRCH, Errno::EPERM
+    false
   end
 
   # @rbs job: Riffer::Rig::Tools::Bash::Job
