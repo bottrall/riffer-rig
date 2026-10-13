@@ -15,8 +15,9 @@ module Riffer::Rig::Commands::Auth
   # @rbs return: String
   def hint: () -> String
 
-  # @rbs return: String
-  def list: () -> String
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs return: void
+  def list: (Riffer::Rig::Command::Context ctx) -> void
 
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs identifier: String

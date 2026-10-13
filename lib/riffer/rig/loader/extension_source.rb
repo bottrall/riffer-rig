@@ -110,21 +110,26 @@ class Riffer::Rig::Loader::ExtensionSource
   # @rbs return: (Array[Riffer::Rig::Extension] | String)
   def rig_file(path, confirm_trust:)
     return [] unless File.file?(path)
-    return [] if confirm_trust && !trusted?(path)
+
+    trusted = confirm_trust ? trust(path) : true
+    return trusted if trusted.is_a?(String)
+    return [] unless trusted
 
     load_file(path, track: true)
   end
 
   # @rbs path: String
-  # @rbs return: bool
-  def trusted?(path)
-    stored = Riffer::Rig::Trust.read(trust_path)[path]
-    return stored unless stored.nil?
+  # @rbs return: (bool | String)
+  def trust(path)
+    decisions = Riffer::Rig::Trust.read(trust_path)
+    return decisions if decisions.is_a?(String)
 
-    asked = @host.capabilities.include?(:confirm)
-    decision = asked ? @host.confirm("Trust #{path}?") : false
-    Riffer::Rig::Trust.store(trust_path, path, decision) if asked
-    decision
+    stored = decisions[path]
+    return stored unless stored.nil?
+    return false unless @host.capabilities.include?(:confirm)
+
+    decision = @host.confirm("Trust #{path}?")
+    Riffer::Rig::Trust.store(trust_path, path, decision) || decision
   end
 
   # @rbs return: String

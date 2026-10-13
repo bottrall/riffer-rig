@@ -102,6 +102,13 @@ describe Riffer::Rig::Loader do
     JSON.parse(File.read(File.join(@home, '.riffer', 'settings.json')))
   end
 
+  def malform_settings(dir)
+    path = File.join(dir, '.riffer', 'settings.json')
+    FileUtils.mkdir_p(File.dirname(path))
+    File.write(path, '{"reasoning":"low",}')
+    "#{path} is not valid JSON at line 1 column 20"
+  end
+
   def build(host: Riffer::Rig::Hosts::Null.new, env: { 'MOCK_API_KEY' => 'mock-key' }, **keywords)
     Riffer::Rig::Loader.runtime(
       cwd: @cwd,
@@ -233,6 +240,20 @@ describe Riffer::Rig::Loader do
   end
 
   describe '#runtime' do
+    describe 'malformed settings' do
+      it 'raises the configuration error naming the home file' do
+        malformed = malform_settings(@home)
+
+        assert_equal(malformed, refusal { build(model: 'mock/test') })
+      end
+
+      it 'raises the configuration error naming the project file' do
+        malformed = malform_settings(@cwd)
+
+        assert_equal(malformed, refusal { build(model: 'mock/test') })
+      end
+    end
+
     describe 'model selection' do
       it 'takes the model from home settings' do
         write_settings(@home, { model: 'mock/home' })
@@ -308,6 +329,19 @@ describe Riffer::Rig::Loader do
         build(host: ScriptedHost.new('mock/chosen'))
 
         assert_equal 'mock/chosen', home_settings['model']
+      end
+
+      it 'raises the configuration error when home settings turn malformed while the host is asked' do
+        host = ScriptedHost.new
+        malformed = nil
+        malform = -> { malformed = malform_settings(@home) }
+        host.define_singleton_method(:ask) do |_question = nil, **|
+          malform.call
+          'mock/chosen'
+        end
+        refused = refusal { build(host: host) }
+
+        assert_equal malformed, refused
       end
 
       it 'rejects a bare answer' do
@@ -807,6 +841,24 @@ describe Riffer::Rig::Loader do
       assert_equal({ depth: 3 }, runtime.settings[:git])
     end
 
+    it 'reports settings malformed on disk' do
+      loader = new_loader
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
+      malformed = malform_settings(@home)
+
+      assert_equal malformed, loader.reload(runtime, force: true)
+    end
+
+    it 'holds an unforced reload under a manual reload keyword when settings are malformed' do
+      write_rig(:project, probe_rig('probe'))
+      loader = new_loader(host: ConfirmingHost.new([true]))
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'), reload: :manual)
+      malform_settings(@home)
+      bump(project_rig_path)
+
+      assert_same runtime, loader.reload(runtime)
+    end
+
     it 'keeps extra extensions through a reload' do
       extra = Riffer::Rig::Extension.new('extra_loader') { |rig| rig.command('ping', description: 'Pings') { |_ctx| nil } }
       loader = new_loader
@@ -997,6 +1049,16 @@ describe Riffer::Rig::Loader do
       turn(runtime)
 
       assert_empty tool_names(runtime).grep(/\Aprobe_next/)
+    end
+
+    it 'reports settings that turn malformed mid-session' do
+      host = ConfirmingHost.new([true])
+      _loader, runtime = built_with(host)
+      malformed = malform_settings(@home)
+      File.write(project_rig_path, probe_rig('probe_next'))
+      turn(runtime)
+
+      assert_equal [[:error, malformed]], host.notifications
     end
   end
 end

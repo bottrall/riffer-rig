@@ -18,7 +18,7 @@ module Riffer::Rig::Commands::Auth
   # @rbs return: void
   def run(ctx)
     words = ctx.args.split
-    return ctx.say(list) if words.empty?
+    return list(ctx) if words.empty?
     return remove(ctx, words[1]) if words[0] == 'remove' && words.length == 2
     return rerun(ctx, words[0]) if words.length == 1
 
@@ -33,13 +33,17 @@ module Riffer::Rig::Commands::Auth
       "#{Riffer::Rig::Providers.list}"
   end
 
-  # @rbs return: String
-  def list
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs return: void
+  def list(ctx)
     statuses = Riffer::Rig::Providers.identifiers.to_h do |identifier|
       [identifier, Riffer::Rig::Credentials.status(identifier)]
     end
+    unreadable = statuses.values.grep(String) #: Array[String]
+    return ctx.host.notify(unreadable.first, level: :error) if unreadable.any?
+
     width = statuses.keys.map { |identifier| identifier.to_s.length }.max || 0
-    statuses.map { |identifier, status| "#{identifier.to_s.ljust(width)}  #{status}" }.join("\n")
+    ctx.say(statuses.map { |identifier, status| "#{identifier.to_s.ljust(width)}  #{status}" }.join("\n"))
   end
 
   # @rbs ctx: Riffer::Rig::Command::Context
@@ -50,6 +54,8 @@ module Riffer::Rig::Commands::Auth
 
     provider = identifier.to_sym
     resolution = Riffer::Rig::Credentials.install(provider, host: ctx.host)
+    return ctx.host.notify(resolution, level: :error) if resolution.is_a?(String)
+
     if resolution.missing.any?
       missing_fields = Riffer::Rig::ProviderSetup.for(provider).missing_fields(resolution.missing)
       ctx.host.notify("#{provider} still has no #{missing_fields}", level: :error)
@@ -65,7 +71,9 @@ module Riffer::Rig::Commands::Auth
   def remove(ctx, identifier)
     return ctx.say(hint) unless Riffer::Providers::Repository.find(identifier)
 
-    Riffer::Rig::Credentials.remove(identifier)
+    refusal = Riffer::Rig::Credentials.remove(identifier)
+    return ctx.host.notify(refusal, level: :error) if refusal
+
     ctx.say("Removed stored #{identifier} credentials")
   end
 end

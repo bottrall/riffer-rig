@@ -54,7 +54,7 @@ A server that authenticates with a token need not put the token in `settings.jso
 
 When the Runtime is built, each field resolves like a provider credential: the environment first, then the entry stored under the server's name in `~/.riffer/auth.json`, then a prompt — asked once with no echo and stored there for every run after. A field may name several environment variables, tried in order. Header values of a server without an `auth` block are sent exactly as written; with one, every `${field}` must name a declared field, and a reference to anything else fails the registration.
 
-A credential that cannot be resolved — unset everywhere, with no stored entry and a host that cannot ask — is reported through `notify` at level `:error` as "MCP server NAME failed to register: MCP server NAME has no FIELD (ENV_VAR); set it in the environment or run riffer interactively to paste it", and the Runtime runs without that server's tools. A rebuild re-resolves the block, so a server whose resolved headers changed is registered again ([Reload and close](#reload-and-close)).
+A credential that cannot be resolved — unset everywhere, with no stored entry and a host that cannot ask — is reported through `notify` at level `:error` as "MCP server NAME failed to register: MCP server NAME has no FIELD (ENV_VAR); set it in the environment or run riffer interactively to paste it", and the Runtime runs without that server's tools. An `auth.json` that does not parse fails the registration the same way, with the message naming the file ([Providers](PROVIDERS.md#authjson)). A rebuild re-resolves the block, so a server whose resolved headers changed is registered again ([Reload and close](#reload-and-close)).
 
 ## Declaring servers from an extension
 

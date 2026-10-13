@@ -5,7 +5,9 @@ Settings live in two files with the same name and shape, both optional:
 - `~/.riffer/settings.json` — the home scope, for every project.
 - `<cwd>/.riffer/settings.json` — the project scope, for sessions started in that directory.
 
-`Riffer::Rig::Loader` reads home then project and merges them key by key, the project winning: a top-level key set in both takes the project's value, and an extension namespace merges the same way one level down, so a project can change one key of a namespace and keep the rest from home. Two keys merge differently: `extensions.disabled` lists add up across both scopes, and an [MCP server](MCP.md) declared in both is replaced whole by the project's. A file that is missing or is not valid JSON counts as empty.
+`Riffer::Rig::Loader` reads home then project and merges them key by key, the project winning: a top-level key set in both takes the project's value, and an extension namespace merges the same way one level down, so a project can change one key of a namespace and keep the rest from home. Two keys merge differently: `extensions.disabled` lists add up across both scopes, and an [MCP server](MCP.md) declared in both is replaced whole by the project's. A file that is missing or blank counts as empty.
+
+A file that is not valid JSON, or does not hold a JSON object, is never read as empty and never written over. The Loader raises `Riffer::Rig::Loader::ConfigurationError` naming the file and, for a parse error, the line and column where parsing stopped, so `riffer` stops before the session starts; fix the file and run it again. The file's text is left out of the message.
 
 ## Core keys
 
@@ -41,7 +43,7 @@ There is no built-in default. The model is the first of these that is set, highe
 
 A bare `RIFFER_MODEL` is rejected even when a higher source wins, since it is a mistake in the environment either way.
 
-`/model provider/name` overrides this key for the current session only: the override wins until the session ends. Switching resolves the new provider's missing credentials and missing SDK gem the same way startup does, and `/model --save` writes the model in effect to this key in the home settings, leaving every other key unchanged ([Switching the model](https://github.com/bottrall/riffer-rig#switching-the-model)).
+`/model provider/name` overrides this key for the current session only: the override wins until the session ends. Switching resolves the new provider's missing credentials and missing SDK gem the same way startup does, and `/model --save` writes the model in effect to this key in the home settings, leaving every other key unchanged — or, when the home file no longer parses, writes nothing and reports the file ([Switching the model](https://github.com/bottrall/riffer-rig#switching-the-model)).
 
 ## `reasoning`
 

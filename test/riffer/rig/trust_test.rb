@@ -12,6 +12,14 @@ describe Riffer::Rig::Trust do
   end
 
   describe '.read' do
+    it 'reports a malformed file' do
+      Dir.mktmpdir do |dir|
+        path = trust_file(dir, '{"a.rb":true,}')
+
+        assert_equal "#{path} is not valid JSON at line 1 column 14", Riffer::Rig::Trust.read(path)
+      end
+    end
+
     it 'keeps true decisions' do
       Dir.mktmpdir do |dir|
         path = trust_file(dir, '{"a.rb":true}')
@@ -38,6 +46,14 @@ describe Riffer::Rig::Trust do
   end
 
   describe '.store' do
+    it 'reports a malformed file' do
+      Dir.mktmpdir do |dir|
+        path = trust_file(dir, '{"a.rb":true,}')
+
+        assert_equal "#{path} is not valid JSON at line 1 column 14", Riffer::Rig::Trust.store(path, 'b.rb', true)
+      end
+    end
+
     it 'writes the decision to the file' do
       Dir.mktmpdir do |dir|
         path = File.join(dir, 'trust.json')

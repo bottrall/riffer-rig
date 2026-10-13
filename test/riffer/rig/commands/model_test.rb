@@ -82,11 +82,29 @@ describe Riffer::Rig::Commands::Model do
     JSON.parse(File.read(Riffer::Rig::Settings::File::PATH))
   end
 
+  def malform(path)
+    FileUtils.mkdir_p(File.dirname(path))
+    File.write(path, '{"reasoning":"low",}')
+  end
+
+  def malformed(path)
+    Riffer::Rig::Events::Notify.new("#{path} is not valid JSON at line 1 column 20", :error)
+  end
+
   it 'reports the current model without arguments' do
     assert_equal [output('Model: mock/test')], command_events(Riffer::Rig::Runtime.new('mock/test'), '')
   end
 
   describe 'save' do
+    it 'reports a malformed settings file instead of the save' do
+      malform(Riffer::Rig::Settings::File::PATH)
+
+      assert_equal(
+        [malformed(Riffer::Rig::Settings::File::PATH)],
+        command_events(Riffer::Rig::Runtime.new('mock/test'), '--save')
+      )
+    end
+
     it 'saves the current model to the home settings' do
       write_home_settings(model: 'gemini/gem-2.5-pro', reasoning: 'high')
       command_events(Riffer::Rig::Runtime.new('mock/test'), '--save')
@@ -190,6 +208,23 @@ describe Riffer::Rig::Commands::Model do
       assert_equal [{ question: 'gemini api_key', secret: true }], host.asked
     end
 
+    it 'reports a malformed auth.json' do
+      malform(Riffer::Rig::Credentials::PATH)
+
+      assert_equal(
+        [malformed(Riffer::Rig::Credentials::PATH)],
+        command_events(Riffer::Rig::Runtime.new('mock/test'), 'gemini/gem-2.5-pro')
+      )
+    end
+
+    it 'keeps the model when auth.json is malformed' do
+      malform(Riffer::Rig::Credentials::PATH)
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      command_events(runtime, 'gemini/gem-2.5-pro')
+
+      assert_equal 'mock/test', runtime.model
+    end
+
     it 'refuses with one notify when the host cannot ask' do
       events = command_events(Riffer::Rig::Runtime.new('mock/test'), 'gemini/gem-2.5-pro')
 
@@ -267,6 +302,15 @@ describe Riffer::Rig::Commands::Model do
     command_events(runtime, 'gemini/gem-2.5-pro --save')
 
     assert_equal 'gemini/gem-2.5-pro', saved_settings['model']
+  end
+
+  it 'reports a malformed settings file next to the new model' do
+    malform(Riffer::Rig::Settings::File::PATH)
+
+    assert_equal(
+      [output('Model switched to mock/other'), malformed(Riffer::Rig::Settings::File::PATH)],
+      command_events(Riffer::Rig::Runtime.new('mock/test'), 'mock/other --save')
+    )
   end
 
   it 'reports the switch to the new model' do

@@ -30,6 +30,13 @@ describe Riffer::Rig::Loader::Credentials do
   end
 
   describe '.install' do
+    it 'reports a malformed auth.json' do
+      FileUtils.mkdir_p(File.dirname(auth_path))
+      File.write(auth_path, '{"gemini":{"a":1},}')
+
+      assert_equal "#{auth_path} is not valid JSON at line 1 column 19", install
+    end
+
     it 'returns the values resolved from the environment' do
       assert_equal({ api_key: 'sk-gem-env' }, install(env: { 'GEMINI_API_KEY' => 'sk-gem-env' }))
     end
