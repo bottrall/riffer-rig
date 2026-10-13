@@ -9,14 +9,14 @@ class Riffer::Rig::ACP::Host
   CAPABILITIES = Set[:notify, :ask, :confirm].freeze #: Set[Symbol]
   BUILDING_CAPABILITIES = Set[:notify].freeze #: Set[Symbol]
 
-  # @rbs @client: ::ACP::AgentConnection::_Client
+  # @rbs @client: ::ACP::AgentConnection::Client
   # @rbs @session_id: String?
   # @rbs @buffered: Array[String]
 
   # @dynamic client=
-  attr_writer :client #: ::ACP::AgentConnection::_Client
+  attr_writer :client #: ::ACP::AgentConnection::Client
 
-  # @rbs client: ::ACP::AgentConnection::_Client
+  # @rbs client: ::ACP::AgentConnection::Client
   # @rbs return: void
   def initialize(client:)
     @client = client

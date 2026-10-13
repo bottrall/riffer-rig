@@ -11,14 +11,14 @@ class Riffer::Rig::ACP::Host
 
   @session_id: String?
 
-  @client: ::ACP::AgentConnection::_Client
+  @client: ::ACP::AgentConnection::Client
 
   # @dynamic client=
-  attr_writer client: ::ACP::AgentConnection::_Client
+  attr_writer client: ::ACP::AgentConnection::Client
 
-  # @rbs client: ::ACP::AgentConnection::_Client
+  # @rbs client: ::ACP::AgentConnection::Client
   # @rbs return: void
-  def initialize: (client: ::ACP::AgentConnection::_Client) -> void
+  def initialize: (client: ::ACP::AgentConnection::Client) -> void
 
   # A request to the client names its session, so nothing can be relayed
   # until the agent sets the id.

@@ -18,7 +18,7 @@ class Riffer::Rig::ACP
   # @rbs @cwd: String
   # @rbs @build: ^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime
   # @rbs @adopt: (^(String) -> Riffer::Rig::Runtime?)?
-  # @rbs @client: ::ACP::AgentConnection::_Client?
+  # @rbs @client: ::ACP::AgentConnection::Client?
   # @rbs @sessions: Hash[String, Riffer::Rig::Runtime]
   # @rbs @hosts: Hash[String, Riffer::Rig::ACP::Host]
   # @rbs @lock: Thread::Mutex
@@ -219,7 +219,7 @@ class Riffer::Rig::ACP
 
   private
 
-  # @rbs return: ::ACP::AgentConnection::_Client
+  # @rbs return: ::ACP::AgentConnection::Client
   def client
     @client or raise 'ACP agent used before ::ACP::AgentConnection.start built it'
   end
