@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Terminal::JobCounter
-  # @rbs @footer: Riffer::Rig::Terminal::JobCounter::_Footer
+  # @rbs @footer: Riffer::Rig::Terminal::Frame
   # @rbs @mutex: Mutex
 
-  # @rbs footer: Riffer::Rig::Terminal::JobCounter::_Footer
+  # @rbs footer: Riffer::Rig::Terminal::Frame
   # @rbs return: void
   def initialize(footer:)
     @footer = footer
     @mutex = Mutex.new
   end
 
-  # @rbs runtime: Riffer::Rig::Terminal::JobCounter::_Runtime
+  # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void
   def watch(runtime)
     # Nothing announces a job starting; the tool result of the call that
@@ -23,7 +23,7 @@ class Riffer::Rig::Terminal::JobCounter
 
   private
 
-  # @rbs runtime: Riffer::Rig::Terminal::JobCounter::_Runtime
+  # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void
   def refresh(runtime)
     # A job exits on its own thread: without the lock, a count read before
