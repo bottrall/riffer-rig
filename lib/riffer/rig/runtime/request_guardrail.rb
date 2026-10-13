@@ -16,7 +16,7 @@ class Riffer::Rig::Runtime::RequestGuardrail < Riffer::Guardrail
   # @rbs context: untyped
   # @rbs return: Riffer::Guardrails::Result
   def process_input(messages, context:)
-    verdict = @hooks.before_request(messages)
+    verdict = Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { @hooks.before_request(messages) }
     return block(verdict.reason) if verdict.is_a?(Riffer::Rig::Runtime::Blocked)
 
     verdict.equal?(messages) ? pass(messages) : transform(verdict.dup)

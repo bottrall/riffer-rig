@@ -50,6 +50,9 @@ class Riffer::Rig::Terminal::Smoother
   def drain: () -> void
 
   # @rbs return: void
+  def discard: () -> void
+
+  # @rbs return: void
   def finish: () -> void
 
   private

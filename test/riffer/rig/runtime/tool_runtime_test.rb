@@ -50,6 +50,17 @@ describe Riffer::Rig::Runtime::ToolRuntime do
     ->(_event) { [:block, 'no'] }
   end
 
+  it 'holds an abort off until the batch has run' do
+    abort = Riffer::Rig::Runtime::Abort.new
+    aborting = lambda do |_event|
+      abort.fire
+      sleep(0)
+    end
+    results = abort.window { execute(tool_runtime(before_tool_call: [aborting]), call('a')) }
+
+    assert_equal 'echo: hi', results.dig(0, 1).content
+  end
+
   it 'runs a batch one call at a time' do
     execute(tool_runtime, call('a'), call('b'))
 

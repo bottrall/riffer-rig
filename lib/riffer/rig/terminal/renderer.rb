@@ -53,6 +53,7 @@ class Riffer::Rig::Terminal::Renderer
     when Riffer::StreamEvents::ToolCallDone
       render_tool_activity(TOOL_CALL_INDENT) { "⚙ #{event.name}(#{format_arguments(event.arguments)})" }
     when Riffer::StreamEvents::Interrupt
+      discard_prose
       render_block(0) { @theme.dim("[interrupted: #{event.reason}]") }
     end
   end
@@ -179,6 +180,9 @@ class Riffer::Rig::Terminal::Renderer
     def drain = nil
 
     # @rbs return: nil
+    def discard = nil
+
+    # @rbs return: nil
     def finish = nil
   end
 
@@ -286,6 +290,12 @@ class Riffer::Rig::Terminal::Renderer
     emit = @wrapper.flush
     @smoother << emit unless emit.empty?
     @smoother.drain
+  end
+
+  # @rbs return: void
+  def discard_prose
+    @wrapper = new_wrapper
+    @smoother.discard
   end
 
   # @rbs return: Riffer::Rig::Terminal::Wrapper

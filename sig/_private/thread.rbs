@@ -1,0 +1,6 @@
+# RBS's core `thread` signatures give handle_interrupt no block.
+
+class Thread
+  def self.handle_interrupt: [T] (Hash[singleton(Exception), Symbol] mask) { () -> T } -> T
+                           | ...
+end

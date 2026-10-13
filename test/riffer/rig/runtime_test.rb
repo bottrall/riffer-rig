@@ -1916,6 +1916,209 @@ describe Riffer::Rig::Runtime do
       assert_equal [:interrupted, 'cancelled'], [outcome.reason, outcome.detail]
     end
 
+    describe 'from inside one of the turn\'s own callbacks' do
+      # Cancels on the turn's thread, then makes the blocking call an abort
+      # would land in were the callback not shielded.
+      def cancel_and_block
+        lambda do |*|
+          @cancelling.cancel
+          sleep(0)
+        end
+      end
+
+      def cancelling_on(hook)
+        on_hook = cancel_and_block
+        extension = Riffer::Rig::Extension.new('canceller') { |rig| rig.on(hook, &on_hook) }
+        @cancelling = Riffer::Rig::Runtime.new('mock/test', extensions: [extension])
+      end
+
+      it 'records the prompt a before_prompt hook was vetting' do
+        cancelling_on(:before_prompt).ask('go')
+
+        assert_equal ['go'], @cancelling.agent.session.messages.grep(Riffer::Messages::User).map(&:content)
+      end
+
+      it 'forwards the event a stream hook was observing' do
+        events = []
+        cancelling_on(:stream).prompt('go') { |event| events << event }
+
+        assert_includes events.map(&:class), Riffer::StreamEvents::TextDelta
+      end
+
+      it 'delivers the message to the observers after the one that cancelled' do
+        @cancelling = Riffer::Rig::Runtime.new('mock/test')
+        on_assistant = cancel_and_block
+        seen = []
+        @cancelling.on_message { |message| on_assistant.call if message.is_a?(Riffer::Messages::Assistant) }
+        @cancelling.on_message { |message| seen << message.role }
+        @cancelling.ask('go')
+
+        assert_equal %i[user assistant], seen
+      end
+    end
+
+    describe 'while the turn is stalled' do
+      before do
+        @stalling = Riffer::Rig::Runtime.new('mock/test', extensions: [@gate_extension])
+        @stalled = Queue.new
+      end
+
+      def script_stream(*steps)
+        @stalling.agent.provider.define_singleton_method(:execute_stream) do |params, yielder|
+          step = steps.shift
+          step ? step.call(yielder) : super(params, yielder)
+        end
+      end
+
+      # A step that leaves the request to the provider's stubbed response.
+      def stubbed
+        nil
+      end
+
+      # Streams the deltas, then blocks the way a provider's HTTP read does.
+      def stall_after(*deltas)
+        lambda do |yielder|
+          deltas.each { |delta| yielder << Riffer::StreamEvents::TextDelta.new(delta) }
+          @stalled << true
+          Queue.new.pop(timeout: 5)
+        end
+      end
+
+      def cancel_once_stalled
+        Thread.new do
+          @stalled.pop
+          @stalling.cancel
+        end
+      end
+
+      def aborted_turn_events
+        canceller = cancel_once_stalled
+        events = []
+        @stalling.prompt('go') { |event| events << event }
+        canceller.join
+        events
+      end
+
+      def aborted_ask
+        canceller = cancel_once_stalled
+        response = @stalling.ask('go')
+        canceller.join
+        response
+      end
+
+      def replies
+        @stalling.agent.session.messages.grep(Riffer::Messages::Assistant).map(&:content)
+      end
+
+      it 'heals the tool calls an abort inside a tool orphaned' do
+        stalled = @stalled
+        exposed = Class.new(Riffer::Tool) do
+          identifier 'exposed'
+          description 'Blocks with the abort let through, as a provider SDK call inside a tool does'
+
+          define_method(:call) do |**|
+            stalled << true
+            Thread.handle_interrupt(Object => :immediate) { Queue.new.pop(timeout: 5) }
+            text('released')
+          end
+        end
+        extension = Riffer::Rig::Extension.new('exposed') { |rig| rig.tool exposed }
+        @stalling = Riffer::Rig::Runtime.new('mock/test', extensions: [extension])
+        @stalling.agent.provider.stub_response('', tool_calls: [{ name: 'exposed', arguments: '{}' }])
+        aborted_turn_events
+
+        assert_equal :interrupted, @stalling.agent.session.messages.grep(Riffer::Messages::Tool).first.error_type
+      end
+
+      it 'records no reply when nothing had streamed' do
+        script_stream(stall_after)
+        aborted_turn_events
+
+        assert_empty replies
+      end
+
+      it 'records no reply for whitespace alone' do
+        script_stream(stall_after("\n\n"))
+        aborted_turn_events
+
+        assert_empty replies
+      end
+
+      it 'keeps the text streamed so far as the reply' do
+        script_stream(stall_after('one ', 'two '))
+        aborted_turn_events
+
+        assert_equal ['one two '], replies
+      end
+
+      it 'keeps only the reply in flight' do
+        @release.close
+        @stalling.agent.provider.stub_response('Looking.', tool_calls: [{ name: 'gate', arguments: '{}' }])
+        script_stream(stubbed, stall_after('two'))
+        aborted_turn_events
+
+        assert_equal ['Looking.', 'two'], replies
+      end
+
+      it 'forgets what a failed turn streamed' do
+        failing = lambda do |yielder|
+          yielder << Riffer::StreamEvents::TextDelta.new('stale')
+          raise 'boom'
+        end
+        script_stream(failing, stall_after)
+        begin
+          @stalling.ask('go')
+        rescue RuntimeError
+          nil
+        end
+        aborted_turn_events
+
+        assert_empty replies
+      end
+
+      it 'delivers the partial reply to message observers' do
+        delivered = []
+        @stalling.on_message { |message| delivered << message }
+        script_stream(stall_after('one ', 'two '))
+        aborted_turn_events
+
+        assert_equal 'one two ', delivered.last.content
+      end
+
+      it 'emits the riffer interrupt event with the cancelled reason' do
+        script_stream(stall_after)
+        interrupt = aborted_turn_events.find { |event| event.is_a?(Riffer::StreamEvents::Interrupt) }
+
+        assert_equal :cancelled, interrupt.reason
+      end
+
+      it 'answers an aborted ask with the partial reply' do
+        script_stream(stall_after('one '))
+
+        assert_equal 'one ', aborted_ask.content
+      end
+
+      it 'reports an aborted ask as interrupted with the cancelled detail' do
+        script_stream(stall_after('one '))
+        outcome = aborted_ask.outcome
+
+        assert_equal [:interrupted, 'cancelled'], [outcome.reason, outcome.detail]
+      end
+
+      it 'ends a turn waiting on its first token with the cancelled stop reason' do
+        script_stream(stall_after)
+
+        assert_equal :cancelled, aborted_turn_events.last.stop_reason
+      end
+
+      it 'prompts again after an aborted turn' do
+        script_stream(stall_after('one '))
+        aborted_turn_events
+
+        assert_equal :completed, @stalling.ask('again').outcome.reason
+      end
+    end
+
     it 'kills outstanding background jobs on cancel' do
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
       exits = job_exits(runtime)

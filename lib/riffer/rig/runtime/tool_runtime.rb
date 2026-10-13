@@ -19,6 +19,16 @@ class Riffer::Rig::Runtime::ToolRuntime < Riffer::Tools::Runtime
     @clock = clock
   end
 
+  # @rbs tool_calls: Array[Riffer::Messages::Assistant::ToolCall]
+  # @rbs tools: Array[singleton(Riffer::Tool)]
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs assistant_message: Riffer::Messages::Assistant?
+  # @rbs tags: Hash[String, String]
+  # @rbs return: Array[[Riffer::Messages::Assistant::ToolCall, Riffer::Tools::Response]]
+  def execute(tool_calls, tools:, context:, assistant_message: nil, tags: {})
+    Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { super }
+  end
+
   private
 
   # @rbs tool_call: Riffer::Messages::Assistant::ToolCall

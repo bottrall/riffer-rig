@@ -102,6 +102,9 @@ class Riffer::Rig::Terminal::Renderer
     def drain: () -> nil
 
     # @rbs return: nil
+    def discard: () -> nil
+
+    # @rbs return: nil
     def finish: () -> nil
   end
 
@@ -151,6 +154,9 @@ class Riffer::Rig::Terminal::Renderer
 
   # @rbs return: void
   def flush_prose: () -> void
+
+  # @rbs return: void
+  def discard_prose: () -> void
 
   # @rbs return: Riffer::Rig::Terminal::Wrapper
   def new_wrapper: () -> Riffer::Rig::Terminal::Wrapper

@@ -61,8 +61,8 @@ class Riffer::Rig::Terminal::Smoother
       else
         @io.print(content)
         @io.flush
+        @newline_pending = !content.end_with?("\n")
       end
-      @newline_pending = !content.end_with?("\n")
     end
     self
   end
@@ -103,6 +103,11 @@ class Riffer::Rig::Terminal::Smoother
       @io.print("\n")
       @io.flush
     end
+  end
+
+  # @rbs return: void
+  def discard
+    @mutex.synchronize { @backlog.clear }
   end
 
   # @rbs return: void

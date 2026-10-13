@@ -13,6 +13,14 @@ class Riffer::Rig::Runtime::ToolRuntime < Riffer::Tools::Runtime
   # @rbs return: void
   def initialize: (Riffer::Rig::Runtime::Hooks hooks, emit: ^(Riffer::Rig::Events::_Event) -> void, clock: ^() -> Float) -> void
 
+  # @rbs tool_calls: Array[Riffer::Messages::Assistant::ToolCall]
+  # @rbs tools: Array[singleton(Riffer::Tool)]
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs assistant_message: Riffer::Messages::Assistant?
+  # @rbs tags: Hash[String, String]
+  # @rbs return: Array[[Riffer::Messages::Assistant::ToolCall, Riffer::Tools::Response]]
+  def execute: (Array[Riffer::Messages::Assistant::ToolCall] tool_calls, tools: Array[singleton(Riffer::Tool)], context: Riffer::Agent::Context?, ?assistant_message: Riffer::Messages::Assistant?, ?tags: Hash[String, String]) -> Array[[ Riffer::Messages::Assistant::ToolCall, Riffer::Tools::Response ]]
+
   private
 
   # @rbs tool_call: Riffer::Messages::Assistant::ToolCall

@@ -175,6 +175,24 @@ describe Riffer::Rig::Terminal::Smoother do
     assert_equal '', @io.string
   end
 
+  it 'discard drops the backlog unprinted' do
+    @smoother << "unrevealed\n"
+    @smoother.discard
+    @smoother.drain
+
+    assert_equal '', @io.string
+  end
+
+  it 'drain closes the line a discard cut short' do
+    @smoother << ('a' * 120)
+    @smoother.tick
+    @smoother << "more\n"
+    @smoother.discard
+    @smoother.drain
+
+    assert_equal "aa\n", @io.string
+  end
+
   it 'finish flushes remaining backlog after stopping the thread' do
     @smoother << 'abcdef'
     @smoother.start
