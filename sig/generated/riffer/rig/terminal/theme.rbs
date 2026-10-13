@@ -10,10 +10,10 @@ class Riffer::Rig::Terminal::Theme
   # @rbs return: void
   def initialize: (enabled: bool) -> void
 
-  # @rbs io: IO
+  # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs no_color: bool
   # @rbs return: Riffer::Rig::Terminal::Theme
-  def self.for: (IO io, ?no_color: bool) -> Riffer::Rig::Terminal::Theme
+  def self.for: (Riffer::Rig::Terminal::_Output io, ?no_color: bool) -> Riffer::Rig::Terminal::Theme
 
   # @rbs text: String
   # @rbs rgb: Array[Integer]

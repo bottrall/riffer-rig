@@ -2,6 +2,7 @@
 
 require 'test_helper'
 require 'stringio'
+require_relative '../../support/terminal_pty'
 
 describe Riffer::Rig::CLI do
   before do
@@ -34,6 +35,20 @@ describe Riffer::Rig::CLI do
 
       def winsize = [24, 80]
     end.new
+  end
+
+  def start_on_pty(env, script)
+    TerminalPty.drive(script) do |tty|
+      Riffer::Rig::CLI.start(
+        [],
+        input: tty,
+        output: tty,
+        error: @error,
+        env: Riffer::Rig::Env.load(env),
+        cwd: @cwd,
+        home: @home
+      )
+    end
   end
 
   def model_env
@@ -217,6 +232,18 @@ describe Riffer::Rig::CLI do
     start(env: { 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test', 'NO_COLOR' => '1' }, output: output)
 
     refute_includes output.string, "\e["
+  end
+
+  it 'reads keys under RIFFER_TICKER' do
+    output = start_on_pty(model_env.merge('RIFFER_TICKER' => '1'), ->(pty) { pty.type("/exit\r") })
+
+    assert_includes output, Riffer::Rig::Terminal::KeyPipeline::BRACKETED_PASTE_ON
+  end
+
+  it 'reads lines without RIFFER_TICKER' do
+    output = start_on_pty(model_env, ->(pty) { pty.feed("/exit\r") })
+
+    refute_includes output, Riffer::Rig::Terminal::KeyPipeline::BRACKETED_PASTE_ON
   end
 
   it 'opens the picker for a bare -r' do

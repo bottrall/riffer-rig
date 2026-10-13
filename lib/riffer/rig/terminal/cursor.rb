@@ -5,13 +5,13 @@ class Riffer::Rig::Terminal::Cursor
 
   SHOW = "\e[?25h" #: String
 
-  # @rbs @io: IO
+  # @rbs @io: Riffer::Rig::Terminal::_Output
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @process: singleton(Process)
   # @rbs @mutex: Mutex
   # @rbs @replaced: Hash[String, Signal::trap_command]
 
-  # @rbs io: IO
+  # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs process: singleton(Process)
   # @rbs return: void

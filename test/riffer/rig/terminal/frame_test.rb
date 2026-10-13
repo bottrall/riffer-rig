@@ -395,6 +395,27 @@ describe Riffer::Rig::Terminal::Frame do
     end
   end
 
+  describe '#measure' do
+    it 'is nil when the io is not a tty' do
+      assert_nil frame(StringIO.new).measure
+    end
+
+    it 'is the rows and columns of the tty' do
+      assert_equal [24, 80], frame(tty(80)).measure
+    end
+
+    it 'is nil when the tty reports zero columns' do
+      assert_nil frame(tty(0)).measure
+    end
+
+    it 'is nil when the window size cannot be queried' do
+      io = tty(80)
+      io.define_singleton_method(:winsize) { raise Errno::ENOTTY }
+
+      assert_nil frame(io).measure
+    end
+  end
+
   describe '#resize' do
     it 'refits the footer when the terminal is resized' do
       frame = on_pty(columns: 40)

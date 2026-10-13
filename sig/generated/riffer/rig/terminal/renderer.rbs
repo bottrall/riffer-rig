@@ -23,15 +23,15 @@ class Riffer::Rig::Terminal::Renderer
 
   @theme: Riffer::Rig::Terminal::Theme
 
-  @io: IO
+  @io: Riffer::Rig::Terminal::_Output
 
-  # @rbs io: IO
+  # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
   # @rbs cursor: Riffer::Rig::Terminal::Cursor
   # @rbs width: Integer?
   # @rbs return: void
-  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme, ?smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother, ?cursor: Riffer::Rig::Terminal::Cursor, ?width: Integer?) -> void
+  def initialize: (?io: Riffer::Rig::Terminal::_Output, ?theme: Riffer::Rig::Terminal::Theme, ?smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother, ?cursor: Riffer::Rig::Terminal::Cursor, ?width: Integer?) -> void
 
   # @rbs event: Riffer::StreamEvents::TextDelta | Riffer::StreamEvents::ToolCallDone | Riffer::StreamEvents::Interrupt
   # @rbs return: void
@@ -62,6 +62,10 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs return: void
   def prompt: () -> void
 
+  # @rbs line: String
+  # @rbs return: void
+  def echo: (String line) -> void
+
   # @rbs question: String?
   # @rbs options: Array[String]?
   # @rbs secret: bool
@@ -85,11 +89,11 @@ class Riffer::Rig::Terminal::Renderer
   def render_tool_result: (Riffer::Messages::Base message) -> void
 
   class PassThroughSmoother
-    @io: IO
+    @io: Riffer::Rig::Terminal::_Output
 
-    # @rbs io: IO
+    # @rbs io: Riffer::Rig::Terminal::_Output
     # @rbs return: void
-    def initialize: (IO io) -> void
+    def initialize: (Riffer::Rig::Terminal::_Output io) -> void
 
     # @rbs content: String
     # @rbs return: self

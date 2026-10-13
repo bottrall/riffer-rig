@@ -5,7 +5,7 @@ class Riffer::Rig::Terminal::Cursor
 
   SHOW: String
 
-  @io: IO
+  @io: Riffer::Rig::Terminal::_Output
 
   @theme: Riffer::Rig::Terminal::Theme
 
@@ -15,11 +15,11 @@ class Riffer::Rig::Terminal::Cursor
 
   @replaced: Hash[String, Signal::trap_command]
 
-  # @rbs io: IO
+  # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs process: singleton(Process)
   # @rbs return: void
-  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme, ?process: singleton(Process)) -> void
+  def initialize: (?io: Riffer::Rig::Terminal::_Output, ?theme: Riffer::Rig::Terminal::Theme, ?process: singleton(Process)) -> void
 
   # @rbs return: void
   def hide: () -> void

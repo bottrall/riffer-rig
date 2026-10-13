@@ -29,6 +29,20 @@ describe Riffer::Rig::Env do
     end
   end
 
+  describe '#ticker' do
+    it 'is true when RIFFER_TICKER is set' do
+      assert Riffer::Rig::Env.new('RIFFER_TICKER' => '1').ticker
+    end
+
+    it 'is false when RIFFER_TICKER is blank' do
+      refute Riffer::Rig::Env.new('RIFFER_TICKER' => '').ticker
+    end
+
+    it 'is false when RIFFER_TICKER is unset' do
+      refute Riffer::Rig::Env.new({}).ticker
+    end
+  end
+
   describe '.load' do
     it 'returns the environment when RIFFER_MODEL is unset' do
       assert_instance_of Riffer::Rig::Env, Riffer::Rig::Env.load({})

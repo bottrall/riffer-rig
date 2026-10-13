@@ -14,7 +14,7 @@ class Riffer::Rig::Terminal::Renderer
 
   TOOL_RESULT_INDENT = 6 #: Integer
 
-  # @rbs @io: IO
+  # @rbs @io: Riffer::Rig::Terminal::_Output
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
   # @rbs @cursor: Riffer::Rig::Terminal::Cursor
@@ -22,7 +22,7 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs @width: Integer?
   # @rbs @wrapper: Riffer::Rig::Terminal::Wrapper
 
-  # @rbs io: IO
+  # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
   # @rbs cursor: Riffer::Rig::Terminal::Cursor
@@ -107,6 +107,12 @@ class Riffer::Rig::Terminal::Renderer
     @io.flush
   end
 
+  # @rbs line: String
+  # @rbs return: void
+  def echo(line)
+    render_block(0) { "#{@theme.pink('›')} #{line}" }
+  end
+
   # @rbs question: String?
   # @rbs options: Array[String]?
   # @rbs secret: bool
@@ -158,9 +164,9 @@ class Riffer::Rig::Terminal::Renderer
   end
 
   class PassThroughSmoother
-    # @rbs @io: IO
+    # @rbs @io: Riffer::Rig::Terminal::_Output
 
-    # @rbs io: IO
+    # @rbs io: Riffer::Rig::Terminal::_Output
     # @rbs return: void
     def initialize(io) = @io = io
 

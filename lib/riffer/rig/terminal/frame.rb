@@ -143,16 +143,6 @@ class Riffer::Rig::Terminal::Frame
     Signal.trap('WINCH', @previous_resize)
   end
 
-  private
-
-  # @rbs return: void
-  def resize
-    @mutex.synchronize do
-      @height, @width = measure || [@height, @width]
-      redraw
-    end
-  end
-
   # winsize raises on ttys with no queryable window size and some pty
   # wrappers report zero columns; a footer that cannot be fitted to the
   # width would wrap and strand the cursor, so neither gets one.
@@ -164,6 +154,16 @@ class Riffer::Rig::Terminal::Frame
     size[1].positive? ? size : nil
   rescue SystemCallError
     nil
+  end
+
+  private
+
+  # @rbs return: void
+  def resize
+    @mutex.synchronize do
+      @height, @width = measure || [@height, @width]
+      redraw
+    end
   end
 
   # @rbs return: void

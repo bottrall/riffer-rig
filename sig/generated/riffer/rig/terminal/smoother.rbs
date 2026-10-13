@@ -28,13 +28,13 @@ class Riffer::Rig::Terminal::Smoother
 
   @theme: Riffer::Rig::Terminal::Theme
 
-  @io: IO
+  @io: Riffer::Rig::Terminal::_Output
 
-  # @rbs io: IO
+  # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs clock: singleton(Kernel)
   # @rbs return: void
-  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme, ?clock: singleton(Kernel)) -> void
+  def initialize: (?io: Riffer::Rig::Terminal::_Output, ?theme: Riffer::Rig::Terminal::Theme, ?clock: singleton(Kernel)) -> void
 
   # @rbs return: void
   def start: () -> void

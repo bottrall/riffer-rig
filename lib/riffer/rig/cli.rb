@@ -78,6 +78,7 @@ module Riffer::Rig::CLI
       output: output,
       version: Riffer::Rig::VERSION,
       no_color: env.is_a?(Riffer::Rig::Env) && env.no_color,
+      ticker: env.is_a?(Riffer::Rig::Env) && env.ticker,
       sessions: Sessions.new(flags: flags, env: env, cwd: cwd, home: home)
     ).run(open_picker: flags.resume == '')
   end

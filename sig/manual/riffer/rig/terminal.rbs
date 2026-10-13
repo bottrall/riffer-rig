@@ -13,4 +13,14 @@ class Riffer::Rig::Terminal
   interface _Prompter
     def ask: (String? question, options: Array[String]?, secret: bool) -> String?
   end
+
+  # What the terminal writes to: an IO, or the Console that keeps the same
+  # writes above the footer.
+  interface _Output
+    def print: (*String chunks) -> void
+    def puts: (?String line) -> void
+    def flush: () -> void
+    def tty?: () -> bool
+    def winsize: () -> [Integer, Integer]
+  end
 end
