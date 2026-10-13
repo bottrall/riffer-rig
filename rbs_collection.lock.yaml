@@ -22,7 +22,7 @@ gems:
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    revision: c69c75ba79d7c19870f8d0e6fa7fe2c1d356e5ae
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: digest
@@ -34,7 +34,7 @@ gems:
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    revision: c69c75ba79d7c19870f8d0e6fa7fe2c1d356e5ae
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: ffi
@@ -62,7 +62,7 @@ gems:
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    revision: c69c75ba79d7c19870f8d0e6fa7fe2c1d356e5ae
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: logger
@@ -70,7 +70,7 @@ gems:
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    revision: c69c75ba79d7c19870f8d0e6fa7fe2c1d356e5ae
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: minitest
@@ -78,7 +78,7 @@ gems:
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    revision: c69c75ba79d7c19870f8d0e6fa7fe2c1d356e5ae
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: monitor
@@ -97,6 +97,10 @@ gems:
   version: 0.103.0
   source:
     type: rubygems
+- name: pathname
+  version: '0'
+  source:
+    type: stdlib
 - name: prism
   version: 1.9.0
   source:
@@ -106,7 +110,7 @@ gems:
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    revision: c69c75ba79d7c19870f8d0e6fa7fe2c1d356e5ae
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: regexp_parser
@@ -114,7 +118,7 @@ gems:
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    revision: c69c75ba79d7c19870f8d0e6fa7fe2c1d356e5ae
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: riffer
@@ -126,7 +130,7 @@ gems:
   source:
     type: git
     name: ruby/gem_rbs_collection
-    revision: 3913b7dffb65bdffdfe5cb9095108f932e85433b
+    revision: c69c75ba79d7c19870f8d0e6fa7fe2c1d356e5ae
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: timeout
@@ -137,4 +141,12 @@ gems:
   version: '0'
   source:
     type: stdlib
+- name: zeitwerk
+  version: '2.8'
+  source:
+    type: git
+    name: ruby/gem_rbs_collection
+    revision: c69c75ba79d7c19870f8d0e6fa7fe2c1d356e5ae
+    remote: https://github.com/ruby/gem_rbs_collection.git
+    repo_dir: gems
 gemfile_lock_path: Gemfile.lock
