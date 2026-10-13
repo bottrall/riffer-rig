@@ -9,7 +9,7 @@ class Riffer::Rig::Terminal::Cursor
 
   @theme: Riffer::Rig::Terminal::Theme
 
-  @process: _Process
+  @process: singleton(Process)
 
   @mutex: Mutex
 
@@ -17,9 +17,9 @@ class Riffer::Rig::Terminal::Cursor
 
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs process: _Process
+  # @rbs process: singleton(Process)
   # @rbs return: void
-  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme, ?process: _Process) -> void
+  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme, ?process: singleton(Process)) -> void
 
   # @rbs return: void
   def hide: () -> void

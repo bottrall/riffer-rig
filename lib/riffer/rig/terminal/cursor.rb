@@ -7,13 +7,13 @@ class Riffer::Rig::Terminal::Cursor
 
   # @rbs @io: IO
   # @rbs @theme: Riffer::Rig::Terminal::Theme
-  # @rbs @process: _Process
+  # @rbs @process: singleton(Process)
   # @rbs @mutex: Mutex
   # @rbs @replaced: Hash[String, Signal::trap_command]
 
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs process: _Process
+  # @rbs process: singleton(Process)
   # @rbs return: void
   def initialize(io: $stdout, theme: Riffer::Rig::Terminal::Theme.for(io), process: Process)
     @io = io
