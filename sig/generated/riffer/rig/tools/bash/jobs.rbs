@@ -25,11 +25,11 @@ class Riffer::Rig::Tools::Bash::Jobs
 
   @jobs: Hash[String, Riffer::Rig::Tools::Bash::Job]
 
-  @inbox: Riffer::Rig::Tools::Bash::_Inbox
+  @inbox: Riffer::Rig::Runtime::JobInbox
 
-  # @rbs inbox: Riffer::Rig::Tools::Bash::_Inbox
+  # @rbs inbox: Riffer::Rig::Runtime::JobInbox
   # @rbs return: void
-  def initialize: (Riffer::Rig::Tools::Bash::_Inbox inbox) -> void
+  def initialize: (Riffer::Rig::Runtime::JobInbox inbox) -> void
 
   # @rbs pid: Integer
   # @rbs command: String

@@ -5,15 +5,15 @@ class Riffer::Rig::Terminal::Autocomplete
 
   QUERY = %r{\A/(\S*)\z} #: Regexp
 
-  # @rbs @commands: Array[_Command]
+  # @rbs @commands: Array[Riffer::Rig::Command]
   # @rbs @index: Integer
   # @rbs @dismissed: bool
 
   # @dynamic editor, matches
   attr_reader :editor #: Riffer::Rig::Terminal::LineEditor
-  attr_reader :matches #: Array[_Command]
+  attr_reader :matches #: Array[Riffer::Rig::Command]
 
-  # @rbs commands: Array[_Command]
+  # @rbs commands: Array[Riffer::Rig::Command]
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
   # @rbs index: Integer
   # @rbs dismissed: bool
@@ -32,7 +32,7 @@ class Riffer::Rig::Terminal::Autocomplete
     matches.any?
   end
 
-  # @rbs return: _Command?
+  # @rbs return: Riffer::Rig::Command?
   def selected
     matches[@index]
   end
@@ -77,7 +77,7 @@ class Riffer::Rig::Terminal::Autocomplete
   end
 
   # @rbs query: String?
-  # @rbs return: Array[_Command]
+  # @rbs return: Array[Riffer::Rig::Command]
   def ranked(query)
     return [] unless query
 
