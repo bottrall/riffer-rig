@@ -1917,11 +1917,10 @@ describe Riffer::Rig::Runtime do
     end
 
     describe 'from inside one of the turn\'s own callbacks' do
-      # Cancels on the turn's thread, then makes the blocking call an abort
-      # would land in were the callback not shielded.
       def cancel_and_block
         lambda do |*|
           @cancelling.cancel
+          # Where an abort would land were the callback not shielded.
           sleep(0)
         end
       end
@@ -1975,11 +1974,11 @@ describe Riffer::Rig::Runtime do
         nil
       end
 
-      # Streams the deltas, then blocks the way a provider's HTTP read does.
       def stall_after(*deltas)
         lambda do |yielder|
           deltas.each { |delta| yielder << Riffer::StreamEvents::TextDelta.new(delta) }
           @stalled << true
+          # Stands in for the provider's HTTP read.
           Queue.new.pop(timeout: 5)
         end
       end
