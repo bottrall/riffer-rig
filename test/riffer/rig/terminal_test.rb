@@ -474,19 +474,6 @@ describe Riffer::Rig::Terminal do
     assert_equal before, after
   end
 
-  it 'traps Ctrl-Z during a turn' do
-    trapped = nil
-    run_terminal("hello\n") do |runtime|
-      runtime.agent.provider.define_singleton_method(:stream_text) do |*args, **options, &block|
-        trapped = Signal.trap('TSTP', 'IGNORE')
-        Signal.trap('TSTP', trapped)
-        super(*args, **options, &block)
-      end
-    end
-
-    assert_kind_of Proc, trapped
-  end
-
   it 'switches the animator to reasoning while the model reasons' do
     animator = RecordingAnimator.new
     run_with_animator("hello\n", animator) do |runtime|

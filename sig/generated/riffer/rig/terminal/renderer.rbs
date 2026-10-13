@@ -17,7 +17,7 @@ class Riffer::Rig::Terminal::Renderer
 
   @prose_gap_pending: bool
 
-  @cursor: Riffer::Rig::Terminal::_Cursor
+  @cursor: Riffer::Rig::Terminal::Cursor
 
   @smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
 
@@ -28,10 +28,10 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
-  # @rbs cursor: Riffer::Rig::Terminal::_Cursor
+  # @rbs cursor: Riffer::Rig::Terminal::Cursor
   # @rbs width: Integer?
   # @rbs return: void
-  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme, ?smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother, ?cursor: Riffer::Rig::Terminal::_Cursor, ?width: Integer?) -> void
+  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme, ?smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother, ?cursor: Riffer::Rig::Terminal::Cursor, ?width: Integer?) -> void
 
   # @rbs event: Riffer::StreamEvents::TextDelta | Riffer::StreamEvents::ToolCallDone | Riffer::StreamEvents::Interrupt
   # @rbs return: void

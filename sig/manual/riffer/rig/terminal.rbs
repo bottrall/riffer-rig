@@ -10,9 +10,4 @@ class Riffer::Rig::Terminal
     def delete: (::Riffer::Rig::Hosts::_Host host, String id) -> void
     def missing: (?String id) -> String
   end
-
-  interface _Cursor
-    def hide: () -> void
-    def show: () -> void
-  end
 end

@@ -9,10 +9,17 @@ class Riffer::Rig::Terminal::Cursor
 
   @theme: Riffer::Rig::Terminal::Theme
 
+  @process: _Process
+
+  @mutex: Mutex
+
+  @replaced: Hash[String, Signal::trap_command]
+
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs process: _Process
   # @rbs return: void
-  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme) -> void
+  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme, ?process: _Process) -> void
 
   # @rbs return: void
   def hide: () -> void
@@ -28,4 +35,15 @@ class Riffer::Rig::Terminal::Cursor
 
   # @rbs return: bool
   def enabled?: () -> bool
+
+  # @rbs signal: String
+  # @rbs &block: () -> void
+  # @rbs return: Signal::trap_command
+  def on: (String signal) { () -> void } -> Signal::trap_command
+
+  # @rbs return: void
+  def suspend: () -> void
+
+  # @rbs return: void
+  def resume: () -> void
 end

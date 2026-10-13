@@ -17,7 +17,7 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs @io: IO
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
-  # @rbs @cursor: Riffer::Rig::Terminal::_Cursor
+  # @rbs @cursor: Riffer::Rig::Terminal::Cursor
   # @rbs @prose_gap_pending: bool
   # @rbs @width: Integer?
   # @rbs @wrapper: Riffer::Rig::Terminal::Wrapper
@@ -25,7 +25,7 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
-  # @rbs cursor: Riffer::Rig::Terminal::_Cursor
+  # @rbs cursor: Riffer::Rig::Terminal::Cursor
   # @rbs width: Integer?
   # @rbs return: void
   def initialize(
