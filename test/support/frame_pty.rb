@@ -16,11 +16,21 @@ class FramePty
     @slave.raw!
     @slave.winsize = [rows, columns]
     @screen = Screen.new(rows: rows, columns: columns)
+    @transcript = +''
   end
 
   def screen
-    @screen.write(@master.read_nonblock(65_536).force_encoding(Encoding::UTF_8)) while @master.wait_readable(0)
+    while @master.wait_readable(0)
+      bytes = @master.read_nonblock(65_536).force_encoding(Encoding::UTF_8)
+      @transcript << bytes
+      @screen.write(bytes)
+    end
     @screen
+  end
+
+  def transcript
+    screen
+    @transcript
   end
 
   def resize(columns)

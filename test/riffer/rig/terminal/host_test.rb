@@ -2,24 +2,27 @@
 
 require 'test_helper'
 require 'stringio'
+require_relative '../../../support/prompter_pty'
 
 describe Riffer::Rig::Terminal::Host do
-  def host(input = '', animator: nil, tty: false)
+  after do
+    @pty&.close
+  end
+
+  def host(input = '', animator: nil)
     @output = StringIO.new
     theme = Riffer::Rig::Terminal::Theme.new(enabled: false)
+    renderer = Riffer::Rig::Terminal::Renderer.new(io: @output, theme: theme)
     Riffer::Rig::Terminal::Host.new(
-      input: tty ? terminal_input(input) : StringIO.new(input),
-      renderer: Riffer::Rig::Terminal::Renderer.new(io: @output, theme: theme),
+      prompter: Riffer::Rig::Terminal::BlockingPrompter.new(input: StringIO.new(input), renderer: renderer),
+      renderer: renderer,
       animator: animator || Riffer::Rig::Terminal::Animator.new(io: @output, theme: theme)
     )
   end
 
-  def terminal_input(input)
-    Class.new(StringIO) do
-      def tty? = true
-
-      def noecho = yield(self)
-    end.new(input)
+  def at_the_footer(keys)
+    @pty = PrompterPty.new
+    @pty.answering(keys) { yield @pty.host }
   end
 
   def recording_animator
@@ -56,14 +59,14 @@ describe Riffer::Rig::Terminal::Host do
     assert_equal 'sk-test', host("sk-test\n").ask('anthropic api_key', secret: true)
   end
 
-  it 'reads a secret answer typed on a terminal' do
-    assert_equal 'sk-test', host("sk-test\n", tty: true).ask('anthropic api_key', secret: true)
+  it 'reads a secret answer typed at the footer' do
+    assert_equal 'sk-test', at_the_footer("sk-test\r") { |host| host.ask('anthropic api_key', secret: true) }
   end
 
-  it 'ends the hidden line on a terminal' do
-    host("sk-test\n", tty: true).ask('anthropic api_key', secret: true)
+  it 'keeps a secret answer typed at the footer off the screen' do
+    at_the_footer("sk-test\r") { |host| host.ask('anthropic api_key', secret: true) }
 
-    assert_match(/\n\z/, @output.string)
+    refute_includes @pty.transcript, 'sk-test'
   end
 
   it 'answers nil at the end of input' do
@@ -76,6 +79,10 @@ describe Riffer::Rig::Terminal::Host do
 
   it 'maps an option number to the option' do
     assert_equal 'token', host("2\n").ask('Sign in with?', options: %w[chain token])
+  end
+
+  it 'maps an option number typed at the footer to the option' do
+    assert_equal 'token', at_the_footer("2\r") { |host| host.ask('Sign in with?', options: %w[chain token]) }
   end
 
   it 'keeps a typed option as written' do
@@ -100,6 +107,20 @@ describe Riffer::Rig::Terminal::Host do
 
   it 'declines at the end of input' do
     refute host.confirm('Trust this project?')
+  end
+
+  it 'shows the confirmation above the footer' do
+    at_the_footer("y\r") { |host| host.confirm('Trust this project?') }
+
+    assert_equal ['', 'Trust this project? [y/N]', '› y', '›', ''], @pty.screen.rows
+  end
+
+  it 'confirms on a yes typed at the footer' do
+    assert(at_the_footer("y\r") { |host| host.confirm('Trust this project?') })
+  end
+
+  it 'declines on a bare Enter at the footer' do
+    refute(at_the_footer("\r") { |host| host.confirm('Trust this project?') })
   end
 
   it 'prints the notification' do

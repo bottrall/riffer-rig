@@ -17,14 +17,14 @@ class Riffer::Rig::Terminal::Picker
 
   @renderer: Riffer::Rig::Terminal::Renderer
 
-  @input: IO
+  @prompter: Riffer::Rig::Terminal::_Prompter
 
-  # @rbs input: IO
+  # @rbs prompter: Riffer::Rig::Terminal::_Prompter
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs return: void
-  def initialize: (input: IO, renderer: Riffer::Rig::Terminal::Renderer, host: Riffer::Rig::Hosts::_Host, sessions: Riffer::Rig::Terminal::_Sessions) -> void
+  def initialize: (prompter: Riffer::Rig::Terminal::_Prompter, renderer: Riffer::Rig::Terminal::Renderer, host: Riffer::Rig::Hosts::_Host, sessions: Riffer::Rig::Terminal::_Sessions) -> void
 
   # @rbs all: bool
   # @rbs return: Riffer::Rig::Terminal::Session?
@@ -47,8 +47,11 @@ class Riffer::Rig::Terminal::Picker
   # @rbs return: Array[Riffer::Rig::Terminal::Session] | :cancel
   def delete_mode: (Array[Riffer::Rig::Terminal::Session] shown, bool all) -> (Array[Riffer::Rig::Terminal::Session] | :cancel)
 
+  # @rbs header: String
+  # @rbs shown: Array[Riffer::Rig::Terminal::Session]
+  # @rbs all: bool
   # @rbs return: String | :interrupt | nil
-  def read: () -> (String | :interrupt | nil)
+  def read: (String header, Array[Riffer::Rig::Terminal::Session] shown, bool all) -> (String | :interrupt | nil)
 
   # @rbs row: Riffer::Rig::Terminal::Session
   # @rbs all: bool

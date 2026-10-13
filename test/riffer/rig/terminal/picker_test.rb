@@ -3,6 +3,7 @@
 require 'test_helper'
 require 'stringio'
 require_relative '../../../support/confirming_host'
+require_relative '../../../support/prompter_pty'
 
 class PickerInput
   def initialize(lines)
@@ -44,9 +45,15 @@ class PickerInterruptedHost
 end
 
 describe Riffer::Rig::Terminal::Picker do
+  after do
+    @pty&.close
+  end
+
   def session(title, updated: nil, cwd: '/work/proj')
     Riffer::Rig::Terminal::Session.new(id: "id-#{title}", title: title, updated: updated, cwd: cwd)
   end
+
+  def ctrl_c = "\u{3}"
 
   def ctrl_d = Riffer::Rig::Terminal::Picker::EOT
 
@@ -54,15 +61,25 @@ describe Riffer::Rig::Terminal::Picker do
     @output = StringIO.new
     @host = host
     @sessions = PickerSessions.new(rows)
+    renderer = Riffer::Rig::Terminal::Renderer.new(io: @output, theme: Riffer::Rig::Terminal::Theme.new(enabled: false))
     Riffer::Rig::Terminal::Picker.new(
-      input: PickerInput.new(lines),
-      renderer: Riffer::Rig::Terminal::Renderer.new(
-        io: @output,
-        theme: Riffer::Rig::Terminal::Theme.new(enabled: false)
-      ),
+      prompter: Riffer::Rig::Terminal::BlockingPrompter.new(input: PickerInput.new(lines), renderer: renderer),
+      renderer: renderer,
       host: @host,
       sessions: @sessions
     ).open(all: all)
+  end
+
+  def pick_at_the_footer(rows, keys)
+    @pty = PrompterPty.new
+    @sessions = PickerSessions.new(rows)
+    picker = Riffer::Rig::Terminal::Picker.new(
+      prompter: @pty.prompter,
+      renderer: @pty.renderer,
+      host: @pty.host,
+      sessions: @sessions
+    )
+    @pty.answering(keys) { picker.open(all: false) }
   end
 
   def rendered(rows, lines = [''], **)
@@ -93,16 +110,40 @@ describe Riffer::Rig::Terminal::Picker do
       assert_includes rendered([session('alpha'), session('beta')]), '2. beta'
     end
 
+    it 'lists the sessions above the footer' do
+      pick_at_the_footer([session('alpha'), session('beta')], ctrl_c)
+
+      assert_equal(
+        ['', Riffer::Rig::Terminal::Picker::HEADER, '  1. alpha — unknown', '  2. beta — unknown', '›', ''],
+        @pty.screen.rows
+      )
+    end
+
     it 'narrows the list to the titles matching the filter, ignoring case' do
       output = rendered([session('alpha'), session('Beta')], ['BET', ''])
 
       assert_includes output, '1. Beta'
     end
 
+    it 'narrows the list to a filter typed at the footer' do
+      pick_at_the_footer([session('alpha'), session('beta')], "bet\r#{ctrl_c}")
+
+      assert_equal(
+        ['› bet', '', Riffer::Rig::Terminal::Picker::HEADER, '  1. beta — unknown', '›', ''],
+        @pty.screen.rows.last(6)
+      )
+    end
+
     it 'enters delete mode on Ctrl-D' do
       output = rendered([session('alpha')], [ctrl_d, nil])
 
       assert_includes output, Riffer::Rig::Terminal::Picker::DELETE_HEADER
+    end
+
+    it 'enters delete mode on Ctrl-D at the footer' do
+      pick_at_the_footer([session('alpha')], "#{ctrl_d}#{ctrl_c}")
+
+      assert_includes @pty.screen.rows, Riffer::Rig::Terminal::Picker::DELETE_HEADER
     end
 
     it 'enters delete mode when the input closes' do
@@ -135,10 +176,20 @@ describe Riffer::Rig::Terminal::Picker do
       assert_nil pick([session('alpha')], [:interrupt, '1'])
     end
 
+    it 'returns nothing on Ctrl-C at the footer' do
+      assert_nil pick_at_the_footer([session('alpha')], ctrl_c)
+    end
+
     it 'switches to the single match on Enter' do
       beta = session('beta')
 
       assert_same beta, pick([session('alpha'), beta], ['bet', ''])
+    end
+
+    it 'switches to the single match on Enter at the footer' do
+      beta = session('beta')
+
+      assert_same beta, pick_at_the_footer([session('alpha'), beta], "bet\r\r")
     end
 
     it 'returns nothing on Enter with several matches' do
@@ -153,6 +204,12 @@ describe Riffer::Rig::Terminal::Picker do
       beta = session('beta')
 
       assert_same beta, pick([session('alpha'), beta], ['2'])
+    end
+
+    it 'switches to the session with the number typed at the footer' do
+      beta = session('beta')
+
+      assert_same beta, pick_at_the_footer([session('alpha'), beta], "2\r")
     end
 
     it 'numbers against the filtered list' do
@@ -219,8 +276,20 @@ describe Riffer::Rig::Terminal::Picker do
       assert_equal ['Delete "alpha"?'], @host.questions
     end
 
+    it 'asks before deleting above the footer' do
+      pick_at_the_footer([session('alpha')], "#{ctrl_d}1\rn\r#{ctrl_c}")
+
+      assert_includes @pty.screen.rows, 'Delete "alpha"? [y/N]'
+    end
+
     it 'deletes nothing when the confirmation is declined' do
       pick([session('alpha')], [ctrl_d, '1', ''], host: ConfirmingHost.new([false]))
+
+      assert_empty @sessions.deleted
+    end
+
+    it 'deletes nothing when the confirmation is declined at the footer' do
+      pick_at_the_footer([session('alpha')], "#{ctrl_d}1\rn\r#{ctrl_c}")
 
       assert_empty @sessions.deleted
     end
@@ -233,6 +302,12 @@ describe Riffer::Rig::Terminal::Picker do
 
     it 'deletes the confirmed session' do
       pick([session('alpha'), session('beta')], [ctrl_d, '2', nil, nil], host: ConfirmingHost.new([true]))
+
+      assert_equal ['id-beta'], @sessions.deleted
+    end
+
+    it 'deletes the session confirmed at the footer' do
+      pick_at_the_footer([session('alpha'), session('beta')], "#{ctrl_d}2\ry\r#{ctrl_c}")
 
       assert_equal ['id-beta'], @sessions.deleted
     end

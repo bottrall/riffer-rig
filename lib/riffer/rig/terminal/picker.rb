@@ -11,18 +11,18 @@ class Riffer::Rig::Terminal::Picker
 
   EOT = "\u{4}" #: String
 
-  # @rbs @input: IO
+  # @rbs @prompter: Riffer::Rig::Terminal::_Prompter
   # @rbs @renderer: Riffer::Rig::Terminal::Renderer
   # @rbs @host: Riffer::Rig::Hosts::_Host
   # @rbs @sessions: Riffer::Rig::Terminal::_Sessions
 
-  # @rbs input: IO
+  # @rbs prompter: Riffer::Rig::Terminal::_Prompter
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs return: void
-  def initialize(input:, renderer:, host:, sessions:)
-    @input = input
+  def initialize(prompter:, renderer:, host:, sessions:)
+    @prompter = prompter
     @renderer = renderer
     @host = host
     @sessions = sessions
@@ -40,8 +40,7 @@ class Riffer::Rig::Terminal::Picker
     filter = ''
     loop do
       shown = rows.filter { |row| matches?(row, filter) }
-      @renderer.question(HEADER, shown.map { |row| row_text(row, all) }, false)
-      case (line = read)
+      case (line = read(HEADER, shown, all))
       when nil, EOT
         outcome = delete_mode(shown, all)
         case outcome
@@ -93,8 +92,7 @@ class Riffer::Rig::Terminal::Picker
   # @rbs all: bool
   # @rbs return: Array[Riffer::Rig::Terminal::Session] | :cancel
   def delete_mode(shown, all)
-    @renderer.question(DELETE_HEADER, shown.map { |row| row_text(row, all) }, false)
-    line = read
+    line = read(DELETE_HEADER, shown, all)
     return :cancel unless line.is_a?(String)
 
     choice = number(line, shown)
@@ -106,9 +104,12 @@ class Riffer::Rig::Terminal::Picker
     @sessions.list(@host, all: all)
   end
 
+  # @rbs header: String
+  # @rbs shown: Array[Riffer::Rig::Terminal::Session]
+  # @rbs all: bool
   # @rbs return: String | :interrupt | nil
-  def read
-    @input.gets&.strip
+  def read(header, shown, all)
+    @prompter.ask(header, options: shown.map { |row| row_text(row, all) }, secret: false)&.strip
   rescue Interrupt
     :interrupt
   end

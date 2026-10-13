@@ -109,7 +109,8 @@ describe Riffer::Rig::Terminal do
       smoother: Riffer::Rig::Terminal::Smoother.new(io: output, theme: theme),
       cursor: Riffer::Rig::Terminal::Cursor.new(io: output, theme: theme)
     )
-    host = Riffer::Rig::Terminal::Host.new(input: input, renderer: renderer, animator: animator)
+    prompter = Riffer::Rig::Terminal::BlockingPrompter.new(input: input, renderer: renderer)
+    host = Riffer::Rig::Terminal::Host.new(prompter: prompter, renderer: renderer, animator: animator)
     Riffer::Rig::Terminal.new(
       input: input,
       host: host,
@@ -118,7 +119,7 @@ describe Riffer::Rig::Terminal do
       theme: theme,
       version: '9.9.9',
       sessions: sessions,
-      picker: Riffer::Rig::Terminal::Picker.new(input: input, renderer: renderer, host: host, sessions: sessions)
+      picker: Riffer::Rig::Terminal::Picker.new(prompter: prompter, renderer: renderer, host: host, sessions: sessions)
     ).run
   end
 

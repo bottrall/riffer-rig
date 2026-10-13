@@ -1,0 +1,23 @@
+# Generated from lib/riffer/rig/terminal/blocking_prompter.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::BlockingPrompter
+  @input: IO
+
+  @renderer: Riffer::Rig::Terminal::Renderer
+
+  # @rbs input: IO
+  # @rbs renderer: Riffer::Rig::Terminal::Renderer
+  # @rbs return: void
+  def initialize: (input: IO, renderer: Riffer::Rig::Terminal::Renderer) -> void
+
+  # @rbs question: String?
+  # @rbs options: Array[String]?
+  # @rbs secret: bool
+  # @rbs return: String?
+  def ask: (String? question, options: Array[String]?, secret: bool) -> String?
+
+  private
+
+  # @rbs return: String?
+  def read_secret: () -> String?
+end

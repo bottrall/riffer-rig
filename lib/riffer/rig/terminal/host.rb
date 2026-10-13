@@ -1,20 +1,18 @@
 # frozen_string_literal: true
 
-require 'io/console'
-
 class Riffer::Rig::Terminal::Host
   CAPABILITIES = Set[:ask, :confirm, :notify, :progress].freeze #: Set[Symbol]
 
-  # @rbs @input: IO
+  # @rbs @prompter: Riffer::Rig::Terminal::_Prompter
   # @rbs @renderer: Riffer::Rig::Terminal::Renderer
   # @rbs @animator: Riffer::Rig::Terminal::Animator
 
-  # @rbs input: IO
+  # @rbs prompter: Riffer::Rig::Terminal::_Prompter
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
   # @rbs animator: Riffer::Rig::Terminal::Animator
   # @rbs return: void
-  def initialize(input:, renderer:, animator:)
-    @input = input
+  def initialize(prompter:, renderer:, animator:)
+    @prompter = prompter
     @renderer = renderer
     @animator = animator
   end
@@ -30,8 +28,7 @@ class Riffer::Rig::Terminal::Host
   # @rbs return: String?
   def ask(question = nil, options: nil, secret: false)
     @animator.stop
-    @renderer.question(question, options, secret)
-    answer = secret ? read_secret : @input.gets
+    answer = @prompter.ask(question, options: options, secret: secret)
     return nil if answer.nil?
 
     choice(answer.strip, options)
@@ -63,16 +60,6 @@ class Riffer::Rig::Terminal::Host
   end
 
   private
-
-  # @rbs return: String?
-  def read_secret
-    return @input.gets unless @input.tty?
-
-    answer = @input.noecho(&:gets)
-    # noecho swallows the newline the user typed along with the secret.
-    @renderer.newline
-    answer
-  end
 
   # @rbs answer: String
   # @rbs options: Array[String]?

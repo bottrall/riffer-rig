@@ -3,17 +3,17 @@
 class Riffer::Rig::Terminal::Host
   CAPABILITIES: Set[Symbol]
 
-  @input: IO
+  @prompter: Riffer::Rig::Terminal::_Prompter
 
   @renderer: Riffer::Rig::Terminal::Renderer
 
   @animator: Riffer::Rig::Terminal::Animator
 
-  # @rbs input: IO
+  # @rbs prompter: Riffer::Rig::Terminal::_Prompter
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
   # @rbs animator: Riffer::Rig::Terminal::Animator
   # @rbs return: void
-  def initialize: (input: IO, renderer: Riffer::Rig::Terminal::Renderer, animator: Riffer::Rig::Terminal::Animator) -> void
+  def initialize: (prompter: Riffer::Rig::Terminal::_Prompter, renderer: Riffer::Rig::Terminal::Renderer, animator: Riffer::Rig::Terminal::Animator) -> void
 
   # @rbs return: Set[Symbol]
   def capabilities: () -> Set[Symbol]
@@ -39,9 +39,6 @@ class Riffer::Rig::Terminal::Host
   def progress: (?String? label) ?{ () -> void } -> void
 
   private
-
-  # @rbs return: String?
-  def read_secret: () -> String?
 
   # @rbs answer: String
   # @rbs options: Array[String]?
