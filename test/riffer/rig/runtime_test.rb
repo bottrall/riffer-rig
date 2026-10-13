@@ -425,8 +425,17 @@ describe Riffer::Rig::Runtime do
       tools = %i[read write edit bash].map { |name| Riffer::Rig.bundled(name) }
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [*tools, replacement])
 
-      assert_equal [Riffer::Rig::Tools::Read, Riffer::Rig::Tools::Write, Riffer::Rig::Tools::Edit, sandbox],
-                   runtime.agent.tools
+      assert_equal(
+        [
+          Riffer::Rig::Tools::Read,
+          Riffer::Rig::Tools::Write,
+          Riffer::Rig::Tools::Edit,
+          sandbox,
+          Riffer::Rig::Tools::Bash::Output,
+          Riffer::Rig::Tools::Bash::Kill
+        ],
+        runtime.agent.tools
+      )
     end
 
     it 'reports the replaced tool through notify at info level' do

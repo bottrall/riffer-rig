@@ -1,0 +1,10 @@
+# Generated from lib/riffer/rig/tools/bash/output.rb with RBS::Inline
+
+class Riffer::Rig::Tools::Bash::Output < Riffer::Tool
+  include Riffer::Rig::Tools::Bash::Truncation
+
+  # @rbs context: Riffer::Agent::Context?
+  # @rbs job_id: String
+  # @rbs return: Riffer::Tools::Response
+  def call: (context: Riffer::Agent::Context?, job_id: String) -> Riffer::Tools::Response
+end

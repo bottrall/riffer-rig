@@ -154,7 +154,7 @@ Registers a custom provider under a new prefix — the one **process-wide** seam
 
 ## Bundled extensions and replacement
 
-The four tools ship as bundled extensions — `Riffer::Rig.bundled(:read)`, `:write`, `:edit`, `:bash` — and so do the `:agents_md` prompt section, `Riffer::Rig.bundled(:agents_md)`, the skills directories, `Riffer::Rig.bundled(:skills)`, and the MCP client, `Riffer::Rig.bundled(:mcp)`, all built on the same seams as any other extension; `Riffer::Rig.bundled` returns them all in load order. [Tools](TOOLS.md) describes the tools, [Instructions](INSTRUCTIONS.md#agentsmd) the AGENTS.md section, [Skills](SKILLS.md) the skills and [MCP](MCP.md) the MCP client.
+The tools ship as four bundled extensions — `Riffer::Rig.bundled(:read)`, `:write`, `:edit`, `:bash` — and so do the `:agents_md` prompt section, `Riffer::Rig.bundled(:agents_md)`, the skills directories, `Riffer::Rig.bundled(:skills)`, and the MCP client, `Riffer::Rig.bundled(:mcp)`, all built on the same seams as any other extension; `Riffer::Rig.bundled` returns them all in load order. [Tools](TOOLS.md) describes the tools, [Instructions](INSTRUCTIONS.md#agentsmd) the AGENTS.md section, [Skills](SKILLS.md) the skills and [MCP](MCP.md) the MCP client.
 
 A later extension replaces anything an earlier one registered by registering under the same name: a tool with the same identifier, a command with the same name, a prompt section with the same name, an MCP server with the same name. Later wins, and the Runtime reports each replacement across extensions through the host's `notify` at level `:info`, as "Extension LATER replaces KIND NAME from EARLIER". Nothing is deregistered, so the original extension is still there to pass to another Runtime.
 
