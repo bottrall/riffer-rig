@@ -13,6 +13,8 @@ class Riffer::Rig::Terminal::Frame
   # text.
   QUEUED_GAP = '   ' #: String
 
+  JOBS_SEPARATOR = ' · ' #: String
+
   # The cursor rests on the input line, the footer's first row, so this wipes
   # the whole footer.
   ERASE = "\r\e[J" #: String
@@ -22,6 +24,7 @@ class Riffer::Rig::Terminal::Frame
   # @rbs @editor: Riffer::Rig::Terminal::LineEditor
   # @rbs @status: String
   # @rbs @queued: Integer
+  # @rbs @jobs: Integer
   # @rbs @width: Integer
   # @rbs @active: bool
   # @rbs @mutex: Mutex
@@ -37,6 +40,7 @@ class Riffer::Rig::Terminal::Frame
     @editor = editor
     @status = ''
     @queued = 0
+    @jobs = 0
     @width = 0
     @active = false
     @mutex = Mutex.new
@@ -95,6 +99,15 @@ class Riffer::Rig::Terminal::Frame
     end
   end
 
+  # @rbs count: Integer
+  # @rbs return: void
+  def jobs(count)
+    @mutex.synchronize do
+      @jobs = count
+      redraw
+    end
+  end
+
   # @rbs return: void
   def stop
     @mutex.synchronize do
@@ -148,9 +161,8 @@ class Riffer::Rig::Terminal::Frame
     typed = "#{before}#{after}"
     spare = typing - Riffer::Rig::Terminal::Columns.width(typed)
     input = Riffer::Rig::Terminal::Columns.head("#{@theme.pink(PROMPT)} #{typed}#{chip(spare)}", room)
-    status = Riffer::Rig::Terminal::Columns.head("#{STATUS_INDENT}#{@status}", room)
     column = [PROMPT_COLUMNS + Riffer::Rig::Terminal::Columns.width(before), room].min
-    "#{input}\r\n#{status}\e[1A\e[#{column + 1}G"
+    "#{input}\r\n#{status_line(room)}\e[1A\e[#{column + 1}G"
   end
 
   # @rbs room: Integer
@@ -162,6 +174,23 @@ class Riffer::Rig::Terminal::Frame
     return '' if @queued.zero? || QUEUED_GAP.size + label.size > room
 
     "#{QUEUED_GAP}#{@theme.dim(label)}"
+  end
+
+  # @rbs room: Integer
+  # @rbs return: String
+  def status_line(room)
+    label = "#{@jobs} #{@jobs == 1 ? 'job' : 'jobs'} running"
+    spare = room - STATUS_INDENT.size - label.size
+    # A count cut short would read as fewer jobs, so the counter is drawn
+    # whole or not at all.
+    return Riffer::Rig::Terminal::Columns.head("#{STATUS_INDENT}#{@status}", room) if @jobs.zero? || spare.negative?
+
+    # The counter is the only sign that a job is still running, so the status
+    # is the one cut to make room.
+    status = Riffer::Rig::Terminal::Columns.head(@status, spare - JOBS_SEPARATOR.size)
+    # A status cut to nothing still carries its styles.
+    counter = Riffer::Rig::Terminal::Columns.width(status).zero? ? label : "#{JOBS_SEPARATOR}#{label}"
+    "#{STATUS_INDENT}#{status}#{@theme.dim(counter)}"
   end
 
   # @rbs bytes: String

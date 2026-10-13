@@ -1,0 +1,21 @@
+# Generated from lib/riffer/rig/terminal/job_counter.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::JobCounter
+  @footer: Riffer::Rig::Terminal::JobCounter::_Footer
+
+  @mutex: Mutex
+
+  # @rbs footer: Riffer::Rig::Terminal::JobCounter::_Footer
+  # @rbs return: void
+  def initialize: (footer: Riffer::Rig::Terminal::JobCounter::_Footer) -> void
+
+  # @rbs runtime: Riffer::Rig::Terminal::JobCounter::_Runtime
+  # @rbs return: void
+  def watch: (Riffer::Rig::Terminal::JobCounter::_Runtime runtime) -> void
+
+  private
+
+  # @rbs runtime: Riffer::Rig::Terminal::JobCounter::_Runtime
+  # @rbs return: void
+  def refresh: (Riffer::Rig::Terminal::JobCounter::_Runtime runtime) -> void
+end

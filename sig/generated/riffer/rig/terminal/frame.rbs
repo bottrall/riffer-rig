@@ -11,6 +11,8 @@ class Riffer::Rig::Terminal::Frame
   # text.
   QUEUED_GAP: String
 
+  JOBS_SEPARATOR: String
+
   # The cursor rests on the input line, the footer's first row, so this wipes
   # the whole footer.
   ERASE: String
@@ -22,6 +24,8 @@ class Riffer::Rig::Terminal::Frame
   @active: bool
 
   @width: Integer
+
+  @jobs: Integer
 
   @queued: Integer
 
@@ -58,6 +62,10 @@ class Riffer::Rig::Terminal::Frame
   # @rbs return: void
   def queued: (Integer count) -> void
 
+  # @rbs count: Integer
+  # @rbs return: void
+  def jobs: (Integer count) -> void
+
   # @rbs return: void
   def stop: () -> void
 
@@ -81,6 +89,10 @@ class Riffer::Rig::Terminal::Frame
   # @rbs room: Integer
   # @rbs return: String
   def chip: (Integer room) -> String
+
+  # @rbs room: Integer
+  # @rbs return: String
+  def status_line: (Integer room) -> String
 
   # @rbs bytes: String
   # @rbs return: void

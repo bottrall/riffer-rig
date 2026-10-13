@@ -229,6 +229,32 @@ describe Riffer::Rig::Terminal::Frame do
     end
   end
 
+  describe '#jobs' do
+    it 'draws nothing when there is no footer' do
+      io = StringIO.new
+
+      started(io).jobs(2)
+
+      assert_equal '', io.string
+    end
+
+    it 'redraws the footer with the count on the status line' do
+      io = tty(80)
+
+      started(io).jobs(2)
+
+      assert_equal "#{empty_footer}\r\e[J› \r\n  2 jobs running\e[1A\e[3G", io.string
+    end
+
+    it 'leaves the cursor on the input line' do
+      frame = on_pty
+
+      frame.jobs(2)
+
+      assert_equal [0, 2], [@pty.screen.row, @pty.screen.column]
+    end
+  end
+
   describe '#stop' do
     it 'writes nothing when there is no footer' do
       io = StringIO.new
@@ -386,6 +412,71 @@ describe Riffer::Rig::Terminal::Frame do
       started(io, editor: editing('hi')).queued(2)
 
       assert_operator io.string, :end_with?, "› hi   · 2 queued\r\n  \e[1A\e[5G"
+    end
+  end
+
+  describe '#status_line' do
+    def counting(columns, jobs, status: '', color: false)
+      io = tty(columns)
+      frame = started(io, color: color)
+      frame.status(status)
+      frame.jobs(jobs)
+      io.string
+    end
+
+    it 'is the status alone once no job is running' do
+      io = tty(80)
+      frame = started(io)
+      frame.status('working')
+
+      frame.jobs(2)
+      frame.jobs(0)
+
+      assert_operator io.string, :end_with?, "\e[J› \r\n  working\e[1A\e[3G"
+    end
+
+    it 'is the status alone rather than a counter cut short when the width has no room for it' do
+      assert_operator counting(16, 2, status: 'working'), :end_with?, "\r\n  working\e[1A\e[3G"
+    end
+
+    it 'counts one job in the singular' do
+      assert_operator counting(80, 1), :end_with?, "\r\n  1 job running\e[1A\e[3G"
+    end
+
+    it 'counts several jobs in the plural' do
+      assert_operator counting(80, 12), :end_with?, "\r\n  12 jobs running\e[1A\e[3G"
+    end
+
+    it 'puts the counter after the status' do
+      assert_operator counting(80, 2, status: 'working'), :end_with?, "\r\n  working · 2 jobs running\e[1A\e[3G"
+    end
+
+    it 'cuts the status short to keep the counter whole on the one row' do
+      assert_operator counting(26, 2, status: 'working through'), :end_with?, "\r\n  workin · 2 jobs running\e[1A\e[3G"
+    end
+
+    it 'draws the counter alone when the width has no room for any status' do
+      assert_operator counting(20, 2, status: 'working'), :end_with?, "\r\n  2 jobs running\e[1A\e[3G"
+    end
+
+    it 'leaves no separator after a status cut down to its styles' do
+      output = counting(20, 2, status: "\e[2mworking\e[0m")
+
+      assert_operator output, :end_with?, "\r\n  \e[2m\e[0m2 jobs running\e[1A\e[3G"
+    end
+
+    it 'fills the status line up to the free last column' do
+      assert_operator counting(17, 2), :end_with?, "\r\n  2 jobs running\e[1A\e[3G"
+    end
+
+    it 'dims the counter when color is on' do
+      assert_operator counting(80, 2, color: true), :end_with?, "\r\n  \e[2m2 jobs running\e[0m\e[1A\e[3G"
+    end
+
+    it 'dims the separator with the counter when color is on' do
+      output = counting(80, 2, status: 'working', color: true)
+
+      assert_operator output, :end_with?, "\r\n  working\e[2m · 2 jobs running\e[0m\e[1A\e[3G"
     end
   end
 end
