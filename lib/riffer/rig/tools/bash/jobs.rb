@@ -16,7 +16,7 @@ class Riffer::Rig::Tools::Bash::Jobs
 
   DRAIN_SECONDS = 0.5 #: Float
 
-  # @rbs @inbox: Riffer::Rig::Tools::Bash::_Inbox
+  # @rbs @inbox: Riffer::Rig::Runtime::JobInbox
   # @rbs @jobs: Hash[String, Riffer::Rig::Tools::Bash::Job]
   # @rbs @groups: Array[Integer]
   # @rbs @logs: Hash[String, Riffer::Rig::Tools::Bash::JobLog]
@@ -24,7 +24,7 @@ class Riffer::Rig::Tools::Bash::Jobs
   # @rbs @mutex: Mutex
   # @rbs @watchers: ThreadGroup
 
-  # @rbs inbox: Riffer::Rig::Tools::Bash::_Inbox
+  # @rbs inbox: Riffer::Rig::Runtime::JobInbox
   # @rbs return: void
   def initialize(inbox)
     @inbox = inbox

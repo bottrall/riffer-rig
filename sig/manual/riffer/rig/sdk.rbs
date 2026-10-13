@@ -3,9 +3,4 @@
 
 module Riffer::Rig::SDK
   extend ::Riffer::Rig::SDK
-
-  interface _Installer
-    def install: (String, Gem::Requirement) -> void
-    def clear_paths: () -> void
-  end
 end

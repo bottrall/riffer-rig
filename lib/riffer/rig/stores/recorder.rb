@@ -7,7 +7,7 @@ class Riffer::Rig::Stores::Recorder
 
   # @rbs @store: Riffer::Rig::Stores::_Store
   # @rbs @resumed: bool
-  # @rbs @clock: Riffer::Rig::Stores::_Clock
+  # @rbs @clock: singleton(Time)
   # @rbs @runtime: Riffer::Rig::Runtime?
   # @rbs @header_written: bool
   # @rbs @pending: Array[Riffer::Rig::Stores::entry]
@@ -21,7 +21,7 @@ class Riffer::Rig::Stores::Recorder
   # no header.
   # @rbs store: Riffer::Rig::Stores::_Store
   # @rbs resumed: bool
-  # @rbs clock: Riffer::Rig::Stores::_Clock
+  # @rbs clock: singleton(Time)
   # @rbs return: void
   def initialize(store:, resumed: false, clock: Time)
     @store = store

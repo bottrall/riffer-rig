@@ -25,7 +25,7 @@ module Riffer::Rig::SDK
   # @rbs gem: String
   # @rbs requirement: String
   # @rbs host: Riffer::Rig::Hosts::_Host
-  # @rbs installer: Riffer::Rig::SDK::_Installer
+  # @rbs installer: singleton(Gem)
   # @rbs return: String?
   def ensure(gem, requirement, host:, installer: Gem)
     return nil if installed?(gem, requirement) && require_gem(gem)
@@ -46,7 +46,7 @@ module Riffer::Rig::SDK
   # @rbs gem: String
   # @rbs requirement: String
   # @rbs host: Riffer::Rig::Hosts::_Host
-  # @rbs installer: Riffer::Rig::SDK::_Installer
+  # @rbs installer: singleton(Gem)
   # @rbs return: String?
   def install(gem, requirement, host:, installer:)
     host.progress(format(PROGRESS_LABEL, gem, requirement)) do

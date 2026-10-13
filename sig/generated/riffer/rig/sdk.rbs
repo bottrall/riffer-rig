@@ -16,18 +16,18 @@ module Riffer::Rig::SDK
   # @rbs gem: String
   # @rbs requirement: String
   # @rbs host: Riffer::Rig::Hosts::_Host
-  # @rbs installer: Riffer::Rig::SDK::_Installer
+  # @rbs installer: singleton(Gem)
   # @rbs return: String?
-  def ensure: (String gem, String requirement, host: Riffer::Rig::Hosts::_Host, ?installer: Riffer::Rig::SDK::_Installer) -> String?
+  def ensure: (String gem, String requirement, host: Riffer::Rig::Hosts::_Host, ?installer: singleton(Gem)) -> String?
 
   private
 
   # @rbs gem: String
   # @rbs requirement: String
   # @rbs host: Riffer::Rig::Hosts::_Host
-  # @rbs installer: Riffer::Rig::SDK::_Installer
+  # @rbs installer: singleton(Gem)
   # @rbs return: String?
-  def install: (String gem, String requirement, host: Riffer::Rig::Hosts::_Host, installer: Riffer::Rig::SDK::_Installer) -> String?
+  def install: (String gem, String requirement, host: Riffer::Rig::Hosts::_Host, installer: singleton(Gem)) -> String?
 
   # @rbs gem: String
   # @rbs requirement: String

@@ -11,7 +11,7 @@ class Riffer::Rig::Stores::Recorder
 
   @runtime: Riffer::Rig::Runtime?
 
-  @clock: Riffer::Rig::Stores::_Clock
+  @clock: singleton(Time)
 
   @resumed: bool
 
@@ -25,9 +25,9 @@ class Riffer::Rig::Stores::Recorder
   # no header.
   # @rbs store: Riffer::Rig::Stores::_Store
   # @rbs resumed: bool
-  # @rbs clock: Riffer::Rig::Stores::_Clock
+  # @rbs clock: singleton(Time)
   # @rbs return: void
-  def initialize: (store: Riffer::Rig::Stores::_Store, ?resumed: bool, ?clock: Riffer::Rig::Stores::_Clock) -> void
+  def initialize: (store: Riffer::Rig::Stores::_Store, ?resumed: bool, ?clock: singleton(Time)) -> void
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void

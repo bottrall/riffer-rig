@@ -5,10 +5,6 @@ module Riffer::Rig::Stores
   type entry = Header | MessageEntry | ModelEntry | SkillEntry
   type entry_type = singleton(Header) | singleton(MessageEntry) | singleton(ModelEntry) | singleton(SkillEntry)
 
-  interface _Clock
-    def now: () -> Time
-  end
-
   interface _Stamped
     def recorded_at: () -> String?
   end

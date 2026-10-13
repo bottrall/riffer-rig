@@ -9,25 +9,25 @@ class Riffer::Rig::Terminal::Autocomplete
 
   @index: Integer
 
-  @commands: Array[_Command]
+  @commands: Array[Riffer::Rig::Command]
 
   # @dynamic editor, matches
   attr_reader editor: Riffer::Rig::Terminal::LineEditor
 
-  attr_reader matches: Array[_Command]
+  attr_reader matches: Array[Riffer::Rig::Command]
 
-  # @rbs commands: Array[_Command]
+  # @rbs commands: Array[Riffer::Rig::Command]
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
   # @rbs index: Integer
   # @rbs dismissed: bool
   # @rbs return: void
-  def initialize: (commands: Array[_Command], ?editor: Riffer::Rig::Terminal::LineEditor, ?index: Integer, ?dismissed: bool) -> void
+  def initialize: (commands: Array[Riffer::Rig::Command], ?editor: Riffer::Rig::Terminal::LineEditor, ?index: Integer, ?dismissed: bool) -> void
 
   # @rbs return: bool
   def open?: () -> bool
 
-  # @rbs return: _Command?
-  def selected: () -> _Command?
+  # @rbs return: Riffer::Rig::Command?
+  def selected: () -> Riffer::Rig::Command?
 
   # @rbs return: String
   def ghost: () -> String
@@ -48,8 +48,8 @@ class Riffer::Rig::Terminal::Autocomplete
   def with: (?editor: Riffer::Rig::Terminal::LineEditor, ?index: Integer, ?dismissed: bool) -> Riffer::Rig::Terminal::Autocomplete
 
   # @rbs query: String?
-  # @rbs return: Array[_Command]
-  def ranked: (String? query) -> Array[_Command]
+  # @rbs return: Array[Riffer::Rig::Command]
+  def ranked: (String? query) -> Array[Riffer::Rig::Command]
 
   # @rbs key: Riffer::Rig::Terminal::Key
   # @rbs return: Riffer::Rig::Terminal::Autocomplete
