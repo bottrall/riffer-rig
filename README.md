@@ -221,6 +221,8 @@ Every project chore is a script in `bin/`. The Rakefile behind them is an implem
 
 PR titles are [conventional commits](https://www.conventionalcommits.org/) and are linted in CI: `feat:` bumps the minor version, `fix:` bumps the patch, and `feat!:` marks a breaking change (also a minor bump while we are on 0.x). `chore:`, `docs:`, `ci:`, `refactor:` and `test:` never release. Squash-merging makes the title the commit on `main`.
 
+A PR whose code nothing in the live path reaches yet is titled `refactor:`, including fixes to such code; the PR that wires it in carries the `feat:` or `fix:`, titled for what the user gets. The changelog and GitHub Release are generated from titles, so a `feat:` on unreachable code advertises a feature nobody can use.
+
 [release-please](https://github.com/googleapis/release-please) keeps a release PR open that bumps `lib/riffer/rig/version.rb` and writes `CHANGELOG.md`. Merging that PR tags `vX.Y.Z`, creates the GitHub Release and publishes the gem to RubyGems.org through Trusted Publishing; nothing is pushed by hand.
 
 ## Contributing

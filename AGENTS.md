@@ -11,7 +11,7 @@ Terminal coding agent built on the riffer framework.
 - **Types**: strict Steep over rbs-inline annotations — every method in `lib/` carries `@rbs` annotations; `sig/generated` is committed; run `bin/rbs` after any `lib/` change
 - **Third-party RBS**: managed by `rbs collection` (`rbs_collection.yaml` + committed lockfile; `.gem_rbs_collection/` is gitignored); `bin/setup` installs it, `bin/typecheck` fails if the lockfile is stale; bump the pinned collection revision deliberately, via `rbs collection update` run through `bundle exec`
 - **Tests**: Minitest (Spec style: `describe`/`it`, `assert_*` assertions), one assertion per `it`, `test/riffer/rig/` mirrors `lib/riffer/rig/`
-- **PR titles**: [Conventional Commits](https://www.conventionalcommits.org/) — `feat:` bumps the minor, `fix:` the patch; titles are linted in CI and become the squash commit on `main`
+- **PR titles**: [Conventional Commits](https://www.conventionalcommits.org/) — `feat:` bumps the minor, `fix:` the patch; titles are linted in CI and become the squash commit on `main`; a PR whose code nothing in the live path reaches yet (fixes included) is `refactor:`, and the PR that wires it in carries the `feat:`/`fix:` — correct a merged title with a `BEGIN_COMMIT_OVERRIDE` … `END_COMMIT_OVERRIDE` block in the PR body
 - **Releases**: release-please keeps a release PR open; merging it publishes the gem
 
 ## Commands
