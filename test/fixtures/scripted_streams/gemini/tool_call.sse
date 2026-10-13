@@ -1,0 +1,6 @@
+data: {"candidates":[{"content":{"role":"model","parts":[{"text":"Let me read "}]},"index":0}],"usageMetadata":{"promptTokenCount":100,"candidatesTokenCount":4,"totalTokenCount":104},"modelVersion":"gemini-2.5-pro","responseId":"resp-01"}
+
+data: {"candidates":[{"content":{"role":"model","parts":[{"text":"the file."}]},"index":0}],"usageMetadata":{"promptTokenCount":100,"candidatesTokenCount":8,"totalTokenCount":108},"modelVersion":"gemini-2.5-pro","responseId":"resp-01"}
+
+data: {"candidates":[{"content":{"role":"model","parts":[{"functionCall":{"name":"read","args":{"path":"notes.txt"}}}]},"finishReason":"STOP","index":0}],"usageMetadata":{"promptTokenCount":100,"candidatesTokenCount":20,"totalTokenCount":120},"modelVersion":"gemini-2.5-pro","responseId":"resp-01"}
+
