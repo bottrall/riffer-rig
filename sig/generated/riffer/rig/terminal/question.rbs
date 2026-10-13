@@ -1,0 +1,9 @@
+# Generated from lib/riffer/rig/terminal/question.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Question
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs question: String?
+  # @rbs options: Array[String]?
+  # @rbs return: Array[String]
+  def lines: (Riffer::Rig::Terminal::Theme theme, String? question, Array[String]? options) -> Array[String]
+end

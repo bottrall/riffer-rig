@@ -114,8 +114,7 @@ class Riffer::Rig::Terminal::Renderer
   def question(question, options, secret)
     drain
     @io.puts
-    @io.puts(question) if question
-    options&.each_with_index { |option, index| @io.puts("  #{@theme.magenta("#{index + 1}.")} #{option}") }
+    Riffer::Rig::Terminal::Question.lines(@theme, question, options).each { |line| @io.puts(line) }
     @io.print("#{@theme.pink('›')} #{@theme.grey('(hidden) ') if secret}")
     @io.flush
   end

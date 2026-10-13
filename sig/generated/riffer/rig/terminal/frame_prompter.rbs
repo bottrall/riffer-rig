@@ -1,0 +1,32 @@
+# Generated from lib/riffer/rig/terminal/frame_prompter.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::FramePrompter
+  HIDDEN: String
+
+  @frame: Riffer::Rig::Terminal::Frame
+
+  @keys: Thread::Queue[Riffer::Rig::Terminal::Key]
+
+  @theme: Riffer::Rig::Terminal::Theme
+
+  # @rbs frame: Riffer::Rig::Terminal::Frame
+  # @rbs keys: Thread::Queue[Riffer::Rig::Terminal::Key]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: void
+  def initialize: (frame: Riffer::Rig::Terminal::Frame, keys: Thread::Queue[Riffer::Rig::Terminal::Key], theme: Riffer::Rig::Terminal::Theme) -> void
+
+  # @rbs question: String?
+  # @rbs options: Array[String]?
+  # @rbs secret: bool
+  # @rbs return: String?
+  def ask: (String? question, options: Array[String]?, secret: bool) -> String?
+
+  private
+
+  # @rbs secret: bool
+  # @rbs return: Riffer::Rig::Terminal::LineEditor?
+  def read: (bool secret) -> Riffer::Rig::Terminal::LineEditor?
+
+  # @rbs return: String
+  def prompt: () -> String
+end
