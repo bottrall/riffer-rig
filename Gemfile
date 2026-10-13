@@ -8,8 +8,8 @@ group :development, :test do
   gem 'minitest', '~> 6.0'
   gem 'rake', '~> 13.0'
 
-  gem 'anthropic', '~> 1.69'
-  gem 'openai', '~> 0.80'
+  gem 'anthropic', '~> 1.78'
+  gem 'openai', '~> 0.103'
 
   gem 'rubocop', '~> 1.91', require: false
   gem 'rubocop-minitest', '~> 0.41', require: false

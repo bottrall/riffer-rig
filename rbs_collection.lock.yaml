@@ -6,7 +6,7 @@ gems:
   source:
     type: rubygems
 - name: anthropic
-  version: 1.76.0
+  version: 1.78.0
   source:
     type: rubygems
 - name: base64
@@ -86,15 +86,15 @@ gems:
   source:
     type: stdlib
 - name: net-http
-  version: '0'
+  version: 0.10.0
   source:
-    type: stdlib
+    type: rubygems
 - name: net-protocol
   version: '0'
   source:
     type: stdlib
 - name: openai
-  version: 0.98.0
+  version: 0.103.0
   source:
     type: rubygems
 - name: prism
@@ -118,7 +118,7 @@ gems:
     remote: https://github.com/ruby/gem_rbs_collection.git
     repo_dir: gems
 - name: riffer
-  version: 0.51.0
+  version: 0.52.1
   source:
     type: rubygems
 - name: thor
