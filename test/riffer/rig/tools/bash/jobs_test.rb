@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'securerandom'
+require 'shellwords'
 require 'test_helper'
 
 describe Riffer::Rig::Tools::Bash::Jobs do
@@ -23,14 +23,12 @@ describe Riffer::Rig::Tools::Bash::Jobs do
       end
     end.new
     @jobs = Riffer::Rig::Tools::Bash::Jobs.new(@inbox)
-    @paths = []
     @strays = []
   end
 
   def teardown
     @jobs.shutdown(0.0)
     @strays.each { |pid| kill_stray(pid) }
-    FileUtils.rm_f(@paths)
   end
 
   def kill_stray(pid)
@@ -39,11 +37,14 @@ describe Riffer::Rig::Tools::Bash::Jobs do
     nil
   end
 
-  def start(command, output: '')
-    path = File.join(Dir.tmpdir, "riffer-rig-job-test-#{SecureRandom.hex(4)}")
-    @paths << path
-    File.binwrite(path, output)
-    @jobs.register(Process.spawn(command, pgroup: true, out: [path, 'a'], err: %i[child out]), command, path)
+  def start(command, output: nil)
+    reader, writer = IO.pipe
+    script = output ? "printf %s #{output.shellescape}; exec #{command}" : command
+    pid = Process.spawn(script, pgroup: true, out: writer, err: %i[child out])
+    writer.close
+    job = @jobs.register(pid, command, reader)
+    sleep 0.01 until File.size(job.output_path) >= output.to_s.bytesize
+    job
   end
 
   def listed(job)
@@ -56,7 +57,7 @@ describe Riffer::Rig::Tools::Bash::Jobs do
   end
 
   def orphan(lifetime = 30)
-    job = start("sleep #{lifetime} & echo $!")
+    job = start("sleep #{lifetime} >/dev/null 2>&1 & echo $!")
     @inbox.await
     child_of(job)
   end
@@ -82,17 +83,27 @@ describe Riffer::Rig::Tools::Bash::Jobs do
     it 'registers a job with the spawned pid' do
       pid = Process.spawn('sleep 5', pgroup: true)
 
-      assert_equal pid, @jobs.register(pid, 'sleep 5', File::NULL).pid
+      assert_equal pid, @jobs.register(pid, 'sleep 5', File.open(File::NULL)).pid
     end
 
     it 'registers a job with the given command' do
       assert_equal 'sleep 5', start('sleep 5').command
     end
 
-    it 'registers a job with the given output path' do
+    it 'registers a job with an output path in a directory private to its owner' do
       job = start('sleep 5')
 
-      assert_equal @paths.last, job.output_path
+      assert_equal 0o700, File.stat(File.dirname(job.output_path)).mode & 0o777
+    end
+
+    it 'keeps the output of every job in one directory' do
+      assert_equal File.dirname(start('sleep 5').output_path), File.dirname(start('sleep 5').output_path)
+    end
+
+    it 'registers a job after the output directory was removed' do
+      FileUtils.remove_entry(File.dirname(start('sleep 5').output_path))
+
+      assert_path_exists start('sleep 5').output_path
     end
 
     it 'registers a job as active' do
@@ -160,29 +171,8 @@ describe Riffer::Rig::Tools::Bash::Jobs do
       assert_equal '', @jobs.read(job.id)&.last
     end
 
-    it 'reads a missing output file as an empty string' do
-      job = start('sleep 5', output: 'hello')
-      File.delete(job.output_path)
-
-      assert_equal '', @jobs.read(job.id)&.last
-    end
-
-    it 'reads output in the default external encoding' do
-      job = start('sleep 5', output: 'hello')
-
-      assert_equal Encoding.default_external, @jobs.read(job.id)&.last&.encoding
-    end
-
     it 'returns the job advanced past what it read' do
       job = start('sleep 5', output: 'hello')
-
-      assert_equal 5, @jobs.read(job.id)&.first&.offset
-    end
-
-    it 'keeps the offset of a job whose output file goes missing' do
-      job = start('sleep 5', output: 'hello')
-      @jobs.read(job.id)
-      File.delete(job.output_path)
 
       assert_equal 5, @jobs.read(job.id)&.first&.offset
     end
@@ -288,12 +278,14 @@ describe Riffer::Rig::Tools::Bash::Jobs do
     end
 
     it 'lets a group that outlived its leader exit on TERM' do
-      job = start("(trap 'echo termed; exit' TERM; echo ready; sleep 5; :) &")
-      sleep 0.01 until File.size?(job.output_path)
-      @inbox.await
-      @jobs.shutdown
+      Dir.mktmpdir do |dir|
+        job = start("(trap 'touch #{dir}/termed; exit' TERM; echo ready; sleep 5; :) &")
+        sleep 0.01 until File.size?(job.output_path)
+        @inbox.await
+        @jobs.shutdown
 
-      assert_includes File.read(job.output_path), 'termed'
+        assert_path_exists File.join(dir, 'termed')
+      end
     end
 
     it 'kills a job that ignores TERM' do
@@ -333,6 +325,38 @@ describe Riffer::Rig::Tools::Bash::Jobs do
       @jobs.shutdown
 
       assert_raises(Errno::ECHILD) { Process.wait(job.pid) }
+    end
+
+    it 'leaves no thread copying output that is still held open' do
+      threads = Thread.list
+      reader, writer = IO.pipe
+      @jobs.register(Process.spawn('true', pgroup: true), 'true', reader)
+      @jobs.shutdown
+      writer.close
+
+      assert_empty Thread.list - threads
+    end
+
+    it 'removes the output of its jobs' do
+      job = start('sleep 30')
+      @jobs.shutdown
+
+      refute_path_exists File.dirname(job.output_path)
+    end
+
+    it 'removes the output of a job whose completion was consumed' do
+      job = start('true')
+      @inbox.await
+      @jobs.consume
+      @jobs.shutdown
+
+      refute_path_exists File.dirname(job.output_path)
+    end
+
+    it 'shuts down a registry that ran no job' do
+      @jobs.shutdown
+
+      assert_empty @jobs.list
     end
   end
 
@@ -388,6 +412,12 @@ describe Riffer::Rig::Tools::Bash::Jobs do
       assert_operator @inbox.await&.duration, :>=, 0.2
     end
 
+    it 'leaves the wait for held-open output out of the duration' do
+      start('sleep 30 & echo started')
+
+      assert_operator @inbox.await&.duration, :<, Riffer::Rig::Tools::Bash::Jobs::DRAIN_SECONDS
+    end
+
     it 'completes a job with its output path' do
       job = start('true')
 
@@ -407,12 +437,21 @@ describe Riffer::Rig::Tools::Bash::Jobs do
       assert_equal '', @inbox.await&.tail
     end
 
-    it 'completes a job whose output file is missing with an empty tail' do
-      job = start('sleep 30', output: 'hello')
-      File.delete(job.output_path)
-      @jobs.kill(job.id)
+    it 'completes a job with output that arrives after its process was reaped' do
+      reader, writer = IO.pipe
+      pid = Process.spawn('true', pgroup: true)
+      @jobs.register(pid, 'true', reader)
+      sleep 0.01 while alive?(pid)
+      writer.write('late')
+      writer.close
 
-      assert_equal '', @inbox.await&.tail
+      assert_equal 'late', @inbox.await&.tail
+    end
+
+    it 'completes a job that left a process holding its output open' do
+      start('sleep 30 & echo started')
+
+      assert_equal "started\n", @inbox.await&.tail
     end
 
     it 'scrubs a multibyte character split by the tail cut' do
@@ -439,7 +478,7 @@ describe Riffer::Rig::Tools::Bash::Jobs do
     it 'drops a job whose process can no longer be waited on' do
       pid = Process.spawn('true')
       Process.wait(pid)
-      @jobs.register(pid, 'true', File::NULL)
+      @jobs.register(pid, 'true', File.open(File::NULL))
       @jobs.shutdown
 
       assert_empty @jobs.list

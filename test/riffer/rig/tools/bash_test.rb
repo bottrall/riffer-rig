@@ -64,7 +64,6 @@ describe Riffer::Rig::Tools::Bash do
     yield response, jobs
   ensure
     jobs.shutdown
-    FileUtils.rm_f(output_path(response)) if response
   end
 
   it 'returns a job id and output path when run_in_background is set' do

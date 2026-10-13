@@ -11,9 +11,15 @@ class Riffer::Rig::Tools::Bash::Jobs
 
   SHUTDOWN_GRACE_SECONDS: Float
 
+  DRAIN_SECONDS: Float
+
   @watchers: ThreadGroup
 
   @mutex: Mutex
+
+  @directory: String?
+
+  @logs: Hash[String, Riffer::Rig::Tools::Bash::JobLog]
 
   @groups: Array[Integer]
 
@@ -27,9 +33,9 @@ class Riffer::Rig::Tools::Bash::Jobs
 
   # @rbs pid: Integer
   # @rbs command: String
-  # @rbs output_path: String
+  # @rbs output: IO
   # @rbs return: Riffer::Rig::Tools::Bash::Job
-  def register: (Integer pid, String command, String output_path) -> Riffer::Rig::Tools::Bash::Job
+  def register: (Integer pid, String command, IO output) -> Riffer::Rig::Tools::Bash::Job
 
   # @rbs return: Array[Riffer::Rig::Tools::Bash::Job]
   def list: () -> Array[Riffer::Rig::Tools::Bash::Job]
@@ -55,9 +61,13 @@ class Riffer::Rig::Tools::Bash::Jobs
 
   private
 
+  # @rbs return: String
+  def directory: () -> String
+
   # @rbs job: Riffer::Rig::Tools::Bash::Job
+  # @rbs log: Riffer::Rig::Tools::Bash::JobLog
   # @rbs return: void
-  def watch: (Riffer::Rig::Tools::Bash::Job job) -> void
+  def watch: (Riffer::Rig::Tools::Bash::Job job, Riffer::Rig::Tools::Bash::JobLog log) -> void
 
   # @rbs pgid: Integer
   # @rbs return: bool
@@ -69,13 +79,8 @@ class Riffer::Rig::Tools::Bash::Jobs
   def signal_group: (Integer pgid, String | Integer signal) -> bool
 
   # @rbs job: Riffer::Rig::Tools::Bash::Job
+  # @rbs log: Riffer::Rig::Tools::Bash::JobLog
   # @rbs exit_status: Integer
   # @rbs return: Riffer::Rig::Runtime::JobCompletion
-  def completion: (Riffer::Rig::Tools::Bash::Job job, Integer exit_status) -> Riffer::Rig::Runtime::JobCompletion
-
-  # @rbs path: String
-  # @rbs limit: Integer
-  # @rbs offset: Integer
-  # @rbs return: String
-  def slice: (String path, Integer limit, Integer offset) -> String
+  def completion: (Riffer::Rig::Tools::Bash::Job job, Riffer::Rig::Tools::Bash::JobLog log, Integer exit_status) -> Riffer::Rig::Runtime::JobCompletion
 end

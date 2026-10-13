@@ -17,7 +17,7 @@ describe Riffer::Rig::Tools::Bash::Kill do
   end
 
   def start(command)
-    @jobs.register(Process.spawn(command, pgroup: true), command, File::NULL)
+    @jobs.register(Process.spawn(command, pgroup: true), command, File.open(File::NULL))
   end
 
   def kill(job)
