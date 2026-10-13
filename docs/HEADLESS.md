@@ -29,7 +29,7 @@ The REPL's flags all work here: `--model provider/name`, `--no-extensions`, `--n
 
 `-c` and `-r` are the multi-turn headless story: `riffer -p -c "now run the tests"` continues the most recent session in this directory, appending to the same [session file](SESSIONS.md#resuming). Unlike the REPL, a missing session is not a fresh start — headless prints `No saved session …` on stderr and exits 2.
 
-Headless never prompts. A missing model, a missing credential, or a missing optional SDK is not an interactive setup flow — the reason is printed on stderr with the provider's recipe (its environment variables and key URL), or the exact `gem install` line, and the process exits 2.
+Headless never prompts. A missing model, a missing credential, or a missing optional SDK is not an interactive setup flow — the reason is printed on stderr with the provider's recipe (its environment variables and key URL), or the exact `gem install` line, and the process exits 2. A `settings.json` or `auth.json` that does not parse exits 2 the same way, with the file named on stderr ([Configuration](CONFIGURATION.md)).
 
 ## Exit codes
 
@@ -37,7 +37,7 @@ Headless never prompts. A missing model, a missing credential, or a missing opti
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `0`  | the turn finished                                                                                                                       |
 | `1`  | runtime error: provider failure, network failure, an exception in a tool or handler                                                     |
-| `2`  | usage or configuration: unknown flag, no prompt, a bare model name, no credentials, a missing optional SDK                              |
+| `2`  | usage or configuration: unknown flag, no prompt, a bare model name, no credentials, a missing optional SDK, a settings or auth file that does not parse |
 | `3`  | the turn ended but did not complete: `max_steps`, `context_window`, `length`, `content_filter`, or `malformed_output`; the reason is on stderr |
 | `130` | SIGINT: the turn is cancelled first — orphaned tool calls healed, the session closed — then exit                                        |
 

@@ -12,9 +12,10 @@ class AnsweringHost
 
   attr_reader :asked
 
-  def initialize(answer)
+  def initialize(answer, &while_asked)
     @null = Riffer::Rig::Hosts::Null.new
     @answer = answer
+    @while_asked = while_asked
     @asked = []
   end
 
@@ -24,6 +25,7 @@ class AnsweringHost
 
   def ask(question = nil, options: nil, secret: false)
     @asked << { question: question, secret: secret }
+    @while_asked&.call
     @answer
   end
 end
@@ -46,6 +48,28 @@ describe Riffer::Rig::Credentials do
   end
 
   describe '.install' do
+    it 'reports a malformed auth.json' do
+      in_tmp_home do |paths|
+        malform(paths[:auth_path])
+
+        assert_equal(
+          malformed(paths[:auth_path]),
+          Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, config: nil, **paths)
+        )
+      end
+    end
+
+    it 'reports a malformed settings file' do
+      in_tmp_home do |paths|
+        malform(paths[:settings_path])
+
+        assert_equal(
+          malformed(paths[:settings_path]),
+          Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, config: nil, **paths)
+        )
+      end
+    end
+
     it 'prefers the env var over the stored value' do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-stored' }, **paths)
@@ -260,6 +284,17 @@ describe Riffer::Rig::Credentials do
         Riffer::Rig::Credentials.install(:anthropic, host: AnsweringHost.new('sk-asked'), env:, config: nil, **paths)
 
         assert_equal :stored, Riffer::Rig::Credentials.status(:anthropic, env:, auth_path: paths[:auth_path])
+      end
+    end
+
+    it 'reports an auth.json that turned malformed while the host was asked' do
+      in_tmp_home do |paths|
+        host = AnsweringHost.new('sk-asked') { malform(paths[:auth_path]) }
+
+        assert_equal(
+          malformed(paths[:auth_path]),
+          Riffer::Rig::Credentials.install(:anthropic, host: host, env:, config: nil, **paths)
+        )
       end
     end
 
@@ -491,6 +526,46 @@ describe Riffer::Rig::Credentials do
   end
 
   describe '.store' do
+    it 'reports a malformed auth.json' do
+      in_tmp_home do |paths|
+        malform(paths[:auth_path])
+
+        assert_equal(
+          malformed(paths[:auth_path]),
+          Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-stored' }, **paths)
+        )
+      end
+    end
+
+    it 'leaves settings unwritten when auth.json is malformed' do
+      in_tmp_home do |paths|
+        malform(paths[:auth_path])
+        Riffer::Rig::Credentials.store(:azure_openai, { endpoint: 'https://azure.test', api_key: 'azure-key' }, **paths)
+
+        refute_path_exists paths[:settings_path]
+      end
+    end
+
+    it 'reports a malformed settings file' do
+      in_tmp_home do |paths|
+        malform(paths[:settings_path])
+
+        assert_equal(
+          malformed(paths[:settings_path]),
+          Riffer::Rig::Credentials.store(:openai, { base_url: 'https://proxy.test/v1' }, **paths)
+        )
+      end
+    end
+
+    it 'leaves auth.json unwritten when the settings file is malformed' do
+      in_tmp_home do |paths|
+        malform(paths[:settings_path])
+        Riffer::Rig::Credentials.store(:azure_openai, { endpoint: 'https://azure.test', api_key: 'azure-key' }, **paths)
+
+        refute_path_exists paths[:auth_path]
+      end
+    end
+
     it 'writes auth.json owner-only' do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-stored' }, **paths)
@@ -600,6 +675,42 @@ describe Riffer::Rig::Credentials do
   end
 
   describe '.remove' do
+    it 'reports a malformed auth.json' do
+      in_tmp_home do |paths|
+        malform(paths[:auth_path])
+
+        assert_equal(malformed(paths[:auth_path]), Riffer::Rig::Credentials.remove(:anthropic, **paths))
+      end
+    end
+
+    it 'keeps the providers block when auth.json is malformed' do
+      in_tmp_home do |paths|
+        Riffer::Rig::Credentials.store(:openai, { base_url: 'https://proxy.test/v1' }, **paths)
+        malform(paths[:auth_path])
+        Riffer::Rig::Credentials.remove(:openai, **paths)
+
+        assert_includes JSON.parse(File.read(paths[:settings_path])), 'providers'
+      end
+    end
+
+    it 'reports a malformed settings file' do
+      in_tmp_home do |paths|
+        malform(paths[:settings_path])
+
+        assert_equal(malformed(paths[:settings_path]), Riffer::Rig::Credentials.remove(:anthropic, **paths))
+      end
+    end
+
+    it 'keeps the auth.json entry when the settings file is malformed' do
+      in_tmp_home do |paths|
+        Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-stored' }, **paths)
+        malform(paths[:settings_path])
+        Riffer::Rig::Credentials.remove(:anthropic, **paths)
+
+        assert_includes JSON.parse(File.read(paths[:auth_path])), 'anthropic'
+      end
+    end
+
     it 'leaves auth.json unwritten when the provider has no entry' do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.remove(:anthropic, **paths)
@@ -705,6 +816,17 @@ describe Riffer::Rig::Credentials do
       end
     end
 
+    it 'reports a malformed auth.json' do
+      in_tmp_home do |paths|
+        malform(paths[:auth_path])
+
+        assert_equal(
+          malformed(paths[:auth_path]),
+          Riffer::Rig::Credentials.status(:anthropic, env:, auth_path: paths[:auth_path])
+        )
+      end
+    end
+
     it 'is :stored when the secret is in auth.json' do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-stored' }, **paths)
@@ -735,6 +857,15 @@ describe Riffer::Rig::Credentials do
   def write_auth(paths, document)
     FileUtils.mkdir_p(File.dirname(paths[:auth_path]))
     File.write(paths[:auth_path], JSON.generate(document))
+  end
+
+  def malform(path)
+    FileUtils.mkdir_p(File.dirname(path))
+    File.write(path, '{"openai":{"a":1},}')
+  end
+
+  def malformed(path)
+    "#{path} is not valid JSON at line 1 column 19"
   end
 
   def in_tmp_home

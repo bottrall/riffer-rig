@@ -6,15 +6,22 @@ module Riffer::Rig::Settings::File
   PATH = ::File.expand_path('~/.riffer/settings.json') #: String
 
   # @rbs path: String
-  # @rbs return: Hash[Symbol, untyped]
+  # @rbs return: (Hash[Symbol, untyped] | String)
   def read(path)
     Riffer::Rig::Support::JsonFile.read(path, symbolize_names: true)
   end
 
+  # @rbs path: String
+  # @rbs &: (Hash[Symbol, untyped]) -> Hash[Symbol, untyped]
+  # @rbs return: String?
+  def update(path, &)
+    Riffer::Rig::Support::JsonFile.update(path, symbolize_names: true, &)
+  end
+
   # @rbs model: String
   # @rbs path: String
-  # @rbs return: void
+  # @rbs return: String?
   def store_model(model, path: PATH)
-    Riffer::Rig::Support::JsonFile.write(path, read(path).merge(model: model))
+    update(path) { |document| document.merge(model: model) }
   end
 end

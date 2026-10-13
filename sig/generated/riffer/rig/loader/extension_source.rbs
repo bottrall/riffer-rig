@@ -63,8 +63,8 @@ class Riffer::Rig::Loader::ExtensionSource
   def rig_file: (String path, confirm_trust: bool) -> (Array[Riffer::Rig::Extension] | String)
 
   # @rbs path: String
-  # @rbs return: bool
-  def trusted?: (String path) -> bool
+  # @rbs return: (bool | String)
+  def trust: (String path) -> (bool | String)
 
   # @rbs return: String
   def trust_path: () -> String

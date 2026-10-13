@@ -4,11 +4,16 @@ module Riffer::Rig::Settings::File
   PATH: String
 
   # @rbs path: String
-  # @rbs return: Hash[Symbol, untyped]
-  def read: (String path) -> Hash[Symbol, untyped]
+  # @rbs return: (Hash[Symbol, untyped] | String)
+  def read: (String path) -> (Hash[Symbol, untyped] | String)
+
+  # @rbs path: String
+  # @rbs &: (Hash[Symbol, untyped]) -> Hash[Symbol, untyped]
+  # @rbs return: String?
+  def update: (String path) { (Hash[Symbol, untyped]) -> Hash[Symbol, untyped] } -> String?
 
   # @rbs model: String
   # @rbs path: String
-  # @rbs return: void
-  def store_model: (String model, ?path: String) -> void
+  # @rbs return: String?
+  def store_model: (String model, ?path: String) -> String?
 end

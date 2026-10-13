@@ -55,7 +55,22 @@ describe Riffer::Rig::Commands::Auth do
     Riffer::Rig::Events::CommandOutput.new('auth', text)
   end
 
+  def malform_auth
+    FileUtils.mkdir_p(File.dirname(Riffer::Rig::Credentials::PATH))
+    File.write(Riffer::Rig::Credentials::PATH, '{"openai":{"a":1},}')
+  end
+
+  def malformed_auth
+    Riffer::Rig::Events::Notify.new("#{Riffer::Rig::Credentials::PATH} is not valid JSON at line 1 column 19", :error)
+  end
+
   describe 'listing' do
+    it 'reports a malformed auth.json once instead of the statuses' do
+      malform_auth
+
+      assert_equal [malformed_auth], command_events(Riffer::Rig::Runtime.new('mock/test'), '')
+    end
+
     it 'reports each provider with its status' do
       ENV['ANTHROPIC_API_KEY'] = 'sk-env'
       Riffer::Rig::Credentials.store(:openai, { api_key: 'sk-stored' })
@@ -93,6 +108,12 @@ describe Riffer::Rig::Commands::Auth do
         )],
         command_events(runtime, 'acme')
       )
+    end
+
+    it 'reports a malformed auth.json' do
+      malform_auth
+
+      assert_equal [malformed_auth], command_events(Riffer::Rig::Runtime.new('mock/test'), 'anthropic')
     end
 
     it 'refuses through notify when the host declines' do
@@ -136,6 +157,12 @@ describe Riffer::Rig::Commands::Auth do
         )],
         command_events(runtime, 'remove acme')
       )
+    end
+
+    it 'reports a malformed auth.json instead of the removal' do
+      malform_auth
+
+      assert_equal [malformed_auth], command_events(Riffer::Rig::Runtime.new('mock/test'), 'remove openai')
     end
 
     it 'removes the stored credentials' do

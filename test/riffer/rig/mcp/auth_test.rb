@@ -63,7 +63,27 @@ describe Riffer::Rig::Mcp::Auth do
     JSON.parse(File.read(auth_path)).fetch(server).except('type')
   end
 
+  def refusal
+    yield
+    nil
+  rescue Riffer::Rig::Mcp::Auth::Error => e
+    e.message
+  end
+
   describe '.resolve' do
+    it 'raises naming a malformed auth.json' do
+      in_tmp_home do |auth_path|
+        FileUtils.mkdir_p(File.dirname(auth_path))
+        File.write(auth_path, '{"docs":{"a":1},}')
+
+        refused = refusal do
+          Riffer::Rig::Mcp::Auth.resolve('docs', { api_key: ['DOCS_API_KEY'] }, host: null_host, env: env, auth_path:)
+        end
+
+        assert_equal "#{auth_path} is not valid JSON at line 1 column 17", refused
+      end
+    end
+
     it 'prefers the env var over the stored value' do
       in_tmp_home do |auth_path|
         store_secret(auth_path, 'docs', 'api_key' => 'stored')

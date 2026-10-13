@@ -23,7 +23,31 @@ describe Riffer::Rig::Settings::File do
     end
   end
 
+  describe '.update' do
+    it 'yields the document with symbol keys' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(dir, { 'git' => { 'depth' => 10 } })
+        yielded = nil
+        Riffer::Rig::Settings::File.update(path) { |document| yielded = document }
+
+        assert_equal({ git: { depth: 10 } }, yielded)
+      end
+    end
+  end
+
   describe '.store_model' do
+    it 'reports a malformed file' do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, 'settings.json')
+        File.write(path, '{"reasoning":"low",}')
+
+        assert_equal(
+          "#{path} is not valid JSON at line 1 column 20",
+          Riffer::Rig::Settings::File.store_model('openai/gpt-5', path: path)
+        )
+      end
+    end
+
     it 'writes the model' do
       Dir.mktmpdir do |dir|
         path = File.join(dir, '.riffer', 'settings.json')

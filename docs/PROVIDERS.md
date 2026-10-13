@@ -44,6 +44,8 @@ Nothing validates a value. A pasted key is saved as it is, and a bad key surface
 
 `"type": "api_key"` is the only type. An entry of any other shape is ignored, including the flat `{"anthropic": "sk-…"}` entries earlier versions wrote: paste the key again when prompted, or rewrite the entry in the typed shape.
 
+A file that is missing or blank counts as empty. One that is not valid JSON, or does not hold a JSON object, is handled the way a settings file is ([Configuration](CONFIGURATION.md)): never read as empty, never written over, and `riffer` stops before the session starts. Inside a session `/auth` and `/model` report the same message in place of their result. The file's text is left out of the message, so a broken file never puts a key on screen.
+
 ### `$VAR` and `!command` values
 
 A secret in `auth.json` is a literal, a reference to an environment variable, or a shell command whose stdout is the secret:
@@ -151,6 +153,8 @@ resolution.missing # => []
 `apply` is the assignment `install` makes, for values that came from elsewhere. It touches only the members it was given a value for, and for a provider `Riffer.config` has no section for it assigns nothing, only recording the values for [`Riffer::Rig.credentials`](CUSTOM_PROVIDERS.md#reading-the-credentials).
 
 `status` reports where a provider's secret comes from: `:env` when one of its env vars is set, `:stored` when `auth.json` has it, `:chain` when neither holds and the setup entry offers the SDK's own credential chain, otherwise `:missing`. It reads no plain fields and runs no command.
+
+A file that [does not parse](#authjson) is reported as a `String` naming it, returned in place of the method's usual result, and nothing is written.
 
 `install`, `store` and `remove` take `auth_path:` and `settings_path:` to point at other files, and `status` takes `auth_path:`. `install` and `status` take `env:`, a `Riffer::Rig::Env`; `install`, `store` and `status` take `setup:` in place of the `Riffer::Rig::ProviderSetup.for(identifier)` lookup; `install` and `apply` take `config:` in place of `Riffer.config`, and `install` with `config: nil` assigns nothing. `install` also takes `known:`, the values the caller already holds for the provider: a required field named there is not reported as `missing`.
 

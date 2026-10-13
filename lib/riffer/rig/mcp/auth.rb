@@ -16,6 +16,8 @@ module Riffer::Rig::Mcp::Auth
   def resolve(server, fields, host:, env:, auth_path: Riffer::Rig::Credentials::PATH)
     setup = setup_for(fields)
     resolution = Riffer::Rig::Credentials.install(server, host:, setup:, env:, auth_path:, config: nil)
+    raise Error, resolution if resolution.is_a?(String)
+
     unless resolution.missing.empty?
       raise Error,
             "MCP server #{server} has no #{setup.missing_fields(resolution.missing)}; " \

@@ -2,12 +2,18 @@
 
 module Riffer::Rig::Trust
   # @rbs path: String
-  # @rbs return: Hash[String, bool]
-  def read: (String path) -> Hash[String, bool]
+  # @rbs return: (Hash[String, bool] | String)
+  def read: (String path) -> (Hash[String, bool] | String)
 
   # @rbs path: String
   # @rbs file: String
   # @rbs decision: bool
-  # @rbs return: void
-  def store: (String path, String file, bool decision) -> void
+  # @rbs return: String?
+  def store: (String path, String file, bool decision) -> String?
+
+  private
+
+  # @rbs document: Hash[untyped, untyped]
+  # @rbs return: Hash[String, bool]
+  def decisions: (Hash[untyped, untyped] document) -> Hash[String, bool]
 end

@@ -5,15 +5,18 @@ module Riffer::Rig::Credentials::ProviderFields
 
   # @rbs identifier: String
   # @rbs path: String
-  # @rbs return: Hash[String, String]
+  # @rbs return: (Hash[String, String] | String)
   def read(identifier, path:)
-    Riffer::Rig::Settings::Document.new(Riffer::Rig::Settings::File.read(path)).providers[identifier] || {}
+    source = Riffer::Rig::Settings::File.read(path)
+    return source if source.is_a?(String)
+
+    Riffer::Rig::Settings::Document.new(source).providers[identifier] || {}
   end
 
   # @rbs identifier: String
   # @rbs fields: Hash[String, String]
   # @rbs path: String
-  # @rbs return: void
+  # @rbs return: String?
   def store(identifier, fields, path:)
     update(path) do |providers|
       providers.merge(identifier => fields) { |_identifier, stored, given| stored.merge(given) }
@@ -22,7 +25,7 @@ module Riffer::Rig::Credentials::ProviderFields
 
   # @rbs identifier: String
   # @rbs path: String
-  # @rbs return: void
+  # @rbs return: String?
   def remove(identifier, path:)
     update(path) { |providers| providers.except(identifier) }
   end
@@ -31,14 +34,14 @@ module Riffer::Rig::Credentials::ProviderFields
 
   # @rbs path: String
   # @rbs &: (Hash[String, Hash[String, String]]) -> Hash[String, Hash[String, String]]
-  # @rbs return: void
+  # @rbs return: String?
   def update(path)
-    source = Riffer::Rig::Settings::File.read(path)
-    current = Riffer::Rig::Settings::Document.new(source).providers
-    providers = yield current
-    return if providers == current
+    Riffer::Rig::Settings::File.update(path) do |source|
+      current = Riffer::Rig::Settings::Document.new(source).providers
+      providers = yield current
+      next source if providers == current
 
-    document = providers.empty? ? source.except(:providers) : source.merge(providers: providers)
-    Riffer::Rig::Support::JsonFile.write(path, document)
+      providers.empty? ? source.except(:providers) : source.merge(providers: providers)
+    end
   end
 end

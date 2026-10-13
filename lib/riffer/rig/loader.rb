@@ -81,6 +81,8 @@ class Riffer::Rig::Loader
   # @rbs return: Riffer::Rig::Runtime
   def runtime(options = Options.new, reload: nil, extra_extensions: [], snapshot: nil)
     settings = merged_settings
+    raise ConfigurationError, settings if settings.is_a?(String)
+
     document = Riffer::Rig::Settings::Document.new(settings)
     selected = select_model(options.model || @env.model || document.model)
     provider = Riffer::Rig::Settings::ModelOptions.provider_for(selected).to_s
@@ -213,7 +215,10 @@ class Riffer::Rig::Loader
 
   # @rbs return: bool
   def manual_reload?
-    reload_mode(Riffer::Rig::Settings::Document.new(merged_settings)) == :manual
+    return true if @reload_mode == :manual
+
+    settings = merged_settings
+    settings.is_a?(Hash) && reload_mode(Riffer::Rig::Settings::Document.new(settings)) == :manual
   end
 
   # The automatic trigger: runs at every before_request boundary, so the
@@ -224,12 +229,15 @@ class Riffer::Rig::Loader
     _ = reload(runtime)
   end
 
-  # @rbs return: Hash[Symbol, untyped]
+  # @rbs return: (Hash[Symbol, untyped] | String)
   def merged_settings
-    Riffer::Rig::Settings.merge(
-      Riffer::Rig::Settings::File.read(home_settings_path),
-      Riffer::Rig::Settings::File.read(File.join(@cwd, '.riffer', 'settings.json'))
-    )
+    home = Riffer::Rig::Settings::File.read(home_settings_path)
+    return home if home.is_a?(String)
+
+    project = Riffer::Rig::Settings::File.read(File.join(@cwd, '.riffer', 'settings.json'))
+    return project if project.is_a?(String)
+
+    Riffer::Rig::Settings.merge(home, project)
   end
 
   # Notifies every failure once and reports its message, unexpected raises
@@ -240,6 +248,8 @@ class Riffer::Rig::Loader
   # @rbs return: (Riffer::Rig::Runtime | String)
   def perform_reload(runtime)
     settings = merged_settings
+    return notify_failure(settings) if settings.is_a?(String)
+
     candidates = reload_candidates(Riffer::Rig::Settings::Document.new(settings))
     return notify_failure(candidates) if candidates.is_a?(String)
 
@@ -290,7 +300,9 @@ class Riffer::Rig::Loader
     rejection = Riffer::Rig::Settings::ModelOptions.rejection(model)
     raise ConfigurationError, rejection if rejection
 
-    Riffer::Rig::Settings::File.store_model(model, path: home_settings_path) unless configured
+    refusal = Riffer::Rig::Settings::File.store_model(model, path: home_settings_path) unless configured
+    raise ConfigurationError, refusal if refusal
+
     model
   end
 

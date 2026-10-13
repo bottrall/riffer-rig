@@ -24,7 +24,9 @@ module Riffer::Rig::Commands::Model
     if model.empty?
       return ctx.say("Model: #{ctx.runtime.model}") unless save
 
-      Riffer::Rig::Settings::File.store_model(ctx.runtime.model)
+      refusal = Riffer::Rig::Settings::File.store_model(ctx.runtime.model)
+      return ctx.host.notify(refusal, level: :error) if refusal
+
       return ctx.say("Saved #{ctx.runtime.model} to settings")
     end
 
@@ -33,7 +35,8 @@ module Riffer::Rig::Commands::Model
     return unless ready?(ctx, model, provider)
 
     ctx.runtime.model = model
-    Riffer::Rig::Settings::File.store_model(model) if save
+    refusal = Riffer::Rig::Settings::File.store_model(model) if save
+    ctx.host.notify(refusal, level: :error) if refusal
     ctx.say("Model switched to #{model}")
   end
 
@@ -80,7 +83,10 @@ module Riffer::Rig::Commands::Model
     empty = {} #: Hash[Symbol, String]
     stored = ctx.runtime.credentials.fetch(provider.to_sym, empty)
     resolution = Riffer::Rig::Credentials.install(provider, host: ctx.host, known: stored)
-    if resolution.missing.any?
+    if resolution.is_a?(String)
+      ctx.host.notify(resolution, level: :error)
+      false
+    elsif resolution.missing.any?
       refuse(ctx, model, provider, missing & resolution.missing)
       false
     else

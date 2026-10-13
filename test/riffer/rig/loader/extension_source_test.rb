@@ -49,6 +49,15 @@ describe Riffer::Rig::Loader::ExtensionSource do
     File.join(@home, '.riffer', 'trust.json')
   end
 
+  def malform_trust
+    FileUtils.mkdir_p(File.dirname(trust_file))
+    File.write(trust_file, '{"a.rb":true,}')
+  end
+
+  def malformed_trust
+    "#{trust_file} is not valid JSON at line 1 column 14"
+  end
+
   def home_rig_path
     File.expand_path(File.join(@home, '.riffer', 'rig.rb'))
   end
@@ -104,6 +113,29 @@ describe Riffer::Rig::Loader::ExtensionSource do
     end
 
     describe 'trust' do
+      it 'reports a malformed trust.json through notify' do
+        write_rig(:project, '')
+        malform_trust
+        source.discover(autoload: false)
+
+        assert_equal [[:error, malformed_trust]], @host.notifications
+      end
+
+      it 'skips the project file when trust.json is malformed' do
+        write_rig(:project, recording('es_untrusted'))
+        malform_trust
+
+        assert_empty source.discover(autoload: false)
+      end
+
+      it 'does not ask about the project file when trust.json is malformed' do
+        write_rig(:project, '')
+        malform_trust
+        source.discover(autoload: false)
+
+        assert_empty @host.questions
+      end
+
       it 'asks to confirm a project file the first time it is seen' do
         write_rig(:project, '')
         source.discover(autoload: false)
@@ -116,6 +148,18 @@ describe Riffer::Rig::Loader::ExtensionSource do
         source.discover(autoload: false)
 
         assert_equal({ project_rig_path => true }, JSON.parse(File.read(trust_file)))
+      end
+
+      it 'reports a trust.json that turned malformed while the host confirmed' do
+        write_rig(:project, '')
+        malform = -> { malform_trust }
+        @host.define_singleton_method(:confirm) do |_question = nil|
+          malform.call
+          true
+        end
+        source.discover(autoload: false)
+
+        assert_equal [[:error, malformed_trust]], @host.notifications
       end
 
       it 'does not ask again once an answer is stored' do
@@ -288,6 +332,14 @@ describe Riffer::Rig::Loader::ExtensionSource do
       source.rediscover
 
       refute_path_exists marker
+    end
+
+    it 'reports a malformed trust.json as its message' do
+      rediscovering = discovered
+      write_rig(:project, '')
+      malform_trust
+
+      assert_equal malformed_trust, rediscovering.rediscover
     end
 
     it 'confirms a project rig.rb appearing after the discovery' do

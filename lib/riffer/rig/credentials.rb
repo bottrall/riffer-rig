@@ -20,7 +20,7 @@ module Riffer::Rig::Credentials
   # @rbs auth_path: String
   # @rbs settings_path: String
   # @rbs known: Hash[Symbol, String]
-  # @rbs return: Resolution
+  # @rbs return: (Resolution | String)
   def install(
     identifier,
     host:,
@@ -32,6 +32,8 @@ module Riffer::Rig::Credentials
     known: {}
   )
     resolution = resolve(identifier, host:, setup:, env:, auth_path:, settings_path:)
+    return resolution if resolution.is_a?(String)
+
     missing = resolution.missing - known.keys
     apply(identifier, resolution.values, config: config) if config && missing.empty?
     Resolution.new(values: resolution.values, missing: missing)
@@ -62,7 +64,7 @@ module Riffer::Rig::Credentials
   # @rbs setup: Riffer::Rig::ProviderSetup
   # @rbs auth_path: String
   # @rbs settings_path: String
-  # @rbs return: void
+  # @rbs return: String?
   def store(
     identifier,
     values,
@@ -75,35 +77,34 @@ module Riffer::Rig::Credentials
     secrets = fields.slice(*secret_names)
     plain = fields.except(*secret_names)
 
-    unless secrets.empty?
-      document = Riffer::Rig::Support::JsonFile.read(auth_path)
-      stored = document[identifier.to_s]
-      entry = (api_key_entry?(stored) ? stored : { 'type' => ENTRY_TYPE }).merge(secrets)
-      write_auth(auth_path, document.merge(identifier.to_s => entry))
-    end
+    refusal = (unreadable_settings(settings_path) unless plain.empty?) ||
+              store_secrets(identifier.to_s, secrets, auth_path)
+    return refusal if refusal
+
     ProviderFields.store(identifier.to_s, plain, path: settings_path) unless plain.empty?
   end
 
   # @rbs identifier: String | Symbol
   # @rbs auth_path: String
   # @rbs settings_path: String
-  # @rbs return: void
+  # @rbs return: String?
   def remove(identifier, auth_path: PATH, settings_path: Riffer::Rig::Settings::File::PATH)
-    document = Riffer::Rig::Support::JsonFile.read(auth_path)
-    write_auth(auth_path, document.except(identifier.to_s)) if document.key?(identifier.to_s)
-    ProviderFields.remove(identifier.to_s, path: settings_path)
+    unreadable_settings(settings_path) ||
+      update_auth(auth_path) { |document| document.except(identifier.to_s) } ||
+      ProviderFields.remove(identifier.to_s, path: settings_path)
   end
 
   # @rbs identifier: String | Symbol
   # @rbs setup: Riffer::Rig::ProviderSetup
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
-  # @rbs return: :env | :stored | :chain | :missing
+  # @rbs return: :env | :stored | :chain | :missing | String
   def status(identifier, setup: Riffer::Rig::ProviderSetup.for(identifier), env: Riffer::Rig::Env.new, auth_path: PATH)
     secret_fields = setup.fields.select(&:secret)
     return :env if secret_fields.any? { |field| env.value_for(field) }
 
     stored = stored_secrets(identifier, auth_path)
+    return stored if stored.is_a?(String)
     return :stored if secret_fields.any? { |field| stored.key?(field.name.to_s) }
 
     setup.chain ? :chain : :missing
@@ -117,7 +118,7 @@ module Riffer::Rig::Credentials
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
-  # @rbs return: Resolution
+  # @rbs return: (Resolution | String)
   def resolve(
     identifier,
     host:,
@@ -127,13 +128,18 @@ module Riffer::Rig::Credentials
     settings_path: Riffer::Rig::Settings::File::PATH
   )
     secrets = stored_secrets(identifier, auth_path)
+    return secrets if secrets.is_a?(String)
+
     plain = ProviderFields.read(identifier.to_s, path: settings_path)
+    return plain if plain.is_a?(String)
+
     found = setup.fields.to_h do |field|
       [field.name, env.value_for(field) || stored_value(field, secrets, plain, env) || field.fallback&.call]
     end.compact
     required = setup.fields.select(&:required)
     answers = ask_for(required.reject { |field| found.key?(field.name) }, identifier, host)
-    store(identifier, answers, setup:, auth_path:, settings_path:)
+    refusal = store(identifier, answers, setup:, auth_path:, settings_path:)
+    return refusal if refusal
 
     values = found.merge(answers)
     Resolution.new(values:, missing: required.map(&:name) - values.keys)
@@ -187,18 +193,34 @@ module Riffer::Rig::Credentials
 
   # @rbs identifier: String | Symbol
   # @rbs path: String
-  # @rbs return: Hash[String, String]
+  # @rbs return: (Hash[String, String] | String)
   def stored_secrets(identifier, path)
-    read_auth(path)[identifier.to_s] || {}
+    document = Riffer::Rig::Support::JsonFile.read(path)
+    return document if document.is_a?(String)
+
+    entry = document[identifier.to_s]
+    api_key_entry?(entry) ? entry.except('type').select { |_name, value| value.is_a?(String) } : {}
+  end
+
+  # @rbs identifier: String
+  # @rbs secrets: Hash[String, String]
+  # @rbs path: String
+  # @rbs return: String?
+  def store_secrets(identifier, secrets, path)
+    return nil if secrets.empty?
+
+    update_auth(path) do |document|
+      stored = document[identifier]
+      entry = (api_key_entry?(stored) ? stored : { 'type' => ENTRY_TYPE }).merge(secrets)
+      document.merge(identifier => entry)
+    end
   end
 
   # @rbs path: String
-  # @rbs return: Hash[String, Hash[String, String]]
-  def read_auth(path)
-    Riffer::Rig::Support::JsonFile
-      .read(path)
-      .select { |_identifier, entry| api_key_entry?(entry) }
-      .transform_values { |entry| entry.except('type').select { |_name, value| value.is_a?(String) } }
+  # @rbs return: String?
+  def unreadable_settings(path)
+    source = Riffer::Rig::Settings::File.read(path)
+    source if source.is_a?(String)
   end
 
   # @rbs entry: untyped
@@ -208,9 +230,9 @@ module Riffer::Rig::Credentials
   end
 
   # @rbs path: String
-  # @rbs document: Hash[untyped, untyped]
-  # @rbs return: void
-  def write_auth(path, document)
-    Riffer::Rig::Support::JsonFile.write(path, document, mode: 0o600)
+  # @rbs &: (Hash[untyped, untyped]) -> Hash[untyped, untyped]
+  # @rbs return: String?
+  def update_auth(path, &)
+    Riffer::Rig::Support::JsonFile.update(path, mode: 0o600, &)
   end
 end

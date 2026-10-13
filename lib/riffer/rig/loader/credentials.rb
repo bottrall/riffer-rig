@@ -12,6 +12,7 @@ module Riffer::Rig::Loader::Credentials
   # @rbs return: (Hash[Symbol, String] | String)
   def install(provider, host:, env:, config:, auth_path:, settings_path:)
     resolution = Riffer::Rig::Credentials.install(provider, host:, env:, config:, auth_path:, settings_path:)
+    return resolution if resolution.is_a?(String)
     return resolution.values if resolution.missing.empty?
 
     setup = Riffer::Rig::ProviderSetup.for(provider)

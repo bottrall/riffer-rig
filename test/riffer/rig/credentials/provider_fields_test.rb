@@ -10,7 +10,25 @@ describe Riffer::Rig::Credentials::ProviderFields do
     path
   end
 
+  def malformed_settings_file(dir)
+    path = File.join(dir, 'settings.json')
+    File.write(path, '{"providers":{},}')
+    path
+  end
+
+  def malformed(path)
+    "#{path} is not valid JSON at line 1 column 17"
+  end
+
   describe '.read' do
+    it 'reports a malformed settings file' do
+      Dir.mktmpdir do |dir|
+        path = malformed_settings_file(dir)
+
+        assert_equal(malformed(path), Riffer::Rig::Credentials::ProviderFields.read('openai', path: path))
+      end
+    end
+
     it 'returns the providers block for one provider' do
       Dir.mktmpdir do |dir|
         path = settings_file(dir, { 'providers' => { 'azure_openai' => { 'endpoint' => 'https://azure.test' } } })
@@ -32,6 +50,17 @@ describe Riffer::Rig::Credentials::ProviderFields do
   end
 
   describe '.store' do
+    it 'reports a malformed settings file' do
+      Dir.mktmpdir do |dir|
+        path = malformed_settings_file(dir)
+
+        assert_equal(
+          malformed(path),
+          Riffer::Rig::Credentials::ProviderFields.store('openai', { 'base_url' => 'https://new.test' }, path: path)
+        )
+      end
+    end
+
     it 'merges fields into an existing block' do
       Dir.mktmpdir do |dir|
         path = settings_file(dir, { 'providers' => { 'openai' => { 'base_url' => 'https://old.test' } } })
@@ -95,6 +124,14 @@ describe Riffer::Rig::Credentials::ProviderFields do
   end
 
   describe '.remove' do
+    it 'reports a malformed settings file' do
+      Dir.mktmpdir do |dir|
+        path = malformed_settings_file(dir)
+
+        assert_equal(malformed(path), Riffer::Rig::Credentials::ProviderFields.remove('openai', path: path))
+      end
+    end
+
     it 'writes nothing when the provider has no block' do
       Dir.mktmpdir do |dir|
         path = File.join(dir, 'settings.json')
