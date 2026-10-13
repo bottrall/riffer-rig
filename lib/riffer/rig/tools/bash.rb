@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require 'open3'
-require 'securerandom'
-require 'tmpdir'
 
 class Riffer::Rig::Tools::Bash < Riffer::Tool
   include Riffer::Rig::Tools::Bash::KillGroup
@@ -60,9 +58,10 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
     return error('no background job registry in the context', type: :command_failed) unless jobs
 
     cwd = context&.[](:cwd) #: String
-    path = File.join(Dir.tmpdir, "riffer-rig-job-#{SecureRandom.hex(4)}")
-    pid = Process.spawn(command, chdir: cwd, pgroup: true, out: [path, 'w', 0o600], err: %i[child out])
-    job = jobs.register(pid, command, path)
+    reader, writer = IO.pipe
+    pid = Process.spawn(command, chdir: cwd, pgroup: true, out: writer, err: %i[child out])
+    writer.close
+    job = jobs.register(pid, command, reader)
 
     text("Job #{job.id} started in background\nOutput: #{job.output_path}")
   end

@@ -63,7 +63,7 @@ describe Riffer::Rig::Runtime do
 
   def spawn_group_job(runtime, command = 'sleep 30')
     jobs = runtime.agent.context[:jobs] #: Riffer::Rig::Tools::Bash::Jobs
-    jobs.register(Process.spawn(command, pgroup: true), command, File::NULL)
+    jobs.register(Process.spawn(command, pgroup: true), command, File.open(File::NULL))
   end
 
   def job_exits(runtime)
@@ -1921,8 +1921,10 @@ describe Riffer::Rig::Runtime do
       exits = job_exits(runtime)
       job = spawn_group_job(runtime)
       runtime.cancel
+      exited = exits.pop(timeout: 5)
+      runtime.close
 
-      assert_equal job.id, exits.pop(timeout: 5)&.job_id
+      assert_equal job.id, exited&.job_id
     end
 
     it 'returns nil' do

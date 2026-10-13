@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'securerandom'
 require 'test_helper'
 
 describe Riffer::Rig::Tools::Bash::Output do
@@ -9,19 +8,19 @@ describe Riffer::Rig::Tools::Bash::Output do
     @jobs = Riffer::Rig::Tools::Bash::Jobs.new(Riffer::Rig::Runtime::JobInbox.new)
     @context = Riffer::Agent::Context.new(cwd: Dir.pwd, jobs: @jobs)
     @max = Riffer::Rig::Tools::Bash::MAX_OUTPUT_BYTES
-    @paths = []
   end
 
   def teardown
     @jobs.shutdown(0.0)
-    FileUtils.rm_f(@paths)
   end
 
   def start(output)
-    path = File.join(Dir.tmpdir, "riffer-rig-job-test-#{SecureRandom.hex(4)}")
-    @paths << path
-    File.binwrite(path, output)
-    @jobs.register(Process.spawn('sleep 30', pgroup: true, out: [path, 'a'], err: %i[child out]), 'sleep 30', path)
+    reader, writer = IO.pipe
+    job = @jobs.register(Process.spawn('sleep 30', pgroup: true), 'sleep 30', reader)
+    writer.binmode.write(output)
+    writer.close
+    sleep 0.01 until File.size(job.output_path) == output.bytesize
+    job
   end
 
   def read(job)

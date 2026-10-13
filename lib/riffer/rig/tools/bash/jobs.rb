@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
+require 'fileutils'
 require 'securerandom'
+require 'tmpdir'
 
 class Riffer::Rig::Tools::Bash::Jobs
   include Riffer::Rig::Tools::Bash::KillGroup
@@ -12,9 +14,13 @@ class Riffer::Rig::Tools::Bash::Jobs
 
   SHUTDOWN_GRACE_SECONDS = 2.0 #: Float
 
+  DRAIN_SECONDS = 0.5 #: Float
+
   # @rbs @inbox: Riffer::Rig::Tools::Bash::_Inbox
   # @rbs @jobs: Hash[String, Riffer::Rig::Tools::Bash::Job]
   # @rbs @groups: Array[Integer]
+  # @rbs @logs: Hash[String, Riffer::Rig::Tools::Bash::JobLog]
+  # @rbs @directory: String?
   # @rbs @mutex: Mutex
   # @rbs @watchers: ThreadGroup
 
@@ -24,27 +30,33 @@ class Riffer::Rig::Tools::Bash::Jobs
     @inbox = inbox
     @jobs = {}
     @groups = []
+    @logs = {}
+    @directory = nil
     @mutex = Mutex.new
     @watchers = ThreadGroup.new
   end
 
   # @rbs pid: Integer
   # @rbs command: String
-  # @rbs output_path: String
+  # @rbs output: IO
   # @rbs return: Riffer::Rig::Tools::Bash::Job
-  def register(pid, command, output_path)
+  def register(pid, command, output)
+    id = SecureRandom.hex(4)
+    path = File.join(directory, id)
+    log = Riffer::Rig::Tools::Bash::JobLog.new(output, path)
     job = Riffer::Rig::Tools::Bash::Job.new(
-      id: SecureRandom.hex(4),
+      id: id,
       pid: pid,
       command: command,
-      output_path: output_path,
+      output_path: path,
       started_at: monotonic_now
     )
     @mutex.synchronize do
-      @jobs[job.id] = job
+      @jobs[id] = job
       @groups << pid
+      @logs[id] = log
     end
-    @watchers.add(Thread.new { watch(job) })
+    @watchers.add(Thread.new { watch(job, log) })
     job
   end
 
@@ -60,12 +72,10 @@ class Riffer::Rig::Tools::Bash::Jobs
       job = @jobs.fetch(id, nil)
       return unless job
 
-      size = File.size?(job.output_path).to_i
-      output = slice(job.output_path, READ_LIMIT_BYTES, job.offset)
+      output, written = @logs.fetch(id).read(job.offset, READ_LIMIT_BYTES)
       # Output past the read limit is dropped rather than queued, so a job writing
-      # faster than it is read cannot build a backlog; the max covers a file
-      # that grew between the size and the read.
-      advanced = job.advance([output.bytesize, size - job.offset].max)
+      # faster than it is read cannot build a backlog.
+      advanced = job.advance(written - job.offset)
       @jobs[id] = advanced
       [advanced, output]
     end
@@ -104,13 +114,29 @@ class Riffer::Rig::Tools::Bash::Jobs
     # the watchers are released rather than left polling.
     @mutex.synchronize { @groups.clear }
     @watchers.list.each(&:join)
+    logs, directory = @mutex.synchronize { [@logs.values, @directory] }
+    # A process that left its job's group can hold the pipe open indefinitely.
+    logs.each(&:close)
+    FileUtils.rm_rf(directory) if directory
   end
 
   private
 
+  # @rbs return: String
+  def directory
+    @mutex.synchronize do
+      current = @directory
+      # A tmp cleaner or a job can remove the directory between two jobs.
+      next current if current && File.directory?(current)
+
+      @directory = Dir.mktmpdir('riffer-rig-jobs-')
+    end
+  end
+
   # @rbs job: Riffer::Rig::Tools::Bash::Job
+  # @rbs log: Riffer::Rig::Tools::Bash::JobLog
   # @rbs return: void
-  def watch(job)
+  def watch(job, log)
     # The only reap of a job: a second reaper would take the exit status and
     # leave this wait with ECHILD.
     _pid, status = Process.wait2(job.pid)
@@ -120,7 +146,10 @@ class Riffer::Rig::Tools::Bash::Jobs
     retain(job.pid)
     exit_status = status.exitstatus || 1
     finished = @mutex.synchronize { @jobs[job.id] = @jobs.fetch(job.id).finish(exit_status, monotonic_now) }
-    @inbox.push(completion(finished, exit_status))
+    # Bounded because a process the job left behind can hold the pipe open
+    # long after the job itself has exited.
+    log.drain(DRAIN_SECONDS)
+    @inbox.push(completion(finished, log, exit_status))
     sleep(Riffer::Rig::Tools::Bash::POLL_SECONDS) while retain(job.pid)
   rescue Errno::ECHILD
     @mutex.synchronize do
@@ -149,33 +178,18 @@ class Riffer::Rig::Tools::Bash::Jobs
   end
 
   # @rbs job: Riffer::Rig::Tools::Bash::Job
+  # @rbs log: Riffer::Rig::Tools::Bash::JobLog
   # @rbs exit_status: Integer
   # @rbs return: Riffer::Rig::Runtime::JobCompletion
-  def completion(job, exit_status)
-    path = job.output_path
+  def completion(job, log, exit_status)
     Riffer::Rig::Runtime::JobCompletion.new(
       job_id: job.id,
       command: job.command,
       exit_status: exit_status,
       duration: job.elapsed(monotonic_now),
-      output_path: path,
+      output_path: job.output_path,
       # Scrubbed because the cut can split a multibyte character.
-      tail: slice(path, TAIL_BYTES, [File.size?(path).to_i - TAIL_BYTES, 0].max).scrub
+      tail: log.tail(TAIL_BYTES).scrub
     )
-  end
-
-  # @rbs path: String
-  # @rbs limit: Integer
-  # @rbs offset: Integer
-  # @rbs return: String
-  def slice(path, limit, offset)
-    read = begin
-      File.read(path, limit, offset)
-    rescue Errno::ENOENT
-      # A tmp cleaner or the job itself can remove the output file, even between
-      # the size and the read.
-      nil
-    end
-    (read || +'').force_encoding(Encoding.default_external)
   end
 end
