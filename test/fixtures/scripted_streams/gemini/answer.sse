@@ -1,0 +1,4 @@
+data: {"candidates":[{"content":{"role":"model","parts":[{"text":"The file "}]},"index":0}],"usageMetadata":{"promptTokenCount":150,"candidatesTokenCount":3,"totalTokenCount":153},"modelVersion":"gemini-2.5-pro","responseId":"resp-02"}
+
+data: {"candidates":[{"content":{"role":"model","parts":[{"text":"is empty."}]},"finishReason":"STOP","index":0}],"usageMetadata":{"promptTokenCount":150,"candidatesTokenCount":10,"totalTokenCount":160},"modelVersion":"gemini-2.5-pro","responseId":"resp-02"}
+

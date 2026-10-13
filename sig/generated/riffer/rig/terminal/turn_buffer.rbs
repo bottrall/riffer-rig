@@ -1,0 +1,56 @@
+# Generated from lib/riffer/rig/terminal/turn_buffer.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::TurnBuffer
+  @request_usage: Riffer::Providers::TokenUsage?
+
+  @settled_usage: Riffer::Providers::TokenUsage?
+
+  @interrupted: bool
+
+  @in_request: bool
+
+  @steps: Integer
+
+  @prose: String
+
+  @ended_at: Float?
+
+  @started_at: Float
+
+  @clock: ^() -> Float
+
+  # @dynamic answer, ghost
+  attr_reader answer: String?
+
+  attr_reader ghost: String?
+
+  # @rbs clock: ^() -> Float
+  # @rbs return: void
+  def initialize: (clock: ^() -> Float) -> void
+
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: void
+  def absorb: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
+
+  # @rbs return: bool
+  def interrupted?: () -> bool
+
+  # @rbs return: Riffer::Rig::Terminal::TurnBuffer::Stats
+  def stats: () -> Riffer::Rig::Terminal::TurnBuffer::Stats
+
+  private
+
+  # @rbs return: void
+  def begin_request: () -> void
+
+  # @rbs finish_reason: Symbol
+  # @rbs return: void
+  def classify: (Symbol finish_reason) -> void
+
+  # @rbs unreported_finish_reason: Symbol
+  # @rbs return: void
+  def settle: (Symbol unreported_finish_reason) -> void
+
+  # @rbs return: Riffer::Providers::TokenUsage?
+  def usage: () -> Riffer::Providers::TokenUsage?
+end

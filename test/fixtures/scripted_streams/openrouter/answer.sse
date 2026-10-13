@@ -1,0 +1,10 @@
+data: {"id":"gen-02","provider":"Anthropic","model":"anthropic/claude-sonnet-4.5","object":"chat.completion.chunk","created":1750000010,"choices":[{"index":0,"delta":{"role":"assistant","content":"The file "},"finish_reason":null,"native_finish_reason":null}]}
+
+data: {"id":"gen-02","provider":"Anthropic","model":"anthropic/claude-sonnet-4.5","object":"chat.completion.chunk","created":1750000010,"choices":[{"index":0,"delta":{"role":"assistant","content":"is empty."},"finish_reason":null,"native_finish_reason":null}]}
+
+data: {"id":"gen-02","provider":"Anthropic","model":"anthropic/claude-sonnet-4.5","object":"chat.completion.chunk","created":1750000010,"choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":"stop","native_finish_reason":"end_turn"}]}
+
+data: {"id":"gen-02","provider":"Anthropic","model":"anthropic/claude-sonnet-4.5","object":"chat.completion.chunk","created":1750000010,"choices":[],"usage":{"prompt_tokens":150,"completion_tokens":10,"total_tokens":160}}
+
+data: [DONE]
+
