@@ -1,0 +1,36 @@
+# Generated from lib/riffer/rig/runtime/abort.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::Abort
+  # Not a StandardError: provider SDKs rescue one around the request and retry it.
+  class Signal < Exception
+  end
+
+  # Rig's own callbacks (hooks, tools, stores, the host) run under this, so the
+  # signal never cuts one off halfway.
+  SHIELD: Hash[singleton(Exception), Symbol]
+
+  @mutex: Thread::Mutex
+
+  @thread: Thread?
+
+  # @rbs return: void
+  def initialize: () -> void
+
+  # @rbs &: () -> Riffer::Agent::Response
+  # @rbs return: Riffer::Agent::Response?
+  def window: () { () -> Riffer::Agent::Response } -> Riffer::Agent::Response?
+
+  # @rbs return: void
+  def fire: () -> void
+
+  private
+
+  # @rbs thread: Thread?
+  # @rbs return: void
+  def arm: (Thread? thread) -> void
+
+  # A signal that never reached a blocking call would otherwise be raised in
+  # the caller, after the turn it was meant for.
+  # @rbs return: void
+  def discard_pending: () -> void
+end

@@ -212,6 +212,31 @@ describe Riffer::Rig::Terminal::Renderer do
     assert_equal "\n    …\n", @io.string
   end
 
+  it 'drops an unfinished prose line on an interrupt event' do
+    renderer = Riffer::Rig::Terminal::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::Terminal::Theme.new(enabled: false),
+      smoother: recording_smoother
+    )
+
+    renderer.render(Riffer::StreamEvents::TextDelta.new('hello'))
+    renderer.render(Riffer::StreamEvents::Interrupt.new(reason: 'user'))
+
+    assert_empty recording_smoother.written
+  end
+
+  it 'discards the smoother backlog on an interrupt event' do
+    renderer = Riffer::Rig::Terminal::Renderer.new(
+      io: @io,
+      theme: Riffer::Rig::Terminal::Theme.new(enabled: false),
+      smoother: recording_smoother
+    )
+
+    renderer.render(Riffer::StreamEvents::Interrupt.new(reason: 'user'))
+
+    assert_predicate recording_smoother, :discarded?
+  end
+
   it 'drains the smoother before rendering an interrupt event' do
     renderer = Riffer::Rig::Terminal::Renderer.new(
       io: @io,
@@ -566,6 +591,10 @@ describe Riffer::Rig::Terminal::Renderer do
       def drain = @drained = true
 
       def drained? = @drained == true
+
+      def discard = @discarded = true
+
+      def discarded? = @discarded == true
 
       def finish = @finished = true
 

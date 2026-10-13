@@ -27,6 +27,10 @@ describe RuboCop::Cop::Rig::NoInheritance do
     assert_empty offenses("class Read < ::Riffer::Tool; end\n")
   end
 
+  it 'allows Exception as a parent' do
+    assert_empty offenses("class Signal < Exception; end\n")
+  end
+
   it 'allows an error subclass' do
     assert_empty offenses("class BusyError < StandardError; end\n")
   end

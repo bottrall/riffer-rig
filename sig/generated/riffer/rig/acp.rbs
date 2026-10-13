@@ -89,7 +89,8 @@ class Riffer::Rig::ACP
   # @rbs return: (::ACP::Types::ListSessionsResponse | ::ACP::RequestError)
   def list_sessions: (::ACP::Types::ListSessionsRequest request) -> (::ACP::Types::ListSessionsResponse | ::ACP::RequestError)
 
-  # Runs on the transport's reader thread, so it only sets the cancel flag.
+  # Runs on the transport's reader thread, so it asks the turn to stop and
+  # never waits for it.
   # @rbs notification: ::ACP::Types::CancelNotification
   # @rbs return: void
   def cancel: (::ACP::Types::CancelNotification notification) -> void

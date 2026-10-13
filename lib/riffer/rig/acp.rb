@@ -193,7 +193,8 @@ class Riffer::Rig::ACP
     ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: e.message)
   end
 
-  # Runs on the transport's reader thread, so it only sets the cancel flag.
+  # Runs on the transport's reader thread, so it asks the turn to stop and
+  # never waits for it.
   # @rbs notification: ::ACP::Types::CancelNotification
   # @rbs return: void
   def cancel(notification)

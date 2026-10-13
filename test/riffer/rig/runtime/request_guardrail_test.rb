@@ -20,6 +20,22 @@ describe Riffer::Rig::Runtime::RequestGuardrail do
   end
 
   describe '#process_input' do
+    it 'holds an abort off while the hooks run' do
+      abort = Riffer::Rig::Runtime::Abort.new
+      messages = [Riffer::Messages::User.new('hi')]
+      aborting = Class.new do
+        define_method(:before_request) do |given|
+          abort.fire
+          sleep(0)
+          given
+        end
+      end.new
+      guardrail = Riffer::Rig::Runtime::RequestGuardrail.new(hooks: aborting)
+      result = abort.window { guardrail.process_input(messages, context: nil) }
+
+      assert_predicate result, :pass?
+    end
+
     it 'blocks when the hooks block the request' do
       guardrail = guardrail_with(Riffer::Rig::Runtime::Blocked.new('no force pushes'))
       result = guardrail.process_input([Riffer::Messages::User.new('hi')], context: nil)

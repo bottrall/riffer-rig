@@ -7,6 +7,7 @@ module RuboCop::Cop::Rig
           'for another framework parent, add a scoped disable with a reason.'
 
     ALLOWED_PARENTS = %w[
+      Exception
       Riffer::Agent
       Riffer::Guardrail
       Riffer::Skills::Backend

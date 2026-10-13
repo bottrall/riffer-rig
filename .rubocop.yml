@@ -37,6 +37,11 @@ Layout/RedundantLineBreak:
   Enabled: true
   InspectBlocks: false
 
+Lint/InheritException:
+  Exclude:
+    # Abort::Signal has to escape the `rescue StandardError` in provider SDKs.
+    - "lib/riffer/rig/runtime/abort.rb"
+
 Lint/UnusedMethodArgument:
   AllowUnusedKeywordArguments: true
   Exclude:

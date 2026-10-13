@@ -45,6 +45,8 @@ class Riffer::Rig::Runtime
 
   # @rbs @agent: Riffer::Agent
   # @rbs @cancel_flag: Riffer::Rig::Runtime::CancelFlag
+  # @rbs @abort: Riffer::Rig::Runtime::Abort
+  # @rbs @draft: Array[String]
   # @rbs @job_inbox: Riffer::Rig::Runtime::JobInbox
   # @rbs @jobs: Riffer::Rig::Tools::Bash::Jobs
   # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
@@ -135,6 +137,7 @@ class Riffer::Rig::Runtime
     @clock = clock
     @yielder = nil
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
+    @abort = Riffer::Rig::Runtime::Abort.new
     @job_inbox = Riffer::Rig::Runtime::JobInbox.new
     @jobs = Riffer::Rig::Tools::Bash::Jobs.new(@job_inbox)
     @session_start_pending = true
@@ -159,7 +162,9 @@ class Riffer::Rig::Runtime
     agent = saved ? restore(saved, model, config) : build_agent(model, config)
     install(registrars, settings, hooks, agent)
     @mcp.retain(mcp_servers)
-    @agent.session.on_message { |message| observe_message(message) }
+    @agent.session.on_message do |message|
+      Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { observe_message(message) }
+    end
   end
 
   # @rbs text: String
@@ -317,6 +322,7 @@ class Riffer::Rig::Runtime
   # @rbs return: nil
   def cancel
     @cancel_flag.set
+    @abort.fire
     @jobs.kill_outstanding
     nil
   end
@@ -459,6 +465,7 @@ class Riffer::Rig::Runtime
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
   def start_turn(text)
     @cancel_flag.clear
+    @draft = []
     @reload_check&.call(self)
     @system_prompt.refresh(@agent.session, self)
     prompt = @hooks.before_prompt(text)
@@ -526,7 +533,13 @@ class Riffer::Rig::Runtime
         yielder << session_start
       end
       @host.drain.each { |queued| yielder << queued }
-      response = start_turn(text).each { |event| pass_through(yielder, event) }
+      response = @abort.window do
+        stream = Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { start_turn(text) }
+        stream.each do |event|
+          Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { pass_through(yielder, event) }
+        end
+      end
+      response ||= aborted(yielder)
       turn_end = Riffer::Rig::Events::TurnEnd.new(stop_reason(response.outcome), response.token_usage)
       @hooks.observe(:turn_end, turn_end)
       @host.drain.each { |queued| yielder << queued }
@@ -537,10 +550,29 @@ class Riffer::Rig::Runtime
     end
   end
 
+  # The abort unwinds riffer's run loop from outside, so what riffer does for
+  # an interrupt it raises itself is done here.
+  # @rbs yielder: Enumerator::Yielder
+  # @rbs return: Riffer::Agent::Response
+  def aborted(yielder)
+    @agent.session.discard_pending_tool_calls
+    text = @draft.join
+    # Silent, then delivered by hand: the on_message observer interrupts a
+    # cancelled turn with a throw, and riffer's catch is gone by now.
+    deliver(@agent.session.add(Riffer::Messages::Assistant.new(text), silent: true)) if text.match?(/\S/)
+    pass_through(yielder, Riffer::StreamEvents::Interrupt.new(reason: INTERRUPT_CANCELLED))
+    Riffer::Agent::Response.new(
+      text,
+      outcome: Riffer::Agent::Outcome.new(reason: :interrupted, detail: INTERRUPT_CANCELLED.to_s),
+      messages: @agent.session.messages.dup.freeze
+    )
+  end
+
   # @rbs yielder: Enumerator::Yielder
   # @rbs event: ::Riffer::StreamEvents::Base
   # @rbs return: void
   def pass_through(yielder, event)
+    @draft << event.content if event.is_a?(Riffer::StreamEvents::TextDelta)
     @hooks.observe(:stream, event)
     forward(yielder, event)
   end
@@ -565,6 +597,7 @@ class Riffer::Rig::Runtime
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
   def observe_message(message)
+    @draft = []
     deliver(message)
     interrupt_if_cancelled
     case message
@@ -598,8 +631,8 @@ class Riffer::Rig::Runtime
     return unless @cancel_flag.set?
 
     @agent.session.discard_pending_tool_calls
-    # Upstream candidate: a cancel token on riffer's run loop. Until then the
-    # loop can only be stopped from inside, at a message boundary.
+    # The abort is held off while a tool runs, so a cancel that lands there is
+    # honoured at the message boundary.
     @agent.interrupt!(INTERRUPT_CANCELLED)
   end
 

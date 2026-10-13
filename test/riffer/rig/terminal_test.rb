@@ -131,19 +131,13 @@ describe Riffer::Rig::Terminal do
 
   def run_with_interrupter(input)
     run_terminal(input) do |runtime|
-      cancelled = Queue.new
-      runtime.define_singleton_method(:cancel) do
-        super()
-        cancelled << true
-      end
       fired = false
       runtime.agent.provider.define_singleton_method(:stream_text) do |*args, **options, &block|
         unless fired
           fired = true
           Process.kill('INT', Process.pid)
-          # The trap hands the cancel to a thread, which has to land before
-          # the turn reaches the message boundary that honours it.
-          cancelled.pop(timeout: 5)
+          # Stands in for the provider read the cancel aborts.
+          Queue.new.pop(timeout: 5)
         end
         super(*args, **options, &block)
       end
@@ -462,7 +456,7 @@ describe Riffer::Rig::Terminal do
     runtime = nil
     run_with_interrupter("hello\nagain\n") { |driven| runtime = driven }
 
-    assert_equal 2, runtime.agent.provider.calls.length
+    assert_includes runtime.agent.provider.calls.last[:messages].last[:content], 'hello'
   end
 
   it 'restores the Ctrl-C handler after a turn' do

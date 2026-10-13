@@ -196,9 +196,9 @@ runtime.cancel
 turn.join
 ```
 
-The turn stops at the next message boundary — after the assistant message being streamed completes, or after the tool calls in flight return — not mid-token. The bundled `bash` tool does not wait that long: it polls the cancel flag, kills its command's process group and returns a tool error ending in `[cancelled]`. A tool of your own can do the same through `context[:cancel_flag].set?`.
+A reply in flight stops at once, whether the turn is still waiting on the provider or the reply is streaming: the request is abandoned, and the text that had streamed is kept as the assistant message — delivered to [`on_message`](#observing-messages) like any other — while reasoning or a tool call still arriving is dropped. A turn cancelled this way reports no `usage` on its `turn_end`. Tool calls in flight are not cut off: the turn stops when they return. The bundled `bash` tool does not wait that long: it polls the cancel flag, kills its command's process group and returns a tool error ending in `[cancelled]`. A tool of your own can do the same through `context[:cancel_flag].set?`.
 
-A cancelled turn leaves the conversation usable. Tool calls that never got a result are filled with an "interrupted" tool error, riffer emits its `Riffer::StreamEvents::Interrupt` event with reason `:cancelled`, and the stream closes with `turn_end` carrying `stop_reason: :cancelled`. From `ask`, the response's outcome is `reason: :interrupted` with `detail: "cancelled"`. The next `prompt` or `ask` carries on from there.
+A cancelled turn leaves the conversation usable. Tool calls that never got a result are filled with an "interrupted" tool error, the stream carries riffer's `Riffer::StreamEvents::Interrupt` event with reason `:cancelled`, and it closes with `turn_end` carrying `stop_reason: :cancelled`. From `ask`, the response's outcome is `reason: :interrupted` with `detail: "cancelled"`. The next `prompt` or `ask` carries on from there.
 
 `cancel` with no turn running is a no-op: the flag is cleared when the next turn starts.
 

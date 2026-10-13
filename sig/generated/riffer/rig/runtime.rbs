@@ -30,8 +30,6 @@ class Riffer::Rig::Runtime
   # tests and embedders can exercise the switches.
   NATIVE_TOOLS_BY_PROVIDER: Hash[Symbol, Hash[Symbol, bool]]
 
-  @message_observers: Array[^(Riffer::Messages::Base) -> void]
-
   @model_override: String?
 
   @session_start_reason: Symbol
@@ -54,9 +52,15 @@ class Riffer::Rig::Runtime
 
   @job_inbox: Riffer::Rig::Runtime::JobInbox
 
+  @draft: Array[String]
+
+  @abort: Riffer::Rig::Runtime::Abort
+
   @cancel_flag: Riffer::Rig::Runtime::CancelFlag
 
   @agent: Riffer::Agent
+
+  @message_observers: Array[^(Riffer::Messages::Base) -> void]
 
   @model_observers: Array[^(String) -> void]
 
@@ -277,6 +281,12 @@ class Riffer::Rig::Runtime
   # @rbs text: String
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
   def turn: (String text) -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
+
+  # The abort unwinds riffer's run loop from outside, so what riffer does for
+  # an interrupt it raises itself is done here.
+  # @rbs yielder: Enumerator::Yielder
+  # @rbs return: Riffer::Agent::Response
+  def aborted: (Enumerator::Yielder yielder) -> Riffer::Agent::Response
 
   # @rbs yielder: Enumerator::Yielder
   # @rbs event: ::Riffer::StreamEvents::Base
