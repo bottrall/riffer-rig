@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Runtime::Abort
-  class Signal < Exception; end # rubocop:disable Lint/InheritException, Rig/NoInheritance -- provider SDKs rescue a StandardError around the request and retry it
+  # Not a StandardError: provider SDKs rescue one around the request and retry it.
+  class Signal < Exception; end
 
   # Rig's own callbacks (hooks, tools, stores, the host) run under this, so the
   # signal never cuts one off halfway.

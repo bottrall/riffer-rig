@@ -1,6 +1,7 @@
 # Generated from lib/riffer/rig/runtime/abort.rb with RBS::Inline
 
 class Riffer::Rig::Runtime::Abort
+  # Not a StandardError: provider SDKs rescue one around the request and retry it.
   class Signal < Exception
   end
 
