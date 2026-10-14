@@ -15,7 +15,7 @@ class Riffer::Rig::ACP
 
   @sessions: Hash[String, Riffer::Rig::Runtime]
 
-  @client: ::ACP::AgentConnection::_Client?
+  @client: ::ACP::AgentConnection::Client?
 
   @adopt: (^(String) -> Riffer::Rig::Runtime?)?
 
@@ -104,8 +104,8 @@ class Riffer::Rig::ACP
 
   private
 
-  # @rbs return: ::ACP::AgentConnection::_Client
-  def client: () -> ::ACP::AgentConnection::_Client
+  # @rbs return: ::ACP::AgentConnection::Client
+  def client: () -> ::ACP::AgentConnection::Client
 
   # @rbs id: String
   # @rbs return: Riffer::Rig::Runtime?
