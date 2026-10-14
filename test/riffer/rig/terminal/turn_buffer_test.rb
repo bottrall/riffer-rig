@@ -40,6 +40,14 @@ describe Riffer::Rig::Terminal::TurnBuffer do
     [before_tool, after_tool]
   end
 
+  def job_exit
+    Riffer::Rig::Events::JobExit.new(
+      Riffer::Rig::Runtime::JobCompletion.new(
+        job_id: 'a1b2c3d4', command: 'true', exit_status: 0, duration: 1.0, output_path: '/tmp/a1b2c3d4', tail: ''
+      )
+    )
+  end
+
   def interrupt
     Riffer::StreamEvents::Interrupt.new(reason: :cancelled)
   end
@@ -247,6 +255,10 @@ describe Riffer::Rig::Terminal::TurnBuffer do
         assert_equal 0, buffer(tools_run).stats.steps
       end
 
+      it 'counts the reply a job exit continued the turn with as another step' do
+        assert_equal 2, buffer(text('Started.'), finish(:stop), job_exit, text('Passed.'), finish(:stop)).stats.steps
+      end
+
       it 'counts the request an interrupt cut short' do
         assert_equal 1, buffer(text('Half a sen'), interrupt, turn_end).stats.steps
       end
@@ -290,6 +302,13 @@ describe Riffer::Rig::Terminal::TurnBuffer do
         second = [usage(150, 4), text('Done.'), usage(150, 10), finish(:stop)]
 
         assert_equal 280, buffer(first, second, turn_end).stats.usage.total_tokens
+      end
+
+      it 'adds the usage of the reply a job exit continued the turn with' do
+        first = [text('Started.'), finish(:stop), usage(100, 20)]
+        second = [text('Passed.'), finish(:stop), usage(150, 10)]
+
+        assert_equal 280, buffer(first, job_exit, second, turn_end).stats.usage.total_tokens
       end
 
       it 'keeps the usage of an interrupted turn' do

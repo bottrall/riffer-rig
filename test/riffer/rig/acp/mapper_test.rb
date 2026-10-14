@@ -50,7 +50,21 @@ describe Riffer::Rig::ACP::Mapper do
     end
   end
 
+  describe '.job_exit' do
+    it 'is an agent message chunk holding a blank line' do
+      update = Riffer::Rig::ACP::Mapper.job_exit
+
+      assert_equal [ACP::Types::SessionUpdate::AgentMessageChunk, "\n\n"], [update.class, update.content.text]
+    end
+  end
+
   describe '.replay_of' do
+    it 'replays a job notification as a paragraph break rather than as typed input' do
+      stored = { role: 'user', content: '<background-job id="a1b2c3d4">', job_notification: true }
+
+      assert_equal Riffer::Rig::ACP::Mapper.job_exit.to_h, Riffer::Rig::ACP::Mapper.replay_of(stored).to_h
+    end
+
     it 'replays a user message as a user message chunk' do
       update = Riffer::Rig::ACP::Mapper.replay_of({ role: 'user', content: 'hello' })
 

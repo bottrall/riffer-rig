@@ -22,4 +22,12 @@ describe Riffer::Rig::Runtime::Usage do
 
     assert_nil Riffer::Rig::Runtime::Usage.sum(messages)
   end
+
+  it 'totals the usages, skipping a missing one' do
+    assert_equal usage(30, 12).to_h, Riffer::Rig::Runtime::Usage.total([usage(10, 5), nil, usage(20, 7)]).to_h
+  end
+
+  it 'totals to nil when there is no usage' do
+    assert_nil Riffer::Rig::Runtime::Usage.total([nil, nil])
+  end
 end

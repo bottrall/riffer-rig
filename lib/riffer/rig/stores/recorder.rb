@@ -51,7 +51,9 @@ class Riffer::Rig::Stores::Recorder
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
   def message(message)
-    write_header(message) unless @header_written
+    # A job notification is no prompt to title the session from, so it waits
+    # for the header like any other entry that lands before one.
+    write_header(message) unless @header_written || message.is_a?(Riffer::Rig::Runtime::JobNotification)
     record(Riffer::Rig::Stores::MessageEntry.new(message: message.to_h, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
   end
 

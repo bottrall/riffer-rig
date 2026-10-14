@@ -33,7 +33,8 @@ module Riffer::Rig::Commands::Cost
   # @rbs messages: Array[Riffer::Messages::Base]
   # @rbs return: Array[Array[Riffer::Messages::Base]]
   def turns(messages)
-    messages.drop_while { |message| !message.is_a?(Riffer::Messages::User) }.slice_before(Riffer::Messages::User).to_a
+    prompt = ->(message) { message.instance_of?(Riffer::Messages::User) }
+    messages.drop_while { |message| !prompt.call(message) }.slice_before(&prompt).to_a
   end
 
   # @rbs label: String

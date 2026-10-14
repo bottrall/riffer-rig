@@ -4,4 +4,8 @@ module Riffer::Rig::Runtime::Usage
   # @rbs messages: Array[Riffer::Messages::Base]
   # @rbs return: Riffer::Providers::TokenUsage?
   def sum: (Array[Riffer::Messages::Base] messages) -> Riffer::Providers::TokenUsage?
+
+  # @rbs usages: Array[Riffer::Providers::TokenUsage?]
+  # @rbs return: Riffer::Providers::TokenUsage?
+  def total: (Array[Riffer::Providers::TokenUsage?] usages) -> Riffer::Providers::TokenUsage?
 end

@@ -15,10 +15,20 @@ class Riffer::Rig::Runtime::Snapshot
       # Upstream candidate: riffer's Serializer carries an agent's config, never
       # its history, so this and to_h round-trip the session message by message;
       # a Session.from_h could also heal orphaned tool calls on load.
-      messages: hash.fetch(:messages).map { |message| Riffer::Messages::Base.from_hash(message) },
+      messages: hash.fetch(:messages).map { |stored| message(stored) },
       model: hash.fetch(:model),
       skills: hash.fetch(:skills)
     )
+  end
+
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs return: Riffer::Messages::Base
+  def self.message(hash)
+    # riffer rebuilds a message from its role alone, which would bring a job
+    # notification back as typed input.
+    return Riffer::Rig::Runtime::JobNotification.from_hash(hash) if hash[Riffer::Rig::Runtime::JobNotification::MARKER]
+
+    Riffer::Messages::Base.from_hash(hash)
   end
 
   # @rbs id: String

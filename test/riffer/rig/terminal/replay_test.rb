@@ -25,6 +25,10 @@ describe Riffer::Rig::Terminal::Replay do
     Riffer::Messages::Tool.new('ok', tool_call_id: 'call_1', name: 'read')
   end
 
+  def notification
+    Riffer::Rig::Runtime::JobNotification.new('<background-job id="a1b2c3d4">')
+  end
+
   def usage(input, output)
     Riffer::Providers::TokenUsage.new(input_tokens: input, output_tokens: output)
   end
@@ -45,6 +49,26 @@ describe Riffer::Rig::Terminal::Replay do
   describe '.call' do
     it 'replays nothing for a session that recorded no message' do
       assert_empty replay([])
+    end
+
+    it 'replays a turn a job notification continued as one turn' do
+      recorded = [
+        entry(user('Go'), 0),
+        entry(assistant('Started.'), 5),
+        entry(notification, 30),
+        entry(assistant('Passed.'), 41)
+      ]
+
+      assert_equal "\n› Go\n\n  Passed.\n\n  2 steps · 00:41\n", replay(recorded)
+    end
+
+    it 'replays no job notification delivered ahead of a prompt as a turn' do
+      recorded = [*exchange, entry(notification, 60), entry(user('Again'), 60), entry(assistant('Fixed.'), 67)]
+
+      assert_equal(
+        "\n› Go\n\n  Done.\n\n  1 step · 00:41\n\n› Again\n\n  Fixed.\n\n  1 step · 00:07\n",
+        replay(recorded)
+      )
     end
 
     it 'replays each turn as a user line, an answer and a stat footer' do

@@ -14,6 +14,10 @@ class Riffer::Rig::Runtime::Snapshot
   # @rbs return: Riffer::Rig::Runtime::Snapshot
   def self.from_h: (Hash[Symbol, untyped] hash) -> Riffer::Rig::Runtime::Snapshot
 
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs return: Riffer::Messages::Base
+  def self.message: (Hash[Symbol, untyped] hash) -> Riffer::Messages::Base
+
   # @rbs id: String
   # @rbs messages: Array[Riffer::Messages::Base]
   # @rbs model: String?

@@ -70,6 +70,10 @@ describe Riffer::Rig::Runtime do
     Queue.new.tap { |exits| runtime.on_job_exit { |completion| exits << completion } }
   end
 
+  def usage(input, output)
+    Riffer::Providers::TokenUsage.new(input_tokens: input, output_tokens: output)
+  end
+
   it 'mints a uuid_v7 id at construction' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
 
@@ -1618,10 +1622,6 @@ describe Riffer::Rig::Runtime do
   end
 
   describe 'snapshots' do
-    def usage(input, output)
-      Riffer::Providers::TokenUsage.new(input_tokens: input, output_tokens: output)
-    end
-
     def saved_runtime
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
       runtime.agent.provider.stub_response('Hi there.', token_usage: usage(10, 5))
@@ -1838,6 +1838,339 @@ describe Riffer::Rig::Runtime do
       @exits.pop(timeout: 5)
 
       assert_equal 0, @runtime.running_job_count
+    end
+  end
+
+  describe 'job exit notifications' do
+    before do
+      exits = @exits = Queue.new
+      job = Class.new(Riffer::Tool) do
+        identifier 'job'
+        description 'Starts a background job, waits for its exit, then answers as told'
+
+        params do
+          required :answer, String
+        end
+
+        define_method(:call) do |context:, answer:|
+          context[:jobs].register(Process.spawn('true', pgroup: true), 'true', File.open(File::NULL))
+          exits.pop(timeout: 5)
+          answer == 'fail' ? error('boom') : text(answer)
+        end
+      end
+      @job = Riffer::Rig::Extension.new('job') { |rig| rig.tool job }
+      @runtimes = []
+    end
+
+    after do
+      @runtimes.each(&:close)
+    end
+
+    def job_runtime(*extensions, **)
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension, @job, *extensions], **)
+      runtime.on_job_exit { |completion| @exits << completion }
+      @runtimes << runtime
+      runtime
+    end
+
+    def job_call(answer = 'started')
+      { name: 'job', arguments: { answer: answer }.to_json }
+    end
+
+    def exiting_mid_turn(answer = 'started')
+      runtime = job_runtime
+      runtime.agent.provider.stub_response('', tool_calls: [job_call(answer)])
+      runtime.agent.provider.stub_response('All done.')
+      runtime
+    end
+
+    def exiting_on_reply(replies, **)
+      remaining = replies
+      runtime = nil
+      on_reply = lambda do |_event|
+        next if remaining.zero?
+
+        remaining -= 1
+        spawn_group_job(runtime, 'true')
+        @exits.pop(timeout: 5)
+      end
+      exits_on_reply = Riffer::Rig::Extension.new('exits_on_reply') { |rig| rig.on(:after_response, &on_reply) }
+      runtime = job_runtime(exits_on_reply, **)
+    end
+
+    def continued_turn
+      runtime = exiting_on_reply(1)
+      runtime.agent.provider.stub_response('Started it.', token_usage: usage(10, 5))
+      runtime.agent.provider.stub_response('It passed.', token_usage: usage(20, 7))
+      runtime
+    end
+
+    def exited_between_turns(count = 1)
+      runtime = job_runtime
+      runtime.agent.provider.stub_response('First.')
+      runtime.ask('first')
+      count.times { spawn_group_job(runtime, 'true') }
+      count.times { @exits.pop(timeout: 5) }
+      runtime.agent.provider.stub_response('Second.')
+      runtime
+    end
+
+    def notifications(runtime)
+      runtime.agent.session.messages.grep(Riffer::Rig::Runtime::JobNotification)
+    end
+
+    def tool_results(runtime)
+      runtime.agent.session.messages.grep(Riffer::Messages::Tool)
+    end
+
+    describe 'for a job that exits during a turn' do
+      it 'leaves the result on the tool call events as the tool returned it' do
+        runtime = exiting_mid_turn
+        events = []
+        runtime.prompt('go') { |event| events << event }
+
+        assert_equal 'started', events.grep(Riffer::Rig::Events::AfterToolCall).last.result.content
+      end
+
+      it 'forgets the job once its exit is reported' do
+        runtime = exiting_mid_turn
+        runtime.ask('go')
+
+        assert_empty runtime.agent.context[:jobs].list
+      end
+
+      it 'emits a job_exit event for the exit' do
+        runtime = exiting_mid_turn
+        events = []
+        runtime.prompt('go') { |event| events << event }
+        exits = events.grep(Riffer::Rig::Events::JobExit).map { |event| [event.command, event.exit_status] }
+
+        assert_equal [['true', 0]], exits
+      end
+
+      it 'appends the notice to the tool result, after the tool\'s own output' do
+        runtime = exiting_mid_turn
+        runtime.ask('go')
+        notice = /\Astarted\n\n<background-job /
+
+        assert_match notice, tool_results(runtime).last.content
+      end
+
+      it 'keeps the error of a failed tool result' do
+        runtime = exiting_mid_turn('fail')
+        runtime.ask('go')
+        result = tool_results(runtime).last
+        noticed = result.content.include?('<background-job')
+
+        assert_equal ['boom', :execution_error, true], [result.error, result.error_type, noticed]
+      end
+
+      it 'appends to the result of the call that just ran when a call id repeats' do
+        runtime = job_runtime
+        runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/nope"}' }])
+        runtime.agent.provider.stub_response('', tool_calls: [job_call])
+        runtime.agent.provider.stub_response('All done.')
+        runtime.ask('go')
+        noticed = tool_results(runtime).map { |result| result.content.include?('<background-job') }
+
+        assert_equal [false, true], noticed
+      end
+
+      it 'hands observers the tool result the model receives' do
+        runtime = exiting_mid_turn
+        observed = []
+        runtime.on_message { |message| observed << message }
+        runtime.ask('go')
+
+        assert_same tool_results(runtime).last, observed.grep(Riffer::Messages::Tool).last
+      end
+
+      it 'reports the exit on the request that follows the tool result' do
+        runtime = exiting_mid_turn
+        runtime.ask('go')
+        sent = runtime.agent.provider.calls.last[:messages].last
+
+        assert_equal [:tool, true], [sent[:role], sent[:content].include?('<command>true</command>')]
+      end
+    end
+
+    describe 'for a job that exits as the model finishes its reply' do
+      it 'stops continuing a turn at the cap' do
+        runtime = exiting_on_reply(Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS + 1)
+        runtime.ask('go')
+
+        assert_equal Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS, notifications(runtime).length
+      end
+
+      it 'delivers the exit the cap held back at the start of the next turn' do
+        runtime = exiting_on_reply(Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS + 1)
+        runtime.ask('go')
+        runtime.ask('again')
+
+        assert_equal(
+          [Riffer::Rig::Runtime::JobNotification, Riffer::Messages::User, Riffer::Messages::Assistant],
+          runtime.agent.session.messages.last(3).map(&:class)
+        )
+      end
+
+      it 'keeps the exit for the next turn when the turn did not complete' do
+        runtime = exiting_on_reply(1)
+        runtime.agent.provider.stub_response('Cut sh', finish_reason: :length)
+        runtime.ask('go')
+
+        assert_empty notifications(runtime)
+      end
+
+      it 'keeps the exit for the next turn when the turn has used its step limit' do
+        runtime = exiting_on_reply(1, max_steps: 1)
+        runtime.ask('go')
+
+        assert_empty notifications(runtime)
+      end
+
+      it 'delivers the exit the step limit held back at the start of the next turn' do
+        runtime = exiting_on_reply(1, max_steps: 1)
+        runtime.ask('go')
+        runtime.ask('again')
+
+        assert_equal(
+          [Riffer::Rig::Runtime::JobNotification, Riffer::Messages::User, Riffer::Messages::Assistant],
+          runtime.agent.session.messages.last(3).map(&:class)
+        )
+      end
+
+      it 'continues the turn while its step limit has steps left' do
+        runtime = exiting_on_reply(1, max_steps: 2)
+        runtime.ask('go')
+
+        assert_equal 1, notifications(runtime).length
+      end
+
+      it 'emits a job_exit event for the exit' do
+        events = []
+        continued_turn.prompt('go') { |event| events << event }
+
+        assert_equal 1, events.grep(Riffer::Rig::Events::JobExit).length
+      end
+
+      it 'continues the turn with a notification after the reply' do
+        runtime = continued_turn
+        runtime.ask('go')
+
+        assert_equal(
+          [Riffer::Messages::User, Riffer::Messages::Assistant, Riffer::Rig::Runtime::JobNotification, Riffer::Messages::Assistant],
+          runtime.agent.session.messages.drop(1).map(&:class)
+        )
+      end
+
+      it 'delivers the notification to observers between the two replies' do
+        runtime = continued_turn
+        observed = []
+        runtime.on_message { |message| observed << message }
+        runtime.ask('go')
+
+        assert_equal(
+          [Riffer::Messages::Assistant, Riffer::Rig::Runtime::JobNotification, Riffer::Messages::Assistant],
+          observed.drop(1).map(&:class)
+        )
+      end
+
+      it 'runs the reload check again before the request that continues the turn' do
+        seen = []
+        runtime = continued_turn
+        runtime.install_reload_check(->(checked) { seen << checked })
+        runtime.ask('go')
+
+        assert_equal [runtime, runtime], seen
+      end
+
+      it 'answers with the reply that followed the notification' do
+        assert_equal 'It passed.', continued_turn.ask('go').content
+      end
+
+      it 'reports the usage of every run of the turn' do
+        assert_equal usage(30, 12).to_h, continued_turn.ask('go').token_usage.to_h
+      end
+
+      it 'counts the steps of every run of the turn' do
+        assert_equal 2, continued_turn.ask('go').steps
+      end
+
+      it 'ends the turn once' do
+        events = []
+        continued_turn.prompt('go') { |event| events << event }
+
+        assert_equal [events.last], events.grep(Riffer::Rig::Events::TurnEnd)
+      end
+    end
+
+    describe 'for a job that exits between turns' do
+      it 'emits a job_exit event for each exit' do
+        runtime = exited_between_turns(2)
+        events = []
+        runtime.prompt('second') { |event| events << event }
+
+        assert_equal 2, events.grep(Riffer::Rig::Events::JobExit).length
+      end
+
+      it 'batches several exits into one notification' do
+        runtime = exited_between_turns(2)
+        runtime.ask('second')
+        envelopes = notifications(runtime).map { |notification| notification.content.scan('<background-job ').length }
+
+        assert_equal [2], envelopes
+      end
+
+      it 'delivers a notification ahead of the next prompt' do
+        runtime = exited_between_turns
+        runtime.ask('second')
+
+        assert_equal(
+          [Riffer::Rig::Runtime::JobNotification, Riffer::Messages::User, Riffer::Messages::Assistant],
+          runtime.agent.session.messages.last(3).map(&:class)
+        )
+      end
+
+      it 'delivers the notification to observers ahead of the prompt' do
+        runtime = exited_between_turns
+        observed = []
+        runtime.on_message { |message| observed << message }
+        runtime.ask('second')
+
+        assert_equal [Riffer::Rig::Runtime::JobNotification, Riffer::Messages::User], observed.first(2).map(&:class)
+      end
+    end
+
+    describe 'on the wire' do
+      def request_behind_last_reply(runtime)
+        runtime.ask('go')
+        runtime.agent.session.messages[...-1]
+      end
+
+      def request_roles(adapter, messages)
+        # Allocated because an adapter's initialize insists on its SDK, which
+        # the bundle leaves out for Bedrock and the converters never touch.
+        provider = Riffer::Providers::Repository.find(adapter).allocate
+        params = provider.send(:build_request_params, provider.send(:merge_consecutive_messages, messages), 'model', {})
+        (params[:messages] || params[:contents] || params[:input]).map { |entry| entry[:role] || entry[:type] }
+      end
+
+      # Bedrock and Gemini reject two turns of one role in a row, the tightest
+      # rule any adapter's API applies, so a request that alternates is valid
+      # for every one of them.
+      adapters = Riffer::Providers::Repository::REPO.keys - [:mock]
+      shapes = {
+        'a notice on a tool result' => :exiting_mid_turn,
+        'a notification after a reply' => :continued_turn,
+        'a notification ahead of a prompt' => :exited_between_turns
+      }
+      adapters.product(shapes.to_a).each do |adapter, (shape, runtime)|
+        it "alternates roles for #{adapter} with #{shape}" do
+          roles = request_roles(adapter, request_behind_last_reply(send(runtime)))
+
+          assert_empty(roles.each_cons(2).select { |one, other| one == other })
+        end
+      end
     end
   end
 

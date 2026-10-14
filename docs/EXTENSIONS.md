@@ -105,7 +105,7 @@ Adds a hook for one event of the Runtime's lifecycle or loop. The block receives
 | `session_start`    | lifecycle   | `id`, `reason` (`:new`, `:restore`, `:reload`)     | as the Runtime's first turn starts (`:new`, or `:restore` after a snapshot), and after a `rebuild` swaps this extension in (`:reload`) |
 | `session_end`      | lifecycle   | `reason` (`:reload`, `:close`)                     | before a `rebuild` swaps this extension out (`:reload`), and on `close` (`:close`), if a session started |
 | `before_prompt`    | vetoable    | `text`                                             | as each `prompt` or `ask` starts, before the text reaches the session |
-| `before_request`   | vetoable    | `messages` (the whole request)                     | before every LLM call: at the start of the turn and again after each round of tool results |
+| `before_request`   | vetoable    | `messages` (the whole request)                     | before every LLM call: at the start of the turn, after each round of tool results, and when the Runtime continues a turn for a [job exit notification](EMBEDDING.md#exit-notifications) |
 | `before_tool_call` | vetoable    | `call_id`, `tool` (the identifier), `args` (symbol keys), `at` | before each tool runs, once the call's arguments have parsed into an object |
 | `after_tool_call`  | observe     | `call_id`, `tool`, `args` (as run), `result` (the call's `Riffer::Tools::Response`), `at`, `duration` | after every tool call, whether or not the tool ran |
 | `after_response`   | observe     | `message` (the `Riffer::Messages::Assistant`)      | after each model response is added to the session                     |

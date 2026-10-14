@@ -19,6 +19,9 @@ class Riffer::Rig::Runtime
 
   INTERRUPT_CANCELLED: Symbol
 
+  # Per user turn, so a job that starts jobs cannot keep a turn alive forever.
+  MAX_JOB_CONTINUATIONS: Integer
+
   # Riffer's remaining stop reasons (:error, :other, :guardrail_blocked) are
   # failures, not early stops.
   STOPPED_WITHOUT_COMPLETING: Array[Symbol]
@@ -282,6 +285,29 @@ class Riffer::Rig::Runtime
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
   def turn: (String text) -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
 
+  # @rbs yielder: Enumerator::Yielder
+  # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  # @rbs return: Riffer::Agent::Response
+  def relay: (Enumerator::Yielder yielder, Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response] stream) -> Riffer::Agent::Response
+
+  # @rbs yielder: Enumerator::Yielder
+  # @rbs response: Riffer::Agent::Response
+  # @rbs remaining: Integer
+  # @rbs return: Riffer::Agent::Response
+  def continued: (Enumerator::Yielder yielder, Riffer::Agent::Response response, Integer remaining) -> Riffer::Agent::Response
+
+  # @rbs return: Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  def continuation: () -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]
+
+  # @rbs response: Riffer::Agent::Response
+  # @rbs return: bool
+  def steps_left?: (Riffer::Agent::Response response) -> bool
+
+  # @rbs earlier: Riffer::Agent::Response
+  # @rbs later: Riffer::Agent::Response
+  # @rbs return: Riffer::Agent::Response
+  def combined: (Riffer::Agent::Response earlier, Riffer::Agent::Response later) -> Riffer::Agent::Response
+
   # The abort unwinds riffer's run loop from outside, so what riffer does for
   # an interrupt it raises itself is done here.
   # @rbs yielder: Enumerator::Yielder
@@ -309,6 +335,16 @@ class Riffer::Rig::Runtime
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
   def deliver: (Riffer::Messages::Base message) -> void
+
+  # @rbs return: String?
+  def job_notice: () -> String?
+
+  # @rbs message: Riffer::Messages::Tool
+  # @rbs return: Riffer::Messages::Tool
+  def with_job_notice: (Riffer::Messages::Tool message) -> Riffer::Messages::Tool
+
+  # @rbs return: Riffer::Messages::Base?
+  def notify_job_exits: () -> Riffer::Messages::Base?
 
   # @rbs return: void
   def before_next_request: () -> void

@@ -76,6 +76,10 @@ describe Riffer::Rig::Stores::Recorder do
     Riffer::Messages::Assistant.new(content)
   end
 
+  def notification
+    Riffer::Rig::Runtime::JobNotification.new('<background-job id="a1b2c3d4">')
+  end
+
   def header(title = 'hello')
     Riffer::Rig::Stores::Header.new(
       schema_version: Riffer::Rig::Stores::JSONL::HEADER_VERSION,
@@ -185,6 +189,31 @@ describe Riffer::Rig::Stores::Recorder do
       recorder(store, [at(1), at(2)]).message(assistant)
 
       assert_equal '', store.appended.first.title
+    end
+
+    it 'holds a job notification that lands before the header' do
+      store = SeededStore.new
+      recorder(store, [at(1)]).message(notification)
+
+      assert_empty store.appended
+    end
+
+    it 'titles the header with the first prompt after a job notification' do
+      store = SeededStore.new
+      recording = recorder(store, [at(1), at(2), at(3)])
+      recording.message(notification)
+      recording.message(user('first prompt'))
+
+      assert_equal 'first prompt', store.appended.first.title
+    end
+
+    it 'records a held job notification ahead of the prompt that wrote the header' do
+      store = SeededStore.new
+      recording = recorder(store, [at(1), at(2), at(3)])
+      recording.message(notification)
+      recording.message(user)
+
+      assert_equal [notification.to_h, user.to_h], store.appended.grep(Riffer::Rig::Stores::MessageEntry).map(&:message)
     end
 
     it 'describes the runtime in the header' do

@@ -29,7 +29,7 @@ Every Loader-built session is saved, one-shots included. Skip one run with `stor
 
 ## Tracing the last turn
 
-`/trace` replays the last turn from the store. The Loader installs it as a runtime command on every build that records, so it works the same in every host and is absent when the session is not saved ([Opting out](#opting-out)). The turn runs from the session's last user message to its last entry, so a resumed session can be traced before its next prompt. The command's `command_output` holds one line per recorded step — the time, what happened, and the detail:
+`/trace` replays the last turn from the store. The Loader installs it as a runtime command on every build that records, so it works the same in every host and is absent when the session is not saved ([Opting out](#opting-out)). The turn runs from the session's last prompt to its last entry, so a resumed session can be traced before its next prompt. The command's `command_output` holds one line per recorded step — the time, what happened, and the detail:
 
 ```
 02:00:01.000  prompt    Fix the failing test
@@ -49,6 +49,7 @@ Every Loader-built session is saved, one-shots included. Skip one run with `stor
 | `dispatch` | one line per tool call of that request: the tool's name and its arguments as the model sent them        |
 | `finish`   | one line per tool result, in call order: the tool's name, and the error type in parentheses when it failed |
 | `answer`   | the first line of the text of a request that called no tool                                             |
+| `notice`   | the first line of a [job exit notification](EMBEDDING.md#exit-notifications) that continued the turn      |
 | `silent`   | a stretch of 5 seconds or more between two consecutive messages, with its length                        |
 
 The times are the entries' `recorded_at`, in UTC; an entry without one has a blank time and bounds no `silent` stretch. The tool results of one request are recorded together, once the last of its calls returns, so a `dispatch` carries its request's time and the `finish` lines of one request share the moment the whole batch ended — each call's own timing is on the stream's [`after_tool_call`](EMBEDDING.md#tool-call-events). A session with no user message yet answers `No turn recorded yet`.
@@ -93,7 +94,7 @@ Switching replaces the Runtime the terminal drives and re-renders the banner: th
 | Key         | Holds                                                                                                                                  |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `:id`       | the Runtime's id, a UUIDv7 minted when the session began; a restored Runtime keeps it, so it names the session across restarts        |
-| `:messages` | the conversation as riffer message hashes (`Riffer::Messages::Base#to_h`), system message first, read back with `Riffer::Messages::Base.from_hash` |
+| `:messages` | the conversation as riffer message hashes (`Riffer::Messages::Base#to_h`), system message first, read back with `Riffer::Messages::Base.from_hash`; a [job exit notification](EMBEDDING.md#exit-notifications) also carries `job_notification: true` and is read back as one |
 | `:model`    | the model the session switched to with `model=` or `/model`, or `nil` when it kept the model it was built with                          |
 | `:skills`   | the names of the skills the model activated in the session ([Skills](SKILLS.md#what-the-model-sees)); a skill run with `/skill:<name>` is not one |
 

@@ -25,14 +25,14 @@ module Riffer::Rig::Commands::Trace::Replay
   # @rbs return: Array[Riffer::Rig::Stores::MessageEntry]
   def last_turn(entries)
     recorded = entries.grep(Riffer::Rig::Stores::MessageEntry) #: Array[Riffer::Rig::Stores::MessageEntry]
-    start = recorded.rindex { |entry| message(entry).is_a?(Riffer::Messages::User) }
+    start = recorded.rindex { |entry| message(entry).instance_of?(Riffer::Messages::User) }
     start ? recorded.drop(start) : []
   end
 
   # @rbs entry: Riffer::Rig::Stores::MessageEntry
   # @rbs return: Riffer::Messages::Base
   def message(entry)
-    Riffer::Messages::Base.from_hash(entry.message)
+    Riffer::Rig::Runtime::Snapshot.message(entry.message)
   end
 
   # @rbs previous: Riffer::Rig::Stores::MessageEntry?
@@ -56,6 +56,8 @@ module Riffer::Rig::Commands::Trace::Replay
       prose(time, message) + message.tool_calls.map { |call| line(time, 'dispatch', "#{call.name} #{call.arguments}") }
     when Riffer::Messages::Tool
       [line(time, 'finish', message.error? ? "#{message.name} (#{message.error_type})" : message.name)]
+    when Riffer::Rig::Runtime::JobNotification
+      [line(time, 'notice', first_line(message.content))]
     else
       [line(time, 'prompt', first_line(message.content))]
     end

@@ -10,7 +10,8 @@ module Riffer::Rig::Terminal::Replay
   # @rbs width: Integer?
   # @rbs return: String
   def call(recorded, theme:, width:)
-    turns = recorded.slice_before { |entry| entry.message[:role].to_s == 'user' }.map { |chunk| turn(chunk) }
+    typed = recorded.reject { |entry| entry.message[Riffer::Rig::Runtime::JobNotification::MARKER] }
+    turns = typed.slice_before { |entry| entry.message[:role].to_s == 'user' }.map { |chunk| turn(chunk) }
     replayed = turns.compact.map do |past|
       "#{user_line(past.prompt, theme)}#{Riffer::Rig::Terminal::TurnReport.call(past, nil, theme: theme, width: width)}"
     end

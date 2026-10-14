@@ -45,7 +45,7 @@ A script that only needs success or failure can therefore test the code alone; a
 
 ## The NDJSON stream (`--json`)
 
-`--json` replaces the streamed text with one JSON object per line on stdout, one record for every event the Runtime yields: riffer's [StreamEvents](https://github.com/bottrall/riffer) plus the rig-level events (`session_start`, `notify`, `before_tool_call`, `after_tool_call`, `turn_end`). The envelope is flat — the event's `to_h` fields, plus a `"type"` of the snake_case event class (`text_delta`, `tool_call_done`, `session_start`, `turn_end`, …). Nested riffer values (a `TokenUsage`, an assistant message, a tool response) serialize through their own `to_h`.
+`--json` replaces the streamed text with one JSON object per line on stdout, one record for every event the Runtime yields: riffer's [StreamEvents](https://github.com/bottrall/riffer) plus the rig-level events (`session_start`, `notify`, `before_tool_call`, `after_tool_call`, `job_exit`, `turn_end`). The envelope is flat — the event's `to_h` fields, plus a `"type"` of the snake_case event class (`text_delta`, `tool_call_done`, `session_start`, `turn_end`, …). Nested riffer values (a `TokenUsage`, an assistant message, a tool response) serialize through their own `to_h`.
 
 ```json
 {"type":"session_start","id":"0198…","reason":"new"}
