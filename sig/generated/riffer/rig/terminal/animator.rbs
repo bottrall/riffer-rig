@@ -21,12 +21,12 @@ class Riffer::Rig::Terminal::Animator
 
   @theme: Riffer::Rig::Terminal::Theme
 
-  @io: IO
+  @io: Riffer::Rig::Terminal::_Output
 
-  # @rbs io: IO
+  # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs return: void
-  def initialize: (?io: IO, ?theme: Riffer::Rig::Terminal::Theme) -> void
+  def initialize: (?io: Riffer::Rig::Terminal::_Output, ?theme: Riffer::Rig::Terminal::Theme) -> void
 
   # @rbs frames: Array[Array[String]]
   # @rbs return: void

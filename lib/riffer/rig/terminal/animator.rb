@@ -17,14 +17,14 @@ class Riffer::Rig::Terminal::Animator
 
   REASONING_TICK_RANGE = (1..5) #: Range[Integer]
 
-  # @rbs @io: IO
+  # @rbs @io: Riffer::Rig::Terminal::_Output
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @thread: Thread?
   # @rbs @mode: Symbol
   # @rbs @phrase: String?
   # @rbs @stop: bool
 
-  # @rbs io: IO
+  # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs return: void
   def initialize(io: $stdout, theme: Riffer::Rig::Terminal::Theme.for(io))

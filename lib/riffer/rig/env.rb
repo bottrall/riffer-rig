@@ -3,9 +3,10 @@
 class Riffer::Rig::Env
   # @rbs @source: Hash[String, String]
 
-  # @dynamic no_color, model
+  # @dynamic no_color, model, ticker
   attr_reader :no_color #: bool
   attr_reader :model #: String?
+  attr_reader :ticker #: bool
 
   # @rbs source: Hash[String, String]
   # @rbs return: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
@@ -22,6 +23,7 @@ class Riffer::Rig::Env
     @source = source.freeze
     @no_color = @source.key?('NO_COLOR')
     @model = self['RIFFER_MODEL']
+    @ticker = !self['RIFFER_TICKER'].nil?
     freeze
   end
 

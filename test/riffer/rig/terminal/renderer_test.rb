@@ -363,6 +363,12 @@ describe Riffer::Rig::Terminal::Renderer do
     assert_equal "\n› ", @io.string
   end
 
+  it 'echoes a submitted line after the prompt marker in its own block' do
+    @renderer.echo('hello')
+
+    assert_equal "\n› hello\n", @io.string
+  end
+
   it 'drains the smoother before rendering a question' do
     renderer = Riffer::Rig::Terminal::Renderer.new(
       io: @io,

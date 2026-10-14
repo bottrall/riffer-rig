@@ -1,0 +1,43 @@
+# Generated from lib/riffer/rig/terminal/console.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Console
+  @output: IO
+
+  @frame: Riffer::Rig::Terminal::Frame
+
+  @pipeline: Riffer::Rig::Terminal::KeyPipeline
+
+  @partial: String
+
+  # @rbs output: IO
+  # @rbs frame: Riffer::Rig::Terminal::Frame
+  # @rbs pipeline: Riffer::Rig::Terminal::KeyPipeline
+  # @rbs return: void
+  def initialize: (output: IO, frame: Riffer::Rig::Terminal::Frame, pipeline: Riffer::Rig::Terminal::KeyPipeline) -> void
+
+  # @rbs return: void
+  def start: () -> void
+
+  # @rbs return: void
+  def stop: () -> void
+
+  # @rbs *chunks: String
+  # @rbs return: void
+  def print: (*String chunks) -> void
+
+  # @rbs line: String
+  # @rbs return: void
+  def puts: (?String line) -> void
+
+  # @rbs return: void
+  def flush: () -> void
+
+  # @rbs return: bool
+  def tty?: () -> bool
+
+  # @rbs return: [Integer, Integer]
+  def winsize: () -> [ Integer, Integer ]
+
+  # @rbs return: void
+  def settle: () -> void
+end

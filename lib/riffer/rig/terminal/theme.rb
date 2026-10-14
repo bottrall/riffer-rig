@@ -12,7 +12,7 @@ class Riffer::Rig::Terminal::Theme
     @enabled = enabled
   end
 
-  # @rbs io: IO
+  # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs no_color: bool
   # @rbs return: Riffer::Rig::Terminal::Theme
   def self.for(io, no_color: false)

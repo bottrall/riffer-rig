@@ -38,25 +38,8 @@ describe Riffer::Rig::Terminal::Frame do
   end
 
   describe '#start' do
-    it 'draws no footer when the io is not a tty' do
+    it 'draws no footer when the terminal cannot be measured' do
       io = StringIO.new
-
-      started(io)
-
-      assert_equal '', io.string
-    end
-
-    it 'draws no footer when the tty reports zero columns' do
-      io = tty(0)
-
-      started(io)
-
-      assert_equal '', io.string
-    end
-
-    it 'draws no footer when the window size cannot be queried' do
-      io = tty(80)
-      io.define_singleton_method(:winsize) { raise Errno::ENOTTY }
 
       started(io)
 
@@ -392,6 +375,27 @@ describe Riffer::Rig::Terminal::Frame do
       started(tty(80)).stop
 
       assert_same handler, Signal.trap('WINCH', original)
+    end
+  end
+
+  describe '#measure' do
+    it 'is nil when the io is not a tty' do
+      assert_nil frame(StringIO.new).measure
+    end
+
+    it 'is the rows and columns of the tty' do
+      assert_equal [24, 80], frame(tty(80)).measure
+    end
+
+    it 'is nil when the tty reports zero columns' do
+      assert_nil frame(tty(0)).measure
+    end
+
+    it 'is nil when the window size cannot be queried' do
+      io = tty(80)
+      io.define_singleton_method(:winsize) { raise Errno::ENOTTY }
+
+      assert_nil frame(io).measure
     end
   end
 

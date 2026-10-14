@@ -27,19 +27,47 @@ class Riffer::Rig::Terminal
   # @rbs @version: String
   # @rbs @sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs @picker: Riffer::Rig::Terminal::Picker
+  # @rbs @repl: Riffer::Rig::Terminal::Repl?
 
   # @rbs input: IO
   # @rbs output: IO
   # @rbs version: String
   # @rbs no_color: bool
+  # @rbs ticker: bool
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs return: Riffer::Rig::Terminal
-  def self.for(input:, output:, version:, sessions:, no_color: false)
+  def self.for(input:, output:, version:, sessions:, no_color: false, ticker: false)
     theme = Theme.for(output, no_color: no_color)
-    smoother = Smoother.new(io: output, theme: theme)
-    renderer = Renderer.new(io: output, theme: theme, smoother: smoother, cursor: Cursor.new(io: output, theme: theme))
-    animator = Animator.new(io: output, theme: theme)
-    prompter = BlockingPrompter.new(input: input, renderer: renderer)
+    frame = Frame.new(io: output, theme: theme) if ticker && input.tty?
+    return assemble(input:, io: output, theme:, version:, sessions:) unless frame&.measure
+
+    pipeline = KeyPipeline.new(input: input, output: output)
+    console = Console.new(output: output, frame: frame, pipeline: pipeline)
+    asks = Queue.new #: Thread::Queue[Riffer::Rig::Terminal::Key]
+    repl = Repl.new(
+      console: console,
+      frame: frame,
+      keys: pipeline.keys,
+      asks: asks,
+      prompter: FramePrompter.new(frame: frame, keys: asks, theme: theme),
+      jobs: JobCounter.new(footer: frame),
+      interrupt: -> { Process.kill('INT', Process.pid) }
+    )
+    assemble(input:, io: console, theme:, version:, sessions:, repl:)
+  end
+
+  # @rbs input: IO
+  # @rbs io: Riffer::Rig::Terminal::_Output
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs version: String
+  # @rbs sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs repl: Riffer::Rig::Terminal::Repl?
+  # @rbs return: Riffer::Rig::Terminal
+  def self.assemble(input:, io:, theme:, version:, sessions:, repl: nil)
+    smoother = Smoother.new(io: io, theme: theme)
+    renderer = Renderer.new(io: io, theme: theme, smoother: smoother, cursor: Cursor.new(io: io, theme: theme))
+    animator = Animator.new(io: io, theme: theme)
+    prompter = repl || BlockingPrompter.new(input: input, renderer: renderer)
     host = Riffer::Rig::Terminal::Host.new(prompter: prompter, renderer: renderer, animator: animator)
     picker = Picker.new(prompter: prompter, renderer: renderer, host: host, sessions: sessions)
     new(
@@ -50,9 +78,11 @@ class Riffer::Rig::Terminal
       theme: theme,
       version: version,
       sessions: sessions,
-      picker: picker
+      picker: picker,
+      repl: repl
     )
   end
+  private_class_method :assemble
 
   # @rbs input: IO
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -62,8 +92,9 @@ class Riffer::Rig::Terminal
   # @rbs version: String
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs picker: Riffer::Rig::Terminal::Picker
+  # @rbs repl: Riffer::Rig::Terminal::Repl?
   # @rbs return: void
-  def initialize(input:, host:, renderer:, animator:, theme:, version:, sessions:, picker:)
+  def initialize(input:, host:, renderer:, animator:, theme:, version:, sessions:, picker:, repl: nil)
     @input = input
     @host = host
     @renderer = renderer
@@ -72,23 +103,29 @@ class Riffer::Rig::Terminal
     @version = version
     @sessions = sessions
     @picker = picker
+    @repl = repl
   end
 
   # @rbs open_picker: bool
   # @rbs return: Integer
   def run(open_picker: false)
+    @repl&.start
     runtime = start(open_picker: open_picker)
     return 1 unless runtime
 
     begin
       runtime.on_message { |message| render_tool_result(message) }
+      @repl&.watch(runtime)
       reveal_banner(runtime)
-      repl(runtime)
+      queued = @repl
+      queued ? drain(queued, runtime) : repl(runtime)
       @renderer.notice(FAREWELL)
       0
     ensure
       runtime.close
     end
+  ensure
+    @repl&.stop
   end
 
   private
@@ -163,6 +200,19 @@ class Riffer::Rig::Terminal
     :interrupt
   end
 
+  # @rbs queued: Riffer::Rig::Terminal::Repl
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def drain(queued, runtime)
+    queued.run do |line|
+      # A pasted line can carry control characters the terminal would act on.
+      @renderer.echo(LineEditor.new(before: line).printable_before)
+      break if EXIT_COMMANDS.include?(line)
+
+      runtime = dispatch(runtime, line)
+    end
+  end
+
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs text: String
   # @rbs return: Riffer::Rig::Runtime
@@ -231,6 +281,7 @@ class Riffer::Rig::Terminal
   def swap(previous, next_runtime)
     previous.close
     next_runtime.on_message { |message| render_tool_result(message) }
+    @repl&.watch(next_runtime)
     reveal_banner(next_runtime)
     next_runtime
   end

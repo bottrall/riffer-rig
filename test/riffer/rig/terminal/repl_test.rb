@@ -1,0 +1,546 @@
+# frozen_string_literal: true
+
+require 'test_helper'
+
+class RecordingConsole
+  def initialize(log) = @log = log
+
+  def start = @log << :start
+
+  def stop = @log << :stop
+
+  def settle = @log << :settle
+end
+
+class LoggingFrame
+  attr_reader :lines, :statuses, :counts
+
+  def initialize(log)
+    @log = log
+    @lines = []
+    @statuses = []
+    @counts = []
+  end
+
+  def input(editor)
+    @lines << editor.text
+    @log << [:input, editor.text]
+  end
+
+  def status(status)
+    @statuses << status
+    @log << [:status, status]
+  end
+
+  def queued(count)
+    @counts << count
+    @log << [:queued, count]
+  end
+end
+
+class QueuePrompter
+  def initialize(asks, log)
+    @asks = asks
+    @log = log
+    @behind = 0
+  end
+
+  def hold_for(behind) = @behind = behind
+
+  def ask(question, options:, secret:)
+    @log << [:asked, question, options, secret]
+    answer = +''
+    loop do
+      key = @asks.pop
+      return nil if key.nil?
+      break if key.name == :enter
+
+      answer << key.text.to_s
+    end
+    sleep 0.001 until @asks.size >= @behind
+    answer
+  end
+end
+
+class RecordingJobs
+  attr_reader :watched
+
+  def initialize = @watched = []
+
+  def watch(runtime) = @watched << runtime
+end
+
+describe Riffer::Rig::Terminal::Repl do
+  def setup
+    @log = Queue.new
+    @keys = Queue.new
+    @asks = Queue.new
+    @frame = LoggingFrame.new(@log)
+    @prompter = QueuePrompter.new(@asks, @log)
+    @jobs = RecordingJobs.new
+    @interrupts = Queue.new
+  end
+
+  def timeout_seconds = 5
+
+  def repl(interrupt: -> { @interrupts << :interrupt })
+    @repl ||= Riffer::Rig::Terminal::Repl.new(
+      console: RecordingConsole.new(@log),
+      frame: @frame,
+      keys: @keys,
+      asks: @asks,
+      prompter: @prompter,
+      jobs: @jobs,
+      interrupt: interrupt
+    )
+  end
+
+  # Stands in for the signal: Ruby raises it in the thread once it blocks.
+  def signalling
+    repl(
+      interrupt: lambda do
+        sleep 0.001 until @session.status == 'sleep'
+        @session.raise(Interrupt)
+      end
+    )
+  end
+
+  def begin_session(&turn)
+    @turns = []
+    @session = Thread.new do
+      repl.start
+      begin
+        repl.run do |line|
+          @turns << line
+          turn&.call(line)
+        end
+      ensure
+        repl.stop
+      end
+    end
+    @session.report_on_exception = false
+  end
+
+  def finish
+    @session.join(timeout_seconds) || raise("the session was still open after #{timeout_seconds}s")
+    @turns
+  end
+
+  def session(&)
+    begin_session(&)
+    finish
+  end
+
+  def type(text)
+    text.each_char do |char|
+      @keys << (char == "\r" ? Riffer::Rig::Terminal::Key.new(:enter) : Riffer::Rig::Terminal::Key.new(:text, char))
+    end
+  end
+
+  def press(*names)
+    names.each { |name| @keys << Riffer::Rig::Terminal::Key.new(name) }
+  end
+
+  def await(event)
+    loop do
+      seen = @log.pop(timeout: timeout_seconds) || raise("no #{event.inspect} within #{timeout_seconds}s")
+      break if seen == event
+    end
+  end
+
+  def logged
+    Array.new(@log.size) { @log.pop }
+  end
+
+  def hint = Riffer::Rig::Terminal::EXIT_HINT
+
+  describe '#start' do
+    it 'starts the console' do
+      @keys.close
+
+      session
+
+      assert_equal :start, logged.first
+    end
+  end
+
+  describe '#stop' do
+    it 'reads no key once it has stopped' do
+      press(:ctrl_d)
+      session
+
+      type('a')
+
+      assert_equal 1, @keys.size
+    end
+
+    it 'stops the console' do
+      @keys.close
+
+      session
+
+      assert_equal :stop, logged.last
+    end
+  end
+
+  describe '#watch' do
+    it 'has the job counter watch the Runtime' do
+      repl.watch(:runtime)
+
+      assert_equal [:runtime], @jobs.watched
+    end
+  end
+
+  describe '#ask' do
+    it 'clears a draft from the footer for the ask' do
+      drafted = Queue.new
+      type("one\rdr")
+      begin_session do
+        drafted.pop
+        repl.ask('who?', options: nil, secret: false)
+      end
+      await([:input, 'dr'])
+      drafted << true
+      await([:asked, 'who?', nil, false])
+      @keys.close
+      finish
+
+      assert_equal ['dr', ''], @frame.lines[-3, 2]
+    end
+
+    it 'settles the console before the question' do
+      type("one\r")
+      @keys.close
+
+      session { repl.ask('who?', options: nil, secret: false) }
+
+      assert_includes logged.each_cons(2), [:settle, [:asked, 'who?', nil, false]]
+    end
+
+    it 'passes the question, options and secrecy to the prompter' do
+      type("one\r")
+      @keys.close
+
+      session { repl.ask('key?', options: %w[a b], secret: true) }
+
+      assert_includes logged, [:asked, 'key?', %w[a b], true]
+    end
+
+    it 'hands the keys typed during the ask to the prompter' do
+      answer = nil
+      type("one\r")
+      begin_session { answer = repl.ask('who?', options: nil, secret: false) }
+      await([:asked, 'who?', nil, false])
+      type("jake\r")
+      @keys.close
+      finish
+
+      assert_equal 'jake', answer
+    end
+
+    it 'keeps the keys typed during the ask off the input line' do
+      type("one\r")
+      begin_session { repl.ask('who?', options: nil, secret: false) }
+      await([:asked, 'who?', nil, false])
+      type("jake\r")
+      @keys.close
+      finish
+
+      refute_includes @frame.lines, 'j'
+    end
+
+    it 'returns the keys typed behind the answer to the input line' do
+      @prompter.hold_for(2)
+      type("one\r")
+      begin_session { repl.ask('who?', options: nil, secret: false) }
+      await([:asked, 'who?', nil, false])
+      type("y\rab")
+      @keys.close
+      finish
+
+      assert_equal 'ab', @frame.lines.last
+    end
+
+    it 'redraws the draft once the ask has answered' do
+      drafted = Queue.new
+      type("one\rdr")
+      begin_session do
+        drafted.pop
+        repl.ask('who?', options: nil, secret: false)
+      end
+      await([:input, 'dr'])
+      drafted << true
+      await([:asked, 'who?', nil, false])
+      type("jake\r")
+      @keys.close
+      finish
+
+      assert_equal 'dr', @frame.lines.last
+    end
+
+    it 'takes the keys back when the ask is interrupted' do
+      type("one\r")
+      signalling
+      begin_session do
+        repl.ask('who?', options: nil, secret: false)
+      rescue Interrupt
+        nil
+      end
+      await([:asked, 'who?', nil, false])
+      press(:ctrl_c)
+      type('x')
+      @keys.close
+      finish
+
+      assert_equal 'x', @frame.lines.last
+    end
+  end
+
+  describe '#run' do
+    it 'runs a submitted line as a turn' do
+      type("one\r")
+      @keys.close
+
+      assert_equal ['one'], session
+    end
+
+    it 'runs the lines submitted during a turn back to back in order' do
+      type("one\r")
+
+      turns = session do |line|
+        next unless line == 'one'
+
+        type("two\rthree\r")
+        @keys.close
+        await([:queued, 2])
+      end
+
+      assert_equal %w[one two three], turns
+    end
+
+    it 'runs a line submitted before the loop began' do
+      type("one\r")
+      repl.start
+      await([:input, ''])
+      turns = []
+      @keys.close
+      repl.run { |line| turns << line }
+      repl.stop
+
+      assert_equal ['one'], turns
+    end
+
+    it 'settles the console after each turn' do
+      type("one\r")
+      @keys.close
+
+      session { |line| @log << [:turn, line] }
+
+      assert_includes logged.each_cons(2), [[:turn, 'one'], :settle]
+    end
+  end
+
+  describe '#take' do
+    it 'draws the count left behind the line it takes' do
+      type("one\r")
+
+      session do |line|
+        next unless line == 'one'
+
+        type("two\rthree\r")
+        @keys.close
+        await([:queued, 2])
+      end
+
+      assert_equal [1, 0, 0], @frame.counts.last(3)
+    end
+
+    it 'ends once the keys have ended and nothing is queued' do
+      @keys.close
+
+      assert_empty session
+    end
+
+    it 'hints at the second Ctrl-C after the first while idle' do
+      signalling
+      press(:ctrl_c)
+      begin_session
+      await([:status, hint])
+      @keys.close
+      finish
+
+      assert_equal [hint], @frame.statuses
+    end
+
+    it 'ends on a second Ctrl-C while idle' do
+      signalling
+      press(:ctrl_c)
+      begin_session
+      await([:status, hint])
+      press(:ctrl_c)
+      finish
+
+      assert_equal :stop, logged.last
+    end
+  end
+
+  describe '#read' do
+    it 'sends Ctrl-C on as an interrupt' do
+      press(:ctrl_c)
+      @keys.close
+
+      session
+
+      assert_equal 1, @interrupts.size
+    end
+
+    it 'keeps Ctrl-C off the input line' do
+      press(:ctrl_c)
+      @keys.close
+
+      session
+
+      assert_empty @frame.lines
+    end
+
+    it 'draws the edited line in the footer' do
+      type('hi')
+      @keys.close
+
+      session
+
+      assert_equal %w[h hi], @frame.lines
+    end
+
+    it 'ends an ask in flight when the keys end' do
+      answer = :unanswered
+      type("one\r")
+      begin_session { answer = repl.ask('who?', options: nil, secret: false) }
+      await([:asked, 'who?', nil, false])
+      @keys.close
+      finish
+
+      assert_nil answer
+    end
+  end
+
+  describe '#press' do
+    it 'clears the hint on the next key' do
+      signalling
+      press(:ctrl_c)
+      begin_session
+      await([:status, hint])
+      type('a')
+      @keys.close
+      finish
+
+      assert_equal [hint, ''], @frame.statuses
+    end
+
+    it 'disarms the exit on a key between two Ctrl-Cs' do
+      signalling
+      press(:ctrl_c)
+      begin_session
+      await([:status, hint])
+      type('a')
+      await([:input, 'a'])
+      press(:ctrl_c)
+      await([:status, hint])
+      @keys.close
+      finish
+
+      assert_equal 2, @frame.statuses.count(hint)
+    end
+  end
+
+  describe '#edit' do
+    it 'clears the footer line on Enter' do
+      type("hi\r")
+      @keys.close
+
+      session
+
+      assert_equal '', @frame.lines.last
+    end
+
+    it 'recalls a submitted line from the history' do
+      type("hi\r")
+      press(:up)
+      @keys.close
+
+      session
+
+      assert_equal 'hi', @frame.lines.last
+    end
+
+    it 'ends on Ctrl-D on an empty line' do
+      press(:ctrl_d)
+
+      session
+
+      assert_equal :stop, logged.last
+    end
+
+    it 'ignores Ctrl-D while the line has text' do
+      type('one')
+      press(:ctrl_d)
+      type("\r")
+      @keys.close
+
+      assert_equal ['one'], session
+    end
+  end
+
+  describe '#enqueue' do
+    it 'counts a line submitted during a turn' do
+      type("one\r")
+
+      session do |line|
+        next unless line == 'one'
+
+        type("two\r")
+        @keys.close
+        await([:queued, 1])
+      end
+
+      assert_includes @frame.counts, 1
+    end
+
+    it 'draws no count for a line submitted while idle' do
+      type("one\r")
+      @keys.close
+
+      session
+
+      assert_equal [0, 0], @frame.counts
+    end
+  end
+
+  describe '#close' do
+    it 'runs what is already queued before the loop ends' do
+      type("one\r")
+
+      turns = session do |line|
+        next unless line == 'one'
+
+        type("two\r")
+        press(:ctrl_d)
+        await([:queued, 1])
+      end
+
+      assert_equal %w[one two], turns
+    end
+
+    it 'keeps reading the keys until the queue has drained' do
+      seen = nil
+      type("one\r")
+
+      session do |_line|
+        press(:ctrl_d, :ctrl_c)
+        seen = @interrupts.pop(timeout: timeout_seconds)
+      end
+
+      assert_equal :interrupt, seen
+    end
+  end
+end

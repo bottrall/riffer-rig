@@ -12,7 +12,7 @@ class Riffer::Rig::Terminal::Smoother
   # trickling in slower than 60 chars/s.
   MIN_CHARS_PER_TICK = Rational(1, 6) #: Rational
 
-  # @rbs @io: IO
+  # @rbs @io: Riffer::Rig::Terminal::_Output
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @clock: singleton(Kernel)
   # @rbs @backlog: String
@@ -22,7 +22,7 @@ class Riffer::Rig::Terminal::Smoother
   # @rbs @stop: bool
   # @rbs @newline_pending: bool
 
-  # @rbs io: IO
+  # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs clock: singleton(Kernel)
   # @rbs return: void

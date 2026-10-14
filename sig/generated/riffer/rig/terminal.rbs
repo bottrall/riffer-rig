@@ -19,29 +19,41 @@ class Riffer::Rig::Terminal
 
   FAREWELL: ::String
 
-  @picker: Riffer::Rig::Terminal::Picker
-
-  @sessions: Riffer::Rig::Terminal::_Sessions
-
-  @version: String
-
-  @theme: Riffer::Rig::Terminal::Theme
-
-  @animator: Riffer::Rig::Terminal::Animator
-
-  @renderer: Riffer::Rig::Terminal::Renderer
+  @input: IO
 
   @host: Riffer::Rig::Hosts::_Host
 
-  @input: IO
+  @renderer: Riffer::Rig::Terminal::Renderer
+
+  @animator: Riffer::Rig::Terminal::Animator
+
+  @theme: Riffer::Rig::Terminal::Theme
+
+  @version: String
+
+  @sessions: Riffer::Rig::Terminal::_Sessions
+
+  @picker: Riffer::Rig::Terminal::Picker
+
+  @repl: Riffer::Rig::Terminal::Repl?
 
   # @rbs input: IO
   # @rbs output: IO
   # @rbs version: String
   # @rbs no_color: bool
+  # @rbs ticker: bool
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs return: Riffer::Rig::Terminal
-  def self.for: (input: IO, output: IO, version: String, sessions: Riffer::Rig::Terminal::_Sessions, ?no_color: bool) -> Riffer::Rig::Terminal
+  def self.for: (input: IO, output: IO, version: String, sessions: Riffer::Rig::Terminal::_Sessions, ?no_color: bool, ?ticker: bool) -> Riffer::Rig::Terminal
+
+  # @rbs input: IO
+  # @rbs io: Riffer::Rig::Terminal::_Output
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs version: String
+  # @rbs sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs repl: Riffer::Rig::Terminal::Repl?
+  # @rbs return: Riffer::Rig::Terminal
+  def self.assemble: (input: IO, io: Riffer::Rig::Terminal::_Output, theme: Riffer::Rig::Terminal::Theme, version: String, sessions: Riffer::Rig::Terminal::_Sessions, ?repl: Riffer::Rig::Terminal::Repl?) -> Riffer::Rig::Terminal
 
   # @rbs input: IO
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -51,8 +63,9 @@ class Riffer::Rig::Terminal
   # @rbs version: String
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs picker: Riffer::Rig::Terminal::Picker
+  # @rbs repl: Riffer::Rig::Terminal::Repl?
   # @rbs return: void
-  def initialize: (input: IO, host: Riffer::Rig::Hosts::_Host, renderer: Riffer::Rig::Terminal::Renderer, animator: Riffer::Rig::Terminal::Animator, theme: Riffer::Rig::Terminal::Theme, version: String, sessions: Riffer::Rig::Terminal::_Sessions, picker: Riffer::Rig::Terminal::Picker) -> void
+  def initialize: (input: IO, host: Riffer::Rig::Hosts::_Host, renderer: Riffer::Rig::Terminal::Renderer, animator: Riffer::Rig::Terminal::Animator, theme: Riffer::Rig::Terminal::Theme, version: String, sessions: Riffer::Rig::Terminal::_Sessions, picker: Riffer::Rig::Terminal::Picker, ?repl: Riffer::Rig::Terminal::Repl?) -> void
 
   # @rbs open_picker: bool
   # @rbs return: Integer
@@ -78,6 +91,11 @@ class Riffer::Rig::Terminal
 
   # @rbs return: String | :interrupt | nil
   def read_line: () -> (String | :interrupt | nil)
+
+  # @rbs queued: Riffer::Rig::Terminal::Repl
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def drain: (Riffer::Rig::Terminal::Repl queued, Riffer::Rig::Runtime runtime) -> void
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs text: String

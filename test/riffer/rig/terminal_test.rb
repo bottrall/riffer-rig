@@ -3,6 +3,7 @@
 require 'test_helper'
 require 'json'
 require 'stringio'
+require_relative '../../support/terminal_pty'
 
 # Delegates to the real sessions collaborator and hands each built Runtime to
 # the block, so tests can stub the provider before the REPL reads a prompt.
@@ -87,15 +88,54 @@ describe Riffer::Rig::Terminal do
     env: { 'MOCK_API_KEY' => 'mock-key' },
     open_picker: false,
     sessions: nil,
+    ticker: false,
     &
   )
     output = StringIO.new
     input = StringIO.new(input) if input.is_a?(String)
     sessions ||= cli_sessions(env: env)
     sessions = PreparedSessions.new(sessions, &) if block_given?
-    terminal = Riffer::Rig::Terminal.for(input: input, output: output, version: '9.9.9', sessions: sessions)
+    terminal = Riffer::Rig::Terminal.for(
+      input: input,
+      output: output,
+      version: '9.9.9',
+      sessions: sessions,
+      ticker: ticker
+    )
     @status = terminal.run(open_picker: open_picker)
     output.string
+  end
+
+  def run_on_pty(
+    script,
+    env: { 'MOCK_API_KEY' => 'mock-key' },
+    ticker: true,
+    columns: 80,
+    open_picker: false,
+    &prepare
+  )
+    sessions = cli_sessions(env: env)
+    sessions = PreparedSessions.new(sessions, &prepare) if prepare
+    TerminalPty.drive(script, columns: columns) do |tty|
+      terminal = Riffer::Rig::Terminal.for(
+        input: tty,
+        output: tty,
+        version: '9.9.9',
+        sessions: sessions,
+        no_color: true,
+        ticker: ticker
+      )
+      @status = terminal.run(open_picker: open_picker)
+    end
+  end
+
+  def hold_turns(runtime, started, release)
+    runtime.agent.provider.define_singleton_method(:stream_text) do |*args, **options, &block|
+      started << true
+      # Stands in for the provider read a cancel aborts.
+      release.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
+      super(*args, **options, &block)
+    end
   end
 
   def run_with_animator(input, animator, &)
@@ -211,6 +251,33 @@ describe Riffer::Rig::Terminal do
     assert_empty referenced - %w[Terminal Runtime Hosts Loader Events Command Turn]
   end
 
+  describe 'the ticker flag' do
+    it 'keeps the blocking loop when the flag is off' do
+      output = run_on_pty(->(pty) { pty.feed("/exit\r") }, ticker: false)
+
+      refute_includes output, Riffer::Rig::Terminal::KeyPipeline::BRACKETED_PASTE_ON
+    end
+
+    it 'keeps the blocking loop when the input is not a terminal' do
+      runtime = nil
+      run_terminal("hello\n", ticker: true) { |driven| runtime = driven }
+
+      assert_equal 1, runtime.agent.provider.calls.length
+    end
+
+    it 'keeps the blocking loop when the terminal reports no width' do
+      output = run_on_pty(->(pty) { pty.feed("/exit\r") }, columns: 0)
+
+      refute_includes output, Riffer::Rig::Terminal::KeyPipeline::BRACKETED_PASTE_ON
+    end
+
+    it 'reads keys on a terminal that can draw the footer' do
+      output = run_on_pty(->(pty) { pty.type("/exit\r") })
+
+      assert_includes output, Riffer::Rig::Terminal::KeyPipeline::BRACKETED_PASTE_ON
+    end
+  end
+
   it 'returns one when the Runtime cannot be built' do
     run_terminal('', env: {})
 
@@ -323,6 +390,216 @@ describe Riffer::Rig::Terminal do
     run_terminal("\n  \n") { |driven| runtime = driven }
 
     assert_empty runtime.agent.provider.calls
+  end
+
+  describe 'the queue loop' do
+    def write_asking_command
+      FileUtils.mkdir_p(File.join(@home, '.riffer'))
+      File.write(File.join(@home, '.riffer', 'rig.rb'), <<~SOURCE)
+        Riffer::Rig.extension('greet') do |rig|
+          rig.command('who', description: 'Asks') { |ctx| ctx.say("hi, \#{ctx.ask('who?')}") }
+        end
+      SOURCE
+    end
+
+    it 'opens the picker over the keys before the first session' do
+      path = seed_session('fix the login bug')
+      script = lambda do |pty|
+        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.type("\rtell me more\r/exit\r")
+      end
+      run_on_pty(script, open_picker: true)
+
+      assert_operator File.readlines(path).length, :>, 3
+    end
+
+    it 'asks for a missing credential over the keys' do
+      script = lambda do |pty|
+        pty.await('api_key')
+        pty.type("mock-key\r/exit\r")
+      end
+      run_on_pty(script, env: {})
+
+      assert_equal 0, @status
+    end
+
+    it 'restores the terminal when the Runtime cannot be built' do
+      script = lambda do |pty|
+        pty.await('api_key')
+        pty.type("\u0004")
+      end
+
+      assert_includes run_on_pty(script, env: {}), Riffer::Rig::Terminal::KeyPipeline::BRACKETED_PASTE_OFF
+    end
+
+    it 'counts the running jobs of the first session in the footer' do
+      output = run_on_pty(->(pty) { pty.type("/exit\r") }) do |runtime|
+        runtime.define_singleton_method(:running_job_count) { 2 }
+      end
+
+      assert_includes output, '2 jobs running'
+    end
+
+    it 'runs two queued prompts as two turns in order' do
+      runtime = nil
+      started = Queue.new
+      release = Queue.new
+      script = lambda do |pty|
+        pty.type("one\r")
+        started.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
+        pty.type("two\r/exit\r")
+        pty.await('2 queued')
+        2.times { release << true }
+      end
+      run_on_pty(script) do |driven|
+        runtime = driven
+        hold_turns(driven, started, release)
+      end
+
+      assert_equal(%w[one two], runtime.agent.provider.calls.map { |call| call[:messages].last[:content] })
+    end
+
+    it 'echoes a submitted line above the footer' do
+      output = run_on_pty(->(pty) { pty.type("hello\r/exit\r") })
+
+      assert_includes output, "› hello\r\n› "
+    end
+
+    it 'echoes a pasted control character as its picture' do
+      output = run_on_pty(->(pty) { pty.type("\e[200~a\eb\e[201~\r/exit\r") })
+
+      assert_includes output, "› a␛b\r\n› "
+    end
+
+    it 'ends the session at /exit' do
+      runtime = nil
+      run_on_pty(->(pty) { pty.type("/exit\rhello\r") }) { |driven| runtime = driven }
+
+      assert_empty runtime.agent.provider.calls
+    end
+
+    it 'ends the session at /quit' do
+      runtime = nil
+      run_on_pty(->(pty) { pty.type("/quit\rhello\r") }) { |driven| runtime = driven }
+
+      assert_empty runtime.agent.provider.calls
+    end
+
+    it 'signs off above the footer when the input ends' do
+      assert_includes run_on_pty(->(pty) { pty.type("\u0004") }), "see you on the next riff.\r\n› "
+    end
+
+    it 'exits on a second Ctrl-C at the prompt' do
+      script = lambda do |pty|
+        # Before the session is up, a Ctrl-C abandons its build instead.
+        pty.await('type /exit to quit')
+        pty.type("\u0003")
+        pty.await(Riffer::Rig::Terminal::EXIT_HINT)
+        pty.type("\u0003")
+      end
+      run_on_pty(script)
+
+      assert_equal 0, @status
+    end
+
+    it 'drives the session /new starts' do
+      ids = []
+      run_on_pty(->(pty) { pty.type("hello\r/new\ragain\r/exit\r") }) { |runtime| ids << runtime.id }
+      fresh = session_files.find { |path| File.basename(path, '.jsonl') == ids.last }
+
+      assert_includes File.read(fresh), 'again'
+    end
+
+    it 'reads the resume picker over the keys' do
+      path = seed_session('fix the login bug')
+      script = lambda do |pty|
+        pty.type("/resume\r")
+        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.type("\r")
+        pty.await('▸ model', count: 2)
+        pty.type("tell me more\r/exit\r")
+      end
+      run_on_pty(script)
+
+      assert_operator File.readlines(path).length, :>, 3
+    end
+
+    it 'dismisses the resume picker on Ctrl-C' do
+      seed_session('fix the login bug')
+      runtime = nil
+      script = lambda do |pty|
+        pty.type("/resume\r")
+        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.type('x')
+        pty.await('› x')
+        cleared = pty.written.scan("› \r\n").size
+        pty.type("\u0003")
+        # Keys typed before the picker has let go of them would be its own.
+        pty.await("› \r\n", count: cleared + 1)
+        pty.type("again\r/exit\r")
+      end
+      run_on_pty(script) { |driven| runtime ||= driven }
+
+      assert_equal 1, runtime.agent.provider.calls.length
+    end
+
+    it 'counts the running jobs of the session /new starts in the footer' do
+      counts = [0, 3]
+      output = run_on_pty(->(pty) { pty.type("/new\r/exit\r") }) do |runtime|
+        count = counts.shift
+        runtime.define_singleton_method(:running_job_count) { count }
+      end
+
+      assert_includes output, '3 jobs running'
+    end
+
+    it 'cancels the running turn on Ctrl-C' do
+      started = Queue.new
+      script = lambda do |pty|
+        pty.type("hello\r")
+        started.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
+        pty.type("\u0003")
+        pty.await('[interrupted: cancelled]')
+        pty.type("/exit\r")
+      end
+      output = run_on_pty(script) { |runtime| hold_turns(runtime, started, Queue.new) }
+
+      assert_includes output, '[interrupted: cancelled]'
+    end
+
+    it 'keeps draining the queue after a cancelled turn' do
+      runtime = nil
+      started = Queue.new
+      release = Queue.new
+      script = lambda do |pty|
+        pty.type("hello\r")
+        started.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
+        pty.type("again\r/exit\r")
+        pty.await('2 queued')
+        pty.type("\u0003")
+        pty.await('[interrupted: cancelled]')
+        release << true
+      end
+      run_on_pty(script) do |driven|
+        runtime = driven
+        hold_turns(driven, started, release)
+      end
+
+      assert_includes runtime.agent.provider.calls.last[:messages].last[:content], 'again'
+    end
+
+    it 'answers a question asked during a turn from the keys' do
+      write_asking_command
+      script = lambda do |pty|
+        pty.type("/who\r")
+        pty.await('who?')
+        pty.type("jake\r")
+        pty.await('hi, jake')
+        pty.type("/exit\r")
+      end
+
+      assert_includes run_on_pty(script), 'hi, jake'
+    end
   end
 
   it 'runs a skill command through run_command' do

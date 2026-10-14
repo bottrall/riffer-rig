@@ -86,16 +86,16 @@ class Riffer::Rig::Terminal::Frame
   # @rbs return: void
   def stop: () -> void
 
-  private
-
-  # @rbs return: void
-  def resize: () -> void
-
   # winsize raises on ttys with no queryable window size and some pty
   # wrappers report zero columns; a footer that cannot be fitted to the
   # width would wrap and strand the cursor, so neither gets one.
   # @rbs return: [Integer, Integer]?
   def measure: () -> [ Integer, Integer ]?
+
+  private
+
+  # @rbs return: void
+  def resize: () -> void
 
   # @rbs return: void
   def redraw: () -> void
