@@ -197,6 +197,18 @@ describe Riffer::Rig::Runtime::Concurrency do
     end
   end
 
+  describe '#busy?' do
+    it 'is false while nothing holds the Runtime' do
+      refute_predicate @concurrency, :busy?
+    end
+
+    it 'is true while a claim holds the Runtime' do
+      @concurrency.claim
+
+      assert_predicate @concurrency, :busy?
+    end
+  end
+
   describe '#close' do
     it 'closes' do
       @concurrency.close

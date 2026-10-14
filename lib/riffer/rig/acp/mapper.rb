@@ -40,6 +40,14 @@ module Riffer::Rig::ACP::Mapper
     message_chunk("\n\n")
   end
 
+  # @rbs completion: Riffer::Rig::Runtime::JobCompletion
+  # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
+  def job_completion(completion)
+    message_chunk(
+      "\n\nBackground job #{completion.job_id} exited with status #{completion.exit_status}: #{completion.command}\n\n"
+    )
+  end
+
   # @rbs message: Hash[Symbol, untyped]
   # @rbs return: ::ACP::Types::SessionUpdate::t?
   def replay_of(message)

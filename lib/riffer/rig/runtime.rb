@@ -322,6 +322,11 @@ class Riffer::Rig::Runtime
     @jobs.list.count(&:active?)
   end
 
+  # @rbs return: bool
+  def busy?
+    @concurrency.busy?
+  end
+
   # @rbs return: nil
   def cancel
     @cancel_flag.set

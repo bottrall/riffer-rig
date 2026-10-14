@@ -7,7 +7,9 @@ class Riffer::Rig::ACP::Host
 
   BUILDING_CAPABILITIES: Set[Symbol]
 
-  @buffered: Array[String]
+  @lock: Thread::Mutex
+
+  @buffered: Array[::ACP::Types::SessionUpdate::t]
 
   @session_id: String?
 
@@ -40,6 +42,10 @@ class Riffer::Rig::ACP::Host
   # @rbs return: void
   def notify: (?String? message, ?level: Symbol) -> void
 
+  # @rbs update: ::ACP::Types::SessionUpdate::t
+  # @rbs return: void
+  def update: (::ACP::Types::SessionUpdate::t update) -> void
+
   # @rbs label: String?
   # @rbs &block: ? () -> void
   # @rbs return: void
@@ -65,9 +71,4 @@ class Riffer::Rig::ACP::Host
   # @rbs question: String
   # @rbs return: String?
   def elicit: (String id, String question) -> String?
-
-  # @rbs id: String
-  # @rbs message: String
-  # @rbs return: void
-  def send_update: (String id, String message) -> void
 end

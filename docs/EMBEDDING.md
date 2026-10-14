@@ -116,7 +116,7 @@ end
 runtime.prompt('and this one?').each { |event| ... }
 ```
 
-One prompt runs at a time per Runtime; a second `prompt` or `ask` while one is running raises `Riffer::Rig::Runtime::BusyError`. Parallelism means more Runtimes, in more threads.
+One prompt runs at a time per Runtime; a second `prompt` or `ask` while one is running raises `Riffer::Rig::Runtime::BusyError`. Parallelism means more Runtimes, in more threads. `busy?` is `true` while a prompt given a block, `ask`, [command](#commands) or [rebuild](#rebuilding-after-a-code-reload) holds the Runtime, so a thread outside the turn — an [`on_job_exit`](#background-jobs) subscriber, say — can tell whether a turn is running.
 
 ## Asking for a turn
 

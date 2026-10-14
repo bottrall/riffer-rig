@@ -22,6 +22,10 @@ module Riffer::Rig::ACP::Mapper
   # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
   def job_exit: () -> ::ACP::Types::SessionUpdate::AgentMessageChunk
 
+  # @rbs completion: Riffer::Rig::Runtime::JobCompletion
+  # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
+  def job_completion: (Riffer::Rig::Runtime::JobCompletion completion) -> ::ACP::Types::SessionUpdate::AgentMessageChunk
+
   # @rbs message: Hash[Symbol, untyped]
   # @rbs return: ::ACP::Types::SessionUpdate::t?
   def replay_of: (Hash[Symbol, untyped] message) -> ::ACP::Types::SessionUpdate::t?

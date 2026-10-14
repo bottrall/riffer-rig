@@ -11,6 +11,8 @@ class Riffer::Rig::ACP
 
   @lock: Thread::Mutex
 
+  @owned: Array[Riffer::Rig::Runtime]
+
   @hosts: Hash[String, Riffer::Rig::ACP::Host]
 
   @sessions: Hash[String, Riffer::Rig::Runtime]
@@ -114,6 +116,21 @@ class Riffer::Rig::ACP
   # @rbs id: String
   # @rbs return: Riffer::Rig::Runtime?
   def adopted: (String id) -> Riffer::Rig::Runtime?
+
+  # @rbs loader: Riffer::Rig::Loader
+  # @rbs request: ::ACP::Types::LoadSessionRequest
+  # @rbs host: Riffer::Rig::ACP::Host
+  # @rbs return: Riffer::Rig::Runtime?
+  def resumed: (Riffer::Rig::Loader loader, ::ACP::Types::LoadSessionRequest request, Riffer::Rig::ACP::Host host) -> Riffer::Rig::Runtime?
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: Riffer::Rig::Runtime
+  def own: (Riffer::Rig::Runtime runtime) -> Riffer::Rig::Runtime
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs host: Riffer::Rig::ACP::Host
+  # @rbs return: Riffer::Rig::Runtime
+  def announcing_job_exits: (Riffer::Rig::Runtime runtime, Riffer::Rig::ACP::Host host) -> Riffer::Rig::Runtime
 
   # @rbs servers: Array[::ACP::Types::McpServer::t]
   # @rbs host: Riffer::Rig::ACP::Host

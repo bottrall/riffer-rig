@@ -58,6 +58,18 @@ describe Riffer::Rig::ACP::Mapper do
     end
   end
 
+  describe '.job_completion' do
+    it 'is an agent message chunk naming the job, its exit status and its command in a paragraph of its own' do
+      completion = Riffer::Rig::Runtime::JobCompletion.new(
+        job_id: 'a1b2c3d4', command: 'make test', exit_status: 2, duration: 1.5, output_path: '/tmp/job.log', tail: ''
+      )
+      update = Riffer::Rig::ACP::Mapper.job_completion(completion)
+      text = "\n\nBackground job a1b2c3d4 exited with status 2: make test\n\n"
+
+      assert_equal [ACP::Types::SessionUpdate::AgentMessageChunk, text], [update.class, update.content.text]
+    end
+  end
+
   describe '.replay_of' do
     it 'replays a job notification as a paragraph break rather than as typed input' do
       stored = { role: 'user', content: '<background-job id="a1b2c3d4">', job_notification: true }

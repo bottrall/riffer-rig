@@ -11,7 +11,8 @@ class Riffer::Rig::ACP::Host
 
   # @rbs @client: ::ACP::AgentConnection::Client
   # @rbs @session_id: String?
-  # @rbs @buffered: Array[String]
+  # @rbs @buffered: Array[::ACP::Types::SessionUpdate::t]
+  # @rbs @lock: Thread::Mutex
 
   # @dynamic client=
   attr_writer :client #: ::ACP::AgentConnection::Client
@@ -22,6 +23,7 @@ class Riffer::Rig::ACP::Host
     @client = client
     @session_id = nil
     @buffered = []
+    @lock = Mutex.new
   end
 
   # A request to the client names its session, so nothing can be relayed
@@ -59,10 +61,18 @@ class Riffer::Rig::ACP::Host
   # @rbs level: Symbol
   # @rbs return: void
   def notify(message = nil, level: :info)
-    id = @session_id
-    return @buffered << message.to_s unless id
+    update(Riffer::Rig::ACP::Mapper.message_chunk(message.to_s))
+  end
 
-    send_update(id, message.to_s)
+  # @rbs update: ::ACP::Types::SessionUpdate::t
+  # @rbs return: void
+  def update(update)
+    # A job's exit reaches here on the job's own thread, racing session_id= for
+    # the buffer.
+    @lock.synchronize do
+      id = @session_id
+      id ? @client.update(id, update) : @buffered << update
+    end
   end
 
   # @rbs label: String?
@@ -80,10 +90,11 @@ class Riffer::Rig::ACP::Host
   # @rbs id: String
   # @rbs return: void
   def session_id=(id)
-    @session_id = id
-    buffered = @buffered
-    @buffered = []
-    buffered.each { |message| send_update(id, message) }
+    @lock.synchronize do
+      @session_id = id
+      @buffered.each { |update| @client.update(id, update) }
+      @buffered = []
+    end
   end
 
   private
@@ -109,17 +120,5 @@ class Riffer::Rig::ACP::Host
   def elicit(id, question)
     request = Riffer::Rig::ACP::Mapper.elicitation_request(id, question)
     Riffer::Rig::ACP::Mapper.elicited_answer(@client.create_elicitation(request))
-  end
-
-  # @rbs id: String
-  # @rbs message: String
-  # @rbs return: void
-  def send_update(id, message)
-    @client.update(
-      id,
-      ::ACP::Types::SessionUpdate::AgentMessageChunk.new(
-        content: ::ACP::Types::ContentBlock::Text.new(text: message)
-      )
-    )
   end
 end

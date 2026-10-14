@@ -21,6 +21,7 @@ class Riffer::Rig::ACP
   # @rbs @client: ::ACP::AgentConnection::Client?
   # @rbs @sessions: Hash[String, Riffer::Rig::Runtime]
   # @rbs @hosts: Hash[String, Riffer::Rig::ACP::Host]
+  # @rbs @owned: Array[Riffer::Rig::Runtime]
   # @rbs @lock: Thread::Mutex
 
   # @rbs input: IO
@@ -76,11 +77,14 @@ class Riffer::Rig::ACP
     @env = env
     @home = home
     @cwd = cwd
-    @build = build || ->(cwd, host, servers) { self.class.build_runtime(cwd, host, servers, env: @env, home: @home) }
+    @build = build || lambda do |cwd, host, servers|
+      own(self.class.build_runtime(cwd, host, servers, env: @env, home: @home))
+    end
     @adopt = adopt
     @client = nil
     @sessions = {}
     @hosts = {}
+    @owned = []
     @lock = Mutex.new
   end
 
@@ -103,6 +107,14 @@ class Riffer::Rig::ACP
     connection.start.join
     yield connection if block_given?
     0
+  ensure
+    # Background jobs run in process groups of their own, so only closing
+    # their Runtime stops them outliving this process. A turn still running is
+    # not waited for, so it is cancelled first to stop it starting another.
+    @lock.synchronize { @owned.dup }.each do |runtime|
+      runtime.cancel
+      runtime.close
+    end
   end
 
   # @rbs request: ::ACP::Types::NewSessionRequest
@@ -110,7 +122,7 @@ class Riffer::Rig::ACP
   def new_session(request)
     host = Riffer::Rig::ACP::Host.new(client: client)
     servers = declarations(request.mcp_servers, host)
-    runtime = @build.call(request.cwd, host, servers)
+    runtime = announcing_job_exits(@build.call(request.cwd, host, servers), host)
     @lock.synchronize do
       @sessions[runtime.id] = runtime
       @hosts[runtime.id] = host
@@ -152,10 +164,7 @@ class Riffer::Rig::ACP
   def load_session(request)
     host = Riffer::Rig::ACP::Host.new(client: client)
     loader = Riffer::Rig::Loader.new(cwd: request.cwd, host: host, env: @env, home: @home)
-    runtime = adopted(request.session_id) || loader.resume(
-      request.session_id,
-      extra_extensions: self.class.session_extensions(declarations(request.mcp_servers, host))
-    )
+    runtime = adopted(request.session_id) || resumed(loader, request, host)
     return ::ACP::RequestError.resource_not_found unless runtime
 
     # A client need not answer a question while its own session/load is
@@ -240,6 +249,38 @@ class Riffer::Rig::ACP
     # re-pointed in place rather than replaced.
     case (host = runtime&.host&.host)
     when Riffer::Rig::ACP::Host then host.client = client
+    end
+    runtime
+  end
+
+  # @rbs loader: Riffer::Rig::Loader
+  # @rbs request: ::ACP::Types::LoadSessionRequest
+  # @rbs host: Riffer::Rig::ACP::Host
+  # @rbs return: Riffer::Rig::Runtime?
+  def resumed(loader, request, host)
+    runtime = loader.resume(
+      request.session_id,
+      extra_extensions: self.class.session_extensions(declarations(request.mcp_servers, host))
+    )
+    runtime && own(announcing_job_exits(runtime, host))
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: Riffer::Rig::Runtime
+  def own(runtime)
+    @lock.synchronize { @owned << runtime }
+    runtime
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs host: Riffer::Rig::ACP::Host
+  # @rbs return: Riffer::Rig::Runtime
+  def announcing_job_exits(runtime, host)
+    # A prompt in flight marks the exit on its own stream when it tells the
+    # model. One starting meanwhile collects the exit from the inbox whose
+    # lock this subscriber holds, so it cannot stream ahead of this update.
+    runtime.on_job_exit do |completion|
+      host.update(Riffer::Rig::ACP::Mapper.job_completion(completion)) unless runtime.busy?
     end
     runtime
   end
