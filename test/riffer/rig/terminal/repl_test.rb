@@ -10,17 +10,23 @@ class RecordingConsole
   def stop = @log << :stop
 
   def settle = @log << :settle
+
+  def print(*chunks) = @log << [:print, chunks.join]
 end
 
 class LoggingFrame
   attr_reader :lines, :statuses, :counts
+  attr_writer :size
 
   def initialize(log)
     @log = log
     @lines = []
     @statuses = []
     @counts = []
+    @size = [24, 80]
   end
+
+  def measure = @size
 
   def input(editor)
     @lines << editor.text
@@ -188,6 +194,49 @@ describe Riffer::Rig::Terminal::Repl do
       repl.watch(:runtime)
 
       assert_equal [:runtime], @jobs.watched
+    end
+  end
+
+  describe '#replay' do
+    def recorded
+      [
+        Riffer::Rig::Stores::MessageEntry.new(
+          message: { role: 'user', content: 'Go' },
+          recorded_at: '2026-10-11T00:00:00.000Z'
+        ),
+        Riffer::Rig::Stores::MessageEntry.new(
+          message: { role: 'assistant', content: 'The picker now reads its rows.' },
+          recorded_at: '2026-10-11T00:00:41.000Z'
+        )
+      ]
+    end
+
+    def theme(color: false)
+      Riffer::Rig::Terminal::Theme.new(enabled: color)
+    end
+
+    def rendered(theme, width)
+      [[:print, Riffer::Rig::Terminal::Replay.call(recorded, theme: theme, width: width)]]
+    end
+
+    it 'prints the recorded turns to the console at the width of the terminal' do
+      @frame.size = [24, 24]
+      repl.replay(recorded, theme: theme)
+
+      assert_equal rendered(theme, 24), logged
+    end
+
+    it 'prints them unwrapped on a terminal that reports no size' do
+      @frame.size = nil
+      repl.replay(recorded, theme: theme)
+
+      assert_equal rendered(theme, nil), logged
+    end
+
+    it 'paints them in the theme' do
+      repl.replay(recorded, theme: theme(color: true))
+
+      assert_equal rendered(theme(color: true), 80), logged
     end
   end
 

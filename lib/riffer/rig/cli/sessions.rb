@@ -58,6 +58,13 @@ class Riffer::Rig::CLI::Sessions
     loader(host).resume(id, @flags.to_options)
   end
 
+  # @rbs id: String
+  # @rbs return: Array[Riffer::Rig::Stores::MessageEntry]
+  def recorded(id)
+    entries = @store&.read(id) || []
+    entries.grep(Riffer::Rig::Stores::MessageEntry) #: Array[Riffer::Rig::Stores::MessageEntry]
+  end
+
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs all: bool
   # @rbs return: Array[::Riffer::Rig::Terminal::Session]

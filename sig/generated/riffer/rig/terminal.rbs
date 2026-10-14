@@ -128,6 +128,10 @@ class Riffer::Rig::Terminal
   def swap: (Riffer::Rig::Runtime previous, Riffer::Rig::Runtime next_runtime) -> Riffer::Rig::Runtime
 
   # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def present: (Riffer::Rig::Runtime runtime) -> void
+
+  # @rbs runtime: Riffer::Rig::Runtime
   # @rbs &block: (^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void) -> void
   # @rbs return: void
   def turn: (Riffer::Rig::Runtime runtime) { (^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void) -> void } -> void

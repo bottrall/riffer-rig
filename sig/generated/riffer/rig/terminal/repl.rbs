@@ -53,6 +53,11 @@ class Riffer::Rig::Terminal::Repl
   # @rbs return: void
   def watch: (Riffer::Rig::Runtime runtime) -> void
 
+  # @rbs recorded: Array[Riffer::Rig::Terminal::Replay::_Recorded]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: void
+  def replay: (Array[Riffer::Rig::Terminal::Replay::_Recorded] recorded, theme: Riffer::Rig::Terminal::Theme) -> void
+
   # @rbs question: String?
   # @rbs options: Array[String]?
   # @rbs secret: bool

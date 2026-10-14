@@ -7,7 +7,7 @@ module Riffer::Rig::Terminal::TurnReport
 
   INTERRUPTED = 'interrupted'
 
-  # @rbs turn: Riffer::Rig::Terminal::TurnBuffer
+  # @rbs turn: Riffer::Rig::Terminal::TurnReport::_Turn
   # @rbs session: Riffer::Providers::TokenUsage?
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs width: Integer?
