@@ -1995,6 +1995,24 @@ describe Riffer::Rig::Runtime do
     end
 
     describe 'for a job that exits as the model finishes its reply' do
+      it 'stops continuing a turn at the cap' do
+        runtime = exiting_on_reply(Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS + 1)
+        runtime.ask('go')
+
+        assert_equal Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS, notifications(runtime).length
+      end
+
+      it 'delivers the exit the cap held back at the start of the next turn' do
+        runtime = exiting_on_reply(Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS + 1)
+        runtime.ask('go')
+        runtime.ask('again')
+
+        assert_equal(
+          [Riffer::Rig::Runtime::JobNotification, Riffer::Messages::User, Riffer::Messages::Assistant],
+          runtime.agent.session.messages.last(3).map(&:class)
+        )
+      end
+
       it 'keeps the exit for the next turn when the turn did not complete' do
         runtime = exiting_on_reply(1)
         runtime.agent.provider.stub_response('Cut sh', finish_reason: :length)
@@ -2038,6 +2056,15 @@ describe Riffer::Rig::Runtime do
         )
       end
 
+      it 'runs the reload check again before the request that continues the turn' do
+        seen = []
+        runtime = continued_turn
+        runtime.install_reload_check(->(checked) { seen << checked })
+        runtime.ask('go')
+
+        assert_equal [runtime, runtime], seen
+      end
+
       it 'answers with the reply that followed the notification' do
         assert_equal 'It passed.', continued_turn.ask('go').content
       end
@@ -2074,24 +2101,6 @@ describe Riffer::Rig::Runtime do
         continued_turn.prompt('go') { |event| events << event }
 
         assert_equal 1, events.grep(Riffer::Rig::Events::JobExit).length
-      end
-
-      it 'stops continuing a turn at the cap' do
-        runtime = exiting_on_reply(Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS + 1)
-        runtime.ask('go')
-
-        assert_equal Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS, notifications(runtime).length
-      end
-
-      it 'delivers the exit the cap held back at the start of the next turn' do
-        runtime = exiting_on_reply(Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS + 1)
-        runtime.ask('go')
-        runtime.ask('again')
-
-        assert_equal(
-          [Riffer::Rig::Runtime::JobNotification, Riffer::Messages::User, Riffer::Messages::Assistant],
-          runtime.agent.session.messages.last(3).map(&:class)
-        )
       end
     end
 

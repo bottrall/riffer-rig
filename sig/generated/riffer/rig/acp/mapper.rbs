@@ -19,6 +19,9 @@ module Riffer::Rig::ACP::Mapper
   # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
   def message_chunk: (String content) -> ::ACP::Types::SessionUpdate::AgentMessageChunk
 
+  # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
+  def paragraph_break: () -> ::ACP::Types::SessionUpdate::AgentMessageChunk
+
   # @rbs message: Hash[Symbol, untyped]
   # @rbs return: ::ACP::Types::SessionUpdate::t?
   def replay_of: (Hash[Symbol, untyped] message) -> ::ACP::Types::SessionUpdate::t?

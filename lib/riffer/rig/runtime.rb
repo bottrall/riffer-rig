@@ -569,10 +569,16 @@ class Riffer::Rig::Runtime
   def continued(yielder, response, remaining)
     return response unless remaining.positive? && response.outcome.reason == :completed && steps_left?(response)
 
-    stream = Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { @agent.stream if notify_job_exits }
+    stream = Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { continuation if notify_job_exits }
     return response unless stream
 
     continued(yielder, combined(response, relay(yielder, stream)), remaining - 1)
+  end
+
+  # @rbs return: Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  def continuation
+    @reload_check&.call(self)
+    @agent.stream
   end
 
   # @rbs response: Riffer::Agent::Response

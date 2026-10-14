@@ -33,10 +33,17 @@ module Riffer::Rig::ACP::Mapper
     ::ACP::Types::SessionUpdate::AgentMessageChunk.new(content: text_block(content))
   end
 
+  # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
+  def paragraph_break
+    # ACP has no update for a job exit notice, and without a break the replies
+    # either side of one read as a single message.
+    message_chunk("\n\n")
+  end
+
   # @rbs message: Hash[Symbol, untyped]
   # @rbs return: ::ACP::Types::SessionUpdate::t?
   def replay_of(message)
-    return nil if message[Riffer::Rig::Runtime::JobNotification::MARKER]
+    return paragraph_break if message[Riffer::Rig::Runtime::JobNotification::MARKER]
 
     case message[:role]
     when 'user' then ::ACP::Types::SessionUpdate::UserMessageChunk.new(content: text_block(message[:content].to_s))

@@ -50,11 +50,19 @@ describe Riffer::Rig::ACP::Mapper do
     end
   end
 
+  describe '.paragraph_break' do
+    it 'is an agent message chunk holding a blank line' do
+      update = Riffer::Rig::ACP::Mapper.paragraph_break
+
+      assert_equal [ACP::Types::SessionUpdate::AgentMessageChunk, "\n\n"], [update.class, update.content.text]
+    end
+  end
+
   describe '.replay_of' do
-    it 'skips a job notification rather than replay it as typed input' do
+    it 'replays a job notification as a paragraph break rather than as typed input' do
       stored = { role: 'user', content: '<background-job id="a1b2c3d4">', job_notification: true }
 
-      assert_nil Riffer::Rig::ACP::Mapper.replay_of(stored)
+      assert_equal Riffer::Rig::ACP::Mapper.paragraph_break.to_h, Riffer::Rig::ACP::Mapper.replay_of(stored).to_h
     end
 
     it 'replays a user message as a user message chunk' do

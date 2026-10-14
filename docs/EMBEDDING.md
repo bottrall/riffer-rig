@@ -163,7 +163,7 @@ turn 1    ↑2600 · ↓120 · cache_write:900 · cache_read:900 · ~$0.0063
 turn 2    ↑1500 · ↓12 · ~$0.0046
 ```
 
-A line holds the input and output tokens, each cache count above zero, and the cost when every model call it sums was priced. A turn is a user message and every message up to the next one, so a [restored](#snapshots) session lists the turns it was saved with; a turn whose model calls reported no usage reads `no usage`. The `session` line is the tally itself, so it still counts a turn that a [`before_request`](EXTENSIONS.md#the-rigon-seam) hook has since taken out of the messages. Before any usage is recorded the command answers `No usage recorded yet`.
+A line holds the input and output tokens, each cache count above zero, and the cost when every model call it sums was priced. A turn is a prompt and every message up to the next one — a [job exit notification](#exit-notifications) starts no turn of its own — so a [restored](#snapshots) session lists the turns it was saved with; a turn whose model calls reported no usage reads `no usage`. The `session` line is the tally itself, so it still counts a turn that a [`before_request`](EXTENSIONS.md#the-rigon-seam) hook has since taken out of the messages. Before any usage is recorded the command answers `No usage recorded yet`.
 
 ## Rig events
 

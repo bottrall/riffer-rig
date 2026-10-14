@@ -24,10 +24,10 @@ Tools never raise. A bad argument, a missing file or a failing command comes bac
 The model never has to ask whether a job is done: the Runtime delivers each exit into the conversation as a notice, a `<background-job id="…" status="…" exit-code="…" duration="…">` envelope holding the command, the output path and the last 2,000 bytes of the output. `status` is `completed` for exit code `0` and `failed` for any other. Where the notice lands depends on what the turn is doing when the job exits:
 
 - **During a turn** it is appended to the next tool result the model receives, after the tool's own output.
-- **As the model finishes its reply** the Runtime adds the notice as a user-role message and runs the model again, so the turn continues. A prompt is continued this way at most five times, and not at all once the turn has made as many model calls as the [step limit](EMBEDDING.md#capping-the-loop) allows; an exit held back waits for the next prompt.
+- **As the model finishes its reply** the Runtime adds the notice as a user-role message and runs the model again, so the turn continues. A prompt is continued this way at most five times, and not once the [step limit](EMBEDDING.md#capping-the-loop) is used up; an exit held back waits for the next prompt.
 - **Between turns** it is delivered as a user-role message ahead of the next prompt.
 
-Exits that are waiting together arrive as one notice. `bash`'s description tells the model it will be notified, so it has no reason to wait on a job or poll `bash_output` for its exit. [Background jobs](EMBEDDING.md#exit-notifications) describes what a host sees of each delivery.
+Exits that are waiting together arrive as one notice. `bash`'s description tells the model it will be notified, so it has no reason to wait on a job or poll `bash_output` for its exit. [Exit notifications](EMBEDDING.md#exit-notifications) describes what a host sees of each delivery.
 
 An output file holds at most 10,000,000 bytes. When a job writes past that, the oldest output is dropped: the file is rewritten to open with the line `[earlier output dropped to keep this file under 10000000 bytes]` followed by the most recent 5,000,000 bytes, and carries on growing from there.
 

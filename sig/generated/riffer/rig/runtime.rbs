@@ -296,6 +296,9 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Agent::Response
   def continued: (Enumerator::Yielder yielder, Riffer::Agent::Response response, Integer remaining) -> Riffer::Agent::Response
 
+  # @rbs return: Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  def continuation: () -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]
+
   # @rbs response: Riffer::Agent::Response
   # @rbs return: bool
   def steps_left?: (Riffer::Agent::Response response) -> bool

@@ -360,6 +360,23 @@ describe Riffer::Rig::ACP do
       assert_empty @permissions
     end
 
+    it 'breaks the agent message where a job exit is delivered' do
+      session = new_session
+      runtime = @built_runtimes.last
+      exits = Queue.new
+      runtime.on_job_exit { |completion| exits << completion }
+      jobs = runtime.agent.context[:jobs] #: Riffer::Rig::Tools::Bash::Jobs
+      jobs.register(Process.spawn('true', pgroup: true), 'true', File.open(File::NULL))
+      exits.pop(timeout: 5)
+      reply('Hi from ACP.')
+      _response, updates = prompt(session.session_id, 'hello')
+      chunks = updates.filter_map do |update|
+        update.content.text if update.is_a?(ACP::Types::SessionUpdate::AgentMessageChunk)
+      end
+
+      assert_equal "\n\n", chunks.first
+    end
+
     it 'ends a tool-call turn with end_turn' do
       session = new_session
       File.write(File.join(@cwd, 'subject.txt'), 'contents')
