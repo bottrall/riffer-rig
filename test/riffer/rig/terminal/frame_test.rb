@@ -12,10 +12,10 @@ describe Riffer::Rig::Terminal::Frame do
     @pty&.close
   end
 
-  def tty(columns)
+  def tty(columns, rows: 24)
     io = StringIO.new
     io.define_singleton_method(:tty?) { true }
-    io.define_singleton_method(:winsize) { [24, columns] }
+    io.define_singleton_method(:winsize) { [rows, columns] }
     io
   end
 
@@ -86,6 +86,16 @@ describe Riffer::Rig::Terminal::Frame do
 
       assert_equal "› hi\r\n  \e[1A\e[5G", io.string
     end
+
+    it 'draws the peek it was given before it started' do
+      io = tty(80)
+      unstarted = frame(io)
+      unstarted.peek('thinking')
+
+      unstarted.start
+
+      assert_equal "  thinking\r\n#{empty_footer}", io.string
+    end
   end
 
   describe '#append' do
@@ -119,6 +129,16 @@ describe Riffer::Rig::Terminal::Frame do
       started(io).append("one\ntwo\r\n")
 
       assert_includes io.string, "\e[Jone\r\ntwo\r\n›"
+    end
+
+    it 'prints the content above the peek' do
+      io = tty(80)
+      frame = started(io)
+      frame.peek('thinking')
+
+      frame.append('one')
+
+      assert_operator io.string, :end_with?, "\e[1A\r\e[Jone\r\n  thinking\r\n#{empty_footer}"
     end
 
     it 'keeps content above the footer when prints interleave with redraws' do
@@ -255,6 +275,53 @@ describe Riffer::Rig::Terminal::Frame do
     end
   end
 
+  describe '#peek' do
+    it 'draws nothing when there is no footer' do
+      io = StringIO.new
+
+      started(io).peek('thinking')
+
+      assert_equal '', io.string
+    end
+
+    it 'redraws the footer under the content' do
+      io = tty(80)
+
+      started(io).peek('thinking')
+
+      assert_equal "#{empty_footer}\r\e[J  thinking\r\n#{empty_footer}", io.string
+    end
+
+    it 'erases every row it drew before drawing the next content' do
+      io = tty(80)
+      frame = started(io)
+      frame.peek("thinking\nhard")
+
+      frame.peek('done')
+
+      assert_operator io.string, :end_with?, "\e[2A\r\e[J  done\r\n#{empty_footer}"
+    end
+
+    it 'leaves the input line and the status line as they were' do
+      frame = on_pty
+      frame.input(editing('hi'))
+      frame.status('working')
+
+      frame.peek('thinking')
+
+      assert_equal ['  thinking', '› hi', '  working'], @pty.screen.rows
+    end
+
+    it 'leaves the cursor at the edit point' do
+      frame = on_pty
+      frame.input(editing('hi', 'yo'))
+
+      frame.peek("thinking\nhard")
+
+      assert_equal [2, 4], [@pty.screen.row, @pty.screen.column]
+    end
+  end
+
   describe '#stop' do
     it 'writes nothing when there is no footer' do
       io = StringIO.new
@@ -270,6 +337,16 @@ describe Riffer::Rig::Terminal::Frame do
       started(io).stop
 
       assert_equal "#{empty_footer}\r\e[J", io.string
+    end
+
+    it 'erases the peek with the footer' do
+      io = tty(80)
+      frame = started(io)
+      frame.peek('thinking')
+
+      frame.stop
+
+      assert_operator io.string, :end_with?, "#{empty_footer}\e[1A\r\e[J"
     end
 
     it 'prints later content without a footer' do
@@ -318,6 +395,69 @@ describe Riffer::Rig::Terminal::Frame do
       @pty.report(0)
 
       assert_equal ['›', '  working t'], @pty.screen.rows
+    end
+
+    it 'refits the peek to the rows left above the footer' do
+      frame = on_pty(columns: 40, rows: 12)
+      frame.peek("one\ntwo\nthree\nfour")
+
+      @pty.report(40, rows: 4)
+
+      assert_equal ['  three', '  four', '›', ''], @pty.screen.rows
+    end
+  end
+
+  describe '#peek_rows' do
+    def peeking(columns, content, rows: 24, color: false)
+      io = tty(columns, rows: rows)
+      started(io, color: color).peek(content)
+      io.string.delete_prefix("#{empty_footer}\r\e[J")
+    end
+
+    it 'draws no more rows than a short terminal has above its footer' do
+      assert_equal "  two\r\n  three\r\n#{empty_footer}", peeking(80, "one\ntwo\nthree", rows: 4)
+    end
+
+    it 'draws no row on a terminal with none above its footer' do
+      assert_equal empty_footer, peeking(80, 'thinking', rows: 2)
+    end
+
+    it 'draws the last lines of content that outgrows the region' do
+      lines = Array.new(10) { |n| "line #{n}" }
+
+      assert_equal "#{lines.last(8).map { |line| "  #{line}\r\n" }.join}#{empty_footer}", peeking(80, lines.join("\n"))
+    end
+
+    it 'wraps the content at the free last column' do
+      assert_equal "  abcde\r\n  fg hi\r\n#{empty_footer}", peeking(8, 'abcde fg hi')
+    end
+
+    it 'keeps a blank line of the content' do
+      assert_equal "  one\r\n\r\n  two\r\n#{empty_footer}", peeking(80, "one\n\ntwo")
+    end
+
+    it 'draws the last rows of a line that wraps past the region' do
+      words = Array.new(10) { |n| "word#{n}" }
+
+      assert_equal "#{words.last(8).map { |word| "  #{word}\r\n" }.join}#{empty_footer}", peeking(8, words.join(' '))
+    end
+
+    it 'cuts each row to a width that has no room for the indent' do
+      assert_equal "  \r\n  \r\n#{empty_footer}", peeking(3, 'ab')
+    end
+
+    it 'never leaves a row behind in the scrollback of a full screen' do
+      frame = on_pty(rows: 4)
+      5.times { |n| frame.append("line #{n}") }
+
+      frame.peek(Array.new(10) { |n| "peeked #{n}" }.join("\n"))
+      frame.peek('')
+
+      assert_equal [*Array.new(5) { |n| "line #{n}" }, '›', ''], @pty.screen.scrollback + @pty.screen.rows
+    end
+
+    it 'dims each row when color is on' do
+      assert_includes peeking(80, "one\ntwo", color: true), "\e[J\e[2m  one\e[0m\r\n\e[2m  two\e[0m\r\n"
     end
   end
 

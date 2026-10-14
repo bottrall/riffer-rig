@@ -1,0 +1,37 @@
+# Generated from lib/riffer/rig/terminal/peek.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Peek
+  TOOL: String
+
+  @frame: Riffer::Rig::Terminal::Frame
+
+  @mutex: Mutex
+
+  @buffer: Riffer::Rig::Terminal::TurnBuffer?
+
+  @open: bool
+
+  # @rbs frame: Riffer::Rig::Terminal::Frame
+  # @rbs return: void
+  def initialize: (frame: Riffer::Rig::Terminal::Frame) -> void
+
+  # @rbs buffer: Riffer::Rig::Terminal::TurnBuffer
+  # @rbs return: void
+  def watch: (Riffer::Rig::Terminal::TurnBuffer buffer) -> void
+
+  # @rbs key: Riffer::Rig::Terminal::Key
+  # @rbs return: void
+  def press: (Riffer::Rig::Terminal::Key key) -> void
+
+  # @rbs return: void
+  def refresh: () -> void
+
+  # @rbs return: void
+  def unwatch: () -> void
+
+  private
+
+  # @rbs buffer: Riffer::Rig::Terminal::TurnBuffer
+  # @rbs return: String
+  def content: (Riffer::Rig::Terminal::TurnBuffer buffer) -> String
+end

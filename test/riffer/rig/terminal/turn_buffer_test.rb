@@ -57,7 +57,15 @@ describe Riffer::Rig::Terminal::TurnBuffer do
       assert_nil buffer(text('Hello')).ghost
     end
 
+    it 'holds the prose of a request that is still streaming' do
+      assert_equal 'Hello', buffer(text('Hel'), text('lo')).prose
+    end
+
     describe 'when a request reports its finish reason' do
+      it 'holds the prose of that request no longer' do
+        assert_empty buffer(text('All done.'), finish(:stop)).prose
+      end
+
       it 'keeps no answer from a request whose prose is blank' do
         assert_nil buffer(text("\n\n"), finish(:stop)).answer
       end
@@ -111,6 +119,18 @@ describe Riffer::Rig::Terminal::TurnBuffer do
       it 'keeps the answer of a request that reported it stopped' do
         assert_equal 'Here it is.', buffer(text('Here it is.'), tool_call, finish(:stop), before_tool).answer
       end
+
+      it 'names no tool before one starts' do
+        assert_nil buffer(text('Let me look.'), tool_call, finish(:tool_calls)).tool
+      end
+
+      it 'names the tool that is running' do
+        assert_equal 'read', buffer(tool_call, before_tool).tool
+      end
+
+      it 'names no tool once it has finished' do
+        assert_nil buffer(tool_call, tools_run).tool
+      end
     end
 
     describe 'when the turn is interrupted' do
@@ -155,6 +175,17 @@ describe Riffer::Rig::Terminal::TurnBuffer do
       it 'keeps the latest preamble as the ghost' do
         assert_equal 'Now the tests.', turn.ghost
       end
+    end
+  end
+
+  describe '#prose' do
+    it 'hands out a copy that later deltas leave alone' do
+      streaming = buffer(text('Hel'))
+      read = streaming.prose
+
+      streaming.absorb(text('lo'))
+
+      assert_equal 'Hel', read
     end
   end
 

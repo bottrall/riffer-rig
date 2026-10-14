@@ -3,13 +3,14 @@
 class Screen
   SEQUENCE = /\e\[([\d;]*)([A-Za-z])|[\r\n]|./m
 
-  attr_reader :row, :column
+  attr_reader :row, :column, :scrollback
   attr_writer :columns
 
   def initialize(rows:, columns:)
     @height = rows
     @columns = columns
     @rows = ['']
+    @scrollback = []
     @row = 0
     @column = 0
   end
@@ -55,7 +56,7 @@ class Screen
     @rows << '' if @row == @rows.size
     return unless @rows.size > @height
 
-    @rows.shift
+    @scrollback << @rows.shift.rstrip
     @row -= 1
   end
 

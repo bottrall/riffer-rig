@@ -13,29 +13,39 @@ class Riffer::Rig::Terminal::Frame
 
   JOBS_SEPARATOR: String
 
+  FOOTER_ROWS: Integer
+
+  PEEK_ROWS: Integer
+
   # The cursor rests on the input line, the footer's first row, so this wipes
   # the whole footer.
   ERASE: String
 
-  @previous_resize: Signal::trap_command
-
-  @mutex: Mutex
-
-  @active: bool
-
-  @width: Integer
-
-  @jobs: Integer
-
-  @queued: Integer
-
-  @status: String
-
-  @editor: Riffer::Rig::Terminal::LineEditor
+  @io: IO
 
   @theme: Riffer::Rig::Terminal::Theme
 
-  @io: IO
+  @editor: Riffer::Rig::Terminal::LineEditor
+
+  @status: String
+
+  @queued: Integer
+
+  @jobs: Integer
+
+  @peek: String
+
+  @peek_height: Integer
+
+  @height: Integer
+
+  @width: Integer
+
+  @active: bool
+
+  @mutex: Mutex
+
+  @previous_resize: Signal::trap_command
 
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -66,6 +76,10 @@ class Riffer::Rig::Terminal::Frame
   # @rbs return: void
   def jobs: (Integer count) -> void
 
+  # @rbs content: String
+  # @rbs return: void
+  def peek: (String content) -> void
+
   # @rbs return: void
   def stop: () -> void
 
@@ -77,11 +91,21 @@ class Riffer::Rig::Terminal::Frame
   # winsize raises on ttys with no queryable window size and some pty
   # wrappers report zero columns; a footer that cannot be fitted to the
   # width would wrap and strand the cursor, so neither gets one.
-  # @rbs return: Integer?
-  def measure: () -> Integer?
+  # @rbs return: [Integer, Integer]?
+  def measure: () -> [ Integer, Integer ]?
 
   # @rbs return: void
   def redraw: () -> void
+
+  # @rbs return: String
+  def erase: () -> String
+
+  # @rbs before: String
+  # @rbs return: void
+  def draw: (?String before) -> void
+
+  # @rbs return: Array[String]
+  def peek_rows: () -> Array[String]
 
   # @rbs return: String
   def footer: () -> String
