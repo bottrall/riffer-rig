@@ -369,7 +369,7 @@ describe Riffer::Rig::Runtime do
     it 'lists no skill commands when the sources hold no skills' do
       FileUtils.remove_entry(File.join(skills_dir, 'a'))
 
-      assert_equal %w[auth model], skilled_runtime.commands.map(&:name)
+      assert_equal %w[auth model cost], skilled_runtime.commands.map(&:name)
     end
 
     it 're-activates a snapshot skill by name on restore' do
@@ -1422,7 +1422,7 @@ describe Riffer::Rig::Runtime do
       it 'keeps the old commands' do
         attempt
 
-        assert_equal %w[auth model old], @runtime.commands.map(&:name)
+        assert_equal %w[auth model cost old], @runtime.commands.map(&:name)
       end
 
       it 'keeps the old settings' do
@@ -1454,7 +1454,7 @@ describe Riffer::Rig::Runtime do
     end
 
     it 'swaps in the commands of the new list' do
-      assert_equal %w[auth model new], rebuilt.commands.map(&:name)
+      assert_equal %w[auth model cost new], rebuilt.commands.map(&:name)
     end
 
     it 'lists a skill added before a rebuild' do

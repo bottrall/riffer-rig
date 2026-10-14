@@ -1,0 +1,7 @@
+# Generated from lib/riffer/rig/runtime/usage.rb with RBS::Inline
+
+module Riffer::Rig::Runtime::Usage
+  # @rbs messages: Array[Riffer::Messages::Base]
+  # @rbs return: Riffer::Providers::TokenUsage?
+  def sum: (Array[Riffer::Messages::Base] messages) -> Riffer::Providers::TokenUsage?
+end

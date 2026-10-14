@@ -155,6 +155,16 @@ Each turn's usage is riffer's: on the `ask` response as `response.token_usage`, 
 
 Missing pricing means `nil`, never zero: a model `Riffer.config.pricing` has no rates for reports no `cost`, and neither does the tally. Pricing is process-wide and keyed by model id, so two Runtimes that price the same model differently share whichever registered last. The terminal takes its pricing from the merged `models` blocks of the two settings files ([Configuration](CONFIGURATION.md#models)); an embedder passes its own, or registers rates itself with `Riffer.config.pricing.set`.
 
+`cost` is a core command, listed in `commands` after [`model`](#switching-the-model). `run_command('cost')` answers with one `command_output`: the tally on the `session` line, then a line for each turn in the order the session's messages hold them:
+
+```
+session   ↑4100 · ↓132 · cache_write:900 · cache_read:900 · ~$0.0109
+turn 1    ↑2600 · ↓120 · cache_write:900 · cache_read:900 · ~$0.0063
+turn 2    ↑1500 · ↓12 · ~$0.0046
+```
+
+A line holds the input and output tokens, each cache count above zero, and the cost when every model call it sums was priced. A turn is a user message and every message up to the next one, so a [restored](#snapshots) session lists the turns it was saved with; a turn whose model calls reported no usage reads `no usage`. The `session` line is the tally itself, so it still counts a turn that a [`before_request`](EXTENSIONS.md#the-rigon-seam) hook has since taken out of the messages. Before any usage is recorded the command answers `No usage recorded yet`.
+
 ## Rig events
 
 The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-level events from `Riffer::Rig::Events`. A rig event is any object with `type` and `to_h` (the RBS interface `Riffer::Rig::Events::_Event`). Rig's own are frozen value objects that include `Riffer::Rig::Support::TypedValue`, which derives `type` and `to_h` from the type and attribute list each class declares and makes them equal when their class and `to_h` match; each has `to_h` — with the type folded in, so a headless host can print every record verbatim as NDJSON — and `type`, the snake_case form of its class name. A class opts in with `extend Riffer::Rig::Support::TypedValue::Schema`, `include Riffer::Rig::Support::TypedValue`, and a `typed_value :type, :attr, ...` declaration; every attribute it names must have a public reader, because `to_h` reads each one by name.

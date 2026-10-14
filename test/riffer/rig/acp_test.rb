@@ -415,7 +415,7 @@ describe Riffer::Rig::ACP do
       session = adopt_session
       _response, updates = load(session.session_id)
 
-      assert_equal %w[auth model skill:tidy reload trace], updates.last.available_commands.map(&:name)
+      assert_equal %w[auth model cost skill:tidy reload trace], updates.last.available_commands.map(&:name)
     end
 
     it 'runs a prompt from a later connection on the adopted runtime' do
@@ -535,7 +535,7 @@ describe Riffer::Rig::ACP do
       session = save_session('first prompt')
       _response, updates = load(session.session_id)
 
-      assert_equal %w[auth model skill:tidy reload trace], updates.last.available_commands.map(&:name)
+      assert_equal %w[auth model cost skill:tidy reload trace], updates.last.available_commands.map(&:name)
     end
 
     it 'continues the conversation after a load' do
@@ -647,7 +647,7 @@ describe Riffer::Rig::ACP do
         notification.update.is_a?(ACP::Types::SessionUpdate::AvailableCommandsUpdate)
       end
 
-      assert_equal %w[auth model skill:tidy reload trace], update.update.available_commands.map(&:name)
+      assert_equal %w[auth model cost skill:tidy reload trace], update.update.available_commands.map(&:name)
     end
   end
 

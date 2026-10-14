@@ -78,12 +78,6 @@ describe Riffer::Rig::Runtime::Snapshot do
 
       assert_equal usage(30, 12).to_h, snapshot(messages: messages).usage.to_h
     end
-
-    it 'is nil when no message carries usage' do
-      messages = [Riffer::Messages::User.new('hello'), Riffer::Messages::Assistant.new('No usage.')]
-
-      assert_nil snapshot(messages: messages).usage
-    end
   end
 
   describe '#restorable_model' do

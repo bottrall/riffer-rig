@@ -441,6 +441,7 @@ class Riffer::Rig::Runtime
       *@core_commands,
       Riffer::Rig::Commands::Auth.command,
       Riffer::Rig::Commands::Model.command,
+      Riffer::Rig::Commands::Cost.command,
       *skills.map { |skill| Riffer::Rig::Commands::Skill.command(skill) },
       *registrars.flat_map { |registrar| registrar.commands.values }
     ]

@@ -33,7 +33,7 @@ The directories are scanned when the Runtime is built and again on every rebuild
 
 ## `/skill:<name>`
 
-Every skill in the catalog gets a runtime command, `skill:<name>`, listed in `runtime.commands` after `model` with the skill's description. It works in every host — the terminal, headless and over ACP — through `run_command`:
+Every skill in the catalog gets a runtime command, `skill:<name>`, listed in `runtime.commands` after `cost` with the skill's description. It works in every host — the terminal, headless and over ACP — through `run_command`:
 
 ```ruby
 runtime.run_command('skill:review', 'focus on lib/') { |event| … }
