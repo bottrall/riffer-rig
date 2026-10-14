@@ -5,10 +5,6 @@ class Riffer::Rig::Terminal::Animator
 
   SPINNER_FRAME_SECONDS = 0.12 #: Float
 
-  EQ_LEVELS = '▁▂▃▄▅▆▇█'.chars.freeze #: Array[String]
-
-  EQ_BARS = 7 #: Integer
-
   NEUTRAL_LABEL = 'riffing…' #: String
 
   REASONING_PHRASES = [
@@ -87,12 +83,7 @@ class Riffer::Rig::Terminal::Animator
   # @rbs label: String
   # @rbs return: String
   def equalizer(tick, label = NEUTRAL_LABEL)
-    bars = Array.new(EQ_BARS) do |i|
-      height = (Math.sin((tick + i) * 0.6).abs * (EQ_LEVELS.length - 1)).round
-      bar = EQ_LEVELS[height]
-      i.even? ? @theme.cyan(bar) : @theme.magenta(bar)
-    end
-    "#{bars.join} #{@theme.grey(label)}"
+    "#{Riffer::Rig::Terminal::Equalizer.bars(@theme, tick)} #{@theme.grey(label)}"
   end
 
   private

@@ -275,6 +275,32 @@ describe Riffer::Rig::Terminal::Frame do
     end
   end
 
+  describe '#status_room' do
+    it 'is nothing when there is no footer' do
+      assert_equal 0, started(StringIO.new).status_room
+    end
+
+    it 'is the row less the indent and the free last column' do
+      assert_equal 77, started(tty(80)).status_room
+    end
+
+    it 'leaves out the columns of the job counter and its separator' do
+      frame = started(tty(80))
+
+      frame.jobs(2)
+
+      assert_equal 60, frame.status_room
+    end
+
+    it 'keeps the columns of a job counter the width has no room to draw' do
+      frame = started(tty(16))
+
+      frame.jobs(2)
+
+      assert_equal 13, frame.status_room
+    end
+  end
+
   describe '#peek' do
     it 'draws nothing when there is no footer' do
       io = StringIO.new
