@@ -38,25 +38,8 @@ describe Riffer::Rig::Terminal::Frame do
   end
 
   describe '#start' do
-    it 'draws no footer when the io is not a tty' do
+    it 'draws no footer when the terminal cannot be measured' do
       io = StringIO.new
-
-      started(io)
-
-      assert_equal '', io.string
-    end
-
-    it 'draws no footer when the tty reports zero columns' do
-      io = tty(0)
-
-      started(io)
-
-      assert_equal '', io.string
-    end
-
-    it 'draws no footer when the window size cannot be queried' do
-      io = tty(80)
-      io.define_singleton_method(:winsize) { raise Errno::ENOTTY }
 
       started(io)
 

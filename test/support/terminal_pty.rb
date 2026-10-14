@@ -6,12 +6,12 @@ require 'io/console'
 class TerminalPty
   TIMEOUT_SECONDS = 5
 
-  # Yields the tty on the calling thread, where a terminal runs, while the
-  # script types on another; returns everything written to the tty.
   def self.drive(script, columns: 80)
     pty = new(columns: columns)
     runner = Thread.current
     returned = Queue.new
+    # The terminal keeps the calling thread, where a Ctrl-C's Interrupt is
+    # raised.
     typist = Thread.new do
       script.call(pty)
       returned.pop(timeout: TIMEOUT_SECONDS) || raise('the terminal was still running after its script')
@@ -42,14 +42,14 @@ class TerminalPty
     @reader = Thread.new { read }
   end
 
-  # The key pipeline only sees keys typed once it holds the tty in raw mode.
   def type(bytes)
+    # The key pipeline only sees keys typed once it holds the tty in raw mode.
     wait_until('the tty never went raw') { !@slave.echo? }
     @master.write(bytes)
   end
 
-  # A blocking read finds a line typed ahead of it in the tty's own buffer.
   def feed(bytes)
+    # A blocking read finds a line typed ahead of it in the tty's own buffer.
     @master.write(bytes)
   end
 

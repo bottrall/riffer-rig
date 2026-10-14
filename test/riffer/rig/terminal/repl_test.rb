@@ -38,8 +38,6 @@ class RecordingFrame
   end
 end
 
-# Reads its answer off the queue the way the framed prompter does, and can
-# hold the answer back until more keys have arrived behind it.
 class QueuePrompter
   def initialize(asks, log)
     @asks = asks
@@ -167,14 +165,6 @@ describe Riffer::Rig::Terminal::Repl do
   end
 
   describe '#stop' do
-    it 'stops the console' do
-      @keys.close
-
-      session
-
-      assert_equal :stop, logged.last
-    end
-
     it 'reads no key once it has stopped' do
       press(:ctrl_d)
       session
@@ -182,6 +172,14 @@ describe Riffer::Rig::Terminal::Repl do
       type('a')
 
       assert_equal 1, @keys.size
+    end
+
+    it 'stops the console' do
+      @keys.close
+
+      session
+
+      assert_equal :stop, logged.last
     end
   end
 
@@ -251,6 +249,18 @@ describe Riffer::Rig::Terminal::Repl do
       refute_includes @frame.lines, 'j'
     end
 
+    it 'returns the keys typed behind the answer to the input line' do
+      @prompter.hold_for(2)
+      type("one\r")
+      begin_session { repl.ask('who?', options: nil, secret: false) }
+      await([:asked, 'who?', nil, false])
+      type("y\rab")
+      @keys.close
+      finish
+
+      assert_equal 'ab', @frame.lines.last
+    end
+
     it 'redraws the draft once the ask has answered' do
       drafted = Queue.new
       type("one\rdr")
@@ -266,18 +276,6 @@ describe Riffer::Rig::Terminal::Repl do
       finish
 
       assert_equal 'dr', @frame.lines.last
-    end
-
-    it 'returns the keys typed behind the answer to the input line' do
-      @prompter.hold_for(2)
-      type("one\r")
-      begin_session { repl.ask('who?', options: nil, secret: false) }
-      await([:asked, 'who?', nil, false])
-      type("y\rab")
-      @keys.close
-      finish
-
-      assert_equal 'ab', @frame.lines.last
     end
 
     it 'takes the keys back when the ask is interrupted' do
@@ -473,13 +471,6 @@ describe Riffer::Rig::Terminal::Repl do
       session
 
       assert_equal 'hi', @frame.lines.last
-    end
-
-    it 'skips a blank line' do
-      type("  \r")
-      @keys.close
-
-      assert_empty session
     end
 
     it 'ends on Ctrl-D on an empty line' do

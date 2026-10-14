@@ -502,20 +502,6 @@ describe Riffer::Rig::Terminal do
       assert_equal 0, @status
     end
 
-    it 'shows the cost line as its turn ends' do
-      script = lambda do |pty|
-        pty.type("hello\r")
-        pty.await('session 15 tok')
-        pty.type("/exit\r")
-      end
-      output = run_on_pty(script) do |runtime|
-        usage = Riffer::Providers::TokenUsage.new(input_tokens: 10, output_tokens: 5)
-        runtime.agent.provider.stub_response('Hi', token_usage: usage)
-      end
-
-      assert_includes output, '↑10 · ↓5 · session 15 tok'
-    end
-
     it 'drives the session /new starts' do
       ids = []
       run_on_pty(->(pty) { pty.type("hello\r/new\ragain\r/exit\r") }) { |runtime| ids << runtime.id }

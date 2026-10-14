@@ -133,8 +133,6 @@ class Riffer::Rig::Terminal::Repl
         # running turn, or as the Interrupt of a prompt.
         @interrupt.call
       else
-        # One reader hands each key to the ask in flight or to the line, so
-        # the two never race for it.
         @mutex.synchronize { @asking ? @asks << key : press(key) }
       end
     end
