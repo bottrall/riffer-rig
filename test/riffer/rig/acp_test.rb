@@ -374,7 +374,7 @@ describe Riffer::Rig::ACP do
         update.content.text if update.is_a?(ACP::Types::SessionUpdate::AgentMessageChunk)
       end
 
-      assert_equal "\n\n", chunks.first
+      assert_equal Riffer::Rig::ACP::Mapper.job_exit.content.text, chunks.first
     end
 
     it 'ends a tool-call turn with end_turn' do

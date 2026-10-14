@@ -20,7 +20,7 @@ module Riffer::Rig::ACP::Mapper
   def message_chunk: (String content) -> ::ACP::Types::SessionUpdate::AgentMessageChunk
 
   # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
-  def paragraph_break: () -> ::ACP::Types::SessionUpdate::AgentMessageChunk
+  def job_exit: () -> ::ACP::Types::SessionUpdate::AgentMessageChunk
 
   # @rbs message: Hash[Symbol, untyped]
   # @rbs return: ::ACP::Types::SessionUpdate::t?

@@ -137,7 +137,7 @@ class Riffer::Rig::ACP
       when Riffer::Rig::Events::AfterToolCall
         client.update(request.session_id, Riffer::Rig::ACP::Mapper.tool_call_done(event))
       when Riffer::Rig::Events::JobExit
-        client.update(request.session_id, Riffer::Rig::ACP::Mapper.paragraph_break)
+        client.update(request.session_id, Riffer::Rig::ACP::Mapper.job_exit)
       when Riffer::Rig::Events::TurnEnd
         stop_reason = event.stop_reason
       end

@@ -1924,20 +1924,36 @@ describe Riffer::Rig::Runtime do
     end
 
     describe 'for a job that exits during a turn' do
+      it 'leaves the result on the tool call events as the tool returned it' do
+        runtime = exiting_mid_turn
+        events = []
+        runtime.prompt('go') { |event| events << event }
+
+        assert_equal 'started', events.grep(Riffer::Rig::Events::AfterToolCall).last.result.content
+      end
+
+      it 'forgets the job once its exit is reported' do
+        runtime = exiting_mid_turn
+        runtime.ask('go')
+
+        assert_empty runtime.agent.context[:jobs].list
+      end
+
+      it 'emits a job_exit event for the exit' do
+        runtime = exiting_mid_turn
+        events = []
+        runtime.prompt('go') { |event| events << event }
+        exits = events.grep(Riffer::Rig::Events::JobExit).map { |event| [event.command, event.exit_status] }
+
+        assert_equal [['true', 0]], exits
+      end
+
       it 'appends the notice to the tool result, after the tool\'s own output' do
         runtime = exiting_mid_turn
         runtime.ask('go')
         notice = /\Astarted\n\n<background-job /
 
         assert_match notice, tool_results(runtime).last.content
-      end
-
-      it 'reports the exit on the request that follows the tool result' do
-        runtime = exiting_mid_turn
-        runtime.ask('go')
-        sent = runtime.agent.provider.calls.last[:messages].last
-
-        assert_equal [:tool, true], [sent[:role], sent[:content].include?('<command>true</command>')]
       end
 
       it 'keeps the error of a failed tool result' do
@@ -1969,28 +1985,12 @@ describe Riffer::Rig::Runtime do
         assert_same tool_results(runtime).last, observed.grep(Riffer::Messages::Tool).last
       end
 
-      it 'leaves the result on the tool call events as the tool returned it' do
-        runtime = exiting_mid_turn
-        events = []
-        runtime.prompt('go') { |event| events << event }
-
-        assert_equal 'started', events.grep(Riffer::Rig::Events::AfterToolCall).last.result.content
-      end
-
-      it 'emits a job_exit event for the exit' do
-        runtime = exiting_mid_turn
-        events = []
-        runtime.prompt('go') { |event| events << event }
-        exits = events.grep(Riffer::Rig::Events::JobExit).map { |event| [event.command, event.exit_status] }
-
-        assert_equal [['true', 0]], exits
-      end
-
-      it 'forgets the job once its exit is reported' do
+      it 'reports the exit on the request that follows the tool result' do
         runtime = exiting_mid_turn
         runtime.ask('go')
+        sent = runtime.agent.provider.calls.last[:messages].last
 
-        assert_empty runtime.agent.context[:jobs].list
+        assert_equal [:tool, true], [sent[:role], sent[:content].include?('<command>true</command>')]
       end
     end
 
@@ -2046,6 +2046,13 @@ describe Riffer::Rig::Runtime do
         assert_equal 1, notifications(runtime).length
       end
 
+      it 'emits a job_exit event for the exit' do
+        events = []
+        continued_turn.prompt('go') { |event| events << event }
+
+        assert_equal 1, events.grep(Riffer::Rig::Events::JobExit).length
+      end
+
       it 'continues the turn with a notification after the reply' do
         runtime = continued_turn
         runtime.ask('go')
@@ -2053,6 +2060,18 @@ describe Riffer::Rig::Runtime do
         assert_equal(
           [Riffer::Messages::User, Riffer::Messages::Assistant, Riffer::Rig::Runtime::JobNotification, Riffer::Messages::Assistant],
           runtime.agent.session.messages.drop(1).map(&:class)
+        )
+      end
+
+      it 'delivers the notification to observers between the two replies' do
+        runtime = continued_turn
+        observed = []
+        runtime.on_message { |message| observed << message }
+        runtime.ask('go')
+
+        assert_equal(
+          [Riffer::Messages::Assistant, Riffer::Rig::Runtime::JobNotification, Riffer::Messages::Assistant],
+          observed.drop(1).map(&:class)
         )
       end
 
@@ -2083,28 +2102,25 @@ describe Riffer::Rig::Runtime do
 
         assert_equal [events.last], events.grep(Riffer::Rig::Events::TurnEnd)
       end
-
-      it 'delivers the notification to observers between the two replies' do
-        runtime = continued_turn
-        observed = []
-        runtime.on_message { |message| observed << message }
-        runtime.ask('go')
-
-        assert_equal(
-          [Riffer::Messages::Assistant, Riffer::Rig::Runtime::JobNotification, Riffer::Messages::Assistant],
-          observed.drop(1).map(&:class)
-        )
-      end
-
-      it 'emits a job_exit event for the exit' do
-        events = []
-        continued_turn.prompt('go') { |event| events << event }
-
-        assert_equal 1, events.grep(Riffer::Rig::Events::JobExit).length
-      end
     end
 
     describe 'for a job that exits between turns' do
+      it 'emits a job_exit event for each exit' do
+        runtime = exited_between_turns(2)
+        events = []
+        runtime.prompt('second') { |event| events << event }
+
+        assert_equal 2, events.grep(Riffer::Rig::Events::JobExit).length
+      end
+
+      it 'batches several exits into one notification' do
+        runtime = exited_between_turns(2)
+        runtime.ask('second')
+        envelopes = notifications(runtime).map { |notification| notification.content.scan('<background-job ').length }
+
+        assert_equal [2], envelopes
+      end
+
       it 'delivers a notification ahead of the next prompt' do
         runtime = exited_between_turns
         runtime.ask('second')
@@ -2122,22 +2138,6 @@ describe Riffer::Rig::Runtime do
         runtime.ask('second')
 
         assert_equal [Riffer::Rig::Runtime::JobNotification, Riffer::Messages::User], observed.first(2).map(&:class)
-      end
-
-      it 'batches several exits into one notification' do
-        runtime = exited_between_turns(2)
-        runtime.ask('second')
-        envelopes = notifications(runtime).map { |notification| notification.content.scan('<background-job ').length }
-
-        assert_equal [2], envelopes
-      end
-
-      it 'emits a job_exit event for each exit' do
-        runtime = exited_between_turns(2)
-        events = []
-        runtime.prompt('second') { |event| events << event }
-
-        assert_equal 2, events.grep(Riffer::Rig::Events::JobExit).length
       end
     end
 
