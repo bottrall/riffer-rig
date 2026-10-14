@@ -326,7 +326,6 @@ class Riffer::Rig::Runtime
   def cancel
     @cancel_flag.set
     @abort.fire
-    @jobs.kill_outstanding
     nil
   end
 

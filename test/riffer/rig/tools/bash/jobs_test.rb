@@ -212,32 +212,6 @@ describe Riffer::Rig::Tools::Bash::Jobs do
     end
   end
 
-  describe '#kill_outstanding' do
-    it 'kills every active job' do
-      2.times { start('sleep 30') }
-      @jobs.kill_outstanding
-
-      assert_equal [1, 1], Array.new(2) { @inbox.await&.exit_status }
-    end
-
-    it 'kills a group that outlived its leader' do
-      pid = orphan
-      @jobs.kill_outstanding
-
-      assert exited?(pid)
-    end
-
-    it 'kills a group that outlived its leader after the job is consumed' do
-      job = start('sleep 30 & echo $!')
-      @inbox.push(@inbox.await)
-      pid = child_of(job)
-      @jobs.consume
-      @jobs.kill_outstanding
-
-      assert exited?(pid)
-    end
-  end
-
   describe '#consume' do
     it 'returns the completions in the inbox' do
       job = start('true')
@@ -263,15 +237,25 @@ describe Riffer::Rig::Tools::Bash::Jobs do
   end
 
   describe '#shutdown' do
-    it 'kills the active jobs' do
-      job = start('sleep 30')
+    it 'kills every active job' do
+      jobs = Array.new(2) { start('sleep 30') }
       @jobs.shutdown
 
-      assert_predicate listed(job), :completed?
+      assert_equal([true, true], jobs.map { |job| listed(job).completed? })
     end
 
     it 'kills a group that outlived its leader' do
       pid = orphan
+      @jobs.shutdown
+
+      assert exited?(pid)
+    end
+
+    it 'kills a group that outlived its leader after the job is consumed' do
+      job = start('sleep 30 & echo $!')
+      @inbox.push(@inbox.await)
+      pid = child_of(job)
+      @jobs.consume
       @jobs.shutdown
 
       assert exited?(pid)

@@ -68,7 +68,7 @@ That is the turn's model calls, its time, its input and output tokens, each cach
 
 ## Interrupting and exiting
 
-- Ctrl-C during a turn cancels it: the status line shows `stopping…`, a reply in flight stops at once and a running tool call when it returns ([Cancelling a turn](EMBEDDING.md#cancelling-a-turn)). Messages queued behind it still run.
+- Ctrl-C during a turn cancels it: the status line shows `stopping…`, a reply in flight stops at once and a running tool call when it returns ([Cancelling a turn](EMBEDDING.md#cancelling-a-turn)). Messages queued behind it still run. Background jobs keep running; ask the model to stop one, or end the session — quitting, `/new` or `/resume` — to stop them all.
 - Ctrl-C with no turn running shows `Press Ctrl-C again to exit.` on the status line, and a second Ctrl-C exits. Any other key in between cancels the exit.
 - `/exit` and `/quit` end the session, as does Ctrl-D on an empty line, which lets the messages already queued run first.
 
