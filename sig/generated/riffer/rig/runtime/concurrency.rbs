@@ -25,6 +25,9 @@ class Riffer::Rig::Runtime::Concurrency
   # @rbs return: void
   def release: () -> void
 
+  # @rbs return: bool
+  def busy?: () -> bool
+
   # @rbs return: void
   def close: () -> void
 

@@ -1841,6 +1841,28 @@ describe Riffer::Rig::Runtime do
     end
   end
 
+  describe '#busy?' do
+    before do
+      @runtime = Riffer::Rig::Runtime.new('mock/test')
+    end
+
+    after do
+      @runtime.close
+    end
+
+    it 'is false between turns' do
+      refute_predicate @runtime, :busy?
+    end
+
+    it 'is true while a prompt runs' do
+      @runtime.agent.provider.stub_response('Hi.')
+      busy = false
+      @runtime.prompt('hello') { busy = @runtime.busy? }
+
+      assert busy
+    end
+  end
+
   describe 'job exit notifications' do
     before do
       exits = @exits = Queue.new

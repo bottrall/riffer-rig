@@ -200,24 +200,27 @@ describe Riffer::Rig::ACP::Host do
   end
 
   describe '#notify' do
-    it 'buffers a notify until it knows the session id' do
-      @host.notify('Buffered', level: :warning)
-
-      assert_empty sent
-    end
-
     it 'sends a notify after the session id as an agent message chunk with its text' do
       @host.session_id = 'session-1'
       @host.notify('Live')
 
       assert_equal 'Live', sent.first.last.content.text
     end
+  end
 
-    it 'sends a notify on the session id it was given' do
+  describe '#update' do
+    it 'buffers an update until it knows the session id' do
+      @host.update(Riffer::Rig::ACP::Mapper.job_exit)
+
+      assert_empty sent
+    end
+
+    it 'sends an update on the session id it was given' do
+      update = Riffer::Rig::ACP::Mapper.job_exit
       @host.session_id = 'session-1'
-      @host.notify('Live')
+      @host.update(update)
 
-      assert_equal 'session-1', sent.first.first
+      assert_equal [['session-1', update]], sent
     end
   end
 

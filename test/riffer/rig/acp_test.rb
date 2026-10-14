@@ -76,6 +76,35 @@ describe Riffer::Rig::ACP do
     @connection.new_session(ACP::Types::NewSessionRequest.new(cwd: @cwd, mcp_servers: mcp_servers))
   end
 
+  def ready_session
+    session = new_session
+    wait_for do
+      @updates.any? { |notification| notification.update.is_a?(ACP::Types::SessionUpdate::AvailableCommandsUpdate) }
+    end
+    session
+  end
+
+  def start_job(runtime, command)
+    jobs = runtime.agent.context[:jobs] #: Riffer::Rig::Tools::Bash::Jobs
+    jobs.register(Process.spawn(command, pgroup: true), command, File.open(File::NULL))
+  end
+
+  def ended_job(runtime)
+    exits = Queue.new
+    runtime.on_job_exit { |completion| exits << completion }
+    start_job(runtime, 'true')
+    exits.pop(timeout: 5)
+  end
+
+  def record_session_end(marker)
+    FileUtils.mkdir_p(File.join(@home, '.riffer'))
+    File.write(File.join(@home, '.riffer', 'rig.rb'), <<~RUBY)
+      Riffer::Rig.extension('acp_close_probe') do |rig|
+        rig.on(:session_end) { |event| File.write(#{marker.inspect}, event.reason.to_s) }
+      end
+    RUBY
+  end
+
   def prompt_request(session_id, text)
     ACP::Types::PromptRequest.new(session_id: session_id, prompt: [ACP::Types::ContentBlock::Text.new(text: text)])
   end
@@ -223,6 +252,39 @@ describe Riffer::Rig::ACP do
 
       assert_equal 0, thread.join(5)&.value
     end
+
+    it 'closes a Runtime it built once the client disconnects' do
+      marker = File.join(@home, 'session_end')
+      record_session_end(marker)
+      @agent, @connection = serve(@env)
+      session = new_session
+      prompt(session.session_id, 'hello')
+      hang_up
+
+      assert_equal 'close', File.read(marker)
+    end
+
+    it 'closes a Runtime it restored once the client disconnects' do
+      marker = File.join(@home, 'session_end')
+      session = save_session('hello')
+      record_session_end(marker)
+      load(session.session_id)
+      prompt(session.session_id, 'again')
+      hang_up
+
+      assert_equal 'close', File.read(marker)
+    end
+
+    it 'leaves the Runtime its build hook returned running once the client disconnects' do
+      new_session
+      runtime = @built_runtimes.last
+      start_job(runtime, 'sleep 30')
+      hang_up
+      running = runtime.running_job_count
+      runtime.close
+
+      assert_equal 1, running
+    end
   end
 
   describe '#new_session' do
@@ -265,6 +327,27 @@ describe Riffer::Rig::ACP do
         { 'stub' => Riffer::Rig::Mcp::Declaration.new(command: script, args: ['--flag'], env: { 'TOKEN' => 't' }) },
         @servers
       )
+    end
+
+    it 'sends the exit of a job that ends between prompts as an agent message chunk' do
+      ready_session
+      update = Riffer::Rig::ACP::Mapper.job_completion(ended_job(@built_runtimes.last))
+      wait_for { message_texts.include?(update.content.text) }
+
+      assert_includes message_texts, update.content.text
+    end
+
+    it 'sends nothing for a job that ends while a prompt is in flight' do
+      session = ready_session
+      runtime = @built_runtimes.last
+      started, gate = hold_provider
+      turn = Thread.new { prompt(session.session_id, 'hello') }
+      started.pop
+      ended_job(runtime)
+      2.times { gate << true }
+      texts = texts_of(turn.value.last) + message_texts
+
+      refute(texts.any? { |text| text.include?('Background job') })
     end
 
     it 'returns the Runtime UUID as the sessionId' do
@@ -361,18 +444,12 @@ describe Riffer::Rig::ACP do
     end
 
     it 'breaks the agent message where a job exit is delivered' do
-      session = new_session
-      runtime = @built_runtimes.last
-      exits = Queue.new
-      runtime.on_job_exit { |completion| exits << completion }
-      jobs = runtime.agent.context[:jobs] #: Riffer::Rig::Tools::Bash::Jobs
-      jobs.register(Process.spawn('true', pgroup: true), 'true', File.open(File::NULL))
-      exits.pop(timeout: 5)
+      session = ready_session
+      update = Riffer::Rig::ACP::Mapper.job_completion(ended_job(@built_runtimes.last))
+      wait_for { message_texts.include?(update.content.text) }
       reply('Hi from ACP.')
       _response, updates = prompt(session.session_id, 'hello')
-      chunks = updates.filter_map do |update|
-        update.content.text if update.is_a?(ACP::Types::SessionUpdate::AgentMessageChunk)
-      end
+      chunks = texts_of(updates)
 
       assert_equal Riffer::Rig::ACP::Mapper.job_exit.content.text, chunks.first
     end
@@ -465,6 +542,16 @@ describe Riffer::Rig::ACP do
       wait_for { message_texts.include?('still here') }
 
       assert_includes message_texts, 'still here'
+    end
+
+    it 'sends the job exits of an adopted runtime to the later connection' do
+      session = adopt_session
+      load(session.session_id)
+      @updates.clear
+      update = Riffer::Rig::ACP::Mapper.job_completion(ended_job(@built_runtimes.last))
+      wait_for { message_texts.include?(update.content.text) }
+
+      assert_includes message_texts, update.content.text
     end
 
     it 'adopts a runtime whose host is not an ACP host' do

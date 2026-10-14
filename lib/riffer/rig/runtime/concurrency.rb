@@ -45,6 +45,11 @@ class Riffer::Rig::Runtime::Concurrency
     @thread = nil
   end
 
+  # @rbs return: bool
+  def busy?
+    @busy
+  end
+
   # @rbs return: void
   def close
     @closed = true

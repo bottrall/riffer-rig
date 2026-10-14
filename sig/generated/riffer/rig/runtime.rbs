@@ -199,6 +199,9 @@ class Riffer::Rig::Runtime
   # @rbs return: Integer
   def running_job_count: () -> Integer
 
+  # @rbs return: bool
+  def busy?: () -> bool
+
   # @rbs return: nil
   def cancel: () -> nil
 
