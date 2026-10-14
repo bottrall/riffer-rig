@@ -40,6 +40,27 @@ describe Riffer::Rig::Runtime::Snapshot do
 
       assert_equal ['hello', 'Hi there.'], Riffer::Rig::Runtime::Snapshot.from_h(saved).messages.map(&:content)
     end
+
+    it 'reads a job notification back as one from a JSON round trip' do
+      messages = [*conversation, Riffer::Rig::Runtime::JobNotification.new('<background-job id="a1b2c3d4">')]
+      saved = JSON.parse(JSON.generate(snapshot(messages: messages).to_h), symbolize_names: true)
+
+      assert_instance_of Riffer::Rig::Runtime::JobNotification, Riffer::Rig::Runtime::Snapshot.from_h(saved).messages.last
+    end
+  end
+
+  describe '.message' do
+    it 'rebuilds a marked hash as a job notification' do
+      stored = { role: 'user', content: '<background-job id="a1b2c3d4">', job_notification: true }
+
+      assert_instance_of Riffer::Rig::Runtime::JobNotification, Riffer::Rig::Runtime::Snapshot.message(stored)
+    end
+
+    it 'rebuilds any other hash as the riffer message of its role' do
+      rebuilt = Riffer::Rig::Runtime::Snapshot.message({ role: 'user', content: 'hello' })
+
+      assert_instance_of Riffer::Messages::User, rebuilt
+    end
   end
 
   describe '#to_h' do

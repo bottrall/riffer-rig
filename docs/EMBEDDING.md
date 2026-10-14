@@ -178,6 +178,7 @@ The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-
 | `notify`          | `message`, `level`               | mirrors every `host.notify`, so a stream consumer sees extension errors too |
 | `before_tool_call` | `call_id`, `tool`, `args`, `at` | as a tool starts, after its `before_tool_call` hooks               |
 | `after_tool_call` | `call_id`, `tool`, `args`, `result`, `at`, `duration` | as every tool call finishes, after its `after_tool_call` hooks |
+| `job_exit`        | `job_id`, `command`, `exit_status`, `duration`, `output_path` | as a [background job's exit](#exit-notifications) is delivered to the model, one per job |
 | `turn_end`        | `stop_reason`, `usage`, `cost`   | the last event of every `prompt`; `stop_reason` is riffer's outcome reason, or `:cancelled` after a `cancel`; `usage` is riffer's `TokenUsage` and `cost` its USD figure, `nil` when unpriced |
 
 `session_start` carries `:new`, `:restore` on a Runtime built from a [snapshot](#snapshots), or `:reload` after a [rebuild](#rebuilding-after-a-code-reload); `session_end` carries `:reload` or `:close`. `close` refuses further prompts and asks with `Riffer::Rig::Runtime::ClosedError` and unregisters every [MCP server](MCP.md) the Runtime registered; its `session_end` reaches extension hooks but not the stream, since no prompt follows it.
@@ -275,6 +276,8 @@ response = runtime.ask('do the thing')
 puts response.outcome.reason # => :max_steps if the cap stopped the loop
 ```
 
+The cap applies to each run. A turn the Runtime [continues for a job exit notice](#exit-notifications) starts a new run with its own cap, and no continuation starts once the turn's runs have together used the cap: the notice then arrives at the start of the next turn.
+
 ## Snapshots
 
 A Runtime saves and restores as a plain hash. `to_h` returns the snapshot; `Riffer::Rig::Runtime.new(model, snapshot: hash, ...)` builds a Runtime that carries on from it. The Runtime never touches disk: keeping the hash — as JSON, in a database, anywhere — is the embedder's job. [Sessions](SESSIONS.md) describes what a snapshot holds.
@@ -306,7 +309,7 @@ The first prompt of a restored Runtime opens with `session_start` carrying the s
 
 ## Observing messages
 
-`on_message { |message| }` registers an observer called with each message the conversation gains, in order: the user's prompt, each assistant message and each tool result, as riffer's `Riffer::Messages` objects. It is how a store appends to a session as it happens rather than snapshotting at the end:
+`on_message { |message| }` registers an observer called with each message the conversation gains, in order: the user's prompt, each assistant message, each tool result and each [job exit notification](#exit-notifications), as riffer's `Riffer::Messages` objects. It is how a store appends to a session as it happens rather than snapshotting at the end:
 
 ```ruby
 runtime.on_message { |message| log.puts(JSON.generate(message.to_h)) }
@@ -340,3 +343,16 @@ Subscribers run on a background thread, not the thread running the turn, and one
 `running_job_count` is the number of jobs still running. It is thread-safe, and has already dropped by the time a subscriber hears of that job's exit.
 
 `close` ends delivery: the jobs it kills, and any exit that lands after it, reach no subscriber. A host that swaps one Runtime for another closes the old one and subscribes on the new one. `close` also removes the output file of every job, so read what you need from an `output_path` first.
+
+### Exit notifications
+
+The model is told of each exit too, as part of the conversation, so it never polls for one ([Tools](TOOLS.md#background-jobs) has the notice it reads and the three points it can arrive at). The Runtime delivers a notice only on the thread running the turn, at a point where the session can change — never from the background thread a subscriber runs on — so a long reply or a long tool call delays it until the next such point.
+
+Each delivery puts one `job_exit` event per job on the stream, before the message that carries the notice reaches `on_message`. It is the moment to render an exit in the transcript; `on_job_exit` is the one to keep a live count with, since it fires when the job exits rather than when the model is told.
+
+`on_message` observers see every notice, because a store has to keep what the model read:
+
+- A notice delivered during a turn is part of a tool result: the `Riffer::Messages::Tool` an observer receives holds the tool's output, a blank line, and the notice. The `result` on that call's `after_tool_call` event is the tool's output alone.
+- A notice delivered as the model finishes its reply, or ahead of the next prompt, is a `Riffer::Rig::Runtime::JobNotification` — a `Riffer::Messages::User`, so every provider serializes it as a user turn — whose `to_h` adds `job_notification: true`. The key is how anything reading stored messages tells a notice from a prompt the user typed. A [snapshot](#snapshots) restores a hash carrying it as a `JobNotification`.
+
+A turn the Runtime continues for a notice is still one turn: one `turn_end`, whose `usage` and the `Riffer::Agent::Response` of `ask` cover every reply in it.

@@ -15,6 +15,10 @@ describe Riffer::Rig::Commands::Cost do
     Riffer::Messages::Assistant.new(content, tool_calls: tool_calls, token_usage: token_usage)
   end
 
+  def job_notification
+    Riffer::Rig::Runtime::JobNotification.new('<background-job id="a1b2c3d4">')
+  end
+
   def two_turn_session
     call = Riffer::Messages::Assistant::ToolCall.new(call_id: 'c1', name: 'bash', arguments: '{"command":"bin/test"}')
     [
@@ -72,6 +76,24 @@ describe Riffer::Rig::Commands::Cost do
     session = [assistant('Earlier.', usage(5, 5)), user('Go'), assistant('Done.', usage(10, 5))]
 
     assert_equal ['session   ↑15 · ↓10', 'turn 1    ↑10 · ↓5'], lines(session)
+  end
+
+  it 'counts a turn continued by a job notification as one turn' do
+    session = [user('Go'), assistant('Started.', usage(10, 5)), job_notification, assistant('Passed.', usage(20, 7))]
+
+    assert_equal ['session   ↑30 · ↓12', 'turn 1    ↑30 · ↓12'], lines(session)
+  end
+
+  it 'starts no turn at a job notification ahead of a prompt' do
+    session = [
+      user('Go'),
+      assistant('Started.', usage(10, 5)),
+      job_notification,
+      user('Again'),
+      assistant('Passed.', usage(20, 7))
+    ]
+
+    assert_equal ['session   ↑30 · ↓12', 'turn 1    ↑10 · ↓5', 'turn 2    ↑20 · ↓7'], lines(session)
   end
 
   it 'marks a turn that reported no usage' do

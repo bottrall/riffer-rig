@@ -9,6 +9,8 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
 
   identifier 'bash'
   description 'Run a shell command in the working directory and return its combined stdout/stderr and exit status. ' \
+              'A run_in_background command keeps running after the call returns, and you are notified when it ' \
+              'exits, with its exit status and the tail of its output, so do not wait or poll for it. ' \
               'Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers.'
 
   timeout 600

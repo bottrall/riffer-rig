@@ -36,6 +36,8 @@ module Riffer::Rig::ACP::Mapper
   # @rbs message: Hash[Symbol, untyped]
   # @rbs return: ::ACP::Types::SessionUpdate::t?
   def replay_of(message)
+    return nil if message[Riffer::Rig::Runtime::JobNotification::MARKER]
+
     case message[:role]
     when 'user' then ::ACP::Types::SessionUpdate::UserMessageChunk.new(content: text_block(message[:content].to_s))
     when 'assistant' then message_chunk(message[:content].to_s)

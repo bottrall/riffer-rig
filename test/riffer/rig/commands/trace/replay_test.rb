@@ -11,6 +11,10 @@ describe Riffer::Rig::Commands::Trace::Replay do
     Riffer::Messages::User.new(content)
   end
 
+  def notification
+    Riffer::Rig::Runtime::JobNotification.new(%(<background-job id="a1b2c3d4">\n<command>make</command>))
+  end
+
   def assistant(content, *paths)
     calls = paths.map do |path|
       Riffer::Messages::Assistant::ToolCall.new(call_id: path, name: 'read', arguments: %({"path":"#{path}"}))
@@ -58,6 +62,12 @@ describe Riffer::Rig::Commands::Trace::Replay do
     assert_empty lines([entry(assistant('Hello.'), '00.000')])
   end
 
+  it 'starts the turn at its prompt rather than at a job notification' do
+    turn = [entry(user('Go'), '00.000'), entry(assistant('Started.'), '01.000'), entry(notification, '02.000')]
+
+    assert_equal '02:00:00.000  prompt    Go', lines(turn).first
+  end
+
   it 'marks a gap that reaches the threshold as silent' do
     turn = [entry(user('Go'), '00.000'), entry(assistant('Done.'), '05.000')]
 
@@ -74,6 +84,12 @@ describe Riffer::Rig::Commands::Trace::Replay do
     turn = [entry(user('Go'), '00.000'), entry(assistant('Thinking.', 'a.rb')), entry(result('a.rb'), '30.000')]
 
     assert_empty lines(turn).grep(/silent/)
+  end
+
+  it 'replays a job notification as a notice' do
+    turn = [entry(user('Go'), '00.000'), entry(assistant('Started.'), '01.000'), entry(notification, '02.000')]
+
+    assert_equal '02:00:02.000  notice    <background-job id="a1b2c3d4">', lines(turn).last
   end
 
   it 'omits the prose line of a request that only called tools' do

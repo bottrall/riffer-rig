@@ -10,6 +10,7 @@ module RuboCop::Cop::Rig
       Exception
       Riffer::Agent
       Riffer::Guardrail
+      Riffer::Messages::User
       Riffer::Skills::Backend
       Riffer::Tool
       Riffer::Tools::Runtime

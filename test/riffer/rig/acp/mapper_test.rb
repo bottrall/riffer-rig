@@ -51,6 +51,12 @@ describe Riffer::Rig::ACP::Mapper do
   end
 
   describe '.replay_of' do
+    it 'skips a job notification rather than replay it as typed input' do
+      stored = { role: 'user', content: '<background-job id="a1b2c3d4">', job_notification: true }
+
+      assert_nil Riffer::Rig::ACP::Mapper.replay_of(stored)
+    end
+
     it 'replays a user message as a user message chunk' do
       update = Riffer::Rig::ACP::Mapper.replay_of({ role: 'user', content: 'hello' })
 

@@ -8,6 +8,10 @@ describe Riffer::Rig::Tools::Bash do
     @context = Riffer::Agent::Context.new(cwd: Dir.pwd)
   end
 
+  it 'tells the model it is notified when a background job exits' do
+    assert_includes Riffer::Rig::Tools::Bash.description, 'you are notified when it exits'
+  end
+
   it 'ends its description with its guidance sentence' do
     assert Riffer::Rig::Tools::Bash.description.end_with?(
       'Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers.'

@@ -1,0 +1,8 @@
+# Generated from lib/riffer/rig/runtime/job_notification.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::JobNotification < Riffer::Messages::User
+  MARKER: Symbol
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

@@ -1,0 +1,17 @@
+# Generated from lib/riffer/rig/runtime/job_envelope.rb with RBS::Inline
+
+module Riffer::Rig::Runtime::JobEnvelope
+  # @rbs completions: Array[Riffer::Rig::Runtime::JobCompletion]
+  # @rbs return: String
+  def render: (Array[Riffer::Rig::Runtime::JobCompletion] completions) -> String
+
+  private
+
+  # @rbs completion: Riffer::Rig::Runtime::JobCompletion
+  # @rbs return: String
+  def envelope: (Riffer::Rig::Runtime::JobCompletion completion) -> String
+
+  # @rbs exit_status: Integer
+  # @rbs return: String
+  def status: (Integer exit_status) -> String
+end

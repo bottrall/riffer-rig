@@ -28,6 +28,9 @@ class Riffer::Rig::Runtime
 
   INTERRUPT_CANCELLED = :cancelled #: Symbol
 
+  # Per user turn, so a job that starts jobs cannot keep a turn alive forever.
+  MAX_JOB_CONTINUATIONS = 5 #: Integer
+
   # Riffer's remaining stop reasons (:error, :other, :guardrail_blocked) are
   # failures, not early stops.
   STOPPED_WITHOUT_COMPLETING = %i[
@@ -472,6 +475,7 @@ class Riffer::Rig::Runtime
     prompt = @hooks.before_prompt(text)
     return blocked_turn(prompt.reason) if prompt.is_a?(Riffer::Rig::Runtime::Blocked)
 
+    notify_job_exits
     stream = @agent.stream(prompt)
     # Upstream candidate: riffer adds the prompt to the session silently, so
     # its on_message never sees the user message a store has to keep.
@@ -536,9 +540,7 @@ class Riffer::Rig::Runtime
       @host.drain.each { |queued| yielder << queued }
       response = @abort.window do
         stream = Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { start_turn(text) }
-        stream.each do |event|
-          Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { pass_through(yielder, event) }
-        end
+        continued(yielder, relay(yielder, stream), MAX_JOB_CONTINUATIONS)
       end
       response ||= aborted(yielder)
       turn_end = Riffer::Rig::Events::TurnEnd.new(stop_reason(response.outcome), response.token_usage)
@@ -549,6 +551,55 @@ class Riffer::Rig::Runtime
     ensure
       @yielder = nil
     end
+  end
+
+  # @rbs yielder: Enumerator::Yielder
+  # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  # @rbs return: Riffer::Agent::Response
+  def relay(yielder, stream)
+    stream.each do |event|
+      Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { pass_through(yielder, event) }
+    end
+  end
+
+  # @rbs yielder: Enumerator::Yielder
+  # @rbs response: Riffer::Agent::Response
+  # @rbs remaining: Integer
+  # @rbs return: Riffer::Agent::Response
+  def continued(yielder, response, remaining)
+    return response unless remaining.positive? && response.outcome.reason == :completed && steps_left?(response)
+
+    stream = Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { @agent.stream if notify_job_exits }
+    return response unless stream
+
+    continued(yielder, combined(response, relay(yielder, stream)), remaining - 1)
+  end
+
+  # @rbs response: Riffer::Agent::Response
+  # @rbs return: bool
+  def steps_left?(response)
+    max_steps = @agent.config.max_steps
+    # Upstream candidate: riffer counts a run's steps from the last user-class
+    # message, so a continuation cannot be handed what the turn has left and
+    # starts on the full limit.
+    max_steps.nil? || response.steps < max_steps
+  end
+
+  # @rbs earlier: Riffer::Agent::Response
+  # @rbs later: Riffer::Agent::Response
+  # @rbs return: Riffer::Agent::Response
+  def combined(earlier, later)
+    Riffer::Agent::Response.new(
+      later.content,
+      outcome: later.outcome,
+      tripwire: later.tripwire,
+      modifications: earlier.modifications + later.modifications,
+      reasoning: later.reasoning,
+      structured_output: later.structured_output,
+      messages: later.messages,
+      token_usage: Riffer::Rig::Runtime::Usage.total([earlier.token_usage, later.token_usage]),
+      steps: earlier.steps + later.steps
+    )
   end
 
   # The abort unwinds riffer's run loop from outside, so what riffer does for
@@ -599,7 +650,7 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def observe_message(message)
     @draft = []
-    deliver(message)
+    deliver(message.is_a?(Riffer::Messages::Tool) ? with_job_notice(message) : message)
     interrupt_if_cancelled
     case message
     when Riffer::Messages::Assistant
@@ -613,6 +664,47 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def deliver(message)
     @message_observers.each { |observer| observer.call(message) }
+  end
+
+  # @rbs return: String?
+  def job_notice
+    completions = @jobs.consume
+    return if completions.empty?
+
+    completions.each { |completion| emit(Riffer::Rig::Events::JobExit.new(completion)) }
+    Riffer::Rig::Runtime::JobEnvelope.render(completions)
+  end
+
+  # @rbs message: Riffer::Messages::Tool
+  # @rbs return: Riffer::Messages::Tool
+  def with_job_notice(message)
+    notice = job_notice
+    return message unless notice
+
+    # Appended to a tool result because a user message straight after one is
+    # consecutive user turns to Bedrock and Gemini, which reject them.
+    noticed = Riffer::Messages::Tool.new(
+      "#{message.content}\n\n#{notice}",
+      tool_call_id: message.tool_call_id,
+      name: message.name,
+      id: message.id,
+      error: message.error,
+      error_type: message.error_type
+    )
+    # By identity: Session#update finds a result by its call id, which need
+    # not be unique within a session.
+    @agent.session.set(@agent.session.messages.map { |recorded| recorded.equal?(message) ? noticed : recorded })
+    noticed
+  end
+
+  # @rbs return: Riffer::Messages::Base?
+  def notify_job_exits
+    notice = job_notice
+    return unless notice
+
+    # Silent, then delivered by hand: the on_message observer interrupts a
+    # cancelled turn with a throw, and no riffer run is there to catch it.
+    @agent.session.add(Riffer::Rig::Runtime::JobNotification.new(notice), silent: true).tap { |message| deliver(message) }
   end
 
   # @rbs return: void
