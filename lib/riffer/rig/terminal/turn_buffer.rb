@@ -11,9 +11,10 @@ class Riffer::Rig::Terminal::TurnBuffer
   # @rbs @settled_usage: Riffer::Providers::TokenUsage?
   # @rbs @request_usage: Riffer::Providers::TokenUsage?
 
-  # @dynamic answer, ghost
+  # @dynamic answer, ghost, tool
   attr_reader :answer #: String?
   attr_reader :ghost #: String?
+  attr_reader :tool #: String?
 
   # @rbs clock: ^() -> Float
   # @rbs return: void
@@ -43,10 +44,15 @@ class Riffer::Rig::Terminal::TurnBuffer
       # Gemini reports a running total on every chunk, so a request's usage is
       # its last reading, not the sum of them.
       @request_usage = event.token_usage
-    when Riffer::Rig::Events::BeforeToolCall, Riffer::Rig::Events::AfterToolCall
+    when Riffer::Rig::Events::BeforeToolCall
       # A provider may send no FinishReasonDone, and nothing else marks the end
-      # of a request; a blocked tool call skips BeforeToolCall.
+      # of a request.
       settle(:tool_calls)
+      @tool = event.tool
+    when Riffer::Rig::Events::AfterToolCall
+      # A blocked tool call skips BeforeToolCall.
+      settle(:tool_calls)
+      @tool = nil
     when Riffer::StreamEvents::Interrupt
       @interrupted = true
       settle(:stop)
@@ -54,6 +60,11 @@ class Riffer::Rig::Terminal::TurnBuffer
       settle(:stop)
       @ended_at = @clock.call
     end
+  end
+
+  # @rbs return: String
+  def prose
+    @prose.dup
   end
 
   # @rbs return: bool

@@ -40,9 +40,9 @@ class FramePty
 
   # Nothing holds this pty as its controlling terminal, so the kernel has no
   # process to signal about the new size.
-  def report(columns)
+  def report(columns, rows: @rows)
     screen
-    @slave.winsize = [@rows, columns]
+    @slave.winsize = [rows, columns]
     Process.kill('WINCH', Process.pid)
     @master.wait_readable(TIMEOUT_SECONDS) || raise("no redraw within #{TIMEOUT_SECONDS}s")
   end
