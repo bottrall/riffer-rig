@@ -53,6 +53,10 @@ class Riffer::Rig::Terminal::TurnBuffer
       # A blocked tool call skips BeforeToolCall.
       settle(:tool_calls)
       @tool = nil
+    when Riffer::Rig::Events::JobExit
+      # A turn the Runtime continues for a job exit has no tool call between
+      # its replies to end the first request.
+      settle(:stop)
     when Riffer::StreamEvents::Interrupt
       @interrupted = true
       settle(:stop)
