@@ -176,6 +176,31 @@ describe Riffer::Rig::CLI::Sessions do
     end
   end
 
+  describe '#recorded' do
+    def record(id, message)
+      entry = Riffer::Rig::Stores::MessageEntry.new(message: message, recorded_at: '2026-10-11T00:00:00.000Z')
+      Riffer::Rig::Stores::JSONL.new(home: @home).append(id, entry)
+    end
+
+    it 'reads back nothing when sessions are not saved' do
+      save('aaa')
+      record('aaa', { role: 'user', content: 'hello' })
+
+      assert_empty sessions('--no-save').recorded('aaa')
+    end
+
+    it 'reads back nothing for a session that has recorded nothing' do
+      assert_empty sessions.recorded('nope')
+    end
+
+    it 'reads back the messages of a session without its other entries' do
+      save('aaa')
+      record('aaa', { role: 'user', content: 'hello' })
+
+      assert_equal [{ role: 'user', content: 'hello' }], sessions.recorded('aaa').map(&:message)
+    end
+  end
+
   describe '#list' do
     it 'lists only the sessions of the cwd by default' do
       save('aaa')

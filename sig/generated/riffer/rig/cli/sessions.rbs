@@ -37,6 +37,10 @@ class Riffer::Rig::CLI::Sessions
   # @rbs return: Riffer::Rig::Runtime?
   def resume: (Riffer::Rig::Hosts::_Host host, String id) -> Riffer::Rig::Runtime?
 
+  # @rbs id: String
+  # @rbs return: Array[Riffer::Rig::Stores::MessageEntry]
+  def recorded: (String id) -> Array[Riffer::Rig::Stores::MessageEntry]
+
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs all: bool
   # @rbs return: Array[::Riffer::Rig::Terminal::Session]

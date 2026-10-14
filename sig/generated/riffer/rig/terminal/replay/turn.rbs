@@ -1,0 +1,20 @@
+# Generated from lib/riffer/rig/terminal/replay/turn.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Replay::Turn
+  # @dynamic prompt, answer, stats
+  attr_reader prompt: String
+
+  attr_reader answer: String?
+
+  attr_reader stats: Riffer::Rig::Terminal::TurnBuffer::Stats
+
+  # @rbs prompt: String
+  # @rbs answer: String?
+  # @rbs stats: Riffer::Rig::Terminal::TurnBuffer::Stats
+  # @rbs return: void
+  def initialize: (prompt: String, answer: String?, stats: Riffer::Rig::Terminal::TurnBuffer::Stats) -> void
+
+  # The record keeps no trace of how a turn ended.
+  # @rbs return: bool
+  def interrupted?: () -> bool
+end

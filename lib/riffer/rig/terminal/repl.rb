@@ -66,6 +66,14 @@ class Riffer::Rig::Terminal::Repl
     @jobs.watch(runtime)
   end
 
+  # @rbs recorded: Array[Riffer::Rig::Terminal::Replay::_Recorded]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: void
+  def replay(recorded, theme:)
+    width = @frame.measure&.last
+    @console.print(Riffer::Rig::Terminal::Replay.call(recorded, theme: theme, width: width))
+  end
+
   # @rbs question: String?
   # @rbs options: Array[String]?
   # @rbs secret: bool

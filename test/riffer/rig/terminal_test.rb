@@ -25,6 +25,10 @@ class PreparedSessions
     prepare(@sessions.resume(host, id))
   end
 
+  def recorded(id)
+    @sessions.recorded(id)
+  end
+
   def list(host, all: false)
     @sessions.list(host, all: all)
   end
@@ -74,9 +78,9 @@ describe Riffer::Rig::Terminal do
     FileUtils.remove_entry(@cwd)
   end
 
-  def cli_sessions(env: { 'MOCK_API_KEY' => 'mock-key' })
+  def cli_sessions(env: { 'MOCK_API_KEY' => 'mock-key' }, resume: nil)
     Riffer::Rig::CLI::Sessions.new(
-      flags: Riffer::Rig::CLI::Flags.new(model: 'mock/test'),
+      flags: Riffer::Rig::CLI::Flags.new(model: 'mock/test', resume: resume),
       env: Riffer::Rig::Env.new(env),
       cwd: @cwd,
       home: @home
@@ -112,9 +116,10 @@ describe Riffer::Rig::Terminal do
     ticker: true,
     columns: 80,
     open_picker: false,
+    resume: nil,
     &prepare
   )
-    sessions = cli_sessions(env: env)
+    sessions = cli_sessions(env: env, resume: resume)
     sessions = PreparedSessions.new(sessions, &prepare) if prepare
     TerminalPty.drive(script, columns: columns) do |tty|
       terminal = Riffer::Rig::Terminal.for(
@@ -192,8 +197,8 @@ describe Riffer::Rig::Terminal do
     File.write(File.join(dir, 'SKILL.md'), "---\nname: #{name}\ndescription: Skill #{name}.\n---\nDo #{name}.\n")
   end
 
-  def seed_session(title, cwd: @cwd, updated: Time.now)
-    runtime = Riffer::Rig::Loader.runtime(
+  def seed_runtime(cwd)
+    Riffer::Rig::Loader.runtime(
       cwd: cwd,
       host: Riffer::Rig::Hosts::Null.new,
       env: Riffer::Rig::Env.new('MOCK_API_KEY' => 'mock-key'),
@@ -202,11 +207,54 @@ describe Riffer::Rig::Terminal do
       options: Riffer::Rig::Loader::Options.new(model: 'mock/test'),
       store: Riffer::Rig::Stores::JSONL.new(home: @home)
     )
+  end
+
+  def seed_session(title, cwd: @cwd, updated: Time.now)
+    runtime = seed_runtime(cwd)
     runtime.prompt(title) { |event| event } # the turn only runs when its events are consumed
     runtime.close
     path = session_file_for(title, cwd: cwd)
     File.utime(updated, updated, path)
     path
+  end
+
+  def seed_history
+    runtime = seed_runtime(@cwd)
+    provider = runtime.agent.provider
+    provider.stub_response(
+      'Let me read the file.',
+      tool_calls: [{ name: 'read', arguments: '{"path":"notes.txt"}' }],
+      token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 100, output_tokens: 20)
+    )
+    provider.stub_response(
+      'The file is empty.',
+      token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 150, output_tokens: 30)
+    )
+    runtime.prompt('what is in notes.txt?') { |event| event }
+    provider.stub_response(
+      'Fixed it.',
+      token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 200, output_tokens: 40)
+    )
+    runtime.prompt('also fix the flaky test') { |event| event }
+    runtime.close
+    runtime.id
+  end
+
+  def history
+    # The seeded turns are stamped by the wall clock as they run.
+    first = '› what is in notes\.txt\?\r\n\r\n  The file is empty\.\r\n\r\n  2 steps · \d\d:\d\d · ↑250 · ↓50\r\n'
+    second = '› also fix the flaky test\r\n\r\n  Fixed it\.\r\n\r\n  1 step · \d\d:\d\d · ↑200 · ↓40\r\n'
+    /\r\n#{first}\r\n#{second}/
+  end
+
+  def session_file(id)
+    session_files.find { |path| File.basename(path, '.jsonl') == id }
+  end
+
+  def rewrite_session(id)
+    path = session_file(id)
+    lines = yield(File.readlines(path).map { |line| JSON.parse(line) })
+    File.write(path, lines.map { |line| "#{JSON.generate(line)}\n" }.join)
   end
 
   def session_files
@@ -355,6 +403,12 @@ describe Riffer::Rig::Terminal do
     assert_match(/▸ session\s+15 tok$/, output)
   end
 
+  it 'replays nothing of a resumed session on the blocking loop' do
+    output = run_terminal("/exit\n", sessions: cli_sessions(resume: seed_history))
+
+    refute_includes output, 'Fixed it.'
+  end
+
   it 'hints at the second Ctrl-C after the first at the prompt' do
     assert_includes run_terminal(interrupting_input(1)), 'Press Ctrl-C again to exit.'
   end
@@ -402,6 +456,14 @@ describe Riffer::Rig::Terminal do
       SOURCE
     end
 
+    def seed_unstamped_history
+      seed_history.tap { |id| rewrite_session(id) { |lines| lines.map { |line| line.except('recorded_at') } } }
+    end
+
+    def notice
+      "\r\n  #{Riffer::Rig::Terminal::Replay::NOTICE}\r\n"
+    end
+
     it 'opens the picker over the keys before the first session' do
       path = seed_session('fix the login bug')
       script = lambda do |pty|
@@ -438,6 +500,46 @@ describe Riffer::Rig::Terminal do
       end
 
       assert_includes output, '2 jobs running'
+    end
+
+    it 'replays nothing in a fresh session' do
+      output = run_on_pty(->(pty) { pty.type("/exit\r") })
+
+      refute_match(/\d steps? · \d\d:\d\d/, output)
+    end
+
+    it 'replays the turns of a session resumed at startup, each as its prompt, answer and footer' do
+      output = run_on_pty(->(pty) { pty.type("/exit\r") }, resume: seed_history)
+
+      assert_match history, output
+    end
+
+    it 'replays them below the banner' do
+      output = run_on_pty(->(pty) { pty.type("/exit\r") }, resume: seed_history)
+
+      assert_match(%r{type /exit to quit.*› what is in notes\.txt\?}m, output)
+    end
+
+    it 'replays them above the footer' do
+      output = run_on_pty(->(pty) { pty.type("/exit\r") }, resume: seed_history)
+
+      assert_includes output, "↑200 · ↓40\r\n› "
+    end
+
+    it 'replays the session picked before the first session' do
+      seed_history
+      script = lambda do |pty|
+        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.type("\r/exit\r")
+      end
+
+      assert_match history, run_on_pty(script, open_picker: true)
+    end
+
+    it 'shows a notice for a session recorded before its entries were stamped' do
+      output = run_on_pty(->(pty) { pty.type("/exit\r") }, resume: seed_unstamped_history)
+
+      assert_includes output, notice
     end
 
     it 'runs two queued prompts as two turns in order' do
@@ -551,6 +653,30 @@ describe Riffer::Rig::Terminal do
       end
 
       assert_includes output, '3 jobs running'
+    end
+
+    it 'replays the session /resume picks below its banner' do
+      seed_history
+      script = lambda do |pty|
+        pty.type("/resume\r")
+        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.type("\r")
+        pty.await('▸ model', count: 2)
+        pty.type("/exit\r")
+      end
+
+      assert_match(/(?:▸ model.*){2}#{history}/m, run_on_pty(script))
+    end
+
+    it 'replays nothing for the session /new starts' do
+      script = lambda do |pty|
+        pty.type("/new\r")
+        pty.await('▸ model', count: 2)
+        pty.type("/exit\r")
+      end
+      output = run_on_pty(script, resume: seed_history)
+
+      assert_equal 1, output.scan('› also fix the flaky test').size
     end
 
     it 'cancels the running turn on Ctrl-C' do

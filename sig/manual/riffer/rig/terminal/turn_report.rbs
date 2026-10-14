@@ -3,4 +3,12 @@
 
 module Riffer::Rig::Terminal::TurnReport
   extend ::Riffer::Rig::Terminal::TurnReport
+
+  # Riffer::Rig::Terminal::TurnBuffer is the turn that just ran,
+  # Riffer::Rig::Terminal::Replay::Turn one read back from the record.
+  interface _Turn
+    def answer: () -> String?
+    def interrupted?: () -> bool
+    def stats: () -> ::Riffer::Rig::Terminal::TurnBuffer::Stats
+  end
 end

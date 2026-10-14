@@ -1,0 +1,14 @@
+# rbs-inline does not emit `extend self`, so without this reopen the module's
+# methods aren't visible as singleton methods.
+
+module Riffer::Rig::Terminal::Replay
+  extend ::Riffer::Rig::Terminal::Replay
+
+  # A message as the session store recorded it. The host namespace test keeps
+  # the terminal from naming the store, whose Riffer::Rig::Stores::MessageEntry
+  # is the implementation.
+  interface _Recorded
+    def message: () -> Hash[Symbol, untyped]
+    def recorded_time: () -> Time?
+  end
+end

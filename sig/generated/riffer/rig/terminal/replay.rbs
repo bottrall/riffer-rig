@@ -1,0 +1,26 @@
+# Generated from lib/riffer/rig/terminal/replay.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Replay
+  NOTICE: ::String
+
+  # @rbs recorded: Array[Riffer::Rig::Terminal::Replay::_Recorded]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs return: String
+  def call: (Array[Riffer::Rig::Terminal::Replay::_Recorded] recorded, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> String
+
+  private
+
+  # @rbs chunk: Array[Riffer::Rig::Terminal::Replay::_Recorded]
+  # @rbs return: Riffer::Rig::Terminal::Replay::Turn?
+  def turn: (Array[Riffer::Rig::Terminal::Replay::_Recorded] chunk) -> Riffer::Rig::Terminal::Replay::Turn?
+
+  # @rbs entry: Riffer::Rig::Terminal::Replay::_Recorded
+  # @rbs return: Riffer::Messages::Base?
+  def message: (Riffer::Rig::Terminal::Replay::_Recorded entry) -> Riffer::Messages::Base?
+
+  # @rbs prompt: String
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: String
+  def user_line: (String prompt, Riffer::Rig::Terminal::Theme theme) -> String
+end

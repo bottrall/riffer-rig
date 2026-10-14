@@ -114,9 +114,7 @@ class Riffer::Rig::Terminal
     return 1 unless runtime
 
     begin
-      runtime.on_message { |message| render_tool_result(message) }
-      @repl&.watch(runtime)
-      reveal_banner(runtime)
+      present(runtime)
       queued = @repl
       queued ? drain(queued, runtime) : repl(runtime)
       @renderer.notice(FAREWELL)
@@ -280,10 +278,17 @@ class Riffer::Rig::Terminal
   # @rbs return: Riffer::Rig::Runtime
   def swap(previous, next_runtime)
     previous.close
-    next_runtime.on_message { |message| render_tool_result(message) }
-    @repl&.watch(next_runtime)
-    reveal_banner(next_runtime)
+    present(next_runtime)
     next_runtime
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def present(runtime)
+    runtime.on_message { |message| render_tool_result(message) }
+    @repl&.watch(runtime)
+    reveal_banner(runtime)
+    @repl&.replay(@sessions.recorded(runtime.id), theme: @theme)
   end
 
   # @rbs runtime: Riffer::Rig::Runtime
