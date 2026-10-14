@@ -10,12 +10,13 @@ class Riffer::Rig::CLI::Flags
   TEXT
 
   # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, version
-  # @dynamic save, verbose, json, headless, prompt, continue, resume
+  # @dynamic save, verbose, json, job_idle_timeout, headless, prompt, continue, resume
   attr_reader :model #: String?
   attr_reader :extensions, :skills, :agents_md, :help, :version, :verbose, :json, :headless #: bool
   attr_reader :tools #: Array[String]?
   attr_reader :max_steps #: Integer?
   attr_reader :save #: bool
+  attr_reader :job_idle_timeout #: Integer?
   attr_reader :prompt #: String?
   attr_reader :continue #: bool
   attr_reader :resume #: String?
@@ -29,6 +30,7 @@ class Riffer::Rig::CLI::Flags
     allowed = rest.empty? || (flags.headless && rest.size == 1)
     return "unexpected argument: #{rest.join(' ')}" unless allowed
     return 'missing argument: -r' if flags.headless && flags.resume == ''
+    return "invalid argument: --job-idle-timeout #{flags.job_idle_timeout}" if flags.job_idle_timeout&.negative?
 
     flags
   rescue OptionParser::ParseError => e
@@ -74,6 +76,11 @@ class Riffer::Rig::CLI::Flags
       parser.on('-p', '--print', 'Run one prompt headless and exit; the prompt is the argument, else stdin')
       parser.on('--verbose', 'With -p, trace each tool call to stderr')
       parser.on('--json', 'With -p, stream every Runtime event as NDJSON to stdout')
+      parser.on(
+        '--job-idle-timeout SECONDS',
+        Integer,
+        'With -p, kill background jobs once none has exited for SECONDS (default 600; 0 waits indefinitely)'
+      )
       parser.on('-h', '--help', 'Show this help')
       parser.on('-v', '--version', 'Show the version')
     end
@@ -94,6 +101,7 @@ class Riffer::Rig::CLI::Flags
       save: !values.key?(:'no-save'),
       verbose: values.key?(:verbose),
       json: values.key?(:json),
+      job_idle_timeout: values[:'job-idle-timeout'],
       headless: values.key?(:print),
       prompt: prompt,
       continue: values.key?(:continue),
@@ -113,6 +121,7 @@ class Riffer::Rig::CLI::Flags
   # @rbs save: bool
   # @rbs verbose: bool
   # @rbs json: bool
+  # @rbs job_idle_timeout: Integer?
   # @rbs headless: bool
   # @rbs prompt: String?
   # @rbs continue: bool
@@ -130,6 +139,7 @@ class Riffer::Rig::CLI::Flags
     save: true,
     verbose: false,
     json: false,
+    job_idle_timeout: nil,
     headless: false,
     prompt: nil,
     continue: false,
@@ -146,6 +156,7 @@ class Riffer::Rig::CLI::Flags
     @save = save
     @verbose = verbose
     @json = json
+    @job_idle_timeout = job_idle_timeout
     @headless = headless
     @prompt = prompt
     @continue = continue

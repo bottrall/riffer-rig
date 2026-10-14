@@ -28,6 +28,10 @@ describe Riffer::Rig::CLI::Flags do
       assert_equal 'missing argument: -r', parse('-pr')
     end
 
+    it 'refuses a negative --job-idle-timeout' do
+      assert_equal 'invalid argument: --job-idle-timeout -1', parse('-p', '--job-idle-timeout', '-1')
+    end
+
     it 'refuses any other flag missing its argument' do
       assert_equal 'missing argument: --model', parse('--model')
     end
@@ -88,6 +92,14 @@ describe Riffer::Rig::CLI::Flags do
 
     it 'keeps --verbose off by default' do
       refute parse.verbose
+    end
+
+    it 'reads --job-idle-timeout as an integer' do
+      assert_equal 30, parse('-p', '--job-idle-timeout', '30').job_idle_timeout
+    end
+
+    it 'leaves the job idle timeout to headless by default' do
+      assert_nil parse.job_idle_timeout
     end
 
     it 'reads -p as headless' do
@@ -200,7 +212,10 @@ describe Riffer::Rig::CLI::Flags do
       usage = Riffer::Rig::CLI::Flags.usage
 
       assert(
-        %w[--model --no-extensions --no-skills --no-agents-md --tools --max-steps -p --verbose --version].all? do |flag|
+        %w[
+          --model --no-extensions --no-skills --no-agents-md --tools --max-steps
+          -p --verbose --job-idle-timeout --version
+        ].all? do |flag|
           usage.include?(flag)
         end
       )

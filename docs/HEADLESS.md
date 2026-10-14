@@ -1,6 +1,6 @@
 # Headless mode
 
-Run one prompt with no terminal: `riffer -p "prompt"` runs a single turn through everything the REPL loads and exits with a code that says how it ended. A pipe in, a pipe out — CI jobs, cron jobs, and other tools drive riffer-rig exactly as a human does, minus the TTY.
+Run one prompt with no terminal: `riffer -p "prompt"` runs a single turn through everything the REPL loads, waits for any [background jobs](#background-jobs) the turn left running, and exits with a code that says how it ended. A pipe in, a pipe out — CI jobs, cron jobs, and other tools drive riffer-rig exactly as a human does, minus the TTY.
 
 ## The prompt
 
@@ -25,23 +25,33 @@ By default only the assistant's text is printed, streamed to stdout. Everything 
 
 ## Flags
 
-The REPL's flags all work here: `--model provider/name`, `--no-extensions`, `--no-skills`, `--no-agents-md`, `--tools a,b,c`, `--max-steps N`, `--no-save`, `-c`/`--continue` and `-r ID`/`--resume ID`, plus `--verbose`. The same [resolution order](PROVIDERS.md#resolution-order) applies to the model: `--model`, then `RIFFER_MODEL`, then settings.
+The REPL's flags all work here: `--model provider/name`, `--no-extensions`, `--no-skills`, `--no-agents-md`, `--tools a,b,c`, `--max-steps N`, `--no-save`, `-c`/`--continue` and `-r ID`/`--resume ID`, plus `--verbose` and `--job-idle-timeout SECONDS`. The same [resolution order](PROVIDERS.md#resolution-order) applies to the model: `--model`, then `RIFFER_MODEL`, then settings.
 
 `-c` and `-r` are the multi-turn headless story: `riffer -p -c "now run the tests"` continues the most recent session in this directory, appending to the same [session file](SESSIONS.md#resuming). Unlike the REPL, a missing session is not a fresh start — headless prints `No saved session …` on stderr and exits 2.
 
 Headless never prompts. A missing model, a missing credential, or a missing optional SDK is not an interactive setup flow — the reason is printed on stderr with the provider's recipe (its environment variables and key URL), or the exact `gem install` line, and the process exits 2. A `settings.json` or `auth.json` that does not parse exits 2 the same way, with the file named on stderr ([Configuration](CONFIGURATION.md)).
 
+## Background jobs
+
+A `bash` call with `run_in_background` starts a job that outlives the turn ([Tools](TOOLS.md#background-jobs)). When the model finishes its reply with a job still running, headless does not exit: it prints `waiting for background jobs` on stderr and waits for the next job to exit. Each exit gives the model a further turn, with no user text, in which it is told of the exit and replies; its output is printed like the first turn's. The run waits again while any job is still running, and exits once none is left, so a model that starts five jobs and replies that it is waiting hears of all five. A run that starts no background job exits as soon as its turn ends.
+
+Only a turn that finished is followed this way. A turn that failed, was cancelled or did not complete (exit `1`, `130` or `3` below) ends the run at once, and the jobs it left running are killed.
+
+The wait has an idle timeout: when no job has exited for `--job-idle-timeout` seconds, 600 by default, headless prints `no background job exited in 600s; killing the jobs still running` on stderr, kills them, and exits 3. It is what keeps a dev server or a file watcher from holding the run open forever. `--job-idle-timeout 0` removes the timeout, and the run waits for as long as any job runs. Each wait starts the timeout afresh, so it counts from the end of the most recent turn.
+
+SIGINT while waiting kills the jobs and exits 130.
+
 ## Exit codes
 
 | Exit | Meaning                                                                                                                                |
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `0`  | the turn finished                                                                                                                       |
+| `0`  | the turn finished, and so did every [follow-up turn](#background-jobs)                                                                  |
 | `1`  | runtime error: provider failure, network failure, an exception in a tool or handler                                                     |
 | `2`  | usage or configuration: unknown flag, no prompt, a bare model name, no credentials, a missing optional SDK, a settings or auth file that does not parse |
-| `3`  | the turn ended but did not complete: `max_steps`, `context_window`, `length`, `content_filter`, or `malformed_output`; the reason is on stderr |
-| `130` | SIGINT: the turn is cancelled first — orphaned tool calls healed, the session closed — then exit                                        |
+| `3`  | the turn ended but did not complete: `max_steps`, `context_window`, `length`, `content_filter`, or `malformed_output`; the reason is on stderr. Also a run whose background jobs passed the [idle timeout](#background-jobs) |
+| `130` | SIGINT: the turn is cancelled first — orphaned tool calls healed, the session closed — then exit. While waiting for background jobs, they are killed and the session closed |
 
-A script that only needs success or failure can therefore test the code alone; a caller that wants the reason reads stderr or waits for `--json` (below).
+With follow-up turns, the code is the last turn's. A script that only needs success or failure can therefore test the code alone; a caller that wants the reason reads stderr or waits for `--json` (below).
 
 ## The NDJSON stream (`--json`)
 
@@ -61,6 +71,8 @@ A script that only needs success or failure can therefore test the code alone; a
 ```
 
 `session_start` is the first record, carrying the session id. The remaining StreamEvents follow the turn in order — the ones a tool-using turn produces are shown above; reasoning (`reasoning_delta`, `reasoning_done`), web search (`web_search_status`, `web_search_done`), finish reasons, guardrails and interrupts serialize the same way whenever the provider emits them. `turn_end` is always the last record of a prompt: `stop_reason` is riffer's outcome vocabulary (`completed`, `length`, `max_steps`, `cancelled`, …), `usage` is the run's token totals, and `cost` (USD, present when the model is priced) rides on `usage`. A consumer that only reads the last line still knows how the turn ended and what it cost.
+
+Each [follow-up turn](#background-jobs) streams its records the same way, after the previous turn's `turn_end`: one `job_exit` record per job the model is told of, then the turn's events, then its own `turn_end`, whose `usage` covers that turn alone. `session_start` is written once, at the start of the run. The `waiting for background jobs` note stays on stderr. When the idle timeout passes, the last record is a `notify` at level `warning` carrying the message text mode prints on stderr.
 
 Each tool call is traced by two records, written as they happen; see [tool call events](EMBEDDING.md#tool-call-events). `tool_call_done` announces the call before it runs. `before_tool_call` is written as the tool starts, with the `args` it runs with; a call that does not run — an extension blocked it, or its arguments are not a JSON object — has no such record. `after_tool_call` is written once for every call, when it finishes. On both, `call_id` matches the `tool_call_done` record and `at` is a monotonic timestamp in seconds, comparable only within the run; `duration` is the seconds the tool itself ran, `0.0` for a call that did not run. `result` is an object of three fields: `content`, the text the model receives; `error`, the error message, `null` on success; and `error_type`, `null` on success and otherwise the kind of failure (`execution_error`, `validation_error`, `unknown_tool`, `timeout_error`, `unhandled_error`, or `blocked` for a call an extension blocked). Text mode prints nothing for either record.
 

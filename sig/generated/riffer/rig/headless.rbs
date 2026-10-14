@@ -3,7 +3,11 @@
 class Riffer::Rig::Headless
   USAGE_ERROR: Integer
 
+  JOB_IDLE_TIMEOUT: Integer
+
   @streamed_text: bool
+
+  @job_idle_timeout: Integer
 
   @json: bool
 
@@ -22,8 +26,9 @@ class Riffer::Rig::Headless
   # @rbs error: IO
   # @rbs verbose: bool
   # @rbs json: bool
+  # @rbs job_idle_timeout: Integer
   # @rbs return: Riffer::Rig::Headless
-  def self.for: (input: IO, output: IO, error: IO, ?verbose: bool, ?json: bool) -> Riffer::Rig::Headless
+  def self.for: (input: IO, output: IO, error: IO, ?verbose: bool, ?json: bool, ?job_idle_timeout: Integer) -> Riffer::Rig::Headless
 
   # @rbs input: IO
   # @rbs output: IO
@@ -31,8 +36,9 @@ class Riffer::Rig::Headless
   # @rbs host: Riffer::Rig::Headless::Host
   # @rbs verbose: bool
   # @rbs json: bool
+  # @rbs job_idle_timeout: Integer
   # @rbs return: void
-  def initialize: (input: IO, output: IO, error: IO, host: Riffer::Rig::Headless::Host, ?verbose: bool, ?json: bool) -> void
+  def initialize: (input: IO, output: IO, error: IO, host: Riffer::Rig::Headless::Host, ?verbose: bool, ?json: bool, ?job_idle_timeout: Integer) -> void
 
   # @rbs prompt: String?
   # @rbs &build: (Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime
@@ -58,10 +64,17 @@ class Riffer::Rig::Headless
   # @rbs return: Integer
   def drive: (Riffer::Rig::Runtime runtime, String text) -> Integer
 
-  # @rbs text: String
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: Integer
-  def turn: (String text, Riffer::Rig::Runtime runtime) -> Integer
+  def follow_up: (Riffer::Rig::Runtime runtime) -> Integer
+
+  # @rbs return: Integer
+  def abandon_jobs: () -> Integer
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs &: (^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void) -> void
+  # @rbs return: Integer
+  def turn: (Riffer::Rig::Runtime runtime) { (^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void) -> void } -> Integer
 
   # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
   # @rbs return: void

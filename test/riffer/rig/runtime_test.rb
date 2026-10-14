@@ -1863,6 +1863,67 @@ describe Riffer::Rig::Runtime do
     end
   end
 
+  describe '#pending_jobs?' do
+    before do
+      @runtime = Riffer::Rig::Runtime.new('mock/test')
+      @exits = job_exits(@runtime)
+    end
+
+    after do
+      @runtime.close
+    end
+
+    it 'is false without a job' do
+      refute_predicate @runtime, :pending_jobs?
+    end
+
+    it 'is true while a job runs' do
+      spawn_group_job(@runtime)
+
+      assert_predicate @runtime, :pending_jobs?
+    end
+
+    it 'stays true for a job that exited until the model is told' do
+      spawn_group_job(@runtime, 'true')
+      @exits.pop(timeout: 5)
+
+      assert_predicate @runtime, :pending_jobs?
+    end
+
+    it 'is false once the model is told of the exit' do
+      spawn_group_job(@runtime, 'true')
+      @exits.pop(timeout: 5)
+      @runtime.agent.provider.stub_response('Noted.')
+      @runtime.ask('next')
+
+      refute_predicate @runtime, :pending_jobs?
+    end
+  end
+
+  describe '#await_job_exit' do
+    before do
+      @runtime = Riffer::Rig::Runtime.new('mock/test')
+      @exits = job_exits(@runtime)
+    end
+
+    after do
+      @runtime.close
+    end
+
+    it 'is true for an exit the model has not been told of' do
+      spawn_group_job(@runtime, 'true')
+      @exits.pop(timeout: 5)
+
+      assert @runtime.await_job_exit(timeout: 0)
+    end
+
+    it 'waits for the next exit without a timeout by default' do
+      spawn_group_job(@runtime, 'sleep 0.1')
+
+      assert @runtime.await_job_exit
+    end
+  end
+
   describe 'job exit notifications' do
     before do
       exits = @exits = Queue.new
@@ -2160,6 +2221,41 @@ describe Riffer::Rig::Runtime do
         runtime.ask('second')
 
         assert_equal [Riffer::Rig::Runtime::JobNotification, Riffer::Messages::User], observed.first(2).map(&:class)
+      end
+    end
+
+    describe 'through #follow_up' do
+      it 'tells the model of the exit and lets it reply' do
+        runtime = exited_between_turns
+        runtime.follow_up { |event| event }
+
+        assert_equal(
+          [Riffer::Messages::Assistant, Riffer::Rig::Runtime::JobNotification, Riffer::Messages::Assistant],
+          runtime.agent.session.messages.last(3).map(&:class)
+        )
+      end
+
+      it 'emits a job_exit event for each exit' do
+        runtime = exited_between_turns(2)
+        events = []
+        runtime.follow_up { |event| events << event }
+
+        assert_equal 2, events.grep(Riffer::Rig::Events::JobExit).length
+      end
+
+      it 'never calls the model with no exit to tell' do
+        runtime = exited_between_turns(0)
+        runtime.follow_up { |event| event }
+
+        assert_equal 1, runtime.agent.provider.calls.length
+      end
+
+      it 'ends a follow-up with no exit to tell as completed' do
+        runtime = exited_between_turns(0)
+        events = []
+        runtime.follow_up { |event| events << event }
+
+        assert_equal :completed, events.last.stop_reason
       end
     end
 

@@ -3,12 +3,15 @@
 class Riffer::Rig::Headless
   USAGE_ERROR = 2 #: Integer
 
+  JOB_IDLE_TIMEOUT = 600 #: Integer
+
   # @rbs @input: IO
   # @rbs @output: IO
   # @rbs @error: IO
   # @rbs @host: Riffer::Rig::Headless::Host
   # @rbs @verbose: bool
   # @rbs @json: bool
+  # @rbs @job_idle_timeout: Integer
   # @rbs @streamed_text: bool
 
   # @rbs input: IO
@@ -16,10 +19,19 @@ class Riffer::Rig::Headless
   # @rbs error: IO
   # @rbs verbose: bool
   # @rbs json: bool
+  # @rbs job_idle_timeout: Integer
   # @rbs return: Riffer::Rig::Headless
-  def self.for(input:, output:, error:, verbose: false, json: false)
+  def self.for(input:, output:, error:, verbose: false, json: false, job_idle_timeout: JOB_IDLE_TIMEOUT)
     host = Riffer::Rig::Headless::Host.new(error: error, json: json)
-    new(input: input, output: output, error: error, host: host, verbose: verbose, json: json)
+    new(
+      input: input,
+      output: output,
+      error: error,
+      host: host,
+      verbose: verbose,
+      json: json,
+      job_idle_timeout: job_idle_timeout
+    )
   end
 
   # @rbs input: IO
@@ -28,14 +40,16 @@ class Riffer::Rig::Headless
   # @rbs host: Riffer::Rig::Headless::Host
   # @rbs verbose: bool
   # @rbs json: bool
+  # @rbs job_idle_timeout: Integer
   # @rbs return: void
-  def initialize(input:, output:, error:, host:, verbose: false, json: false)
+  def initialize(input:, output:, error:, host:, verbose: false, json: false, job_idle_timeout: JOB_IDLE_TIMEOUT)
     @input = input
     @output = output
     @error = error
     @host = host
     @verbose = verbose
     @json = json
+    @job_idle_timeout = job_idle_timeout
   end
 
   # @rbs prompt: String?
@@ -84,22 +98,45 @@ class Riffer::Rig::Headless
   # @rbs text: String
   # @rbs return: Integer
   def drive(runtime, text)
-    turn(text, runtime)
+    code = turn(runtime) { |handler| runtime.prompt(text, &handler) }
+    code = follow_up(runtime) while code.zero? && runtime.pending_jobs?
+    code
   ensure
     runtime.close
   end
 
-  # @rbs text: String
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: Integer
-  def turn(text, runtime)
+  def follow_up(runtime)
+    @error.puts('waiting for background jobs')
+    cap = @job_idle_timeout unless @job_idle_timeout.zero?
+    return abandon_jobs unless runtime.await_job_exit(timeout: cap)
+
+    turn(runtime) { |handler| runtime.follow_up(&handler) }
+  end
+
+  # @rbs return: Integer
+  def abandon_jobs
+    message = "no background job exited in #{@job_idle_timeout}s; killing the jobs still running"
+    if @json
+      @output.write(Ndjson.line(Riffer::Rig::Events::Notify.new(message, :warning)))
+    else
+      @error.puts(message)
+    end
+    3
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs &: (^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void) -> void
+  # @rbs return: Integer
+  def turn(runtime)
     # @type var stop_reason: Symbol?
     stop_reason = nil
     # Runtime#cancel takes a Mutex, which Ruby refuses inside a trap handler,
     # so the handler hands the cancel to a thread.
     previous = Signal.trap('INT') { Thread.new { runtime.cancel } }
     begin
-      runtime.prompt(text) do |event|
+      yield(lambda do |event|
         case event
         when Riffer::Rig::Events::TurnEnd
           stop_reason = event.stop_reason
@@ -107,7 +144,7 @@ class Riffer::Rig::Headless
         else
           handle(event)
         end
-      end
+      end)
     rescue StandardError => e
       return fatal(e.message, 1)
     ensure

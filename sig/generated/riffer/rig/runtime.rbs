@@ -19,7 +19,7 @@ class Riffer::Rig::Runtime
 
   INTERRUPT_CANCELLED: Symbol
 
-  # Per user turn, so a job that starts jobs cannot keep a turn alive forever.
+  # Per turn, so a job that starts jobs cannot keep a turn alive forever.
   MAX_JOB_CONTINUATIONS: Integer
 
   # Riffer's remaining stop reasons (:error, :other, :guardrail_blocked) are
@@ -131,9 +131,13 @@ class Riffer::Rig::Runtime
   def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?env: Riffer::Rig::Env, ?auth_path: String, ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?native_tools: Hash[Symbol, untyped], ?clock: ^() -> Float, ?snapshot: Hash[Symbol, untyped]?) -> void
 
   # @rbs text: String
-  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
+  # @rbs &: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
   def prompt: (String text) ?{ (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void } -> (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
+
+  # @rbs &: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
+  # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
+  def follow_up: () ?{ (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void } -> (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
 
   # @rbs text: String
   # @rbs return: Riffer::Agent::Response
@@ -202,6 +206,13 @@ class Riffer::Rig::Runtime
   # @rbs return: bool
   def busy?: () -> bool
 
+  # @rbs return: bool
+  def pending_jobs?: () -> bool
+
+  # @rbs timeout: Numeric?
+  # @rbs return: bool
+  def await_job_exit: (?timeout: Numeric?) -> bool
+
   # @rbs return: nil
   def cancel: () -> nil
 
@@ -264,13 +275,24 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def lifecycle: (Symbol name, Riffer::Rig::Events::_Event event) -> void
 
+  # @rbs turn: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
+  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
+  # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
+  def claimed: (Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response] turn) ?{ (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void } -> (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
+
   # @rbs text: String
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
   def start_turn: (String text) -> Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
 
-  # @rbs reason: String
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
-  def blocked_turn: (String reason) -> Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  def start_follow_up: () -> Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+
+  # @rbs return: void
+  def open_turn: () -> void
+
+  # @rbs outcome: Riffer::Agent::Outcome
+  # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  def ended_turn: (Riffer::Agent::Outcome outcome) -> Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
 
   # @rbs name: String
   # @rbs args: String
@@ -284,9 +306,9 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Rig::Command::Context
   def command_context: (Riffer::Rig::Command command, String args, ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void emit) -> Riffer::Rig::Command::Context
 
-  # @rbs text: String
+  # @rbs &: () -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
-  def turn: (String text) -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
+  def turn: () { () -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response] } -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
 
   # @rbs yielder: Enumerator::Yielder
   # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]

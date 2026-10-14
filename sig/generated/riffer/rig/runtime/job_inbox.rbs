@@ -3,14 +3,19 @@
 class Riffer::Rig::Runtime::JobInbox
   @mutex: Thread::Mutex
 
+  @arrived: Thread::ConditionVariable
+
+  @clock: ^() -> Float
+
   @pending: Array[Riffer::Rig::Runtime::JobCompletion]
 
   @subscribers: Array[^(Riffer::Rig::Runtime::JobCompletion) -> void]
 
   @closed: bool
 
+  # @rbs clock: ^() -> Float
   # @rbs return: void
-  def initialize: () -> void
+  def initialize: (?clock: ^() -> Float) -> void
 
   # @rbs &block: (Riffer::Rig::Runtime::JobCompletion) -> void
   # @rbs return: void
@@ -22,6 +27,10 @@ class Riffer::Rig::Runtime::JobInbox
 
   # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
   def drain: () -> Array[Riffer::Rig::Runtime::JobCompletion]
+
+  # @rbs timeout: Numeric?
+  # @rbs return: bool
+  def await: (Numeric? timeout) -> bool
 
   # @rbs return: void
   def close: () -> void
