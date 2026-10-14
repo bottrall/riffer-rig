@@ -14,6 +14,12 @@ module Riffer::Rig::Terminal::TurnReport
 
   private
 
+  # @rbs source: String
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs return: String?
+  def answer: (String source, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> String?
+
   # @rbs stats: Riffer::Rig::Terminal::TurnBuffer::Stats
   # @rbs session: Riffer::Providers::TokenUsage?
   # @rbs return: String
