@@ -22,17 +22,6 @@ module Riffer::Rig::Terminal::TurnReport
     blocks.map { |block| "\n#{block}\n" }.join
   end
 
-  # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs return: Array[String]
-  def tokens(usage)
-    cache = { cache_write: usage.cache_write_tokens, cache_read: usage.cache_read_tokens }
-    [
-      "↑#{usage.input_tokens}",
-      "↓#{usage.output_tokens}",
-      *cache.filter_map { |name, count| "#{name}:#{count}" if count&.positive? }
-    ]
-  end
-
   private
 
   # @rbs stats: Riffer::Rig::Terminal::TurnBuffer::Stats
@@ -44,7 +33,7 @@ module Riffer::Rig::Terminal::TurnReport
     [
       "#{stats.steps} #{stats.steps == 1 ? 'step' : 'steps'}",
       format('%<minutes>02d:%<seconds>02d', minutes: minutes, seconds: seconds),
-      *([*tokens(usage), *Riffer::Rig::Terminal::Tally.cost(usage)] if usage),
+      *([*Riffer::Rig::Terminal::Tally.tokens(usage), *Riffer::Rig::Terminal::Tally.cost(usage)] if usage),
       *("session #{Riffer::Rig::Terminal::Tally.call(session)}" if session)
     ].join(' · ')
   end

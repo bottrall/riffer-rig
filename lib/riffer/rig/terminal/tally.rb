@@ -15,4 +15,15 @@ module Riffer::Rig::Terminal::Tally
     amount = usage.cost
     format('~$%.4f', amount) if amount
   end
+
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs return: Array[String]
+  def tokens(usage)
+    cache = { cache_write: usage.cache_write_tokens, cache_read: usage.cache_read_tokens }
+    [
+      "↑#{usage.input_tokens}",
+      "↓#{usage.output_tokens}",
+      *cache.filter_map { |name, count| "#{name}:#{count}" if count&.positive? }
+    ]
+  end
 end

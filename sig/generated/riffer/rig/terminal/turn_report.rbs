@@ -12,10 +12,6 @@ module Riffer::Rig::Terminal::TurnReport
   # @rbs return: String
   def call: (Riffer::Rig::Terminal::TurnBuffer turn, Riffer::Providers::TokenUsage? session, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> String
 
-  # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs return: Array[String]
-  def tokens: (Riffer::Providers::TokenUsage usage) -> Array[String]
-
   private
 
   # @rbs stats: Riffer::Rig::Terminal::TurnBuffer::Stats

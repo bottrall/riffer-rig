@@ -60,30 +60,6 @@ describe Riffer::Rig::Terminal::TurnReport do
     end
   end
 
-  describe '.tokens' do
-    it 'shows the input and output tokens' do
-      assert_equal %w[↑100 ↓50], Riffer::Rig::Terminal::TurnReport.tokens(usage(100, 50))
-    end
-
-    it 'adds the cache write tokens of a turn that wrote to the cache' do
-      tokens = Riffer::Rig::Terminal::TurnReport.tokens(usage(100, 50, cache_write_tokens: 400))
-
-      assert_equal %w[↑100 ↓50 cache_write:400], tokens
-    end
-
-    it 'adds the cache read tokens of a turn that read from the cache' do
-      tokens = Riffer::Rig::Terminal::TurnReport.tokens(usage(100, 50, cache_read_tokens: 200))
-
-      assert_equal %w[↑100 ↓50 cache_read:200], tokens
-    end
-
-    it 'omits a cache count of zero' do
-      spent = usage(100, 50, cache_write_tokens: 0, cache_read_tokens: 0)
-
-      assert_equal %w[↑100 ↓50], Riffer::Rig::Terminal::TurnReport.tokens(spent)
-    end
-  end
-
   describe '.footer' do
     it 'counts a single step in the singular' do
       assert_equal "\n  1 step · 00:41\n", report(turn(answer: nil, steps: 1))

@@ -236,10 +236,7 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs session: Riffer::Providers::TokenUsage
   # @rbs return: String
   def usage_line(usage, session)
-    [
-      *Riffer::Rig::Terminal::TurnReport.tokens(usage),
-      "session #{Riffer::Rig::Terminal::Tally.call(session)}"
-    ].join(' · ')
+    [*Riffer::Rig::Terminal::Tally.tokens(usage), "session #{Riffer::Rig::Terminal::Tally.call(session)}"].join(' · ')
   end
 
   # @rbs arguments: String
