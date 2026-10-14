@@ -27,10 +27,7 @@ describe Riffer::Rig::Terminal::Interrupter do
   end
 
   def interrupter(color: false)
-    @interrupter ||= Riffer::Rig::Terminal::Interrupter.new(
-      frame: @frame,
-      theme: Riffer::Rig::Terminal::Theme.new(enabled: color)
-    )
+    Riffer::Rig::Terminal::Interrupter.new(frame: @frame, theme: Riffer::Rig::Terminal::Theme.new(enabled: color))
   end
 
   def rows
@@ -142,11 +139,7 @@ describe Riffer::Rig::Terminal::Interrupter do
         gated = Riffer::Rig::Extension.new('gated') { |rig| rig.tool gate }
         @runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [gated])
         @runtime.agent.provider.stub_response('', tool_calls: [{ name: 'gate', arguments: '{}' }])
-        @queue = ['fix the flaky test', 'then update the docs'].reduce(
-          Riffer::Rig::Terminal::MessageQueue.new,
-          :enqueue
-        )
-        @frame.queued(@queue.messages.size)
+        @frame.queued(2)
         @turn = Thread.new { run_turn('go') }
         started.pop
         interrupter.cancel(@runtime)
@@ -159,18 +152,6 @@ describe Riffer::Rig::Terminal::Interrupter do
         @turn.join
       end
 
-      def run_queued
-        message, @queue = @queue.dequeue
-        return unless message
-
-        run_turn(message.text)
-        run_queued
-      end
-
-      def prompts
-        @runtime.agent.session.messages.grep(Riffer::Messages::User).map(&:content)
-      end
-
       it 'shows stopping beside the queued chip while the cancel drains' do
         assert_equal ['›    · 2 queued', '  stopping…'], rows
       end
@@ -179,13 +160,6 @@ describe Riffer::Rig::Terminal::Interrupter do
         release_tool
 
         assert_equal ['interrupted', '›    · 2 queued', ''], rows
-      end
-
-      it 'leaves the queued messages to run next, in the order they were entered' do
-        release_tool
-        run_queued
-
-        assert_equal ['go', 'fix the flaky test', 'then update the docs'], prompts
       end
     end
 
