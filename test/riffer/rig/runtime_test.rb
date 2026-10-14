@@ -2216,6 +2216,12 @@ describe Riffer::Rig::Runtime do
       events
     end
 
+    it 'sets the cancel flag a running tool polls' do
+      @runtime.cancel
+
+      assert_predicate @runtime.agent.context[:cancel_flag], :set?
+    end
+
     it 'ends the turn with the cancelled stop reason' do
       assert_equal :cancelled, cancelled_turn_events.last.stop_reason
     end
@@ -2451,15 +2457,15 @@ describe Riffer::Rig::Runtime do
       end
     end
 
-    it 'kills outstanding background jobs on cancel' do
+    it 'leaves a background job running to its own exit' do
       runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
       exits = job_exits(runtime)
-      job = spawn_group_job(runtime)
+      spawn_group_job(runtime, 'sleep 0.2')
       runtime.cancel
       exited = exits.pop(timeout: 5)
       runtime.close
 
-      assert_equal job.id, exited&.job_id
+      assert_equal 0, exited&.exit_status
     end
 
     it 'returns nil' do

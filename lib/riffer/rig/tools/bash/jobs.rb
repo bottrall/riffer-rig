@@ -88,12 +88,6 @@ class Riffer::Rig::Tools::Bash::Jobs
     @mutex.synchronize { @jobs.fetch(id, nil)&.tap { |job| kill_group(job.pid) if job.active? } }
   end
 
-  # @rbs signal: String
-  # @rbs return: void
-  def kill_outstanding(signal = 'TERM')
-    @mutex.synchronize { @groups.each { |pgid| signal_group(pgid, signal) } }
-  end
-
   # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
   def consume
     completions = @inbox.drain
@@ -104,7 +98,7 @@ class Riffer::Rig::Tools::Bash::Jobs
   # @rbs grace: Float
   # @rbs return: void
   def shutdown(grace = SHUTDOWN_GRACE_SECONDS)
-    kill_outstanding
+    kill_outstanding('TERM')
     deadline = monotonic_now + grace
     @watchers.list.each { |watcher| watcher.join([deadline - monotonic_now, 0.0].max) }
     # A job that ignores TERM would otherwise hold its watcher, and this join, forever.
@@ -156,6 +150,12 @@ class Riffer::Rig::Tools::Bash::Jobs
       @jobs.delete(job.id)
       @groups.delete(job.pid)
     end
+  end
+
+  # @rbs signal: String
+  # @rbs return: void
+  def kill_outstanding(signal)
+    @mutex.synchronize { @groups.each { |pgid| signal_group(pgid, signal) } }
   end
 
   # @rbs pgid: Integer

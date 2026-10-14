@@ -48,10 +48,6 @@ class Riffer::Rig::Tools::Bash::Jobs
   # @rbs return: Riffer::Rig::Tools::Bash::Job?
   def kill: (String id) -> Riffer::Rig::Tools::Bash::Job?
 
-  # @rbs signal: String
-  # @rbs return: void
-  def kill_outstanding: (?String signal) -> void
-
   # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
   def consume: () -> Array[Riffer::Rig::Runtime::JobCompletion]
 
@@ -68,6 +64,10 @@ class Riffer::Rig::Tools::Bash::Jobs
   # @rbs log: Riffer::Rig::Tools::Bash::JobLog
   # @rbs return: void
   def watch: (Riffer::Rig::Tools::Bash::Job job, Riffer::Rig::Tools::Bash::JobLog log) -> void
+
+  # @rbs signal: String
+  # @rbs return: void
+  def kill_outstanding: (String signal) -> void
 
   # @rbs pgid: Integer
   # @rbs return: bool
