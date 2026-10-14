@@ -1,0 +1,31 @@
+# Generated from lib/riffer/rig/commands/cost.rb with RBS::Inline
+
+module Riffer::Rig::Commands::Cost
+  NO_USAGE: ::String
+
+  NO_TURN_USAGE: ::String
+
+  LABEL_WIDTH: ::Integer
+
+  # @rbs return: Riffer::Rig::Command
+  def command: () -> Riffer::Rig::Command
+
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs return: void
+  def run: (Riffer::Rig::Command::Context ctx) -> void
+
+  private
+
+  # @rbs messages: Array[Riffer::Messages::Base]
+  # @rbs return: Array[Array[Riffer::Messages::Base]]
+  def turns: (Array[Riffer::Messages::Base] messages) -> Array[Array[Riffer::Messages::Base]]
+
+  # @rbs label: String
+  # @rbs usage: Riffer::Providers::TokenUsage?
+  # @rbs return: String
+  def line: (String label, Riffer::Providers::TokenUsage? usage) -> String
+
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs return: String
+  def figures: (Riffer::Providers::TokenUsage usage) -> String
+end

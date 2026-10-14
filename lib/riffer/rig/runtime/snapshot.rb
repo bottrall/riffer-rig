@@ -49,11 +49,8 @@ class Riffer::Rig::Runtime::Snapshot
 
   # @rbs return: Riffer::Providers::TokenUsage?
   def usage
-    # Upstream candidate: a nil-aware TokenUsage.sum, which riffer's own
-    # Agent::Run and evals also hand-roll; a loaded session could restore its
-    # own tally.
-    @messages.filter_map { |message| message.token_usage if message.is_a?(Riffer::Messages::Assistant) }
-             .reduce { |total, usage| total + usage } # rubocop:disable Performance/Sum -- TokenUsage has no zero, and no usage must stay nil
+    # Upstream candidate: a loaded session could restore its own tally.
+    Riffer::Rig::Runtime::Usage.sum(@messages)
   end
 
   # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
