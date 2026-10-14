@@ -118,6 +118,11 @@ class Riffer::Rig::Terminal::Frame
     end
   end
 
+  # @rbs return: Integer
+  def status_room
+    @mutex.synchronize { [status_columns(@width - 1), 0].max }
+  end
+
   # @rbs content: String
   # @rbs return: void
   def peek(content)
@@ -225,18 +230,31 @@ class Riffer::Rig::Terminal::Frame
   # @rbs room: Integer
   # @rbs return: String
   def status_line(room)
-    label = "#{@jobs} #{@jobs == 1 ? 'job' : 'jobs'} running"
-    spare = room - STATUS_INDENT.size - label.size
-    # A count cut short would read as fewer jobs, so the counter is drawn
-    # whole or not at all.
-    return Riffer::Rig::Terminal::Columns.head("#{STATUS_INDENT}#{@status}", room) if @jobs.zero? || spare.negative?
+    label = counter(room)
+    return Riffer::Rig::Terminal::Columns.head("#{STATUS_INDENT}#{@status}", room) unless label
 
     # The counter is the only sign that a job is still running, so the status
     # is the one cut to make room.
-    status = Riffer::Rig::Terminal::Columns.head(@status, spare - JOBS_SEPARATOR.size)
+    status = Riffer::Rig::Terminal::Columns.head(@status, status_columns(room))
     # A status cut to nothing still carries its styles.
-    counter = Riffer::Rig::Terminal::Columns.width(status).zero? ? label : "#{JOBS_SEPARATOR}#{label}"
-    "#{STATUS_INDENT}#{status}#{@theme.dim(counter)}"
+    trailer = Riffer::Rig::Terminal::Columns.width(status).zero? ? label : "#{JOBS_SEPARATOR}#{label}"
+    "#{STATUS_INDENT}#{status}#{@theme.dim(trailer)}"
+  end
+
+  # @rbs room: Integer
+  # @rbs return: Integer
+  def status_columns(room)
+    label = counter(room)
+    room - STATUS_INDENT.size - (label ? JOBS_SEPARATOR.size + label.size : 0)
+  end
+
+  # @rbs room: Integer
+  # @rbs return: String?
+  def counter(room)
+    label = "#{@jobs} #{@jobs == 1 ? 'job' : 'jobs'} running"
+    # A count cut short would read as fewer jobs, so the counter is drawn
+    # whole or not at all.
+    label unless @jobs.zero? || STATUS_INDENT.size + label.size > room
   end
 
   # @rbs bytes: String

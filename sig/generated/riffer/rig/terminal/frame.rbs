@@ -76,6 +76,9 @@ class Riffer::Rig::Terminal::Frame
   # @rbs return: void
   def jobs: (Integer count) -> void
 
+  # @rbs return: Integer
+  def status_room: () -> Integer
+
   # @rbs content: String
   # @rbs return: void
   def peek: (String content) -> void
@@ -117,6 +120,14 @@ class Riffer::Rig::Terminal::Frame
   # @rbs room: Integer
   # @rbs return: String
   def status_line: (Integer room) -> String
+
+  # @rbs room: Integer
+  # @rbs return: Integer
+  def status_columns: (Integer room) -> Integer
+
+  # @rbs room: Integer
+  # @rbs return: String?
+  def counter: (Integer room) -> String?
 
   # @rbs bytes: String
   # @rbs return: void

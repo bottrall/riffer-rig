@@ -1,0 +1,103 @@
+# Generated from lib/riffer/rig/terminal/ticker.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Ticker
+  TICK_SECONDS: Float
+
+  CHARS_PER_TOKEN: Integer
+
+  SKILL_TICKS: Integer
+
+  PHRASE_TICKS: Range[Integer]
+
+  SEPARATOR: String
+
+  @footer: Riffer::Rig::Terminal::Frame
+
+  @theme: Riffer::Rig::Terminal::Theme
+
+  @buffer: Riffer::Rig::Terminal::TurnBuffer
+
+  @rates: Riffer::Config::Pricing::Rates?
+
+  @random: Random
+
+  @mutex: Mutex
+
+  @halt: Thread::Queue[true]
+
+  @thread: Thread?
+
+  @tick: Integer
+
+  @tools: Integer
+
+  @unmetered: Integer
+
+  @reasoning: bool
+
+  @phrase: String
+
+  @roll_at: Integer
+
+  @skill: String
+
+  @skill_until: Integer
+
+  # @rbs footer: Riffer::Rig::Terminal::Frame
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs buffer: Riffer::Rig::Terminal::TurnBuffer
+  # @rbs rates: Riffer::Config::Pricing::Rates?
+  # @rbs random: Random
+  # @rbs return: void
+  def initialize: (footer: Riffer::Rig::Terminal::Frame, theme: Riffer::Rig::Terminal::Theme, buffer: Riffer::Rig::Terminal::TurnBuffer, rates: Riffer::Config::Pricing::Rates?, random: Random) -> void
+
+  # @rbs return: void
+  def start: () -> void
+
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: void
+  def absorb: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
+
+  # @rbs return: void
+  def tick: () -> void
+
+  # @rbs return: void
+  def stop: () -> void
+
+  private
+
+  # @rbs return: void
+  def roll: () -> void
+
+  # @rbs room: Integer
+  # @rbs return: String
+  def line: (Integer room) -> String
+
+  # @rbs wall_time: Float
+  # @rbs return: String
+  def clock: (Float wall_time) -> String
+
+  # @rbs begun: Integer
+  # @rbs return: String?
+  def steps: (Integer begun) -> String?
+
+  # @rbs return: String?
+  def tools: () -> String?
+
+  # @rbs usage: Riffer::Providers::TokenUsage?
+  # @rbs estimate: Integer
+  # @rbs return: String
+  def tokens: (Riffer::Providers::TokenUsage? usage, Integer estimate) -> String
+
+  # @rbs usage: Riffer::Providers::TokenUsage?
+  # @rbs estimate: Integer
+  # @rbs return: String?
+  def cost: (Riffer::Providers::TokenUsage? usage, Integer estimate) -> String?
+
+  # @rbs amount: Integer
+  # @rbs return: String
+  def count: (Integer amount) -> String
+
+  # @rbs return: String
+  def label: () -> String
+end

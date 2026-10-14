@@ -4,13 +4,6 @@ require 'test_helper'
 require 'stringio'
 
 describe Riffer::Rig::Terminal::Animator do
-  tagging_theme = Class.new do
-    define_method(:enabled) { true }
-    def cyan(_text) = 'c'
-    def magenta(_text) = 'm'
-    def grey(text) = text
-  end
-
   def setup
     @io = StringIO.new
     @animator = Riffer::Rig::Terminal::Animator.new(io: @io, theme: Riffer::Rig::Terminal::Theme.new(enabled: false))
@@ -133,12 +126,6 @@ describe Riffer::Rig::Terminal::Animator do
     frame = animator.equalizer(3, 'pondering…')
 
     assert_includes frame, 'pondering…'
-  end
-
-  it 'equalizer alternates bar colours' do
-    animator = Riffer::Rig::Terminal::Animator.new(io: StringIO.new, theme: tagging_theme.new)
-
-    assert_equal 'cmcmcmc label', animator.equalizer(3, 'label')
   end
 
   it 'thinking frames render the equalizer when enabled' do

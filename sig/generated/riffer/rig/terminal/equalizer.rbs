@@ -1,0 +1,12 @@
+# Generated from lib/riffer/rig/terminal/equalizer.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Equalizer
+  LEVELS: Array[String]
+
+  BARS: Integer
+
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs tick: Integer
+  # @rbs return: String
+  def bars: (Riffer::Rig::Terminal::Theme theme, Integer tick) -> String
+end
