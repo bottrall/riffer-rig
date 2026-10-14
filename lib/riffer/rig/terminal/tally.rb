@@ -6,7 +6,13 @@ module Riffer::Rig::Terminal::Tally
   # @rbs usage: Riffer::Providers::TokenUsage
   # @rbs return: String
   def call(usage)
-    cost = usage.cost
-    ["#{usage.total_tokens} tok", *(format('~$%.4f', cost) if cost)].join(' · ')
+    ["#{usage.total_tokens} tok", *cost(usage)].join(' · ')
+  end
+
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs return: String?
+  def cost(usage)
+    amount = usage.cost
+    format('~$%.4f', amount) if amount
   end
 end

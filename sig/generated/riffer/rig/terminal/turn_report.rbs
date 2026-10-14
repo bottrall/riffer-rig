@@ -1,0 +1,30 @@
+# Generated from lib/riffer/rig/terminal/turn_report.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::TurnReport
+  INDENT: Integer
+
+  INTERRUPTED: ::String
+
+  # @rbs turn: Riffer::Rig::Terminal::TurnBuffer
+  # @rbs session: Riffer::Providers::TokenUsage?
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs return: String
+  def call: (Riffer::Rig::Terminal::TurnBuffer turn, Riffer::Providers::TokenUsage? session, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> String
+
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs return: Array[String]
+  def tokens: (Riffer::Providers::TokenUsage usage) -> Array[String]
+
+  private
+
+  # @rbs stats: Riffer::Rig::Terminal::TurnBuffer::Stats
+  # @rbs session: Riffer::Providers::TokenUsage?
+  # @rbs return: String
+  def footer: (Riffer::Rig::Terminal::TurnBuffer::Stats stats, Riffer::Providers::TokenUsage? session) -> String
+
+  # @rbs text: String
+  # @rbs width: Integer?
+  # @rbs return: String
+  def wrap: (String text, Integer? width) -> String
+end

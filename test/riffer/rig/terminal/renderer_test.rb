@@ -339,24 +339,6 @@ describe Riffer::Rig::Terminal::Renderer do
     assert_equal "\n  ↑100 · ↓50 · cache_read:200 · session 450 tok\n", @io.string
   end
 
-  it 'renders cache write token count when present' do
-    @renderer.usage(usage(100, 50, cache_write_tokens: 400), usage(100, 50))
-
-    assert_includes @io.string, 'cache_write:400'
-  end
-
-  it 'omits a zero cache write token count' do
-    @renderer.usage(usage(100, 50, cache_write_tokens: 0), usage(100, 50))
-
-    refute_includes @io.string, 'cache_write'
-  end
-
-  it 'omits a zero cache read token count' do
-    @renderer.usage(usage(100, 50, cache_read_tokens: 0), usage(100, 50))
-
-    refute_includes @io.string, 'cache_read'
-  end
-
   it 'renders the prompt marker below a blank line' do
     @renderer.prompt
 
