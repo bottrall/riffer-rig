@@ -5,16 +5,13 @@ class Riffer::Rig::Terminal::Host
 
   # @rbs @prompter: Riffer::Rig::Terminal::_Prompter
   # @rbs @renderer: Riffer::Rig::Terminal::Renderer
-  # @rbs @animator: Riffer::Rig::Terminal::Animator
 
   # @rbs prompter: Riffer::Rig::Terminal::_Prompter
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
-  # @rbs animator: Riffer::Rig::Terminal::Animator
   # @rbs return: void
-  def initialize(prompter:, renderer:, animator:)
+  def initialize(prompter:, renderer:)
     @prompter = prompter
     @renderer = renderer
-    @animator = animator
   end
 
   # @rbs return: Set[Symbol]
@@ -27,7 +24,6 @@ class Riffer::Rig::Terminal::Host
   # @rbs secret: bool
   # @rbs return: String?
   def ask(question = nil, options: nil, secret: false)
-    @animator.stop
     answer = @prompter.ask(question, options: options, secret: secret)
     return nil if answer.nil?
 
@@ -44,7 +40,6 @@ class Riffer::Rig::Terminal::Host
   # @rbs level: Symbol
   # @rbs return: void
   def notify(message = nil, level: :info)
-    @animator.stop
     @renderer.notify(message.to_s, level)
   end
 
@@ -53,10 +48,7 @@ class Riffer::Rig::Terminal::Host
   # @rbs return: void
   def progress(label = nil, &block)
     @renderer.notice(label) if label
-    @animator.start
     block&.call
-  ensure
-    @animator.stop
   end
 
   private

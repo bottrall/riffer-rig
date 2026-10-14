@@ -5,17 +5,7 @@ require 'test_helper'
 describe Riffer::Rig::Terminal::Console do
   def setup
     @log = []
-    @console = Riffer::Rig::Terminal::Console.new(
-      output: sized_output,
-      frame: recording_frame(@log),
-      pipeline: recording_pipeline(@log)
-    )
-  end
-
-  def sized_output
-    Class.new do
-      def winsize = [24, 80]
-    end.new
+    @console = Riffer::Rig::Terminal::Console.new(frame: recording_frame(@log), pipeline: recording_pipeline(@log))
   end
 
   def recording_frame(log)
@@ -54,47 +44,19 @@ describe Riffer::Rig::Terminal::Console do
 
       assert_equal %i[pipeline_stop frame_stop], @log
     end
-
-    it 'appends an unfinished line before it erases the footer' do
-      @console.print('usage')
-
-      @console.stop
-
-      assert_equal ['usage', :frame_stop], @log.last(2)
-    end
   end
 
   describe '#print' do
-    it 'appends a finished line above the footer' do
-      @console.print("one\n")
+    it 'appends the chunks of one write together above the footer' do
+      @console.print('on', "e\n")
 
       assert_equal ["one\n"], @log
     end
 
-    it 'holds an unfinished line back' do
-      @console.print('one')
+    it 'appends nothing for an empty write' do
+      @console.print('')
 
       assert_empty @log
-    end
-
-    it 'finishes a held line with what follows' do
-      @console.print('on')
-
-      @console.print('e', "\n")
-
-      assert_equal ["one\n"], @log
-    end
-
-    it 'appends the finished lines of one write together' do
-      @console.print("one\ntwo\nthree")
-
-      assert_equal ["one\ntwo\n"], @log
-    end
-
-    it 'appends a blank line after a finished one' do
-      @console.print("one\n\n")
-
-      assert_equal ["one\n\n"], @log
     end
   end
 
@@ -120,8 +82,6 @@ describe Riffer::Rig::Terminal::Console do
 
   describe '#flush' do
     it 'appends nothing' do
-      @console.print('one')
-
       @console.flush
 
       assert_empty @log
@@ -131,37 +91,6 @@ describe Riffer::Rig::Terminal::Console do
   describe '#tty?' do
     it 'is false' do
       refute_predicate @console, :tty?
-    end
-  end
-
-  describe '#winsize' do
-    it 'is the size of the output' do
-      assert_equal [24, 80], @console.winsize
-    end
-  end
-
-  describe '#settle' do
-    it 'appends nothing without an unfinished line' do
-      @console.settle
-
-      assert_empty @log
-    end
-
-    it 'appends an unfinished line' do
-      @console.print('usage')
-
-      @console.settle
-
-      assert_equal ['usage'], @log
-    end
-
-    it 'appends an unfinished line only once' do
-      @console.print('usage')
-      @console.settle
-
-      @console.settle
-
-      assert_equal ['usage'], @log
     end
   end
 end

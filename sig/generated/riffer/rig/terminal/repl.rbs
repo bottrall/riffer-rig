@@ -21,7 +21,7 @@ class Riffer::Rig::Terminal::Repl
 
   @interrupt: ^() -> void
 
-  @jobs: Riffer::Rig::Terminal::JobCounter
+  @peek: Riffer::Rig::Terminal::Peek
 
   @prompter: Riffer::Rig::Terminal::FramePrompter
 
@@ -38,20 +38,16 @@ class Riffer::Rig::Terminal::Repl
   # @rbs keys: Thread::Queue[Riffer::Rig::Terminal::Key]
   # @rbs asks: Thread::Queue[Riffer::Rig::Terminal::Key]
   # @rbs prompter: Riffer::Rig::Terminal::FramePrompter
-  # @rbs jobs: Riffer::Rig::Terminal::JobCounter
+  # @rbs peek: Riffer::Rig::Terminal::Peek
   # @rbs interrupt: ^() -> void
   # @rbs return: void
-  def initialize: (console: Riffer::Rig::Terminal::Console, frame: Riffer::Rig::Terminal::Frame, keys: Thread::Queue[Riffer::Rig::Terminal::Key], asks: Thread::Queue[Riffer::Rig::Terminal::Key], prompter: Riffer::Rig::Terminal::FramePrompter, jobs: Riffer::Rig::Terminal::JobCounter, interrupt: ^() -> void) -> void
+  def initialize: (console: Riffer::Rig::Terminal::Console, frame: Riffer::Rig::Terminal::Frame, keys: Thread::Queue[Riffer::Rig::Terminal::Key], asks: Thread::Queue[Riffer::Rig::Terminal::Key], prompter: Riffer::Rig::Terminal::FramePrompter, peek: Riffer::Rig::Terminal::Peek, interrupt: ^() -> void) -> void
 
   # @rbs return: void
   def start: () -> void
 
   # @rbs return: void
   def stop: () -> void
-
-  # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: void
-  def watch: (Riffer::Rig::Runtime runtime) -> void
 
   # @rbs recorded: Array[Riffer::Rig::Terminal::Replay::_Recorded]
   # @rbs theme: Riffer::Rig::Terminal::Theme

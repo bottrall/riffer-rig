@@ -199,6 +199,16 @@ describe Riffer::Rig::Terminal::TurnBuffer do
     end
   end
 
+  describe '#ended?' do
+    it 'is false while the turn is running' do
+      refute_predicate buffer(text('All done.'), finish(:stop)), :ended?
+    end
+
+    it 'is true once the turn has ended' do
+      assert_predicate buffer(text('All done.'), turn_end), :ended?
+    end
+  end
+
   describe '#stats' do
     it 'returns a frozen record' do
       assert_predicate buffer.stats, :frozen?

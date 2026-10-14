@@ -13,29 +13,25 @@ class Riffer::Rig::Terminal
 
   SLASH_COMMAND: Regexp
 
-  SKILL_COMMAND_PREFIX: ::String
-
   EXIT_HINT: ::String
 
   FAREWELL: ::String
 
-  @input: IO
+  @repl: Riffer::Rig::Terminal::Repl?
 
-  @host: Riffer::Rig::Hosts::_Host
-
-  @renderer: Riffer::Rig::Terminal::Renderer
-
-  @animator: Riffer::Rig::Terminal::Animator
-
-  @theme: Riffer::Rig::Terminal::Theme
-
-  @version: String
-
-  @sessions: Riffer::Rig::Terminal::_Sessions
+  @turns: Riffer::Rig::Terminal::_TurnDisplay
 
   @picker: Riffer::Rig::Terminal::Picker
 
-  @repl: Riffer::Rig::Terminal::Repl?
+  @sessions: Riffer::Rig::Terminal::_Sessions
+
+  @opening: Riffer::Rig::Terminal::Opening
+
+  @renderer: Riffer::Rig::Terminal::Renderer
+
+  @host: Riffer::Rig::Hosts::_Host
+
+  @input: IO
 
   # @rbs input: IO
   # @rbs output: IO
@@ -47,25 +43,24 @@ class Riffer::Rig::Terminal
   def self.for: (input: IO, output: IO, version: String, sessions: Riffer::Rig::Terminal::_Sessions, ?no_color: bool, ?ticker: bool) -> Riffer::Rig::Terminal
 
   # @rbs input: IO
-  # @rbs io: Riffer::Rig::Terminal::_Output
-  # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs version: String
+  # @rbs renderer: Riffer::Rig::Terminal::Renderer
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs opening: Riffer::Rig::Terminal::Opening
+  # @rbs turns: Riffer::Rig::Terminal::_TurnDisplay
   # @rbs repl: Riffer::Rig::Terminal::Repl?
   # @rbs return: Riffer::Rig::Terminal
-  def self.assemble: (input: IO, io: Riffer::Rig::Terminal::_Output, theme: Riffer::Rig::Terminal::Theme, version: String, sessions: Riffer::Rig::Terminal::_Sessions, ?repl: Riffer::Rig::Terminal::Repl?) -> Riffer::Rig::Terminal
+  def self.assemble: (input: IO, renderer: Riffer::Rig::Terminal::Renderer, sessions: Riffer::Rig::Terminal::_Sessions, opening: Riffer::Rig::Terminal::Opening, turns: Riffer::Rig::Terminal::_TurnDisplay, ?repl: Riffer::Rig::Terminal::Repl?) -> Riffer::Rig::Terminal
 
   # @rbs input: IO
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
-  # @rbs animator: Riffer::Rig::Terminal::Animator
-  # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs version: String
+  # @rbs opening: Riffer::Rig::Terminal::Opening
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs picker: Riffer::Rig::Terminal::Picker
+  # @rbs turns: Riffer::Rig::Terminal::_TurnDisplay
   # @rbs repl: Riffer::Rig::Terminal::Repl?
   # @rbs return: void
-  def initialize: (input: IO, host: Riffer::Rig::Hosts::_Host, renderer: Riffer::Rig::Terminal::Renderer, animator: Riffer::Rig::Terminal::Animator, theme: Riffer::Rig::Terminal::Theme, version: String, sessions: Riffer::Rig::Terminal::_Sessions, picker: Riffer::Rig::Terminal::Picker, ?repl: Riffer::Rig::Terminal::Repl?) -> void
+  def initialize: (input: IO, host: Riffer::Rig::Hosts::_Host, renderer: Riffer::Rig::Terminal::Renderer, opening: Riffer::Rig::Terminal::Opening, sessions: Riffer::Rig::Terminal::_Sessions, picker: Riffer::Rig::Terminal::Picker, turns: Riffer::Rig::Terminal::_TurnDisplay, ?repl: Riffer::Rig::Terminal::Repl?) -> void
 
   # @rbs open_picker: bool
   # @rbs return: Integer
@@ -80,10 +75,6 @@ class Riffer::Rig::Terminal
   # @rbs &build: () -> Riffer::Rig::Runtime?
   # @rbs return: Riffer::Rig::Runtime?
   def build: () { () -> Riffer::Rig::Runtime? } -> Riffer::Rig::Runtime?
-
-  # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: void
-  def reveal_banner: (Riffer::Rig::Runtime runtime) -> void
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void
@@ -128,10 +119,6 @@ class Riffer::Rig::Terminal
   def swap: (Riffer::Rig::Runtime previous, Riffer::Rig::Runtime next_runtime) -> Riffer::Rig::Runtime
 
   # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: void
-  def present: (Riffer::Rig::Runtime runtime) -> void
-
-  # @rbs runtime: Riffer::Rig::Runtime
   # @rbs &block: (^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void) -> void
   # @rbs return: void
   def turn: (Riffer::Rig::Runtime runtime) { (^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void) -> void } -> void
@@ -140,12 +127,4 @@ class Riffer::Rig::Terminal
   # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
   # @rbs return: void
   def render: (Riffer::Rig::Runtime runtime, ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
-
-  # @rbs message: Riffer::Messages::Base
-  # @rbs return: void
-  def render_tool_result: (Riffer::Messages::Base message) -> void
-
-  # @rbs mode: Symbol
-  # @rbs return: void
-  def start_animator: (?Symbol mode) -> void
 end

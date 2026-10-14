@@ -13,8 +13,6 @@ class Riffer::Rig::Terminal
 
   SLASH_COMMAND = %r{\A/(\S+)\s*(.*)\z}m #: Regexp
 
-  SKILL_COMMAND_PREFIX = 'skill:'
-
   EXIT_HINT = 'Press Ctrl-C again to exit.'
 
   FAREWELL = 'see you on the next riff.'
@@ -22,11 +20,10 @@ class Riffer::Rig::Terminal
   # @rbs @input: IO
   # @rbs @host: Riffer::Rig::Hosts::_Host
   # @rbs @renderer: Riffer::Rig::Terminal::Renderer
-  # @rbs @animator: Riffer::Rig::Terminal::Animator
-  # @rbs @theme: Riffer::Rig::Terminal::Theme
-  # @rbs @version: String
+  # @rbs @opening: Riffer::Rig::Terminal::Opening
   # @rbs @sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs @picker: Riffer::Rig::Terminal::Picker
+  # @rbs @turns: Riffer::Rig::Terminal::_TurnDisplay
   # @rbs @repl: Riffer::Rig::Terminal::Repl?
 
   # @rbs input: IO
@@ -38,71 +35,78 @@ class Riffer::Rig::Terminal
   # @rbs return: Riffer::Rig::Terminal
   def self.for(input:, output:, version:, sessions:, no_color: false, ticker: false)
     theme = Theme.for(output, no_color: no_color)
+    clock = -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
     frame = Frame.new(io: output, theme: theme) if ticker && input.tty?
-    return assemble(input:, io: output, theme:, version:, sessions:) unless frame&.measure
+    unless frame&.measure
+      opening = Opening.new(io: output, theme:, version:, sessions:)
+      turns = QuietDisplay.new(io: output, theme: theme, clock: clock)
+      return assemble(input:, renderer: Renderer.new(io: output, theme: theme), sessions:, opening:, turns:)
+    end
 
     pipeline = KeyPipeline.new(input: input, output: output)
-    console = Console.new(output: output, frame: frame, pipeline: pipeline)
+    console = Console.new(frame: frame, pipeline: pipeline)
     asks = Queue.new #: Thread::Queue[Riffer::Rig::Terminal::Key]
+    peek = Peek.new(frame: frame)
     repl = Repl.new(
       console: console,
       frame: frame,
       keys: pipeline.keys,
       asks: asks,
       prompter: FramePrompter.new(frame: frame, keys: asks, theme: theme),
-      jobs: JobCounter.new(footer: frame),
+      peek: peek,
       interrupt: -> { Process.kill('INT', Process.pid) }
     )
-    assemble(input:, io: console, theme:, version:, sessions:, repl:)
-  end
-
-  # @rbs input: IO
-  # @rbs io: Riffer::Rig::Terminal::_Output
-  # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs version: String
-  # @rbs sessions: Riffer::Rig::Terminal::_Sessions
-  # @rbs repl: Riffer::Rig::Terminal::Repl?
-  # @rbs return: Riffer::Rig::Terminal
-  def self.assemble(input:, io:, theme:, version:, sessions:, repl: nil)
-    smoother = Smoother.new(io: io, theme: theme)
-    renderer = Renderer.new(io: io, theme: theme, smoother: smoother, cursor: Cursor.new(io: io, theme: theme))
-    animator = Animator.new(io: io, theme: theme)
-    prompter = repl || BlockingPrompter.new(input: input, renderer: renderer)
-    host = Riffer::Rig::Terminal::Host.new(prompter: prompter, renderer: renderer, animator: animator)
-    picker = Picker.new(prompter: prompter, renderer: renderer, host: host, sessions: sessions)
-    new(
-      input: input,
-      host: host,
-      renderer: renderer,
-      animator: animator,
+    opening = Opening.new(
+      io: console,
       theme: theme,
       version: version,
       sessions: sessions,
-      picker: picker,
+      jobs: JobCounter.new(footer: frame),
       repl: repl
     )
+    turns = TickerDisplay.new(
+      frame: frame,
+      theme: theme,
+      peek: peek,
+      pricing: Riffer.config.pricing,
+      random: Random.new,
+      clock: clock
+    )
+    assemble(input:, renderer: Renderer.new(io: console, theme: theme), sessions:, opening:, turns:, repl:)
+  end
+
+  # @rbs input: IO
+  # @rbs renderer: Riffer::Rig::Terminal::Renderer
+  # @rbs sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs opening: Riffer::Rig::Terminal::Opening
+  # @rbs turns: Riffer::Rig::Terminal::_TurnDisplay
+  # @rbs repl: Riffer::Rig::Terminal::Repl?
+  # @rbs return: Riffer::Rig::Terminal
+  def self.assemble(input:, renderer:, sessions:, opening:, turns:, repl: nil)
+    prompter = repl || BlockingPrompter.new(input: input, renderer: renderer)
+    host = Riffer::Rig::Terminal::Host.new(prompter: prompter, renderer: renderer)
+    picker = Picker.new(prompter: prompter, renderer: renderer, host: host, sessions: sessions)
+    new(input:, host:, renderer:, opening:, sessions:, picker:, turns:, repl:)
   end
   private_class_method :assemble
 
   # @rbs input: IO
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
-  # @rbs animator: Riffer::Rig::Terminal::Animator
-  # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs version: String
+  # @rbs opening: Riffer::Rig::Terminal::Opening
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs picker: Riffer::Rig::Terminal::Picker
+  # @rbs turns: Riffer::Rig::Terminal::_TurnDisplay
   # @rbs repl: Riffer::Rig::Terminal::Repl?
   # @rbs return: void
-  def initialize(input:, host:, renderer:, animator:, theme:, version:, sessions:, picker:, repl: nil)
+  def initialize(input:, host:, renderer:, opening:, sessions:, picker:, turns:, repl: nil)
     @input = input
     @host = host
     @renderer = renderer
-    @animator = animator
-    @theme = theme
-    @version = version
+    @opening = opening
     @sessions = sessions
     @picker = picker
+    @turns = turns
     @repl = repl
   end
 
@@ -114,7 +118,7 @@ class Riffer::Rig::Terminal
     return 1 unless runtime
 
     begin
-      present(runtime)
+      @opening.call(runtime)
       queued = @repl
       queued ? drain(queued, runtime) : repl(runtime)
       @renderer.notice(FAREWELL)
@@ -151,21 +155,6 @@ class Riffer::Rig::Terminal
   rescue Interrupt
     @renderer.newline
     nil
-  end
-
-  # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: void
-  def reveal_banner(runtime)
-    skills = runtime.commands.count { |command| command.name.start_with?(SKILL_COMMAND_PREFIX) }
-    lines = Banner.lines(
-      @theme,
-      model: runtime.model,
-      cwd: runtime.cwd,
-      skills: skills.zero? ? 'none' : skills.to_s,
-      version: @version,
-      tally: runtime.tally
-    )
-    @animator.reveal([lines])
   end
 
   # @rbs runtime: Riffer::Rig::Runtime
@@ -278,17 +267,8 @@ class Riffer::Rig::Terminal
   # @rbs return: Riffer::Rig::Runtime
   def swap(previous, next_runtime)
     previous.close
-    present(next_runtime)
+    @opening.call(next_runtime)
     next_runtime
-  end
-
-  # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: void
-  def present(runtime)
-    runtime.on_message { |message| render_tool_result(message) }
-    @repl&.watch(runtime)
-    reveal_banner(runtime)
-    @repl&.replay(@sessions.recorded(runtime.id), theme: @theme)
   end
 
   # @rbs runtime: Riffer::Rig::Runtime
@@ -297,18 +277,15 @@ class Riffer::Rig::Terminal
   def turn(runtime, &)
     # Runtime#cancel takes a Mutex, which Ruby refuses inside a trap handler,
     # so the handler hands the cancel to a thread.
-    previous = Signal.trap('INT') { Thread.new { runtime.cancel } }
+    previous = Signal.trap('INT') { Thread.new { @turns.cancel(runtime) } }
     begin
-      @renderer.begin_turn
-      start_animator
+      @turns.start(runtime)
       yield(->(event) { render(runtime, event) })
     rescue StandardError => e
-      @animator.stop
       @renderer.error("Error: #{e.message}")
     ensure
       Signal.trap('INT', previous)
-      @animator.stop
-      @renderer.end_turn
+      @turns.finish(runtime)
     end
   end
 
@@ -317,45 +294,15 @@ class Riffer::Rig::Terminal
   # @rbs return: void
   def render(runtime, event)
     case event
-    when Riffer::StreamEvents::ReasoningDelta
-      start_animator(:reasoning)
-    when Riffer::StreamEvents::ReasoningDone, Riffer::StreamEvents::TokenUsageDone
-      # Tool execution and the next model call emit no events, so the spinner
-      # comes straight back on to cover the silent stretch.
-      start_animator
-    when Riffer::StreamEvents::TextDelta, Riffer::StreamEvents::ToolCallDone, Riffer::StreamEvents::Interrupt
-      @animator.stop
-      @renderer.render(event)
-    when Riffer::StreamEvents::SkillActivation, Riffer::Rig::Events::SkillActivated
-      @animator.stop
-      @renderer.skill(event.name)
-      start_animator
     when Riffer::Rig::Events::CommandOutput
-      @animator.stop
       @renderer.notice(event.text)
     when Riffer::Rig::Events::TurnEnd
-      @animator.stop
-      @renderer.usage(event.usage, runtime.tally)
+      @turns.absorb(event)
+      @turns.finish(runtime)
+      # A command can prompt more than once, and each turn is shown as its own.
+      @turns.start(runtime)
+    else
+      @turns.absorb(event)
     end
-  end
-
-  # @rbs message: Riffer::Messages::Base
-  # @rbs return: void
-  def render_tool_result(message)
-    return unless message.is_a?(Riffer::Messages::Tool)
-
-    @animator.stop
-    @renderer.render_tool_result(message)
-    start_animator
-  end
-
-  # @rbs mode: Symbol
-  # @rbs return: void
-  def start_animator(mode = :neutral)
-    # The smoother's backlog may still be trickling out from streamed prose,
-    # and spinner frames drawn mid-drain would carve `\r…\e[K` through a
-    # half-printed sentence.
-    @renderer.drain
-    @animator.start(mode)
   end
 end

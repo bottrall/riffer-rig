@@ -1,19 +1,14 @@
 # Generated from lib/riffer/rig/terminal/console.rb with RBS::Inline
 
 class Riffer::Rig::Terminal::Console
-  @output: IO
-
   @frame: Riffer::Rig::Terminal::Frame
 
   @pipeline: Riffer::Rig::Terminal::KeyPipeline
 
-  @partial: String
-
-  # @rbs output: IO
   # @rbs frame: Riffer::Rig::Terminal::Frame
   # @rbs pipeline: Riffer::Rig::Terminal::KeyPipeline
   # @rbs return: void
-  def initialize: (output: IO, frame: Riffer::Rig::Terminal::Frame, pipeline: Riffer::Rig::Terminal::KeyPipeline) -> void
+  def initialize: (frame: Riffer::Rig::Terminal::Frame, pipeline: Riffer::Rig::Terminal::KeyPipeline) -> void
 
   # @rbs return: void
   def start: () -> void
@@ -34,10 +29,4 @@ class Riffer::Rig::Terminal::Console
 
   # @rbs return: bool
   def tty?: () -> bool
-
-  # @rbs return: [Integer, Integer]
-  def winsize: () -> [ Integer, Integer ]
-
-  # @rbs return: void
-  def settle: () -> void
 end

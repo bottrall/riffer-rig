@@ -47,6 +47,13 @@ class Riffer::Rig::Terminal::Frame
 
   @previous_resize: Signal::trap_command
 
+  # winsize raises on ttys with no queryable window size and some pty
+  # wrappers report zero columns; output that cannot be fitted to the width
+  # would wrap mid-line (and strand a footer's cursor), so neither gets one.
+  # @rbs io: IO
+  # @rbs return: [Integer, Integer]?
+  def self.measure: (IO io) -> [ Integer, Integer ]?
+
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
@@ -86,9 +93,6 @@ class Riffer::Rig::Terminal::Frame
   # @rbs return: void
   def stop: () -> void
 
-  # winsize raises on ttys with no queryable window size and some pty
-  # wrappers report zero columns; a footer that cannot be fitted to the
-  # width would wrap and strand the cursor, so neither gets one.
   # @rbs return: [Integer, Integer]?
   def measure: () -> [ Integer, Integer ]?
 

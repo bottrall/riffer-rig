@@ -70,7 +70,7 @@ The exit code says how the turn ended: `0` finished, `1` runtime error, `2` usag
 
 ### In the session
 
-Type a prompt and press Enter; the reply streams in, with each tool call and the first line of its result, and every turn ends with a token line (`↑in · ↓out · session N tok`, plus the session cost when the model is [priced](docs/CONFIGURATION.md#models)).
+Type a prompt and press Enter; the reply is printed when the turn ends, followed by a stat line (`N steps · mm:ss · ↑in · ↓out · session N tok`, plus the turn's cost and the session's when the model is [priced](docs/CONFIGURATION.md#models)).
 
 - Ctrl-C during a turn cancels it and returns to the prompt. Ctrl-C at the prompt asks for a second one, which exits.
 - `/exit` or `/quit` ends the session, as does Ctrl-D.

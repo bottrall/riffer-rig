@@ -49,24 +49,6 @@ class PreparedSessions
   end
 end
 
-class RecordingAnimator
-  attr_reader :calls
-
-  def initialize
-    @calls = []
-  end
-
-  def reveal(_frames) = nil
-
-  def start(mode = :neutral)
-    @calls << mode
-  end
-
-  def stop
-    @calls << :stop
-  end
-end
-
 describe Riffer::Rig::Terminal do
   before do
     @home = Dir.mktmpdir
@@ -141,31 +123,6 @@ describe Riffer::Rig::Terminal do
       release.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
       super(*args, **options, &block)
     end
-  end
-
-  def run_with_animator(input, animator, &)
-    output = StringIO.new
-    input = StringIO.new(input)
-    sessions = PreparedSessions.new(cli_sessions, &)
-    theme = Riffer::Rig::Terminal::Theme.for(output, no_color: true)
-    renderer = Riffer::Rig::Terminal::Renderer.new(
-      io: output,
-      theme: theme,
-      smoother: Riffer::Rig::Terminal::Smoother.new(io: output, theme: theme),
-      cursor: Riffer::Rig::Terminal::Cursor.new(io: output, theme: theme)
-    )
-    prompter = Riffer::Rig::Terminal::BlockingPrompter.new(input: input, renderer: renderer)
-    host = Riffer::Rig::Terminal::Host.new(prompter: prompter, renderer: renderer, animator: animator)
-    Riffer::Rig::Terminal.new(
-      input: input,
-      host: host,
-      renderer: renderer,
-      animator: animator,
-      theme: theme,
-      version: '9.9.9',
-      sessions: sessions,
-      picker: Riffer::Rig::Terminal::Picker.new(prompter: prompter, renderer: renderer, host: host, sessions: sessions)
-    ).run
   end
 
   def run_with_extension(input, source, &)
@@ -382,16 +339,6 @@ describe Riffer::Rig::Terminal do
 
   it 'shows the model in the banner' do
     assert_includes run_terminal(''), 'mock/test'
-  end
-
-  it 'counts the skills in the banner' do
-    write_skill('tidy')
-
-    assert_match(/skills\s+1/, run_terminal(''))
-  end
-
-  it 'shows none in the banner without skills' do
-    assert_match(/skills\s+none/, run_terminal(''))
   end
 
   it 'shows the session total in the banner of a resumed session' do
@@ -685,12 +632,12 @@ describe Riffer::Rig::Terminal do
         pty.type("hello\r")
         started.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
         pty.type("\u0003")
-        pty.await('[interrupted: cancelled]')
+        pty.await("  interrupted\r\n")
         pty.type("/exit\r")
       end
       output = run_on_pty(script) { |runtime| hold_turns(runtime, started, Queue.new) }
 
-      assert_includes output, '[interrupted: cancelled]'
+      assert_includes output, "  interrupted\r\n"
     end
 
     it 'keeps draining the queue after a cancelled turn' do
@@ -703,7 +650,7 @@ describe Riffer::Rig::Terminal do
         pty.type("again\r/exit\r")
         pty.await('2 queued')
         pty.type("\u0003")
-        pty.await('[interrupted: cancelled]')
+        pty.await("  interrupted\r\n")
         release << true
       end
       run_on_pty(script) do |driven|
@@ -712,6 +659,52 @@ describe Riffer::Rig::Terminal do
       end
 
       assert_includes runtime.agent.provider.calls.last[:messages].last[:content], 'again'
+    end
+
+    it 'draws the ticker on the status line while a turn runs' do
+      started = Queue.new
+      release = Queue.new
+      script = lambda do |pty|
+        pty.type("hello\r")
+        started.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
+        pty.await('riffing…')
+        release << true
+        pty.type("/exit\r")
+      end
+      output = run_on_pty(script) { |runtime| hold_turns(runtime, started, release) }
+
+      assert_includes output, 'riffing…'
+    end
+
+    it 'peeks at the running turn on Ctrl-T' do
+      stalled = Queue.new
+      release = Queue.new
+      script = lambda do |pty|
+        pty.type("hello\r")
+        stalled.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
+        pty.type("\u0014")
+        pty.await('  Half a sen')
+        release << true
+        pty.type("/exit\r")
+      end
+      output = run_on_pty(script) do |runtime|
+        runtime.agent.provider.define_singleton_method(:execute_stream) do |_params, yielder|
+          yielder << Riffer::StreamEvents::TextDelta.new('Half a sen')
+          stalled << true
+          # Stands in for the provider's HTTP read.
+          release.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
+        end
+      end
+
+      assert_includes output, "  Half a sen\r\n› "
+    end
+
+    it 'prints the answer and the stat footer above the footer when the turn ends' do
+      output = run_on_pty(->(pty) { pty.type("hello\r/exit\r") }) do |runtime|
+        runtime.agent.provider.stub_response('Hi from the model')
+      end
+
+      assert_match(/\r\n  Hi from the model\.\r\n\r\n  1 step · \d\d:\d\d\r\n› /, output)
     end
 
     it 'answers a question asked during a turn from the keys' do
@@ -732,7 +725,7 @@ describe Riffer::Rig::Terminal do
     write_skill('tidy')
     output = run_terminal("/skill:tidy\n") { |runtime| runtime.agent.provider.stub_response('Tidied.') }
 
-    assert_includes output, '✦ skill: tidy'
+    assert_includes output, '  Tidied.'
   end
 
   it 'runs an extension command through run_command' do
@@ -853,7 +846,7 @@ describe Riffer::Rig::Terminal do
   it 'cancels the turn on Ctrl-C' do
     output = run_with_interrupter("hello\n")
 
-    assert_includes output, '[interrupted: cancelled]'
+    assert_includes output, "\n  interrupted\n"
   end
 
   it 'keeps the session after a cancelled turn' do
@@ -872,81 +865,26 @@ describe Riffer::Rig::Terminal do
     assert_equal before, after
   end
 
-  it 'switches the animator to reasoning while the model reasons' do
-    animator = RecordingAnimator.new
-    run_with_animator("hello\n", animator) do |runtime|
-      runtime.agent.provider.stub_response('Hi', reasoning: [{ type: :text, text: 'thinking' }])
-    end
-
-    assert_includes animator.calls, :reasoning
-  end
-
-  it 'returns the animator to neutral when the reasoning is done' do
-    animator = RecordingAnimator.new
-    run_with_animator("hello\n", animator) do |runtime|
-      runtime.agent.provider.stub_response('Hi', reasoning: [{ type: :text, text: 'thinking' }])
-    end
-
-    assert_includes animator.calls.each_cons(2), %i[reasoning neutral]
-  end
-
-  it 'renders streamed text' do
-    output = run_terminal("hello\n") { |runtime| runtime.agent.provider.stub_response('Hi from the model') }
-
-    assert_includes output, 'Hi from the model'
-  end
-
-  it 'renders a tool call' do
+  it 'prints only the answer and the stat footer of a turn' do
     output = run_terminal("read it\n") do |runtime|
       runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'missing.txt' } }])
       runtime.agent.provider.stub_response('Done.')
     end
 
-    assert_includes output, '⚙ read(path: "missing.txt")'
+    assert_match(/› \n  Done\. ?\n\n  2 steps · \d\d:\d\d\n\n› /, output)
   end
 
-  it 'renders nothing for the before_tool_call and after_tool_call events' do
-    output = run_terminal("read it\n") do |runtime|
-      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'missing.txt' } }])
-      runtime.agent.provider.stub_response('Done.')
+  it 'prints each turn of a command that prompts twice' do
+    source = <<~RUBY
+      Riffer::Rig.extension('pair') do |rig|
+        rig.command('pair', description: 'Prompts twice') { |ctx| 2.times { ctx.prompt('go') } }
+      end
+    RUBY
+    output = run_with_extension("/pair\n", source) do |runtime|
+      runtime.agent.provider.stub_response('First.')
+      runtime.agent.provider.stub_response('Second.')
     end
 
-    refute_match(/(before|after)_tool_call|Events::/, output)
-  end
-
-  it 'renders the cost line from turn_end' do
-    output = run_terminal("hello\n") do |runtime|
-      usage = Riffer::Providers::TokenUsage.new(input_tokens: 10, output_tokens: 5)
-      runtime.agent.provider.stub_response('Hi', token_usage: usage)
-    end
-
-    assert_includes output, '↑10 · ↓5 · session 15 tok'
-  end
-
-  it 'leaves the animator alone for a message that is not a tool result' do
-    animator = RecordingAnimator.new
-    run_with_animator("hello\n", animator) { |runtime| runtime.agent.provider.stub_response('Hi') }
-
-    assert_equal [:neutral], animator.calls - [:stop]
-  end
-
-  it 'renders a tool result once' do
-    File.write(File.join(@cwd, 'note.txt'), 'the note')
-    output = run_terminal("read it\n") do |runtime|
-      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'note.txt' } }])
-      runtime.agent.provider.stub_response('Done.')
-    end
-
-    assert_equal 1, output.scan('↳ ').size
-  end
-
-  it 'renders a tool result under its call' do
-    File.write(File.join(@cwd, 'note.txt'), 'the note')
-    output = run_terminal("read it\n") do |runtime|
-      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: { path: 'note.txt' } }])
-      runtime.agent.provider.stub_response('Done.')
-    end
-
-    assert_includes output, '↳ '
+    assert_equal %w[First. Second.], output.scan(/First\.|Second\./)
   end
 end

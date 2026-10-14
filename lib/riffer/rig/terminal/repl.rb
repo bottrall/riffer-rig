@@ -6,7 +6,7 @@ class Riffer::Rig::Terminal::Repl
   # @rbs @keys: Thread::Queue[Riffer::Rig::Terminal::Key]
   # @rbs @asks: Thread::Queue[Riffer::Rig::Terminal::Key]
   # @rbs @prompter: Riffer::Rig::Terminal::FramePrompter
-  # @rbs @jobs: Riffer::Rig::Terminal::JobCounter
+  # @rbs @peek: Riffer::Rig::Terminal::Peek
   # @rbs @interrupt: ^() -> void
   # @rbs @reader: Thread?
   # @rbs @editor: Riffer::Rig::Terminal::LineEditor
@@ -23,16 +23,16 @@ class Riffer::Rig::Terminal::Repl
   # @rbs keys: Thread::Queue[Riffer::Rig::Terminal::Key]
   # @rbs asks: Thread::Queue[Riffer::Rig::Terminal::Key]
   # @rbs prompter: Riffer::Rig::Terminal::FramePrompter
-  # @rbs jobs: Riffer::Rig::Terminal::JobCounter
+  # @rbs peek: Riffer::Rig::Terminal::Peek
   # @rbs interrupt: ^() -> void
   # @rbs return: void
-  def initialize(console:, frame:, keys:, asks:, prompter:, jobs:, interrupt:)
+  def initialize(console:, frame:, keys:, asks:, prompter:, peek:, interrupt:)
     @console = console
     @frame = frame
     @keys = keys
     @asks = asks
     @prompter = prompter
-    @jobs = jobs
+    @peek = peek
     @interrupt = interrupt
     @reader = nil
     @editor = Riffer::Rig::Terminal::LineEditor.new
@@ -60,12 +60,6 @@ class Riffer::Rig::Terminal::Repl
     @console.stop
   end
 
-  # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: void
-  def watch(runtime)
-    @jobs.watch(runtime)
-  end
-
   # @rbs recorded: Array[Riffer::Rig::Terminal::Replay::_Recorded]
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs return: void
@@ -83,9 +77,6 @@ class Riffer::Rig::Terminal::Repl
       @asking = true
       @frame.input(Riffer::Rig::Terminal::LineEditor.new)
     end
-    # The prompter appends straight to the frame, which would put the
-    # question above a line the console still holds.
-    @console.settle
     @prompter.ask(question, options: options, secret: secret)
   ensure
     @mutex.synchronize do
@@ -101,7 +92,6 @@ class Riffer::Rig::Terminal::Repl
   def run
     while (message = take)
       yield message.text
-      @console.settle
     end
   end
 
@@ -141,6 +131,7 @@ class Riffer::Rig::Terminal::Repl
         # running turn, or as the Interrupt of a prompt.
         @interrupt.call
       else
+        @peek.press(key)
         @mutex.synchronize { @asking ? @asks << key : press(key) }
       end
     end
