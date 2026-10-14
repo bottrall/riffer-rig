@@ -70,7 +70,7 @@ A listed header carries the session's update time as `updated`, stamped by the s
 
 On the command line, `riffer -c` continues the most recent session in the directory and `riffer -r <id>` resumes by id. With no match the REPL tells you and starts fresh. Bare `riffer -r` opens the [picker](#the-picker) before the first session starts; picking a session resumes it, leaving the picker starts a fresh one.
 
-Resuming folds the session's entries back into a snapshot and builds a Runtime over it: the last `model` entry wins, skill activations accumulate, and the `message` entries are the history. Everything else is today's — the settings, credentials, extensions and tools of the new build, and its model selection, unless the session recorded a `/model` switch, which is restored when its provider still has credentials ([Restoring](#restoring) has the rules, including the healed tail of a file cut mid-turn). A resumed session keeps its id and appends to the same file.
+Resuming folds the session's entries back into a snapshot and builds a Runtime over it: the last `model` entry wins, skill activations accumulate, and the `message` entries are the history. Everything else is today's — the settings, credentials, extensions and tools of the new build, and its model selection, unless the session recorded a `/model` switch, which is restored when its provider still has credentials ([Restoring](#restoring) has the rules, including the healed tail of a file cut mid-turn). A resumed session keeps its id and appends to the same file, and the terminal replays its earlier turns above the input ([Terminal](TERMINAL.md#resuming)).
 
 ## The picker
 

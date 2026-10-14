@@ -17,6 +17,9 @@ groups:
   - label: Using the terminal
     tone: rose
     pages:
+      - source: TERMINAL.md
+        slug: terminal
+        description: The input line and its keys, queueing, the status line, peek, resume replay
       - source: CONFIGURATION.md
         slug: configuration
         description: Settings scopes and every core key
