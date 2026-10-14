@@ -30,13 +30,12 @@ class Riffer::Rig::Terminal
   # @rbs output: IO
   # @rbs version: String
   # @rbs no_color: bool
-  # @rbs ticker: bool
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs return: Riffer::Rig::Terminal
-  def self.for(input:, output:, version:, sessions:, no_color: false, ticker: false)
+  def self.for(input:, output:, version:, sessions:, no_color: false)
     theme = Theme.for(output, no_color: no_color)
     clock = -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
-    frame = Frame.new(io: output, theme: theme) if ticker && input.tty?
+    frame = Frame.new(io: output, theme: theme) if input.tty?
     unless frame&.measure
       opening = Opening.new(io: output, theme:, version:, sessions:)
       turns = QuietDisplay.new(io: output, theme: theme, clock: clock)

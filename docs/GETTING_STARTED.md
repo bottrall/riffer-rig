@@ -41,11 +41,12 @@ A pasted key is saved to `~/.riffer/auth.json` (permissions `600`) and reused fr
 
 The banner shows the model, the working directory, how many skills were found and the version. It is drawn again when the session changes — `/new`, `/resume` — and for a session that has already used tokens it adds a `session` row with the total so far, and its cost once the model is priced. Type a prompt and press Enter:
 
-- nothing is printed while the turn runs; when it ends, the reply is printed in one piece;
-- under it comes a stat line: the turn's steps, time and tokens, then the session's running total, each with its cost once the model is priced ([Configuration](CONFIGURATION.md#models));
-- Ctrl-C cancels a running turn, which prints what the reply had reached and `interrupted`; at the prompt, a second Ctrl-C exits, as do `/exit`, `/quit` and Ctrl-D.
+- while the turn runs, the status line under the input shows its time, steps, tool calls, tokens and cost, and Ctrl-T peeks at what the model is writing;
+- when it ends, the reply is printed in one piece, and under it a stat line: the turn's steps, time and tokens, then the session's running total, each with its cost once the model is priced ([Configuration](CONFIGURATION.md#models));
+- you can keep typing while a turn runs: Enter queues the message, and it runs when the turn ends;
+- Ctrl-C cancels a running turn, which prints what the reply had reached and `interrupted`; with no turn running, a second Ctrl-C exits, as do `/exit`, `/quit` and Ctrl-D on an empty line.
 
-The [README](https://github.com/bottrall/riffer-rig#usage) lists the flags and slash commands.
+[Terminal](TERMINAL.md) has every key and the slash commands, and the [README](https://github.com/bottrall/riffer-rig#usage) lists the flags.
 
 ## What first run leaves behind
 

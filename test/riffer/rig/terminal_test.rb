@@ -74,20 +74,13 @@ describe Riffer::Rig::Terminal do
     env: { 'MOCK_API_KEY' => 'mock-key' },
     open_picker: false,
     sessions: nil,
-    ticker: false,
     &
   )
     output = StringIO.new
     input = StringIO.new(input) if input.is_a?(String)
     sessions ||= cli_sessions(env: env)
     sessions = PreparedSessions.new(sessions, &) if block_given?
-    terminal = Riffer::Rig::Terminal.for(
-      input: input,
-      output: output,
-      version: '9.9.9',
-      sessions: sessions,
-      ticker: ticker
-    )
+    terminal = Riffer::Rig::Terminal.for(input: input, output: output, version: '9.9.9', sessions: sessions)
     @status = terminal.run(open_picker: open_picker)
     output.string
   end
@@ -95,7 +88,6 @@ describe Riffer::Rig::Terminal do
   def run_on_pty(
     script,
     env: { 'MOCK_API_KEY' => 'mock-key' },
-    ticker: true,
     columns: 80,
     open_picker: false,
     resume: nil,
@@ -109,8 +101,7 @@ describe Riffer::Rig::Terminal do
         output: tty,
         version: '9.9.9',
         sessions: sessions,
-        no_color: true,
-        ticker: ticker
+        no_color: true
       )
       @status = terminal.run(open_picker: open_picker)
     end
@@ -228,7 +219,7 @@ describe Riffer::Rig::Terminal do
 
   def interrupting_input(times)
     remaining = times
-    input = Object.new
+    input = StringIO.new
     input.define_singleton_method(:gets) do
       remaining -= 1
       raise Interrupt unless remaining.negative?
@@ -238,7 +229,7 @@ describe Riffer::Rig::Terminal do
 
   def scripted_input(steps)
     remaining = steps.dup
-    input = Object.new
+    input = StringIO.new
     input.define_singleton_method(:gets) do
       step = remaining.shift
       raise Interrupt if step == :interrupt
@@ -256,21 +247,15 @@ describe Riffer::Rig::Terminal do
     assert_empty referenced - %w[Terminal Runtime Hosts Loader Events Command Turn]
   end
 
-  describe 'the ticker flag' do
-    it 'keeps the blocking loop when the flag is off' do
-      output = run_on_pty(->(pty) { pty.feed("/exit\r") }, ticker: false)
-
-      refute_includes output, Riffer::Rig::Terminal::KeyPipeline::BRACKETED_PASTE_ON
-    end
-
-    it 'keeps the blocking loop when the input is not a terminal' do
+  describe 'choosing the loop' do
+    it 'runs the blocking loop when the input is not a terminal' do
       runtime = nil
-      run_terminal("hello\n", ticker: true) { |driven| runtime = driven }
+      run_terminal("hello\n") { |driven| runtime = driven }
 
       assert_equal 1, runtime.agent.provider.calls.length
     end
 
-    it 'keeps the blocking loop when the terminal reports no width' do
+    it 'runs the blocking loop when the terminal reports no width' do
       output = run_on_pty(->(pty) { pty.feed("/exit\r") }, columns: 0)
 
       refute_includes output, Riffer::Rig::Terminal::KeyPipeline::BRACKETED_PASTE_ON

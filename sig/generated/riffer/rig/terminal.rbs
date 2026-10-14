@@ -37,10 +37,9 @@ class Riffer::Rig::Terminal
   # @rbs output: IO
   # @rbs version: String
   # @rbs no_color: bool
-  # @rbs ticker: bool
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs return: Riffer::Rig::Terminal
-  def self.for: (input: IO, output: IO, version: String, sessions: Riffer::Rig::Terminal::_Sessions, ?no_color: bool, ?ticker: bool) -> Riffer::Rig::Terminal
+  def self.for: (input: IO, output: IO, version: String, sessions: Riffer::Rig::Terminal::_Sessions, ?no_color: bool) -> Riffer::Rig::Terminal
 
   # @rbs input: IO
   # @rbs renderer: Riffer::Rig::Terminal::Renderer

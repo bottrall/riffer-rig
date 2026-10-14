@@ -70,15 +70,11 @@ The exit code says how the turn ended: `0` finished, `1` runtime error, `2` usag
 
 ### In the session
 
-Type a prompt and press Enter; the reply is printed when the turn ends, followed by a stat line (`N steps · mm:ss · ↑in · ↓out · session N tok`, plus the turn's cost and the session's when the model is [priced](docs/CONFIGURATION.md#models)).
+Type a prompt and press Enter. While the turn runs, the status line under the input shows its time, steps, tool calls, tokens and cost, and Ctrl-T peeks at what the model is writing; the reply is printed when the turn ends, followed by a stat line (`N steps · mm:ss · ↑in · ↓out · session N tok`, plus the turn's cost and the session's when the model is [priced](docs/CONFIGURATION.md#models)). The input line stays open throughout: a message sent during a turn is queued and runs when the turn ends. [Terminal](docs/TERMINAL.md) has every key.
 
-- Ctrl-C during a turn cancels it and returns to the prompt. Ctrl-C at the prompt asks for a second one, which exits.
-- `/exit` or `/quit` ends the session, as does Ctrl-D.
-- `/resume [--all]` opens the [session picker](docs/SESSIONS.md#the-picker): type to filter, switch with Enter on a single match or a row number, and delete with Ctrl-D and a confirm. `/new` starts a fresh session in place; the one you left stays on disk. Both replace the session the terminal drives and re-render the banner.
-- `/model provider/name` switches the model ([below](#switching-the-model)), and `/skill:<name> [text]` runs a skill ([Skills](docs/SKILLS.md)).
-- `/cost` shows the session's token usage and cost, then the same for each turn ([Embedding](docs/EMBEDDING.md#token-tally-and-cost)).
-- `/trace` replays the last turn from the saved session: each tool call's dispatch and finish with its time, the assistant's text as preamble or answer, and the silent stretches between ([Sessions](docs/SESSIONS.md#tracing-the-last-turn)).
-- Any other `/name args` runs the Runtime command of that name, such as one an extension registers ([Extensions](docs/EXTENSIONS.md)); an unknown name is reported and nothing is sent to the model.
+- Ctrl-C during a turn cancels it. Ctrl-C with no turn running asks for a second one, which exits.
+- `/exit` or `/quit` ends the session, as does Ctrl-D on an empty line.
+- `/resume [--all]`, `/new`, `/cost`, `/trace`, `/skill:<name>` and the other slash commands are listed in [Terminal](docs/TERMINAL.md#commands); `/model` is covered [below](#switching-the-model).
 
 ### Switching the model
 
@@ -179,6 +175,7 @@ Start here:
 
 Using the terminal:
 
+- [Terminal](https://riffer.bottrall.dev/guides/terminal/) — The input line and its keys, queueing, the status line, peek, resume replay
 - [Configuration](https://riffer.bottrall.dev/guides/configuration/) — Settings scopes and every core key
 - [Instructions](https://riffer.bottrall.dev/guides/instructions/) — How the system message is built; AGENTS.md
 - [Tools](https://riffer.bottrall.dev/guides/tools/) — The bundled toolkit and provider-native tools
