@@ -9,8 +9,6 @@ class RecordingConsole
 
   def stop = @log << :stop
 
-  def settle = @log << :settle
-
   def print(*chunks) = @log << [:print, chunks.join]
 end
 
@@ -68,12 +66,12 @@ class QueuePrompter
   end
 end
 
-class RecordingJobs
-  attr_reader :watched
+class RecordingPeek
+  attr_reader :pressed
 
-  def initialize = @watched = []
+  def initialize = @pressed = Queue.new
 
-  def watch(runtime) = @watched << runtime
+  def press(key) = @pressed << key.name
 end
 
 describe Riffer::Rig::Terminal::Repl do
@@ -83,7 +81,7 @@ describe Riffer::Rig::Terminal::Repl do
     @asks = Queue.new
     @frame = LoggingFrame.new(@log)
     @prompter = QueuePrompter.new(@asks, @log)
-    @jobs = RecordingJobs.new
+    @peek = RecordingPeek.new
     @interrupts = Queue.new
   end
 
@@ -96,7 +94,7 @@ describe Riffer::Rig::Terminal::Repl do
       keys: @keys,
       asks: @asks,
       prompter: @prompter,
-      jobs: @jobs,
+      peek: @peek,
       interrupt: interrupt
     )
   end
@@ -189,14 +187,6 @@ describe Riffer::Rig::Terminal::Repl do
     end
   end
 
-  describe '#watch' do
-    it 'has the job counter watch the Runtime' do
-      repl.watch(:runtime)
-
-      assert_equal [:runtime], @jobs.watched
-    end
-  end
-
   describe '#replay' do
     def recorded
       [
@@ -255,15 +245,6 @@ describe Riffer::Rig::Terminal::Repl do
       finish
 
       assert_equal ['dr', ''], @frame.lines[-3, 2]
-    end
-
-    it 'settles the console before the question' do
-      type("one\r")
-      @keys.close
-
-      session { repl.ask('who?', options: nil, secret: false) }
-
-      assert_includes logged.each_cons(2), [:settle, [:asked, 'who?', nil, false]]
     end
 
     it 'passes the question, options and secrecy to the prompter' do
@@ -378,15 +359,6 @@ describe Riffer::Rig::Terminal::Repl do
 
       assert_equal ['one'], turns
     end
-
-    it 'settles the console after each turn' do
-      type("one\r")
-      @keys.close
-
-      session { |line| @log << [:turn, line] }
-
-      assert_includes logged.each_cons(2), [[:turn, 'one'], :settle]
-    end
   end
 
   describe '#take' do
@@ -450,6 +422,16 @@ describe Riffer::Rig::Terminal::Repl do
       session
 
       assert_empty @frame.lines
+    end
+
+    it 'shows the peek each key it hands on' do
+      press(:ctrl_t)
+      type('a')
+      @keys.close
+
+      session
+
+      assert_equal %i[ctrl_t text], Array.new(@peek.pressed.size) { @peek.pressed.pop }
     end
 
     it 'draws the edited line in the footer' do

@@ -3,26 +3,8 @@
 class Riffer::Rig::Terminal::Animator
   REVEAL_FRAME_SECONDS = 0.05 #: Float
 
-  SPINNER_FRAME_SECONDS = 0.12 #: Float
-
-  NEUTRAL_LABEL = 'riffing…' #: String
-
-  REASONING_PHRASES = [
-    'contemplating…', 'pondering…', 'mulling it over…', 'reasoning…',
-    'connecting the dots…', 'herding thoughts…', 'consulting the muse…',
-    'doing some deep listening…', 'warming up…', 'tuning up…',
-    'in the woodshed…', 'vamping…', 'finding the key…', 'counting it off…',
-    'jamming internally…'
-  ].freeze #: Array[String]
-
-  REASONING_TICK_RANGE = (1..5) #: Range[Integer]
-
   # @rbs @io: Riffer::Rig::Terminal::_Output
   # @rbs @theme: Riffer::Rig::Terminal::Theme
-  # @rbs @thread: Thread?
-  # @rbs @mode: Symbol
-  # @rbs @phrase: String?
-  # @rbs @stop: bool
 
   # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -30,9 +12,6 @@ class Riffer::Rig::Terminal::Animator
   def initialize(io: $stdout, theme: Riffer::Rig::Terminal::Theme.for(io))
     @io = io
     @theme = theme
-    @thread = nil
-    @mode = :neutral
-    @phrase = nil
   end
 
   # @rbs frames: Array[Array[String]]
@@ -52,76 +31,7 @@ class Riffer::Rig::Terminal::Animator
     end
   end
 
-  # @rbs mode: Symbol
-  # @rbs return: void
-  def start(mode = :neutral)
-    return unless enabled?
-
-    if @thread
-      @mode = mode
-      return
-    end
-
-    @mode = mode
-    @stop = false
-    @thread = Thread.new { animate }
-  end
-
-  # @rbs return: void
-  def stop
-    thread = @thread
-    return unless thread
-
-    @stop = true
-    thread.join
-    @thread = nil
-    @io.print("\r\e[K")
-    @io.flush
-  end
-
-  # @rbs tick: Integer
-  # @rbs label: String
-  # @rbs return: String
-  def equalizer(tick, label = NEUTRAL_LABEL)
-    "#{Riffer::Rig::Terminal::Equalizer.bars(@theme, tick)} #{@theme.grey(label)}"
-  end
-
   private
-
-  # @rbs return: void
-  def animate
-    tick = 0
-    roll_at = 0.0
-    until @stop
-      roll_at = roll_phrase(roll_at)
-      @io.print("\r  #{equalizer(tick, label)}\e[K")
-      @io.flush
-      sleep(SPINNER_FRAME_SECONDS)
-      tick += 1
-    end
-  end
-
-  # @rbs roll_at: Float
-  # @rbs return: Float
-  def roll_phrase(roll_at)
-    now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    return roll_at unless @mode == :reasoning && now >= roll_at
-
-    @phrase = REASONING_PHRASES.sample
-    now + roll_rand
-  end
-
-  # @rbs return: Integer
-  def roll_rand
-    x = rand(REASONING_TICK_RANGE)
-    # Range rand returns nil for an empty range; this one is a non-empty constant.
-    x || 0
-  end
-
-  # @rbs return: String
-  def label
-    @mode == :reasoning ? @phrase || NEUTRAL_LABEL : NEUTRAL_LABEL
-  end
 
   # @rbs return: bool
   def enabled?

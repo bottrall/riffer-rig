@@ -1,0 +1,33 @@
+# Generated from lib/riffer/rig/terminal/quiet_display.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::QuietDisplay
+  @io: IO
+
+  @theme: Riffer::Rig::Terminal::Theme
+
+  @clock: ^() -> Float
+
+  @buffer: Riffer::Rig::Terminal::TurnBuffer?
+
+  # @rbs io: IO
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs clock: ^() -> Float
+  # @rbs return: void
+  def initialize: (io: IO, theme: Riffer::Rig::Terminal::Theme, clock: ^() -> Float) -> void
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def start: (Riffer::Rig::Runtime runtime) -> void
+
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: void
+  def absorb: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def cancel: (Riffer::Rig::Runtime runtime) -> void
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def finish: (Riffer::Rig::Runtime runtime) -> void
+end

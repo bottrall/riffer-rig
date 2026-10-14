@@ -22,6 +22,14 @@ class Riffer::Rig::Terminal
     def puts: (?String line) -> void
     def flush: () -> void
     def tty?: () -> bool
-    def winsize: () -> [Integer, Integer]
+  end
+
+  # What shows a turn while it runs and once it has ended: QuietDisplay on the
+  # blocking loop, TickerDisplay over the footer.
+  interface _TurnDisplay
+    def start: (::Riffer::Rig::Runtime runtime) -> void
+    def absorb: (::Riffer::StreamEvents::Base | ::Riffer::Rig::Events::_Event event) -> void
+    def cancel: (::Riffer::Rig::Runtime runtime) -> void
+    def finish: (::Riffer::Rig::Runtime runtime) -> void
   end
 end

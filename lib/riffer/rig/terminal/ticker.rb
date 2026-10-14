@@ -11,6 +11,16 @@ class Riffer::Rig::Terminal::Ticker
 
   SEPARATOR = ' · ' #: String
 
+  NEUTRAL_LABEL = 'riffing…' #: String
+
+  REASONING_PHRASES = [
+    'contemplating…', 'pondering…', 'mulling it over…', 'reasoning…',
+    'connecting the dots…', 'herding thoughts…', 'consulting the muse…',
+    'doing some deep listening…', 'warming up…', 'tuning up…',
+    'in the woodshed…', 'vamping…', 'finding the key…', 'counting it off…',
+    'jamming internally…'
+  ].freeze #: Array[String]
+
   # @rbs @footer: Riffer::Rig::Terminal::Frame
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @buffer: Riffer::Rig::Terminal::TurnBuffer
@@ -46,7 +56,7 @@ class Riffer::Rig::Terminal::Ticker
     @tools = 0
     @unmetered = 0
     @reasoning = false
-    @phrase = Riffer::Rig::Terminal::Animator::NEUTRAL_LABEL
+    @phrase = NEUTRAL_LABEL
     @roll_at = 0
     @skill = ''
     @skill_until = 0
@@ -108,8 +118,7 @@ class Riffer::Rig::Terminal::Ticker
   def roll
     return unless @reasoning && @tick >= @roll_at
 
-    phrases = Riffer::Rig::Terminal::Animator::REASONING_PHRASES
-    @phrase = phrases.fetch(@random.rand(phrases.size))
+    @phrase = REASONING_PHRASES.fetch(@random.rand(REASONING_PHRASES.size))
     @roll_at = @tick + @random.rand(PHRASE_TICKS)
   end
 
@@ -175,6 +184,6 @@ class Riffer::Rig::Terminal::Ticker
   def label
     return @skill if @tick < @skill_until
 
-    @reasoning ? @phrase : Riffer::Rig::Terminal::Animator::NEUTRAL_LABEL
+    @reasoning ? @phrase : NEUTRAL_LABEL
   end
 end

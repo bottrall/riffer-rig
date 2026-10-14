@@ -1,45 +1,14 @@
 # Generated from lib/riffer/rig/terminal/renderer.rb with RBS::Inline
 
 class Riffer::Rig::Terminal::Renderer
-  RESULT_PREVIEW_LIMIT: Integer
-
-  ARGUMENT_PREVIEW_LIMIT: Integer
-
-  PROSE_INDENT: Integer
-
-  TOOL_CALL_INDENT: Integer
-
-  TOOL_RESULT_INDENT: Integer
-
-  @wrapper: Riffer::Rig::Terminal::Wrapper
-
-  @width: Integer?
-
-  @prose_gap_pending: bool
-
-  @cursor: Riffer::Rig::Terminal::Cursor
-
-  @smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
+  @io: Riffer::Rig::Terminal::_Output
 
   @theme: Riffer::Rig::Terminal::Theme
 
-  @io: Riffer::Rig::Terminal::_Output
-
   # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother
-  # @rbs cursor: Riffer::Rig::Terminal::Cursor
-  # @rbs width: Integer?
   # @rbs return: void
-  def initialize: (?io: Riffer::Rig::Terminal::_Output, ?theme: Riffer::Rig::Terminal::Theme, ?smoother: Riffer::Rig::Terminal::Smoother | PassThroughSmoother, ?cursor: Riffer::Rig::Terminal::Cursor, ?width: Integer?) -> void
-
-  # @rbs event: Riffer::StreamEvents::TextDelta | Riffer::StreamEvents::ToolCallDone | Riffer::StreamEvents::Interrupt
-  # @rbs return: void
-  def render: (Riffer::StreamEvents::TextDelta | Riffer::StreamEvents::ToolCallDone | Riffer::StreamEvents::Interrupt event) -> void
-
-  # @rbs name: String
-  # @rbs return: void
-  def skill: (String name) -> void
+  def initialize: (?io: Riffer::Rig::Terminal::_Output, ?theme: Riffer::Rig::Terminal::Theme) -> void
 
   # @rbs text: String
   # @rbs return: void
@@ -53,11 +22,6 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs level: Symbol
   # @rbs return: void
   def notify: (String message, Symbol level) -> void
-
-  # @rbs usage: Riffer::Providers::TokenUsage?
-  # @rbs session: Riffer::Providers::TokenUsage?
-  # @rbs return: void
-  def usage: (Riffer::Providers::TokenUsage? usage, Riffer::Providers::TokenUsage? session) -> void
 
   # @rbs return: void
   def prompt: () -> void
@@ -75,102 +39,9 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs return: void
   def newline: () -> void
 
-  # @rbs return: void
-  def begin_turn: () -> void
-
-  # @rbs return: void
-  def end_turn: () -> void
-
-  # @rbs return: void
-  def drain: () -> void
-
-  # @rbs message: Riffer::Messages::Base
-  # @rbs return: void
-  def render_tool_result: (Riffer::Messages::Base message) -> void
-
-  class PassThroughSmoother
-    @io: Riffer::Rig::Terminal::_Output
-
-    # @rbs io: Riffer::Rig::Terminal::_Output
-    # @rbs return: void
-    def initialize: (Riffer::Rig::Terminal::_Output io) -> void
-
-    # @rbs content: String
-    # @rbs return: self
-    def <<: (String content) -> self
-
-    # @rbs return: nil
-    def start: () -> nil
-
-    # @rbs return: nil
-    def drain: () -> nil
-
-    # @rbs return: nil
-    def discard: () -> nil
-
-    # @rbs return: nil
-    def finish: () -> nil
-  end
-
   private
 
-  # @rbs indent: Integer
-  # @rbs &block: () -> String
-  # @rbs return: void
-  def render_block: (Integer indent) { () -> String } -> void
-
-  # @rbs content: String
-  # @rbs return: void
-  def render_prose: (String content) -> void
-
-  # @rbs indent: Integer
-  # @rbs &block: () -> String
-  # @rbs return: void
-  def render_tool_activity: (Integer indent) { () -> String } -> void
-
-  # @rbs return: void
-  def open_tool_activity: () -> void
-
-  # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs session: Riffer::Providers::TokenUsage
-  # @rbs return: String
-  def usage_line: (Riffer::Providers::TokenUsage usage, Riffer::Providers::TokenUsage session) -> String
-
-  # @rbs arguments: String
-  # @rbs return: String
-  def format_arguments: (String arguments) -> String
-
-  # @rbs content: String
-  # @rbs return: String
-  def preview: (String content) -> String
-
   # @rbs text: String
-  # @rbs limit: Integer
-  # @rbs return: String
-  def elide: (String text, Integer limit) -> String
-
-  # Truncation is what keeps an indented line from wrapping: a wrapped
-  # continuation starts at column zero and destroys the prose > tool nesting.
-  # @rbs text: String
-  # @rbs indent: Integer
-  # @rbs return: String
-  def fit: (String text, Integer indent) -> String
-
   # @rbs return: void
-  def flush_prose: () -> void
-
-  # @rbs return: void
-  def discard_prose: () -> void
-
-  # @rbs return: Riffer::Rig::Terminal::Wrapper
-  def new_wrapper: () -> Riffer::Rig::Terminal::Wrapper
-
-  # @rbs return: Integer?
-  def detect_width: () -> Integer?
-
-  # winsize raises on ttys with no queryable window size and some pty
-  # wrappers report zero columns; either way the real width is unknowable,
-  # and nil leaves every consumer un-fitted rather than mis-fitted.
-  # @rbs return: Integer?
-  def detected_width: () -> Integer?
+  def render_block: (String text) -> void
 end

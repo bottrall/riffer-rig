@@ -7,13 +7,10 @@ class Riffer::Rig::Terminal::Host
 
   @renderer: Riffer::Rig::Terminal::Renderer
 
-  @animator: Riffer::Rig::Terminal::Animator
-
   # @rbs prompter: Riffer::Rig::Terminal::_Prompter
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
-  # @rbs animator: Riffer::Rig::Terminal::Animator
   # @rbs return: void
-  def initialize: (prompter: Riffer::Rig::Terminal::_Prompter, renderer: Riffer::Rig::Terminal::Renderer, animator: Riffer::Rig::Terminal::Animator) -> void
+  def initialize: (prompter: Riffer::Rig::Terminal::_Prompter, renderer: Riffer::Rig::Terminal::Renderer) -> void
 
   # @rbs return: Set[Symbol]
   def capabilities: () -> Set[Symbol]

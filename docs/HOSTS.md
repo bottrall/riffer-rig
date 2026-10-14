@@ -52,13 +52,13 @@ runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: host, options: options
 - A line of text is `runtime.prompt(text) { |event| ... }`, which yields riffer's `StreamEvents` and rig's events as the turn runs.
 - A line starting with `/` is `runtime.run_command(name, args) { |event| ... }`; the names come from `runtime.commands`. An unknown name is reported through the host's `notify`, so a host needs no list of its own. Only commands that end or replace the Runtime stay in the host: the terminal's are `/exit` and `/quit`.
 - `runtime.cancel` stops the running turn — a reply in flight at once, a tool call when it returns ([Cancelling a turn](EMBEDDING.md#cancelling-a-turn)); the terminal calls it on Ctrl-C (from a thread, since the cancel flag takes a lock that Ruby refuses inside a signal handler). The turn ends with riffer's `Interrupt` event and a `turn_end` whose `stop_reason` is `:cancelled`.
-- `runtime.on_message` delivers each message as the session records it; the terminal renders tool results from it.
+- `runtime.on_message` delivers each message as the session records it.
 - `runtime.on_job_exit` delivers each [background job](EMBEDDING.md#background-jobs) as it exits, on a background thread, and `runtime.running_job_count` is how many are still running. A host that replaces its Runtime subscribes again on the new one; the closed one delivers nothing more.
 - `runtime.close` when the session ends.
 
 ### Rendering the stream
 
-The terminal renders `TextDelta` as streamed prose, `ToolCallDone` as the call, `SkillActivation` and the rig `skill_activated` event as a skill line, `command_output` as a line of its own, and `Interrupt` as a note, dropping any prose it had not yet drawn. `turn_end` carries the turn's `usage`, which the terminal prints with `runtime.tally` (every turn so far) and its `cost`. It skips the stream's `notify` events: the mirror queues one for each `host.notify`, which the terminal's host has already printed. It also renders nothing for the stream's [`before_tool_call` and `after_tool_call`](EMBEDDING.md#tool-call-events) events — it draws each tool result from `runtime.on_message`; headless prints them as NDJSON records, and ACP turns `after_tool_call` into the call's completing `tool_call_update`. A host that matches on the events it knows and ignores the rest needs no change when the stream grows.
+The terminal prints nothing while a turn streams. It gathers the `TextDelta` text of each response and, at `turn_end`, prints the text of the response that ended the turn — text a response sent along with tool calls is not printed — and under it a stat line: the turn's steps, its time, its token usage and `cost`, and `runtime.tally` (every turn so far). A turn that ended on an `Interrupt` prints the text it had reached and `interrupted` in place of the stat line. `command_output` is printed as a line of its own when it arrives. It skips the stream's `notify` events: the mirror queues one for each `host.notify`, which the terminal's host has already printed. It also prints nothing for `ToolCallDone`, for a skill activation, or for the stream's [`before_tool_call` and `after_tool_call`](EMBEDDING.md#tool-call-events) events; headless prints those two as NDJSON records, and ACP turns `after_tool_call` into the call's completing `tool_call_update`. A host that matches on the events it knows and ignores the rest needs no change when the stream grows.
 
 ### The terminal's host
 
@@ -69,6 +69,6 @@ The terminal renders `TextDelta` as streamed prose, `ToolCallDone` as the call, 
 | `ask`      | prints the question and reads a line; `secret:` reads without echo; `options:` are numbered and a number picks one |
 | `confirm`  | asks `[y/N]`; only an answer starting with `y` confirms                                    |
 | `notify`   | prints the message as a line of its own, red for `level: :error`                           |
-| `progress` | prints the label and runs the block under the spinner                                      |
+| `progress` | prints the label and runs the block                                                        |
 
 The other two tiers follow the same shape and include `NonInteractive`. `Riffer::Rig::Headless::Host` reports `Set[:notify, :progress]` and prints both to stderr ([Headless](HEADLESS.md)). `Riffer::Rig::ACP::Host` turns `notify` into a `session/update` on the session it belongs to and buffers the ones raised while the Runtime is still building ([ACP](ACP.md)). It reports `Set[:notify]` while its session is still building and `Set[:notify, :ask, :confirm]` from then on, and [relays `ask` and `confirm` to the client](ACP.md#relaying-questions-to-the-client).

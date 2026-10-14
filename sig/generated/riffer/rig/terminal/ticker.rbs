@@ -11,6 +11,10 @@ class Riffer::Rig::Terminal::Ticker
 
   SEPARATOR: String
 
+  NEUTRAL_LABEL: String
+
+  REASONING_PHRASES: Array[String]
+
   @footer: Riffer::Rig::Terminal::Frame
 
   @theme: Riffer::Rig::Terminal::Theme

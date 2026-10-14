@@ -40,6 +40,9 @@ class Riffer::Rig::Terminal::TurnBuffer
   # @rbs return: bool
   def interrupted?: () -> bool
 
+  # @rbs return: bool
+  def ended?: () -> bool
+
   # @rbs return: Riffer::Rig::Terminal::TurnBuffer::Stats
   def stats: () -> Riffer::Rig::Terminal::TurnBuffer::Stats
 

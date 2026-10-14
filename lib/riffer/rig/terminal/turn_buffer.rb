@@ -72,6 +72,11 @@ class Riffer::Rig::Terminal::TurnBuffer
     @interrupted
   end
 
+  # @rbs return: bool
+  def ended?
+    !@ended_at.nil?
+  end
+
   # @rbs return: Riffer::Rig::Terminal::TurnBuffer::Stats
   def stats
     Stats.new(steps: @steps, wall_time: (@ended_at || @clock.call) - @started_at, usage: usage)

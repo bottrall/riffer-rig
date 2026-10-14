@@ -144,16 +144,22 @@ class Riffer::Rig::Terminal::Frame
   end
 
   # winsize raises on ttys with no queryable window size and some pty
-  # wrappers report zero columns; a footer that cannot be fitted to the
-  # width would wrap and strand the cursor, so neither gets one.
+  # wrappers report zero columns; output that cannot be fitted to the width
+  # would wrap mid-line (and strand a footer's cursor), so neither gets one.
+  # @rbs io: IO
   # @rbs return: [Integer, Integer]?
-  def measure
-    return nil unless @io.tty?
+  def self.measure(io)
+    return nil unless io.tty?
 
-    size = @io.winsize
+    size = io.winsize
     size[1].positive? ? size : nil
   rescue SystemCallError
     nil
+  end
+
+  # @rbs return: [Integer, Integer]?
+  def measure
+    self.class.measure(@io)
   end
 
   private

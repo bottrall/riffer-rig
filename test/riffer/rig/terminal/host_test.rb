@@ -9,34 +9,19 @@ describe Riffer::Rig::Terminal::Host do
     @pty&.close
   end
 
-  def host(input = '', animator: nil)
+  def host(input = '')
     @output = StringIO.new
     theme = Riffer::Rig::Terminal::Theme.new(enabled: false)
     renderer = Riffer::Rig::Terminal::Renderer.new(io: @output, theme: theme)
     Riffer::Rig::Terminal::Host.new(
       prompter: Riffer::Rig::Terminal::BlockingPrompter.new(input: StringIO.new(input), renderer: renderer),
-      renderer: renderer,
-      animator: animator || Riffer::Rig::Terminal::Animator.new(io: @output, theme: theme)
+      renderer: renderer
     )
   end
 
   def at_the_footer(keys)
     @pty = PrompterPty.new
     @pty.answering(keys) { yield @pty.host }
-  end
-
-  def recording_animator
-    Class.new do
-      attr_reader :calls
-
-      def initialize
-        @calls = []
-      end
-
-      def start = @calls << :start
-
-      def stop = @calls << :stop
-    end.new
   end
 
   it 'reports all four capabilities' do
@@ -150,12 +135,5 @@ describe Riffer::Rig::Terminal::Host do
 
   it 'returns from progress without a block' do
     assert_nil host.progress('Installing')
-  end
-
-  it 'stops the animator when the block exits early' do
-    animator = recording_animator
-    catch(:leave) { host(animator: animator).progress('Installing') { throw :leave } }
-
-    assert_equal %i[start stop], animator.calls
   end
 end

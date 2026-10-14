@@ -20,15 +20,9 @@ class PrompterPty
     @frame = Riffer::Rig::Terminal::Frame.new(io: @pty.slave, theme: theme)
     @frame.start
     @prompter = Riffer::Rig::Terminal::FramePrompter.new(frame: @frame, keys: @keys.pipeline.keys, theme: theme)
-    # Notices and the spinner do not go through the frame, so they are kept
-    # off its pty.
-    unframed = StringIO.new
-    @renderer = Riffer::Rig::Terminal::Renderer.new(io: unframed, theme: theme)
-    @host = Riffer::Rig::Terminal::Host.new(
-      prompter: @prompter,
-      renderer: @renderer,
-      animator: Riffer::Rig::Terminal::Animator.new(io: unframed, theme: theme)
-    )
+    # Notices do not go through the frame, so they are kept off its pty.
+    @renderer = Riffer::Rig::Terminal::Renderer.new(io: StringIO.new, theme: theme)
+    @host = Riffer::Rig::Terminal::Host.new(prompter: @prompter, renderer: @renderer)
   end
 
   def answering(bytes, &)
