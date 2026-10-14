@@ -3,7 +3,7 @@
 class Riffer::Rig::Terminal::Opening
   SKILL_COMMAND_PREFIX: ::String
 
-  @animator: Riffer::Rig::Terminal::Animator
+  @io: Riffer::Rig::Terminal::_Output
 
   @theme: Riffer::Rig::Terminal::Theme
 
@@ -15,14 +15,14 @@ class Riffer::Rig::Terminal::Opening
 
   @repl: Riffer::Rig::Terminal::Repl?
 
-  # @rbs animator: Riffer::Rig::Terminal::Animator
+  # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs version: String
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs jobs: Riffer::Rig::Terminal::JobCounter?
   # @rbs repl: Riffer::Rig::Terminal::Repl?
   # @rbs return: void
-  def initialize: (animator: Riffer::Rig::Terminal::Animator, theme: Riffer::Rig::Terminal::Theme, version: String, sessions: Riffer::Rig::Terminal::_Sessions, ?jobs: Riffer::Rig::Terminal::JobCounter?, ?repl: Riffer::Rig::Terminal::Repl?) -> void
+  def initialize: (io: Riffer::Rig::Terminal::_Output, theme: Riffer::Rig::Terminal::Theme, version: String, sessions: Riffer::Rig::Terminal::_Sessions, ?jobs: Riffer::Rig::Terminal::JobCounter?, ?repl: Riffer::Rig::Terminal::Repl?) -> void
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void

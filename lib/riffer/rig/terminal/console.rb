@@ -44,8 +44,6 @@ class Riffer::Rig::Terminal::Console
 
   # @rbs return: bool
   def tty?
-    # A tty would be given the banner's reveal, which redraws in place over
-    # the rows the footer owns.
     false
   end
 end

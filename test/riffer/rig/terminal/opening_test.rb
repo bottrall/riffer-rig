@@ -51,7 +51,7 @@ describe Riffer::Rig::Terminal::Opening do
 
   def banner(runtime, jobs: nil, repl: nil)
     Riffer::Rig::Terminal::Opening.new(
-      animator: Riffer::Rig::Terminal::Animator.new(io: @output, theme: @theme),
+      io: @output,
       theme: @theme,
       version: '9.9.9',
       sessions: @sessions,
@@ -79,7 +79,7 @@ describe Riffer::Rig::Terminal::Opening do
       assert_match(/skills\s+none$/, banner(OpenedRuntime.new(commands: %w[model])))
     end
 
-    it 'reveals the banner of the Runtime' do
+    it 'prints the banner of the Runtime' do
       assert_match(%r{model\s+mock/test$}, banner(OpenedRuntime.new))
     end
 

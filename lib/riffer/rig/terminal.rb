@@ -38,7 +38,7 @@ class Riffer::Rig::Terminal
     clock = -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
     frame = Frame.new(io: output, theme: theme) if ticker && input.tty?
     unless frame&.measure
-      opening = Opening.new(animator: Animator.new(io: output, theme: theme), theme:, version:, sessions:)
+      opening = Opening.new(io: output, theme:, version:, sessions:)
       turns = QuietDisplay.new(io: output, theme: theme, clock: clock)
       return assemble(input:, renderer: Renderer.new(io: output, theme: theme), sessions:, opening:, turns:)
     end
@@ -57,7 +57,7 @@ class Riffer::Rig::Terminal
       interrupt: -> { Process.kill('INT', Process.pid) }
     )
     opening = Opening.new(
-      animator: Animator.new(io: console, theme: theme),
+      io: console,
       theme: theme,
       version: version,
       sessions: sessions,

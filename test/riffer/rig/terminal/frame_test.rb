@@ -37,6 +37,27 @@ describe Riffer::Rig::Terminal::Frame do
     Riffer::Rig::Terminal::LineEditor.new(before: before, after: after)
   end
 
+  describe '.measure' do
+    it 'is nil when the io is not a tty' do
+      assert_nil Riffer::Rig::Terminal::Frame.measure(StringIO.new)
+    end
+
+    it 'is the rows and columns of the tty' do
+      assert_equal [24, 80], Riffer::Rig::Terminal::Frame.measure(tty(80))
+    end
+
+    it 'is nil when the tty reports zero columns' do
+      assert_nil Riffer::Rig::Terminal::Frame.measure(tty(0))
+    end
+
+    it 'is nil when the window size cannot be queried' do
+      io = tty(80)
+      io.define_singleton_method(:winsize) { raise Errno::ENOTTY }
+
+      assert_nil Riffer::Rig::Terminal::Frame.measure(io)
+    end
+  end
+
   describe '#start' do
     it 'draws no footer when the terminal cannot be measured' do
       io = StringIO.new
@@ -375,27 +396,6 @@ describe Riffer::Rig::Terminal::Frame do
       started(tty(80)).stop
 
       assert_same handler, Signal.trap('WINCH', original)
-    end
-  end
-
-  describe '.measure' do
-    it 'is nil when the io is not a tty' do
-      assert_nil Riffer::Rig::Terminal::Frame.measure(StringIO.new)
-    end
-
-    it 'is the rows and columns of the tty' do
-      assert_equal [24, 80], Riffer::Rig::Terminal::Frame.measure(tty(80))
-    end
-
-    it 'is nil when the tty reports zero columns' do
-      assert_nil Riffer::Rig::Terminal::Frame.measure(tty(0))
-    end
-
-    it 'is nil when the window size cannot be queried' do
-      io = tty(80)
-      io.define_singleton_method(:winsize) { raise Errno::ENOTTY }
-
-      assert_nil Riffer::Rig::Terminal::Frame.measure(io)
     end
   end
 

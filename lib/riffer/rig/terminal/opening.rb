@@ -3,22 +3,22 @@
 class Riffer::Rig::Terminal::Opening
   SKILL_COMMAND_PREFIX = 'skill:'
 
-  # @rbs @animator: Riffer::Rig::Terminal::Animator
+  # @rbs @io: Riffer::Rig::Terminal::_Output
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @version: String
   # @rbs @sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs @jobs: Riffer::Rig::Terminal::JobCounter?
   # @rbs @repl: Riffer::Rig::Terminal::Repl?
 
-  # @rbs animator: Riffer::Rig::Terminal::Animator
+  # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs version: String
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs jobs: Riffer::Rig::Terminal::JobCounter?
   # @rbs repl: Riffer::Rig::Terminal::Repl?
   # @rbs return: void
-  def initialize(animator:, theme:, version:, sessions:, jobs: nil, repl: nil)
-    @animator = animator
+  def initialize(io:, theme:, version:, sessions:, jobs: nil, repl: nil)
+    @io = io
     @theme = theme
     @version = version
     @sessions = sessions
@@ -31,15 +31,15 @@ class Riffer::Rig::Terminal::Opening
   def call(runtime)
     @jobs&.watch(runtime)
     skills = runtime.commands.count { |command| command.name.start_with?(SKILL_COMMAND_PREFIX) }
-    lines = Riffer::Rig::Terminal::Banner.lines(
+    Riffer::Rig::Terminal::Banner.lines(
       @theme,
       model: runtime.model,
       cwd: runtime.cwd,
       skills: skills.zero? ? 'none' : skills.to_s,
       version: @version,
       tally: runtime.tally
-    )
-    @animator.reveal([lines])
+    ).each { |line| @io.puts(line) }
+    @io.flush
     @repl&.replay(@sessions.recorded(runtime.id), theme: @theme)
   end
 end
