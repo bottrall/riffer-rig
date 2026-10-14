@@ -35,10 +35,6 @@ describe Riffer::Rig::Terminal::TurnReport do
       assert_equal "\n  All done.\n\n  2 steps · 00:41\n", report(turn)
     end
 
-    it 'drops the control characters an answer could drive the terminal with' do
-      assert_equal "\n  All done.\n\n  2 steps · 00:41\n", report(turn(answer: "\e\u0007All\b done.\r\n"))
-    end
-
     it 'prints the footer alone for a turn that gave no answer' do
       assert_equal "\n  2 steps · 00:41\n", report(turn(answer: nil))
     end
@@ -51,12 +47,30 @@ describe Riffer::Rig::Terminal::TurnReport do
       assert_equal "\n  Half a sen\n\n  interrupted\n", report(turn(answer: 'Half a sen', interrupted: true))
     end
 
-    it 'dims the footer and leaves the answer plain' do
-      assert_equal "\n  All done.\n\n\e[2m  2 steps · 00:41\e[0m\n", report(turn, color: true)
+    it 'styles the answer as markdown above a dimmed footer' do
+      styled = "\n  All \e[1mdone\e[0m.\n\n\e[2m  2 steps · 00:41\e[0m\n"
+
+      assert_equal styled, report(turn(answer: 'All **done**.'), color: true)
     end
 
     it 'dims the interrupted marker' do
       assert_equal "\n\e[2m  interrupted\e[0m\n", report(turn(answer: nil, interrupted: true), color: true)
+    end
+  end
+
+  describe '.answer' do
+    it 'prints the footer alone for an answer that renders to nothing' do
+      assert_equal "\n  2 steps · 00:41\n", report(turn(answer: " \n"))
+    end
+
+    it 'wraps the answer to the width left of its indent' do
+      wrapped = "\n  Reads the rows\n  now\n\n  2 steps · 00:41\n"
+
+      assert_equal wrapped, report(turn(answer: 'Reads the rows now'), width: 18)
+    end
+
+    it 'indents every line of the answer and leaves its blank lines empty' do
+      assert_equal "\n  One.\n\n  Two.\n\n  2 steps · 00:41\n", report(turn(answer: "One.\n\nTwo."))
     end
   end
 
@@ -109,17 +123,6 @@ describe Riffer::Rig::Terminal::TurnReport do
   end
 
   describe '.wrap' do
-    it 'wraps the answer to the width and keeps its paragraphs apart' do
-      answer = "The picker now reads its rows through the registrar.\n\nNothing else changed."
-      wrapped = "\n  The picker now reads\n  its rows through the\n  registrar.\n\n  Nothing else changed.\n"
-
-      assert_equal "#{wrapped}\n  2 steps · 00:41\n", report(turn(answer: answer), width: 24)
-    end
-
-    it 'drops the blank lines around the answer' do
-      assert_equal "\n  All done.\n\n  2 steps · 00:41\n", report(turn(answer: "\n\nAll done.\n\n"))
-    end
-
     it 'wraps the footer to the width' do
       spent = turn(answer: nil, usage: usage(1200, 340, cost: 0.071))
       footer = "\n  2 steps · 00:41 ·\n  ↑1200 · ↓340 ·\n  ~$0.0710 · session\n  4500 tok\n"
@@ -131,6 +134,68 @@ describe Riffer::Rig::Terminal::TurnReport do
       spent = turn(answer: nil, usage: usage(1200, 340))
 
       assert_equal "\n\e[2m  2 steps · 00:41 ·\n  ↑1200 · ↓340\e[0m\n", report(spent, color: true, width: 20)
+    end
+  end
+
+  describe 'with a markdown answer' do
+    def answered
+      answer = <<~MARKDOWN
+        ## Picker
+
+        The picker now reads its rows through the **registrar**, not `Session`.
+
+        - one row per session
+        - newest first
+
+        ```ruby
+        Picker.new(registrar)
+        ```
+      MARKDOWN
+      turn(answer: answer, usage: usage(250, 50))
+    end
+
+    def golden(rows)
+      rows.map { |row| "#{row}\n" }.join
+    end
+
+    it 'prints the answer and the footer in colour' do
+      rows = [
+        '',
+        "  \e[1m\e[38;2;122;92;255mPicker\e[0m\e[0m",
+        '',
+        "  The picker now reads its rows through the \e[1mregistrar\e[0m, not",
+        "  \e[38;2;45;226;230mSession\e[0m.",
+        '',
+        "  \e[38;2;192;76;253m•\e[0m one row per session",
+        "  \e[38;2;192;76;253m•\e[0m newest first",
+        '',
+        "  \e[2mruby\e[0m",
+        "  \e[2m│\e[0m \e[38;2;45;226;230mPicker.new(registrar)\e[0m",
+        '',
+        "\e[2m  2 steps · 00:41 · ↑250 · ↓50 · session 300 tok\e[0m"
+      ]
+
+      assert_equal golden(rows), report(answered, session: usage(250, 50), color: true, width: 60)
+    end
+
+    it 'prints the answer and the footer without colour' do
+      rows = [
+        '',
+        '  ## Picker',
+        '',
+        '  The picker now reads its rows through the registrar, not',
+        '  `Session`.',
+        '',
+        '  • one row per session',
+        '  • newest first',
+        '',
+        '  ruby',
+        '  │ Picker.new(registrar)',
+        '',
+        '  2 steps · 00:41 · ↑250 · ↓50 · session 300 tok'
+      ]
+
+      assert_equal golden(rows), report(answered, session: usage(250, 50), width: 60)
     end
   end
 

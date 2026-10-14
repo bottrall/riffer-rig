@@ -13,16 +13,21 @@ module Riffer::Rig::Terminal::TurnReport
   # @rbs width: Integer?
   # @rbs return: String
   def call(turn, session, theme:, width:)
-    answer = turn.answer
     closing = turn.interrupted? ? INTERRUPTED : footer(turn.stats, session)
-    blocks = [
-      *(wrap(answer.gsub(Riffer::Rig::Terminal::Markdown::CONTROL, ''), width) if answer),
-      theme.dim(wrap(closing, width))
-    ]
+    blocks = [*answer(turn.answer.to_s, theme: theme, width: width), theme.dim(wrap(closing, width))]
     blocks.map { |block| "\n#{block}\n" }.join
   end
 
   private
+
+  # @rbs source: String
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs return: String?
+  def answer(source, theme:, width:)
+    body = Riffer::Rig::Terminal::Markdown.render(source, theme: theme, width: width && (width - INDENT))
+    body.gsub(/^(?=.)/, ' ' * INDENT).chomp unless body.empty?
+  end
 
   # @rbs stats: Riffer::Rig::Terminal::TurnBuffer::Stats
   # @rbs session: Riffer::Providers::TokenUsage?
@@ -61,6 +66,6 @@ module Riffer::Rig::Terminal::TurnReport
   # @rbs return: String
   def wrap(text, width)
     wrapper = Riffer::Rig::Terminal::Wrapper.new(width: width, indent: INDENT)
-    (wrapper << "#{text}\n").gsub(/\A\n+|\n+\z/, '')
+    (wrapper << "#{text}\n").chomp
   end
 end
