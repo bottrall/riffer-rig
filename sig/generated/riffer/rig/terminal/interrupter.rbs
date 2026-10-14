@@ -1,0 +1,24 @@
+# Generated from lib/riffer/rig/terminal/interrupter.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Interrupter
+  STOPPING: String
+
+  MARKER: String
+
+  @frame: Riffer::Rig::Terminal::Frame
+
+  @theme: Riffer::Rig::Terminal::Theme
+
+  # @rbs frame: Riffer::Rig::Terminal::Frame
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: void
+  def initialize: (frame: Riffer::Rig::Terminal::Frame, theme: Riffer::Rig::Terminal::Theme) -> void
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def cancel: (Riffer::Rig::Runtime runtime) -> void
+
+  # @rbs turn: Riffer::Rig::Terminal::TurnBuffer
+  # @rbs return: void
+  def finish: (Riffer::Rig::Terminal::TurnBuffer turn) -> void
+end
