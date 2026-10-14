@@ -69,19 +69,6 @@ describe Riffer::Rig::Terminal::TurnReport do
       assert_equal "\n  2 steps · 02:05\n", report(turn(answer: nil, wall_time: 125.9))
     end
 
-    it 'shows the real tokens of a turn that reported usage, cache counts included' do
-      spent = usage(1200, 340, cache_write_tokens: 400, cache_read_tokens: 200)
-      footer = "\n  2 steps · 00:41 · ↑1200 · ↓340 · cache_write:400 · cache_read:200\n"
-
-      assert_equal footer, report(turn(answer: nil, usage: spent))
-    end
-
-    it 'shows the cost of a priced turn after its tokens' do
-      spent = usage(1200, 340, cost: 0.071)
-
-      assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340 · ~$0.0710\n", report(turn(answer: nil, usage: spent))
-    end
-
     it 'closes with the session total and its cost' do
       spent = usage(1200, 340, cost: 0.071)
       footer = "\n  2 steps · 00:41 · ↑1200 · ↓340 · ~$0.0710 · session 4500 tok · ~$0.2500\n"
@@ -91,6 +78,33 @@ describe Riffer::Rig::Terminal::TurnReport do
 
     it 'shows the session total of a turn that reported no usage' do
       assert_equal "\n  2 steps · 00:41 · session 4500 tok\n", report(turn(answer: nil), session: usage(3000, 1500))
+    end
+  end
+
+  describe '.tokens' do
+    it 'shows the real tokens of a turn that reported usage' do
+      assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340\n", report(turn(answer: nil, usage: usage(1200, 340)))
+    end
+
+    it 'adds the cache counts of a turn that wrote to and read from the cache' do
+      spent = usage(1200, 340, cache_write_tokens: 400, cache_read_tokens: 200)
+      footer = "\n  2 steps · 00:41 · ↑1200 · ↓340 · cache_write:400 · cache_read:200\n"
+
+      assert_equal footer, report(turn(answer: nil, usage: spent))
+    end
+
+    it 'omits a cache count of zero' do
+      spent = usage(1200, 340, cache_write_tokens: 0, cache_read_tokens: 0)
+
+      assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340\n", report(turn(answer: nil, usage: spent))
+    end
+  end
+
+  describe '.cost' do
+    it 'shows the cost of a priced turn after its tokens' do
+      spent = usage(1200, 340, cost: 0.071)
+
+      assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340 · ~$0.0710\n", report(turn(answer: nil, usage: spent))
     end
   end
 

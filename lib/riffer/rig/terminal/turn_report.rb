@@ -33,9 +33,27 @@ module Riffer::Rig::Terminal::TurnReport
     [
       "#{stats.steps} #{stats.steps == 1 ? 'step' : 'steps'}",
       format('%<minutes>02d:%<seconds>02d', minutes: minutes, seconds: seconds),
-      *([*Riffer::Rig::Terminal::Tally.tokens(usage), *Riffer::Rig::Terminal::Tally.cost(usage)] if usage),
-      *("session #{Riffer::Rig::Terminal::Tally.call(session)}" if session)
+      *([*tokens(usage), *cost(usage)] if usage),
+      *(["session #{session.total_tokens} tok", *cost(session)] if session)
     ].join(' · ')
+  end
+
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs return: Array[String]
+  def tokens(usage)
+    cache = { cache_write: usage.cache_write_tokens, cache_read: usage.cache_read_tokens }
+    [
+      "↑#{usage.input_tokens}",
+      "↓#{usage.output_tokens}",
+      *cache.filter_map { |name, count| "#{name}:#{count}" if count&.positive? }
+    ]
+  end
+
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs return: String?
+  def cost(usage)
+    amount = usage.cost
+    format('~$%.4f', amount) if amount
   end
 
   # @rbs text: String

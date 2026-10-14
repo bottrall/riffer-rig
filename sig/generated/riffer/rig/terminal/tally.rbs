@@ -4,12 +4,4 @@ module Riffer::Rig::Terminal::Tally
   # @rbs usage: Riffer::Providers::TokenUsage
   # @rbs return: String
   def call: (Riffer::Providers::TokenUsage usage) -> String
-
-  # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs return: String?
-  def cost: (Riffer::Providers::TokenUsage usage) -> String?
-
-  # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs return: Array[String]
-  def tokens: (Riffer::Providers::TokenUsage usage) -> Array[String]
 end

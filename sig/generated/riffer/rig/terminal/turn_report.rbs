@@ -19,6 +19,14 @@ module Riffer::Rig::Terminal::TurnReport
   # @rbs return: String
   def footer: (Riffer::Rig::Terminal::TurnBuffer::Stats stats, Riffer::Providers::TokenUsage? session) -> String
 
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs return: Array[String]
+  def tokens: (Riffer::Providers::TokenUsage usage) -> Array[String]
+
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs return: String?
+  def cost: (Riffer::Providers::TokenUsage usage) -> String?
+
   # @rbs text: String
   # @rbs width: Integer?
   # @rbs return: String

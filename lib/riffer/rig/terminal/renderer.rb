@@ -236,7 +236,12 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs session: Riffer::Providers::TokenUsage
   # @rbs return: String
   def usage_line(usage, session)
-    [*Riffer::Rig::Terminal::Tally.tokens(usage), "session #{Riffer::Rig::Terminal::Tally.call(session)}"].join(' · ')
+    parts = ["↑#{usage.input_tokens}", "↓#{usage.output_tokens}"]
+    parts << "cache_write:#{usage.cache_write_tokens}" if usage.cache_write_tokens&.positive?
+    parts << "cache_read:#{usage.cache_read_tokens}" if usage.cache_read_tokens&.positive?
+    parts << "session #{Riffer::Rig::Terminal::Tally.call(session)}"
+
+    parts.join(' · ')
   end
 
   # @rbs arguments: String
