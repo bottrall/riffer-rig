@@ -12,7 +12,7 @@ class RecordingConsole
   def settle = @log << :settle
 end
 
-class RecordingFrame
+class LoggingFrame
   attr_reader :lines, :statuses, :counts
 
   def initialize(log)
@@ -75,7 +75,7 @@ describe Riffer::Rig::Terminal::Repl do
     @log = Queue.new
     @keys = Queue.new
     @asks = Queue.new
-    @frame = RecordingFrame.new(@log)
+    @frame = LoggingFrame.new(@log)
     @prompter = QueuePrompter.new(@asks, @log)
     @jobs = RecordingJobs.new
     @interrupts = Queue.new
