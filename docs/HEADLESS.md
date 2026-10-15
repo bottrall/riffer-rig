@@ -10,7 +10,7 @@ The prompt is the argument:
 riffer -p "what does this repo do"
 ```
 
-Piped stdin is appended to the argument as context, and with no argument stdin alone is the prompt. A TTY stdin is never read, so `riffer -p` in a terminal without an argument has nothing to run and exits 2.
+Piped stdin is appended to the argument as context, and with no argument stdin alone is the prompt. Bytes that are not valid UTF-8 are replaced. A TTY stdin is never read, so `riffer -p` in a terminal without an argument has nothing to run and exits 2.
 
 ```bash
 git diff | riffer -p "review this diff"   # argument + stdin as context
