@@ -107,5 +107,13 @@ describe Riffer::Rig::Runtime::SystemPrompt do
 
       assert_equal history, refreshed.messages.drop(1)
     end
+
+    it 'keeps every message when the session has no system message' do
+      restored = session.messages.drop(1)
+      refreshed = Riffer::Agent::Session.new(messages: restored)
+      prompt.refresh(refreshed, @runtime)
+
+      assert_equal restored, refreshed.messages.drop(1)
+    end
   end
 end
