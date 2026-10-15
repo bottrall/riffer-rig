@@ -118,8 +118,11 @@ class Riffer::Rig::Terminal
 
     begin
       @opening.call(runtime)
-      queued = @repl
-      queued ? drain(queued, runtime) : repl(runtime)
+      each_entry do |entry|
+        next deliver_job_exits(runtime) if entry == :job_exit
+
+        runtime = dispatch(runtime, entry)
+      end
       @renderer.notice(FAREWELL)
       0
     ensure
@@ -156,9 +159,16 @@ class Riffer::Rig::Terminal
     nil
   end
 
-  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs &block: (String | :job_exit) -> void
   # @rbs return: void
-  def repl(runtime)
+  def each_entry(&)
+    queued = @repl
+    queued ? drain(queued, &) : repl(&)
+  end
+
+  # @rbs &block: (String) -> void
+  # @rbs return: void
+  def repl
     armed = false
     loop do
       case (line = read_line)
@@ -173,7 +183,7 @@ class Riffer::Rig::Terminal
         text = line.strip
         break if EXIT_COMMANDS.include?(text)
 
-        runtime = dispatch(runtime, text) unless text.empty?
+        yield text unless text.empty?
       end
     end
   end
@@ -187,17 +197,17 @@ class Riffer::Rig::Terminal
   end
 
   # @rbs queued: Riffer::Rig::Terminal::Repl
-  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs &block: (String | :job_exit) -> void
   # @rbs return: void
-  def drain(queued, runtime)
+  def drain(queued)
     queued.run do |entry|
-      next deliver_job_exits(runtime) if entry == :job_exit
+      next yield(entry) if entry == :job_exit
 
       # A pasted line can carry control characters the terminal would act on.
       @renderer.echo(LineEditor.new(before: entry).printable_before)
       break if EXIT_COMMANDS.include?(entry)
 
-      runtime = dispatch(runtime, entry)
+      yield entry
     end
   end
 
