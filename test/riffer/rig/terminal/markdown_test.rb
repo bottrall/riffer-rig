@@ -286,8 +286,9 @@ describe Riffer::Rig::Terminal::Markdown do
       assert_equal "a    │ b\n─────┼──\nlong │ 2\n", render("| a | b |\n|---|---|\n| long | 2 |")
     end
 
-    it 'prints a table wider than the limit as text' do
-      assert_equal "|#{'a' * 497}|b| |-|-|\n", render("|#{'a' * 497}|b|\n|-|-|", width: nil)
+    it 'wraps a table to the width' do
+      assert_equal "a │ b\n──┼──────────\nx │ one two\n  │ three\n",
+                   render("| a | b |\n|---|---|\n| x | one two three |", width: 13)
     end
   end
 end

@@ -3,21 +3,25 @@
 require 'test_helper'
 
 describe Riffer::Rig::Terminal::Markdown::Table do
-  def lines(source, enabled: false)
+  def lines(source, enabled: false, width: nil)
     theme = Riffer::Rig::Terminal::Theme.new(enabled: enabled)
-    Riffer::Rig::Terminal::Markdown::Table.lines(source.lines(chomp: true), theme: theme)
+    Riffer::Rig::Terminal::Markdown::Table.lines(source.lines(chomp: true), theme: theme, width: width)
   end
 
-  it 'returns nothing for a grid wider than the limit' do
-    assert_nil lines("|#{'a' * 497}|b|\n|-|-|")
+  def past_limit
+    ["#{'a' * 496} │ b", "a#{' ' * 495} │", "#{'─' * 496}─┼──"]
   end
 
-  it 'returns nothing when the widest cells of different rows sum past the limit' do
-    assert_nil lines("|#{'a' * 300}|b|\n|-|-|\n|c|#{'d' * 300}|")
-  end
-
-  it 'renders a grid as wide as the limit' do
+  it 'renders a grid as wide as the limit when no width is known' do
     assert_equal ["#{'a' * 496} │ b", "#{'─' * 496}─┼──"], lines("|#{'a' * 496}|b|\n|-|-|")
+  end
+
+  it 'wraps a grid to the limit when no width is known' do
+    assert_equal past_limit, lines("|#{'a' * 497}|b|\n|-|-|")
+  end
+
+  it 'wraps a grid to the limit when the width is past it' do
+    assert_equal past_limit, lines("|#{'a' * 497}|b|\n|-|-|", width: 1000)
   end
 
   it 'reads rows without outer pipes' do
@@ -44,8 +48,8 @@ describe Riffer::Rig::Terminal::Markdown::Table do
     assert_equal ['a │ b', '──┼──'], lines("| a | b |\n|---|---|")
   end
 
-  it 'pads each column to its widest cell' do
-    assert_equal ['a    │ b', '─────┼──', 'long │ 2'], lines("| a | b |\n|---|---|\n| long | 2 |")
+  it 'keeps the backticks of a code cell without colour' do
+    assert_equal ['a', '───', '`x`'], lines("| a |\n|---|\n| `x` |")
   end
 
   it 'measures a cell by its visible text' do
@@ -53,15 +57,54 @@ describe Riffer::Rig::Terminal::Markdown::Table do
                  lines("| a | b |\n|---|---|\n| **x** | y |", enabled: true)
   end
 
+  it 'pads each column to its widest cell when the grid fits the width' do
+    assert_equal ['a    │ b', '─────┼──', 'long │ 2'], lines("| a | b |\n|---|---|\n| long | 2 |", width: 8)
+  end
+
+  it 'shrinks only the widest column when that is enough' do
+    assert_equal ['a │ b            │ c', '──┼──────────────┼──', 'x │ one two      │ y', '  │ three four   │'],
+                 lines("| a | b | c |\n|---|---|---|\n| x | one two three four | y |", width: 20)
+  end
+
+  it 'shrinks the widest columns to a common width' do
+    assert_equal ['a          │ b', '───────────┼───────────', 'one two    │ four five', 'three      │ six'],
+                 lines("| a | b |\n|---|---|\n| one two three | four five six |", width: 23)
+  end
+
+  it 'lays the rows out as records when the columns cannot shrink enough' do
+    assert_equal ['a: one two', 'three', 'b: 2', 'c: 3'],
+                 lines("| a | b | c |\n|---|---|---|\n| one two three | 2 | 3 |", width: 14)
+  end
+
+  it 'draws the separators beside every line of a wrapped row' do
+    assert_equal ['a │ b', '──┼──────────', 'x │ one two', '  │ three', '  │ four'],
+                 lines("| a | b |\n|---|---|\n| x | one two three four |", width: 13)
+  end
+
   it 'pads a cell with a run of spaces by its printed length' do
     assert_equal ['a  b │ c', '─────┼──', 'd    │ e'], lines("| a  b | c |\n|---|---|\n| d | e |")
+  end
+
+  it 'keeps the spaces of a cell that fits its shrunk grid' do
+    assert_equal ['a    │ b', '─────┼──────────────', 'x  y │ one two three', '     │ four'],
+                 lines("| a | b |\n|---|---|\n| x  y | one two three four |", width: 20)
   end
 
   it 'pads a cell of wide characters by the columns they fill' do
     assert_equal ['日本 │ b', '─────┼──', 'a    │ c'], lines("| 日本 | b |\n|---|---|\n| a | c |")
   end
 
-  it 'keeps the backticks of a code cell without colour' do
-    assert_equal ['a', '───', '`x`'], lines("| a |\n|---|\n| `x` |")
+  it 'pads a linked cell by its visible text' do
+    assert_equal "\e]8;;https://e.com\e\\\e[4m\e[38;2;77;124;255mx\e[0m\e[0m\e]8;;\e\\   \e[2m│\e[0m y",
+                 lines("| key | v |\n|---|---|\n| [x](https://e.com) | y |", enabled: true).fetch(2)
+  end
+
+  it 'separates records with a blank line' do
+    assert_equal ['a: 1', 'b: 2', 'c: 3', '', 'a: 4', 'b: 5', 'c: 6'],
+                 lines("| a | b | c |\n|---|---|---|\n| 1 | 2 | 3 |\n| 4 | 5 | 6 |", width: 6)
+  end
+
+  it 'lists the labels of a header with no rows when the columns cannot shrink enough' do
+    assert_equal ['alpha beta', 'gamma', 'b', 'c'], lines("| alpha beta gamma | b | c |\n|---|---|---|", width: 14)
   end
 end
