@@ -15,13 +15,13 @@ class Riffer::Rig::Terminal::Frame
 
   JOBS_SEPARATOR = ' · ' #: String
 
-  FOOTER_ROWS = 2 #: Integer
+  FOOTER_ROWS = 3 #: Integer
 
   PEEK_ROWS = 8 #: Integer
 
-  # The cursor rests on the input line, the footer's first row, so this wipes
-  # the whole footer.
   ERASE = "\r\e[J" #: String
+
+  SPACER = "\r\n" #: String
 
   # @rbs @io: IO
   # @rbs @theme: Riffer::Rig::Terminal::Theme
@@ -179,14 +179,16 @@ class Riffer::Rig::Terminal::Frame
 
   # @rbs return: String
   def erase
-    @peek_height.zero? ? ERASE : "\e[#{@peek_height}A#{ERASE}"
+    # The cursor rests on the input line, so the footer starts at the spacer
+    # above the peek.
+    "\e[#{@peek_height + 1}A#{ERASE}"
   end
 
   # @rbs before: String
   # @rbs return: void
   def draw(before = '')
     rows = peek_rows
-    write("#{before}#{rows.join}#{footer}")
+    write("#{before}#{SPACER}#{rows.join}#{footer}")
     @peek_height = rows.size
   end
 

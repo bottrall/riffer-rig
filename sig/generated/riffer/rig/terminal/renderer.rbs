@@ -5,10 +5,13 @@ class Riffer::Rig::Terminal::Renderer
 
   @theme: Riffer::Rig::Terminal::Theme
 
+  @width: ^() -> Integer?
+
   # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: ^() -> Integer?
   # @rbs return: void
-  def initialize: (?io: Riffer::Rig::Terminal::_Output, ?theme: Riffer::Rig::Terminal::Theme) -> void
+  def initialize: (?io: Riffer::Rig::Terminal::_Output, ?theme: Riffer::Rig::Terminal::Theme, ?width: ^() -> Integer?) -> void
 
   # @rbs text: String
   # @rbs return: void
@@ -40,6 +43,10 @@ class Riffer::Rig::Terminal::Renderer
   def newline: () -> void
 
   private
+
+  # @rbs text: String
+  # @rbs return: String
+  def wrapped: (String text) -> String
 
   # @rbs text: String
   # @rbs return: void

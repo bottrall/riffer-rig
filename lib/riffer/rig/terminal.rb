@@ -35,11 +35,12 @@ class Riffer::Rig::Terminal
   def self.for(input:, output:, version:, sessions:, no_color: false)
     theme = Theme.for(output, no_color: no_color)
     clock = -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
+    width = -> { Frame.measure(output)&.last }
     frame = Frame.new(io: output, theme: theme) if input.tty?
     unless frame&.measure
       opening = Opening.new(io: output, theme:, version:, sessions:)
       turns = QuietDisplay.new(io: output, theme: theme, clock: clock)
-      return assemble(input:, renderer: Renderer.new(io: output, theme: theme), sessions:, opening:, turns:)
+      return assemble(input:, renderer: Renderer.new(io: output, theme:, width:), sessions:, opening:, turns:)
     end
 
     pipeline = KeyPipeline.new(input: input, output: output)
@@ -71,7 +72,7 @@ class Riffer::Rig::Terminal
       random: Random.new,
       clock: clock
     )
-    assemble(input:, renderer: Renderer.new(io: console, theme: theme), sessions:, opening:, turns:, repl:)
+    assemble(input:, renderer: Renderer.new(io: console, theme:, width:), sessions:, opening:, turns:, repl:)
   end
 
   # @rbs input: IO
