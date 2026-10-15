@@ -41,8 +41,8 @@ class Riffer::Rig::Terminal::KeyPipeline
   # @rbs return: void
   def read_loop: () -> void
 
-  # @rbs return: String?
-  def read_char: () -> String?
+  # @rbs return: Integer?
+  def read_byte: () -> Integer?
 
   # @rbs events: Array[Riffer::Rig::Terminal::Key]
   # @rbs return: void

@@ -28,7 +28,7 @@ Every other key does nothing.
 
 ### Pasting
 
-A paste arrives as text, not as keystrokes: a line break in it does not send the line, and shows as `␊` (a tab as `␉`). A paste of 1,000 characters or more shows as `[pasted 1.2k chars]`, and Backspace, Delete and the arrows treat it as a single character; the whole text is sent.
+A paste arrives as text, not as keystrokes: a line break in it does not send the line, and shows as `␊` (a tab as `␉`). A paste of 1,000 characters or more shows as `[pasted 1.2k chars]`, and Backspace, Delete and the arrows treat it as a single character; the whole text is sent. Bytes that are not valid UTF-8 are dropped.
 
 ## Queueing messages
 
