@@ -91,6 +91,18 @@ describe Riffer::Rig::Terminal::FramePrompter do
   end
 
   describe '#read' do
+    it 'shows the hint on the status line while the line is read' do
+      ask([])
+
+      assert_includes @pty.transcript, "› \r\n  answer above · Ctrl-C cancels\e[1A"
+    end
+
+    it 'dims the hint when color is on' do
+      ask([], color: true)
+
+      assert_includes @pty.transcript, "\e[2manswer above · Ctrl-C cancels\e[0m"
+    end
+
     it 'answers nil when the keys close' do
       assert_nil ask([])
     end
@@ -110,7 +122,7 @@ describe Riffer::Rig::Terminal::FramePrompter do
     it 'draws the line on the footer as it is typed' do
       ask(typed('abc'))
 
-      assert_includes @pty.transcript, "› abc\r\n  \e[1A"
+      assert_includes @pty.transcript, "› abc\r\n  answer above · Ctrl-C cancels\e[1A"
     end
 
     it 'never draws a secret line' do
@@ -131,6 +143,16 @@ describe Riffer::Rig::Terminal::FramePrompter do
 
     it 'clears the footer when the line is abandoned' do
       ask([*typed('abc'), key(:ctrl_d)])
+
+      assert_equal footer, @pty.screen.rows.last(2)
+    end
+
+    it 'clears the footer when Ctrl-C raises' do
+      begin
+        ask([*typed('abc'), key(:ctrl_c)])
+      rescue Interrupt
+        nil
+      end
 
       assert_equal footer, @pty.screen.rows.last(2)
     end

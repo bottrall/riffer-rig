@@ -226,6 +226,55 @@ describe Riffer::Rig::Terminal::Frame do
     end
   end
 
+  describe '#hint' do
+    it 'draws nothing when there is no footer' do
+      io = StringIO.new
+
+      started(io).hint('answer')
+
+      assert_equal '', io.string
+    end
+
+    it 'redraws the footer with the hint in place of the status' do
+      io = tty(80)
+      frame = started(io)
+      frame.status('working')
+
+      frame.hint('answer')
+
+      assert_operator io.string, :end_with?, "\e[J› \r\n  answer\e[1A\e[3G"
+    end
+
+    it 'keeps the hint over a status set after it' do
+      io = tty(80)
+      frame = started(io)
+      frame.hint('answer')
+
+      frame.status('working')
+
+      assert_operator io.string, :end_with?, "\e[J› \r\n  answer\e[1A\e[3G"
+    end
+
+    it 'brings back the status once the hint is cleared' do
+      io = tty(80)
+      frame = started(io)
+      frame.status('working')
+      frame.hint('answer')
+
+      frame.hint(nil)
+
+      assert_operator io.string, :end_with?, "\e[J› \r\n  working\e[1A\e[3G"
+    end
+
+    it 'leaves the cursor on the input line' do
+      frame = on_pty
+
+      frame.hint('answer')
+
+      assert_equal [0, 2], [@pty.screen.row, @pty.screen.column]
+    end
+  end
+
   describe '#queued' do
     it 'draws nothing when there is no footer' do
       io = StringIO.new
@@ -625,6 +674,16 @@ describe Riffer::Rig::Terminal::Frame do
 
     it 'puts the counter after the status' do
       assert_operator counting(80, 2, status: 'working'), :end_with?, "\r\n  working · 2 jobs running\e[1A\e[3G"
+    end
+
+    it 'puts the counter after a hint' do
+      io = tty(80)
+      frame = started(io)
+      frame.hint('answer')
+
+      frame.jobs(2)
+
+      assert_operator io.string, :end_with?, "\r\n  answer · 2 jobs running\e[1A\e[3G"
     end
 
     it 'cuts the status short to keep the counter whole on the one row' do

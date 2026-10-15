@@ -29,6 +29,8 @@ class Riffer::Rig::Terminal::Frame
 
   @status: String
 
+  @hint: String?
+
   @queued: Integer
 
   @jobs: Integer
@@ -74,6 +76,10 @@ class Riffer::Rig::Terminal::Frame
   # @rbs status: String
   # @rbs return: void
   def status: (String status) -> void
+
+  # @rbs hint: String?
+  # @rbs return: void
+  def hint: (String? hint) -> void
 
   # @rbs count: Integer
   # @rbs return: void
