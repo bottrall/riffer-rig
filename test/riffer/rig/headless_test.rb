@@ -391,6 +391,15 @@ describe Riffer::Rig::Headless do
     assert_equal "first\nsecond\n", @output.string
   end
 
+  it 'prints no tool trace without --verbose' do
+    run_headless(prompt: 'read it') do |runtime|
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
+      runtime.agent.provider.stub_response('Done.')
+    end
+
+    refute_match(/tool_call/, @error.string)
+  end
+
   it 'traces one line per tool call on stderr with --verbose' do
     run_headless(prompt: 'read it', verbose: true) do |runtime|
       runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
@@ -400,13 +409,13 @@ describe Riffer::Rig::Headless do
     assert_match(%r{tool_call read \{"path":"/tmp/x"\}}, @error.string)
   end
 
-  it 'prints no tool trace without --verbose' do
-    run_headless(prompt: 'read it') do |runtime|
+  it 'traces tool calls on stderr with --json and --verbose' do
+    run_headless(prompt: 'read it', verbose: true, json: true) do |runtime|
       runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
       runtime.agent.provider.stub_response('Done.')
     end
 
-    refute_match(/tool_call/, @error.string)
+    assert_match(%r{tool_call read \{"path":"/tmp/x"\}}, @error.string)
   end
 
   it 'prints nothing for the tool call events in text mode' do
