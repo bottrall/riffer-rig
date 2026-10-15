@@ -134,6 +134,18 @@ describe Riffer::Rig::Terminal::Picker do
       )
     end
 
+    it 'says so when the filter matches no session' do
+      output = rendered([session('alpha')], ['zzz', nil, nil])
+
+      assert_includes output, 'No sessions match "zzz"'
+    end
+
+    it 'keeps the previous rows when the filter matches no session' do
+      alpha = session('alpha')
+
+      assert_same alpha, pick([alpha, session('beta')], ['alp', 'zzz', ''])
+    end
+
     it 'enters delete mode on Ctrl-D' do
       output = rendered([session('alpha')], [ctrl_d, nil])
 
@@ -172,6 +184,12 @@ describe Riffer::Rig::Terminal::Picker do
       assert_nil pick([session('alpha')], [ctrl_d, '1', '1'], host: ConfirmingHost.new([true]))
     end
 
+    it 'clears a filter that matches nothing after a delete' do
+      alpha = session('alpha')
+
+      assert_same alpha, pick([alpha, session('beta')], ['bet', ctrl_d, '1', ''], host: ConfirmingHost.new([true]))
+    end
+
     it 'returns nothing when interrupted at the prompt' do
       assert_nil pick([session('alpha')], [:interrupt, '1'])
     end
@@ -194,10 +212,6 @@ describe Riffer::Rig::Terminal::Picker do
 
     it 'returns nothing on Enter with several matches' do
       assert_nil pick([session('alpha'), session('beta')], [''])
-    end
-
-    it 'returns nothing on Enter with no matches' do
-      assert_nil pick([session('alpha')], ['zzz', ''])
     end
 
     it 'switches to the session with the typed number' do
@@ -252,10 +266,10 @@ describe Riffer::Rig::Terminal::Picker do
       assert_empty @sessions.deleted
     end
 
-    it 'returns to the picker on a line that is not a number' do
-      alpha = session('alpha')
+    it 'returns to every session on a line that is not a number' do
+      beta = session('beta')
 
-      assert_same alpha, pick([alpha], [ctrl_d, 'alpha', ''])
+      assert_same beta, pick([session('alpha'), beta], ['alp', ctrl_d, 'x', 'beta', ''])
     end
 
     it 'deletes nothing on an out-of-range number' do
@@ -294,10 +308,11 @@ describe Riffer::Rig::Terminal::Picker do
       assert_empty @sessions.deleted
     end
 
-    it 'returns to the picker when the confirmation is declined' do
-      alpha = session('alpha')
+    it 'returns to every session when the confirmation is declined' do
+      beta = session('beta')
+      lines = ['alp', ctrl_d, '1', 'beta', '']
 
-      assert_same alpha, pick([alpha], [ctrl_d, '1', ''], host: ConfirmingHost.new([false]))
+      assert_same beta, pick([session('alpha'), beta], lines, host: ConfirmingHost.new([false]))
     end
 
     it 'deletes the confirmed session' do

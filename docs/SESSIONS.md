@@ -79,7 +79,7 @@ In the REPL, `/resume` opens the picker over the sessions of the current directo
 
 The picker reads one line at a time:
 
-- Typing text filters the rows to titles containing it (case-insensitive).
+- Typing text filters the rows to titles containing it (case-insensitive). A filter that matches nothing says so and keeps the previous rows.
 - Enter switches to the session when a single row remains.
 - A row number — `2`, Enter — switches to that row directly.
 - Ctrl-D starts a delete: type the number of the row, then confirm with `y` (`n` or anything else keeps it). The session is removed from the store.
