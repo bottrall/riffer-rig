@@ -83,7 +83,7 @@ The picker reads one line at a time:
 - Enter switches to the session when a single row remains.
 - A row number — `2`, Enter — switches to that row directly.
 - Ctrl-D starts a delete: type the number of the row, then confirm with `y` (`n` or anything else keeps it). The session is removed from the store.
-- Enter with several rows, or Ctrl-C, leaves the picker.
+- Enter without a single row left, Ctrl-C, or Ctrl-D at the delete prompt leaves the picker and prints `(closed)`.
 
 Switching replaces the Runtime the terminal drives and re-renders the banner: the conversation you left is already saved, keeps its id and file, and `/resume` appends to it. `/new` starts a fresh session in place the same way — a new id, empty history — and the session you left stays on disk.
 
