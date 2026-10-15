@@ -71,7 +71,8 @@ class Riffer::Rig::Terminal
       random: Random.new,
       clock: clock
     )
-    assemble(input:, renderer: Renderer.new(io: console, theme: theme), sessions:, opening:, turns:, repl:)
+    renderer = Renderer.new(io: console, theme: theme, width: -> { frame.measure&.last })
+    assemble(input:, renderer:, sessions:, opening:, turns:, repl:)
   end
 
   # @rbs input: IO
@@ -193,8 +194,7 @@ class Riffer::Rig::Terminal
     queued.run do |entry|
       next deliver_job_exits(runtime) if entry == :job_exit
 
-      # A pasted line can carry control characters the terminal would act on.
-      @renderer.echo(LineEditor.new(before: entry).printable_before)
+      @renderer.echo(entry)
       break if EXIT_COMMANDS.include?(entry)
 
       runtime = dispatch(runtime, entry)
