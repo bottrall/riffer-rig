@@ -53,6 +53,8 @@ The allowlist names tools, not extensions. All three `bash` tools come from the 
 
 The allowlist covers the tools extensions register. Tools from [MCP servers](MCP.md) are added by riffer inside the agent and are not filtered by it.
 
+For each allowlisted name that matches no tool an extension registered, the Runtime reports it through the host's `notify` at level `:warning`, as "Unknown tool in allowlist: NAME", so a typo such as `--tools raed,bash` does not silently drop `read`. An MCP tool name is reported too, since the allowlist has no effect on it. The Runtime reports them when it is built and again on each [rebuild](EMBEDDING.md#rebuilding-after-a-code-reload).
+
 ## The bundled extensions
 
 `Riffer::Rig.bundled(:read)` returns the bundled extension of that name — the same `Riffer::Rig::Extension` type `Riffer::Rig.extension` returns — and `Riffer::Rig.bundled` with no argument returns all of them in load order: `read`, `write`, `edit`, `bash`, then `agents_md` ([Instructions](INSTRUCTIONS.md#agentsmd)), `skills` ([Skills](SKILLS.md)) and `mcp` ([MCP](MCP.md)). An unknown name raises `KeyError`. An embedder composes them with its own:
