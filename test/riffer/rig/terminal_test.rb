@@ -811,6 +811,26 @@ describe Riffer::Rig::Terminal do
     end
   end
 
+  describe 'a / with no command name' do
+    it 'asks for a command name' do
+      assert_includes run_terminal("/\n"), 'Type a command name after /'
+    end
+
+    it 'sends nothing to the model' do
+      runtime = nil
+      run_terminal("/\n") { |driven| runtime = driven }
+
+      assert_empty runtime.agent.provider.calls
+    end
+
+    it 'sends nothing to the model when text follows it' do
+      runtime = nil
+      run_terminal("/ hello\n") { |driven| runtime = driven }
+
+      assert_empty runtime.agent.provider.calls
+    end
+  end
+
   it 'runs a skill command through run_command' do
     write_skill('tidy')
     output = run_terminal("/skill:tidy\n") { |runtime| runtime.agent.provider.stub_response('Tidied.') }

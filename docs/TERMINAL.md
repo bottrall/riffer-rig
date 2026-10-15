@@ -93,7 +93,7 @@ A line starting with `/` runs a command. Besides `/exit` and `/quit`:
 | `/trace`                          | replays the last turn from the saved session, step by step with times ([Sessions](SESSIONS.md#tracing-the-last-turn))      |
 | `/skill:<name> [text]`            | runs a skill ([Skills](SKILLS.md))                                                                                         |
 
-Any other `/name args` runs the command of that name, such as one an [extension](EXTENSIONS.md) registers; an unknown name is reported and nothing is sent to the model.
+Any other `/name args` runs the command of that name, such as one an [extension](EXTENSIONS.md) registers; an unknown name, or a `/` with none, is reported and nothing is sent to the model.
 
 ## Without a terminal
 
