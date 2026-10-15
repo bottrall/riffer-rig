@@ -5,18 +5,37 @@ require 'json'
 require 'stringio'
 
 class ScriptedRuntime
-  attr_reader :cancelled
+  attr_reader :cancelled, :timeouts, :follow_ups
 
-  def initialize(events, &before_events)
+  def initialize(events, exits: [], follow_up: [], &before_events)
     @events = events
+    @exits = exits.dup
+    @follow_up = follow_up
     @before_events = before_events
     @cancelled = Queue.new
     @closed = false
+    @timeouts = []
+    @follow_ups = 0
   end
 
   def prompt(_text, &)
     @before_events&.call(self)
     @events.each(&)
+  end
+
+  def pending_jobs?
+    !@exits.empty?
+  end
+
+  def await_job_exit(timeout: nil)
+    @timeouts << timeout
+    exit = @exits.shift
+    exit.is_a?(Class) ? raise(exit) : exit
+  end
+
+  def follow_up(&)
+    @follow_ups += 1
+    @follow_up.each(&)
   end
 
   def cancel
@@ -82,13 +101,24 @@ describe Riffer::Rig::Headless do
     end
   end
 
-  def run_build(&)
-    @status = Riffer::Rig::Headless.for(input: StringIO.new, output: @output, error: @error).run(prompt: 'hello', &)
+  def run_build(json: false, job_idle_timeout: Riffer::Rig::Headless::JOB_IDLE_TIMEOUT, &)
+    @status = Riffer::Rig::Headless.for(
+      input: StringIO.new, output: @output, error: @error, json: json, job_idle_timeout: job_idle_timeout
+    ).run(prompt: 'hello', &)
   end
 
   def run_scripted(*events, &)
     @runtime = ScriptedRuntime.new(events, &)
     run_build { @runtime }
+  end
+
+  def turn_end(stop_reason)
+    Riffer::Rig::Events::TurnEnd.new(stop_reason, nil)
+  end
+
+  def run_waiting(exits, events: [turn_end(:completed)], follow_up: [turn_end(:completed)], **)
+    @runtime = ScriptedRuntime.new(events, exits: exits, follow_up: follow_up)
+    run_build(**) { @runtime }
   end
 
   def interrupt_once(cancelled)
@@ -205,6 +235,91 @@ describe Riffer::Rig::Headless do
     run_scripted { raise 'boom' }
 
     assert_predicate @runtime, :closed?
+  end
+
+  describe 'with background jobs' do
+    it 'never waits without a job' do
+      run_waiting([])
+
+      assert_empty @runtime.timeouts
+    end
+
+    it 'never waits after a turn that did not complete' do
+      run_waiting([true], events: [turn_end(:max_steps)])
+
+      assert_empty @runtime.timeouts
+    end
+
+    it 'says on stderr that it is waiting' do
+      run_waiting([true])
+
+      assert_match(/waiting for background jobs/, @error.string)
+    end
+
+    it 'waits for an exit with the idle timeout' do
+      run_waiting([true], job_idle_timeout: 30)
+
+      assert_equal [30], @runtime.timeouts
+    end
+
+    it 'waits for an exit without a timeout when the idle timeout is zero' do
+      run_waiting([true], job_idle_timeout: 0)
+
+      assert_equal [nil], @runtime.timeouts
+    end
+
+    it 'returns 130 when interrupted while waiting' do
+      run_waiting([Interrupt])
+
+      assert_equal 130, @status
+    end
+
+    it 'says it is killing the jobs once the idle timeout passes' do
+      run_waiting([false], job_idle_timeout: 30)
+
+      assert_match(/no background job exited in 30s; killing the jobs still running/, @error.string)
+    end
+
+    it 'returns three once the idle timeout passes' do
+      run_waiting([false])
+
+      assert_equal 3, @status
+    end
+
+    it 'closes the runtime once the idle timeout passes' do
+      run_waiting([false])
+
+      assert_predicate @runtime, :closed?
+    end
+
+    it 'follows up once for each exit' do
+      run_waiting([true, true])
+
+      assert_equal 2, @runtime.follow_ups
+    end
+
+    it 'prints the reply of a follow-up' do
+      run_waiting([true], follow_up: [Riffer::StreamEvents::TextDone.new('It passed.'), turn_end(:completed)])
+
+      assert_equal "It passed.\n", @output.string
+    end
+
+    it 'returns the code of the last follow-up' do
+      run_waiting([true, true], follow_up: [turn_end(:max_steps)])
+
+      assert_equal 3, @status
+    end
+
+    it 'gives the model a further turn with the exit of a job it left running' do
+      run_headless(prompt: 'start it') do |runtime|
+        start = { command: 'sleep 0.2', run_in_background: true }.to_json
+        runtime.agent.provider.stub_response('', tool_calls: [{ name: 'bash', arguments: start }])
+        runtime.agent.provider.stub_response('Waiting.')
+        runtime.agent.provider.stub_response('It finished.')
+      end
+
+      assert_includes @output.string, 'It finished.'
+    end
   end
 
   it 'cancels the runtime when interrupted mid-turn' do
@@ -426,6 +541,25 @@ describe Riffer::Rig::Headless do
       run_headless(prompt: 'hello', json: true, model: 'gemini/gem-2.5-pro', env: {})
 
       assert_equal 2, @status
+    end
+
+    it 'keeps the waiting note off stdout' do
+      run_waiting([true], json: true)
+
+      refute_match(/waiting/, @output.string)
+    end
+
+    it 'prints a warning record once the idle timeout passes' do
+      run_waiting([false], json: true, job_idle_timeout: 30)
+
+      assert_equal(
+        {
+          'type' => 'notify',
+          'message' => 'no background job exited in 30s; killing the jobs still running',
+          'level' => 'warning'
+        },
+        records.last
+      )
     end
 
     it 'ends with a turn_end record' do

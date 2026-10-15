@@ -28,7 +28,7 @@ class Riffer::Rig::Runtime
 
   INTERRUPT_CANCELLED = :cancelled #: Symbol
 
-  # Per user turn, so a job that starts jobs cannot keep a turn alive forever.
+  # Per turn, so a job that starts jobs cannot keep a turn alive forever.
   MAX_JOB_CONTINUATIONS = 5 #: Integer
 
   # Riffer's remaining stop reasons (:error, :other, :guardrail_blocked) are
@@ -141,7 +141,7 @@ class Riffer::Rig::Runtime
     @yielder = nil
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
     @abort = Riffer::Rig::Runtime::Abort.new
-    @job_inbox = Riffer::Rig::Runtime::JobInbox.new
+    @job_inbox = Riffer::Rig::Runtime::JobInbox.new(clock: clock)
     @jobs = Riffer::Rig::Tools::Bash::Jobs.new(@job_inbox)
     @session_start_pending = true
     @session_start_reason = saved ? :restore : :new
@@ -171,20 +171,16 @@ class Riffer::Rig::Runtime
   end
 
   # @rbs text: String
-  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
+  # @rbs &: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
-  def prompt(text, &block)
-    @concurrency.claim
-    begin
-      if block
-        turn(text).each(&block)
-        nil
-      else
-        turn(text)
-      end
-    ensure
-      @concurrency.release
-    end
+  def prompt(text, &)
+    claimed(turn { start_turn(text) }, &)
+  end
+
+  # @rbs &: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
+  # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
+  def follow_up(&)
+    claimed(turn { start_follow_up }, &)
   end
 
   # @rbs text: String
@@ -192,7 +188,7 @@ class Riffer::Rig::Runtime
   def ask(text)
     @concurrency.claim
     begin
-      turn(text).each { |event| event }
+      turn { start_turn(text) }.each { |event| event }
     ensure
       @concurrency.release
     end
@@ -325,6 +321,18 @@ class Riffer::Rig::Runtime
   # @rbs return: bool
   def busy?
     @concurrency.busy?
+  end
+
+  # @rbs return: bool
+  def pending_jobs?
+    # Jobs stay listed from their start until the model is told of their exit.
+    @jobs.list.any?
+  end
+
+  # @rbs timeout: Numeric?
+  # @rbs return: bool
+  def await_job_exit(timeout: nil)
+    @job_inbox.await(timeout)
   end
 
   # @rbs return: nil
@@ -469,15 +477,31 @@ class Riffer::Rig::Runtime
     @host.queue(event)
   end
 
+  # @rbs turn: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
+  # @rbs &block: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
+  # @rbs return: (nil | Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response])
+  def claimed(turn, &block)
+    @concurrency.claim
+    begin
+      if block
+        turn.each(&block)
+        nil
+      else
+        turn
+      end
+    ensure
+      @concurrency.release
+    end
+  end
+
   # @rbs text: String
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
   def start_turn(text)
-    @cancel_flag.clear
-    @draft = []
-    @reload_check&.call(self)
-    @system_prompt.refresh(@agent.session, self)
+    open_turn
     prompt = @hooks.before_prompt(text)
-    return blocked_turn(prompt.reason) if prompt.is_a?(Riffer::Rig::Runtime::Blocked)
+    if prompt.is_a?(Riffer::Rig::Runtime::Blocked)
+      return ended_turn(Riffer::Agent::Outcome.new(reason: :guardrail_blocked, detail: prompt.reason))
+    end
 
     notify_job_exits
     stream = @agent.stream(prompt)
@@ -487,14 +511,24 @@ class Riffer::Rig::Runtime
     stream
   end
 
-  # @rbs reason: String
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
-  def blocked_turn(reason)
-    response = Riffer::Agent::Response.new(
-      '',
-      outcome: Riffer::Agent::Outcome.new(reason: :guardrail_blocked, detail: reason),
-      messages: @agent.session.messages.dup.freeze
-    )
+  def start_follow_up
+    open_turn
+    notify_job_exits ? @agent.stream : ended_turn(Riffer::Agent::Outcome.new(reason: :completed))
+  end
+
+  # @rbs return: void
+  def open_turn
+    @cancel_flag.clear
+    @draft = []
+    @reload_check&.call(self)
+    @system_prompt.refresh(@agent.session, self)
+  end
+
+  # @rbs outcome: Riffer::Agent::Outcome
+  # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  def ended_turn(outcome)
+    response = Riffer::Agent::Response.new('', outcome: outcome, messages: @agent.session.messages.dup.freeze)
     Enumerator.new { |_yielder| response }
   end
 
@@ -526,13 +560,13 @@ class Riffer::Rig::Runtime
       host: @host,
       settings: settings,
       emit: emit,
-      turn: ->(text) { turn(text).each(&emit) }
+      turn: ->(text) { turn { start_turn(text) }.each(&emit) }
     )
   end
 
-  # @rbs text: String
+  # @rbs &: () -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
-  def turn(text)
+  def turn(&)
     Enumerator.new do |yielder|
       @yielder = yielder
       if @session_start_pending
@@ -543,7 +577,7 @@ class Riffer::Rig::Runtime
       end
       @host.drain.each { |queued| yielder << queued }
       response = @abort.window do
-        stream = Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { start_turn(text) }
+        stream = Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD, &)
         continued(yielder, relay(yielder, stream), MAX_JOB_CONTINUATIONS)
       end
       response ||= aborted(yielder)

@@ -55,4 +55,63 @@ describe Riffer::Rig::Runtime::JobInbox do
       assert_empty @inbox.drain
     end
   end
+
+  describe '#await' do
+    def pushing_later(completion)
+      Thread.new do
+        sleep 0.05
+        @inbox.push(completion)
+      end
+    end
+
+    it 'is true at once while a completion is pending' do
+      @inbox.push(@completion)
+
+      assert @inbox.await(0)
+    end
+
+    it 'leaves a pending completion for the drain' do
+      @inbox.push(@completion)
+      @inbox.await(0)
+
+      assert_equal [@completion], @inbox.drain
+    end
+
+    it 'is false once closed' do
+      @inbox.close
+
+      refute @inbox.await(nil)
+    end
+
+    it 'is false when the timeout passes with nothing pushed' do
+      refute @inbox.await(0.05)
+    end
+
+    it 'is true when a completion is pushed during the wait' do
+      pusher = pushing_later(@completion)
+
+      assert @inbox.await(5)
+    ensure
+      pusher&.join
+    end
+
+    it 'waits without a timeout for a completion' do
+      pusher = pushing_later(@completion)
+
+      assert @inbox.await(nil)
+    ensure
+      pusher&.join
+    end
+
+    it 'is false when closed during the wait' do
+      closer = Thread.new do
+        sleep 0.05
+        @inbox.close
+      end
+
+      refute @inbox.await(nil)
+    ensure
+      closer&.join
+    end
+  end
 end

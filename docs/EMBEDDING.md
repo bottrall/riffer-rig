@@ -342,6 +342,24 @@ Subscribers run on a background thread, not the thread running the turn, and one
 
 `running_job_count` is the number of jobs still running. It is thread-safe, and has already dropped by the time a subscriber hears of that job's exit.
 
+### Waiting for jobs
+
+A host whose model stops with jobs still running can wait for them on its own thread and give the model a turn for each exit, with no user text — what [headless](HEADLESS.md#background-jobs) does before it exits:
+
+```ruby
+runtime.prompt('run the three test suites in the background') { |event| render(event) }
+while runtime.pending_jobs?
+  break unless runtime.await_job_exit(timeout: 600)
+
+  runtime.follow_up { |event| render(event) }
+end
+runtime.close
+```
+
+`pending_jobs?` is true while any job is running or has exited without the model being told of it yet, so a job that exits just as a turn ends is never missed. `await_job_exit(timeout:)` blocks until an exit is waiting to be told and returns `true`, or returns `false` once `timeout` seconds pass without one; it returns `true` at once when an exit is already waiting, and without a `timeout` it waits for as long as it takes. It neither delivers nor consumes the exit, it is safe to call from any thread, and `close` from another thread ends the wait at once.
+
+`follow_up` runs a turn with no user text: it tells the model of every exit waiting to be told, as one [notification](#exit-notifications), and streams the model's reply exactly as `prompt` does — with a block it yields each event and returns `nil`, without one it returns an `Enumerator`. It is a turn like any other: one prompt or follow-up runs at a time, it ends with a `turn_end`, and it is [continued](#exit-notifications) for exits that land as the model finishes. With no exit waiting it does not call the model, and its `turn_end` has `stop_reason` `:completed`.
+
 `close` ends delivery: the jobs it kills, and any exit that lands after it, reach no subscriber. A host that swaps one Runtime for another closes the old one and subscribes on the new one. `close` also removes the output file of every job, so read what you need from an `output_path` first.
 
 ### Exit notifications
@@ -353,6 +371,6 @@ Each delivery puts one `job_exit` event per job on the stream, before the messag
 `on_message` observers see every notice, because a store has to keep what the model read:
 
 - A notice delivered during a turn is part of a tool result: the `Riffer::Messages::Tool` an observer receives holds the tool's output, a blank line, and the notice. The `result` on that call's `after_tool_call` event is the tool's output alone.
-- A notice delivered as the model finishes its reply, or ahead of the next prompt, is a `Riffer::Rig::Runtime::JobNotification` — a `Riffer::Messages::User`, so every provider serializes it as a user turn — whose `to_h` adds `job_notification: true`. The key is how anything reading stored messages tells a notice from a prompt the user typed. A [snapshot](#snapshots) restores a hash carrying it as a `JobNotification`.
+- A notice delivered as the model finishes its reply, ahead of the next prompt, or by a [follow-up](#waiting-for-jobs), is a `Riffer::Rig::Runtime::JobNotification` — a `Riffer::Messages::User`, so every provider serializes it as a user turn — whose `to_h` adds `job_notification: true`. The key is how anything reading stored messages tells a notice from a prompt the user typed. A [snapshot](#snapshots) restores a hash carrying it as a `JobNotification`.
 
 A turn the Runtime continues for a notice is still one turn: one `turn_end`, whose `usage` and the `Riffer::Agent::Response` of `ask` cover every reply in it.

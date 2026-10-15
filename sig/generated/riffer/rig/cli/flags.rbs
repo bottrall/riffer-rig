@@ -4,7 +4,7 @@ class Riffer::Rig::CLI::Flags
   BANNER: String
 
   # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, version
-  # @dynamic save, verbose, json, headless, prompt, continue, resume
+  # @dynamic save, verbose, json, job_idle_timeout, headless, prompt, continue, resume
   attr_reader model: String?
 
   attr_reader extensions: bool
@@ -28,6 +28,8 @@ class Riffer::Rig::CLI::Flags
   attr_reader max_steps: Integer?
 
   attr_reader save: bool
+
+  attr_reader job_idle_timeout: Integer?
 
   attr_reader prompt: String?
 
@@ -62,6 +64,7 @@ class Riffer::Rig::CLI::Flags
   # @rbs save: bool
   # @rbs verbose: bool
   # @rbs json: bool
+  # @rbs job_idle_timeout: Integer?
   # @rbs headless: bool
   # @rbs prompt: String?
   # @rbs continue: bool
@@ -69,5 +72,5 @@ class Riffer::Rig::CLI::Flags
   # @rbs help: bool
   # @rbs version: bool
   # @rbs return: void
-  def initialize: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?verbose: bool, ?json: bool, ?headless: bool, ?prompt: String?, ?continue: bool, ?resume: String?, ?help: bool, ?version: bool) -> void
+  def initialize: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?verbose: bool, ?json: bool, ?job_idle_timeout: Integer?, ?headless: bool, ?prompt: String?, ?continue: bool, ?resume: String?, ?help: bool, ?version: bool) -> void
 end

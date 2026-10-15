@@ -25,7 +25,7 @@ The model never has to ask whether a job is done: the Runtime delivers each exit
 
 - **During a turn** it is appended to the next tool result the model receives, after the tool's own output.
 - **As the model finishes its reply** the Runtime adds the notice as a user-role message and runs the model again, so the turn continues. A prompt is continued this way at most five times, and not once the [step limit](EMBEDDING.md#capping-the-loop) is used up; an exit held back waits for the next prompt.
-- **Between turns** it is delivered as a user-role message ahead of the next prompt.
+- **Between turns** it is delivered as a user-role message ahead of the next prompt, or in a [follow-up](EMBEDDING.md#waiting-for-jobs) turn of its own, which is how [headless](HEADLESS.md#background-jobs) hears of the jobs a run left running.
 
 Exits that are waiting together arrive as one notice. `bash`'s description tells the model it will be notified, so it has no reason to wait on a job or poll `bash_output` for its exit. [Exit notifications](EMBEDDING.md#exit-notifications) describes what a host sees of each delivery.
 
