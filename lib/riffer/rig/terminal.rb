@@ -11,8 +11,6 @@ class Riffer::Rig::Terminal
 
   RESUME_USAGE = 'Usage: /resume [--all]' #: String
 
-  SLASH_COMMAND = %r{\A/(\S+)\s*(.*)\z}m #: Regexp
-
   EXIT_HINT = 'Press Ctrl-C again to exit.'
 
   FAREWELL = 'see you on the next riff.'
@@ -217,7 +215,7 @@ class Riffer::Rig::Terminal
   # @rbs text: String
   # @rbs return: Riffer::Rig::Runtime
   def dispatch(runtime, text)
-    command = SLASH_COMMAND.match(text)
+    command = Riffer::Rig::Command::INVOCATION.match(text)
     if command
       case command[1].to_s
       when NEW_COMMAND then return command_new(runtime, command[2].to_s)

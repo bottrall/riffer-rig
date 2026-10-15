@@ -11,8 +11,6 @@ class Riffer::Rig::Terminal
 
   RESUME_USAGE: String
 
-  SLASH_COMMAND: Regexp
-
   EXIT_HINT: ::String
 
   FAREWELL: ::String

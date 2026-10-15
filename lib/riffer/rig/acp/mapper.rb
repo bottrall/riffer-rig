@@ -85,7 +85,7 @@ module Riffer::Rig::ACP::Mapper
 
   # riffer's failure reasons (:error, :other, :guardrail_blocked) have no ACP
   # counterpart; refusal is the closest signal that the turn did not complete.
-  # @rbs stop_reason: Symbol?
+  # @rbs stop_reason: Symbol
   # @rbs return: String
   def stop_reason_of(stop_reason)
     case stop_reason

@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/command.rb with RBS::Inline
 
 class Riffer::Rig::Command
+  INVOCATION: Regexp
+
   @block: ^(Riffer::Rig::Command::Context) -> void
 
   # @dynamic name, description, extension
