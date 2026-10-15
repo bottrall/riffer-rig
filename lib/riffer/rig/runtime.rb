@@ -335,6 +335,11 @@ class Riffer::Rig::Runtime
     @job_inbox.await(timeout)
   end
 
+  # @rbs return: Integer
+  def pending_job_exit_count
+    @job_inbox.size
+  end
+
   # @rbs return: nil
   def cancel
     @cancel_flag.set

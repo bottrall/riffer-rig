@@ -13,6 +13,7 @@ class Riffer::Rig::Terminal::Repl
   # @rbs @queue: Riffer::Rig::Terminal::MessageQueue
   # @rbs @asking: bool
   # @rbs @armed: bool
+  # @rbs @woken: bool
   # @rbs @busy: bool
   # @rbs @closed: bool
   # @rbs @mutex: Mutex
@@ -39,6 +40,7 @@ class Riffer::Rig::Terminal::Repl
     @queue = Riffer::Rig::Terminal::MessageQueue.new
     @asking = false
     @armed = false
+    @woken = false
     @busy = false
     @closed = false
     @mutex = Mutex.new
@@ -58,6 +60,12 @@ class Riffer::Rig::Terminal::Repl
     @reader&.kill
     @reader&.join
     @console.stop
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def watch(runtime)
+    runtime.on_job_exit { wake }
   end
 
   # @rbs recorded: Array[Riffer::Rig::Terminal::Replay::_Recorded]
@@ -87,28 +95,40 @@ class Riffer::Rig::Terminal::Repl
     end
   end
 
-  # @rbs &block: (String) -> void
+  # @rbs &block: (String | :job_exit) -> void
   # @rbs return: void
   def run
-    while (message = take)
-      yield message.text
+    while (entry = take)
+      yield entry
     end
   end
 
   private
 
-  # @rbs return: Riffer::Rig::Terminal::MessageQueue::Message?
+  # @rbs return: (String | :job_exit)?
   def take
     @mutex.synchronize do
       @busy = false
-      @arrival.wait(@mutex) while @queue.messages.empty? && !@closed
+      @arrival.wait(@mutex) while @queue.messages.empty? && !@woken && !@closed
       message, @queue = @queue.dequeue
-      @busy = !message.nil?
+      entry = message ? message.text : job_exit
+      @busy = !entry.nil?
       @frame.queued(@queue.messages.size)
-      message
+      entry
     end
   rescue Interrupt
     retry if arm
+  end
+
+  # @rbs return: :job_exit | nil
+  def job_exit
+    return unless @woken && !@closed
+
+    # Exits that land while a turn runs, or together, are one wake-up: the
+    # turn it starts takes every exit the Runtime holds by then.
+    @woken = false
+    disarm
+    :job_exit
   end
 
   # @rbs return: bool
@@ -141,13 +161,26 @@ class Riffer::Rig::Terminal::Repl
     @mutex.synchronize { close }
   end
 
+  # @rbs return: void
+  def wake
+    @mutex.synchronize do
+      @woken = true
+      @arrival.signal
+    end
+  end
+
   # @rbs key: Riffer::Rig::Terminal::Key
   # @rbs return: void
   def press(key)
-    @frame.status('') if @armed
-    @armed = false
+    disarm
     @editor = edit(key)
     @frame.input(@editor)
+  end
+
+  # @rbs return: void
+  def disarm
+    @frame.status('') if @armed
+    @armed = false
   end
 
   # @rbs key: Riffer::Rig::Terminal::Key

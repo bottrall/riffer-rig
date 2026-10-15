@@ -35,9 +35,14 @@ class RecordedSessions
 end
 
 class ReplayingRepl
-  attr_reader :replayed
+  attr_reader :watched, :replayed
 
-  def initialize = @replayed = []
+  def initialize
+    @watched = []
+    @replayed = []
+  end
+
+  def watch(runtime) = @watched << runtime
 
   def replay(recorded, theme:) = @replayed << [recorded, theme]
 end
@@ -69,6 +74,15 @@ describe Riffer::Rig::Terminal::Opening do
       banner(runtime, jobs: jobs)
 
       assert_equal [runtime], jobs.watched
+    end
+
+    it 'has the Repl watch the Runtime' do
+      repl = ReplayingRepl.new
+      runtime = OpenedRuntime.new
+
+      banner(runtime, repl: repl)
+
+      assert_equal [runtime], repl.watched
     end
 
     it 'counts the skill commands in the banner' do

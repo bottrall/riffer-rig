@@ -1924,6 +1924,36 @@ describe Riffer::Rig::Runtime do
     end
   end
 
+  describe '#pending_job_exit_count' do
+    before do
+      @runtime = Riffer::Rig::Runtime.new('mock/test')
+      @exits = job_exits(@runtime)
+    end
+
+    after do
+      @runtime.close
+    end
+
+    it 'is zero without an exit' do
+      assert_equal 0, @runtime.pending_job_exit_count
+    end
+
+    it 'counts an exit no turn has delivered' do
+      spawn_group_job(@runtime, 'true')
+      @exits.pop(timeout: 5)
+
+      assert_equal 1, @runtime.pending_job_exit_count
+    end
+
+    it 'drops once a turn delivers the exit' do
+      spawn_group_job(@runtime, 'true')
+      @exits.pop(timeout: 5)
+      @runtime.ask('next')
+
+      assert_equal 0, @runtime.pending_job_exit_count
+    end
+  end
+
   describe 'job exit notifications' do
     before do
       exits = @exits = Queue.new

@@ -493,6 +493,111 @@ describe Riffer::Rig::Terminal do
       assert_equal(%w[one two], runtime.agent.provider.calls.map { |call| call[:messages].last[:content] })
     end
 
+    describe 'when a background job exits' do
+      before do
+        @runtimes = []
+        @exits = Queue.new
+      end
+
+      def run_watching(script, &)
+        run_on_pty(script) do |runtime|
+          @runtimes << runtime
+          runtime.on_job_exit { @exits << true }
+          yield runtime if block_given?
+        end
+      end
+
+      def exit_jobs(count = 1)
+        jobs = @runtimes.last.agent.context[:jobs]
+        count.times { jobs.register(Process.spawn('true', pgroup: true), 'true', File.open(File::NULL)) }
+        count.times { @exits.pop(timeout: TerminalPty::TIMEOUT_SECONDS) || raise('the job never exited') }
+      end
+
+      def idle_exit
+        lambda do |pty|
+          pty.await('type /exit to quit')
+          exit_jobs
+          pty.await('Mock response')
+          pty.type("/exit\r")
+        end
+      end
+
+      def exits_while_asked(count)
+        write_asking_command
+        lambda do |pty|
+          pty.type("/who\r")
+          pty.await('who?')
+          exit_jobs(count)
+          pty.type("me\r")
+          pty.await('Mock response')
+          pty.type("/exit\r")
+        end
+      end
+
+      it 'runs a turn on the exit without a key pressed' do
+        run_watching(idle_exit)
+
+        assert_includes @runtimes.last.agent.provider.calls.last[:messages].last[:content], '<background-job '
+      end
+
+      it 'shows a notice ahead of that turn' do
+        assert_match(/1 background job exited\r\n.*Mock response/m, run_watching(idle_exit))
+      end
+
+      it 'keeps a half-typed line through that turn' do
+        script = lambda do |pty|
+          pty.await('type /exit to quit')
+          pty.type('half')
+          pty.await('› half')
+          exit_jobs
+          pty.await('Mock response')
+          pty.type(" done\r")
+          pty.await('Mock response', count: 2)
+          pty.type("/exit\r")
+        end
+        run_watching(script)
+
+        assert_equal 'half done', @runtimes.last.agent.provider.calls.last[:messages].last[:content]
+      end
+
+      it 'holds an exit while a host prompt is open' do
+        assert_match(/hi, me.*1 background job exited/m, run_watching(exits_while_asked(1)))
+      end
+
+      it 'counts them in its notice' do
+        assert_includes run_watching(exits_while_asked(2)), "2 background jobs exited\r\n"
+      end
+
+      it 'starts nothing for an exit from a Runtime /new swapped out' do
+        held = Queue.new
+        release = Queue.new
+        checked = Queue.new
+        script = lambda do |pty|
+          pty.type("/cost\r")
+          held.pop(timeout: TerminalPty::TIMEOUT_SECONDS) || raise('the command was never held')
+          exit_jobs
+          pty.type("/new\r")
+          pty.await('1 queued')
+          release << true
+          checked.pop(timeout: TerminalPty::TIMEOUT_SECONDS) || raise('the exit was never checked')
+          pty.type("/exit\r")
+        end
+        output = run_watching(script) do |runtime|
+          if @runtimes.one?
+            runtime.define_singleton_method(:run_command) do |*args, &block|
+              held << true
+              release.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
+              super(*args, &block)
+            end
+          else
+            runtime.define_singleton_method(:pending_job_exit_count) { super().tap { checked << true } }
+          end
+        end
+
+        refute_includes output, 'background job'
+      end
+    end
+
     it 'echoes a submitted line above the footer' do
       output = run_on_pty(->(pty) { pty.type("hello\r/exit\r") })
 

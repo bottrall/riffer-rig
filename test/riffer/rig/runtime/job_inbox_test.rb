@@ -41,6 +41,16 @@ describe Riffer::Rig::Runtime::JobInbox do
     end
   end
 
+  describe '#size' do
+    it 'counts the completions pushed since the last drain' do
+      @inbox.push(@completion)
+      @inbox.drain
+      2.times { @inbox.push(@completion) }
+
+      assert_equal 2, @inbox.size
+    end
+  end
+
   describe '#drain' do
     it 'returns the completions pushed since the last drain' do
       @inbox.push(@completion)

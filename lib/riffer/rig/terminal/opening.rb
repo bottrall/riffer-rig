@@ -30,6 +30,7 @@ class Riffer::Rig::Terminal::Opening
   # @rbs return: void
   def call(runtime)
     @jobs&.watch(runtime)
+    @repl&.watch(runtime)
     skills = runtime.commands.count { |command| command.name.start_with?(SKILL_COMMAND_PREFIX) }
     Riffer::Rig::Terminal::Banner.lines(
       @theme,

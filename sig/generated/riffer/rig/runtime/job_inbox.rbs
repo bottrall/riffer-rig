@@ -25,6 +25,9 @@ class Riffer::Rig::Runtime::JobInbox
   # @rbs return: void
   def push: (Riffer::Rig::Runtime::JobCompletion completion) -> void
 
+  # @rbs return: Integer
+  def size: () -> Integer
+
   # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
   def drain: () -> Array[Riffer::Rig::Runtime::JobCompletion]
 

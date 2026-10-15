@@ -88,6 +88,10 @@ class Riffer::Rig::Terminal
   def drain: (Riffer::Rig::Terminal::Repl queued, Riffer::Rig::Runtime runtime) -> void
 
   # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def deliver_job_exits: (Riffer::Rig::Runtime runtime) -> void
+
+  # @rbs runtime: Riffer::Rig::Runtime
   # @rbs text: String
   # @rbs return: Riffer::Rig::Runtime
   def dispatch: (Riffer::Rig::Runtime runtime, String text) -> Riffer::Rig::Runtime
