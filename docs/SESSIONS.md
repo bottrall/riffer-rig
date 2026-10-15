@@ -27,6 +27,8 @@ Every entry but the header also holds `recorded_at`, the wall-clock time the Loa
 
 Every Loader-built session is saved, one-shots included. Skip one run with `store: nil` — `--no-save` on the command line — or all of them with `"sessions": {"save": false}` in settings ([Configuration](CONFIGURATION.md)).
 
+`--no-save` leaves the saved sessions unread too: `-c`, `-r` and `/resume` print `Sessions are off for this run (--no-save).` instead of looking for one, and in headless mode `-c` and `-r` exit 2 with it. The settings switch only stops recording — saved sessions still resume, and the resumed session is not appended to.
+
 ## Tracing the last turn
 
 `/trace` replays the last turn from the store. The Loader installs it as a runtime command on every build that records, so it works the same in every host and is absent when the session is not saved ([Opting out](#opting-out)). The turn runs from the session's last prompt to its last entry, so a resumed session can be traced before its next prompt. The command's `command_output` holds one line per recorded step — the time, what happened, and the detail:

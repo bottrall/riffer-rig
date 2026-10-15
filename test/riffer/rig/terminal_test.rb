@@ -33,6 +33,10 @@ class PreparedSessions
     @sessions.list(host, all: all)
   end
 
+  def off
+    @sessions.off
+  end
+
   def missing(id = nil)
     @sessions.missing(id)
   end
