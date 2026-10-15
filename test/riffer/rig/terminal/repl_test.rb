@@ -66,6 +66,14 @@ class QueuePrompter
   end
 end
 
+class ExitingRuntime
+  def initialize = @subscribers = []
+
+  def on_job_exit(&block) = @subscribers << block
+
+  def exit_job = @subscribers.each(&:call)
+end
+
 class RecordingPeek
   attr_reader :pressed
 
@@ -184,6 +192,17 @@ describe Riffer::Rig::Terminal::Repl do
       session
 
       assert_equal :stop, logged.last
+    end
+  end
+
+  describe '#watch' do
+    it 'runs a job exit from the Runtime as a turn' do
+      runtime = ExitingRuntime.new
+      repl.watch(runtime)
+      begin_session { @keys.close }
+      runtime.exit_job
+
+      assert_equal [:job_exit], finish
     end
   end
 
@@ -376,6 +395,22 @@ describe Riffer::Rig::Terminal::Repl do
       assert_equal [1, 0, 0], @frame.counts.last(3)
     end
 
+    it 'takes the lines queued behind a turn ahead of a job exit' do
+      runtime = ExitingRuntime.new
+      repl.watch(runtime)
+      type("one\r")
+
+      turns = session do |line|
+        next @keys.close unless line == 'one'
+
+        type("two\r")
+        await([:queued, 1])
+        runtime.exit_job
+      end
+
+      assert_equal ['one', 'two', :job_exit], turns
+    end
+
     it 'ends once the keys have ended and nothing is queued' do
       @keys.close
 
@@ -402,6 +437,47 @@ describe Riffer::Rig::Terminal::Repl do
       finish
 
       assert_equal :stop, logged.last
+    end
+  end
+
+  describe '#job_exit' do
+    before do
+      @runtime = ExitingRuntime.new
+    end
+
+    it 'takes exits that landed together as one' do
+      repl.watch(@runtime)
+      2.times { @runtime.exit_job }
+
+      assert_equal([:job_exit], session { @keys.close })
+    end
+
+    it 'drops an exit once the input has ended' do
+      repl.watch(@runtime)
+      type("one\r")
+
+      turns = session do
+        @runtime.exit_job
+        press(:ctrl_d, :ctrl_c)
+        @interrupts.pop(timeout: timeout_seconds)
+      end
+
+      assert_equal ['one'], turns
+    end
+
+    it 'disarms the exit for the turn it starts' do
+      signalling.watch(@runtime)
+      press(:ctrl_c)
+      begin_session
+      await([:status, hint])
+      @runtime.exit_job
+      await([:status, ''])
+      press(:ctrl_c)
+      await([:status, hint])
+      @keys.close
+      finish
+
+      assert_equal 2, @frame.statuses.count(hint)
     end
   end
 

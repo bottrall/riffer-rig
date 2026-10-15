@@ -213,6 +213,9 @@ class Riffer::Rig::Runtime
   # @rbs return: bool
   def await_job_exit: (?timeout: Numeric?) -> bool
 
+  # @rbs return: Integer
+  def pending_job_exit_count: () -> Integer
+
   # @rbs return: nil
   def cancel: () -> nil
 

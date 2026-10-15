@@ -39,6 +39,11 @@ class Riffer::Rig::Runtime::JobInbox
     end
   end
 
+  # @rbs return: Integer
+  def size
+    @mutex.synchronize { @pending.size }
+  end
+
   # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
   def drain
     @mutex.synchronize { @pending.shift(@pending.size) }

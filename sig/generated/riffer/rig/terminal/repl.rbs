@@ -1,37 +1,39 @@
 # Generated from lib/riffer/rig/terminal/repl.rb with RBS::Inline
 
 class Riffer::Rig::Terminal::Repl
-  @arrival: ConditionVariable
-
-  @mutex: Mutex
-
-  @closed: bool
-
-  @busy: bool
-
-  @armed: bool
-
-  @asking: bool
-
-  @queue: Riffer::Rig::Terminal::MessageQueue
-
-  @editor: Riffer::Rig::Terminal::LineEditor
-
-  @reader: Thread?
-
-  @interrupt: ^() -> void
-
-  @peek: Riffer::Rig::Terminal::Peek
-
-  @prompter: Riffer::Rig::Terminal::FramePrompter
-
-  @asks: Thread::Queue[Riffer::Rig::Terminal::Key]
-
-  @keys: Thread::Queue[Riffer::Rig::Terminal::Key]
+  @console: Riffer::Rig::Terminal::Console
 
   @frame: Riffer::Rig::Terminal::Frame
 
-  @console: Riffer::Rig::Terminal::Console
+  @keys: Thread::Queue[Riffer::Rig::Terminal::Key]
+
+  @asks: Thread::Queue[Riffer::Rig::Terminal::Key]
+
+  @prompter: Riffer::Rig::Terminal::FramePrompter
+
+  @peek: Riffer::Rig::Terminal::Peek
+
+  @interrupt: ^() -> void
+
+  @reader: Thread?
+
+  @editor: Riffer::Rig::Terminal::LineEditor
+
+  @queue: Riffer::Rig::Terminal::MessageQueue
+
+  @asking: bool
+
+  @armed: bool
+
+  @woken: bool
+
+  @busy: bool
+
+  @closed: bool
+
+  @mutex: Mutex
+
+  @arrival: ConditionVariable
 
   # @rbs console: Riffer::Rig::Terminal::Console
   # @rbs frame: Riffer::Rig::Terminal::Frame
@@ -49,6 +51,10 @@ class Riffer::Rig::Terminal::Repl
   # @rbs return: void
   def stop: () -> void
 
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def watch: (Riffer::Rig::Runtime runtime) -> void
+
   # @rbs recorded: Array[Riffer::Rig::Terminal::Replay::_Recorded]
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs return: void
@@ -60,14 +66,17 @@ class Riffer::Rig::Terminal::Repl
   # @rbs return: String?
   def ask: (String? question, options: Array[String]?, secret: bool) -> String?
 
-  # @rbs &block: (String) -> void
+  # @rbs &block: (String | :job_exit) -> void
   # @rbs return: void
-  def run: () { (String) -> void } -> void
+  def run: () { (String | :job_exit) -> void } -> void
 
   private
 
-  # @rbs return: Riffer::Rig::Terminal::MessageQueue::Message?
-  def take: () -> Riffer::Rig::Terminal::MessageQueue::Message?
+  # @rbs return: (String | :job_exit)?
+  def take: () -> (String | :job_exit)?
+
+  # @rbs return: :job_exit | nil
+  def job_exit: () -> (:job_exit | nil)
 
   # @rbs return: bool
   def arm: () -> bool
@@ -75,9 +84,15 @@ class Riffer::Rig::Terminal::Repl
   # @rbs return: void
   def read: () -> void
 
+  # @rbs return: void
+  def wake: () -> void
+
   # @rbs key: Riffer::Rig::Terminal::Key
   # @rbs return: void
   def press: (Riffer::Rig::Terminal::Key key) -> void
+
+  # @rbs return: void
+  def disarm: () -> void
 
   # @rbs key: Riffer::Rig::Terminal::Key
   # @rbs return: Riffer::Rig::Terminal::LineEditor

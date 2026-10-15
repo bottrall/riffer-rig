@@ -190,13 +190,27 @@ class Riffer::Rig::Terminal
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void
   def drain(queued, runtime)
-    queued.run do |line|
-      # A pasted line can carry control characters the terminal would act on.
-      @renderer.echo(LineEditor.new(before: line).printable_before)
-      break if EXIT_COMMANDS.include?(line)
+    queued.run do |entry|
+      next deliver_job_exits(runtime) if entry == :job_exit
 
-      runtime = dispatch(runtime, line)
+      # A pasted line can carry control characters the terminal would act on.
+      @renderer.echo(LineEditor.new(before: entry).printable_before)
+      break if EXIT_COMMANDS.include?(entry)
+
+      runtime = dispatch(runtime, entry)
     end
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def deliver_job_exits(runtime)
+    # An exit delivered inside a turn, or dropped with a swapped-out Runtime,
+    # leaves nothing to start one for.
+    exits = runtime.pending_job_exit_count
+    return if exits.zero?
+
+    @renderer.notice("#{exits} background #{exits == 1 ? 'job' : 'jobs'} exited")
+    turn(runtime) { |emit| runtime.follow_up(&emit) }
   end
 
   # @rbs runtime: Riffer::Rig::Runtime
