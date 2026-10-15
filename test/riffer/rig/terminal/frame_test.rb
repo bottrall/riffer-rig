@@ -37,6 +37,18 @@ describe Riffer::Rig::Terminal::Frame do
     Riffer::Rig::Terminal::LineEditor.new(before: before, after: after)
   end
 
+  def commands(described = { 'auth' => 'Store credentials', 'model' => 'Switch the model' })
+    described.map { |name, about| Riffer::Rig::Command.new(name, description: about, extension: :core) { nil } }
+  end
+
+  def completing(*keys, listed: commands)
+    keys.reduce(Riffer::Rig::Terminal::Autocomplete.new(commands: listed)) do |state, key|
+      state.press(key.is_a?(String) ? Riffer::Rig::Terminal::Key.new(:text, key) : Riffer::Rig::Terminal::Key.new(key))
+    end
+  end
+
+  def palette = "▸ /auth   Store credentials\r\n  /model  Switch the model\r\n"
+
   describe '.measure' do
     it 'is nil when the io is not a tty' do
       assert_nil Riffer::Rig::Terminal::Frame.measure(StringIO.new)
@@ -197,6 +209,52 @@ describe Riffer::Rig::Terminal::Frame do
       frame.input(editing('hi', 'yo'))
 
       assert_equal [0, 4], [@pty.screen.row, @pty.screen.column]
+    end
+
+    it 'erases the palette of an earlier completion' do
+      io = tty(80)
+      frame = started(io)
+      frame.complete(completing('/'))
+
+      frame.input(editing('hi'))
+
+      assert_operator io.string, :end_with?, "\e[2A\r\e[J› hi\r\n  \e[1A\e[5G"
+    end
+  end
+
+  describe '#complete' do
+    it 'draws nothing when there is no footer' do
+      io = StringIO.new
+
+      started(io).complete(completing('/'))
+
+      assert_equal '', io.string
+    end
+
+    it 'redraws the footer under the palette of the completion' do
+      io = tty(80)
+
+      started(io).complete(completing('/'))
+
+      assert_equal "#{empty_footer}\r\e[J#{palette}› /auth\r\n  \e[1A\e[4G", io.string
+    end
+
+    it 'erases the palette once the completion closes' do
+      io = tty(80)
+      frame = started(io)
+      frame.complete(completing('/'))
+
+      frame.complete(completing('/', :escape))
+
+      assert_operator io.string, :end_with?, "\e[2A\r\e[J› /\r\n  \e[1A\e[4G"
+    end
+
+    it 'leaves the cursor at the edit point' do
+      frame = on_pty
+
+      frame.complete(completing('/', 'm', 'o'))
+
+      assert_equal [1, 5], [@pty.screen.row, @pty.screen.column]
     end
   end
 
@@ -497,6 +555,53 @@ describe Riffer::Rig::Terminal::Frame do
     end
   end
 
+  describe '#palette_rows' do
+    def completed(columns, completion, rows: 24, color: false)
+      io = tty(columns, rows: rows)
+      started(io, color: color).complete(completion)
+      io.string.delete_prefix("#{empty_footer}\r\e[J")
+    end
+
+    it 'draws no more rows than a short terminal has above its footer' do
+      shown = completed(80, completing('/', listed: commands('auth' => 'a', 'commit' => 'c', 'model' => 'm')), rows: 4)
+
+      assert_equal "▸ /auth    a\r\n  /commit  c\r\n› /auth\r\n  \e[1A\e[4G", shown
+    end
+
+    it 'leaves the peek the rows the palette does not take' do
+      io = tty(80, rows: 5)
+      frame = started(io)
+      frame.peek("one\ntwo")
+
+      frame.complete(completing('/'))
+
+      assert_operator io.string, :end_with?, "\e[2A\r\e[J  two\r\n#{palette}› /auth\r\n  \e[1A\e[4G"
+    end
+
+    it 'scrolls the matches to keep the selection on the last row' do
+      rows = (2..8).map { |n| "  /c#{n}  about #{n}\r\n" }.join
+      shown = completed(80, completing('/', :up, listed: commands((0..9).to_h { |n| ["c#{n}", "about #{n}"] })))
+
+      assert_equal "#{rows}▸ /c9  about 9\r\n› /c9\r\n  \e[1A\e[4G", shown
+    end
+
+    it 'joins the lines of a description into one row' do
+      listed = commands('auth' => "Store\ncredentials\n")
+
+      assert_operator completed(80, completing('/', listed:)), :start_with?, "▸ /auth  Store credentials\r\n"
+    end
+
+    it 'paints the selected name and dims each description when color is on' do
+      row = "▸ \e[38;2;255;106;193m/auth \e[0m  \e[2mStore credentials\e[0m\r\n"
+
+      assert_includes completed(80, completing('/'), color: true), row
+    end
+
+    it 'cuts each row at the free last column' do
+      assert_operator completed(12, completing('/')), :start_with?, "▸ /auth   S\r\n  /model  S\r\n"
+    end
+  end
+
   describe '#footer' do
     it 'keeps the last column free' do
       io = tty(10)
@@ -545,6 +650,30 @@ describe Riffer::Rig::Terminal::Frame do
 
       assert_operator io.string, :end_with?, "\r\n  \e[2mworki\e[0m\e[1A\e[3G"
     end
+
+    it 'draws the rest of the selected name after the cursor' do
+      io = tty(80)
+
+      started(io).complete(completing('/', 'm', 'o'))
+
+      assert_operator io.string, :end_with?, "› /model\r\n  \e[1A\e[6G"
+    end
+
+    it 'cuts the rest of the name at the free last column' do
+      io = tty(7)
+
+      started(io).complete(completing('/', 'm', 'o'))
+
+      assert_operator io.string, :end_with?, "› /mod\r\n  \e[1A\e[6G"
+    end
+
+    it 'dims the rest of the name when color is on' do
+      io = tty(80)
+
+      started(io, color: true).complete(completing('/', 'm', 'o'))
+
+      assert_includes io.string, "/mo\e[2mdel\e[0m\r\n"
+    end
   end
 
   describe '#chip' do
@@ -580,6 +709,16 @@ describe Riffer::Rig::Terminal::Frame do
       started(io, editor: editing('hi', 'yo')).queued(2)
 
       assert_operator io.string, :end_with?, "› hiyo   · 2 queued\r\n  \e[1A\e[5G"
+    end
+
+    it 'follows the rest of a completed name' do
+      io = tty(80)
+      frame = started(io)
+      frame.complete(completing('/', 'm', 'o'))
+
+      frame.queued(2)
+
+      assert_operator io.string, :end_with?, "› /model   · 2 queued\r\n  \e[1A\e[6G"
     end
 
     it 'fills the input line up to the free last column' do

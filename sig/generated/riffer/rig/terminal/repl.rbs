@@ -17,7 +17,9 @@ class Riffer::Rig::Terminal::Repl
 
   @reader: Thread?
 
-  @editor: Riffer::Rig::Terminal::LineEditor
+  @runtime: Riffer::Rig::Runtime?
+
+  @completion: Riffer::Rig::Terminal::Autocomplete
 
   @queue: Riffer::Rig::Terminal::MessageQueue
 
@@ -95,8 +97,8 @@ class Riffer::Rig::Terminal::Repl
   def disarm: () -> void
 
   # @rbs key: Riffer::Rig::Terminal::Key
-  # @rbs return: Riffer::Rig::Terminal::LineEditor
-  def edit: (Riffer::Rig::Terminal::Key key) -> Riffer::Rig::Terminal::LineEditor
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete
+  def edit: (Riffer::Rig::Terminal::Key key) -> Riffer::Rig::Terminal::Autocomplete
 
   # @rbs line: String
   # @rbs return: void

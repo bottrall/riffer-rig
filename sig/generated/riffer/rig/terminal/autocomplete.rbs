@@ -7,14 +7,14 @@ class Riffer::Rig::Terminal::Autocomplete
 
   @dismissed: bool
 
-  @index: Integer
-
   @commands: Array[Riffer::Rig::Command]
 
-  # @dynamic editor, matches
+  # @dynamic editor, matches, index
   attr_reader editor: Riffer::Rig::Terminal::LineEditor
 
   attr_reader matches: Array[Riffer::Rig::Command]
+
+  attr_reader index: Integer
 
   # @rbs commands: Array[Riffer::Rig::Command]
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
@@ -31,6 +31,10 @@ class Riffer::Rig::Terminal::Autocomplete
 
   # @rbs return: String
   def ghost: () -> String
+
+  # @rbs commands: Array[Riffer::Rig::Command]
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete
+  def over: (Array[Riffer::Rig::Command] commands) -> Riffer::Rig::Terminal::Autocomplete
 
   # @rbs key: Riffer::Rig::Terminal::Key
   # @rbs return: Riffer::Rig::Terminal::Autocomplete

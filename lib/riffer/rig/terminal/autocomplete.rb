@@ -6,12 +6,12 @@ class Riffer::Rig::Terminal::Autocomplete
   QUERY = %r{\A/(\S*)\z} #: Regexp
 
   # @rbs @commands: Array[Riffer::Rig::Command]
-  # @rbs @index: Integer
   # @rbs @dismissed: bool
 
-  # @dynamic editor, matches
+  # @dynamic editor, matches, index
   attr_reader :editor #: Riffer::Rig::Terminal::LineEditor
   attr_reader :matches #: Array[Riffer::Rig::Command]
+  attr_reader :index #: Integer
 
   # @rbs commands: Array[Riffer::Rig::Command]
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
@@ -44,6 +44,14 @@ class Riffer::Rig::Terminal::Autocomplete
     return '' unless name && editor.after.empty? && name.downcase.start_with?(typed.downcase)
 
     name[typed.length..].to_s
+  end
+
+  # @rbs commands: Array[Riffer::Rig::Command]
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete
+  def over(commands)
+    return self if commands == @commands
+
+    self.class.new(commands: commands, editor: editor, dismissed: @dismissed)
   end
 
   # @rbs key: Riffer::Rig::Terminal::Key

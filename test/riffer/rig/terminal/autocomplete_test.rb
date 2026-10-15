@@ -119,6 +119,35 @@ describe Riffer::Rig::Terminal::Autocomplete do
     end
   end
 
+  describe '#over' do
+    def replaced
+      %w[mode reload].map { |name| Riffer::Rig::Command.new(name, description: name, extension: :core) { nil } }
+    end
+
+    it 'keeps the selection over the same commands' do
+      listed = commands
+      state = typed('/', :down, from: Riffer::Rig::Terminal::Autocomplete.new(commands: listed))
+
+      assert_equal 'commit', state.over(listed.dup).selected.name
+    end
+
+    it 'matches the typed line against new commands' do
+      assert_equal %w[mode], names(typed('/', 'm', 'o').over(replaced))
+    end
+
+    it 'returns to the best match over new commands' do
+      assert_equal 'mode', typed('/', :down).over(replaced).selected.name
+    end
+
+    it 'keeps the line over new commands' do
+      assert_equal '/mo', typed('/', 'm', 'o').over(replaced).editor.text
+    end
+
+    it 'stays dismissed over new commands' do
+      refute_predicate typed('/', :escape).over(replaced), :open?
+    end
+  end
+
   describe '#press' do
     it 'recalls history on up while closed' do
       state = typed('h', 'i').submit
