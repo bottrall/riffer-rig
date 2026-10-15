@@ -5,6 +5,10 @@ class Riffer::Rig::Headless
 
   JOB_IDLE_TIMEOUT: Integer
 
+  @break_before_text: bool
+
+  @wrote_text: bool
+
   @streamed_text: bool
 
   @job_idle_timeout: Integer
@@ -79,6 +83,10 @@ class Riffer::Rig::Headless
   # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
   # @rbs return: void
   def handle: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
+
+  # @rbs content: String
+  # @rbs return: void
+  def write_text: (String content) -> void
 
   # @rbs stop_reason: Symbol?
   # @rbs return: Integer

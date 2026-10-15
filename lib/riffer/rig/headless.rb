@@ -13,6 +13,8 @@ class Riffer::Rig::Headless
   # @rbs @json: bool
   # @rbs @job_idle_timeout: Integer
   # @rbs @streamed_text: bool
+  # @rbs @wrote_text: bool
+  # @rbs @break_before_text: bool
 
   # @rbs input: IO
   # @rbs output: IO
@@ -50,6 +52,8 @@ class Riffer::Rig::Headless
     @verbose = verbose
     @json = json
     @job_idle_timeout = job_idle_timeout
+    @wrote_text = false
+    @break_before_text = false
   end
 
   # @rbs prompt: String?
@@ -112,6 +116,7 @@ class Riffer::Rig::Headless
     cap = @job_idle_timeout unless @job_idle_timeout.zero?
     return abandon_jobs unless runtime.await_job_exit(timeout: cap)
 
+    @break_before_text = @wrote_text
     turn(runtime) { |handler| runtime.follow_up(&handler) }
   end
 
@@ -160,17 +165,26 @@ class Riffer::Rig::Headless
 
     case event
     when Riffer::StreamEvents::TextDelta
-      @output.write(event.content)
+      write_text(event.content)
       @streamed_text = true
     when Riffer::StreamEvents::TextDone
       # A provider that streams nothing hands over the whole text here; one
       # that streamed deltas has already written it.
-      @output.write(event.content) if !@streamed_text && !event.content.empty?
+      write_text(event.content) if !@streamed_text && !event.content.empty?
       @output.puts if @streamed_text || !event.content.empty?
       @streamed_text = false
     when Riffer::StreamEvents::ToolCallDone
       @error.puts("tool_call #{event.name} #{event.arguments}") if @verbose
     end
+  end
+
+  # @rbs content: String
+  # @rbs return: void
+  def write_text(content)
+    @output.puts if @break_before_text
+    @break_before_text = false
+    @wrote_text = true
+    @output.write(content)
   end
 
   # @rbs stop_reason: Symbol?

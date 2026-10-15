@@ -304,6 +304,37 @@ describe Riffer::Rig::Headless do
       assert_equal "It passed.\n", @output.string
     end
 
+    it 'separates the reply of a follow-up from the turn before with a blank line' do
+      run_waiting(
+        [true],
+        events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)],
+        follow_up: [Riffer::StreamEvents::TextDone.new('It passed.'), turn_end(:completed)]
+      )
+
+      assert_equal "started\n\nIt passed.\n", @output.string
+    end
+
+    it 'prints the blank line only once for a follow-up that streams its reply' do
+      run_waiting(
+        [true],
+        events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)],
+        follow_up: [
+          Riffer::StreamEvents::TextDelta.new('It '),
+          Riffer::StreamEvents::TextDelta.new('passed.'),
+          Riffer::StreamEvents::TextDone.new('It passed.'),
+          turn_end(:completed)
+        ]
+      )
+
+      assert_equal "started\n\nIt passed.\n", @output.string
+    end
+
+    it 'prints no blank line for a follow-up that prints nothing' do
+      run_waiting([true], events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)])
+
+      assert_equal "started\n", @output.string
+    end
+
     it 'returns the code of the last follow-up' do
       run_waiting([true, true], follow_up: [turn_end(:max_steps)])
 
@@ -560,6 +591,17 @@ describe Riffer::Rig::Headless do
         },
         records.last
       )
+    end
+
+    it 'prints no blank line between the records of a follow-up' do
+      run_waiting(
+        [true],
+        json: true,
+        events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)],
+        follow_up: [Riffer::StreamEvents::TextDone.new('It passed.'), turn_end(:completed)]
+      )
+
+      refute_match(/\n\n/, @output.string)
     end
 
     it 'ends with a turn_end record' do
