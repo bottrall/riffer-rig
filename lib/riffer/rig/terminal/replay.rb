@@ -10,10 +10,14 @@ module Riffer::Rig::Terminal::Replay
   # @rbs width: Integer?
   # @rbs return: String
   def call(recorded, theme:, width:)
-    typed = recorded.reject { |entry| entry.message[Riffer::Rig::Runtime::JobNotification::MARKER] }
-    turns = typed.slice_before { |entry| entry.message[:role].to_s == 'user' }.map { |chunk| turn(chunk) }
+    # A notification without a follow-up count was delivered within the turn
+    # of a prompt, so it opens no turn of its own.
+    kept = recorded.reject do |entry|
+      entry.message[Riffer::Rig::Runtime::JobNotification::MARKER] && !entry.message[:follow_up_exits]
+    end
+    turns = kept.slice_before { |entry| entry.message[:role].to_s == 'user' }.map { |chunk| turn(chunk, theme) }
     replayed = turns.compact.map do |past|
-      "#{user_line(past.prompt, theme)}#{Riffer::Rig::Terminal::TurnReport.call(past, nil, theme: theme, width: width)}"
+      "#{past.heading}#{Riffer::Rig::Terminal::TurnReport.call(past, nil, theme: theme, width: width)}"
     end
     indent = ' ' * Riffer::Rig::Terminal::TurnReport::INDENT
     [*replayed, *("\n#{theme.dim("#{indent}#{NOTICE}")}\n" if replayed.size < turns.size)].join
@@ -22,16 +26,18 @@ module Riffer::Rig::Terminal::Replay
   private
 
   # @rbs chunk: Array[Riffer::Rig::Terminal::Replay::_Recorded]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs return: Riffer::Rig::Terminal::Replay::Turn?
-  def turn(chunk)
+  def turn(chunk, theme)
     started = chunk.first&.recorded_time
     ended = chunk.last&.recorded_time
-    prompt, *rest = chunk.map { |entry| message(entry) }
-    return nil unless started && ended && prompt.is_a?(Riffer::Messages::User) && rest.all?
+    opener, *rest = chunk.map { |entry| message(entry) }
+    heading = heading(opener, theme)
+    return nil unless started && ended && heading && rest.all?
 
     replies = rest.grep(Riffer::Messages::Assistant) #: Array[Riffer::Messages::Assistant]
     Turn.new(
-      prompt: prompt.content,
+      heading: heading,
       answer: replies.reject(&:has_tool_calls?).map(&:content).grep(/\S/).last,
       stats: Riffer::Rig::Terminal::TurnBuffer::Stats.new(
         steps: replies.size,
@@ -41,11 +47,23 @@ module Riffer::Rig::Terminal::Replay
     )
   end
 
+  # @rbs opener: Riffer::Messages::Base?
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: String?
+  def heading(opener, theme)
+    case opener
+    when Riffer::Rig::Runtime::JobNotification
+      exits = opener.follow_up_exits
+      "\n#{theme.grey(Riffer::Rig::Terminal::JobExitNotice.call(exits))}\n" if exits
+    when Riffer::Messages::User then user_line(opener.content, theme)
+    end
+  end
+
   # @rbs entry: Riffer::Rig::Terminal::Replay::_Recorded
   # @rbs return: Riffer::Messages::Base?
   def message(entry)
     hash = entry.message
-    Riffer::Messages::Base.from_hash(hash) if hash[:content].is_a?(String)
+    Riffer::Rig::Runtime::Snapshot.message(hash) if hash[:content].is_a?(String)
   # riffer checks a message hash only by rebuilding it, and a damaged one
   # fails wherever the damage sits, not with one error.
   rescue StandardError

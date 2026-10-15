@@ -25,8 +25,12 @@ describe Riffer::Rig::Terminal::Replay do
     Riffer::Messages::Tool.new('ok', tool_call_id: 'call_1', name: 'read')
   end
 
-  def notification
-    Riffer::Rig::Runtime::JobNotification.new('<background-job id="a1b2c3d4">')
+  def notification(follow_up_exits: nil)
+    Riffer::Rig::Runtime::JobNotification.new('<background-job id="a1b2c3d4">', follow_up_exits: follow_up_exits)
+  end
+
+  def follow_up
+    [*exchange, entry(notification(follow_up_exits: 1), 60), entry(assistant('Passed.'), 67)]
   end
 
   def usage(input, output)
@@ -68,6 +72,13 @@ describe Riffer::Rig::Terminal::Replay do
       assert_equal(
         "\n› Go\n\n  Done.\n\n  1 step · 00:41\n\n› Again\n\n  Fixed.\n\n  1 step · 00:07\n",
         replay(recorded)
+      )
+    end
+
+    it 'replays a turn a job exit started as its own turn' do
+      assert_equal(
+        "\n› Go\n\n  Done.\n\n  1 step · 00:41\n\n1 background job exited\n\n  Passed.\n\n  1 step · 00:07\n",
+        replay(follow_up)
       )
     end
 
@@ -160,6 +171,15 @@ describe Riffer::Rig::Terminal::Replay do
       ]
 
       assert_equal "\n› Go\n\n  Done.\n\n  2 steps · 00:41 · ↑250 · ↓50\n", replay(recorded)
+    end
+  end
+
+  describe '.heading' do
+    it 'paints the job exit line of a turn a job exit started grey' do
+      recorded = [entry(notification(follow_up_exits: 2), 0), entry(assistant('Passed.'), 7)]
+      painted = "\n\e[38;2;138;139;154m2 background jobs exited\e[0m\n\n  Passed.\n\n\e[2m  1 step · 00:07\e[0m\n"
+
+      assert_equal painted, replay(recorded, color: true)
     end
   end
 

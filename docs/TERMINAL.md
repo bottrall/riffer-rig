@@ -76,7 +76,7 @@ That is the turn's model calls, its time, its input and output tokens, each cach
 
 ## Resuming
 
-When a session is resumed — `riffer -c`, `riffer -r`, or a pick in [the picker](SESSIONS.md#the-picker) — its earlier turns are replayed above the input line, under the banner: each prompt as `› prompt`, then the turn's answer and its stat line, without the session total. A cancelled turn replays with a stat line too. Turns saved by a version that recorded no times, or damaged on disk, are left out with one line saying so.
+When a session is resumed — `riffer -c`, `riffer -r`, or a pick in [the picker](SESSIONS.md#the-picker) — its earlier turns are replayed above the input line, under the banner: each prompt as `› prompt`, then the turn's answer and its stat line, without the session total. A turn a [background job's exit](#background-jobs) started replays the same way, under its `1 background job exited` line instead of a prompt; one saved by an earlier version replays as part of the turn before it. A cancelled turn replays with a stat line too. Turns saved by a version that recorded no times, or damaged on disk, are left out with one line saying so.
 
 ## Commands
 

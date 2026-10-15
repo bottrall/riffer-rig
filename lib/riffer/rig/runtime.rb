@@ -519,7 +519,7 @@ class Riffer::Rig::Runtime
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
   def start_follow_up
     open_turn
-    notify_job_exits ? @agent.stream : ended_turn(Riffer::Agent::Outcome.new(reason: :completed))
+    notify_job_exits(follow_up: true) ? @agent.stream : ended_turn(Riffer::Agent::Outcome.new(reason: :completed))
   end
 
   # @rbs return: void
@@ -715,25 +715,21 @@ class Riffer::Rig::Runtime
     @message_observers.each { |observer| observer.call(message) }
   end
 
-  # @rbs return: String?
-  def job_notice
-    completions = @jobs.consume
-    return if completions.empty?
-
-    completions.each { |completion| emit(Riffer::Rig::Events::JobExit.new(completion)) }
-    Riffer::Rig::Runtime::JobEnvelope.render(completions)
+  # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
+  def job_exits
+    @jobs.consume.each { |completion| emit(Riffer::Rig::Events::JobExit.new(completion)) }
   end
 
   # @rbs message: Riffer::Messages::Tool
   # @rbs return: Riffer::Messages::Tool
   def with_job_notice(message)
-    notice = job_notice
-    return message unless notice
+    completions = job_exits
+    return message if completions.empty?
 
     # Appended to a tool result because a user message straight after one is
     # consecutive user turns to Bedrock and Gemini, which reject them.
     noticed = Riffer::Messages::Tool.new(
-      "#{message.content}\n\n#{notice}",
+      "#{message.content}\n\n#{Riffer::Rig::Runtime::JobEnvelope.render(completions)}",
       tool_call_id: message.tool_call_id,
       name: message.name,
       id: message.id,
@@ -746,14 +742,19 @@ class Riffer::Rig::Runtime
     noticed
   end
 
+  # @rbs follow_up: bool
   # @rbs return: Riffer::Messages::Base?
-  def notify_job_exits
-    notice = job_notice
-    return unless notice
+  def notify_job_exits(follow_up: false)
+    completions = job_exits
+    return if completions.empty?
 
+    notification = Riffer::Rig::Runtime::JobNotification.new(
+      Riffer::Rig::Runtime::JobEnvelope.render(completions),
+      follow_up_exits: (completions.size if follow_up)
+    )
     # Silent, then delivered by hand: the on_message observer interrupts a
     # cancelled turn with a throw, and no riffer run is there to catch it.
-    @agent.session.add(Riffer::Rig::Runtime::JobNotification.new(notice), silent: true).tap { |message| deliver(message) }
+    @agent.session.add(notification, silent: true).tap { |message| deliver(message) }
   end
 
   # @rbs return: void

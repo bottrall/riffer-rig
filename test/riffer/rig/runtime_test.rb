@@ -2234,6 +2234,13 @@ describe Riffer::Rig::Runtime do
         assert_equal [2], envelopes
       end
 
+      it 'marks no notification delivered ahead of the next prompt as starting a follow-up' do
+        runtime = exited_between_turns
+        runtime.ask('second')
+
+        assert_equal [nil], notifications(runtime).map(&:follow_up_exits)
+      end
+
       it 'delivers a notification ahead of the next prompt' do
         runtime = exited_between_turns
         runtime.ask('second')
@@ -2271,6 +2278,13 @@ describe Riffer::Rig::Runtime do
         runtime.follow_up { |event| events << event }
 
         assert_equal 2, events.grep(Riffer::Rig::Events::JobExit).length
+      end
+
+      it 'marks the notification as starting a follow-up of that many exits' do
+        runtime = exited_between_turns(2)
+        runtime.follow_up { |event| event }
+
+        assert_equal [2], notifications(runtime).map(&:follow_up_exits)
       end
 
       it 'never calls the model with no exit to tell' do
