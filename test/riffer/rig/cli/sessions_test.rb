@@ -273,6 +273,40 @@ describe Riffer::Rig::CLI::Sessions do
     end
   end
 
+  describe '#missing?' do
+    it 'is false when no session was asked for' do
+      refute_predicate sessions('--no-save'), :missing?
+    end
+
+    it 'is true for a --resume id under --no-save' do
+      save('aaa')
+
+      assert_predicate sessions('--no-save', '-r', 'aaa'), :missing?
+    end
+
+    it 'is true for an unknown --resume id' do
+      assert_predicate sessions('-r', 'nope'), :missing?
+    end
+
+    it 'is false for a saved --resume id' do
+      save('aaa')
+
+      refute_predicate sessions('-r', 'aaa'), :missing?
+    end
+
+    it 'is true for --continue with no session saved in this directory' do
+      save('aaa', cwd: '/elsewhere')
+
+      assert_predicate sessions('-c'), :missing?
+    end
+
+    it 'is false for --continue with a session saved in this directory' do
+      save('aaa')
+
+      refute_predicate sessions('-c'), :missing?
+    end
+  end
+
   describe '#missing' do
     it 'names the given id' do
       assert_equal 'No saved session bbb.', sessions('-r', 'aaa').missing('bbb')

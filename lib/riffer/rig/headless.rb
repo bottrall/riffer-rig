@@ -57,15 +57,21 @@ class Riffer::Rig::Headless
   # @rbs return: Integer
   def run(prompt:, &build)
     text = prompt_text(prompt)
-    return usage_error if text.empty?
+    return refuse('no prompt: pass one as an argument, or pipe it to stdin') if text.empty?
 
     drive(yield(@host), text)
   rescue Riffer::Rig::Loader::ConfigurationError => e
-    fatal(e.message, USAGE_ERROR)
+    refuse(e.message)
   rescue Interrupt
     130
   rescue StandardError => e
     fatal(e.message, 1)
+  end
+
+  # @rbs message: String
+  # @rbs return: Integer
+  def refuse(message)
+    fatal(message, USAGE_ERROR)
   end
 
   private
@@ -75,11 +81,6 @@ class Riffer::Rig::Headless
   def prompt_text(prompt)
     piped = @input.tty? ? '' : @input.read.to_s.strip
     [prompt, piped].compact.reject(&:empty?).join("\n\n")
-  end
-
-  # @rbs return: Integer
-  def usage_error
-    fatal('no prompt: pass one as an argument, or pipe it to stdin', USAGE_ERROR)
   end
 
   # @rbs message: String

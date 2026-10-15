@@ -52,19 +52,17 @@ module Riffer::Rig::CLI
   # @rbs return: Integer
   def headless(flags, input:, output:, error:, env:, cwd:, home:)
     sessions = Sessions.new(flags: flags, env: env, cwd: cwd, home: home)
-    Riffer::Rig::Headless.for(
+    headless = Riffer::Rig::Headless.for(
       input: input,
       output: output,
       error: error,
       verbose: flags.verbose,
       json: flags.json,
       job_idle_timeout: flags.job_idle_timeout || Riffer::Rig::Headless::JOB_IDLE_TIMEOUT
-    ).run(prompt: flags.prompt) do |host|
-      started = sessions.find(host)
-      raise Riffer::Rig::Loader::ConfigurationError, sessions.missing if started.nil? && sessions.asked?
+    )
+    return headless.refuse(sessions.missing) if sessions.missing?
 
-      started || sessions.fresh(host)
-    end
+    headless.run(prompt: flags.prompt) { |host| sessions.find(host) || sessions.fresh(host) }
   end
 
   # @rbs flags: Riffer::Rig::CLI::Flags

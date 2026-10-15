@@ -180,6 +180,24 @@ describe Riffer::Rig::CLI do
       assert_includes @error.string, 'No saved session nope.'
     end
 
+    it 'returns two for -p -r with an unknown id and no prompt' do
+      assert_equal 2, start('-p', '-r', 'say hi', input: '', env: model_env)
+    end
+
+    it 'says the session is missing for -p -r with an unknown id and no prompt' do
+      start('-p', '-r', 'say hi', input: '', env: model_env)
+
+      assert_includes @error.string, 'No saved session say hi.'
+    end
+
+    it 'says there is no prompt for -p -r with a saved session and no prompt' do
+      start('-p', 'hello', input: '', env: model_env)
+      id = File.basename(session_files.first, '.jsonl')
+      start('-p', '-r', id, input: '', env: model_env)
+
+      assert_includes @error.string, 'no prompt'
+    end
+
     it 'keeps one header when -p -c continues the session' do
       start('-p', 'hello', input: '', env: model_env)
       path = session_files.first
