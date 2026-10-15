@@ -8,21 +8,21 @@ Colour is on when the output is a terminal; set `NO_COLOR` to turn it off.
 
 The input line, marked `›`, is always there, including while a turn runs. Enter sends the line; a line that is empty or only spaces is not sent.
 
-| Key                                                      | Does                                                                                                                                  |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Enter                                                    | sends the line ([Queueing](#queueing-messages))                                                                                       |
-| Left, Right                                              | moves one character                                                                                                                   |
-| Ctrl-Left, Ctrl-Right, Alt-Left, Alt-Right, Alt-B, Alt-F | moves one word, a run of letters and digits                                                                                           |
-| Home, End                                                | moves to the start or the end of the line                                                                                             |
-| Backspace, Delete                                        | deletes the character before or under the cursor                                                                                      |
-| Ctrl-W                                                   | cuts back to the start of the word before the cursor, a run of anything but spaces                                                    |
-| Ctrl-U                                                   | cuts everything before the cursor                                                                                                     |
-| Ctrl-K                                                   | cuts everything from the cursor to the end                                                                                            |
-| Ctrl-Y                                                   | inserts the last cut at the cursor, even one from an earlier line                                                                     |
-| Up, Down                                                 | steps through the lines sent since `riffer` started; Down past the newest brings back the line you were typing                        |
-| Ctrl-T                                                   | opens or closes the [peek](#peek) while a turn runs                                                                                   |
-| Ctrl-C                                                   | cancels the running turn; with none running, asks for a second Ctrl-C to exit ([Interrupting and exiting](#interrupting-and-exiting)) |
-| Ctrl-D                                                   | on an empty line, ends the session once the queued messages have run                                                                  |
+| Key                                                      | Does                                                                                                                                                 |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Enter                                                    | sends the line ([Queueing](#queueing-messages))                                                                                                      |
+| Left, Right                                              | moves one character                                                                                                                                  |
+| Ctrl-Left, Ctrl-Right, Alt-Left, Alt-Right, Alt-B, Alt-F | moves one word, a run of letters and digits                                                                                                          |
+| Home, End                                                | moves to the start or the end of the line                                                                                                            |
+| Backspace, Delete                                        | deletes the character before or under the cursor                                                                                                     |
+| Ctrl-W                                                   | cuts back to the start of the word before the cursor, a run of anything but spaces                                                                   |
+| Ctrl-U                                                   | cuts everything before the cursor                                                                                                                    |
+| Ctrl-K                                                   | cuts everything from the cursor to the end                                                                                                           |
+| Ctrl-Y                                                   | inserts the last cut at the cursor, even one from an earlier line                                                                                    |
+| Up, Down                                                 | steps through the lines sent since `riffer` started; Down past the newest brings back the line you were typing                                       |
+| Ctrl-T                                                   | opens or closes the [peek](#peek) while a turn runs                                                                                                  |
+| Ctrl-C                                                   | cancels the running turn or an open question; with neither, asks for a second Ctrl-C to exit ([Interrupting and exiting](#interrupting-and-exiting)) |
+| Ctrl-D                                                   | on an empty line, ends the session once the queued messages have run                                                                                 |
 
 Every other key does nothing.
 
@@ -71,6 +71,7 @@ That is the turn's model calls, its time, its input and output tokens, each cach
 ## Interrupting and exiting
 
 - Ctrl-C during a turn cancels it: the status line shows `stopping…`, a reply in flight stops at once and a running tool call when it returns ([Cancelling a turn](EMBEDDING.md#cancelling-a-turn)). Messages queued behind it still run. Background jobs keep running; ask the model to stop one, or end the session — quitting, `/new` or `/resume` — to stop them all.
+- Ctrl-C at a question — a missing credential that `/auth` or `/model` asks for, a confirmation, a command's own question — cancels it and ends the command or turn that asked: nothing is stored, and `/model` keeps the current model. At a question asked before the session starts, Ctrl-C exits. Ctrl-D instead leaves the question unanswered and lets what asked carry on without an answer, so `/auth` and `/model` report the credential still missing.
 - Ctrl-C with no turn running shows `Press Ctrl-C again to exit.` on the status line, and a second Ctrl-C exits. Any other key in between cancels the exit.
 - `/exit` and `/quit` end the session, as does Ctrl-D on an empty line, which lets the messages already queued run first.
 

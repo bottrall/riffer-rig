@@ -57,6 +57,7 @@ class QueuePrompter
     loop do
       key = @asks.pop
       return nil if key.nil?
+      raise Interrupt if key.name == :ctrl_c
       break if key.name == :enter
 
       answer << key.text.to_s
@@ -329,7 +330,6 @@ describe Riffer::Rig::Terminal::Repl do
 
     it 'takes the keys back when the ask is interrupted' do
       type("one\r")
-      signalling
       begin_session do
         repl.ask('who?', options: nil, secret: false)
       rescue Interrupt
@@ -482,6 +482,60 @@ describe Riffer::Rig::Terminal::Repl do
   end
 
   describe '#read' do
+    it 'shows the peek each key it hands on' do
+      press(:ctrl_t)
+      type('a')
+      @keys.close
+
+      session
+
+      assert_equal %i[ctrl_t text], Array.new(@peek.pressed.size) { @peek.pressed.pop }
+    end
+
+    it 'ends an ask in flight when the keys end' do
+      answer = :unanswered
+      type("one\r")
+      begin_session { answer = repl.ask('who?', options: nil, secret: false) }
+      await([:asked, 'who?', nil, false])
+      @keys.close
+      finish
+
+      assert_nil answer
+    end
+  end
+
+  describe '#hand_on' do
+    it 'hands Ctrl-C to an ask in flight' do
+      interrupted = false
+      type("one\r")
+      begin_session do
+        repl.ask('who?', options: nil, secret: false)
+      rescue Interrupt
+        interrupted = true
+      end
+      await([:asked, 'who?', nil, false])
+      press(:ctrl_c)
+      @keys.close
+      finish
+
+      assert interrupted
+    end
+
+    it 'sends no interrupt for a Ctrl-C an ask takes' do
+      type("one\r")
+      begin_session do
+        repl.ask('who?', options: nil, secret: false)
+      rescue Interrupt
+        nil
+      end
+      await([:asked, 'who?', nil, false])
+      press(:ctrl_c)
+      @keys.close
+      finish
+
+      assert_empty @interrupts
+    end
+
     it 'sends Ctrl-C on as an interrupt' do
       press(:ctrl_c)
       @keys.close
@@ -500,16 +554,6 @@ describe Riffer::Rig::Terminal::Repl do
       assert_empty @frame.lines
     end
 
-    it 'shows the peek each key it hands on' do
-      press(:ctrl_t)
-      type('a')
-      @keys.close
-
-      session
-
-      assert_equal %i[ctrl_t text], Array.new(@peek.pressed.size) { @peek.pressed.pop }
-    end
-
     it 'draws the edited line in the footer' do
       type('hi')
       @keys.close
@@ -517,17 +561,6 @@ describe Riffer::Rig::Terminal::Repl do
       session
 
       assert_equal %w[h hi], @frame.lines
-    end
-
-    it 'ends an ask in flight when the keys end' do
-      answer = :unanswered
-      type("one\r")
-      begin_session { answer = repl.ask('who?', options: nil, secret: false) }
-      await([:asked, 'who?', nil, false])
-      @keys.close
-      finish
-
-      assert_nil answer
     end
   end
 

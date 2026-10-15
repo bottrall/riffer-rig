@@ -296,6 +296,10 @@ class Riffer::Rig::Terminal
       yield(->(event) { render(runtime, event) })
     rescue StandardError => e
       @renderer.error("Error: #{e.message}")
+    rescue Interrupt
+      # The trap takes every Ctrl-C but one at a question the turn asked,
+      # which raises: dropping the turn with it stores none of the answers.
+      nil
     ensure
       Signal.trap('INT', previous)
       @turns.finish(runtime)

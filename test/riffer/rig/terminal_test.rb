@@ -809,6 +809,25 @@ describe Riffer::Rig::Terminal do
 
       assert_includes run_on_pty(script), 'hi, jake'
     end
+
+    it 'drops the turn of a question cancelled with Ctrl-C' do
+      write_asking_command
+      runtime = nil
+      script = lambda do |pty|
+        pty.type("/who\r")
+        pty.await('who?')
+        pty.type('x')
+        pty.await('› x')
+        cleared = pty.written.scan("› \r\n").size
+        pty.type("\u0003")
+        # Keys typed before the question has let go of them would be its own.
+        pty.await("› \r\n", count: cleared + 1)
+        pty.type("jake\r/exit\r")
+      end
+      run_on_pty(script) { |driven| runtime ||= driven }
+
+      assert_includes runtime.agent.provider.calls.last[:messages].last[:content], 'jake'
+    end
   end
 
   it 'runs a skill command through run_command' do
