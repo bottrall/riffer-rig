@@ -26,15 +26,6 @@ class Riffer::Rig::CLI::Sessions
   end
 
   # @rbs host: Riffer::Rig::Hosts::_Host
-  # @rbs return: Riffer::Rig::Runtime
-  def start(host)
-    started = find(host)
-    host.notify(missing) if started.nil? && asked?
-
-    started || loader(host).runtime(@flags.to_options)
-  end
-
-  # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs return: Riffer::Rig::Runtime?
   def find(host)
     id = resume_id
