@@ -73,9 +73,13 @@ class Riffer::Rig::Terminal
   # @rbs return: Integer
   def run_session: (bool open_picker) -> Integer
 
-  # @rbs open_picker: bool
+  # @rbs session: Riffer::Rig::Terminal::Session?
   # @rbs return: Riffer::Rig::Runtime?
-  def start: (open_picker: bool) -> Riffer::Rig::Runtime?
+  def find: (Riffer::Rig::Terminal::Session? session) -> Riffer::Rig::Runtime?
+
+  # @rbs session: Riffer::Rig::Terminal::Session?
+  # @rbs return: void
+  def notify_missing: (Riffer::Rig::Terminal::Session? session) -> void
 
   # @rbs &build: () -> Riffer::Rig::Runtime?
   # @rbs return: Riffer::Rig::Runtime?

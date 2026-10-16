@@ -13,8 +13,8 @@ class PreparedSessions
     @prepare = prepare
   end
 
-  def start(host)
-    prepare(@sessions.start(host))
+  def find(host)
+    prepare(@sessions.find(host))
   end
 
   def fresh(host)
@@ -35,6 +35,10 @@ class PreparedSessions
 
   def off
     @sessions.off
+  end
+
+  def asked?
+    @sessions.asked?
   end
 
   def missing(id = nil)
@@ -312,16 +316,45 @@ describe Riffer::Rig::Terminal do
       assert_includes run_terminal("/exit\n", open_picker: true), 'No saved sessions.'
     end
 
-    it 'takes the missing-session wording from the sessions collaborator' do
-      sessions = Object.new
-      sessions.define_singleton_method(:start) { |_host| nil }
-      sessions.define_singleton_method(:resume) { |_host, _id| nil }
-      sessions.define_singleton_method(:list) do |_host, **|
-        [Riffer::Rig::Terminal::Session.new(id: 'nope', title: 'gone', updated: Time.now, cwd: Dir.pwd)]
+    describe 'when the picked session is missing' do
+      def run_missing_pick
+        seed_session('fix the login bug')
+        sessions = cli_sessions
+        sessions.define_singleton_method(:resume) { |_host, _id| nil }
+        sessions.define_singleton_method(:missing) { |id = nil| "wording for #{id}" }
+        run_terminal("\n/exit\n", open_picker: true, sessions: sessions)
       end
-      sessions.define_singleton_method(:missing) { |id| "wording for #{id}" }
 
-      assert_includes run_terminal("\n", open_picker: true, sessions: sessions), 'wording for nope'
+      it 'takes the missing-session wording from the sessions collaborator' do
+        assert_match(/wording for \S+/, run_missing_pick)
+      end
+
+      it 'notifies below the banner' do
+        assert_match(%r{type /exit to quit.*wording for}m, run_missing_pick)
+      end
+    end
+  end
+
+  describe 'a session asked for with -r or -c' do
+    it 'starts fresh when the asked session is missing' do
+      runtime = nil
+      run_terminal("/exit\n", sessions: cli_sessions(resume: 'nope')) { |driven| runtime = driven }
+
+      assert_instance_of Riffer::Rig::Runtime, runtime
+    end
+
+    it 'stays quiet when the asked session is found' do
+      refute_includes run_terminal("/exit\n", sessions: cli_sessions(resume: seed_history)), 'No saved session'
+    end
+
+    it 'stays quiet when no session was asked for' do
+      refute_includes run_terminal("/exit\n"), 'No saved session'
+    end
+
+    it 'notifies the missing session below the banner' do
+      output = run_terminal("/exit\n", sessions: cli_sessions(resume: 'nope'))
+
+      assert_match(%r{type /exit to quit.*No saved session nope\.}m, output)
     end
   end
 
@@ -331,7 +364,7 @@ describe Riffer::Rig::Terminal do
 
   it 'returns one when the build is interrupted' do
     sessions = Object.new
-    sessions.define_singleton_method(:start) { |_host| raise Interrupt }
+    sessions.define_singleton_method(:find) { |_host| raise Interrupt }
     run_terminal('', sessions: sessions)
 
     assert_equal 1, @status
@@ -920,7 +953,13 @@ describe Riffer::Rig::Terminal do
     it 'keeps driving the current session when the fresh build fails' do
       runtime = nil
       sessions = PreparedSessions.new(cli_sessions) { |driven| runtime = driven }
-      sessions.define_singleton_method(:fresh) { |_host| raise Riffer::Rig::Loader::ConfigurationError, 'no fresh' }
+      started = false
+      sessions.define_singleton_method(:fresh) do |host|
+        raise Riffer::Rig::Loader::ConfigurationError, 'no fresh' if started
+
+        started = true
+        super(host)
+      end
       run_terminal("/new\nagain\n", sessions: sessions)
 
       assert_equal 1, runtime.agent.provider.calls.length

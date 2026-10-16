@@ -133,11 +133,14 @@ class Riffer::Rig::Terminal
   # @rbs return: Integer
   def run_session(open_picker)
     @repl&.start
-    runtime = start(open_picker: open_picker)
+    session = @picker.open(all: false) if open_picker
+    found = nil #: Riffer::Rig::Runtime?
+    runtime = build { (found = find(session)) || @sessions.fresh(@host) }
     return 1 unless runtime
 
     begin
       @opening.call(runtime)
+      notify_missing(session) unless found
       each_entry do |entry|
         next deliver_job_exits(runtime) if entry == :job_exit
 
@@ -152,17 +155,16 @@ class Riffer::Rig::Terminal
     @repl&.stop
   end
 
-  # @rbs open_picker: bool
+  # @rbs session: Riffer::Rig::Terminal::Session?
   # @rbs return: Riffer::Rig::Runtime?
-  def start(open_picker:)
-    session = @picker.open(all: false) if open_picker
-    return build { @sessions.start(@host) } unless session
+  def find(session)
+    session ? @sessions.resume(@host, session.id) : @sessions.find(@host)
+  end
 
-    resumed = build { @sessions.resume(@host, session.id) }
-    return resumed if resumed
-
-    @renderer.notify(@sessions.missing(session.id), :info)
-    build { @sessions.start(@host) }
+  # @rbs session: Riffer::Rig::Terminal::Session?
+  # @rbs return: void
+  def notify_missing(session)
+    @renderer.notify(@sessions.missing(session&.id), :info) if session || @sessions.asked?
   end
 
   # @rbs &build: () -> Riffer::Rig::Runtime?
