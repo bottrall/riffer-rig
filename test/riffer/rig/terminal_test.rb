@@ -284,6 +284,17 @@ describe Riffer::Rig::Terminal do
     assert_match(/see you on the next riff\.\n\z/, run_terminal(''))
   end
 
+  describe 'when Ctrl-C was ignored at launch' do
+    before { @inherited = Signal.trap('INT', 'IGNORE') }
+    after { Signal.trap('INT', @inherited) }
+
+    it 'leaves Ctrl-C ignored when the session ends' do
+      run_terminal('')
+
+      assert_equal 'IGNORE', Signal.trap('INT', 'IGNORE')
+    end
+  end
+
   describe 'bare -r' do
     it 'opens the picker before the first session' do
       path = seed_session('fix the login bug')
@@ -394,6 +405,36 @@ describe Riffer::Rig::Terminal do
 
     def notice
       "\r\n  #{Riffer::Rig::Terminal::Replay::NOTICE}\r\n"
+    end
+
+    describe 'when Ctrl-C was ignored at launch' do
+      before { @inherited = Signal.trap('INT', 'IGNORE') }
+      after { Signal.trap('INT', @inherited) }
+
+      it 'dismisses the picker before the first session on Ctrl-C' do
+        seed_session('fix the login bug')
+        script = lambda do |pty|
+          pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+          pty.type("\u0003")
+          pty.await('type /exit to quit')
+          pty.type("/exit\r")
+        end
+        run_on_pty(script, open_picker: true)
+
+        assert_equal 0, @status
+      end
+
+      it 'exits on a second Ctrl-C at the prompt' do
+        script = lambda do |pty|
+          pty.await('type /exit to quit')
+          pty.type("\u0003")
+          pty.await(Riffer::Rig::Terminal::EXIT_HINT)
+          pty.type("\u0003")
+        end
+        run_on_pty(script)
+
+        assert_equal 0, @status
+      end
     end
 
     it 'opens the picker over the keys before the first session' do
