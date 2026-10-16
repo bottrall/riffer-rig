@@ -9,6 +9,8 @@ class Riffer::Rig::Terminal::Picker
 
   EMPTY = 'No saved sessions.' #: String
 
+  NO_MATCH = 'No sessions match "%s"' #: String
+
   EOT = "\u{4}" #: String
 
   # @rbs @prompter: Riffer::Rig::Terminal::_Prompter
@@ -42,7 +44,7 @@ class Riffer::Rig::Terminal::Picker
       shown = rows.filter { |row| matches?(row, filter) }
       case (line = read(HEADER, shown, all))
       when nil, EOT
-        outcome = delete_mode(shown, all)
+        outcome = delete_mode(rows, shown, all)
         case outcome
         when :cancel then return nil
         else
@@ -51,6 +53,7 @@ class Riffer::Rig::Terminal::Picker
             @renderer.notice(EMPTY)
             return nil
           end
+          filter = '' unless any_match?(rows, filter)
         end
       when :interrupt
         return nil
@@ -62,7 +65,11 @@ class Riffer::Rig::Terminal::Picker
         choice = number(line, shown)
         return choice if choice
 
-        filter = line
+        if any_match?(rows, line)
+          filter = line
+        else
+          @renderer.notice(format(NO_MATCH, line))
+        end
       end
     end
   rescue Interrupt
@@ -78,6 +85,13 @@ class Riffer::Rig::Terminal::Picker
     filter.empty? || row.title.downcase.include?(filter.downcase)
   end
 
+  # @rbs rows: Array[Riffer::Rig::Terminal::Session]
+  # @rbs filter: String
+  # @rbs return: bool
+  def any_match?(rows, filter)
+    rows.any? { |row| matches?(row, filter) }
+  end
+
   # @rbs line: String
   # @rbs shown: Array[Riffer::Rig::Terminal::Session]
   # @rbs return: Riffer::Rig::Terminal::Session?
@@ -88,16 +102,17 @@ class Riffer::Rig::Terminal::Picker
     shown[index - 1] if index.positive?
   end
 
+  # @rbs rows: Array[Riffer::Rig::Terminal::Session]
   # @rbs shown: Array[Riffer::Rig::Terminal::Session]
   # @rbs all: bool
   # @rbs return: Array[Riffer::Rig::Terminal::Session] | :cancel
-  def delete_mode(shown, all)
+  def delete_mode(rows, shown, all)
     line = read(DELETE_HEADER, shown, all)
     return :cancel unless line.is_a?(String)
 
     choice = number(line, shown)
-    return shown unless choice
-    return shown unless @host.confirm("Delete \"#{choice.title}\"?")
+    return rows unless choice
+    return rows unless @host.confirm("Delete \"#{choice.title}\"?")
 
     @sessions.delete(@host, choice.id)
     @renderer.notice(DELETED)
