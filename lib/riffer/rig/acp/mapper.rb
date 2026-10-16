@@ -108,7 +108,18 @@ module Riffer::Rig::ACP::Mapper
     end
   end
 
-  # A permission request must name a tool call, and a host question has none.
+  # @rbs tool_call_id: String
+  # @rbs question: String
+  # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
+  def permission_call(tool_call_id, question)
+    ::ACP::Types::SessionUpdate::ToolCall.new(
+      tool_call_id: tool_call_id,
+      title: question,
+      kind: ::ACP::Types::ToolKind::OTHER,
+      status: ::ACP::Types::ToolCallStatus::PENDING
+    )
+  end
+
   # @rbs session_id: String
   # @rbs tool_call_id: String
   # @rbs question: String
