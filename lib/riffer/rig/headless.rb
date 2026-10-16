@@ -75,7 +75,7 @@ class Riffer::Rig::Headless
   # @rbs return: String
   def prompt_text(prompt)
     piped = @input.tty? ? '' : @input.read.to_s.scrub.strip
-    [prompt, piped].compact.reject(&:empty?).join("\n\n")
+    [prompt&.strip, piped].compact.reject(&:empty?).join("\n\n")
   end
 
   # @rbs return: Integer

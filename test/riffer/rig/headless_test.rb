@@ -168,6 +168,12 @@ describe Riffer::Rig::Headless do
     assert_equal "review this\n\nthe diff", prompt_sent_to_model
   end
 
+  it 'strips whitespace around the prompt argument' do
+    run_headless(prompt: "  review this\n", input: 'the diff') { |runtime| runtime.agent.provider.stub_response('Hi') }
+
+    assert_equal "review this\n\nthe diff", prompt_sent_to_model
+  end
+
   it 'uses piped stdin alone as the prompt without an argument' do
     run_headless(input: 'the diff') { |runtime| runtime.agent.provider.stub_response('Hi') }
 
@@ -199,6 +205,18 @@ describe Riffer::Rig::Headless do
     run_headless
 
     assert_match(/no prompt/, @error.string)
+  end
+
+  it 'returns two when the prompt argument is only whitespace' do
+    run_headless(prompt: '   ')
+
+    assert_equal 2, @status
+  end
+
+  it 'returns two when piped stdin is only whitespace' do
+    run_headless(input: "  \n ")
+
+    assert_equal 2, @status
   end
 
   it 'returns two without the provider credentials' do
