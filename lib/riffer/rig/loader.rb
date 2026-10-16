@@ -231,13 +231,22 @@ class Riffer::Rig::Loader
 
   # @rbs return: (Hash[Symbol, untyped] | String)
   def merged_settings
-    home = Riffer::Rig::Settings::File.read(home_settings_path)
+    home = read_settings(home_settings_path)
     return home if home.is_a?(String)
 
-    project = Riffer::Rig::Settings::File.read(File.join(@cwd, '.riffer', 'settings.json'))
+    project = read_settings(File.join(@cwd, '.riffer', 'settings.json'))
     return project if project.is_a?(String)
 
     Riffer::Rig::Settings.merge(home, project)
+  end
+
+  # @rbs path: String
+  # @rbs return: (Hash[Symbol, untyped] | String)
+  def read_settings(path)
+    source = Riffer::Rig::Settings::File.read(path)
+    return source if source.is_a?(String) || source.fetch(:model, '').is_a?(String)
+
+    "#{path} sets \"model\" to a value that is not a string"
   end
 
   # Notifies every failure once and reports its message, unexpected raises

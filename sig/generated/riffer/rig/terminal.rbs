@@ -69,6 +69,10 @@ class Riffer::Rig::Terminal
 
   private
 
+  # @rbs open_picker: bool
+  # @rbs return: Integer
+  def run_session: (bool open_picker) -> Integer
+
   # @rbs session: Riffer::Rig::Terminal::Session?
   # @rbs return: Riffer::Rig::Runtime?
   def find: (Riffer::Rig::Terminal::Session? session) -> Riffer::Rig::Runtime?
