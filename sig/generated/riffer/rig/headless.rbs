@@ -80,6 +80,10 @@ class Riffer::Rig::Headless
   # @rbs return: void
   def handle: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
 
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: void
+  def trace: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
+
   # @rbs stop_reason: Symbol?
   # @rbs return: Integer
   def finish: (Symbol? stop_reason) -> Integer

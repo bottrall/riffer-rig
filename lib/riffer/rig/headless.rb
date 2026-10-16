@@ -56,6 +56,7 @@ class Riffer::Rig::Headless
   # @rbs &build: (Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime
   # @rbs return: Integer
   def run(prompt:, &build)
+    @output.sync = true
     text = prompt_text(prompt)
     return usage_error if text.empty?
 
@@ -73,7 +74,7 @@ class Riffer::Rig::Headless
   # @rbs prompt: String?
   # @rbs return: String
   def prompt_text(prompt)
-    piped = @input.tty? ? '' : @input.read.to_s.strip
+    piped = @input.tty? ? '' : @input.read.to_s.scrub.strip
     [prompt&.strip, piped].compact.reject(&:empty?).join("\n\n")
   end
 
@@ -156,6 +157,7 @@ class Riffer::Rig::Headless
   # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
   # @rbs return: void
   def handle(event)
+    trace(event)
     return @output.write(Ndjson.line(event)) if @json
 
     case event
@@ -168,8 +170,17 @@ class Riffer::Rig::Headless
       @output.write(event.content) if !@streamed_text && !event.content.empty?
       @output.puts if @streamed_text || !event.content.empty?
       @streamed_text = false
+    end
+  end
+
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: void
+  def trace(event)
+    return unless @verbose
+
+    case event
     when Riffer::StreamEvents::ToolCallDone
-      @error.puts("tool_call #{event.name} #{event.arguments}") if @verbose
+      @error.puts("tool_call #{event.name} #{event.arguments}")
     end
   end
 

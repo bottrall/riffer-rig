@@ -180,6 +180,12 @@ describe Riffer::Rig::Headless do
     assert_equal 'the diff', prompt_sent_to_model
   end
 
+  it 'replaces invalid UTF-8 in piped stdin' do
+    run_headless(prompt: 'review this', input: "caf\xE9") { |runtime| runtime.agent.provider.stub_response('Hi') }
+
+    assert_equal "review this\n\ncaf\uFFFD", prompt_sent_to_model
+  end
+
   it 'never reads a TTY stdin' do
     input = StringIO.new('piped content')
     input.define_singleton_method(:tty?) { true }
@@ -272,6 +278,22 @@ describe Riffer::Rig::Headless do
       run_waiting([true])
 
       assert_match(/waiting for background jobs/, @error.string)
+    end
+
+    it 'has written the reply through to a pipe by the time it waits' do
+      reader, @output = IO.pipe
+      @output.sync = false
+      seen = nil
+      reply = Riffer::StreamEvents::TextDone.new('started')
+      @runtime = ScriptedRuntime.new([reply, turn_end(:completed)], exits: [false])
+      @runtime.define_singleton_method(:await_job_exit) do |**|
+        seen = reader.read_nonblock(64, exception: false)
+        false
+      end
+      run_build { @runtime }
+      [@output, reader].each(&:close)
+
+      assert_equal "started\n", seen
     end
 
     it 'waits for an exit with the idle timeout' do
@@ -409,6 +431,15 @@ describe Riffer::Rig::Headless do
     assert_equal "first\nsecond\n", @output.string
   end
 
+  it 'prints no tool trace without --verbose' do
+    run_headless(prompt: 'read it') do |runtime|
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
+      runtime.agent.provider.stub_response('Done.')
+    end
+
+    refute_match(/tool_call/, @error.string)
+  end
+
   it 'traces one line per tool call on stderr with --verbose' do
     run_headless(prompt: 'read it', verbose: true) do |runtime|
       runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
@@ -418,13 +449,13 @@ describe Riffer::Rig::Headless do
     assert_match(%r{tool_call read \{"path":"/tmp/x"\}}, @error.string)
   end
 
-  it 'prints no tool trace without --verbose' do
-    run_headless(prompt: 'read it') do |runtime|
+  it 'traces tool calls on stderr with --json and --verbose' do
+    run_headless(prompt: 'read it', verbose: true, json: true) do |runtime|
       runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
       runtime.agent.provider.stub_response('Done.')
     end
 
-    refute_match(/tool_call/, @error.string)
+    assert_match(%r{tool_call read \{"path":"/tmp/x"\}}, @error.string)
   end
 
   it 'prints nothing for the tool call events in text mode' do

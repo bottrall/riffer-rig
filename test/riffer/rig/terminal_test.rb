@@ -604,10 +604,10 @@ describe Riffer::Rig::Terminal do
       assert_includes output, "› hello\r\n› "
     end
 
-    it 'echoes a pasted control character as its picture' do
-      output = run_on_pty(->(pty) { pty.type("\e[200~a\eb\e[201~\r/exit\r") })
+    it 'wraps an echoed line to the terminal width' do
+      output = run_on_pty(->(pty) { pty.type("refactor the picker now\r/exit\r") }, columns: 16)
 
-      assert_includes output, "› a␛b\r\n› "
+      assert_includes output, "› refactor the\r\n  picker now\r\n"
     end
 
     it 'ends the session at /exit' do
