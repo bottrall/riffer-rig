@@ -7,6 +7,7 @@ class Riffer::Rig::Terminal::Opening
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @version: String
   # @rbs @sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs @width: ^() -> Integer?
   # @rbs @jobs: Riffer::Rig::Terminal::JobCounter?
   # @rbs @repl: Riffer::Rig::Terminal::Repl?
 
@@ -14,14 +15,16 @@ class Riffer::Rig::Terminal::Opening
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs version: String
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs width: ^() -> Integer?
   # @rbs jobs: Riffer::Rig::Terminal::JobCounter?
   # @rbs repl: Riffer::Rig::Terminal::Repl?
   # @rbs return: void
-  def initialize(io:, theme:, version:, sessions:, jobs: nil, repl: nil)
+  def initialize(io:, theme:, version:, sessions:, width:, jobs: nil, repl: nil)
     @io = io
     @theme = theme
     @version = version
     @sessions = sessions
+    @width = width
     @jobs = jobs
     @repl = repl
   end
@@ -38,7 +41,8 @@ class Riffer::Rig::Terminal::Opening
       cwd: runtime.cwd,
       skills: skills.zero? ? 'none' : skills.to_s,
       version: @version,
-      tally: runtime.tally
+      tally: runtime.tally,
+      width: @width.call
     ).each { |line| @io.puts(line) }
     @io.flush
     @repl&.replay(@sessions.recorded(runtime.id), theme: @theme)

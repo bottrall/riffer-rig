@@ -54,12 +54,13 @@ describe Riffer::Rig::Terminal::Opening do
     @sessions = RecordedSessions.new
   end
 
-  def banner(runtime, jobs: nil, repl: nil)
+  def banner(runtime, width: nil, jobs: nil, repl: nil)
     Riffer::Rig::Terminal::Opening.new(
       io: @output,
       theme: @theme,
       version: '9.9.9',
       sessions: @sessions,
+      width: -> { width },
       jobs: jobs,
       repl: repl
     ).call(runtime)
@@ -95,6 +96,10 @@ describe Riffer::Rig::Terminal::Opening do
 
     it 'prints the banner of the Runtime' do
       assert_match(%r{model\s+mock/test$}, banner(OpenedRuntime.new))
+    end
+
+    it 'fits the banner to the measured width' do
+      refute_includes banner(OpenedRuntime.new, width: 20), Riffer::Rig::Terminal::Banner::WORDMARK.first
     end
 
     it "replays the turns recorded for the Runtime's session in the theme" do

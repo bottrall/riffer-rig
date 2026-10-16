@@ -426,6 +426,12 @@ describe Riffer::Rig::Terminal do
       assert_includes run_on_pty(script, env: {}), Riffer::Rig::Terminal::KeyPipeline::BRACKETED_PASTE_OFF
     end
 
+    it 'fits the banner to the width of the terminal' do
+      output = run_on_pty(->(pty) { pty.type("/exit\r") }, columns: 30)
+
+      refute_includes output, Riffer::Rig::Terminal::Banner::WORDMARK.first
+    end
+
     it 'counts the running jobs of the first session in the footer' do
       output = run_on_pty(->(pty) { pty.type("/exit\r") }) do |runtime|
         runtime.define_singleton_method(:running_job_count) { 2 }
