@@ -3,13 +3,16 @@
 class Riffer::Rig::Terminal::Renderer
   # @rbs @io: Riffer::Rig::Terminal::_Output
   # @rbs @theme: Riffer::Rig::Terminal::Theme
+  # @rbs @width: ^() -> Integer?
 
   # @rbs io: Riffer::Rig::Terminal::_Output
   # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: ^() -> Integer?
   # @rbs return: void
-  def initialize(io: $stdout, theme: Riffer::Rig::Terminal::Theme.for(io))
+  def initialize(io: $stdout, theme: Riffer::Rig::Terminal::Theme.for(io), width: -> {})
     @io = io
     @theme = theme
+    @width = width
   end
 
   # @rbs text: String
@@ -38,10 +41,10 @@ class Riffer::Rig::Terminal::Renderer
     @io.flush
   end
 
-  # @rbs line: String
+  # @rbs prompt: String
   # @rbs return: void
-  def echo(line)
-    render_block("#{@theme.pink('›')} #{line}")
+  def echo(prompt)
+    render_block(Riffer::Rig::Terminal::Echo.call(prompt, theme: @theme, width: @width.call))
   end
 
   # @rbs question: String?
