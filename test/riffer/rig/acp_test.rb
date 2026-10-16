@@ -164,6 +164,20 @@ describe Riffer::Rig::ACP do
     [started, gate]
   end
 
+  def busy_prompt_error
+    session = new_session
+    reply('Slow hello.')
+    started, gate = hold_provider
+    first = Thread.new { prompt(session.session_id, 'hello') }
+    started.pop
+    # The client connection refuses a second stream on a session itself, so
+    # only a direct call reaches the Runtime's own refusal.
+    error = @agent.prompt(prompt_request(session.session_id, 'again'))
+    gate << true
+    first.join
+    error
+  end
+
   def wait_for(timeout: 5)
     deadline = Time.now + timeout
     until yield
@@ -464,19 +478,12 @@ describe Riffer::Rig::ACP do
       assert_equal 'end_turn', response.stop_reason
     end
 
-    it 'answers a prompt on a busy session with the runtime error' do
-      session = new_session
-      reply('Slow hello.')
-      started, gate = hold_provider
-      first = Thread.new { prompt(session.session_id, 'hello') }
-      started.pop
-      # The client connection refuses a second stream on a session itself, so
-      # only a direct call reaches the Runtime's own refusal.
-      error = @agent.prompt(prompt_request(session.session_id, 'again'))
-      gate << true
-      first.join
+    it 'answers a prompt on a busy session with an invalid request error' do
+      assert_equal ACP::RequestError::INVALID_REQUEST, busy_prompt_error.code
+    end
 
-      assert_includes error.message, 'already running'
+    it 'tells the client to wait for or cancel the running prompt on a busy session' do
+      assert_includes busy_prompt_error.message, 'wait for it to finish or cancel it'
     end
 
     it 'answers a prompt on a closed session with the runtime error' do

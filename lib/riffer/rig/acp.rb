@@ -155,7 +155,12 @@ class Riffer::Rig::ACP
       end
     end
     ::ACP::Types::PromptResponse.new(stop_reason: Riffer::Rig::ACP::Mapper.stop_reason_of(stop_reason))
-  rescue Riffer::Rig::Runtime::BusyError, Riffer::Rig::Runtime::ClosedError => e
+  rescue Riffer::Rig::Runtime::BusyError
+    ::ACP::RequestError.new(
+      code: ::ACP::RequestError::INVALID_REQUEST,
+      message: 'a prompt is already running on this session; wait for it to finish or cancel it'
+    )
+  rescue Riffer::Rig::Runtime::ClosedError => e
     ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: e.message)
   end
 
