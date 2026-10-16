@@ -19,8 +19,8 @@ module Riffer::Rig::Terminal::Markdown
   # quote marks could exhaust the stack.
   NESTING_LIMIT = 16 #: Integer
 
-  # Every row is padded to the widest, so without a ceiling one wide row costs
-  # a cell per column on every other row. A row's pipes bound its cells.
+  # Every row is padded to the header, so without a ceiling one wide header
+  # costs a cell per column on every row. A row's pipes bound its cells.
   COLUMN_LIMIT = 32 #: Integer
 
   # @rbs source: String
@@ -62,7 +62,7 @@ module Riffer::Rig::Terminal::Markdown
     when :quote then quote(chunk, theme: theme, width: width, depth: depth)
     when :list then list(chunk, theme: theme, width: width, depth: depth)
     when :table then table(chunk, theme: theme, width: width)
-    else flow(chunk.join(' '), theme: theme, width: width)
+    else flow(chunk.map(&:strip).join("\n"), theme: theme, width: width)
     end
   end
 

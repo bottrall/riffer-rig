@@ -8,6 +8,7 @@ class Riffer::Rig::Terminal
     def recorded: (String id) -> Array[::Riffer::Rig::Terminal::Replay::_Recorded]
     def list: (::Riffer::Rig::Hosts::_Host host, ?all: bool) -> Array[::Riffer::Rig::Terminal::Session]
     def delete: (::Riffer::Rig::Hosts::_Host host, String id) -> void
+    def off: () -> String?
     def missing: (?String id) -> String
   end
 

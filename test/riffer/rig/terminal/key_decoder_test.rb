@@ -5,7 +5,7 @@ require 'test_helper'
 describe Riffer::Rig::Terminal::KeyDecoder do
   def decode(string)
     decoder = Riffer::Rig::Terminal::KeyDecoder.new
-    string.chars.flat_map { |char| decoder.push(char) } + decoder.flush
+    string.bytes.flat_map { |byte| decoder.push(byte) } + decoder.flush
   end
 
   def pairs(string)
@@ -13,7 +13,7 @@ describe Riffer::Rig::Terminal::KeyDecoder do
   end
 
   def fed(string)
-    Riffer::Rig::Terminal::KeyDecoder.new.tap { |decoder| string.chars.each { |char| decoder.push(char) } }
+    Riffer::Rig::Terminal::KeyDecoder.new.tap { |decoder| string.bytes.each { |byte| decoder.push(byte) } }
   end
 
   describe '#pending?' do
@@ -22,10 +22,11 @@ describe Riffer::Rig::Terminal::KeyDecoder do
     end
 
     it 'pending? is true mid-sequence' do
-      decoder = Riffer::Rig::Terminal::KeyDecoder.new
-      decoder.push("\e")
+      assert_predicate fed("\e"), :pending?
+    end
 
-      assert_predicate decoder, :pending?
+    it 'pending? is true mid-character' do
+      assert_predicate fed("\xC3"), :pending?
     end
   end
 
@@ -36,6 +37,30 @@ describe Riffer::Rig::Terminal::KeyDecoder do
 
     it 'decodes line feed as Enter and Ctrl-H as Backspace rather than as chords' do
       assert_equal [[:enter, nil], [:backspace, nil]], pairs("\n\x08")
+    end
+
+    it 'decodes multibyte characters as one text event' do
+      assert_equal [[:text, 'é'], [:text, '🜁']], pairs('é🜁')
+    end
+
+    it 'decodes a character led by an 8-bit meta byte as text' do
+      assert_equal [[:text, '€']], pairs('€')
+    end
+
+    it 'drops a byte that is not UTF-8' do
+      assert_equal [[:text, 'a']], pairs("\xFFa")
+    end
+
+    it 'drops an incomplete character that another key interrupts' do
+      assert_equal [[:text, 'a']], pairs("\xE2\x82a")
+    end
+
+    it 'drops a character that is still invalid after four bytes' do
+      refute_predicate fed("\xF0\x80\x80\x80"), :pending?
+    end
+
+    it 'decodes a lone 8-bit meta byte that another key interrupts as its Alt chord' do
+      assert_equal [[:alt_b, nil], [:alt_f, nil], [:text, 'a']], pairs("\xE2\xE6a")
     end
 
     it 'decodes Ctrl-chords by letter' do
@@ -50,8 +75,8 @@ describe Riffer::Rig::Terminal::KeyDecoder do
       assert_equal [[:text, 'a'], [:text, 'b']], pairs('ab')
     end
 
-    it 'decodes multibyte characters as one text event' do
-      assert_equal [[:text, 'é'], [:text, '🜁']], pairs('é🜁')
+    it 'decodes ASCII text as UTF-8' do
+      assert_equal Encoding::UTF_8, decode('a').first.text.encoding
     end
 
     it 'decodes escape followed by b or f as Alt chords' do
@@ -112,9 +137,8 @@ describe Riffer::Rig::Terminal::KeyDecoder do
     end
 
     it 'holds a paste open across pushes until the end marker' do
-      decoder = Riffer::Rig::Terminal::KeyDecoder.new
-      "\e[200~hel".chars.each { |char| decoder.push(char) }
-      events = "lo\e[201~".chars.flat_map { |char| decoder.push(char) }
+      decoder = fed("\e[200~hel")
+      events = "lo\e[201~".bytes.flat_map { |byte| decoder.push(byte) }
 
       assert_equal [Riffer::Rig::Terminal::Key.new(:paste, 'hello')], events
     end
@@ -126,6 +150,10 @@ describe Riffer::Rig::Terminal::KeyDecoder do
     it 'decodes a carriage return and line feed inside a paste as one newline' do
       assert_equal [[:paste, "one\ntwo"]], pairs("\e[200~one\r\ntwo\e[201~")
     end
+
+    it 'drops bytes that are not UTF-8 from a paste' do
+      assert_equal [[:paste, 'ab']], pairs("\e[200~a\xFF\xF1b\e[201~")
+    end
   end
 
   describe '#flush' do
@@ -136,16 +164,25 @@ describe Riffer::Rig::Terminal::KeyDecoder do
     it 'keeps an unterminated paste open' do
       decoder = fed("\e[200~hel")
       decoder.flush
-      events = "lo\e[201~".chars.flat_map { |char| decoder.push(char) }
+      events = "lo\e[201~".bytes.flat_map { |byte| decoder.push(byte) }
 
       assert_equal [Riffer::Rig::Terminal::Key.new(:paste, 'hello')], events
     end
 
     it 'decodes a lone escape once the reader gives up on a sequence' do
-      decoder = Riffer::Rig::Terminal::KeyDecoder.new
-      decoder.push("\e")
+      assert_equal [Riffer::Rig::Terminal::Key.new(:escape)], fed("\e").flush
+    end
 
-      assert_equal [Riffer::Rig::Terminal::Key.new(:escape)], decoder.flush
+    it 'decodes a lone 8-bit meta byte as its Alt chord' do
+      assert_equal [Riffer::Rig::Terminal::Key.new(:alt_f)], fed("\xE6").flush
+    end
+
+    it 'flushes nothing from a lone byte that is not a meta key' do
+      assert_empty fed("\xE1").flush
+    end
+
+    it 'flushes nothing from an incomplete character' do
+      assert_empty fed("\xE2\x82").flush
     end
 
     it 'flushes nothing from an unterminated CSI sequence' do
@@ -156,7 +193,7 @@ describe Riffer::Rig::Terminal::KeyDecoder do
       decoder = fed("\e[1")
       decoder.flush
 
-      assert_equal [Riffer::Rig::Terminal::Key.new(:text, 'A')], decoder.push('A')
+      assert_equal [Riffer::Rig::Terminal::Key.new(:text, 'A')], decoder.push('A'.ord)
     end
   end
 end

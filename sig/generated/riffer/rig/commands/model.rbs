@@ -3,6 +3,8 @@
 module Riffer::Rig::Commands::Model
   SAVE: String
 
+  SAVED_TO: String
+
   # @rbs return: Riffer::Rig::Command
   def command: () -> Riffer::Rig::Command
 
