@@ -35,7 +35,7 @@ class Riffer::Rig::Terminal::Picker
   def open(all:)
     rows = @sessions.list(@host, all: all)
     if rows.empty?
-      @renderer.notice(EMPTY)
+      @renderer.notice(@sessions.off || EMPTY)
       return nil
     end
 

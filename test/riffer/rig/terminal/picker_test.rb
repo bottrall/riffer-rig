@@ -19,10 +19,11 @@ class PickerInput
 end
 
 class PickerSessions
-  attr_reader :scopes, :deleted
+  attr_reader :scopes, :deleted, :off
 
-  def initialize(rows)
+  def initialize(rows, off: nil)
     @rows = rows
+    @off = off
     @scopes = []
     @deleted = []
   end
@@ -57,10 +58,10 @@ describe Riffer::Rig::Terminal::Picker do
 
   def ctrl_d = Riffer::Rig::Terminal::Picker::EOT
 
-  def pick(rows, lines, all: false, host: ConfirmingHost.new)
+  def pick(rows, lines, all: false, host: ConfirmingHost.new, off: nil)
     @output = StringIO.new
     @host = host
-    @sessions = PickerSessions.new(rows)
+    @sessions = PickerSessions.new(rows, off: off)
     renderer = Riffer::Rig::Terminal::Renderer.new(io: @output, theme: Riffer::Rig::Terminal::Theme.new(enabled: false))
     Riffer::Rig::Terminal::Picker.new(
       prompter: Riffer::Rig::Terminal::BlockingPrompter.new(input: PickerInput.new(lines), renderer: renderer),
@@ -96,6 +97,10 @@ describe Riffer::Rig::Terminal::Picker do
 
     it 'says so when there are no saved sessions' do
       assert_includes rendered([]), Riffer::Rig::Terminal::Picker::EMPTY
+    end
+
+    it 'says why when the sessions are off' do
+      assert_includes rendered([], off: 'Sessions are off.'), 'Sessions are off.'
     end
 
     it 'returns nothing when there are no saved sessions' do
