@@ -56,6 +56,7 @@ class Riffer::Rig::Headless
   # @rbs &build: (Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime
   # @rbs return: Integer
   def run(prompt:, &build)
+    @output.sync = true
     text = prompt_text(prompt)
     return usage_error if text.empty?
 

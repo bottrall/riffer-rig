@@ -256,6 +256,22 @@ describe Riffer::Rig::Headless do
       assert_match(/waiting for background jobs/, @error.string)
     end
 
+    it 'has written the reply through to a pipe by the time it waits' do
+      reader, @output = IO.pipe
+      @output.sync = false
+      seen = nil
+      reply = Riffer::StreamEvents::TextDone.new('started')
+      @runtime = ScriptedRuntime.new([reply, turn_end(:completed)], exits: [false])
+      @runtime.define_singleton_method(:await_job_exit) do |**|
+        seen = reader.read_nonblock(64, exception: false)
+        false
+      end
+      run_build { @runtime }
+      [@output, reader].each(&:close)
+
+      assert_equal "started\n", seen
+    end
+
     it 'waits for an exit with the idle timeout' do
       run_waiting([true], job_idle_timeout: 30)
 
