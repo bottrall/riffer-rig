@@ -13,7 +13,7 @@ class Riffer::Rig::Terminal
 
   COMMAND_HINT = 'Type a command name after /'
 
-  SLASH_COMMAND = %r{\A/(\S*)\s*(.*)\z}m #: Regexp
+  BARE_SLASH = %r{\A/(?:\s|\z)} #: Regexp
 
   EXIT_HINT = 'Press Ctrl-C again to exit.'
 
@@ -229,10 +229,11 @@ class Riffer::Rig::Terminal
   # @rbs text: String
   # @rbs return: Riffer::Rig::Runtime
   def dispatch(runtime, text)
-    command = SLASH_COMMAND.match(text)
+    return notice(runtime, COMMAND_HINT) if BARE_SLASH.match?(text)
+
+    command = Riffer::Rig::Command::INVOCATION.match(text)
     if command
       case command[1].to_s
-      when '' then return notice(runtime, COMMAND_HINT)
       when NEW_COMMAND then return command_new(runtime, command[2].to_s)
       when RESUME_COMMAND then return command_resume(runtime, command[2].to_s)
       end

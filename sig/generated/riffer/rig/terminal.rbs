@@ -13,7 +13,7 @@ class Riffer::Rig::Terminal
 
   COMMAND_HINT: ::String
 
-  SLASH_COMMAND: Regexp
+  BARE_SLASH: Regexp
 
   EXIT_HINT: ::String
 

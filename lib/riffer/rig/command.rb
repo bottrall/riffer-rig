@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Command
+  INVOCATION = %r{\A/(\S+)\s*(.*)\z}m #: Regexp
+
   # @rbs @block: ^(Riffer::Rig::Command::Context) -> void
 
   # @dynamic name, description, extension

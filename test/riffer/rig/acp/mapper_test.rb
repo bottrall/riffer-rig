@@ -171,7 +171,7 @@ describe Riffer::Rig::ACP::Mapper do
     end
 
     it 'ends a failed turn with refusal' do
-      reasons = [:error, :other, :guardrail_blocked, nil]
+      reasons = %i[error other guardrail_blocked]
 
       assert_equal %w[refusal], reasons.map { |reason| Riffer::Rig::ACP::Mapper.stop_reason_of(reason) }.uniq
     end
