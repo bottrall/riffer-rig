@@ -89,6 +89,10 @@ describe Riffer::Rig::ACP::Mapper do
       assert_equal [ACP::Types::SessionUpdate::AgentMessageChunk, 'Reading.'], [update.class, update.content.text]
     end
 
+    it 'skips an assistant message with only whitespace content' do
+      assert_nil Riffer::Rig::ACP::Mapper.replay_of({ role: 'assistant', content: " \n" })
+    end
+
     it 'replays a tool message as a completed tool call titled with its name' do
       update = Riffer::Rig::ACP::Mapper.replay_of(tool_message('read'))
 
