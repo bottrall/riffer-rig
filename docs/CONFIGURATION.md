@@ -43,6 +43,8 @@ There is no built-in default. The model is the first of these that is set, highe
 
 A bare `RIFFER_MODEL` is rejected even when a higher source wins, since it is a mistake in the environment either way.
 
+A `model` that is not a string is never skipped as unset: the Loader raises `Riffer::Rig::Loader::ConfigurationError` naming the file, even when a higher source wins, the same as for a file that does not parse.
+
 `/model provider/name` overrides this key for the current session only: the override wins until the session ends. Switching resolves the new provider's missing credentials and missing SDK gem the same way startup does, and `/model --save` writes the model in effect to this key in the home settings, leaving every other key unchanged — or, when the home file no longer parses, writes nothing and reports the file ([Switching the model](https://github.com/bottrall/riffer-rig#switching-the-model)).
 
 ## `reasoning`
