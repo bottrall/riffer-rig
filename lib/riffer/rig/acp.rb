@@ -138,12 +138,14 @@ class Riffer::Rig::ACP
     runtime = session(request.session_id)
     return ::ACP::RequestError.resource_not_found unless runtime
 
-    # @type var stop_reason: Symbol?
-    stop_reason = nil
-    runtime.prompt(Riffer::Rig::ACP::Mapper.prompt_text(request.prompt)) do |event|
+    # A command that runs no turn sends no turn_end.
+    stop_reason = :completed
+    dispatch(runtime, Riffer::Rig::ACP::Mapper.prompt_text(request.prompt)) do |event|
       case event
       when Riffer::StreamEvents::TextDelta
         client.update(request.session_id, Riffer::Rig::ACP::Mapper.message_chunk(event.content))
+      when Riffer::Rig::Events::CommandOutput
+        client.update(request.session_id, Riffer::Rig::ACP::Mapper.message_chunk(event.text))
       when Riffer::StreamEvents::ToolCallDone
         client.update(request.session_id, Riffer::Rig::ACP::Mapper.tool_call(event))
       when Riffer::Rig::Events::AfterToolCall
@@ -239,6 +241,15 @@ class Riffer::Rig::ACP
   # @rbs return: Riffer::Rig::Runtime?
   def session(id)
     @lock.synchronize { @sessions[id] }
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs text: String
+  # @rbs &: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
+  # @rbs return: void
+  def dispatch(runtime, text, &)
+    command = Riffer::Rig::Command::INVOCATION.match(text)
+    command ? runtime.run_command(command[1].to_s, command[2].to_s, &) : runtime.prompt(text, &)
   end
 
   # @rbs id: String

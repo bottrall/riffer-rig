@@ -11,7 +11,9 @@ class Riffer::Rig::Terminal
 
   RESUME_USAGE = 'Usage: /resume [--all]' #: String
 
-  SLASH_COMMAND = %r{\A/(\S+)\s*(.*)\z}m #: Regexp
+  COMMAND_HINT = 'Type a command name after /'
+
+  BARE_SLASH = %r{\A/(?:\s|\z)} #: Regexp
 
   EXIT_HINT = 'Press Ctrl-C again to exit.'
 
@@ -122,8 +124,11 @@ class Riffer::Rig::Terminal
     begin
       @opening.call(runtime)
       notify_missing(session) unless found
-      queued = @repl
-      queued ? drain(queued, runtime) : repl(runtime)
+      each_entry do |entry|
+        next deliver_job_exits(runtime) if entry == :job_exit
+
+        runtime = dispatch(runtime, entry)
+      end
       @renderer.notice(FAREWELL)
       0
     ensure
@@ -159,9 +164,16 @@ class Riffer::Rig::Terminal
     nil
   end
 
-  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs &block: (String | :job_exit) -> void
   # @rbs return: void
-  def repl(runtime)
+  def each_entry(&)
+    queued = @repl
+    queued ? drain(queued, &) : repl(&)
+  end
+
+  # @rbs &block: (String) -> void
+  # @rbs return: void
+  def repl
     armed = false
     loop do
       case (line = read_line)
@@ -176,7 +188,7 @@ class Riffer::Rig::Terminal
         text = line.strip
         break if EXIT_COMMANDS.include?(text)
 
-        runtime = dispatch(runtime, text) unless text.empty?
+        yield text unless text.empty?
       end
     end
   end
@@ -190,16 +202,16 @@ class Riffer::Rig::Terminal
   end
 
   # @rbs queued: Riffer::Rig::Terminal::Repl
-  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs &block: (String | :job_exit) -> void
   # @rbs return: void
-  def drain(queued, runtime)
+  def drain(queued)
     queued.run do |entry|
-      next deliver_job_exits(runtime) if entry == :job_exit
+      next yield(entry) if entry == :job_exit
 
       @renderer.echo(entry)
       break if EXIT_COMMANDS.include?(entry)
 
-      runtime = dispatch(runtime, entry)
+      yield entry
     end
   end
 
@@ -219,7 +231,9 @@ class Riffer::Rig::Terminal
   # @rbs text: String
   # @rbs return: Riffer::Rig::Runtime
   def dispatch(runtime, text)
-    command = SLASH_COMMAND.match(text)
+    return notice(runtime, COMMAND_HINT) if BARE_SLASH.match?(text)
+
+    command = Riffer::Rig::Command::INVOCATION.match(text)
     if command
       case command[1].to_s
       when NEW_COMMAND then return command_new(runtime, command[2].to_s)
@@ -237,7 +251,7 @@ class Riffer::Rig::Terminal
   # @rbs args: String
   # @rbs return: Riffer::Rig::Runtime
   def command_new(runtime, args)
-    return usage(runtime, NEW_USAGE) unless args.strip.empty?
+    return notice(runtime, NEW_USAGE) unless args.strip.empty?
 
     fresh = build { @sessions.fresh(@host) }
     return runtime unless fresh
@@ -250,7 +264,7 @@ class Riffer::Rig::Terminal
   # @rbs return: Riffer::Rig::Runtime
   def command_resume(runtime, args)
     stripped = args.strip
-    return usage(runtime, RESUME_USAGE) unless stripped.empty? || stripped == '--all'
+    return notice(runtime, RESUME_USAGE) unless stripped.empty? || stripped == '--all'
 
     session = @picker.open(all: stripped == '--all')
     return runtime unless session
@@ -262,10 +276,10 @@ class Riffer::Rig::Terminal
   end
 
   # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs usage: String
+  # @rbs message: String
   # @rbs return: Riffer::Rig::Runtime
-  def usage(runtime, usage)
-    @renderer.notice(usage)
+  def notice(runtime, message)
+    @renderer.notice(message)
     runtime
   end
 

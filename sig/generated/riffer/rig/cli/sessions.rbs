@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/cli/sessions.rb with RBS::Inline
 
 class Riffer::Rig::CLI::Sessions
+  OFF: String
+
   @loader: Riffer::Rig::Loader?
 
   @store: Riffer::Rig::Stores::_Store?
@@ -49,6 +51,9 @@ class Riffer::Rig::CLI::Sessions
 
   # @rbs return: bool
   def asked?: () -> bool
+
+  # @rbs return: String?
+  def off: () -> String?
 
   # @rbs id: String?
   # @rbs return: String

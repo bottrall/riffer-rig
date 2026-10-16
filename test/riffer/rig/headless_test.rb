@@ -168,6 +168,12 @@ describe Riffer::Rig::Headless do
     assert_equal "review this\n\nthe diff", prompt_sent_to_model
   end
 
+  it 'strips whitespace around the prompt argument' do
+    run_headless(prompt: "  review this\n", input: 'the diff') { |runtime| runtime.agent.provider.stub_response('Hi') }
+
+    assert_equal "review this\n\nthe diff", prompt_sent_to_model
+  end
+
   it 'uses piped stdin alone as the prompt without an argument' do
     run_headless(input: 'the diff') { |runtime| runtime.agent.provider.stub_response('Hi') }
 
@@ -199,6 +205,18 @@ describe Riffer::Rig::Headless do
     run_headless
 
     assert_match(/no prompt/, @error.string)
+  end
+
+  it 'returns two when the prompt argument is only whitespace' do
+    run_headless(prompt: '   ')
+
+    assert_equal 2, @status
+  end
+
+  it 'returns two when piped stdin is only whitespace' do
+    run_headless(input: "  \n ")
+
+    assert_equal 2, @status
   end
 
   it 'returns two without the provider credentials' do
@@ -324,6 +342,37 @@ describe Riffer::Rig::Headless do
       run_waiting([true], follow_up: [Riffer::StreamEvents::TextDone.new('It passed.'), turn_end(:completed)])
 
       assert_equal "It passed.\n", @output.string
+    end
+
+    it 'separates the reply of a follow-up from the turn before with a blank line' do
+      run_waiting(
+        [true],
+        events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)],
+        follow_up: [Riffer::StreamEvents::TextDone.new('It passed.'), turn_end(:completed)]
+      )
+
+      assert_equal "started\n\nIt passed.\n", @output.string
+    end
+
+    it 'prints the blank line only once for a follow-up that streams its reply' do
+      run_waiting(
+        [true],
+        events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)],
+        follow_up: [
+          Riffer::StreamEvents::TextDelta.new('It '),
+          Riffer::StreamEvents::TextDelta.new('passed.'),
+          Riffer::StreamEvents::TextDone.new('It passed.'),
+          turn_end(:completed)
+        ]
+      )
+
+      assert_equal "started\n\nIt passed.\n", @output.string
+    end
+
+    it 'prints no blank line for a follow-up that prints nothing' do
+      run_waiting([true], events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)])
+
+      assert_equal "started\n", @output.string
     end
 
     it 'returns the code of the last follow-up' do
@@ -591,6 +640,17 @@ describe Riffer::Rig::Headless do
         },
         records.last
       )
+    end
+
+    it 'prints no blank line between the records of a follow-up' do
+      run_waiting(
+        [true],
+        json: true,
+        events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)],
+        follow_up: [Riffer::StreamEvents::TextDone.new('It passed.'), turn_end(:completed)]
+      )
+
+      refute_match(/\n\n/, @output.string)
     end
 
     it 'ends with a turn_end record' do
