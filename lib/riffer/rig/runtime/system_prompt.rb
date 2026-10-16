@@ -41,7 +41,9 @@ class Riffer::Rig::Runtime::SystemPrompt
   def refresh(session, runtime)
     # Upstream candidate: riffer resolves `instructions` once, in Agent.new, so
     # a per-turn system message has to be swapped into the session by hand.
-    session.set([Riffer::Messages::System.new(render(runtime)), *session.messages.drop(1)])
+    history = session.messages
+    kept = history.first.is_a?(Riffer::Messages::System) ? history.drop(1) : history
+    session.set([Riffer::Messages::System.new(render(runtime)), *kept])
   end
 
   private

@@ -11,6 +11,8 @@ class Riffer::Rig::Terminal::Picker
 
   CLOSED: String
 
+  NO_MATCH: String
+
   EOT: String
 
   @sessions: Riffer::Rig::Terminal::_Sessions
@@ -42,15 +44,21 @@ class Riffer::Rig::Terminal::Picker
   # @rbs return: bool
   def matches?: (Riffer::Rig::Terminal::Session row, String filter) -> bool
 
+  # @rbs rows: Array[Riffer::Rig::Terminal::Session]
+  # @rbs filter: String
+  # @rbs return: bool
+  def any_match?: (Array[Riffer::Rig::Terminal::Session] rows, String filter) -> bool
+
   # @rbs line: String
   # @rbs shown: Array[Riffer::Rig::Terminal::Session]
   # @rbs return: Riffer::Rig::Terminal::Session?
   def number: (String line, Array[Riffer::Rig::Terminal::Session] shown) -> Riffer::Rig::Terminal::Session?
 
+  # @rbs rows: Array[Riffer::Rig::Terminal::Session]
   # @rbs shown: Array[Riffer::Rig::Terminal::Session]
   # @rbs all: bool
   # @rbs return: Array[Riffer::Rig::Terminal::Session] | :cancel
-  def delete_mode: (Array[Riffer::Rig::Terminal::Session] shown, bool all) -> (Array[Riffer::Rig::Terminal::Session] | :cancel)
+  def delete_mode: (Array[Riffer::Rig::Terminal::Session] rows, Array[Riffer::Rig::Terminal::Session] shown, bool all) -> (Array[Riffer::Rig::Terminal::Session] | :cancel)
 
   # @rbs header: String
   # @rbs shown: Array[Riffer::Rig::Terminal::Session]

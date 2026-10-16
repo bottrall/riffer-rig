@@ -5,6 +5,11 @@ module Riffer::Rig::Terminal::Markdown::Table
   # cell costs its length again on every other row.
   WIDTH_LIMIT: Integer
 
+  # GFM splits at a pipe inside a code span, but models rarely escape one
+  # there, so a code span keeps its pipes. A tick run with no closer is matched
+  # whole, so a later tick in it opens no span.
+  CELL: Regexp
+
   # @rbs chunk: Array[String]
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs return: Array[String]?

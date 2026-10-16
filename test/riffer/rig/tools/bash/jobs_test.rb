@@ -272,6 +272,18 @@ describe Riffer::Rig::Tools::Bash::Jobs do
       end
     end
 
+    it 'lets a stopped job exit on TERM' do
+      Dir.mktmpdir do |dir|
+        job = start("trap 'touch #{dir}/termed; exit' TERM; echo ready; sleep 30")
+        sleep 0.01 until File.size?(job.output_path)
+        Process.kill('STOP', -job.pid)
+        sleep 0.01 until `ps -o stat= -p #{job.pid}`.start_with?('T')
+        @jobs.shutdown
+
+        assert_path_exists File.join(dir, 'termed')
+      end
+    end
+
     it 'kills a job that ignores TERM' do
       job = start('trap "" TERM; echo ready; sleep 30')
       sleep 0.01 until File.size?(job.output_path)

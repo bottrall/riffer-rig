@@ -17,8 +17,8 @@ module Riffer::Rig::Terminal::Markdown
   # quote marks could exhaust the stack.
   NESTING_LIMIT: Integer
 
-  # Every row is padded to the widest, so without a ceiling one wide row costs
-  # a cell per column on every other row. A row's pipes bound its cells.
+  # Every row is padded to the header, so without a ceiling one wide header
+  # costs a cell per column on every row. A row's pipes bound its cells.
   COLUMN_LIMIT: Integer
 
   # @rbs source: String

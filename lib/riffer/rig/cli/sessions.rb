@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::CLI::Sessions
+  OFF = 'Sessions are off for this run (--no-save).' #: String
+
   # The terminal's sessions collaborator: translates the parsed flags into
   # Loader builds and store lookups, so the host never sees the flags.
   #
@@ -88,11 +90,16 @@ class Riffer::Rig::CLI::Sessions
     resume_id ? true : @flags.continue
   end
 
+  # @rbs return: String?
+  def off
+    OFF unless @store
+  end
+
   # @rbs id: String?
   # @rbs return: String
   def missing(id = nil)
     id ||= resume_id
-    id ? "No saved session #{id}." : 'No saved session in this directory.'
+    off || (id ? "No saved session #{id}." : 'No saved session in this directory.')
   end
 
   private

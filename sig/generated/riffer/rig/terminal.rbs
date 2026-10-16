@@ -11,6 +11,8 @@ class Riffer::Rig::Terminal
 
   RESUME_USAGE: String
 
+  COMMAND_HINT: ::String
+
   SLASH_COMMAND: Regexp
 
   EXIT_HINT: ::String
@@ -75,17 +77,21 @@ class Riffer::Rig::Terminal
   # @rbs return: Riffer::Rig::Runtime?
   def build: () { () -> Riffer::Rig::Runtime? } -> Riffer::Rig::Runtime?
 
-  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs &block: (String | :job_exit) -> void
   # @rbs return: void
-  def repl: (Riffer::Rig::Runtime runtime) -> void
+  def each_entry: () { (String | :job_exit) -> void } -> void
+
+  # @rbs &block: (String) -> void
+  # @rbs return: void
+  def repl: () { (String) -> void } -> void
 
   # @rbs return: String | :interrupt | nil
   def read_line: () -> (String | :interrupt | nil)
 
   # @rbs queued: Riffer::Rig::Terminal::Repl
-  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs &block: (String | :job_exit) -> void
   # @rbs return: void
-  def drain: (Riffer::Rig::Terminal::Repl queued, Riffer::Rig::Runtime runtime) -> void
+  def drain: (Riffer::Rig::Terminal::Repl queued) { (String | :job_exit) -> void } -> void
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void
@@ -107,9 +113,9 @@ class Riffer::Rig::Terminal
   def command_resume: (Riffer::Rig::Runtime runtime, String args) -> Riffer::Rig::Runtime
 
   # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs usage: String
+  # @rbs message: String
   # @rbs return: Riffer::Rig::Runtime
-  def usage: (Riffer::Rig::Runtime runtime, String usage) -> Riffer::Rig::Runtime
+  def notice: (Riffer::Rig::Runtime runtime, String message) -> Riffer::Rig::Runtime
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs session: Riffer::Rig::Terminal::Session

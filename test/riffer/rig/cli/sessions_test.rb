@@ -273,7 +273,21 @@ describe Riffer::Rig::CLI::Sessions do
     end
   end
 
+  describe '#off' do
+    it 'says sessions are off under --no-save' do
+      assert_equal Riffer::Rig::CLI::Sessions::OFF, sessions('--no-save').off
+    end
+
+    it 'is nil when the run saves' do
+      assert_nil sessions.off
+    end
+  end
+
   describe '#missing' do
+    it 'says sessions are off under --no-save' do
+      assert_equal Riffer::Rig::CLI::Sessions::OFF, sessions('--no-save', '-r', 'aaa').missing
+    end
+
     it 'names the given id' do
       assert_equal 'No saved session bbb.', sessions('-r', 'aaa').missing('bbb')
     end

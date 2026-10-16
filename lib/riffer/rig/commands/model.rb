@@ -4,6 +4,7 @@ module Riffer::Rig::Commands::Model
   extend self
 
   SAVE = '--save' #: String
+  SAVED_TO = '~/.riffer/settings.json' #: String
 
   # @rbs return: Riffer::Rig::Command
   def command
@@ -27,7 +28,7 @@ module Riffer::Rig::Commands::Model
       refusal = Riffer::Rig::Settings::File.store_model(ctx.runtime.model)
       return ctx.host.notify(refusal, level: :error) if refusal
 
-      return ctx.say("Saved #{ctx.runtime.model} to settings")
+      return ctx.say("Saved #{ctx.runtime.model} to #{SAVED_TO}")
     end
 
     provider = Riffer::Rig::Settings::ModelOptions.provider_for(model)
@@ -37,7 +38,8 @@ module Riffer::Rig::Commands::Model
     ctx.runtime.model = model
     refusal = Riffer::Rig::Settings::File.store_model(model) if save
     ctx.host.notify(refusal, level: :error) if refusal
-    ctx.say("Model switched to #{model}")
+    saved = save && !refusal
+    ctx.say(saved ? "Model switched to #{model} and saved to #{SAVED_TO}" : "Model switched to #{model}")
   end
 
   private
