@@ -9,6 +9,8 @@ class Riffer::Rig::Terminal::Picker
 
   EMPTY: String
 
+  CLOSED: String
+
   NO_MATCH: String
 
   EOT: String
@@ -33,6 +35,9 @@ class Riffer::Rig::Terminal::Picker
   def open: (all: bool) -> Riffer::Rig::Terminal::Session?
 
   private
+
+  # @rbs return: nil
+  def closed: () -> nil
 
   # @rbs row: Riffer::Rig::Terminal::Session
   # @rbs filter: String

@@ -9,6 +9,8 @@ class Riffer::Rig::Terminal::Picker
 
   EMPTY = 'No saved sessions.' #: String
 
+  CLOSED = '(closed)' #: String
+
   NO_MATCH = 'No sessions match "%s"' #: String
 
   EOT = "\u{4}" #: String
@@ -46,7 +48,7 @@ class Riffer::Rig::Terminal::Picker
       when nil, EOT
         outcome = delete_mode(rows, shown, all)
         case outcome
-        when :cancel then return nil
+        when :cancel then return closed
         else
           rows = outcome
           if rows.empty?
@@ -56,11 +58,11 @@ class Riffer::Rig::Terminal::Picker
           filter = '' unless any_match?(rows, filter)
         end
       when :interrupt
-        return nil
+        return closed
       when ''
         return shown.first if shown.one?
 
-        return nil
+        return closed
       else
         choice = number(line, shown)
         return choice if choice
@@ -73,10 +75,16 @@ class Riffer::Rig::Terminal::Picker
       end
     end
   rescue Interrupt
-    nil
+    closed
   end
 
   private
+
+  # @rbs return: nil
+  def closed
+    @renderer.notice(CLOSED)
+    nil
+  end
 
   # @rbs row: Riffer::Rig::Terminal::Session
   # @rbs filter: String

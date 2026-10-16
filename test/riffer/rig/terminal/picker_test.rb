@@ -107,6 +107,10 @@ describe Riffer::Rig::Terminal::Picker do
       assert_nil pick([], ['1'])
     end
 
+    it 'does not say the picker closed when there are no saved sessions' do
+      refute_includes rendered([]), Riffer::Rig::Terminal::Picker::CLOSED
+    end
+
     it 'shows the header' do
       assert_includes rendered([session('alpha')]), Riffer::Rig::Terminal::Picker::HEADER
     end
@@ -173,6 +177,10 @@ describe Riffer::Rig::Terminal::Picker do
       assert_nil pick([session('alpha')], [ctrl_d, nil])
     end
 
+    it 'says the picker closed when delete mode is cancelled' do
+      assert_includes rendered([session('alpha')], [ctrl_d, nil]), Riffer::Rig::Terminal::Picker::CLOSED
+    end
+
     it 'carries on with the remaining sessions after a delete' do
       beta = session('beta')
 
@@ -189,6 +197,12 @@ describe Riffer::Rig::Terminal::Picker do
       assert_nil pick([session('alpha')], [ctrl_d, '1', '1'], host: ConfirmingHost.new([true]))
     end
 
+    it 'does not say the picker closed when the last session is deleted' do
+      output = rendered([session('alpha')], [ctrl_d, '1'], host: ConfirmingHost.new([true]))
+
+      refute_includes output, Riffer::Rig::Terminal::Picker::CLOSED
+    end
+
     it 'clears a filter that matches nothing after a delete' do
       alpha = session('alpha')
 
@@ -197,6 +211,10 @@ describe Riffer::Rig::Terminal::Picker do
 
     it 'returns nothing when interrupted at the prompt' do
       assert_nil pick([session('alpha')], [:interrupt, '1'])
+    end
+
+    it 'says the picker closed when interrupted at the prompt' do
+      assert_includes rendered([session('alpha')], [:interrupt]), Riffer::Rig::Terminal::Picker::CLOSED
     end
 
     it 'returns nothing on Ctrl-C at the footer' do
@@ -217,6 +235,10 @@ describe Riffer::Rig::Terminal::Picker do
 
     it 'returns nothing on Enter with several matches' do
       assert_nil pick([session('alpha'), session('beta')], [''])
+    end
+
+    it 'says the picker closed on Enter without a single match' do
+      assert_includes rendered([session('alpha'), session('beta')], ['']), Riffer::Rig::Terminal::Picker::CLOSED
     end
 
     it 'switches to the session with the typed number' do
@@ -251,6 +273,12 @@ describe Riffer::Rig::Terminal::Picker do
 
     it 'returns nothing when interrupted outside the prompt' do
       assert_nil pick([session('alpha')], [ctrl_d, '1', '1'], host: PickerInterruptedHost.new)
+    end
+
+    it 'says the picker closed when interrupted outside the prompt' do
+      output = rendered([session('alpha')], [ctrl_d, '1'], host: PickerInterruptedHost.new)
+
+      assert_includes output, Riffer::Rig::Terminal::Picker::CLOSED
     end
   end
 
