@@ -62,7 +62,7 @@ module Riffer::Rig::Terminal::Markdown
     when :quote then quote(chunk, theme: theme, width: width, depth: depth)
     when :list then list(chunk, theme: theme, width: width, depth: depth)
     when :table then table(chunk, theme: theme, width: width)
-    else flow(chunk.join(' '), theme: theme, width: width)
+    else flow(chunk.map(&:strip).join("\n"), theme: theme, width: width)
     end
   end
 
