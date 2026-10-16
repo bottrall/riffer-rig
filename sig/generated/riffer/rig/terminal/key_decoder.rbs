@@ -15,6 +15,8 @@ class Riffer::Rig::Terminal::KeyDecoder
 
   PASTE_END: String
 
+  MAX_CHARACTER_BYTES: Integer
+
   @sequence: String
 
   @state: Symbol
@@ -25,9 +27,9 @@ class Riffer::Rig::Terminal::KeyDecoder
   # @rbs return: bool
   def pending?: () -> bool
 
-  # @rbs char: String
+  # @rbs byte: Integer
   # @rbs return: Array[Riffer::Rig::Terminal::Key]
-  def push: (String char) -> Array[Riffer::Rig::Terminal::Key]
+  def push: (Integer byte) -> Array[Riffer::Rig::Terminal::Key]
 
   # @rbs return: Array[Riffer::Rig::Terminal::Key]
   def flush: () -> Array[Riffer::Rig::Terminal::Key]
@@ -45,6 +47,17 @@ class Riffer::Rig::Terminal::KeyDecoder
   # @rbs char: String
   # @rbs return: Symbol?
   def ctrl_chord: (String char) -> Symbol?
+
+  # @rbs char: String
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def continuation: (String char) -> Array[Riffer::Rig::Terminal::Key]
+
+  # @rbs char: String
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def character: (String char) -> Array[Riffer::Rig::Terminal::Key]
+
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def stray: () -> Array[Riffer::Rig::Terminal::Key]
 
   # @rbs char: String
   # @rbs return: Array[Riffer::Rig::Terminal::Key]
