@@ -55,7 +55,7 @@ module Riffer::Rig::ACP::Mapper
 
     case message[:role]
     when 'user' then ::ACP::Types::SessionUpdate::UserMessageChunk.new(content: text_block(message[:content].to_s))
-    when 'assistant' then message_chunk(message[:content].to_s)
+    when 'assistant' then message_chunk(message[:content].to_s) unless message[:content].to_s.strip.empty?
     when 'tool' then replayed_tool_call(message)
     end
   end
