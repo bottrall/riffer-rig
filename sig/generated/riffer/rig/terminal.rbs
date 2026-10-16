@@ -11,6 +11,8 @@ class Riffer::Rig::Terminal
 
   RESUME_USAGE: String
 
+  COMMAND_HINT: ::String
+
   SLASH_COMMAND: Regexp
 
   EXIT_HINT: ::String
@@ -107,9 +109,9 @@ class Riffer::Rig::Terminal
   def command_resume: (Riffer::Rig::Runtime runtime, String args) -> Riffer::Rig::Runtime
 
   # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs usage: String
+  # @rbs message: String
   # @rbs return: Riffer::Rig::Runtime
-  def usage: (Riffer::Rig::Runtime runtime, String usage) -> Riffer::Rig::Runtime
+  def notice: (Riffer::Rig::Runtime runtime, String message) -> Riffer::Rig::Runtime
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs session: Riffer::Rig::Terminal::Session
