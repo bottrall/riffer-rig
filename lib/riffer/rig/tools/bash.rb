@@ -61,7 +61,7 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
 
     cwd = context&.[](:cwd) #: String
     reader, writer = IO.pipe
-    pid = Process.spawn(command, chdir: cwd, pgroup: true, out: writer, err: %i[child out])
+    pid = Process.spawn(command, chdir: cwd, pgroup: true, in: File::NULL, out: writer, err: %i[child out])
     writer.close
     job = jobs.register(pid, command, reader)
 

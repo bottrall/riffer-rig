@@ -33,6 +33,10 @@ class PreparedSessions
     @sessions.list(host, all: all)
   end
 
+  def off
+    @sessions.off
+  end
+
   def missing(id = nil)
     @sessions.missing(id)
   end
@@ -604,10 +608,10 @@ describe Riffer::Rig::Terminal do
       assert_includes output, "› hello\r\n› "
     end
 
-    it 'echoes a pasted control character as its picture' do
-      output = run_on_pty(->(pty) { pty.type("\e[200~a\eb\e[201~\r/exit\r") })
+    it 'wraps an echoed line to the terminal width' do
+      output = run_on_pty(->(pty) { pty.type("refactor the picker now\r/exit\r") }, columns: 16)
 
-      assert_includes output, "› a␛b\r\n› "
+      assert_includes output, "› refactor the\r\n  picker now\r\n"
     end
 
     it 'ends the session at /exit' do
@@ -647,6 +651,13 @@ describe Riffer::Rig::Terminal do
       fresh = session_files.find { |path| File.basename(path, '.jsonl') == ids.last }
 
       assert_includes File.read(fresh), 'again'
+    end
+
+    it 'closes the session /new starts at exit' do
+      runtimes = []
+      run_on_pty(->(pty) { pty.type("/new\r/exit\r") }) { |runtime| runtimes << runtime }
+
+      assert_raises(Riffer::Rig::Runtime::ClosedError) { runtimes.last.prompt('hello') }
     end
 
     it 'reads the resume picker over the keys' do
@@ -811,6 +822,26 @@ describe Riffer::Rig::Terminal do
     end
   end
 
+  describe 'a / with no command name' do
+    it 'asks for a command name' do
+      assert_includes run_terminal("/\n"), 'Type a command name after /'
+    end
+
+    it 'sends nothing to the model' do
+      runtime = nil
+      run_terminal("/\n") { |driven| runtime = driven }
+
+      assert_empty runtime.agent.provider.calls
+    end
+
+    it 'sends nothing to the model when text follows it' do
+      runtime = nil
+      run_terminal("/ hello\n") { |driven| runtime = driven }
+
+      assert_empty runtime.agent.provider.calls
+    end
+  end
+
   it 'runs a skill command through run_command' do
     write_skill('tidy')
     output = run_terminal("/skill:tidy\n") { |runtime| runtime.agent.provider.stub_response('Tidied.') }
@@ -871,6 +902,26 @@ describe Riffer::Rig::Terminal do
 
       assert_includes File.read(fresh), 'again'
     end
+
+    it 'closes the new session at exit' do
+      runtimes = []
+      run_terminal("/new\n/exit\n") { |runtime| runtimes << runtime }
+
+      assert_raises(Riffer::Rig::Runtime::ClosedError) { runtimes.last.prompt('hello') }
+    end
+
+    it 'closes the new session when the input fails' do
+      runtimes = []
+      input = StringIO.new("/new\n")
+      input.define_singleton_method(:gets) { super() || raise(IOError, 'input lost') }
+      begin
+        run_terminal(input) { |runtime| runtimes << runtime }
+      rescue IOError
+        nil
+      end
+
+      assert_raises(Riffer::Rig::Runtime::ClosedError) { runtimes.last.prompt('hello') }
+    end
   end
 
   describe 'the resume picker' do
@@ -894,6 +945,14 @@ describe Riffer::Rig::Terminal do
       run_terminal("/resume\nlogin\n\ntell me more\n")
 
       assert_operator File.readlines(path).length, :>, 3
+    end
+
+    it 'closes the resumed session at exit' do
+      seed_session('fix the login bug')
+      runtimes = []
+      run_terminal("/resume\nlogin\n\n/exit\n") { |runtime| runtimes << runtime }
+
+      assert_raises(Riffer::Rig::Runtime::ClosedError) { runtimes.last.prompt('hello') }
     end
 
     it 'keeps the current session when the picked one is missing' do

@@ -452,6 +452,7 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def install(registrars, settings, hooks, agent)
     overrides(registrars).each { |message| @host.notify(message, level: :info) }
+    unknown_tools(registrars, @tool_allowlist).each { |message| @host.notify(message, level: :warning) }
     @declared_settings = registrars.to_h { |registrar| [registrar.extension.to_sym, registrar.declared_settings] }
                                    .reject { |_extension, declared| declared.empty? }
     @settings = with_declared_defaults(settings)
@@ -849,6 +850,16 @@ class Riffer::Rig::Runtime
           "Extension #{later} replaces #{registration} from #{earlier}"
         end
       end
+  end
+
+  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs allowlist: Array[String]?
+  # @rbs return: Array[String]
+  def unknown_tools(registrars, allowlist)
+    return [] if allowlist.nil?
+
+    registered = registrars.flat_map { |registrar| registrar.tools.keys }
+    (allowlist - registered).map { |name| "Unknown tool in allowlist: #{name}" }
   end
 
   # @rbs settings: Hash[Symbol, untyped]
