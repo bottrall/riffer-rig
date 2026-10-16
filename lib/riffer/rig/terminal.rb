@@ -117,6 +117,21 @@ class Riffer::Rig::Terminal
   # @rbs open_picker: bool
   # @rbs return: Integer
   def run(open_picker: false)
+    # Ruby keeps a SIGINT inherited as ignored, but the idle prompt and the
+    # picker need the Interrupt its own handler raises.
+    inherited = Signal.trap('INT', 'DEFAULT')
+    begin
+      run_session(open_picker)
+    ensure
+      Signal.trap('INT', inherited)
+    end
+  end
+
+  private
+
+  # @rbs open_picker: bool
+  # @rbs return: Integer
+  def run_session(open_picker)
     @repl&.start
     runtime = start(open_picker: open_picker)
     return 1 unless runtime
@@ -136,8 +151,6 @@ class Riffer::Rig::Terminal
   ensure
     @repl&.stop
   end
-
-  private
 
   # @rbs open_picker: bool
   # @rbs return: Riffer::Rig::Runtime?
