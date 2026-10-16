@@ -43,6 +43,56 @@ describe Riffer::Rig::Terminal::Banner do
     assert_includes banner, '3'
   end
 
+  describe 'the logo' do
+    def banner(width)
+      Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: 'none', version: '1', width: width)
+    end
+
+    it 'is drawn when the width is unknown' do
+      assert_includes banner(nil), Riffer::Rig::Terminal::Banner::WORDMARK.first
+    end
+
+    it 'is drawn on a terminal as wide as it' do
+      assert_includes banner(Riffer::Rig::Terminal::Banner::ART_COLUMNS), Riffer::Rig::Terminal::Banner::WORDMARK.first
+    end
+
+    it 'is left out on a narrower terminal' do
+      refute_includes banner(Riffer::Rig::Terminal::Banner::ART_COLUMNS - 1), '█'
+    end
+
+    it 'leaves the tagline in on a narrower terminal' do
+      assert_includes banner(Riffer::Rig::Terminal::Banner::ART_COLUMNS - 1), "♪ let's riff ♪"
+    end
+  end
+
+  describe 'a value too long for its row' do
+    def banner(model: 'm', cwd: 'c', width: 30)
+      Riffer::Rig::Terminal::Banner.call(@theme, model: model, cwd: cwd, skills: 'none', version: '1', width: width)
+    end
+
+    it 'keeps a long value whole when the width is unknown' do
+      assert_match(%r{cwd\s+/home/someone/repos/riffer-rig$}, banner(cwd: '/home/someone/repos/riffer-rig', width: nil))
+    end
+
+    it 'keeps a model that fits whole' do
+      assert_match(%r{model\s+anthropic/claude-x$}, banner(model: 'anthropic/claude-x'))
+    end
+
+    it 'cuts a long model from the left' do
+      assert_match(/model\s+…claude-sonnet-4-5$/, banner(model: 'anthropic/claude-sonnet-4-5'))
+    end
+
+    it 'cuts a long working directory from the left' do
+      assert_match(%r{cwd\s+…/repos/riffer-rig$}, banner(cwd: '/home/someone/repos/riffer-rig'))
+    end
+
+    it 'fits the cut row to the width' do
+      cut = banner(cwd: '/home/someone/repos/riffer-rig').lines(chomp: true).find { |line| line.include?('cwd') }
+
+      assert_equal 30, Riffer::Rig::Terminal::Columns.width(cut)
+    end
+  end
+
   describe 'the session row' do
     def banner(tally)
       Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: 'none', version: '1', tally: tally)

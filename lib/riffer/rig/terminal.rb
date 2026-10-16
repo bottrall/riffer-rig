@@ -37,9 +37,10 @@ class Riffer::Rig::Terminal
   def self.for(input:, output:, version:, sessions:, no_color: false)
     theme = Theme.for(output, no_color: no_color)
     clock = -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
+    width = -> { Frame.measure(output)&.last }
     frame = Frame.new(io: output, theme: theme) if input.tty?
     unless frame&.measure
-      opening = Opening.new(io: output, theme:, version:, sessions:)
+      opening = Opening.new(io: output, theme:, version:, sessions:, width:)
       turns = QuietDisplay.new(io: output, theme: theme, clock: clock)
       return assemble(input:, renderer: Renderer.new(io: output, theme: theme), sessions:, opening:, turns:)
     end
@@ -62,6 +63,7 @@ class Riffer::Rig::Terminal
       theme: theme,
       version: version,
       sessions: sessions,
+      width: width,
       jobs: JobCounter.new(footer: frame),
       repl: repl
     )
