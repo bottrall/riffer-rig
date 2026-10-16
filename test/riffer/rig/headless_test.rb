@@ -174,6 +174,12 @@ describe Riffer::Rig::Headless do
     assert_equal 'the diff', prompt_sent_to_model
   end
 
+  it 'replaces invalid UTF-8 in piped stdin' do
+    run_headless(prompt: 'review this', input: "caf\xE9") { |runtime| runtime.agent.provider.stub_response('Hi') }
+
+    assert_equal "review this\n\ncaf\uFFFD", prompt_sent_to_model
+  end
+
   it 'never reads a TTY stdin' do
     input = StringIO.new('piped content')
     input.define_singleton_method(:tty?) { true }
