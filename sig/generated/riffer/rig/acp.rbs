@@ -113,6 +113,12 @@ class Riffer::Rig::ACP
   # @rbs return: Riffer::Rig::Runtime?
   def session: (String id) -> Riffer::Rig::Runtime?
 
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs text: String
+  # @rbs &: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
+  # @rbs return: void
+  def dispatch: (Riffer::Rig::Runtime runtime, String text) { (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void } -> void
+
   # @rbs id: String
   # @rbs return: Riffer::Rig::Runtime?
   def adopted: (String id) -> Riffer::Rig::Runtime?

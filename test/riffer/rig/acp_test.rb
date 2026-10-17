@@ -164,6 +164,20 @@ describe Riffer::Rig::ACP do
     [started, gate]
   end
 
+  def busy_prompt_error
+    session = new_session
+    reply('Slow hello.')
+    started, gate = hold_provider
+    first = Thread.new { prompt(session.session_id, 'hello') }
+    started.pop
+    # The client connection refuses a second stream on a session itself, so
+    # only a direct call reaches the Runtime's own refusal.
+    error = @agent.prompt(prompt_request(session.session_id, 'again'))
+    gate << true
+    first.join
+    error
+  end
+
   def wait_for(timeout: 5)
     deadline = Time.now + timeout
     until yield
@@ -390,10 +404,47 @@ describe Riffer::Rig::ACP do
       assert_includes text, 'Hi from ACP'
     end
 
+    it 'runs a slash command instead of prompting the model' do
+      session = ready_session
+      prompt(session.session_id, '/cost')
+
+      assert_empty prompts_seen_by(@built_runtimes.last)
+    end
+
+    it 'passes a slash command the text after its name' do
+      session = ready_session
+      prompt(session.session_id, '/model mock/other')
+
+      assert_equal 'mock/other', @built_runtimes.last.model
+    end
+
+    it 'streams the output of a slash command as an agent message chunk' do
+      session = ready_session
+      _response, updates = prompt(session.session_id, '/cost')
+
+      assert_equal [Riffer::Rig::Commands::Cost::NO_USAGE], texts_of(updates)
+    end
+
+    it 'streams the turn a slash command starts' do
+      write_skill('tidy')
+      session = ready_session
+      reply('Tidied.')
+      _response, updates = prompt(session.session_id, '/skill:tidy')
+
+      assert_includes texts_of(updates).join, 'Tidied.'
+    end
+
     it 'ends a completed turn with end_turn' do
       session = new_session
       reply('Hi from ACP.')
       response, = prompt(session.session_id, 'hello')
+
+      assert_equal 'end_turn', response.stop_reason
+    end
+
+    it 'ends a slash command that runs no turn with end_turn' do
+      session = ready_session
+      response, = prompt(session.session_id, '/cost')
 
       assert_equal 'end_turn', response.stop_reason
     end
@@ -464,19 +515,12 @@ describe Riffer::Rig::ACP do
       assert_equal 'end_turn', response.stop_reason
     end
 
-    it 'answers a prompt on a busy session with the runtime error' do
-      session = new_session
-      reply('Slow hello.')
-      started, gate = hold_provider
-      first = Thread.new { prompt(session.session_id, 'hello') }
-      started.pop
-      # The client connection refuses a second stream on a session itself, so
-      # only a direct call reaches the Runtime's own refusal.
-      error = @agent.prompt(prompt_request(session.session_id, 'again'))
-      gate << true
-      first.join
+    it 'answers a prompt on a busy session with an invalid request error' do
+      assert_equal ACP::RequestError::INVALID_REQUEST, busy_prompt_error.code
+    end
 
-      assert_includes error.message, 'already running'
+    it 'tells the client to wait for or cancel the running prompt on a busy session' do
+      assert_includes busy_prompt_error.message, 'wait for it to finish or cancel it'
     end
 
     it 'answers a prompt on a closed session with the runtime error' do
@@ -761,7 +805,7 @@ describe Riffer::Rig::ACP do
                  *Dir[File.expand_path('../../../lib/riffer/rig/acp/**/*.rb', __dir__)]]
       referenced = sources.flat_map { |path| File.read(path).scan(/Riffer::Rig::(\w+)/).flatten }.uniq
 
-      assert_empty referenced - %w[ACP Runtime Hosts Loader Events Extension Mcp Env VERSION]
+      assert_empty referenced - %w[ACP Runtime Hosts Loader Events Extension Mcp Env Command VERSION]
     end
   end
 end

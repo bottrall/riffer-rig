@@ -107,7 +107,9 @@ class Riffer::Rig::ACP::Host
     # An adopting connection can replace @client while the question is out, and
     # only the client that was asked knows the tool call to close.
     client = @client
+    # A permission request must name a tool call, and a host question has none.
     call_id = SecureRandom.uuid
+    client.update(id, Riffer::Rig::ACP::Mapper.permission_call(call_id, question))
     request = Riffer::Rig::ACP::Mapper.permission_request(id, call_id, question, options)
     selected = Riffer::Rig::ACP::Mapper.selected_option(client.request_permission(request))
     client.update(id, Riffer::Rig::ACP::Mapper.permission_done(call_id, selected))
