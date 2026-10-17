@@ -326,7 +326,7 @@ class Riffer::Rig::Terminal
       @turns.start(runtime)
       yield(->(event) { render(runtime, event) })
     rescue StandardError => e
-      @renderer.error("Error: #{e.message}")
+      @renderer.error("Error: #{Riffer::Rig::Runtime::ErrorMessage.of(e)}")
     ensure
       Signal.trap('INT', previous)
       @turns.finish(runtime)

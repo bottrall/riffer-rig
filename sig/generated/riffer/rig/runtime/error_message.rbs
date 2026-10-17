@@ -1,0 +1,13 @@
+# Generated from lib/riffer/rig/runtime/error_message.rb with RBS::Inline
+
+module Riffer::Rig::Runtime::ErrorMessage
+  # @rbs error: StandardError
+  # @rbs return: String
+  def of: (StandardError error) -> String
+
+  private
+
+  # @rbs error: StandardError
+  # @rbs return: String?
+  def body_message: (StandardError error) -> String?
+end

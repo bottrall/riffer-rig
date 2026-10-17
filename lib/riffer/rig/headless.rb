@@ -152,7 +152,7 @@ class Riffer::Rig::Headless
         end
       end)
     rescue StandardError => e
-      return fatal(e.message, 1)
+      return fatal(Riffer::Rig::Runtime::ErrorMessage.of(e), 1)
     ensure
       Signal.trap('INT', previous)
     end
