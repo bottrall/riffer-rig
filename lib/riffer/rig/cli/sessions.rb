@@ -81,6 +81,17 @@ class Riffer::Rig::CLI::Sessions
     resume_id ? true : @flags.continue
   end
 
+  # @rbs return: bool
+  def missing?
+    return false unless asked?
+
+    store = @store
+    return true unless store
+
+    id = resume_id
+    id ? store.read(id).empty? : store.list(cwd: @cwd).empty?
+  end
+
   # @rbs return: String?
   def off
     OFF unless @store

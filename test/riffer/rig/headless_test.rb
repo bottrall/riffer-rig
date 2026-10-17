@@ -714,4 +714,29 @@ describe Riffer::Rig::Headless do
       assert_equal @output.string.lines.size, records.size
     end
   end
+
+  describe '#refuse' do
+    def refuse(json: false)
+      headless = Riffer::Rig::Headless.for(input: StringIO.new, output: @output, error: @error, json: json)
+      @status = headless.refuse('gone')
+    end
+
+    it 'prints the message on stderr' do
+      refuse
+
+      assert_equal "riffer: gone\n", @error.string
+    end
+
+    it 'prints the message as an error record with --json' do
+      refuse(json: true)
+
+      assert_equal({ 'type' => 'error', 'message' => 'gone' }, JSON.parse(@output.string))
+    end
+
+    it 'returns two' do
+      refuse
+
+      assert_equal 2, @status
+    end
+  end
 end
