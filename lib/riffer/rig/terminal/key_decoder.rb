@@ -23,6 +23,8 @@ class Riffer::Rig::Terminal::KeyDecoder
 
   PASTE_END = "\e[201~" #: String
 
+  MAX_CHARACTER_BYTES = 4 #: Integer
+
   # @rbs @state: Symbol
   # @rbs @sequence: String
 
@@ -37,14 +39,16 @@ class Riffer::Rig::Terminal::KeyDecoder
     @state != :ground
   end
 
-  # @rbs char: String
+  # @rbs byte: Integer
   # @rbs return: Array[Riffer::Rig::Terminal::Key]
-  def push(char)
+  def push(byte)
+    char = byte.chr
     case @state
     when :escape then escape(char)
     when :csi then csi(char)
     when :ss3 then ss3(char)
     when :paste then paste(char)
+    when :character then continuation(char)
     else ground(char)
     end
   end
@@ -55,8 +59,11 @@ class Riffer::Rig::Terminal::KeyDecoder
     # keystrokes, and its newlines would submit.
     return [] if @state == :paste
 
-    events = [] #: Array[Riffer::Rig::Terminal::Key]
-    events << Riffer::Rig::Terminal::Key.new(:escape) if @state == :escape
+    events = case @state
+             when :escape then [Riffer::Rig::Terminal::Key.new(:escape)]
+             when :character then stray
+             else [] #: Array[Riffer::Rig::Terminal::Key]
+             end
     @state = :ground
     @sequence = +''
     events
@@ -85,11 +92,13 @@ class Riffer::Rig::Terminal::KeyDecoder
   # @rbs char: String
   # @rbs return: Array[Riffer::Rig::Terminal::Key]
   def ground_other(char)
+    return character(char) unless char.ascii_only?
+
     chord = ctrl_chord(char)
     return [Riffer::Rig::Terminal::Key.new(chord)] if chord
     return [] if char.ord < 0x20
 
-    [Riffer::Rig::Terminal::Key.new(:text, char)]
+    [Riffer::Rig::Terminal::Key.new(:text, char.encode(Encoding::UTF_8))]
   end
 
   # @rbs char: String
@@ -99,6 +108,37 @@ class Riffer::Rig::Terminal::KeyDecoder
     return unless code.between?(1, 26)
 
     :"ctrl_#{(code + 96).chr}"
+  end
+
+  # @rbs char: String
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def continuation(char)
+    char.ord.between?(0x80, 0xbf) ? character(char) : flush + ground(char)
+  end
+
+  # @rbs char: String
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def character(char)
+    @state = :character
+    @sequence << char
+    text = @sequence.dup.force_encoding(Encoding::UTF_8)
+    if text.valid_encoding?
+      @state = :ground
+      @sequence = +''
+      return [Riffer::Rig::Terminal::Key.new(:text, text)]
+    end
+
+    @sequence.bytesize < MAX_CHARACTER_BYTES ? [] : flush
+  end
+
+  # @rbs return: Array[Riffer::Rig::Terminal::Key]
+  def stray
+    return [] unless @sequence.bytesize == 1
+
+    # xterm's 8-bit meta input sends Alt with a key as that key's byte with the
+    # high bit set, a byte UTF-8 cannot carry on its own.
+    name = META_KEYS.fetch((@sequence.b.ord & 0x7f).chr, nil)
+    name ? [Riffer::Rig::Terminal::Key.new(name)] : []
   end
 
   # @rbs char: String
@@ -129,7 +169,7 @@ class Riffer::Rig::Terminal::KeyDecoder
       # A control byte aborts an unterminated sequence; a fresh ESC restarts.
       @state = :ground
       @sequence = +''
-      return push(char)
+      return ground(char)
     end
 
     @sequence << char
@@ -171,7 +211,7 @@ class Riffer::Rig::Terminal::KeyDecoder
     return [] unless @sequence.end_with?(PASTE_END)
 
     # Terminals send a pasted line break as a carriage return.
-    text = @sequence.delete_suffix(PASTE_END).gsub(/\r\n?/, "\n")
+    text = @sequence.delete_suffix(PASTE_END).force_encoding(Encoding::UTF_8).scrub('').gsub(/\r\n?/, "\n")
     @state = :ground
     @sequence = +''
     [Riffer::Rig::Terminal::Key.new(:paste, text)]

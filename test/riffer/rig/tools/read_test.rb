@@ -54,6 +54,15 @@ describe Riffer::Rig::Tools::Read do
     end
   end
 
+  it 'replaces bytes that are not valid UTF-8' do
+    Dir.mktmpdir do |dir|
+      File.binwrite(File.join(dir, 'latin1.txt'), "caf\xE9\n")
+      response = @tool.call(context: Riffer::Agent::Context.new(cwd: dir), path: 'latin1.txt')
+
+      assert_equal "     1\tcaf\uFFFD", response.content
+    end
+  end
+
   it 'offset and limit select a slice' do
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do

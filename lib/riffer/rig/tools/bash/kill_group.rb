@@ -2,11 +2,13 @@
 
 module Riffer::Rig::Tools::Bash::KillGroup
   # @rbs pid: Integer
-  # @rbs signal: String
   # @rbs return: Integer
-  def kill_group(pid, signal = 'TERM')
-    Process.kill(signal, -Process.getpgid(pid))
-    Process.getpgid(pid)
+  def kill_group(pid)
+    pgid = Process.getpgid(pid)
+    Process.kill('TERM', -pgid)
+    # A stopped process holds TERM pending until it is continued.
+    Process.kill('CONT', -pgid)
+    pgid
   rescue Errno::ESRCH, Errno::EPERM
     0
   end

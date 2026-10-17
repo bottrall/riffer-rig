@@ -278,6 +278,12 @@ describe Riffer::Rig::Runtime do
       assert_equal %w[web__echo web__token], tool_names(runtime([serving], tools: %w[web__echo]))
     end
 
+    it 'reports a server tool in the tools: allowlist as unknown' do
+      notice = Riffer::Rig::Events::Notify.new('Unknown tool in allowlist: web__echo', :warning)
+
+      assert_equal [notice], notifies(runtime([serving], tools: %w[web__echo]))
+    end
+
     it 'runs a server tool the model calls' do
       built = runtime([serving])
       built.agent.provider.stub_response('', tool_calls: [{ name: 'web__echo', arguments: '{"text":"hi"}' }])
@@ -475,6 +481,26 @@ describe Riffer::Rig::Runtime do
 
       assert_empty runtime.host.drain
     end
+  end
+
+  it 'notifies nothing about the allowlist without one' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
+
+    assert_empty runtime.host.drain
+  end
+
+  it 'notifies nothing when every allowlisted name is a registered tool' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], tools: %w[read bash])
+
+    assert_empty runtime.host.drain
+  end
+
+  it 'reports each allowlisted name no extension registered through notify at warning level' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], tools: %w[raed bash nope])
+
+    assert_equal [Riffer::Rig::Events::Notify.new('Unknown tool in allowlist: raed', :warning),
+                  Riffer::Rig::Events::Notify.new('Unknown tool in allowlist: nope', :warning)],
+                 runtime.host.drain
   end
 
   describe 'declared settings' do
