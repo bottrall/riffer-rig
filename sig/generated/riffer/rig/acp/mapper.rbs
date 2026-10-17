@@ -19,6 +19,10 @@ module Riffer::Rig::ACP::Mapper
   # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
   def message_chunk: (String content) -> ::ACP::Types::SessionUpdate::AgentMessageChunk
 
+  # @rbs text: String
+  # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
+  def notice: (String text) -> ::ACP::Types::SessionUpdate::AgentMessageChunk
+
   # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
   def job_exit: () -> ::ACP::Types::SessionUpdate::AgentMessageChunk
 

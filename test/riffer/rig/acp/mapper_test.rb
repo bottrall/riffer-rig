@@ -50,6 +50,14 @@ describe Riffer::Rig::ACP::Mapper do
     end
   end
 
+  describe '.notice' do
+    it 'is an agent message chunk holding the text in a paragraph of its own' do
+      update = Riffer::Rig::ACP::Mapper.notice('Hi')
+
+      assert_equal [ACP::Types::SessionUpdate::AgentMessageChunk, "\n\nHi\n\n"], [update.class, update.content.text]
+    end
+  end
+
   describe '.job_exit' do
     it 'is an agent message chunk holding a blank line' do
       update = Riffer::Rig::ACP::Mapper.job_exit
