@@ -3,6 +3,20 @@
 class Riffer::Rig::Runtime::JobNotification < Riffer::Messages::User
   MARKER: Symbol
 
+  # @dynamic follow_up_exits
+  attr_reader follow_up_exits: Integer?
+
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs return: Riffer::Rig::Runtime::JobNotification
+  def self.from_hash: (Hash[Symbol, untyped] hash) -> Riffer::Rig::Runtime::JobNotification
+
+  # @rbs content: String
+  # @rbs id: String?
+  # @rbs files: Array[Riffer::Messages::User::FilePart]
+  # @rbs follow_up_exits: Integer?
+  # @rbs return: void
+  def initialize: (String content, ?id: String?, ?files: Array[Riffer::Messages::User::FilePart], ?follow_up_exits: Integer?) -> void
+
   # @rbs return: Hash[Symbol, untyped]
   def to_h: () -> Hash[Symbol, untyped]
 end

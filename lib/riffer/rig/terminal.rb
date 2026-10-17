@@ -238,7 +238,7 @@ class Riffer::Rig::Terminal
     exits = runtime.pending_job_exit_count
     return if exits.zero?
 
-    @renderer.notice("#{exits} background #{exits == 1 ? 'job' : 'jobs'} exited")
+    @renderer.notice(JobExitNotice.call(exits))
     turn(runtime) { |emit| runtime.follow_up(&emit) }
   end
 

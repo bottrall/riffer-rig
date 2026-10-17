@@ -96,7 +96,7 @@ Switching replaces the Runtime the terminal drives and re-renders the banner: th
 | Key         | Holds                                                                                                                                  |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `:id`       | the Runtime's id, a UUIDv7 minted when the session began; a restored Runtime keeps it, so it names the session across restarts        |
-| `:messages` | the conversation as riffer message hashes (`Riffer::Messages::Base#to_h`), system message first, read back with `Riffer::Messages::Base.from_hash`; a [job exit notification](EMBEDDING.md#exit-notifications) also carries `job_notification: true` and is read back as one |
+| `:messages` | the conversation as riffer message hashes (`Riffer::Messages::Base#to_h`), system message first, read back with `Riffer::Messages::Base.from_hash`; a [job exit notification](EMBEDDING.md#exit-notifications) also carries `job_notification: true` and is read back as one, and one a [follow-up](EMBEDDING.md#waiting-for-jobs) delivered carries `follow_up_exits` too |
 | `:model`    | the model the session switched to with `model=` or `/model`, or `nil` when it kept the model it was built with                          |
 | `:skills`   | the names of the skills the model activated in the session ([Skills](SKILLS.md#what-the-model-sees)); a skill run with `/skill:<name>` is not one |
 

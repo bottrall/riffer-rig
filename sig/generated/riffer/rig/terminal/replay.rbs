@@ -12,8 +12,16 @@ module Riffer::Rig::Terminal::Replay
   private
 
   # @rbs chunk: Array[Riffer::Rig::Terminal::Replay::_Recorded]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
   # @rbs return: Riffer::Rig::Terminal::Replay::Turn?
-  def turn: (Array[Riffer::Rig::Terminal::Replay::_Recorded] chunk) -> Riffer::Rig::Terminal::Replay::Turn?
+  def turn: (Array[Riffer::Rig::Terminal::Replay::_Recorded] chunk, Riffer::Rig::Terminal::Theme theme, Integer? width) -> Riffer::Rig::Terminal::Replay::Turn?
+
+  # @rbs opener: Riffer::Messages::Base?
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs return: String?
+  def heading: (Riffer::Messages::Base? opener, Riffer::Rig::Terminal::Theme theme, Integer? width) -> String?
 
   # @rbs entry: Riffer::Rig::Terminal::Replay::_Recorded
   # @rbs return: Riffer::Messages::Base?

@@ -364,15 +364,16 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def deliver: (Riffer::Messages::Base message) -> void
 
-  # @rbs return: String?
-  def job_notice: () -> String?
+  # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
+  def job_exits: () -> Array[Riffer::Rig::Runtime::JobCompletion]
 
   # @rbs message: Riffer::Messages::Tool
   # @rbs return: Riffer::Messages::Tool
   def with_job_notice: (Riffer::Messages::Tool message) -> Riffer::Messages::Tool
 
+  # @rbs follow_up: bool
   # @rbs return: Riffer::Messages::Base?
-  def notify_job_exits: () -> Riffer::Messages::Base?
+  def notify_job_exits: (?follow_up: bool) -> Riffer::Messages::Base?
 
   # @rbs return: void
   def before_next_request: () -> void
