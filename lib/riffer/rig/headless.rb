@@ -5,6 +5,8 @@ class Riffer::Rig::Headless
 
   JOB_IDLE_TIMEOUT = 600 #: Integer
 
+  STDIN_TIMEOUT = 3 #: Integer
+
   # @rbs @input: IO
   # @rbs @output: IO
   # @rbs @error: IO
@@ -12,6 +14,7 @@ class Riffer::Rig::Headless
   # @rbs @verbose: bool
   # @rbs @json: bool
   # @rbs @job_idle_timeout: Integer
+  # @rbs @stdin_timeout: Integer
   # @rbs @streamed_text: bool
   # @rbs @wrote_text: bool
   # @rbs @break_before_text: bool
@@ -22,8 +25,17 @@ class Riffer::Rig::Headless
   # @rbs verbose: bool
   # @rbs json: bool
   # @rbs job_idle_timeout: Integer
+  # @rbs stdin_timeout: Integer
   # @rbs return: Riffer::Rig::Headless
-  def self.for(input:, output:, error:, verbose: false, json: false, job_idle_timeout: JOB_IDLE_TIMEOUT)
+  def self.for(
+    input:,
+    output:,
+    error:,
+    verbose: false,
+    json: false,
+    job_idle_timeout: JOB_IDLE_TIMEOUT,
+    stdin_timeout: STDIN_TIMEOUT
+  )
     host = Riffer::Rig::Headless::Host.new(error: error, json: json)
     new(
       input: input,
@@ -32,7 +44,8 @@ class Riffer::Rig::Headless
       host: host,
       verbose: verbose,
       json: json,
-      job_idle_timeout: job_idle_timeout
+      job_idle_timeout: job_idle_timeout,
+      stdin_timeout: stdin_timeout
     )
   end
 
@@ -43,8 +56,18 @@ class Riffer::Rig::Headless
   # @rbs verbose: bool
   # @rbs json: bool
   # @rbs job_idle_timeout: Integer
+  # @rbs stdin_timeout: Integer
   # @rbs return: void
-  def initialize(input:, output:, error:, host:, verbose: false, json: false, job_idle_timeout: JOB_IDLE_TIMEOUT)
+  def initialize(
+    input:,
+    output:,
+    error:,
+    host:,
+    verbose: false,
+    json: false,
+    job_idle_timeout: JOB_IDLE_TIMEOUT,
+    stdin_timeout: STDIN_TIMEOUT
+  )
     @input = input
     @output = output
     @error = error
@@ -52,6 +75,7 @@ class Riffer::Rig::Headless
     @verbose = verbose
     @json = json
     @job_idle_timeout = job_idle_timeout
+    @stdin_timeout = stdin_timeout
     @wrote_text = false
     @break_before_text = false
   end
@@ -84,8 +108,21 @@ class Riffer::Rig::Headless
   # @rbs prompt: String?
   # @rbs return: String
   def prompt_text(prompt)
-    piped = @input.tty? ? '' : @input.read.to_s.scrub.strip
-    [prompt&.strip, piped].compact.reject(&:empty?).join("\n\n")
+    argument = prompt.to_s.strip
+    [argument, piped(argument)].reject(&:empty?).join("\n\n")
+  end
+
+  # @rbs argument: String
+  # @rbs return: String
+  def piped(argument)
+    return '' if @input.tty?
+    return @input.read.scrub.strip if argument.empty? || @input.wait_readable(@stdin_timeout)
+
+    @error.puts(
+      "no stdin data received in #{@stdin_timeout}s, proceeding without it; " \
+      'redirect stdin from /dev/null to skip this'
+    )
+    ''
   end
 
   # @rbs message: String
