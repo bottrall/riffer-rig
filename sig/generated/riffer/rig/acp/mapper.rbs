@@ -48,7 +48,11 @@ module Riffer::Rig::ACP::Mapper
   # @rbs return: Array[::ACP::Types::PermissionOption]
   def choices: (Array[String] options) -> Array[::ACP::Types::PermissionOption]
 
-  # A permission request must name a tool call, and a host question has none.
+  # @rbs tool_call_id: String
+  # @rbs question: String
+  # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
+  def permission_call: (String tool_call_id, String question) -> ::ACP::Types::SessionUpdate::ToolCall
+
   # @rbs session_id: String
   # @rbs tool_call_id: String
   # @rbs question: String

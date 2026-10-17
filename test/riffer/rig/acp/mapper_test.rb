@@ -187,6 +187,14 @@ describe Riffer::Rig::ACP::Mapper do
     end
   end
 
+  describe '.permission_call' do
+    it 'announces a pending tool call titled with the question' do
+      call = Riffer::Rig::ACP::Mapper.permission_call('c1', 'Proceed?')
+
+      assert_equal %w[c1 Proceed? other pending], [call.tool_call_id, call.title, call.kind, call.status]
+    end
+  end
+
   describe '.permission_request' do
     def request
       Riffer::Rig::ACP::Mapper.permission_request('s1', 'c1', 'Proceed?', Riffer::Rig::ACP::Mapper::CONFIRM_OPTIONS)

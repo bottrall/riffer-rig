@@ -74,7 +74,7 @@ The host's `ask` and `confirm` reach the client, and each question blocks the tu
 - `ask` without options sends `elicitation/create` in form mode, scoped to the session, for one required string field named `answer`, and answers with what the client submits. A client that does not advertise `elicitation.form` is not sent the request, and the ask is declined.
 - `ask` with `secret: true` is always declined: ACP forbids asking for a secret in a form.
 
-A permission request has to name a tool call and a question has none, so each one carries a tool call of its own — a fresh `toolCallId`, `pending`, with the question as its `title`. When the request ends, a `tool_call_update` closes that `toolCallId`: `completed` when the client selected an option, `No` included, and `failed` otherwise.
+A permission request has to name a tool call and a question has none, so each one carries a tool call of its own — a fresh `toolCallId`, `pending`, with the question as its `title`. Before the request is sent, a `tool_call` update announces that tool call on the session. When the request ends, a `tool_call_update` closes that `toolCallId`: `completed` when the client selected an option, `No` included, and `failed` otherwise.
 
 Anything but a selected option or an accepted form — the client cancels, declines, answers with an error, or the connection closes — declines the question: `confirm` is `false` and `ask` is `nil`. A trust question the client declines is stored as a no, like any other ([Extensions](EXTENSIONS.md#the-rigrb-files)).
 
