@@ -7,6 +7,11 @@ module Riffer::Rig::Terminal::Markdown::Table
   # cell costs its length again on every other row.
   WIDTH_LIMIT = 500 #: Integer
 
+  # GFM splits at a pipe inside a code span, but models rarely escape one
+  # there, so a code span keeps its pipes. A tick run with no closer is matched
+  # whole, so a later tick in it opens no span.
+  CELL = /\|(?<cell>(?:#{Riffer::Rig::Terminal::Markdown::Inline::CODE}|\\.|`+|[^|])*)/ #: Regexp
+
   # Narrower than this a column breaks most words apart.
   MIN_COLUMN_WIDTH = 8 #: Integer
 
@@ -37,12 +42,11 @@ module Riffer::Rig::Terminal::Markdown::Table
   # @rbs return: Array[Array[Array[Riffer::Rig::Terminal::Markdown::Span]]]
   def grid(chunk, theme)
     header, _divider, *body = chunk.map { |line| cells(line) }
-    rows = [header || [], *body]
-    columns = rows.map(&:size).max.to_i
-    rows.each_with_index.map do |row, index|
+    columns = header.to_a.size
+    [header.to_a, *body].each_with_index.map do |row, index|
       styles = index.zero? ? [:bold] : [] #: Array[Symbol]
-      (row + Array.new(columns - row.size, '')).map do |cell|
-        Riffer::Rig::Terminal::Markdown::Inline.parse(cell, plain: !theme.enabled, styles: styles)
+      Array.new(columns) do |column|
+        Riffer::Rig::Terminal::Markdown::Inline.parse(row.fetch(column, ''), plain: !theme.enabled, styles: styles)
       end
     end
   end
@@ -50,7 +54,8 @@ module Riffer::Rig::Terminal::Markdown::Table
   # @rbs line: String
   # @rbs return: Array[String]
   def cells(line)
-    line.strip.delete_prefix('|').delete_suffix('|').split(/(?<!\\)\|/, -1).map { |cell| cell.strip.gsub('\|', '|') }
+    row = "|#{line.strip.delete_prefix('|').delete_suffix('|')}"
+    row.enum_for(:scan, CELL).map { Regexp.last_match(:cell).to_s.strip.gsub('\|', '|') }
   end
 
   # @rbs spans: Array[Riffer::Rig::Terminal::Markdown::Span]

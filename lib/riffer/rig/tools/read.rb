@@ -25,8 +25,8 @@ class Riffer::Rig::Tools::Read < Riffer::Tool
     return error('offset must be >= 1', type: :invalid_argument) if offset && offset < 1
 
     start = offset ? offset - 1 : 0
-    lines = File.readlines(resolved, chomp: true)
-    slice = lines[start, limit] || []
+    lines = File.readlines(resolved, chomp: true, encoding: Encoding::UTF_8)
+    slice = (lines[start, limit] || []).map(&:scrub)
 
     numbered = slice.each_with_index.map do |line, i|
       format("%<lineno>6d\t%<text>s", lineno: start + i + 1, text: line)

@@ -63,19 +63,18 @@ class Riffer::Rig::Terminal::KeyPipeline
   def read_loop
     @input.raw do
       until @stopping
-        # wait_readable's timeout and EOF both make getc-less paths return
+        # wait_readable's timeout and EOF both make getbyte-less paths return
         # nil, but only EOF may end the loop: an idle gap must keep polling.
         next unless @input.wait_readable(IDLE_SECONDS)
 
-        char = @input.getc
-        unless char
-          @queue.close
-          break
-        end
+        # Bytes, not getc: getc decodes in the locale's encoding, and holds a
+        # byte that may begin a character until the next key arrives.
+        byte = @input.getbyte
+        break unless byte
 
-        emit(@decoder.push(char))
+        emit(@decoder.push(byte))
         while @decoder.pending? && !@stopping
-          follow = read_char
+          follow = read_byte
           break unless follow
 
           emit(@decoder.push(follow))
@@ -84,13 +83,17 @@ class Riffer::Rig::Terminal::KeyPipeline
       end
       nil
     end
+  ensure
+    # A stop keeps the keys open for a restart. Anything else that ends the
+    # reader, end of input or a failure, ends the keys for good.
+    @queue.close unless @stopping
   end
 
-  # @rbs return: String?
-  def read_char
+  # @rbs return: Integer?
+  def read_byte
     return unless @input.wait_readable(IDLE_SECONDS)
 
-    @input.getc
+    @input.getbyte
   end
 
   # @rbs events: Array[Riffer::Rig::Terminal::Key]

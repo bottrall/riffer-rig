@@ -36,12 +36,28 @@ describe Riffer::Rig::Terminal::Markdown::Table do
     assert_equal ['a | b │ c', '──────┼──'], lines("| a \\| b | c |\n|---|---|")
   end
 
+  it 'keeps a pipe inside a code span in its cell' do
+    assert_equal ['`a|b` │ c', '──────┼──'], lines("| `a|b` | c |\n|---|---|")
+  end
+
+  it 'splits at a pipe after an unclosed tick' do
+    assert_equal ['`a │ b', '───┼──'], lines("| `a | b |\n|---|---|")
+  end
+
+  it 'opens no code span inside an unclosed tick run' do
+    assert_equal ['``a │ b`', '────┼───'], lines("| ``a | b` |\n|---|---|")
+  end
+
+  it 'opens no code span at an escaped tick' do
+    assert_equal ['`a │ b`', '───┼───'], lines("| \\`a | b` |\n|---|---|")
+  end
+
   it 'fills a short row with empty cells' do
     assert_equal ['a │ b', '──┼──', '1 │'], lines("| a | b |\n|---|---|\n| 1 |")
   end
 
-  it 'widens the grid for a long row' do
-    assert_equal ['a │', '──┼──', '1 │ 2'], lines("| a |\n|---|\n| 1 | 2 |")
+  it 'drops the cells of a row past the header' do
+    assert_equal ['a │ b', '──┼──', '1 │ 2'], lines("| a | b |\n|---|---|\n| 1 | 2 | 3 | 4 |")
   end
 
   it 'renders a header with no rows' do

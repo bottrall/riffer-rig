@@ -44,7 +44,7 @@ describe Riffer::Rig::Terminal::Markdown do
     end
 
     it 'treats a carriage return line feed as one line ending' do
-      assert_equal "a b\n\nc\n", render("a\r\nb\r\n\r\nc")
+      assert_equal "a\nb\n\nc\n", render("a\r\nb\r\n\r\nc")
     end
 
     it 'strips an escape sequence down to inert text' do
@@ -106,8 +106,20 @@ describe Riffer::Rig::Terminal::Markdown do
   end
 
   describe 'paragraphs' do
-    it 'joins the lines of a paragraph and wraps at the width' do
-      assert_equal "one two\nthree\n", render("one\ntwo\nthree", width: 8)
+    it 'breaks a paragraph at each of its lines' do
+      assert_equal "one\ntwo\nthree\n", render("one\ntwo\nthree")
+    end
+
+    it 'wraps each line of a paragraph at the width' do
+      assert_equal "one two\nthree\nfour\n", render("one two three\nfour", width: 8)
+    end
+
+    it 'strips the spaces around each line of a paragraph' do
+      assert_equal "a\nb\n", render("  a  \n   b", width: nil)
+    end
+
+    it 'carries a span across the lines of a paragraph' do
+      assert_equal "\e[1mbold\e[0m\n\e[1mstill bold\e[0m\n", render("**bold\nstill bold**", enabled: true)
     end
 
     it 'does not wrap when no width is known' do
@@ -262,7 +274,7 @@ describe Riffer::Rig::Terminal::Markdown do
     end
 
     it 'renders an item whose marker is followed by more spaces than a regexp repeat allows' do
-      assert_equal "• a b\n", render("-#{' ' * 100_001}a\n  b", width: nil)
+      assert_equal "• a\n  b\n", render("-#{' ' * 100_001}a\n  b", width: nil)
     end
   end
 

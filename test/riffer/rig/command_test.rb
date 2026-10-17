@@ -3,6 +3,16 @@
 require 'test_helper'
 
 describe Riffer::Rig::Command do
+  it 'splits an invocation into its name and the text after it' do
+    invocation = Riffer::Rig::Command::INVOCATION.match('/skill:review focus on lib/')
+
+    assert_equal ['skill:review', 'focus on lib/'], invocation&.captures
+  end
+
+  it 'matches no text without a leading slash' do
+    assert_nil Riffer::Rig::Command::INVOCATION.match('review /skill:review')
+  end
+
   it 'carries its name, description and extension' do
     command = Riffer::Rig::Command.new('log', description: 'Recent commits', extension: :git) { |_ctx| nil }
 
