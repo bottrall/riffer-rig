@@ -1,0 +1,9 @@
+# Generated from lib/riffer/rig/terminal/echo.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Echo
+  # @rbs prompt: String
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs return: String
+  def call: (String prompt, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> String
+end

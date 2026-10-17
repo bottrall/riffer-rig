@@ -13,7 +13,8 @@ module Riffer::Rig::Terminal::Replay
     typed = recorded.reject { |entry| entry.message[Riffer::Rig::Runtime::JobNotification::MARKER] }
     turns = typed.slice_before { |entry| entry.message[:role].to_s == 'user' }.map { |chunk| turn(chunk) }
     replayed = turns.compact.map do |past|
-      "#{user_line(past.prompt, theme)}#{Riffer::Rig::Terminal::TurnReport.call(past, nil, theme: theme, width: width)}"
+      echo = Riffer::Rig::Terminal::Echo.call(past.prompt, theme: theme, width: width)
+      "\n#{echo}\n#{Riffer::Rig::Terminal::TurnReport.call(past, nil, theme: theme, width: width)}"
     end
     indent = ' ' * Riffer::Rig::Terminal::TurnReport::INDENT
     [*replayed, *("\n#{theme.dim("#{indent}#{NOTICE}")}\n" if replayed.size < turns.size)].join
@@ -50,13 +51,5 @@ module Riffer::Rig::Terminal::Replay
   # fails wherever the damage sits, not with one error.
   rescue StandardError
     nil
-  end
-
-  # @rbs prompt: String
-  # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs return: String
-  def user_line(prompt, theme)
-    pictured = Riffer::Rig::Terminal::LineEditor.new(before: prompt).printable_before
-    "\n#{theme.pink(Riffer::Rig::Terminal::Frame::PROMPT)} #{pictured}\n"
   end
 end

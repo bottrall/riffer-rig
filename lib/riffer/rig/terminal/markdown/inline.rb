@@ -7,11 +7,13 @@ module Riffer::Rig::Terminal::Markdown::Inline
   # so without a ceiling a paragraph of openers costs quadratic time.
   SPAN_LIMIT = 1000 #: Integer
 
+  CODE = /(?<ticks>`++)(?<code>.{1,#{SPAN_LIMIT}}?)(?<!`)\k<ticks>(?!`)/m #: Regexp
+
   # The trailing alternative matches whatever the others don't, so the matches
   # tile the text and a scan sees every character exactly once.
   TOKEN = %r{
     \\(?<escaped>[!-/:-@\[-`\{-~])
-    | (?<ticks>`++)(?<code>.{1,#{SPAN_LIMIT}}?)(?<!`)\k<ticks>(?!`)
+    | #{CODE}
     | !?\[(?<label>[^\]]{0,#{SPAN_LIMIT}})\]
       \(\s*<?(?<target>(?:[^\s()<>]|\([^\s()<>]*\))+)>?(?:\s+(?:"[^"]*"|'[^']*'))?\s*\)
     | \*\*\*(?=\S)(?<strong_em>.{1,#{SPAN_LIMIT}}?)(?<=\S)\*\*\*

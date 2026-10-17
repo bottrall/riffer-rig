@@ -8,10 +8,10 @@ class KeyPty
 
   attr_reader :slave, :pipeline
 
-  def initialize
+  def initialize(**pipeline_options)
     @master, @slave = PTY.open
     @master.timeout = TIMEOUT_SECONDS
-    @pipeline = Riffer::Rig::Terminal::KeyPipeline.new(input: @slave, output: @slave)
+    @pipeline = Riffer::Rig::Terminal::KeyPipeline.new(input: @slave, output: @slave, **pipeline_options)
     start
   end
 
@@ -36,6 +36,10 @@ class KeyPty
 
   def close
     @pipeline.stop
+    release
+  end
+
+  def release
     @master.close
     @slave.close
   end
