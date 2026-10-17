@@ -549,7 +549,7 @@ describe Riffer::Rig::Terminal do
     it 'replays them above the footer' do
       output = run_on_pty(->(pty) { pty.type("/exit\r") }, resume: seed_history)
 
-      assert_includes output, "↑200 · ↓40\r\n› "
+      assert_includes output, "↑200 · ↓40\r\n\r\n› "
     end
 
     it 'replays the session picked before the first session' do
@@ -695,7 +695,7 @@ describe Riffer::Rig::Terminal do
     it 'echoes a submitted line above the footer' do
       output = run_on_pty(->(pty) { pty.type("hello\r/exit\r") })
 
-      assert_includes output, "› hello\r\n› "
+      assert_includes output, "› hello\r\n\r\n› "
     end
 
     it 'wraps an echoed line to the terminal width' do
@@ -741,7 +741,7 @@ describe Riffer::Rig::Terminal do
     end
 
     it 'signs off above the footer when the input ends' do
-      assert_includes run_on_pty(->(pty) { pty.type("\u0004") }), "see you on the next riff.\r\n› "
+      assert_includes run_on_pty(->(pty) { pty.type("\u0004") }), "see you on the next riff.\r\n\r\n› "
     end
 
     it 'exits on a second Ctrl-C at the prompt' do
@@ -917,7 +917,7 @@ describe Riffer::Rig::Terminal do
         runtime.agent.provider.stub_response('Hi from the model')
       end
 
-      assert_match(/\r\n  Hi from the model\.\r\n\r\n  1 step · \d\d:\d\d\r\n› /, output)
+      assert_match(/\r\n  Hi from the model\.\r\n\r\n  1 step · \d\d:\d\d\r\n\r\n› /, output)
     end
 
     it 'wraps command output to the width of the terminal' do

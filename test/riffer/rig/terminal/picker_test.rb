@@ -123,7 +123,7 @@ describe Riffer::Rig::Terminal::Picker do
       pick_at_the_footer([session('alpha'), session('beta')], ctrl_c)
 
       assert_equal(
-        ['', Riffer::Rig::Terminal::Picker::HEADER, '  1. alpha — unknown', '  2. beta — unknown', '›', ''],
+        ['', Riffer::Rig::Terminal::Picker::HEADER, '  1. alpha — unknown', '  2. beta — unknown', '', '›', ''],
         @pty.screen.rows
       )
     end
@@ -138,8 +138,8 @@ describe Riffer::Rig::Terminal::Picker do
       pick_at_the_footer([session('alpha'), session('beta')], "bet\r#{ctrl_c}")
 
       assert_equal(
-        ['› bet', '', Riffer::Rig::Terminal::Picker::HEADER, '  1. beta — unknown', '›', ''],
-        @pty.screen.rows.last(6)
+        ['› bet', '', Riffer::Rig::Terminal::Picker::HEADER, '  1. beta — unknown', '', '›', ''],
+        @pty.screen.rows.last(7)
       )
     end
 
