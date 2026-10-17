@@ -5,12 +5,12 @@ A host receives questions and out-of-band messages from a `Riffer::Rig::Runtime`
 | Method                             | Purpose                                                     |
 | ---------------------------------- | ----------------------------------------------------------- |
 | `ask(question, options:, secret:)` | free text or a choice from `options`; `secret:` hides input |
-| `confirm(question)`                | yes or no                                                   |
+| `confirm(question)`                | `true` for yes, `false` for no, `nil` when left unanswered  |
 | `notify(message, level:)`          | out-of-band message; never enters the model's context       |
 | `progress(label) { }`              | wraps slow work                                             |
 | `capabilities`                     | the `Set` of methods the host truly supports                |
 
-A host implements all five, including the ones it declines. Whoever calls `ask` or `confirm` checks `capabilities` first, so a host that declines one is never asked and the caller takes the declined path. `progress` is always called, because its block is the work.
+A host implements all five, including the ones it declines. Whoever calls `ask` or `confirm` checks `capabilities` first, so a host that declines one is never asked and the caller takes the declined path. A host whose user can walk away from a question returns `nil` from `confirm`, as `ask` does, so the caller can tell "not now" from "no": an unanswered [trust question](EXTENSIONS.md#the-rigrb-files) is asked again at the next load, while a `false` is stored as a no. A host that always answers `true` or `false` still meets the contract. `progress` is always called, because its block is the work.
 
 A host that cannot interact includes `Riffer::Rig::Hosts::NonInteractive`, which supplies the declines (`ask` returns `nil`, `confirm` returns `false`, `progress` yields), and leaves `:ask` and `:confirm` out of its `capabilities`. A method the host defines itself replaces the mixin's.
 
@@ -69,7 +69,7 @@ At `turn_end` the terminal prints the text of the response that ended the turn â
 | Method     | In the terminal                                                                           |
 | ---------- | ----------------------------------------------------------------------------------------- |
 | `ask`      | prints the question and reads a line; `secret:` reads without echo; `options:` are numbered and a number picks one |
-| `confirm`  | asks `[y/N]`; only an answer starting with `y` confirms                                    |
+| `confirm`  | asks `[y/N]`; only an answer starting with `y` confirms, and Ctrl-C or Ctrl-D leaves it unanswered (`nil`) |
 | `notify`   | prints the message as a line of its own, red for `level: :error`                           |
 | `progress` | prints the label and runs the block                                                        |
 

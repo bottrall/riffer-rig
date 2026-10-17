@@ -31,9 +31,9 @@ class Riffer::Rig::Terminal::Host
   end
 
   # @rbs question: String?
-  # @rbs return: bool
+  # @rbs return: bool?
   def confirm(question = nil)
-    ask("#{question} [y/N]").to_s.downcase.start_with?('y')
+    ask("#{question} [y/N]")&.downcase&.start_with?('y')
   end
 
   # @rbs message: String?

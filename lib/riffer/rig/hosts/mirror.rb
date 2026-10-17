@@ -27,7 +27,7 @@ class Riffer::Rig::Hosts::Mirror
   end
 
   # @rbs question: String?
-  # @rbs return: bool
+  # @rbs return: bool?
   def confirm(question = nil)
     @host.confirm(question)
   end

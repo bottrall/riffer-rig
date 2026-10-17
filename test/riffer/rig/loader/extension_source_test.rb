@@ -221,6 +221,28 @@ describe Riffer::Rig::Loader::ExtensionSource do
 
         refute_path_exists trust_file
       end
+
+      it 'skips a project file whose question was left unanswered' do
+        write_rig(:project, recording('es_unanswered'))
+
+        assert_empty source(host: ConfirmingHost.new([nil])).discover(autoload: false)
+      end
+
+      it 'records nothing for an unanswered question' do
+        write_rig(:project, '')
+        source(host: ConfirmingHost.new([nil])).discover(autoload: false)
+
+        refute_path_exists trust_file
+      end
+
+      it 'asks again about a file whose question was left unanswered' do
+        write_rig(:project, '')
+        host = ConfirmingHost.new([nil, true])
+        source(host: host).discover(autoload: false)
+        source(host: host).discover(autoload: false)
+
+        assert_equal 2, host.questions.size
+      end
     end
 
     it 'returns the home extensions before the project ones' do
