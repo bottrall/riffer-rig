@@ -5,14 +5,14 @@ class Riffer::Rig::Terminal::TurnBuffer
   # @rbs @started_at: Float
   # @rbs @ended_at: Float?
   # @rbs @prose: String
+  # @rbs @answers: Array[String]
   # @rbs @steps: Integer
   # @rbs @in_request: bool
   # @rbs @interrupted: bool
   # @rbs @settled_usage: Riffer::Providers::TokenUsage?
   # @rbs @request_usage: Riffer::Providers::TokenUsage?
 
-  # @dynamic answer, ghost, tool
-  attr_reader :answer #: String?
+  # @dynamic ghost, tool
   attr_reader :ghost #: String?
   attr_reader :tool #: String?
 
@@ -22,6 +22,7 @@ class Riffer::Rig::Terminal::TurnBuffer
     @clock = clock
     @started_at = clock.call
     @prose = +''
+    @answers = []
     @steps = 0
     @in_request = false
     @interrupted = false
@@ -67,6 +68,11 @@ class Riffer::Rig::Terminal::TurnBuffer
   end
 
   # @rbs return: String
+  def answer
+    @answers.join("\n\n")
+  end
+
+  # @rbs return: String
   def prose
     @prose.dup
   end
@@ -105,7 +111,7 @@ class Riffer::Rig::Terminal::TurnBuffer
     if finish_reason == :tool_calls
       @ghost = first_line.rstrip
     else
-      @answer = prose
+      @answers << prose
     end
   end
 

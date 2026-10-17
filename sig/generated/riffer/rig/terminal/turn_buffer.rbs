@@ -11,6 +11,8 @@ class Riffer::Rig::Terminal::TurnBuffer
 
   @steps: Integer
 
+  @answers: Array[String]
+
   @prose: String
 
   @ended_at: Float?
@@ -19,9 +21,7 @@ class Riffer::Rig::Terminal::TurnBuffer
 
   @clock: ^() -> Float
 
-  # @dynamic answer, ghost, tool
-  attr_reader answer: String?
-
+  # @dynamic ghost, tool
   attr_reader ghost: String?
 
   attr_reader tool: String?
@@ -33,6 +33,9 @@ class Riffer::Rig::Terminal::TurnBuffer
   # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
   # @rbs return: void
   def absorb: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
+
+  # @rbs return: String
+  def answer: () -> String
 
   # @rbs return: String
   def prose: () -> String

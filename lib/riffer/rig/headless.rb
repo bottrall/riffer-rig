@@ -118,7 +118,6 @@ class Riffer::Rig::Headless
     cap = @job_idle_timeout unless @job_idle_timeout.zero?
     return abandon_jobs unless runtime.await_job_exit(timeout: cap)
 
-    @break_before_text = @wrote_text
     turn(runtime) { |handler| runtime.follow_up(&handler) }
   end
 
@@ -176,6 +175,8 @@ class Riffer::Rig::Headless
       write_text(event.content) if !@streamed_text && !event.content.empty?
       @output.puts if @streamed_text || !event.content.empty?
       @streamed_text = false
+    when Riffer::Rig::Events::JobExit
+      @break_before_text = @wrote_text
     end
   end
 
