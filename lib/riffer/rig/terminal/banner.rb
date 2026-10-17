@@ -25,15 +25,22 @@ module Riffer::Rig::Terminal::Banner
 
   INDENT = '  ' #: String
 
+  ART_COLUMNS = INDENT.size + Riffer::Rig::Terminal::Columns.width(WORDMARK[0]) #: Integer
+
+  MARKER = '▸' #: String
+
+  VALUE_COLUMN = Riffer::Rig::Terminal::Columns.width("#{INDENT}#{MARKER} ") + INFO_LABEL_WIDTH #: Integer
+
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs model: String
   # @rbs cwd: String
   # @rbs skills: String
   # @rbs version: String
   # @rbs tally: Riffer::Providers::TokenUsage?
+  # @rbs width: Integer?
   # @rbs return: String
-  def call(theme, model:, cwd:, skills:, version:, tally: nil)
-    lines(theme, model: model, cwd: cwd, skills: skills, version: version, tally: tally).join("\n")
+  def call(theme, model:, cwd:, skills:, version:, tally: nil, width: nil)
+    lines(theme, model: model, cwd: cwd, skills: skills, version: version, tally: tally, width: width).join("\n")
   end
 
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -42,17 +49,21 @@ module Riffer::Rig::Terminal::Banner
   # @rbs skills: String
   # @rbs version: String
   # @rbs tally: Riffer::Providers::TokenUsage?
+  # @rbs width: Integer?
   # @rbs return: Array[String]
-  def lines(theme, model:, cwd:, skills:, version:, tally:)
-    rows = info(theme, model: model, cwd: cwd, skills: skills, version: version, tally: tally)
-    [''] + art(theme) + [''] + rows + ['']
+  def lines(theme, model:, cwd:, skills:, version:, tally:, width:)
+    rows = info(theme, model: model, cwd: cwd, skills: skills, version: version, tally: tally, width: width)
+    [''] + art(theme, width) + [''] + rows + ['']
   end
 
   # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
   # @rbs return: Array[String]
-  def art(theme)
-    art = WORDMARK.each_index.map { |i| "#{INDENT}#{theme.paint(WORDMARK[i], ROW_COLOURS[i])}" }
-    art + ["#{INDENT}#{theme.cyan("♪ let's riff ♪")}"]
+  def art(theme, width)
+    tagline = "#{INDENT}#{theme.cyan("♪ let's riff ♪")}"
+    return [tagline] if width && width < ART_COLUMNS
+
+    WORDMARK.each_index.map { |i| "#{INDENT}#{theme.paint(WORDMARK[i], ROW_COLOURS[i])}" } + [tagline]
   end
 
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -61,13 +72,33 @@ module Riffer::Rig::Terminal::Banner
   # @rbs skills: String
   # @rbs version: String
   # @rbs tally: Riffer::Providers::TokenUsage?
+  # @rbs width: Integer?
   # @rbs return: Array[String]
-  def info(theme, model:, cwd:, skills:, version:, tally:)
+  def info(theme, model:, cwd:, skills:, version:, tally:, width:)
+    room = width && (width - VALUE_COLUMN)
     session = tally && Riffer::Rig::Terminal::Tally.call(tally)
-    values = { model: model, cwd: cwd, skills: skills, version: version, session: session }.compact
+    values = {
+      model: clip(model, room),
+      cwd: clip(cwd, room),
+      skills: skills,
+      version: version,
+      session: session
+    }.compact
     rows = values.map do |label, value|
-      "  #{theme.magenta('▸')} #{theme.grey(label.to_s.ljust(INFO_LABEL_WIDTH))}#{value}"
+      "#{INDENT}#{theme.magenta(MARKER)} #{theme.grey(label.to_s.ljust(INFO_LABEL_WIDTH))}#{value}"
     end
     rows + ['', "  #{theme.dim('type /exit to quit')}"]
+  end
+
+  private
+
+  # The end of a path or model id is what tells it apart, so the cut takes the front.
+  # @rbs value: String
+  # @rbs room: Integer?
+  # @rbs return: String
+  def clip(value, room)
+    return value if room.nil? || Riffer::Rig::Terminal::Columns.width(value) <= room
+
+    "…#{Riffer::Rig::Terminal::Columns.tail(value, room - 1)}"
   end
 end

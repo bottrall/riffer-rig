@@ -18,7 +18,29 @@ module Riffer::Rig::Terminal::TurnReport
     blocks.map { |block| "\n#{block}\n" }.join
   end
 
+  # @rbs text: String
+  # @rbs width: Integer?
+  # @rbs return: String
+  def wrap(text, width)
+    text.lines(chomp: true).map { |line| wrap_line(line, width) }.join("\n")
+  end
+
   private
+
+  # @rbs line: String
+  # @rbs width: Integer?
+  # @rbs return: String
+  def wrap_line(line, width)
+    if line.strip.empty?
+      ''
+    # Wrapping packs words with single spaces, which would collapse the
+    # columns of a line laid out as a table.
+    elsif width.nil? || Riffer::Rig::Terminal::Columns.width(line) <= width - INDENT
+      "#{' ' * INDENT}#{line}"
+    else
+      (Riffer::Rig::Terminal::Wrapper.new(width: width, indent: INDENT) << "#{line}\n").chomp
+    end
+  end
 
   # @rbs source: String
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -59,13 +81,5 @@ module Riffer::Rig::Terminal::TurnReport
   def cost(usage)
     amount = usage.cost
     format('~$%.4f', amount) if amount
-  end
-
-  # @rbs text: String
-  # @rbs width: Integer?
-  # @rbs return: String
-  def wrap(text, width)
-    wrapper = Riffer::Rig::Terminal::Wrapper.new(width: width, indent: INDENT)
-    (wrapper << "#{text}\n").chomp
   end
 end

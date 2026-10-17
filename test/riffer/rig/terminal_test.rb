@@ -13,8 +13,8 @@ class PreparedSessions
     @prepare = prepare
   end
 
-  def start(host)
-    prepare(@sessions.start(host))
+  def find(host)
+    prepare(@sessions.find(host))
   end
 
   def fresh(host)
@@ -31,6 +31,14 @@ class PreparedSessions
 
   def list(host, all: false)
     @sessions.list(host, all: all)
+  end
+
+  def off
+    @sessions.off
+  end
+
+  def asked?
+    @sessions.asked?
   end
 
   def missing(id = nil)
@@ -284,6 +292,17 @@ describe Riffer::Rig::Terminal do
     assert_match(/see you on the next riff\.\n\z/, run_terminal(''))
   end
 
+  describe 'when Ctrl-C was ignored at launch' do
+    before { @inherited = Signal.trap('INT', 'IGNORE') }
+    after { Signal.trap('INT', @inherited) }
+
+    it 'leaves Ctrl-C ignored when the session ends' do
+      run_terminal('')
+
+      assert_equal 'IGNORE', Signal.trap('INT', 'IGNORE')
+    end
+  end
+
   describe 'bare -r' do
     it 'opens the picker before the first session' do
       path = seed_session('fix the login bug')
@@ -297,16 +316,45 @@ describe Riffer::Rig::Terminal do
       assert_includes run_terminal("/exit\n", open_picker: true), 'No saved sessions.'
     end
 
-    it 'takes the missing-session wording from the sessions collaborator' do
-      sessions = Object.new
-      sessions.define_singleton_method(:start) { |_host| nil }
-      sessions.define_singleton_method(:resume) { |_host, _id| nil }
-      sessions.define_singleton_method(:list) do |_host, **|
-        [Riffer::Rig::Terminal::Session.new(id: 'nope', title: 'gone', updated: Time.now, cwd: Dir.pwd)]
+    describe 'when the picked session is missing' do
+      def run_missing_pick
+        seed_session('fix the login bug')
+        sessions = cli_sessions
+        sessions.define_singleton_method(:resume) { |_host, _id| nil }
+        sessions.define_singleton_method(:missing) { |id = nil| "wording for #{id}" }
+        run_terminal("\n/exit\n", open_picker: true, sessions: sessions)
       end
-      sessions.define_singleton_method(:missing) { |id| "wording for #{id}" }
 
-      assert_includes run_terminal("\n", open_picker: true, sessions: sessions), 'wording for nope'
+      it 'takes the missing-session wording from the sessions collaborator' do
+        assert_match(/wording for \S+/, run_missing_pick)
+      end
+
+      it 'notifies below the banner' do
+        assert_match(%r{type /exit to quit.*wording for}m, run_missing_pick)
+      end
+    end
+  end
+
+  describe 'a session asked for with -r or -c' do
+    it 'starts fresh when the asked session is missing' do
+      runtime = nil
+      run_terminal("/exit\n", sessions: cli_sessions(resume: 'nope')) { |driven| runtime = driven }
+
+      assert_instance_of Riffer::Rig::Runtime, runtime
+    end
+
+    it 'stays quiet when the asked session is found' do
+      refute_includes run_terminal("/exit\n", sessions: cli_sessions(resume: seed_history)), 'No saved session'
+    end
+
+    it 'stays quiet when no session was asked for' do
+      refute_includes run_terminal("/exit\n"), 'No saved session'
+    end
+
+    it 'notifies the missing session below the banner' do
+      output = run_terminal("/exit\n", sessions: cli_sessions(resume: 'nope'))
+
+      assert_match(%r{type /exit to quit.*No saved session nope\.}m, output)
     end
   end
 
@@ -316,7 +364,7 @@ describe Riffer::Rig::Terminal do
 
   it 'returns one when the build is interrupted' do
     sessions = Object.new
-    sessions.define_singleton_method(:start) { |_host| raise Interrupt }
+    sessions.define_singleton_method(:find) { |_host| raise Interrupt }
     run_terminal('', sessions: sessions)
 
     assert_equal 1, @status
@@ -396,6 +444,36 @@ describe Riffer::Rig::Terminal do
       "\r\n  #{Riffer::Rig::Terminal::Replay::NOTICE}\r\n"
     end
 
+    describe 'when Ctrl-C was ignored at launch' do
+      before { @inherited = Signal.trap('INT', 'IGNORE') }
+      after { Signal.trap('INT', @inherited) }
+
+      it 'dismisses the picker before the first session on Ctrl-C' do
+        seed_session('fix the login bug')
+        script = lambda do |pty|
+          pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+          pty.type("\u0003")
+          pty.await('type /exit to quit')
+          pty.type("/exit\r")
+        end
+        run_on_pty(script, open_picker: true)
+
+        assert_equal 0, @status
+      end
+
+      it 'exits on a second Ctrl-C at the prompt' do
+        script = lambda do |pty|
+          pty.await('type /exit to quit')
+          pty.type("\u0003")
+          pty.await(Riffer::Rig::Terminal::EXIT_HINT)
+          pty.type("\u0003")
+        end
+        run_on_pty(script)
+
+        assert_equal 0, @status
+      end
+    end
+
     it 'opens the picker over the keys before the first session' do
       path = seed_session('fix the login bug')
       script = lambda do |pty|
@@ -424,6 +502,12 @@ describe Riffer::Rig::Terminal do
       end
 
       assert_includes run_on_pty(script, env: {}), Riffer::Rig::Terminal::KeyPipeline::BRACKETED_PASTE_OFF
+    end
+
+    it 'fits the banner to the width of the terminal' do
+      output = run_on_pty(->(pty) { pty.type("/exit\r") }, columns: 30)
+
+      refute_includes output, Riffer::Rig::Terminal::Banner::WORDMARK.first
     end
 
     it 'counts the running jobs of the first session in the footer' do
@@ -604,10 +688,10 @@ describe Riffer::Rig::Terminal do
       assert_includes output, "› hello\r\n› "
     end
 
-    it 'echoes a pasted control character as its picture' do
-      output = run_on_pty(->(pty) { pty.type("\e[200~a\eb\e[201~\r/exit\r") })
+    it 'wraps an echoed line to the terminal width' do
+      output = run_on_pty(->(pty) { pty.type("refactor the picker now\r/exit\r") }, columns: 16)
 
-      assert_includes output, "› a␛b\r\n› "
+      assert_includes output, "› refactor the\r\n  picker now\r\n"
     end
 
     it 'ends the session at /exit' do
@@ -647,6 +731,13 @@ describe Riffer::Rig::Terminal do
       fresh = session_files.find { |path| File.basename(path, '.jsonl') == ids.last }
 
       assert_includes File.read(fresh), 'again'
+    end
+
+    it 'closes the session /new starts at exit' do
+      runtimes = []
+      run_on_pty(->(pty) { pty.type("/new\r/exit\r") }) { |runtime| runtimes << runtime }
+
+      assert_raises(Riffer::Rig::Runtime::ClosedError) { runtimes.last.prompt('hello') }
     end
 
     it 'reads the resume picker over the keys' do
@@ -797,6 +888,12 @@ describe Riffer::Rig::Terminal do
       assert_match(/\r\n  Hi from the model\.\r\n\r\n  1 step · \d\d:\d\d\r\n› /, output)
     end
 
+    it 'wraps command output to the width of the terminal' do
+      output = run_on_pty(->(pty) { pty.type("/model sonnet\r/exit\r") }, columns: 40)
+
+      assert_includes output, "  Use /model provider/name, with a\r\n  provider from: "
+    end
+
     it 'answers a question asked during a turn from the keys' do
       write_asking_command
       script = lambda do |pty|
@@ -808,6 +905,26 @@ describe Riffer::Rig::Terminal do
       end
 
       assert_includes run_on_pty(script), 'hi, jake'
+    end
+  end
+
+  describe 'a / with no command name' do
+    it 'asks for a command name' do
+      assert_includes run_terminal("/\n"), 'Type a command name after /'
+    end
+
+    it 'sends nothing to the model' do
+      runtime = nil
+      run_terminal("/\n") { |driven| runtime = driven }
+
+      assert_empty runtime.agent.provider.calls
+    end
+
+    it 'sends nothing to the model when text follows it' do
+      runtime = nil
+      run_terminal("/ hello\n") { |driven| runtime = driven }
+
+      assert_empty runtime.agent.provider.calls
     end
   end
 
@@ -842,7 +959,13 @@ describe Riffer::Rig::Terminal do
     it 'keeps driving the current session when the fresh build fails' do
       runtime = nil
       sessions = PreparedSessions.new(cli_sessions) { |driven| runtime = driven }
-      sessions.define_singleton_method(:fresh) { |_host| raise Riffer::Rig::Loader::ConfigurationError, 'no fresh' }
+      started = false
+      sessions.define_singleton_method(:fresh) do |host|
+        raise Riffer::Rig::Loader::ConfigurationError, 'no fresh' if started
+
+        started = true
+        super(host)
+      end
       run_terminal("/new\nagain\n", sessions: sessions)
 
       assert_equal 1, runtime.agent.provider.calls.length
@@ -871,6 +994,26 @@ describe Riffer::Rig::Terminal do
 
       assert_includes File.read(fresh), 'again'
     end
+
+    it 'closes the new session at exit' do
+      runtimes = []
+      run_terminal("/new\n/exit\n") { |runtime| runtimes << runtime }
+
+      assert_raises(Riffer::Rig::Runtime::ClosedError) { runtimes.last.prompt('hello') }
+    end
+
+    it 'closes the new session when the input fails' do
+      runtimes = []
+      input = StringIO.new("/new\n")
+      input.define_singleton_method(:gets) { super() || raise(IOError, 'input lost') }
+      begin
+        run_terminal(input) { |runtime| runtimes << runtime }
+      rescue IOError
+        nil
+      end
+
+      assert_raises(Riffer::Rig::Runtime::ClosedError) { runtimes.last.prompt('hello') }
+    end
   end
 
   describe 'the resume picker' do
@@ -894,6 +1037,14 @@ describe Riffer::Rig::Terminal do
       run_terminal("/resume\nlogin\n\ntell me more\n")
 
       assert_operator File.readlines(path).length, :>, 3
+    end
+
+    it 'closes the resumed session at exit' do
+      seed_session('fix the login bug')
+      runtimes = []
+      run_terminal("/resume\nlogin\n\n/exit\n") { |runtime| runtimes << runtime }
+
+      assert_raises(Riffer::Rig::Runtime::ClosedError) { runtimes.last.prompt('hello') }
     end
 
     it 'keeps the current session when the picked one is missing' do
@@ -931,6 +1082,16 @@ describe Riffer::Rig::Terminal do
     end
 
     assert_includes output, 'Error: boom'
+  end
+
+  it 'reports the response body message of a provider error' do
+    error = StandardError.new('status=400')
+    error.define_singleton_method(:body) { { error: { message: 'bad model' } } }
+    output = run_terminal("hello\n") do |runtime|
+      runtime.agent.provider.define_singleton_method(:stream_text) { |*| raise error }
+    end
+
+    assert_includes output, 'Error: status=400: bad model'
   end
 
   it 'cancels the turn on Ctrl-C' do

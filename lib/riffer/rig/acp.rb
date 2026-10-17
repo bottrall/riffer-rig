@@ -138,12 +138,14 @@ class Riffer::Rig::ACP
     runtime = session(request.session_id)
     return ::ACP::RequestError.resource_not_found unless runtime
 
-    # @type var stop_reason: Symbol?
-    stop_reason = nil
-    runtime.prompt(Riffer::Rig::ACP::Mapper.prompt_text(request.prompt)) do |event|
+    # A command that runs no turn sends no turn_end.
+    stop_reason = :completed
+    dispatch(runtime, Riffer::Rig::ACP::Mapper.prompt_text(request.prompt)) do |event|
       case event
       when Riffer::StreamEvents::TextDelta
         client.update(request.session_id, Riffer::Rig::ACP::Mapper.message_chunk(event.content))
+      when Riffer::Rig::Events::CommandOutput
+        client.update(request.session_id, Riffer::Rig::ACP::Mapper.message_chunk(event.text))
       when Riffer::StreamEvents::ToolCallDone
         client.update(request.session_id, Riffer::Rig::ACP::Mapper.tool_call(event))
       when Riffer::Rig::Events::AfterToolCall
@@ -155,7 +157,12 @@ class Riffer::Rig::ACP
       end
     end
     ::ACP::Types::PromptResponse.new(stop_reason: Riffer::Rig::ACP::Mapper.stop_reason_of(stop_reason))
-  rescue Riffer::Rig::Runtime::BusyError, Riffer::Rig::Runtime::ClosedError => e
+  rescue Riffer::Rig::Runtime::BusyError
+    ::ACP::RequestError.new(
+      code: ::ACP::RequestError::INVALID_REQUEST,
+      message: 'a prompt is already running on this session; wait for it to finish or cancel it'
+    )
+  rescue Riffer::Rig::Runtime::ClosedError => e
     ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: e.message)
   end
 
@@ -239,6 +246,15 @@ class Riffer::Rig::ACP
   # @rbs return: Riffer::Rig::Runtime?
   def session(id)
     @lock.synchronize { @sessions[id] }
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs text: String
+  # @rbs &: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
+  # @rbs return: void
+  def dispatch(runtime, text, &)
+    command = Riffer::Rig::Command::INVOCATION.match(text)
+    command ? runtime.run_command(command[1].to_s, command[2].to_s, &) : runtime.prompt(text, &)
   end
 
   # @rbs id: String

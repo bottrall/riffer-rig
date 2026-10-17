@@ -11,6 +11,8 @@ class Riffer::Rig::Terminal::Opening
 
   @sessions: Riffer::Rig::Terminal::_Sessions
 
+  @width: ^() -> Integer?
+
   @jobs: Riffer::Rig::Terminal::JobCounter?
 
   @repl: Riffer::Rig::Terminal::Repl?
@@ -19,10 +21,11 @@ class Riffer::Rig::Terminal::Opening
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs version: String
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs width: ^() -> Integer?
   # @rbs jobs: Riffer::Rig::Terminal::JobCounter?
   # @rbs repl: Riffer::Rig::Terminal::Repl?
   # @rbs return: void
-  def initialize: (io: Riffer::Rig::Terminal::_Output, theme: Riffer::Rig::Terminal::Theme, version: String, sessions: Riffer::Rig::Terminal::_Sessions, ?jobs: Riffer::Rig::Terminal::JobCounter?, ?repl: Riffer::Rig::Terminal::Repl?) -> void
+  def initialize: (io: Riffer::Rig::Terminal::_Output, theme: Riffer::Rig::Terminal::Theme, version: String, sessions: Riffer::Rig::Terminal::_Sessions, width: ^() -> Integer?, ?jobs: Riffer::Rig::Terminal::JobCounter?, ?repl: Riffer::Rig::Terminal::Repl?) -> void
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void

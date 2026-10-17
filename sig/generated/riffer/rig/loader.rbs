@@ -116,6 +116,10 @@ class Riffer::Rig::Loader
   # @rbs return: (Hash[Symbol, untyped] | String)
   def merged_settings: () -> (Hash[Symbol, untyped] | String)
 
+  # @rbs path: String
+  # @rbs return: (Hash[Symbol, untyped] | String)
+  def read_settings: (String path) -> (Hash[Symbol, untyped] | String)
+
   # Notifies every failure once and reports its message, unexpected raises
   # included — the automatic check runs mid-turn with no other isolation, and a
   # raised attempt must still advance the snapshot in reload. A rebuilt Runtime

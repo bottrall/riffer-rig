@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/cli/sessions.rb with RBS::Inline
 
 class Riffer::Rig::CLI::Sessions
+  OFF: String
+
   @loader: Riffer::Rig::Loader?
 
   @store: Riffer::Rig::Stores::_Store?
@@ -19,10 +21,6 @@ class Riffer::Rig::CLI::Sessions
   # @rbs home: String
   # @rbs return: void
   def initialize: (flags: Riffer::Rig::CLI::Flags, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, cwd: String, home: String) -> void
-
-  # @rbs host: Riffer::Rig::Hosts::_Host
-  # @rbs return: Riffer::Rig::Runtime
-  def start: (Riffer::Rig::Hosts::_Host host) -> Riffer::Rig::Runtime
 
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs return: Riffer::Rig::Runtime?
@@ -53,6 +51,12 @@ class Riffer::Rig::CLI::Sessions
 
   # @rbs return: bool
   def asked?: () -> bool
+
+  # @rbs return: bool
+  def missing?: () -> bool
+
+  # @rbs return: String?
+  def off: () -> String?
 
   # @rbs id: String?
   # @rbs return: String

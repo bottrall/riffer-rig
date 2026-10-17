@@ -89,6 +89,10 @@ describe Riffer::Rig::ACP::Mapper do
       assert_equal [ACP::Types::SessionUpdate::AgentMessageChunk, 'Reading.'], [update.class, update.content.text]
     end
 
+    it 'skips an assistant message with only whitespace content' do
+      assert_nil Riffer::Rig::ACP::Mapper.replay_of({ role: 'assistant', content: " \n" })
+    end
+
     it 'replays a tool message as a completed tool call titled with its name' do
       update = Riffer::Rig::ACP::Mapper.replay_of(tool_message('read'))
 
@@ -171,7 +175,7 @@ describe Riffer::Rig::ACP::Mapper do
     end
 
     it 'ends a failed turn with refusal' do
-      reasons = [:error, :other, :guardrail_blocked, nil]
+      reasons = %i[error other guardrail_blocked]
 
       assert_equal %w[refusal], reasons.map { |reason| Riffer::Rig::ACP::Mapper.stop_reason_of(reason) }.uniq
     end
@@ -180,6 +184,14 @@ describe Riffer::Rig::ACP::Mapper do
   describe '.choices' do
     it 'offers each option under its own text as the id' do
       assert_equal(%w[red blue], Riffer::Rig::ACP::Mapper.choices(%w[red blue]).map(&:option_id))
+    end
+  end
+
+  describe '.permission_call' do
+    it 'announces a pending tool call titled with the question' do
+      call = Riffer::Rig::ACP::Mapper.permission_call('c1', 'Proceed?')
+
+      assert_equal %w[c1 Proceed? other pending], [call.tool_call_id, call.title, call.kind, call.status]
     end
   end
 

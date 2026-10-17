@@ -27,6 +27,8 @@ Every entry but the header also holds `recorded_at`, the wall-clock time the Loa
 
 Every Loader-built session is saved, one-shots included. Skip one run with `store: nil` — `--no-save` on the command line — or all of them with `"sessions": {"save": false}` in settings ([Configuration](CONFIGURATION.md)).
 
+`--no-save` leaves the saved sessions unread too: `-c`, `-r` and `/resume` print `Sessions are off for this run (--no-save).` instead of looking for one, and in headless mode `-c` and `-r` exit 2 with it. The settings switch only stops recording — saved sessions still resume, and the resumed session is not appended to.
+
 ## Tracing the last turn
 
 `/trace` replays the last turn from the store. The Loader installs it as a runtime command on every build that records, so it works the same in every host and is absent when the session is not saved ([Opting out](#opting-out)). The turn runs from the session's last prompt to its last entry, so a resumed session can be traced before its next prompt. The command's `command_output` holds one line per recorded step — the time, what happened, and the detail:
@@ -79,11 +81,11 @@ In the REPL, `/resume` opens the picker over the sessions of the current directo
 
 The picker reads one line at a time:
 
-- Typing text filters the rows to titles containing it (case-insensitive).
+- Typing text filters the rows to titles containing it (case-insensitive). A filter that matches nothing says so and keeps the previous rows.
 - Enter switches to the session when a single row remains.
 - A row number — `2`, Enter — switches to that row directly.
 - Ctrl-D starts a delete: type the number of the row, then confirm with `y` (`n` or anything else keeps it). The session is removed from the store.
-- Enter with several rows, or Ctrl-C, leaves the picker.
+- Enter with several rows, Ctrl-C, or Ctrl-D at the delete prompt leaves the picker and prints `(closed)`.
 
 Switching replaces the Runtime the terminal drives and re-renders the banner: the conversation you left is already saved, keeps its id and file, and `/resume` appends to it. `/new` starts a fresh session in place the same way — a new id, empty history — and the session you left stays on disk.
 
@@ -94,7 +96,7 @@ Switching replaces the Runtime the terminal drives and re-renders the banner: th
 | Key         | Holds                                                                                                                                  |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `:id`       | the Runtime's id, a UUIDv7 minted when the session began; a restored Runtime keeps it, so it names the session across restarts        |
-| `:messages` | the conversation as riffer message hashes (`Riffer::Messages::Base#to_h`), system message first, read back with `Riffer::Messages::Base.from_hash`; a [job exit notification](EMBEDDING.md#exit-notifications) also carries `job_notification: true` and is read back as one |
+| `:messages` | the conversation as riffer message hashes (`Riffer::Messages::Base#to_h`), system message first, read back with `Riffer::Messages::Base.from_hash`; a [job exit notification](EMBEDDING.md#exit-notifications) also carries `job_notification: true` and is read back as one, and one a [follow-up](EMBEDDING.md#waiting-for-jobs) delivered carries `follow_up_exits` too |
 | `:model`    | the model the session switched to with `model=` or `/model`, or `nil` when it kept the model it was built with                          |
 | `:skills`   | the names of the skills the model activated in the session ([Skills](SKILLS.md#what-the-model-sees)); a skill run with `/skill:<name>` is not one |
 

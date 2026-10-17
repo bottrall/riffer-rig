@@ -28,7 +28,7 @@ Every other key does nothing.
 
 ### Pasting
 
-A paste arrives as text, not as keystrokes: a line break in it does not send the line, and shows as `␊` (a tab as `␉`). A paste of 1,000 characters or more shows as `[pasted 1.2k chars]`, and Backspace, Delete and the arrows treat it as a single character; the whole text is sent.
+A paste arrives as text, not as keystrokes: a line break in it does not send the line, and shows as `␊` (a tab as `␉`). A paste of 1,000 characters or more shows as `[pasted 1.2k chars]`, and Backspace, Delete and the arrows treat it as a single character; the whole text is sent. Bytes that are not valid UTF-8 are dropped.
 
 ## Queueing messages
 
@@ -78,7 +78,7 @@ That is the turn's model calls, its time, its input and output tokens, each cach
 
 ## Resuming
 
-When a session is resumed — `riffer -c`, `riffer -r`, or a pick in [the picker](SESSIONS.md#the-picker) — its earlier turns are replayed above the input line, under the banner: each prompt as `› prompt`, then the turn's answer and its stat line, without the session total. A cancelled turn replays with a stat line too. Turns saved by a version that recorded no times, or damaged on disk, are left out with one line saying so.
+When a session is resumed — `riffer -c`, `riffer -r`, or a pick in [the picker](SESSIONS.md#the-picker) — its earlier turns are replayed above the input line, under the banner: each prompt as `› prompt`, then the turn's answer and its stat line, without the session total. A turn a [background job's exit](#background-jobs) started replays the same way, under its `1 background job exited` line instead of a prompt; one saved by an earlier version replays as part of the turn before it. A cancelled turn replays with a stat line too. Turns saved by a version that recorded no times, or damaged on disk, are left out with one line saying so.
 
 ## Commands
 
@@ -95,7 +95,7 @@ A line starting with `/` runs a command. Besides `/exit` and `/quit`:
 | `/trace`                          | replays the last turn from the saved session, step by step with times ([Sessions](SESSIONS.md#tracing-the-last-turn))      |
 | `/skill:<name> [text]`            | runs a skill ([Skills](SKILLS.md))                                                                                         |
 
-Any other `/name args` runs the command of that name, such as one an [extension](EXTENSIONS.md) registers; an unknown name is reported and nothing is sent to the model.
+Any other `/name args` runs the command of that name, such as one an [extension](EXTENSIONS.md) registers; an unknown name, or a `/` with none, is reported and nothing is sent to the model.
 
 ## Without a terminal
 

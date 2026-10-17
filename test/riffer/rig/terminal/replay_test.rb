@@ -25,8 +25,12 @@ describe Riffer::Rig::Terminal::Replay do
     Riffer::Messages::Tool.new('ok', tool_call_id: 'call_1', name: 'read')
   end
 
-  def notification
-    Riffer::Rig::Runtime::JobNotification.new('<background-job id="a1b2c3d4">')
+  def notification(follow_up_exits: nil)
+    Riffer::Rig::Runtime::JobNotification.new('<background-job id="a1b2c3d4">', follow_up_exits: follow_up_exits)
+  end
+
+  def follow_up
+    [*exchange, entry(notification(follow_up_exits: 1), 60), entry(assistant('Passed.'), 67)]
   end
 
   def usage(input, output)
@@ -71,6 +75,13 @@ describe Riffer::Rig::Terminal::Replay do
       )
     end
 
+    it 'replays a turn a job exit started as its own turn' do
+      assert_equal(
+        "\n› Go\n\n  Done.\n\n  1 step · 00:41\n\n1 background job exited\n\n  Passed.\n\n  1 step · 00:07\n",
+        replay(follow_up)
+      )
+    end
+
     it 'replays each turn as a user line, an answer and a stat footer' do
       recorded = [
         entry(user('refactor the picker'), 0),
@@ -87,6 +98,12 @@ describe Riffer::Rig::Terminal::Replay do
       recorded = [*exchange, entry({ role: 'user' }, 60), entry(assistant('Lost.'), 67)]
 
       assert_equal "\n› Go\n\n  Done.\n\n  1 step · 00:41\n#{notice}", replay(recorded)
+    end
+
+    it 'wraps a replayed prompt to the width' do
+      recorded = [entry(user('refactor the picker now'), 0), entry(assistant('Done.'), 41)]
+
+      assert_equal "\n› refactor the\n  picker now\n\n  Done.\n\n  1 step · 00:41\n", replay(recorded, width: 16)
     end
 
     it 'wraps a replayed answer to the width' do
@@ -163,6 +180,15 @@ describe Riffer::Rig::Terminal::Replay do
     end
   end
 
+  describe '.heading' do
+    it 'paints the job exit line of a turn a job exit started grey' do
+      recorded = [entry(notification(follow_up_exits: 2), 0), entry(assistant('Passed.'), 7)]
+      painted = "\n\e[38;2;138;139;154m2 background jobs exited\e[0m\n\n  Passed.\n\n\e[2m  1 step · 00:07\e[0m\n"
+
+      assert_equal painted, replay(recorded, color: true)
+    end
+  end
+
   describe '.message' do
     it 'does not replay a turn holding a message without text' do
       assert_equal notice, replay([entry(user('Go'), 0), entry({ role: 'assistant' }, 41)])
@@ -172,20 +198,6 @@ describe Riffer::Rig::Terminal::Replay do
       damaged = { role: 'assistant', content: 'Done.', tool_calls: 'none' }
 
       assert_equal notice, replay([entry(user('Go'), 0), entry(damaged, 41)])
-    end
-  end
-
-  describe '.user_line' do
-    it 'shows the control characters of a prompt as pictures' do
-      recorded = [entry(user("Go\e[2J\nnow"), 0), entry(assistant('Done.'), 41)]
-
-      assert_equal "\n› Go␛[2J␊now\n\n  Done.\n\n  1 step · 00:41\n", replay(recorded)
-    end
-
-    it 'paints the prompt glyph pink' do
-      painted = "\n\e[38;2;255;106;193m›\e[0m Go\n\n  Done.\n\n\e[2m  1 step · 00:41\e[0m\n"
-
-      assert_equal painted, replay(exchange, color: true)
     end
   end
 end

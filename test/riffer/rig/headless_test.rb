@@ -168,10 +168,22 @@ describe Riffer::Rig::Headless do
     assert_equal "review this\n\nthe diff", prompt_sent_to_model
   end
 
+  it 'strips whitespace around the prompt argument' do
+    run_headless(prompt: "  review this\n", input: 'the diff') { |runtime| runtime.agent.provider.stub_response('Hi') }
+
+    assert_equal "review this\n\nthe diff", prompt_sent_to_model
+  end
+
   it 'uses piped stdin alone as the prompt without an argument' do
     run_headless(input: 'the diff') { |runtime| runtime.agent.provider.stub_response('Hi') }
 
     assert_equal 'the diff', prompt_sent_to_model
+  end
+
+  it 'replaces invalid UTF-8 in piped stdin' do
+    run_headless(prompt: 'review this', input: "caf\xE9") { |runtime| runtime.agent.provider.stub_response('Hi') }
+
+    assert_equal "review this\n\ncaf\uFFFD", prompt_sent_to_model
   end
 
   it 'never reads a TTY stdin' do
@@ -193,6 +205,18 @@ describe Riffer::Rig::Headless do
     run_headless
 
     assert_match(/no prompt/, @error.string)
+  end
+
+  it 'returns two when the prompt argument is only whitespace' do
+    run_headless(prompt: '   ')
+
+    assert_equal 2, @status
+  end
+
+  it 'returns two when piped stdin is only whitespace' do
+    run_headless(input: "  \n ")
+
+    assert_equal 2, @status
   end
 
   it 'returns two without the provider credentials' do
@@ -256,6 +280,22 @@ describe Riffer::Rig::Headless do
       assert_match(/waiting for background jobs/, @error.string)
     end
 
+    it 'has written the reply through to a pipe by the time it waits' do
+      reader, @output = IO.pipe
+      @output.sync = false
+      seen = nil
+      reply = Riffer::StreamEvents::TextDone.new('started')
+      @runtime = ScriptedRuntime.new([reply, turn_end(:completed)], exits: [false])
+      @runtime.define_singleton_method(:await_job_exit) do |**|
+        seen = reader.read_nonblock(64, exception: false)
+        false
+      end
+      run_build { @runtime }
+      [@output, reader].each(&:close)
+
+      assert_equal "started\n", seen
+    end
+
     it 'waits for an exit with the idle timeout' do
       run_waiting([true], job_idle_timeout: 30)
 
@@ -304,6 +344,37 @@ describe Riffer::Rig::Headless do
       assert_equal "It passed.\n", @output.string
     end
 
+    it 'separates the reply of a follow-up from the turn before with a blank line' do
+      run_waiting(
+        [true],
+        events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)],
+        follow_up: [Riffer::StreamEvents::TextDone.new('It passed.'), turn_end(:completed)]
+      )
+
+      assert_equal "started\n\nIt passed.\n", @output.string
+    end
+
+    it 'prints the blank line only once for a follow-up that streams its reply' do
+      run_waiting(
+        [true],
+        events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)],
+        follow_up: [
+          Riffer::StreamEvents::TextDelta.new('It '),
+          Riffer::StreamEvents::TextDelta.new('passed.'),
+          Riffer::StreamEvents::TextDone.new('It passed.'),
+          turn_end(:completed)
+        ]
+      )
+
+      assert_equal "started\n\nIt passed.\n", @output.string
+    end
+
+    it 'prints no blank line for a follow-up that prints nothing' do
+      run_waiting([true], events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)])
+
+      assert_equal "started\n", @output.string
+    end
+
     it 'returns the code of the last follow-up' do
       run_waiting([true, true], follow_up: [turn_end(:max_steps)])
 
@@ -346,6 +417,17 @@ describe Riffer::Rig::Headless do
     end
 
     assert_match(/boom/, @error.string)
+  end
+
+  it 'says what the provider answered when the turn raises a provider error' do
+    error = StandardError.new('status=400').tap do |status_error|
+      status_error.define_singleton_method(:body) { { error: { message: 'bad model' } } }
+    end
+    run_headless(prompt: 'hello') do |runtime|
+      runtime.agent.provider.define_singleton_method(:stream_text) { |*| raise error }
+    end
+
+    assert_match(/riffer: status=400: bad model/, @error.string)
   end
 
   it 'restores the previous INT handler after the turn' do
@@ -391,6 +473,15 @@ describe Riffer::Rig::Headless do
     assert_equal "first\nsecond\n", @output.string
   end
 
+  it 'prints no tool trace without --verbose' do
+    run_headless(prompt: 'read it') do |runtime|
+      runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
+      runtime.agent.provider.stub_response('Done.')
+    end
+
+    refute_match(/tool_call/, @error.string)
+  end
+
   it 'traces one line per tool call on stderr with --verbose' do
     run_headless(prompt: 'read it', verbose: true) do |runtime|
       runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
@@ -400,13 +491,13 @@ describe Riffer::Rig::Headless do
     assert_match(%r{tool_call read \{"path":"/tmp/x"\}}, @error.string)
   end
 
-  it 'prints no tool trace without --verbose' do
-    run_headless(prompt: 'read it') do |runtime|
+  it 'traces tool calls on stderr with --json and --verbose' do
+    run_headless(prompt: 'read it', verbose: true, json: true) do |runtime|
       runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
       runtime.agent.provider.stub_response('Done.')
     end
 
-    refute_match(/tool_call/, @error.string)
+    assert_match(%r{tool_call read \{"path":"/tmp/x"\}}, @error.string)
   end
 
   it 'prints nothing for the tool call events in text mode' do
@@ -562,6 +653,17 @@ describe Riffer::Rig::Headless do
       )
     end
 
+    it 'prints no blank line between the records of a follow-up' do
+      run_waiting(
+        [true],
+        json: true,
+        events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)],
+        follow_up: [Riffer::StreamEvents::TextDone.new('It passed.'), turn_end(:completed)]
+      )
+
+      refute_match(/\n\n/, @output.string)
+    end
+
     it 'ends with a turn_end record' do
       turn
 
@@ -610,6 +712,31 @@ describe Riffer::Rig::Headless do
       turn
 
       assert_equal @output.string.lines.size, records.size
+    end
+  end
+
+  describe '#refuse' do
+    def refuse(json: false)
+      headless = Riffer::Rig::Headless.for(input: StringIO.new, output: @output, error: @error, json: json)
+      @status = headless.refuse('gone')
+    end
+
+    it 'prints the message on stderr' do
+      refuse
+
+      assert_equal "riffer: gone\n", @error.string
+    end
+
+    it 'prints the message as an error record with --json' do
+      refuse(json: true)
+
+      assert_equal({ 'type' => 'error', 'message' => 'gone' }, JSON.parse(@output.string))
+    end
+
+    it 'returns two' do
+      refuse
+
+      assert_equal 2, @status
     end
   end
 end
