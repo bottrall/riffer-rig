@@ -9,6 +9,13 @@ describe Riffer::Rig::Runtime::JobNotification do
 
       assert_equal 2, Riffer::Rig::Runtime::JobNotification.from_hash(stored).follow_up_exits
     end
+
+    it 'rebuilds the files the notification carries' do
+      file = { media_type: 'text/plain', data: 'aGk=', filename: 'notes.txt' }
+      stored = { role: 'user', content: '<background-job id="a1b2c3d4">', job_notification: true, files: [file] }
+
+      assert_equal [file], Riffer::Rig::Runtime::JobNotification.from_hash(stored).files.map(&:to_h)
+    end
   end
 
   describe '#initialize' do

@@ -9,7 +9,8 @@ class Riffer::Rig::Runtime::JobNotification < Riffer::Messages::User
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: Riffer::Rig::Runtime::JobNotification
   def self.from_hash(hash)
-    new(hash[:content], id: hash[:id], follow_up_exits: hash[:follow_up_exits])
+    files = (hash[:files] || []).map { |file| Riffer::Messages::User::FilePart.from_hash(file) }
+    new(hash[:content], id: hash[:id], files: files, follow_up_exits: hash[:follow_up_exits])
   end
 
   # @rbs content: String
