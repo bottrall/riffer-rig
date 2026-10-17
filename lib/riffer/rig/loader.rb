@@ -117,7 +117,7 @@ class Riffer::Rig::Loader
       riffer_config: @riffer_config,
       model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected, document.reasoning),
       native_tools: document.native_tools,
-      snapshot: snapshot
+      snapshot: options.model ? snapshot&.merge(model: nil) : snapshot
     )
     built.install_command(Riffer::Rig::Commands::Reload.command(self))
     store = @store
