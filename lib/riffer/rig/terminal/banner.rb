@@ -87,7 +87,7 @@ module Riffer::Rig::Terminal::Banner
     rows = values.map do |label, value|
       "#{INDENT}#{theme.magenta(MARKER)} #{theme.grey(label.to_s.ljust(INFO_LABEL_WIDTH))}#{value}"
     end
-    rows + ['', "  #{theme.dim('type /exit to quit')}"]
+    rows + ['', "  #{theme.dim('type /help for commands, /exit to quit')}"]
   end
 
   private

@@ -215,7 +215,7 @@ A cancelled turn leaves the conversation usable. Tool calls that never got a res
 
 ## Commands
 
-Slash commands are runtime objects: extensions register them with [`rig.command`](EXTENSIONS.md#the-rigcommand-seam), and every host drives them through the Runtime, so a command works the same in the terminal, headless and over ACP. Commands that end or replace the Runtime itself — `/exit`, `/new`, `/resume` — belong to the host, not here.
+Slash commands are runtime objects: extensions register them with [`rig.command`](EXTENSIONS.md#the-rigcommand-seam), and every host drives them through the Runtime, so a command works the same in the terminal, headless and over ACP. Commands that end or replace the Runtime itself — `/exit`, `/new`, `/resume` — belong to the host, not here, and so does the terminal's `/help`, which lists them alongside these.
 
 `commands` lists the registered commands in load order. Each is a `Riffer::Rig::Command` with a `name` (without the leading slash) and a `description`:
 

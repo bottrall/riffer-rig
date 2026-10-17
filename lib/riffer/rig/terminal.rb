@@ -7,15 +7,20 @@ class Riffer::Rig::Terminal
 
   RESUME_COMMAND = 'resume' #: String
 
+  HELP_COMMAND = 'help' #: String
+
   BUILTINS = [
     Builtin.new(NEW_COMMAND, description: 'Start a fresh session in place'),
     Builtin.new(RESUME_COMMAND, description: "Pick a session to resume: /resume --all for every directory's"),
+    Builtin.new(HELP_COMMAND, description: "List this session's commands"),
     *EXIT_COMMANDS.map { |line| Builtin.new(line.delete_prefix('/'), description: 'End the session') }
   ].freeze #: Array[Riffer::Rig::Terminal::Builtin]
 
   NEW_USAGE = 'Usage: /new' #: String
 
   RESUME_USAGE = 'Usage: /resume [--all]' #: String
+
+  HELP_USAGE = 'Usage: /help' #: String
 
   COMMAND_HINT = 'Type a command name after /'
 
@@ -277,6 +282,7 @@ class Riffer::Rig::Terminal
       case command[1].to_s
       when NEW_COMMAND then return command_new(runtime, command[2].to_s)
       when RESUME_COMMAND then return command_resume(runtime, command[2].to_s)
+      when HELP_COMMAND then return command_help(runtime, command[2].to_s)
       end
 
       turn(runtime) { |emit| runtime.run_command(command[1].to_s, command[2].to_s, &emit) }
@@ -312,6 +318,15 @@ class Riffer::Rig::Terminal
     return missing(runtime, session) unless resumed
 
     swap(runtime, resumed)
+  end
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs args: String
+  # @rbs return: Riffer::Rig::Runtime
+  def command_help(runtime, args)
+    return notice(runtime, HELP_USAGE) unless args.strip.empty?
+
+    notice(runtime, Help.call([*BUILTINS, *runtime.commands]))
   end
 
   # @rbs runtime: Riffer::Rig::Runtime

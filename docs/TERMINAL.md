@@ -28,7 +28,7 @@ While the [command palette](#the-command-palette) is open, Up and Down move thro
 
 ### The command palette
 
-A `/` at the start of the line opens a palette above the input line listing the session's [commands](#commands) — `/new`, `/resume`, `/exit`, `/quit`, `/model`, `/auth`, `/reload`, `/cost`, `/trace`, each skill's and each [extension](EXTENSIONS.md)'s — with their descriptions. Typing after the `/` narrows it to the commands whose names hold those letters in order, ignoring case, with a name that is exactly what you typed first, then the names that start with it. It shows eight commands at a time, fewer on a short terminal, and scrolls to keep the selected one in view. The selected command is marked `▸`; when its name starts with what you typed and the cursor is at the end of the line, the rest of the name shows dimmed after the cursor.
+A `/` at the start of the line opens a palette above the input line listing the session's [commands](#commands) — `/help`, `/new`, `/resume`, `/exit`, `/quit`, `/model`, `/auth`, `/reload`, `/cost`, `/trace`, each skill's and each [extension](EXTENSIONS.md)'s — with their descriptions. Typing after the `/` narrows it to the commands whose names hold those letters in order, ignoring case, with a name that is exactly what you typed first, then the names that start with it. It shows eight commands at a time, fewer on a short terminal, and scrolls to keep the selected one in view. The selected command is marked `▸`; when its name starts with what you typed and the cursor is at the end of the line, the rest of the name shows dimmed after the cursor.
 
 | Key                             | Does                                                                                                              |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -100,6 +100,7 @@ A line starting with `/` runs a command. Besides `/exit` and `/quit`:
 
 | Command                           | Does                                                                                                                       |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `/help`                           | lists the session's commands by name, with their descriptions                                                              |
 | `/new`                            | starts a fresh session in place; the one you left stays on disk ([Sessions](SESSIONS.md#the-picker))                       |
 | `/resume [--all]`                 | opens [the picker](SESSIONS.md#the-picker) over this directory's sessions, or every directory's                            |
 | `/model [provider/name] [--save]` | shows or switches the model ([Configuration](CONFIGURATION.md#model))                                                      |

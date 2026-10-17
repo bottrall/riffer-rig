@@ -330,7 +330,7 @@ describe Riffer::Rig::Terminal do
       end
 
       it 'notifies below the banner' do
-        assert_match(%r{type /exit to quit.*wording for}m, run_missing_pick)
+        assert_match(%r{type /help for commands, /exit to quit.*wording for}m, run_missing_pick)
       end
     end
   end
@@ -354,7 +354,7 @@ describe Riffer::Rig::Terminal do
     it 'notifies the missing session below the banner' do
       output = run_terminal("/exit\n", sessions: cli_sessions(resume: 'nope'))
 
-      assert_match(%r{type /exit to quit.*No saved session nope\.}m, output)
+      assert_match(%r{type /help for commands, /exit to quit.*No saved session nope\.}m, output)
     end
   end
 
@@ -453,7 +453,7 @@ describe Riffer::Rig::Terminal do
         script = lambda do |pty|
           pty.await(Riffer::Rig::Terminal::FramePrompter::HINT)
           pty.type("\u0003")
-          pty.await('type /exit to quit')
+          pty.await('type /help for commands, /exit to quit')
           pty.type("/exit\r")
         end
         run_on_pty(script, open_picker: true)
@@ -463,7 +463,7 @@ describe Riffer::Rig::Terminal do
 
       it 'exits on a second Ctrl-C at the prompt' do
         script = lambda do |pty|
-          pty.await('type /exit to quit')
+          pty.await('type /help for commands, /exit to quit')
           pty.type("\u0003")
           pty.await(Riffer::Rig::Terminal::EXIT_HINT)
           pty.type("\u0003")
@@ -543,7 +543,7 @@ describe Riffer::Rig::Terminal do
     it 'replays them below the banner' do
       output = run_on_pty(->(pty) { pty.type("/exit\r") }, resume: seed_history)
 
-      assert_match(%r{type /exit to quit.*› what is in notes\.txt\?}m, output)
+      assert_match(%r{type /help for commands, /exit to quit.*› what is in notes\.txt\?}m, output)
     end
 
     it 'replays them above the footer' do
@@ -609,7 +609,7 @@ describe Riffer::Rig::Terminal do
 
       def idle_exit(reply = 'Mock response')
         lambda do |pty|
-          pty.await('type /exit to quit')
+          pty.await('type /help for commands, /exit to quit')
           exit_jobs
           pty.await(reply)
           pty.type("/exit\r")
@@ -665,7 +665,7 @@ describe Riffer::Rig::Terminal do
 
       it 'keeps a half-typed line through that turn' do
         script = lambda do |pty|
-          pty.await('type /exit to quit')
+          pty.await('type /help for commands, /exit to quit')
           pty.type('half')
           pty.await('› half')
           exit_jobs
@@ -780,7 +780,7 @@ describe Riffer::Rig::Terminal do
 
     it 'asks for a command name on a lone / sent from the palette' do
       script = lambda do |pty|
-        pty.await('type /exit to quit')
+        pty.await('type /help for commands, /exit to quit')
         pty.type("/\r")
         pty.await(Riffer::Rig::Terminal::COMMAND_HINT)
         pty.type("/exit\r")
@@ -791,7 +791,7 @@ describe Riffer::Rig::Terminal do
 
     it 'lists the commands the terminal runs itself in the palette' do
       script = lambda do |pty|
-        pty.await('type /exit to quit')
+        pty.await('type /help for commands, /exit to quit')
         pty.type('/re')
         pty.await('Pick a session to resume')
         pty.type("\u0015/exit\r")
@@ -821,7 +821,7 @@ describe Riffer::Rig::Terminal do
     it 'exits on a second Ctrl-C at the prompt' do
       script = lambda do |pty|
         # Before the session is up, a Ctrl-C abandons its build instead.
-        pty.await('type /exit to quit')
+        pty.await('type /help for commands, /exit to quit')
         pty.type("\u0003")
         pty.await(Riffer::Rig::Terminal::EXIT_HINT)
         pty.type("\u0003")
@@ -1245,6 +1245,27 @@ describe Riffer::Rig::Terminal do
       assert_includes run_terminal("/resume\n/exit\n/exit\n"), 'No saved sessions.'
     ensure
       FileUtils.remove_entry(other)
+    end
+  end
+
+  describe '/help' do
+    it 'reports the usage for arguments' do
+      assert_includes run_terminal("/help me\n"), 'Usage: /help'
+    end
+
+    it 'lists the commands the terminal runs itself' do
+      assert_match %r{/new +Start a fresh session in place}, run_terminal("/help\n")
+    end
+
+    it "lists the Runtime's commands" do
+      assert_match %r{/trace +Replay the last turn's activity from the session store}, run_terminal("/help\n")
+    end
+
+    it 'sends nothing to the model' do
+      runtime = nil
+      run_terminal("/help\n") { |driven| runtime = driven }
+
+      assert_empty runtime.agent.provider.calls
     end
   end
 

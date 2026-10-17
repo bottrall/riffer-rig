@@ -1,0 +1,22 @@
+# Generated from lib/riffer/rig/terminal/help.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Help
+  POINTER: String
+
+  # @rbs commands: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
+  # @rbs return: String
+  def call: (Array[Riffer::Rig::Terminal::Autocomplete::_Entry] commands) -> String
+
+  # @rbs commands: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
+  # @rbs return: Integer
+  def width: (Array[Riffer::Rig::Terminal::Autocomplete::_Entry] commands) -> Integer
+
+  # @rbs command: Riffer::Rig::Terminal::Autocomplete::_Entry
+  # @rbs width: Integer
+  # @rbs return: String
+  def label: (Riffer::Rig::Terminal::Autocomplete::_Entry command, Integer width) -> String
+
+  # @rbs command: Riffer::Rig::Terminal::Autocomplete::_Entry
+  # @rbs return: String
+  def about: (Riffer::Rig::Terminal::Autocomplete::_Entry command) -> String
+end

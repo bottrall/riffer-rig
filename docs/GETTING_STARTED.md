@@ -46,7 +46,7 @@ The banner shows the model, the working directory, how many skills were found an
 - you can keep typing while a turn runs: Enter queues the message, and it runs when the turn ends;
 - Ctrl-C cancels a running turn, which prints what the reply had reached and `interrupted`; with no turn running, a second Ctrl-C exits, as do `/exit`, `/quit` and Ctrl-D on an empty line.
 
-[Terminal](TERMINAL.md) has every key and the slash commands, and the [README](https://github.com/bottrall/riffer-rig#usage) lists the flags.
+`/help` lists the slash commands, [Terminal](TERMINAL.md) has every key and what each command does, and the [README](https://github.com/bottrall/riffer-rig#usage) lists the flags.
 
 ## What first run leaves behind
 

@@ -7,11 +7,15 @@ class Riffer::Rig::Terminal
 
   RESUME_COMMAND: String
 
+  HELP_COMMAND: String
+
   BUILTINS: Array[Riffer::Rig::Terminal::Builtin]
 
   NEW_USAGE: String
 
   RESUME_USAGE: String
+
+  HELP_USAGE: String
 
   COMMAND_HINT: ::String
 
@@ -121,6 +125,11 @@ class Riffer::Rig::Terminal
   # @rbs args: String
   # @rbs return: Riffer::Rig::Runtime
   def command_resume: (Riffer::Rig::Runtime runtime, String args) -> Riffer::Rig::Runtime
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs args: String
+  # @rbs return: Riffer::Rig::Runtime
+  def command_help: (Riffer::Rig::Runtime runtime, String args) -> Riffer::Rig::Runtime
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs message: String
