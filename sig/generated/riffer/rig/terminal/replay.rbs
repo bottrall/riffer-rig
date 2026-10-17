@@ -18,9 +18,4 @@ module Riffer::Rig::Terminal::Replay
   # @rbs entry: Riffer::Rig::Terminal::Replay::_Recorded
   # @rbs return: Riffer::Messages::Base?
   def message: (Riffer::Rig::Terminal::Replay::_Recorded entry) -> Riffer::Messages::Base?
-
-  # @rbs prompt: String
-  # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs return: String
-  def user_line: (String prompt, Riffer::Rig::Terminal::Theme theme) -> String
 end

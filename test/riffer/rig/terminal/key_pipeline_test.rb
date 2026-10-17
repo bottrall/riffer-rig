@@ -12,13 +12,13 @@ describe Riffer::Rig::Terminal::KeyPipeline do
     @pty.close
   end
 
-  def scripted_input(ready: [], chars: [])
+  def scripted_input(ready: [], bytes: [])
     Class.new do
       attr_reader :reads
 
-      def initialize(ready, chars)
+      def initialize(ready, bytes)
         @ready = ready.dup
-        @chars = chars.dup
+        @bytes = bytes.dup
         @reads = Queue.new
       end
 
@@ -30,11 +30,20 @@ describe Riffer::Rig::Terminal::KeyPipeline do
         @ready.empty? || @ready.shift
       end
 
-      def getc
+      def getbyte
         @reads << :read
-        @chars.shift
+        @bytes.shift
       end
-    end.new(ready, chars)
+    end.new(ready, bytes)
+  end
+
+  def failing_decoder
+    Class.new do
+      def push(_byte)
+        Thread.current.report_on_exception = false
+        raise 'decoder failed'
+      end
+    end.new
   end
 
   describe '#start' do
@@ -97,7 +106,7 @@ describe Riffer::Rig::Terminal::KeyPipeline do
 
   describe '#read_loop' do
     it 'keeps decoding after an idle gap longer than the read timeout' do
-      input = scripted_input(ready: [false], chars: ['a'])
+      input = scripted_input(ready: [false], bytes: ['a'.ord])
       pipeline = Riffer::Rig::Terminal::KeyPipeline.new(input: input, output: StringIO.new)
 
       pipeline.start
@@ -151,6 +160,12 @@ describe Riffer::Rig::Terminal::KeyPipeline do
       assert_equal Riffer::Rig::Terminal::Key.new(:escape), @pty.key
     end
 
+    it 'emits a lone byte once the reader gives up waiting for the rest of its character' do
+      @pty.type("\xE2")
+
+      assert_equal Riffer::Rig::Terminal::Key.new(:alt_b), @pty.key
+    end
+
     it 'delivers a multi-line paste as one key instead of submitting its lines' do
       @pty.type("\e[200~one\ntwo\r\e[201~")
 
@@ -177,6 +192,28 @@ describe Riffer::Rig::Terminal::KeyPipeline do
       @pty.type(pastes.map { |pasted| "\e[200~#{pasted}\e[201~" }.join)
 
       assert_equal(pastes, pastes.map { @pty.key.text })
+    end
+
+    it 'closes the keys when the reader fails' do
+      pipeline = Riffer::Rig::Terminal::KeyPipeline.new(
+        input: scripted_input(bytes: ['a'.ord]), output: StringIO.new, decoder: failing_decoder
+      )
+
+      pipeline.start
+      pipeline.keys.pop(timeout: KeyPty::TIMEOUT_SECONDS)
+
+      assert_predicate pipeline.keys, :closed?
+    end
+
+    it 'restores the terminal when the reader fails' do
+      pty = KeyPty.new(decoder: failing_decoder)
+      pty.type('a')
+      pty.pipeline.keys.pop(timeout: KeyPty::TIMEOUT_SECONDS)
+
+      assert_predicate pty.slave, :echo?
+    ensure
+      # close would stop the pipeline, and joining the failed reader re-raises its error.
+      pty&.release
     end
   end
 end

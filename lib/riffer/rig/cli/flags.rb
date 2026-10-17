@@ -30,6 +30,7 @@ class Riffer::Rig::CLI::Flags
     allowed = rest.empty? || (flags.headless && rest.size == 1)
     return "unexpected argument: #{rest.join(' ')}" unless allowed
     return 'missing argument: -r' if flags.headless && flags.resume == ''
+    return "invalid argument: --max-steps #{flags.max_steps}" if flags.max_steps&.<(1)
     return "invalid argument: --job-idle-timeout #{flags.job_idle_timeout}" if flags.job_idle_timeout&.negative?
 
     flags

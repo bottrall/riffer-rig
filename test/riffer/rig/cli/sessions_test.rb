@@ -61,59 +61,6 @@ describe Riffer::Rig::CLI::Sessions do
     end
   end
 
-  describe '#start' do
-    it 'starts the session the flags ask for' do
-      save('aaa')
-
-      assert_equal 'aaa', sessions('-r', 'aaa').start(@host).id
-    end
-
-    it 'stays quiet when the asked session is found' do
-      save('aaa')
-      sessions('-r', 'aaa').start(@host)
-
-      assert_empty @host.notifications
-    end
-
-    it 'stays quiet when no session was asked for' do
-      sessions.start(@host)
-
-      assert_empty @host.notifications
-    end
-
-    it 'starts fresh when no session was asked for' do
-      save('aaa')
-
-      refute_equal 'aaa', sessions.start(@host).id
-    end
-
-    it 'notifies when the asked session is missing' do
-      sessions('-r', 'nope').start(@host)
-
-      assert_equal [[:info, 'No saved session nope.']], @host.notifications
-    end
-
-    it 'starts fresh when the asked session is missing' do
-      assert_instance_of Riffer::Rig::Runtime, sessions('-c').start(@host)
-    end
-
-    it 'hands --model to the Loader' do
-      assert_equal 'mock/flagged', sessions('--model', 'mock/flagged').start(@host).model
-    end
-
-    it 'loads the skills of the cwd by default' do
-      write_skill('tidy')
-
-      assert_equal %w[tidy], sessions.start(@host).agent.context.skills.skills.keys
-    end
-
-    it 'hands --no-skills to the Loader' do
-      write_skill('tidy')
-
-      assert_nil sessions('--no-skills').start(@host).agent.context.skills
-    end
-  end
-
   describe '#find' do
     it 'resumes the --resume id' do
       save('aaa')
@@ -161,6 +108,22 @@ describe Riffer::Rig::CLI::Sessions do
       save('aaa')
 
       refute_equal 'aaa', sessions('-r', 'aaa').fresh(@host).id
+    end
+
+    it 'hands --model to the Loader' do
+      assert_equal 'mock/flagged', sessions('--model', 'mock/flagged').fresh(@host).model
+    end
+
+    it 'loads the skills of the cwd by default' do
+      write_skill('tidy')
+
+      assert_equal %w[tidy], sessions.fresh(@host).agent.context.skills.skills.keys
+    end
+
+    it 'hands --no-skills to the Loader' do
+      write_skill('tidy')
+
+      assert_nil sessions('--no-skills').fresh(@host).agent.context.skills
     end
   end
 
@@ -307,7 +270,21 @@ describe Riffer::Rig::CLI::Sessions do
     end
   end
 
+  describe '#off' do
+    it 'says sessions are off under --no-save' do
+      assert_equal Riffer::Rig::CLI::Sessions::OFF, sessions('--no-save').off
+    end
+
+    it 'is nil when the run saves' do
+      assert_nil sessions.off
+    end
+  end
+
   describe '#missing' do
+    it 'says sessions are off under --no-save' do
+      assert_equal Riffer::Rig::CLI::Sessions::OFF, sessions('--no-save', '-r', 'aaa').missing
+    end
+
     it 'names the given id' do
       assert_equal 'No saved session bbb.', sessions('-r', 'aaa').missing('bbb')
     end

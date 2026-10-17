@@ -55,7 +55,7 @@ module Riffer::Rig::ACP::Mapper
 
     case message[:role]
     when 'user' then ::ACP::Types::SessionUpdate::UserMessageChunk.new(content: text_block(message[:content].to_s))
-    when 'assistant' then message_chunk(message[:content].to_s)
+    when 'assistant' then message_chunk(message[:content].to_s) unless message[:content].to_s.strip.empty?
     when 'tool' then replayed_tool_call(message)
     end
   end
@@ -85,7 +85,7 @@ module Riffer::Rig::ACP::Mapper
 
   # riffer's failure reasons (:error, :other, :guardrail_blocked) have no ACP
   # counterpart; refusal is the closest signal that the turn did not complete.
-  # @rbs stop_reason: Symbol?
+  # @rbs stop_reason: Symbol
   # @rbs return: String
   def stop_reason_of(stop_reason)
     case stop_reason
@@ -108,7 +108,18 @@ module Riffer::Rig::ACP::Mapper
     end
   end
 
-  # A permission request must name a tool call, and a host question has none.
+  # @rbs tool_call_id: String
+  # @rbs question: String
+  # @rbs return: ::ACP::Types::SessionUpdate::ToolCall
+  def permission_call(tool_call_id, question)
+    ::ACP::Types::SessionUpdate::ToolCall.new(
+      tool_call_id: tool_call_id,
+      title: question,
+      kind: ::ACP::Types::ToolKind::OTHER,
+      status: ::ACP::Types::ToolCallStatus::PENDING
+    )
+  end
+
   # @rbs session_id: String
   # @rbs tool_call_id: String
   # @rbs question: String

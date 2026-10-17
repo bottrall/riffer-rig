@@ -84,18 +84,38 @@ describe Riffer::Rig::Tools::Bash do
     end
   end
 
+  def await_output(path, expected)
+    content = ''
+    50.times do
+      content = File.exist?(path) ? File.read(path) : ''
+      break if content.include?(expected)
+
+      sleep 0.02
+    end
+    content
+  end
+
   it 'collects a background job output at the returned path' do
     with_background_job('echo hello') do |response, _jobs|
-      path = output_path(response)
-      content = ''
-      50.times do
-        content = File.exist?(path) ? File.read(path) : ''
-        break if content.include?('hello')
+      assert_includes await_output(output_path(response), 'hello'), 'hello'
+    end
+  end
 
-        sleep 0.02
+  def with_open_stdin
+    original = $stdin.dup
+    reader, writer = IO.pipe
+    $stdin.reopen(reader)
+    yield
+  ensure
+    $stdin.reopen(original)
+    [original, reader, writer].each(&:close)
+  end
+
+  it 'gives a background job an empty stdin' do
+    with_open_stdin do
+      with_background_job('cat; echo eof') do |response, _jobs|
+        assert_includes await_output(output_path(response), 'eof'), 'eof'
       end
-
-      assert_includes content, 'hello'
     end
   end
 

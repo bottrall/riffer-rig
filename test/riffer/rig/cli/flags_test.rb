@@ -28,6 +28,14 @@ describe Riffer::Rig::CLI::Flags do
       assert_equal 'missing argument: -r', parse('-pr')
     end
 
+    it 'refuses a zero --max-steps' do
+      assert_equal 'invalid argument: --max-steps 0', parse('--max-steps', '0')
+    end
+
+    it 'refuses a negative --max-steps' do
+      assert_equal 'invalid argument: --max-steps -1', parse('--max-steps', '-1')
+    end
+
     it 'refuses a negative --job-idle-timeout' do
       assert_equal 'invalid argument: --job-idle-timeout -1', parse('-p', '--job-idle-timeout', '-1')
     end

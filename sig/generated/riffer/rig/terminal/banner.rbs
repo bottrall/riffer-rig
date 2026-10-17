@@ -9,14 +9,21 @@ module Riffer::Rig::Terminal::Banner
 
   INDENT: String
 
+  ART_COLUMNS: Integer
+
+  MARKER: String
+
+  VALUE_COLUMN: Integer
+
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs model: String
   # @rbs cwd: String
   # @rbs skills: String
   # @rbs version: String
   # @rbs tally: Riffer::Providers::TokenUsage?
+  # @rbs width: Integer?
   # @rbs return: String
-  def call: (Riffer::Rig::Terminal::Theme theme, model: String, cwd: String, skills: String, version: String, ?tally: Riffer::Providers::TokenUsage?) -> String
+  def call: (Riffer::Rig::Terminal::Theme theme, model: String, cwd: String, skills: String, version: String, ?tally: Riffer::Providers::TokenUsage?, ?width: Integer?) -> String
 
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs model: String
@@ -24,12 +31,14 @@ module Riffer::Rig::Terminal::Banner
   # @rbs skills: String
   # @rbs version: String
   # @rbs tally: Riffer::Providers::TokenUsage?
+  # @rbs width: Integer?
   # @rbs return: Array[String]
-  def lines: (Riffer::Rig::Terminal::Theme theme, model: String, cwd: String, skills: String, version: String, tally: Riffer::Providers::TokenUsage?) -> Array[String]
+  def lines: (Riffer::Rig::Terminal::Theme theme, model: String, cwd: String, skills: String, version: String, tally: Riffer::Providers::TokenUsage?, width: Integer?) -> Array[String]
 
   # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
   # @rbs return: Array[String]
-  def art: (Riffer::Rig::Terminal::Theme theme) -> Array[String]
+  def art: (Riffer::Rig::Terminal::Theme theme, Integer? width) -> Array[String]
 
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs model: String
@@ -37,6 +46,15 @@ module Riffer::Rig::Terminal::Banner
   # @rbs skills: String
   # @rbs version: String
   # @rbs tally: Riffer::Providers::TokenUsage?
+  # @rbs width: Integer?
   # @rbs return: Array[String]
-  def info: (Riffer::Rig::Terminal::Theme theme, model: String, cwd: String, skills: String, version: String, tally: Riffer::Providers::TokenUsage?) -> Array[String]
+  def info: (Riffer::Rig::Terminal::Theme theme, model: String, cwd: String, skills: String, version: String, tally: Riffer::Providers::TokenUsage?, width: Integer?) -> Array[String]
+
+  private
+
+  # The end of a path or model id is what tells it apart, so the cut takes the front.
+  # @rbs value: String
+  # @rbs room: Integer?
+  # @rbs return: String
+  def clip: (String value, Integer? room) -> String
 end
