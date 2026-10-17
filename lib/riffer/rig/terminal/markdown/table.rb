@@ -3,8 +3,8 @@
 module Riffer::Rig::Terminal::Markdown::Table
   extend self
 
-  # Every row is padded to the grid's width, so without a ceiling one long
-  # cell costs its length again on every other row.
+  # Rows are padded to the grid's width, so with no terminal width to wrap to
+  # one long cell would pad every other row to its length.
   WIDTH_LIMIT = 500 #: Integer
 
   # GFM splits at a pipe inside a code span, but models rarely escape one
