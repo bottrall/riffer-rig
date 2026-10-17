@@ -114,7 +114,7 @@ describe Riffer::Rig::Commands::Model do
 
     it 'reports the saved model' do
       assert_equal(
-        [output('Saved mock/test to settings')],
+        [output('Saved mock/test to ~/.riffer/settings.json')],
         command_events(Riffer::Rig::Runtime.new('mock/test'), '--save')
       )
     end
@@ -309,6 +309,13 @@ describe Riffer::Rig::Commands::Model do
 
     assert_equal(
       [output('Model switched to mock/other'), malformed(Riffer::Rig::Settings::File::PATH)],
+      command_events(Riffer::Rig::Runtime.new('mock/test'), 'mock/other --save')
+    )
+  end
+
+  it 'reports the switch and the save to the new model' do
+    assert_equal(
+      [output('Model switched to mock/other and saved to ~/.riffer/settings.json')],
       command_events(Riffer::Rig::Runtime.new('mock/test'), 'mock/other --save')
     )
   end

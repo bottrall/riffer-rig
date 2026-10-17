@@ -414,6 +414,11 @@ class Riffer::Rig::Runtime
   # @rbs return: Array[String]
   def overrides: (Array[Riffer::Rig::Registrar] registrars) -> Array[String]
 
+  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs allowlist: Array[String]?
+  # @rbs return: Array[String]
+  def unknown_tools: (Array[Riffer::Rig::Registrar] registrars, Array[String]? allowlist) -> Array[String]
+
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs return: Hash[Symbol, untyped]
   def with_declared_defaults: (Hash[Symbol, untyped] settings) -> Hash[Symbol, untyped]

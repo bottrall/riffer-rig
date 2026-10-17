@@ -15,7 +15,7 @@ module Riffer::Rig::Terminal::Replay
     kept = recorded.reject do |entry|
       entry.message[Riffer::Rig::Runtime::JobNotification::MARKER] && !entry.message[:follow_up_exits]
     end
-    turns = kept.slice_before { |entry| entry.message[:role].to_s == 'user' }.map { |chunk| turn(chunk, theme) }
+    turns = kept.slice_before { |entry| entry.message[:role].to_s == 'user' }.map { |chunk| turn(chunk, theme, width) }
     replayed = turns.compact.map do |past|
       "#{past.heading}#{Riffer::Rig::Terminal::TurnReport.call(past, nil, theme: theme, width: width)}"
     end
@@ -27,12 +27,13 @@ module Riffer::Rig::Terminal::Replay
 
   # @rbs chunk: Array[Riffer::Rig::Terminal::Replay::_Recorded]
   # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
   # @rbs return: Riffer::Rig::Terminal::Replay::Turn?
-  def turn(chunk, theme)
+  def turn(chunk, theme, width)
     started = chunk.first&.recorded_time
     ended = chunk.last&.recorded_time
     opener, *rest = chunk.map { |entry| message(entry) }
-    heading = heading(opener, theme)
+    heading = heading(opener, theme, width)
     return nil unless started && ended && heading && rest.all?
 
     replies = rest.grep(Riffer::Messages::Assistant) #: Array[Riffer::Messages::Assistant]
@@ -49,13 +50,15 @@ module Riffer::Rig::Terminal::Replay
 
   # @rbs opener: Riffer::Messages::Base?
   # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
   # @rbs return: String?
-  def heading(opener, theme)
+  def heading(opener, theme, width)
     case opener
     when Riffer::Rig::Runtime::JobNotification
       exits = opener.follow_up_exits
       "\n#{theme.grey(Riffer::Rig::Terminal::JobExitNotice.call(exits))}\n" if exits
-    when Riffer::Messages::User then user_line(opener.content, theme)
+    when Riffer::Messages::User
+      "\n#{Riffer::Rig::Terminal::Echo.call(opener.content, theme: theme, width: width)}\n"
     end
   end
 
@@ -68,13 +71,5 @@ module Riffer::Rig::Terminal::Replay
   # fails wherever the damage sits, not with one error.
   rescue StandardError
     nil
-  end
-
-  # @rbs prompt: String
-  # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs return: String
-  def user_line(prompt, theme)
-    pictured = Riffer::Rig::Terminal::LineEditor.new(before: prompt).printable_before
-    "\n#{theme.pink(Riffer::Rig::Terminal::Frame::PROMPT)} #{pictured}\n"
   end
 end

@@ -100,6 +100,12 @@ describe Riffer::Rig::Terminal::Replay do
       assert_equal "\n› Go\n\n  Done.\n\n  1 step · 00:41\n#{notice}", replay(recorded)
     end
 
+    it 'wraps a replayed prompt to the width' do
+      recorded = [entry(user('refactor the picker now'), 0), entry(assistant('Done.'), 41)]
+
+      assert_equal "\n› refactor the\n  picker now\n\n  Done.\n\n  1 step · 00:41\n", replay(recorded, width: 16)
+    end
+
     it 'wraps a replayed answer to the width' do
       recorded = [entry(user('Go'), 0), entry(assistant('The picker now reads its rows.'), 41)]
 
@@ -192,20 +198,6 @@ describe Riffer::Rig::Terminal::Replay do
       damaged = { role: 'assistant', content: 'Done.', tool_calls: 'none' }
 
       assert_equal notice, replay([entry(user('Go'), 0), entry(damaged, 41)])
-    end
-  end
-
-  describe '.user_line' do
-    it 'shows the control characters of a prompt as pictures' do
-      recorded = [entry(user("Go\e[2J\nnow"), 0), entry(assistant('Done.'), 41)]
-
-      assert_equal "\n› Go␛[2J␊now\n\n  Done.\n\n  1 step · 00:41\n", replay(recorded)
-    end
-
-    it 'paints the prompt glyph pink' do
-      painted = "\n\e[38;2;255;106;193m›\e[0m Go\n\n  Done.\n\n\e[2m  1 step · 00:41\e[0m\n"
-
-      assert_equal painted, replay(exchange, color: true)
     end
   end
 end

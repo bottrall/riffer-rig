@@ -13,20 +13,17 @@ module Riffer::Rig::Terminal::Replay
 
   # @rbs chunk: Array[Riffer::Rig::Terminal::Replay::_Recorded]
   # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
   # @rbs return: Riffer::Rig::Terminal::Replay::Turn?
-  def turn: (Array[Riffer::Rig::Terminal::Replay::_Recorded] chunk, Riffer::Rig::Terminal::Theme theme) -> Riffer::Rig::Terminal::Replay::Turn?
+  def turn: (Array[Riffer::Rig::Terminal::Replay::_Recorded] chunk, Riffer::Rig::Terminal::Theme theme, Integer? width) -> Riffer::Rig::Terminal::Replay::Turn?
 
   # @rbs opener: Riffer::Messages::Base?
   # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
   # @rbs return: String?
-  def heading: (Riffer::Messages::Base? opener, Riffer::Rig::Terminal::Theme theme) -> String?
+  def heading: (Riffer::Messages::Base? opener, Riffer::Rig::Terminal::Theme theme, Integer? width) -> String?
 
   # @rbs entry: Riffer::Rig::Terminal::Replay::_Recorded
   # @rbs return: Riffer::Messages::Base?
   def message: (Riffer::Rig::Terminal::Replay::_Recorded entry) -> Riffer::Messages::Base?
-
-  # @rbs prompt: String
-  # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs return: String
-  def user_line: (String prompt, Riffer::Rig::Terminal::Theme theme) -> String
 end
