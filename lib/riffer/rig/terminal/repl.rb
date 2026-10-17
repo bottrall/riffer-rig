@@ -8,8 +8,10 @@ class Riffer::Rig::Terminal::Repl
   # @rbs @prompter: Riffer::Rig::Terminal::FramePrompter
   # @rbs @peek: Riffer::Rig::Terminal::Peek
   # @rbs @interrupt: ^() -> void
+  # @rbs @builtins: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs @reader: Thread?
-  # @rbs @editor: Riffer::Rig::Terminal::LineEditor
+  # @rbs @runtime: Riffer::Rig::Runtime?
+  # @rbs @completion: Riffer::Rig::Terminal::Autocomplete
   # @rbs @queue: Riffer::Rig::Terminal::MessageQueue
   # @rbs @asking: bool
   # @rbs @armed: bool
@@ -26,8 +28,9 @@ class Riffer::Rig::Terminal::Repl
   # @rbs prompter: Riffer::Rig::Terminal::FramePrompter
   # @rbs peek: Riffer::Rig::Terminal::Peek
   # @rbs interrupt: ^() -> void
+  # @rbs builtins: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs return: void
-  def initialize(console:, frame:, keys:, asks:, prompter:, peek:, interrupt:)
+  def initialize(console:, frame:, keys:, asks:, prompter:, peek:, interrupt:, builtins:)
     @console = console
     @frame = frame
     @keys = keys
@@ -35,8 +38,10 @@ class Riffer::Rig::Terminal::Repl
     @prompter = prompter
     @peek = peek
     @interrupt = interrupt
+    @builtins = builtins
     @reader = nil
-    @editor = Riffer::Rig::Terminal::LineEditor.new
+    @runtime = nil
+    @completion = Riffer::Rig::Terminal::Autocomplete.new(commands: [])
     @queue = Riffer::Rig::Terminal::MessageQueue.new
     @asking = false
     @armed = false
@@ -65,6 +70,7 @@ class Riffer::Rig::Terminal::Repl
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void
   def watch(runtime)
+    @mutex.synchronize { @runtime = runtime }
     runtime.on_job_exit { wake }
   end
 
@@ -91,7 +97,7 @@ class Riffer::Rig::Terminal::Repl
       @asking = false
       # A key typed behind the answer reached the ask before it returned.
       Array.new(@asks.size) { @asks.pop }.compact.each { |key| press(key) }
-      @frame.input(@editor)
+      @frame.complete(@completion)
     end
   end
 
@@ -173,8 +179,8 @@ class Riffer::Rig::Terminal::Repl
   # @rbs return: void
   def press(key)
     disarm
-    @editor = edit(key)
-    @frame.input(@editor)
+    @completion = edit(key)
+    @frame.complete(@completion)
   end
 
   # @rbs return: void
@@ -184,17 +190,18 @@ class Riffer::Rig::Terminal::Repl
   end
 
   # @rbs key: Riffer::Rig::Terminal::Key
-  # @rbs return: Riffer::Rig::Terminal::LineEditor
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete
   def edit(key)
     case key.name
     when :enter
-      enqueue(@editor.text)
-      @editor.submit
+      enqueue(@completion.line)
+      @completion.submit
     when :ctrl_d
-      close if @editor.text.empty?
-      @editor
+      close if @completion.editor.text.empty?
+      @completion
     else
-      @editor.press(key)
+      # A /reload, /new or /resume changes the commands between keys.
+      @completion.over([*@builtins, *(@runtime&.commands || [])]).press(key)
     end
   end
 

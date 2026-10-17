@@ -291,6 +291,10 @@ describe Riffer::Rig::Terminal::LineEditor do
       assert_equal %w[abc], typed('abc').submit.history
     end
 
+    it 'records the line sent in place of the typed one' do
+      assert_equal %w[xyz], typed('abc').submit('xyz').history
+    end
+
     it 'keeps earlier history' do
       first = typed('one').submit
 

@@ -13,12 +13,13 @@ class RecordingConsole
 end
 
 class LoggingFrame
-  attr_reader :lines, :statuses, :counts
+  attr_reader :lines, :palettes, :statuses, :counts
   attr_writer :size
 
   def initialize(log)
     @log = log
     @lines = []
+    @palettes = []
     @statuses = []
     @counts = []
     @size = [24, 80]
@@ -29,6 +30,11 @@ class LoggingFrame
   def input(editor)
     @lines << editor.text
     @log << [:input, editor.text]
+  end
+
+  def complete(completion)
+    @palettes << completion.matches.map(&:name)
+    input(completion.editor)
   end
 
   def status(status)
@@ -66,8 +72,17 @@ class QueuePrompter
   end
 end
 
-class ExitingRuntime
-  def initialize = @subscribers = []
+class WatchedRuntime
+  attr_reader :commands
+
+  def initialize(*names)
+    @subscribers = []
+    reload(*names)
+  end
+
+  def reload(*names)
+    @commands = names.map { |name| Riffer::Rig::Command.new(name, description: name, extension: :test) { nil } }
+  end
 
   def on_job_exit(&block) = @subscribers << block
 
@@ -95,7 +110,7 @@ describe Riffer::Rig::Terminal::Repl do
 
   def timeout_seconds = 5
 
-  def repl(interrupt: -> { @interrupts << :interrupt })
+  def repl(interrupt: -> { @interrupts << :interrupt }, builtins: [])
     @repl ||= Riffer::Rig::Terminal::Repl.new(
       console: RecordingConsole.new(@log),
       frame: @frame,
@@ -103,7 +118,8 @@ describe Riffer::Rig::Terminal::Repl do
       asks: @asks,
       prompter: @prompter,
       peek: @peek,
-      interrupt: interrupt
+      interrupt: interrupt,
+      builtins: builtins
     )
   end
 
@@ -197,12 +213,34 @@ describe Riffer::Rig::Terminal::Repl do
 
   describe '#watch' do
     it 'runs a job exit from the Runtime as a turn' do
-      runtime = ExitingRuntime.new
+      runtime = WatchedRuntime.new
       repl.watch(runtime)
       begin_session { @keys.close }
       runtime.exit_job
 
       assert_equal [:job_exit], finish
+    end
+
+    it 'completes from the commands of the Runtime watched last' do
+      repl.watch(WatchedRuntime.new('auth'))
+      repl.watch(WatchedRuntime.new('model'))
+      type('/')
+      @keys.close
+
+      session
+
+      assert_equal [%w[model]], @frame.palettes
+    end
+
+    it 'completes the built-in commands alongside those of the Runtime' do
+      repl(builtins: [Riffer::Rig::Terminal::Builtin.new('resume', description: 'Pick a session')])
+      repl.watch(WatchedRuntime.new('reload'))
+      type('/re')
+      @keys.close
+
+      session
+
+      assert_equal %w[reload resume], @frame.palettes.last
     end
   end
 
@@ -396,7 +434,7 @@ describe Riffer::Rig::Terminal::Repl do
     end
 
     it 'takes the lines queued behind a turn ahead of a job exit' do
-      runtime = ExitingRuntime.new
+      runtime = WatchedRuntime.new
       repl.watch(runtime)
       type("one\r")
 
@@ -442,7 +480,7 @@ describe Riffer::Rig::Terminal::Repl do
 
   describe '#job_exit' do
     before do
-      @runtime = ExitingRuntime.new
+      @runtime = WatchedRuntime.new
     end
 
     it 'takes exits that landed together as one' do
@@ -570,6 +608,14 @@ describe Riffer::Rig::Terminal::Repl do
       assert_equal '', @frame.lines.last
     end
 
+    it 'sends the selected command on Enter while the palette is open' do
+      repl.watch(WatchedRuntime.new('model'))
+      type("/mo\r")
+      @keys.close
+
+      assert_equal ['/model'], session
+    end
+
     it 'recalls a submitted line from the history' do
       type("hi\r")
       press(:up)
@@ -595,6 +641,20 @@ describe Riffer::Rig::Terminal::Repl do
       @keys.close
 
       assert_equal ['one'], session
+    end
+
+    it 'completes from the commands reloaded into the Runtime' do
+      runtime = WatchedRuntime.new('auth')
+      repl.watch(runtime)
+      begin_session
+      type('/')
+      await([:input, '/'])
+      runtime.reload('model')
+      type('m')
+      @keys.close
+      finish
+
+      assert_equal %w[model], @frame.palettes.last
     end
   end
 

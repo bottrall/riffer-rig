@@ -1,0 +1,13 @@
+# Generated from lib/riffer/rig/terminal/builtin.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Builtin
+  # @dynamic name, description
+  attr_reader name: String
+
+  attr_reader description: String
+
+  # @rbs name: String
+  # @rbs description: String
+  # @rbs return: void
+  def initialize: (String name, description: String) -> void
+end

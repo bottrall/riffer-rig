@@ -5,15 +5,15 @@ class Riffer::Rig::Terminal::Autocomplete
 
   QUERY = %r{\A/(\S*)\z} #: Regexp
 
-  # @rbs @commands: Array[Riffer::Rig::Command]
-  # @rbs @index: Integer
+  # @rbs @commands: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs @dismissed: bool
 
-  # @dynamic editor, matches
+  # @dynamic editor, matches, index
   attr_reader :editor #: Riffer::Rig::Terminal::LineEditor
-  attr_reader :matches #: Array[Riffer::Rig::Command]
+  attr_reader :matches #: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
+  attr_reader :index #: Integer
 
-  # @rbs commands: Array[Riffer::Rig::Command]
+  # @rbs commands: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
   # @rbs index: Integer
   # @rbs dismissed: bool
@@ -32,7 +32,7 @@ class Riffer::Rig::Terminal::Autocomplete
     matches.any?
   end
 
-  # @rbs return: Riffer::Rig::Command?
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete::_Entry?
   def selected
     matches[@index]
   end
@@ -44,6 +44,14 @@ class Riffer::Rig::Terminal::Autocomplete
     return '' unless name && editor.after.empty? && name.downcase.start_with?(typed.downcase)
 
     name[typed.length..].to_s
+  end
+
+  # @rbs commands: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete
+  def over(commands)
+    return self if commands == @commands
+
+    self.class.new(commands: commands, editor: editor, dismissed: @dismissed)
   end
 
   # @rbs key: Riffer::Rig::Terminal::Key
@@ -61,9 +69,17 @@ class Riffer::Rig::Terminal::Autocomplete
     end
   end
 
+  # @rbs return: String
+  def line
+    chosen = selected
+    return editor.text unless chosen && editor.text != TRIGGER
+
+    "#{TRIGGER}#{chosen.name}"
+  end
+
   # @rbs return: Riffer::Rig::Terminal::Autocomplete
   def submit
-    self.class.new(commands: @commands, editor: editor.submit)
+    self.class.new(commands: @commands, editor: editor.submit(line))
   end
 
   private
@@ -77,15 +93,23 @@ class Riffer::Rig::Terminal::Autocomplete
   end
 
   # @rbs query: String?
-  # @rbs return: Array[Riffer::Rig::Command]
+  # @rbs return: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   def ranked(query)
     return [] unless query
 
     fuzzy = Regexp.new(query.chars.map { |char| Regexp.escape(char) }.join('.*'), Regexp::IGNORECASE)
     @commands.select { |command| command.name.match?(fuzzy) }
-             .sort_by(&:name)
-             .partition { |command| command.name.downcase.start_with?(query.downcase) }
-             .flatten
+             .sort_by { |command| [rank(command.name.downcase, query.downcase), command.name] }
+  end
+
+  # @rbs name: String
+  # @rbs query: String
+  # @rbs return: Integer
+  def rank(name, query)
+    return 0 if name == query
+    return 1 if name.start_with?(query)
+
+    2
   end
 
   # @rbs key: Riffer::Rig::Terminal::Key

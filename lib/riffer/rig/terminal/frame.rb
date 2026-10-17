@@ -19,6 +19,12 @@ class Riffer::Rig::Terminal::Frame
 
   PEEK_ROWS = 8 #: Integer
 
+  PALETTE_ROWS = 8 #: Integer
+
+  SELECTED = '▸' #: String
+
+  DESCRIPTION_GAP = '  ' #: String
+
   # The cursor rests on the input line, the footer's first row, so this wipes
   # the whole footer.
   ERASE = "\r\e[J" #: String
@@ -26,11 +32,12 @@ class Riffer::Rig::Terminal::Frame
   # @rbs @io: IO
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @editor: Riffer::Rig::Terminal::LineEditor
+  # @rbs @completion: Riffer::Rig::Terminal::Autocomplete?
   # @rbs @status: String
   # @rbs @queued: Integer
   # @rbs @jobs: Integer
   # @rbs @peek: String
-  # @rbs @peek_height: Integer
+  # @rbs @rows_above: Integer
   # @rbs @height: Integer
   # @rbs @width: Integer
   # @rbs @active: bool
@@ -59,11 +66,12 @@ class Riffer::Rig::Terminal::Frame
     @io = io
     @theme = theme
     @editor = editor
+    @completion = nil
     @status = ''
     @queued = 0
     @jobs = 0
     @peek = ''
-    @peek_height = 0
+    @rows_above = 0
     @height = 0
     @width = 0
     @active = false
@@ -101,6 +109,17 @@ class Riffer::Rig::Terminal::Frame
   def input(editor)
     @mutex.synchronize do
       @editor = editor
+      @completion = nil
+      redraw
+    end
+  end
+
+  # @rbs completion: Riffer::Rig::Terminal::Autocomplete
+  # @rbs return: void
+  def complete(completion)
+    @mutex.synchronize do
+      @editor = completion.editor
+      @completion = completion
       redraw
     end
   end
@@ -179,22 +198,24 @@ class Riffer::Rig::Terminal::Frame
 
   # @rbs return: String
   def erase
-    @peek_height.zero? ? ERASE : "\e[#{@peek_height}A#{ERASE}"
+    @rows_above.zero? ? ERASE : "\e[#{@rows_above}A#{ERASE}"
   end
 
   # @rbs before: String
   # @rbs return: void
   def draw(before = '')
-    rows = peek_rows
+    # A row scrolled off the top of the screen could never be erased again.
+    above = [@height - FOOTER_ROWS, 0].max
+    palette = palette_rows([above, PALETTE_ROWS].min)
+    rows = [*peek_rows([above - palette.size, PEEK_ROWS].min), *palette]
     write("#{before}#{rows.join}#{footer}")
-    @peek_height = rows.size
+    @rows_above = rows.size
   end
 
+  # @rbs limit: Integer
   # @rbs return: Array[String]
-  def peek_rows
+  def peek_rows(limit)
     room = @width - 1
-    # A row scrolled off the top of the screen could never be erased again.
-    limit = (@height - FOOTER_ROWS).clamp(0, PEEK_ROWS)
     wrapper = Riffer::Rig::Terminal::Wrapper.new(width: room, indent: STATUS_INDENT.size)
     # Every line fills at least one row, so the rows shown come from the last
     # few lines; wrapping only those keeps a redraw from growing with the peek.
@@ -202,6 +223,33 @@ class Riffer::Rig::Terminal::Frame
     "#{wrapper << tail}#{wrapper.flush}".lines(chomp: true).last(limit).map do |row|
       "#{@theme.dim(Riffer::Rig::Terminal::Columns.head(row, room))}\r\n"
     end
+  end
+
+  # @rbs limit: Integer
+  # @rbs return: Array[String]
+  def palette_rows(limit)
+    completion = @completion
+    return [] unless completion
+
+    first = [completion.index - limit + 1, 0].max
+    shown = completion.matches.drop(first).first(limit)
+    width = shown.map { |command| Riffer::Rig::Terminal::Columns.width(command.name) }.max.to_i
+    shown.each_with_index.map do |command, offset|
+      palette_row(command, width, chosen: first + offset == completion.index)
+    end
+  end
+
+  # @rbs command: Riffer::Rig::Terminal::Autocomplete::_Entry
+  # @rbs width: Integer
+  # @rbs chosen: bool
+  # @rbs return: String
+  def palette_row(command, width, chosen:)
+    padding = ' ' * (width - Riffer::Rig::Terminal::Columns.width(command.name))
+    name = "#{Riffer::Rig::Terminal::Autocomplete::TRIGGER}#{command.name}#{padding}"
+    # A line break in a description would draw a row the erase never counts.
+    about = command.description.gsub(/[[:cntrl:]]+/, ' ').strip
+    label = chosen ? "#{SELECTED} #{@theme.pink(name)}" : "#{STATUS_INDENT}#{name}"
+    "#{Riffer::Rig::Terminal::Columns.head("#{label}#{DESCRIPTION_GAP}#{@theme.dim(about)}", @width - 1)}\r\n"
   end
 
   # @rbs return: String
@@ -216,8 +264,13 @@ class Riffer::Rig::Terminal::Frame
       typing - Riffer::Rig::Terminal::Columns.width(before)
     )
     typed = "#{before}#{after}"
-    spare = typing - Riffer::Rig::Terminal::Columns.width(typed)
-    input = Riffer::Rig::Terminal::Columns.head("#{@theme.pink(PROMPT)} #{typed}#{chip(spare)}", room)
+    ghost = Riffer::Rig::Terminal::Columns.head(
+      @completion&.ghost.to_s,
+      typing - Riffer::Rig::Terminal::Columns.width(typed)
+    )
+    shown = "#{typed}#{@theme.dim(ghost) unless ghost.empty?}"
+    spare = typing - Riffer::Rig::Terminal::Columns.width(shown)
+    input = Riffer::Rig::Terminal::Columns.head("#{@theme.pink(PROMPT)} #{shown}#{chip(spare)}", room)
     column = [PROMPT_COLUMNS + Riffer::Rig::Terminal::Columns.width(before), room].min
     "#{input}\r\n#{status_line(room)}\e[1A\e[#{column + 1}G"
   end

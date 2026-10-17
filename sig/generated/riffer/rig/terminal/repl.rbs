@@ -15,9 +15,13 @@ class Riffer::Rig::Terminal::Repl
 
   @interrupt: ^() -> void
 
+  @builtins: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
+
   @reader: Thread?
 
-  @editor: Riffer::Rig::Terminal::LineEditor
+  @runtime: Riffer::Rig::Runtime?
+
+  @completion: Riffer::Rig::Terminal::Autocomplete
 
   @queue: Riffer::Rig::Terminal::MessageQueue
 
@@ -42,8 +46,9 @@ class Riffer::Rig::Terminal::Repl
   # @rbs prompter: Riffer::Rig::Terminal::FramePrompter
   # @rbs peek: Riffer::Rig::Terminal::Peek
   # @rbs interrupt: ^() -> void
+  # @rbs builtins: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs return: void
-  def initialize: (console: Riffer::Rig::Terminal::Console, frame: Riffer::Rig::Terminal::Frame, keys: Thread::Queue[Riffer::Rig::Terminal::Key], asks: Thread::Queue[Riffer::Rig::Terminal::Key], prompter: Riffer::Rig::Terminal::FramePrompter, peek: Riffer::Rig::Terminal::Peek, interrupt: ^() -> void) -> void
+  def initialize: (console: Riffer::Rig::Terminal::Console, frame: Riffer::Rig::Terminal::Frame, keys: Thread::Queue[Riffer::Rig::Terminal::Key], asks: Thread::Queue[Riffer::Rig::Terminal::Key], prompter: Riffer::Rig::Terminal::FramePrompter, peek: Riffer::Rig::Terminal::Peek, interrupt: ^() -> void, builtins: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]) -> void
 
   # @rbs return: void
   def start: () -> void
@@ -95,8 +100,8 @@ class Riffer::Rig::Terminal::Repl
   def disarm: () -> void
 
   # @rbs key: Riffer::Rig::Terminal::Key
-  # @rbs return: Riffer::Rig::Terminal::LineEditor
-  def edit: (Riffer::Rig::Terminal::Key key) -> Riffer::Rig::Terminal::LineEditor
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete
+  def edit: (Riffer::Rig::Terminal::Key key) -> Riffer::Rig::Terminal::Autocomplete
 
   # @rbs line: String
   # @rbs return: void

@@ -1,0 +1,8 @@
+class Riffer::Rig::Terminal::Autocomplete
+  # What the palette lists: a Riffer::Rig::Command from the Runtime, or a
+  # Riffer::Rig::Terminal::Builtin the terminal handles itself.
+  interface _Entry
+    def name: () -> String
+    def description: () -> String
+  end
+end

@@ -17,6 +17,12 @@ class Riffer::Rig::Terminal::Frame
 
   PEEK_ROWS: Integer
 
+  PALETTE_ROWS: Integer
+
+  SELECTED: String
+
+  DESCRIPTION_GAP: String
+
   # The cursor rests on the input line, the footer's first row, so this wipes
   # the whole footer.
   ERASE: String
@@ -27,6 +33,8 @@ class Riffer::Rig::Terminal::Frame
 
   @editor: Riffer::Rig::Terminal::LineEditor
 
+  @completion: Riffer::Rig::Terminal::Autocomplete?
+
   @status: String
 
   @queued: Integer
@@ -35,7 +43,7 @@ class Riffer::Rig::Terminal::Frame
 
   @peek: String
 
-  @peek_height: Integer
+  @rows_above: Integer
 
   @height: Integer
 
@@ -70,6 +78,10 @@ class Riffer::Rig::Terminal::Frame
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
   # @rbs return: void
   def input: (Riffer::Rig::Terminal::LineEditor editor) -> void
+
+  # @rbs completion: Riffer::Rig::Terminal::Autocomplete
+  # @rbs return: void
+  def complete: (Riffer::Rig::Terminal::Autocomplete completion) -> void
 
   # @rbs status: String
   # @rbs return: void
@@ -111,8 +123,19 @@ class Riffer::Rig::Terminal::Frame
   # @rbs return: void
   def draw: (?String before) -> void
 
+  # @rbs limit: Integer
   # @rbs return: Array[String]
-  def peek_rows: () -> Array[String]
+  def peek_rows: (Integer limit) -> Array[String]
+
+  # @rbs limit: Integer
+  # @rbs return: Array[String]
+  def palette_rows: (Integer limit) -> Array[String]
+
+  # @rbs command: Riffer::Rig::Terminal::Autocomplete::_Entry
+  # @rbs width: Integer
+  # @rbs chosen: bool
+  # @rbs return: String
+  def palette_row: (Riffer::Rig::Terminal::Autocomplete::_Entry command, Integer width, chosen: bool) -> String
 
   # @rbs return: String
   def footer: () -> String

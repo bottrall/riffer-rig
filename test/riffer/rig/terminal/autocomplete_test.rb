@@ -31,6 +31,12 @@ describe Riffer::Rig::Terminal::Autocomplete do
     state.matches.map(&:name)
   end
 
+  def listed(*names)
+    Riffer::Rig::Terminal::Autocomplete.new(
+      commands: names.map { |name| Riffer::Rig::Command.new(name, description: name, extension: :core) { nil } }
+    )
+  end
+
   it 'is frozen' do
     assert_predicate typed, :frozen?
   end
@@ -75,6 +81,14 @@ describe Riffer::Rig::Terminal::Autocomplete do
     it 'ranks prefix matches ahead of fuzzy matches' do
       assert_equal %w[model commit], names(typed('/', 'm'))
     end
+
+    it 'ranks an exact name ahead of the longer names that start with it' do
+      assert_equal %w[reload Reload-all], names(typed(*'/reload'.chars, from: listed('Reload-all', 'reload')))
+    end
+
+    it 'ranks an exact name typed in another case first' do
+      assert_equal %w[reload Reload-all], names(typed(*'/RELOAD'.chars, from: listed('Reload-all', 'reload')))
+    end
   end
 
   describe '#open?' do
@@ -116,6 +130,35 @@ describe Riffer::Rig::Terminal::Autocomplete do
 
     it 'follows the selection' do
       assert_equal 'commit', typed('/', :down).ghost
+    end
+  end
+
+  describe '#over' do
+    def replaced
+      %w[mode reload].map { |name| Riffer::Rig::Command.new(name, description: name, extension: :core) { nil } }
+    end
+
+    it 'keeps the selection over the same commands' do
+      listed = commands
+      state = typed('/', :down, from: Riffer::Rig::Terminal::Autocomplete.new(commands: listed))
+
+      assert_equal 'commit', state.over(listed.dup).selected.name
+    end
+
+    it 'matches the typed line against new commands' do
+      assert_equal %w[mode], names(typed('/', 'm', 'o').over(replaced))
+    end
+
+    it 'returns to the best match over new commands' do
+      assert_equal 'mode', typed('/', :down).over(replaced).selected.name
+    end
+
+    it 'keeps the line over new commands' do
+      assert_equal '/mo', typed('/', 'm', 'o').over(replaced).editor.text
+    end
+
+    it 'stays dismissed over new commands' do
+      refute_predicate typed('/', :escape).over(replaced), :open?
     end
   end
 
@@ -225,9 +268,43 @@ describe Riffer::Rig::Terminal::Autocomplete do
     end
   end
 
+  describe '#line' do
+    it 'is the typed line while closed' do
+      assert_equal 'hi', typed('h', 'i').line
+    end
+
+    it 'is the typed line once dismissed' do
+      assert_equal '/mo', typed('/', 'm', 'o', :escape).line
+    end
+
+    it 'is the typed line on a lone slash' do
+      assert_equal '/', typed('/').line
+    end
+
+    it 'is the selected command on a partial name' do
+      assert_equal '/model', typed('/', 'm', 'o').line
+    end
+
+    it 'is the named command on a name typed in full' do
+      assert_equal '/reload', typed(*'/reload'.chars, from: listed('reload', 'reloaded')).line
+    end
+
+    it 'is the selected command once the selection moves past a name typed in full' do
+      assert_equal '/reloaded', typed(*'/reload'.chars, :down, from: listed('reload', 'reloaded')).line
+    end
+
+    it 'is the selected command on a name typed in another case' do
+      assert_equal '/model', typed(*'/MODEL'.chars).line
+    end
+
+    it 'follows the selection' do
+      assert_equal '/commit', typed('/', 'm', :down).line
+    end
+  end
+
   describe '#submit' do
-    it 'records the line in the history' do
-      assert_equal %w[/m], typed('/', 'm').submit.editor.history
+    it 'records the sent line in the history' do
+      assert_equal %w[/model], typed('/', 'm').submit.editor.history
     end
 
     it 'opens again after a dismissed line is submitted' do
