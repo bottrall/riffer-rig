@@ -34,6 +34,7 @@ class Riffer::Rig::Terminal::Frame
   # @rbs @editor: Riffer::Rig::Terminal::LineEditor
   # @rbs @completion: Riffer::Rig::Terminal::Autocomplete?
   # @rbs @status: String
+  # @rbs @hint: String?
   # @rbs @queued: Integer
   # @rbs @jobs: Integer
   # @rbs @peek: String
@@ -68,6 +69,7 @@ class Riffer::Rig::Terminal::Frame
     @editor = editor
     @completion = nil
     @status = ''
+    @hint = nil
     @queued = 0
     @jobs = 0
     @peek = ''
@@ -129,6 +131,15 @@ class Riffer::Rig::Terminal::Frame
   def status(status)
     @mutex.synchronize do
       @status = status
+      redraw
+    end
+  end
+
+  # @rbs hint: String?
+  # @rbs return: void
+  def hint(hint)
+    @mutex.synchronize do
+      @hint = hint
       redraw
     end
   end
@@ -289,12 +300,15 @@ class Riffer::Rig::Terminal::Frame
   # @rbs room: Integer
   # @rbs return: String
   def status_line(room)
+    # A running ticker sets the status on every tick, so a hint outranks it
+    # rather than being drawn over.
+    shown = @hint || @status
     label = counter(room)
-    return Riffer::Rig::Terminal::Columns.head("#{STATUS_INDENT}#{@status}", room) unless label
+    return Riffer::Rig::Terminal::Columns.head("#{STATUS_INDENT}#{shown}", room) unless label
 
     # The counter is the only sign that a job is still running, so the status
     # is the one cut to make room.
-    status = Riffer::Rig::Terminal::Columns.head(@status, status_columns(room))
+    status = Riffer::Rig::Terminal::Columns.head(shown, status_columns(room))
     # A status cut to nothing still carries its styles.
     trailer = Riffer::Rig::Terminal::Columns.width(status).zero? ? label : "#{JOBS_SEPARATOR}#{label}"
     "#{STATUS_INDENT}#{status}#{@theme.dim(trailer)}"

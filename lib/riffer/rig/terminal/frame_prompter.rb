@@ -3,6 +3,8 @@
 class Riffer::Rig::Terminal::FramePrompter
   HIDDEN = '(hidden)' #: String
 
+  HINT = 'answer above · Ctrl-C cancels' #: String
+
   # @rbs @frame: Riffer::Rig::Terminal::Frame
   # @rbs @keys: Thread::Queue[Riffer::Rig::Terminal::Key]
   # @rbs @theme: Riffer::Rig::Terminal::Theme
@@ -36,6 +38,7 @@ class Riffer::Rig::Terminal::FramePrompter
   # @rbs secret: bool
   # @rbs return: Riffer::Rig::Terminal::LineEditor?
   def read(secret)
+    @frame.hint(@theme.dim(HINT))
     editor = Riffer::Rig::Terminal::LineEditor.new
     loop do
       key = @keys.pop
@@ -49,6 +52,7 @@ class Riffer::Rig::Terminal::FramePrompter
       @frame.input(editor) unless secret
     end
   ensure
+    @frame.hint(nil)
     @frame.input(Riffer::Rig::Terminal::LineEditor.new)
   end
 

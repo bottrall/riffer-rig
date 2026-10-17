@@ -3,6 +3,8 @@
 class Riffer::Rig::Terminal::FramePrompter
   HIDDEN: String
 
+  HINT: String
+
   @frame: Riffer::Rig::Terminal::Frame
 
   @keys: Thread::Queue[Riffer::Rig::Terminal::Key]
