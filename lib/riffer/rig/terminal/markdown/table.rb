@@ -30,8 +30,10 @@ module Riffer::Rig::Terminal::Markdown::Table
   def lines(chunk, theme:, width:)
     grid = grid(chunk, theme)
     room = width && width < WIDTH_LIMIT ? width : WIDTH_LIMIT
-    natural = grid.transpose.map { |column| column.map { |spans| cell_width(spans) }.max.to_i }
-    widths = fit(natural, room)
+    columns = grid.transpose
+    natural = columns.map { |column| column.map { |spans| cell_width(spans) }.max.to_i }
+    words = columns.map { |column| column.flat_map { |spans| word_widths(spans) }.max.to_i }
+    widths = fit(natural, words, room)
     widths ? layout(grid, widths, theme) : records(grid, theme, room)
   end
 
@@ -64,21 +66,38 @@ module Riffer::Rig::Terminal::Markdown::Table
     Riffer::Rig::Terminal::Columns.width(spans.map(&:text).join)
   end
 
-  # @rbs natural: Array[Integer]
-  # @rbs room: Integer
-  # @rbs return: Array[Integer]?
-  def fit(natural, room)
-    return natural if breadth(natural) <= room
-
-    cap = room.downto(MIN_COLUMN_WIDTH).find { |limit| breadth(capped(natural, limit)) <= room }
-    cap && capped(natural, cap)
+  # @rbs spans: Array[Riffer::Rig::Terminal::Markdown::Span]
+  # @rbs return: Array[Integer]
+  def word_widths(spans)
+    spans.map(&:text).join.split.map { |word| Riffer::Rig::Terminal::Columns.width(word) }
   end
 
-  # @rbs widths: Array[Integer]
+  # @rbs natural: Array[Integer]
+  # @rbs words: Array[Integer]
+  # @rbs room: Integer
+  # @rbs return: Array[Integer]?
+  def fit(natural, words, room)
+    return natural if breadth(natural) <= room
+
+    floors = clamped(natural, words, MIN_COLUMN_WIDTH)
+    shrink(natural, words, room) || shrink(floors, Array.new(floors.size, 0), room)
+  end
+
+  # @rbs tops: Array[Integer]
+  # @rbs bottoms: Array[Integer]
+  # @rbs room: Integer
+  # @rbs return: Array[Integer]?
+  def shrink(tops, bottoms, room)
+    cap = room.downto(MIN_COLUMN_WIDTH).find { |limit| breadth(clamped(tops, bottoms, limit)) <= room }
+    cap && clamped(tops, bottoms, cap)
+  end
+
+  # @rbs tops: Array[Integer]
+  # @rbs bottoms: Array[Integer]
   # @rbs cap: Integer
   # @rbs return: Array[Integer]
-  def capped(widths, cap)
-    widths.map { |width| [width, cap].min }
+  def clamped(tops, bottoms, cap)
+    tops.zip(bottoms).map { |top, bottom| cap.clamp(bottom.to_i, top) }
   end
 
   # @rbs widths: Array[Integer]
