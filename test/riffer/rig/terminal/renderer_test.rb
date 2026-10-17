@@ -68,6 +68,15 @@ describe Riffer::Rig::Terminal::Renderer do
     assert_equal "\n› hello\n", @io.string
   end
 
+  it 'wraps an echoed line to the width it measures' do
+    theme = Riffer::Rig::Terminal::Theme.new(enabled: false)
+    renderer = Riffer::Rig::Terminal::Renderer.new(io: @io, theme: theme, width: -> { 16 })
+
+    renderer.echo('refactor the picker now')
+
+    assert_equal "\n› refactor the\n  picker now\n", @io.string
+  end
+
   it 'renders a question with numbered options' do
     @renderer.question('Pick one', %w[chain token], false)
 

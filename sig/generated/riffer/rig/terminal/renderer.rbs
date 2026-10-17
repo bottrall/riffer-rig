@@ -29,9 +29,9 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs return: void
   def prompt: () -> void
 
-  # @rbs line: String
+  # @rbs prompt: String
   # @rbs return: void
-  def echo: (String line) -> void
+  def echo: (String prompt) -> void
 
   # @rbs question: String?
   # @rbs options: Array[String]?

@@ -414,7 +414,7 @@ describe Riffer::Rig::Terminal::Ticker do
       ].each(&:join)
 
       assert_equal(
-        [*Array.new(20) { |n| "line #{n}" }, '', '›', '  ▇▅▁▅██▆ 00:00 · step 1 · ↓25 tok · riffing…'],
+        [*Array.new(20) { |n| "line #{n}" }, '›', '  ▇▅▁▅██▆ 00:00 · step 1 · ↓25 tok · riffing…'],
         @pty.screen.rows
       )
     end
@@ -430,7 +430,7 @@ describe Riffer::Rig::Terminal::Ticker do
       end
       ticker.stop
 
-      assert_equal [*Array.new(5) { |n| "line #{n}" }, '', '›', ''], @pty.screen.rows
+      assert_equal [*Array.new(5) { |n| "line #{n}" }, '›', ''], @pty.screen.rows
     end
 
     it 'sheds segments to fit a narrow terminal' do
@@ -439,7 +439,7 @@ describe Riffer::Rig::Terminal::Ticker do
       ticker.absorb(text('x' * 400))
       ticker.tick
 
-      assert_equal ['', '›', '  ▁▅██▆▂▄ 00:00 · step 1'], @pty.screen.rows
+      assert_equal ['›', '  ▁▅██▆▂▄ 00:00 · step 1'], @pty.screen.rows
     end
 
     it 'sheds segments to keep the job counter whole' do
@@ -448,7 +448,7 @@ describe Riffer::Rig::Terminal::Ticker do
 
       ticker.tick
 
-      assert_equal ['', '›', '  ▁▅██▆▂▄ 00:00 · 2 jobs running'], @pty.screen.rows
+      assert_equal ['›', '  ▁▅██▆▂▄ 00:00 · 2 jobs running'], @pty.screen.rows
     end
   end
 end

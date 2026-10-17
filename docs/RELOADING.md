@@ -26,7 +26,7 @@ The check is dropped when the reload mode is `manual` — the core setting `"rel
 
 ## Failure
 
-The new registrar is built aside; nothing on the Runtime changes until it is complete. If a `rig.rb` itself raises, or `settings.json`, `auth.json` or `trust.json` no longer parses, the reload is abandoned: the live registrar stays, the host gets one `notify`, and the mtime snapshot advances so a failing reload is not retried on every request. A single extension block failing follows the standard rule: skipped and reported, the rest swap in ([Extensions](EXTENSIONS.md#error-isolation)). Errors go to the host only, never into the model's context.
+The new registrar is built aside; nothing on the Runtime changes until it is complete. If a `rig.rb` itself raises, or `settings.json`, `auth.json` or `trust.json` no longer parses or `settings.json` sets a `model` that is not a string, the reload is abandoned: the live registrar stays, the host gets one `notify`, and the mtime snapshot advances so a failing reload is not retried on every request. A single extension block failing follows the standard rule: skipped and reported, the rest swap in ([Extensions](EXTENSIONS.md#error-isolation)). Errors go to the host only, never into the model's context.
 
 ## Known limits
 

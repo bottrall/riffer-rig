@@ -17,9 +17,9 @@ class Riffer::Rig::Terminal::Frame
 
   PEEK_ROWS: Integer
 
+  # The cursor rests on the input line, the footer's first row, so this wipes
+  # the whole footer.
   ERASE: String
-
-  SPACER: String
 
   @io: IO
 

@@ -5,6 +5,8 @@ module Riffer::Rig::Terminal::Markdown::Inline
   # so without a ceiling a paragraph of openers costs quadratic time.
   SPAN_LIMIT: Integer
 
+  CODE: Regexp
+
   # The trailing alternative matches whatever the others don't, so the matches
   # tile the text and a scan sees every character exactly once.
   TOKEN: Regexp

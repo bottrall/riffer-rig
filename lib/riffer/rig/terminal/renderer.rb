@@ -41,10 +41,10 @@ class Riffer::Rig::Terminal::Renderer
     @io.flush
   end
 
-  # @rbs line: String
+  # @rbs prompt: String
   # @rbs return: void
-  def echo(line)
-    render_block("#{@theme.pink('›')} #{line}")
+  def echo(prompt)
+    render_block(Riffer::Rig::Terminal::Echo.call(prompt, theme: @theme, width: @width.call))
   end
 
   # @rbs question: String?

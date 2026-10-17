@@ -1,6 +1,6 @@
 # Terminal
 
-`riffer` with no `-p` opens the interactive terminal. It keeps two rows at the bottom of the screen — the input line, and a status line under it — and prints everything else above them, a blank row clear of the input line: the banner, each message as it starts, each turn's answer and stat line, and command output. When there is no terminal to draw on, it reads plain lines instead ([Without a terminal](#without-a-terminal)).
+`riffer` with no `-p` opens the interactive terminal. It keeps two rows at the bottom of the screen — the input line, and a status line under it — and prints everything else above them: the banner, each message as it starts, each turn's answer and stat line, and command output. When there is no terminal to draw on, it reads plain lines instead ([Without a terminal](#without-a-terminal)).
 
 Colour is on when the output is a terminal; set `NO_COLOR` to turn it off.
 
@@ -28,7 +28,7 @@ Every other key does nothing.
 
 ### Pasting
 
-A paste arrives as text, not as keystrokes: a line break in it does not send the line, and shows as `␊` (a tab as `␉`). A paste of 1,000 characters or more shows as `[pasted 1.2k chars]`, and Backspace, Delete and the arrows treat it as a single character; the whole text is sent.
+A paste arrives as text, not as keystrokes: a line break in it does not send the line, and shows as `␊` (a tab as `␉`). A paste of 1,000 characters or more shows as `[pasted 1.2k chars]`, and Backspace, Delete and the arrows treat it as a single character; the whole text is sent. Bytes that are not valid UTF-8 are dropped.
 
 ## Queueing messages
 
@@ -93,7 +93,7 @@ A line starting with `/` runs a command. Besides `/exit` and `/quit`:
 | `/trace`                          | replays the last turn from the saved session, step by step with times ([Sessions](SESSIONS.md#tracing-the-last-turn))      |
 | `/skill:<name> [text]`            | runs a skill ([Skills](SKILLS.md))                                                                                         |
 
-Any other `/name args` runs the command of that name, such as one an [extension](EXTENSIONS.md) registers; an unknown name is reported and nothing is sent to the model.
+Any other `/name args` runs the command of that name, such as one an [extension](EXTENSIONS.md) registers; an unknown name, or a `/` with none, is reported and nothing is sent to the model.
 
 ## Without a terminal
 

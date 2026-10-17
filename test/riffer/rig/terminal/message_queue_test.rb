@@ -119,7 +119,7 @@ describe Riffer::Rig::Terminal::MessageQueue do
       @resume << :finish
       @turn.join
 
-      assert_equal ['step 1', 'step 2', '', '›    · 2 queued', ''], @pty.screen.rows
+      assert_equal ['step 1', 'step 2', '›    · 2 queued', ''], @pty.screen.rows
     end
 
     it 'keeps the queued lines in order when the turn is stopped early' do

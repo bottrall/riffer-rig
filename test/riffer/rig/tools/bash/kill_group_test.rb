@@ -37,11 +37,20 @@ describe Riffer::Rig::Tools::Bash::KillGroup do
       assert_operator pgid, :positive?
     end
 
-    it 'sends the given signal' do
+    it 'sends TERM' do
       spawn_sleeper
-      host.kill_group(@pid, 'KILL')
+      host.kill_group(@pid)
 
-      assert_equal Signal.list.fetch('KILL'), Process.wait2(@pid).last.termsig
+      assert_equal Signal.list.fetch('TERM'), Process.wait2(@pid).last.termsig
+    end
+
+    it 'delivers TERM to a stopped child' do
+      spawn_sleeper
+      Process.kill('STOP', @pid)
+      Process.wait2(@pid, Process::WUNTRACED)
+      host.kill_group(@pid)
+
+      assert_equal Signal.list.fetch('TERM'), Process.detach(@pid).join(5)&.value&.termsig
     end
 
     it 'signals the processes the child started' do

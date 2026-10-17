@@ -99,6 +99,8 @@ class Riffer::Rig::Tools::Bash::Jobs
   # @rbs return: void
   def shutdown(grace = SHUTDOWN_GRACE_SECONDS)
     kill_outstanding('TERM')
+    # A stopped process holds TERM pending until it is continued.
+    kill_outstanding('CONT')
     deadline = monotonic_now + grace
     @watchers.list.each { |watcher| watcher.join([deadline - monotonic_now, 0.0].max) }
     # A job that ignores TERM would otherwise hold its watcher, and this join, forever.

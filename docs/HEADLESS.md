@@ -10,7 +10,7 @@ The prompt is the argument:
 riffer -p "what does this repo do"
 ```
 
-Piped stdin is appended to the argument as context, and with no argument stdin alone is the prompt. A TTY stdin is never read, so `riffer -p` in a terminal without an argument has nothing to run and exits 2.
+Piped stdin is appended to the argument as context, and with no argument stdin alone is the prompt. Bytes that are not valid UTF-8 are replaced. A TTY stdin is never read, so `riffer -p` in a terminal without an argument has nothing to run and exits 2.
 
 ```bash
 git diff | riffer -p "review this diff"   # argument + stdin as context
@@ -27,13 +27,13 @@ By default only the assistant's text is printed, streamed to stdout. Everything 
 
 The REPL's flags all work here: `--model provider/name`, `--no-extensions`, `--no-skills`, `--no-agents-md`, `--tools a,b,c`, `--max-steps N`, `--no-save`, `-c`/`--continue` and `-r ID`/`--resume ID`, plus `--verbose` and `--job-idle-timeout SECONDS`. The same [resolution order](PROVIDERS.md#resolution-order) applies to the model: `--model`, then `RIFFER_MODEL`, then settings.
 
-`-c` and `-r` are the multi-turn headless story: `riffer -p -c "now run the tests"` continues the most recent session in this directory, appending to the same [session file](SESSIONS.md#resuming). Unlike the REPL, a missing session is not a fresh start — headless prints `No saved session …` on stderr and exits 2.
+`-c` and `-r` are the multi-turn headless story: `riffer -p -c "now run the tests"` continues the most recent session in this directory, appending to the same [session file](SESSIONS.md#resuming). Unlike the REPL, a missing session is not a fresh start — headless prints `No saved session …` on stderr and exits 2 (`Sessions are off for this run (--no-save).` under [`--no-save`](SESSIONS.md#opting-out)).
 
 Headless never prompts. A missing model, a missing credential, or a missing optional SDK is not an interactive setup flow — the reason is printed on stderr with the provider's recipe (its environment variables and key URL), or the exact `gem install` line, and the process exits 2. A `settings.json` or `auth.json` that does not parse exits 2 the same way, with the file named on stderr ([Configuration](CONFIGURATION.md)).
 
 ## Background jobs
 
-A `bash` call with `run_in_background` starts a job that outlives the turn ([Tools](TOOLS.md#background-jobs)). When the model finishes its reply with a job still running, headless does not exit: it prints `waiting for background jobs` on stderr and waits for the next job to exit. Each exit gives the model a further turn, with no user text, in which it is told of the exit and replies; its output is printed like the first turn's. The run waits again while any job is still running, and exits once none is left, so a model that starts five jobs and replies that it is waiting hears of all five. A run that starts no background job exits as soon as its turn ends.
+A `bash` call with `run_in_background` starts a job that outlives the turn ([Tools](TOOLS.md#background-jobs)). When the model finishes its reply with a job still running, headless does not exit: it prints `waiting for background jobs` on stderr and waits for the next job to exit. Each exit gives the model a further turn, with no user text, in which it is told of the exit and replies; its output is printed like the first turn's, set off from the text before it by a blank line (in `--json` mode the records stay one per line). The run waits again while any job is still running, and exits once none is left, so a model that starts five jobs and replies that it is waiting hears of all five. A run that starts no background job exits as soon as its turn ends.
 
 Only a turn that finished is followed this way. A turn that failed, was cancelled or did not complete (exit `1`, `130` or `3` below) ends the run at once, and the jobs it left running are killed.
 

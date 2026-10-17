@@ -259,6 +259,15 @@ describe Riffer::Rig::Loader do
 
         assert_equal(malformed, refusal { build(model: 'mock/test') })
       end
+
+      it 'raises the configuration error naming a file whose model is not a string' do
+        write_settings(@cwd, { model: 5 })
+
+        assert_equal(
+          "#{File.join(@cwd, '.riffer', 'settings.json')} sets \"model\" to a value that is not a string",
+          refusal { build(model: 'mock/test') }
+        )
+      end
     end
 
     describe 'model selection' do
