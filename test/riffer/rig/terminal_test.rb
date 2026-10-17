@@ -495,6 +495,16 @@ describe Riffer::Rig::Terminal do
       assert_equal 0, @status
     end
 
+    it 'exits on Ctrl-C at a question before the first session' do
+      script = lambda do |pty|
+        pty.await('api_key')
+        pty.type("\u0003")
+      end
+      run_on_pty(script, env: {})
+
+      assert_equal 1, @status
+    end
+
     it 'restores the terminal when the Runtime cannot be built' do
       script = lambda do |pty|
         pty.await('api_key')
@@ -927,6 +937,79 @@ describe Riffer::Rig::Terminal do
       end
 
       assert_includes run_on_pty(script), 'hi, jake'
+    end
+
+    describe 'a question cancelled with Ctrl-C' do
+      def cancel_command_question
+        write_asking_command
+        runtime = nil
+        script = lambda do |pty|
+          pty.type("/who\r")
+          pty.await('who?')
+          pty.type('x')
+          pty.await('› x')
+          cleared = pty.written.scan("› \r\n").size
+          pty.type("\u0003")
+          # Keys typed before the question has let go of them would be its own.
+          pty.await("› \r\n", count: cleared + 1)
+          pty.type("jake\r/exit\r")
+        end
+        output = run_on_pty(script) { |driven| runtime ||= driven }
+        [output, runtime]
+      end
+
+      def cancel_reload_question
+        rig = File.join(@cwd, '.riffer', 'rig.rb')
+        script = lambda do |pty|
+          pty.type("hello\r")
+          pty.await("Trust #{rig}?")
+          pty.type("\u0003")
+          pty.await("  interrupted\r\n")
+          pty.type("/exit\r")
+        end
+        output = run_on_pty(script) do |runtime|
+          provider = runtime.agent.provider
+          provider.stub_response('Reading.', tool_calls: [{ name: 'read', arguments: '{"path":"notes.txt"}' }])
+          requests = 0
+          provider.define_singleton_method(:stream_text) do |*args, **options, &block|
+            requests += 1
+            if requests == 1
+              # A project rig.rb that appears mid-turn is asked about before the next request.
+              FileUtils.mkdir_p(File.dirname(rig))
+              File.write(rig, '')
+            else
+              # Stands in for the provider read the cancel aborts.
+              Queue.new.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
+            end
+            super(*args, **options, &block)
+          end
+        end
+        [output, rig]
+      end
+
+      it 'leaves a command question unanswered' do
+        output, = cancel_command_question
+
+        assert_includes output, "hi, \r\n"
+      end
+
+      it 'sends the line typed next to the model, not to the question' do
+        _, runtime = cancel_command_question
+
+        assert_includes runtime.agent.provider.calls.last[:messages].last[:content], 'jake'
+      end
+
+      it 'declines a trust question a reload asks mid-turn' do
+        _, rig = cancel_reload_question
+
+        refute Riffer::Rig::Trust.read(File.join(@home, '.riffer', 'trust.json')).fetch(rig)
+      end
+
+      it 'cancels the turn a reload asked in' do
+        output, = cancel_reload_question
+
+        assert_includes output, "  interrupted\r\n"
+      end
     end
   end
 

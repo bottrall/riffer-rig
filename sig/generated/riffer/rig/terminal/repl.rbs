@@ -89,6 +89,10 @@ class Riffer::Rig::Terminal::Repl
   # @rbs return: void
   def read: () -> void
 
+  # @rbs key: Riffer::Rig::Terminal::Key
+  # @rbs return: void
+  def hand_on: (Riffer::Rig::Terminal::Key key) -> void
+
   # @rbs return: void
   def wake: () -> void
 

@@ -92,6 +92,13 @@ class Riffer::Rig::Terminal::Repl
       @frame.input(Riffer::Rig::Terminal::LineEditor.new)
     end
     @prompter.ask(question, options: options, secret: secret)
+  rescue Interrupt
+    # A Ctrl-C leaves the question unanswered and is then sent on as the
+    # signal, which lands where one at the input line would: on the trap of
+    # a running turn, which cancels it, or, for whatever asked outside one,
+    # as an Interrupt raised right here.
+    @interrupt.call
+    nil
   ensure
     @mutex.synchronize do
       @asking = false
@@ -151,20 +158,30 @@ class Riffer::Rig::Terminal::Repl
   # @rbs return: void
   def read
     while (key = @keys.pop)
-      if key.name == :ctrl_c
-        # Raw mode delivers Ctrl-C as a key. Sent on as the signal it stands
-        # for, it lands where a blocking terminal's does: on the trap of a
-        # running turn, or as the Interrupt of a prompt.
-        @interrupt.call
-      else
-        @peek.press(key)
-        @mutex.synchronize { @asking ? @asks << key : press(key) }
-      end
+      @peek.press(key)
+      @mutex.synchronize { hand_on(key) }
     end
   ensure
     # An ask in flight, and any later one, reads this as the end of input.
     @asks.close
     @mutex.synchronize { close }
+  end
+
+  # @rbs key: Riffer::Rig::Terminal::Key
+  # @rbs return: void
+  def hand_on(key)
+    if @asking
+      # Ctrl-C too: the question has to close before the signal is sent on,
+      # or the next line typed would be its answer.
+      @asks << key
+    elsif key.name == :ctrl_c
+      # Raw mode delivers Ctrl-C as a key. Sent on as the signal it stands
+      # for, it lands where a blocking terminal's does: on the trap of a
+      # running turn, or as the Interrupt of the idle input line.
+      @interrupt.call
+    else
+      press(key)
+    end
   end
 
   # @rbs return: void

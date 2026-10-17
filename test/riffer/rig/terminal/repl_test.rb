@@ -63,6 +63,11 @@ class QueuePrompter
     loop do
       key = @asks.pop
       return nil if key.nil?
+
+      if key.name == :ctrl_c
+        @log << [:interrupted, question]
+        raise Interrupt
+      end
       break if key.name == :enter
 
       answer << key.text.to_s
@@ -365,14 +370,58 @@ describe Riffer::Rig::Terminal::Repl do
       assert_equal 'dr', @frame.lines.last
     end
 
+    describe 'when Ctrl-C interrupts it' do
+      def interrupt_ask
+        answer = :unanswered
+        type("one\r")
+        begin_session { answer = repl.ask('who?', options: nil, secret: false) }
+        await([:asked, 'who?', nil, false])
+        press(:ctrl_c)
+        await([:interrupted, 'who?'])
+        @keys.close
+        finish
+        answer
+      end
+
+      it 'answers nothing' do
+        assert_nil interrupt_ask
+      end
+
+      it 'sends the Ctrl-C on as an interrupt once' do
+        interrupt_ask
+
+        assert_equal 1, @interrupts.size
+      end
+
+      it 'sends the interrupt from the thread that asked' do
+        senders = []
+        repl(interrupt: -> { senders << Thread.current })
+        interrupt_ask
+
+        assert_equal [@session], senders
+      end
+
+      it 'raises the Interrupt of a signal no turn traps' do
+        repl(interrupt: -> { raise Interrupt })
+        interrupted = false
+        type("one\r")
+        begin_session do
+          repl.ask('who?', options: nil, secret: false)
+        rescue Interrupt
+          interrupted = true
+        end
+        await([:asked, 'who?', nil, false])
+        press(:ctrl_c)
+        @keys.close
+        finish
+
+        assert interrupted
+      end
+    end
+
     it 'takes the keys back when the ask is interrupted' do
       type("one\r")
-      signalling
-      begin_session do
-        repl.ask('who?', options: nil, secret: false)
-      rescue Interrupt
-        nil
-      end
+      begin_session { repl.ask('who?', options: nil, secret: false) }
       await([:asked, 'who?', nil, false])
       press(:ctrl_c)
       type('x')
@@ -520,6 +569,40 @@ describe Riffer::Rig::Terminal::Repl do
   end
 
   describe '#read' do
+    it 'shows the peek each key it hands on' do
+      press(:ctrl_t)
+      type('a')
+      @keys.close
+
+      session
+
+      assert_equal %i[ctrl_t text], Array.new(@peek.pressed.size) { @peek.pressed.pop }
+    end
+
+    it 'ends an ask in flight when the keys end' do
+      answer = :unanswered
+      type("one\r")
+      begin_session { answer = repl.ask('who?', options: nil, secret: false) }
+      await([:asked, 'who?', nil, false])
+      @keys.close
+      finish
+
+      assert_nil answer
+    end
+  end
+
+  describe '#hand_on' do
+    it 'hands Ctrl-C to an ask in flight' do
+      type("one\r")
+      begin_session { repl.ask('who?', options: nil, secret: false) }
+      await([:asked, 'who?', nil, false])
+      press(:ctrl_c)
+      @keys.close
+      finish
+
+      assert_includes logged, [:interrupted, 'who?']
+    end
+
     it 'sends Ctrl-C on as an interrupt' do
       press(:ctrl_c)
       @keys.close
@@ -538,16 +621,6 @@ describe Riffer::Rig::Terminal::Repl do
       assert_empty @frame.lines
     end
 
-    it 'shows the peek each key it hands on' do
-      press(:ctrl_t)
-      type('a')
-      @keys.close
-
-      session
-
-      assert_equal %i[ctrl_t text], Array.new(@peek.pressed.size) { @peek.pressed.pop }
-    end
-
     it 'draws the edited line in the footer' do
       type('hi')
       @keys.close
@@ -555,17 +628,6 @@ describe Riffer::Rig::Terminal::Repl do
       session
 
       assert_equal %w[h hi], @frame.lines
-    end
-
-    it 'ends an ask in flight when the keys end' do
-      answer = :unanswered
-      type("one\r")
-      begin_session { answer = repl.ask('who?', options: nil, secret: false) }
-      await([:asked, 'who?', nil, false])
-      @keys.close
-      finish
-
-      assert_nil answer
     end
   end
 
