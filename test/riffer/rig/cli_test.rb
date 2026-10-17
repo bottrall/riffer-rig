@@ -19,7 +19,7 @@ describe Riffer::Rig::CLI do
   def start(*argv, input: "/exit\n", env: { 'MOCK_API_KEY' => 'mock-key' }, output: @output)
     Riffer::Rig::CLI.start(
       argv,
-      input: StringIO.new(input),
+      input: input.is_a?(String) ? StringIO.new(input) : input,
       output: output,
       error: @error,
       env: Riffer::Rig::Env.load(env),
@@ -196,6 +196,18 @@ describe Riffer::Rig::CLI do
       start('-p', '-r', id, input: '', env: model_env)
 
       assert_includes @error.string, 'no prompt'
+    end
+
+    it 'says the session is missing for -p -r when it is emptied before it loads' do
+      start('-p', 'hello', input: '', env: model_env)
+      path = session_files.first
+      id = File.basename(path, '.jsonl')
+      emptying = Class.new(StringIO) do
+        define_method(:read) { File.write(path, '').then { '' } }
+      end
+      start('-p', '-r', id, 'again', input: emptying.new, env: model_env)
+
+      assert_includes @error.string, "No saved session #{id}."
     end
 
     it 'keeps one header when -p -c continues the session' do

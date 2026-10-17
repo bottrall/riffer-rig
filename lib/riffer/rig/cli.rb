@@ -62,7 +62,12 @@ module Riffer::Rig::CLI
     )
     return headless.refuse(sessions.missing) if sessions.missing?
 
-    headless.run(prompt: flags.prompt) { |host| sessions.find(host) || sessions.fresh(host) }
+    headless.run(prompt: flags.prompt) do |host|
+      started = sessions.find(host)
+      raise Riffer::Rig::Loader::ConfigurationError, sessions.missing if started.nil? && sessions.asked?
+
+      started || sessions.fresh(host)
+    end
   end
 
   # @rbs flags: Riffer::Rig::CLI::Flags
