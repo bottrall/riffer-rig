@@ -49,14 +49,15 @@ class Riffer::Rig::Headless
   # @rbs return: Integer
   def run: (prompt: String?) { (Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime } -> Integer
 
+  # @rbs message: String
+  # @rbs return: Integer
+  def refuse: (String message) -> Integer
+
   private
 
   # @rbs prompt: String?
   # @rbs return: String
   def prompt_text: (String? prompt) -> String
-
-  # @rbs return: Integer
-  def usage_error: () -> Integer
 
   # @rbs message: String
   # @rbs code: Integer

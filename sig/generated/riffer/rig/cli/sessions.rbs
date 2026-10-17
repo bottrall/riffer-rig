@@ -52,6 +52,9 @@ class Riffer::Rig::CLI::Sessions
   # @rbs return: bool
   def asked?: () -> bool
 
+  # @rbs return: bool
+  def missing?: () -> bool
+
   # @rbs return: String?
   def off: () -> String?
 

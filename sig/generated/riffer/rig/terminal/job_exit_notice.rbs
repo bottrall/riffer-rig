@@ -1,0 +1,7 @@
+# Generated from lib/riffer/rig/terminal/job_exit_notice.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::JobExitNotice
+  # @rbs exits: Integer
+  # @rbs return: String
+  def call: (Integer exits) -> String
+end

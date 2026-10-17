@@ -158,8 +158,9 @@ module Riffer::Rig::Terminal::Markdown
   # @rbs width: Integer?
   # @rbs return: Array[String]
   def table(chunk, theme:, width:)
-    grid = Table.lines(chunk, theme: theme) unless chunk.any? { |line| line.count('|') > COLUMN_LIMIT }
-    grid || flow(chunk.join(' '), theme: theme, width: width)
+    return flow(chunk.join(' '), theme: theme, width: width) if chunk.any? { |line| line.count('|') > COLUMN_LIMIT }
+
+    Table.lines(chunk, theme: theme, width: width)
   end
 
   # @rbs source_lines: Array[String]

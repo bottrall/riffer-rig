@@ -1,8 +1,8 @@
 # Generated from lib/riffer/rig/terminal/markdown/table.rb with RBS::Inline
 
 module Riffer::Rig::Terminal::Markdown::Table
-  # Every row is padded to the grid's width, so without a ceiling one long
-  # cell costs its length again on every other row.
+  # Rows are padded to the grid's width, so with no terminal width to wrap to
+  # one long cell would pad every other row to its length.
   WIDTH_LIMIT: Integer
 
   # GFM splits at a pipe inside a code span, but models rarely escape one
@@ -10,12 +10,29 @@ module Riffer::Rig::Terminal::Markdown::Table
   # whole, so a later tick in it opens no span.
   CELL: Regexp
 
+  # Narrower than this a column breaks most words apart.
+  MIN_COLUMN_WIDTH: Integer
+
+  DIVIDER: String
+
+  LABEL_SEPARATOR: Riffer::Rig::Terminal::Markdown::Span
+
+  # Columns can't measure a link's escapes, so a cell is padded by the width of
+  # its unpainted twin.
+  UNPAINTED: Riffer::Rig::Terminal::Theme
+
   # @rbs chunk: Array[String]
   # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs return: Array[String]?
-  def lines: (Array[String] chunk, theme: Riffer::Rig::Terminal::Theme) -> Array[String]?
+  # @rbs width: Integer?
+  # @rbs return: Array[String]
+  def lines: (Array[String] chunk, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> Array[String]
 
   private
+
+  # @rbs chunk: Array[String]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: Array[Array[Array[Riffer::Rig::Terminal::Markdown::Span]]]
+  def grid: (Array[String] chunk, Riffer::Rig::Terminal::Theme theme) -> Array[Array[Array[Riffer::Rig::Terminal::Markdown::Span]]]
 
   # @rbs line: String
   # @rbs return: Array[String]
@@ -25,9 +42,48 @@ module Riffer::Rig::Terminal::Markdown::Table
   # @rbs return: Integer
   def cell_width: (Array[Riffer::Rig::Terminal::Markdown::Span] spans) -> Integer
 
+  # @rbs natural: Array[Integer]
+  # @rbs room: Integer
+  # @rbs return: Array[Integer]?
+  def fit: (Array[Integer] natural, Integer room) -> Array[Integer]?
+
+  # @rbs widths: Array[Integer]
+  # @rbs cap: Integer
+  # @rbs return: Array[Integer]
+  def capped: (Array[Integer] widths, Integer cap) -> Array[Integer]
+
+  # @rbs widths: Array[Integer]
+  # @rbs return: Integer
+  def breadth: (Array[Integer] widths) -> Integer
+
+  # @rbs grid: Array[Array[Array[Riffer::Rig::Terminal::Markdown::Span]]]
+  # @rbs widths: Array[Integer]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: Array[String]
+  def layout: (Array[Array[Array[Riffer::Rig::Terminal::Markdown::Span]]] grid, Array[Integer] widths, Riffer::Rig::Terminal::Theme theme) -> Array[String]
+
   # @rbs row: Array[Array[Riffer::Rig::Terminal::Markdown::Span]]
   # @rbs widths: Array[Integer]
   # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs return: String
-  def join: (Array[Array[Riffer::Rig::Terminal::Markdown::Span]] row, Array[Integer] widths, Riffer::Rig::Terminal::Theme theme) -> String
+  # @rbs return: Array[String]
+  def row: (Array[Array[Riffer::Rig::Terminal::Markdown::Span]] row, Array[Integer] widths, Riffer::Rig::Terminal::Theme theme) -> Array[String]
+
+  # @rbs spans: Array[Riffer::Rig::Terminal::Markdown::Span]
+  # @rbs width: Integer
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: Array[String]
+  def cell: (Array[Riffer::Rig::Terminal::Markdown::Span] spans, Integer width, Riffer::Rig::Terminal::Theme theme) -> Array[String]
+
+  # @rbs grid: Array[Array[Array[Riffer::Rig::Terminal::Markdown::Span]]]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer
+  # @rbs return: Array[String]
+  def records: (Array[Array[Array[Riffer::Rig::Terminal::Markdown::Span]]] grid, Riffer::Rig::Terminal::Theme theme, Integer width) -> Array[String]
+
+  # @rbs labels: Array[Array[Riffer::Rig::Terminal::Markdown::Span]]
+  # @rbs row: Array[Array[Riffer::Rig::Terminal::Markdown::Span]]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer
+  # @rbs return: Array[String]
+  def record: (Array[Array[Riffer::Rig::Terminal::Markdown::Span]] labels, Array[Array[Riffer::Rig::Terminal::Markdown::Span]] row, Riffer::Rig::Terminal::Theme theme, Integer width) -> Array[String]
 end

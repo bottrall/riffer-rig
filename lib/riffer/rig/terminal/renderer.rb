@@ -18,13 +18,13 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs text: String
   # @rbs return: void
   def notice(text)
-    render_block(@theme.grey(text))
+    render_block(@theme.grey(wrapped(text)))
   end
 
   # @rbs text: String
   # @rbs return: void
   def error(text)
-    render_block(@theme.red(text))
+    render_block(@theme.red(wrapped(text)))
   end
 
   # @rbs message: String
@@ -65,6 +65,12 @@ class Riffer::Rig::Terminal::Renderer
   end
 
   private
+
+  # @rbs text: String
+  # @rbs return: String
+  def wrapped(text)
+    Riffer::Rig::Terminal::TurnReport.wrap(text, @width.call)
+  end
 
   # @rbs text: String
   # @rbs return: void

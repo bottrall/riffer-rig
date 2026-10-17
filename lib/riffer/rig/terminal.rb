@@ -48,7 +48,7 @@ class Riffer::Rig::Terminal
     unless frame&.measure
       opening = Opening.new(io: output, theme:, version:, sessions:, width:)
       turns = QuietDisplay.new(io: output, theme: theme, clock: clock)
-      return assemble(input:, renderer: Renderer.new(io: output, theme: theme), sessions:, opening:, turns:)
+      return assemble(input:, renderer: Renderer.new(io: output, theme:, width:), sessions:, opening:, turns:)
     end
 
     pipeline = KeyPipeline.new(input: input, output: output)
@@ -245,7 +245,7 @@ class Riffer::Rig::Terminal
     exits = runtime.pending_job_exit_count
     return if exits.zero?
 
-    @renderer.notice("#{exits} background #{exits == 1 ? 'job' : 'jobs'} exited")
+    @renderer.notice(JobExitNotice.call(exits))
     turn(runtime) { |emit| runtime.follow_up(&emit) }
   end
 
@@ -333,7 +333,7 @@ class Riffer::Rig::Terminal
       @turns.start(runtime)
       yield(->(event) { render(runtime, event) })
     rescue StandardError => e
-      @renderer.error("Error: #{e.message}")
+      @renderer.error("Error: #{Riffer::Rig::Runtime::ErrorMessage.of(e)}")
     ensure
       Signal.trap('INT', previous)
       @turns.finish(runtime)
