@@ -17,6 +17,14 @@ git diff | riffer -p "review this diff"   # argument + stdin as context
 echo "explain this diff" | riffer -p      # stdin is the prompt
 ```
 
+With an argument, stdin gets 3 seconds to send data or close. If it does neither, headless prints `no stdin data received in 3s, proceeding without it; redirect stdin from /dev/null to skip this` on stderr and runs the argument alone, without reading stdin. Once data arrives in time, stdin is read to its end however long that takes. Without an argument stdin is the prompt, so headless waits on it with no limit.
+
+A program that spawns riffer with a stdin pipe it never closes (Node's `child_process.spawn`, Python's `subprocess.PIPE`) pays those 3 seconds on every run, and a shell loop that reads its own stdin loses the rest of its input to the first run, which reads it as context. Redirect stdin from `/dev/null` in both:
+
+```bash
+while read -r p; do riffer -p --no-save "$p" </dev/null; done < prompts.txt
+```
+
 The turn is one prompt: slash commands are not dispatched, and the session is saved like any other unless `--no-save` is given.
 
 ## Output
@@ -76,6 +84,6 @@ Each [follow-up turn](#background-jobs) streams its records the same way, after 
 
 Each tool call is traced by two records, written as they happen; see [tool call events](EMBEDDING.md#tool-call-events). `tool_call_done` announces the call before it runs. `before_tool_call` is written as the tool starts, with the `args` it runs with; a call that does not run — an extension blocked it, or its arguments are not a JSON object — has no such record. `after_tool_call` is written once for every call, when it finishes. On both, `call_id` matches the `tool_call_done` record and `at` is a monotonic timestamp in seconds, comparable only within the run; `duration` is the seconds the tool itself ran, `0.0` for a call that did not run. `result` is an object of three fields: `content`, the text the model receives; `error`, the error message, `null` on success; and `error_type`, `null` on success and otherwise the kind of failure (`execution_error`, `validation_error`, `unknown_tool`, `timeout_error`, `unhandled_error`, or `blocked` for a call an extension blocked). Text mode prints nothing for either record.
 
-Warnings and notify lines that headless prints on stderr in text mode ride the stream as `notify` records in `--json`; `progress` and the `--verbose` tool trace stay on stderr. The `before_prompt`, `before_request` and `after_response` events are extension-hook traffic, not Runtime output, so they never appear on the stream.
+Warnings and notify lines that headless prints on stderr in text mode ride the stream as `notify` records in `--json`; `progress`, the `--verbose` tool trace and the [stdin warning](#the-prompt), which comes before the session starts, stay on stderr. The `before_prompt`, `before_request` and `after_response` events are extension-hook traffic, not Runtime output, so they never appear on the stream.
 
 A fatal error — a failed configuration, no prompt, or an exception mid-turn — is a last `{"type": "error", "message": "…"}` record and the exit code above. Everything else on stderr stays on stderr: the exit-3 stop reason is printed there as in text mode and also rides on `turn_end`.

@@ -2,8 +2,11 @@
 
 require 'test_helper'
 require 'stringio'
+require_relative '../../support/stdin_pipes'
 
 describe Riffer::Rig::CLI do
+  include StdinPipes
+
   before do
     @home = Dir.mktmpdir
     @cwd = Dir.mktmpdir
@@ -12,6 +15,7 @@ describe Riffer::Rig::CLI do
   end
 
   after do
+    close_pipes
     FileUtils.remove_entry(@home)
     FileUtils.remove_entry(@cwd)
   end
@@ -19,7 +23,7 @@ describe Riffer::Rig::CLI do
   def start(*argv, input: "/exit\n", env: { 'MOCK_API_KEY' => 'mock-key' }, output: @output)
     Riffer::Rig::CLI.start(
       argv,
-      input: input.is_a?(String) ? StringIO.new(input) : input,
+      input: input.is_a?(String) ? piped(input) : input,
       output: output,
       error: @error,
       env: Riffer::Rig::Env.load(env),
@@ -202,10 +206,9 @@ describe Riffer::Rig::CLI do
       start('-p', 'hello', input: '', env: model_env)
       path = session_files.first
       id = File.basename(path, '.jsonl')
-      emptying = Class.new(StringIO) do
-        define_method(:read) { File.write(path, '').then { '' } }
-      end
-      start('-p', '-r', id, 'again', input: emptying.new, env: model_env)
+      emptying = piped('')
+      emptying.define_singleton_method(:read) { File.write(path, '').then { '' } }
+      start('-p', '-r', id, 'again', input: emptying, env: model_env)
 
       assert_includes @error.string, "No saved session #{id}."
     end

@@ -3,6 +3,7 @@
 require 'test_helper'
 require 'json'
 require 'stringio'
+require_relative '../../support/stdin_pipes'
 
 class ScriptedRuntime
   attr_reader :cancelled, :timeouts, :follow_ups
@@ -52,6 +53,8 @@ class ScriptedRuntime
 end
 
 describe Riffer::Rig::Headless do
+  include StdinPipes
+
   before do
     @home = Dir.mktmpdir
     @cwd = Dir.mktmpdir
@@ -60,6 +63,7 @@ describe Riffer::Rig::Headless do
   end
 
   after do
+    close_pipes
     FileUtils.remove_entry(@home)
     FileUtils.remove_entry(@cwd)
   end
@@ -72,12 +76,13 @@ describe Riffer::Rig::Headless do
     verbose: false,
     json: false,
     max_steps: nil,
+    stdin_timeout: Riffer::Rig::Headless::STDIN_TIMEOUT,
     &block
   )
-    input = StringIO.new(input) if input.is_a?(String)
-    @status = Riffer::Rig::Headless.for(input: input, output: @output, error: @error, verbose: verbose, json: json).run(
-      prompt: prompt
-    ) do |host|
+    input = piped(input) if input.is_a?(String)
+    @status = Riffer::Rig::Headless.for(
+      input: input, output: @output, error: @error, verbose: verbose, json: json, stdin_timeout: stdin_timeout
+    ).run(prompt: prompt) do |host|
       @runtime = Riffer::Rig::Loader.runtime(
         cwd: @cwd,
         host: host,
@@ -92,7 +97,7 @@ describe Riffer::Rig::Headless do
   end
 
   def run_with_extension(extension, prompt: 'hello', input: '')
-    @status = Riffer::Rig::Headless.for(input: StringIO.new(input), output: @output, error: @error).run(
+    @status = Riffer::Rig::Headless.for(input: piped(input), output: @output, error: @error).run(
       prompt: prompt
     ) do |host|
       @runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [extension], host: host, cwd: @cwd)
@@ -103,7 +108,7 @@ describe Riffer::Rig::Headless do
 
   def run_build(json: false, job_idle_timeout: Riffer::Rig::Headless::JOB_IDLE_TIMEOUT, &)
     @status = Riffer::Rig::Headless.for(
-      input: StringIO.new, output: @output, error: @error, json: json, job_idle_timeout: job_idle_timeout
+      input: piped(''), output: @output, error: @error, json: json, job_idle_timeout: job_idle_timeout
     ).run(prompt: 'hello', &)
   end
 
@@ -191,6 +196,44 @@ describe Riffer::Rig::Headless do
     input.define_singleton_method(:tty?) { true }
 
     run_headless(prompt: 'hello', input: input) { |runtime| runtime.agent.provider.stub_response('Hi') }
+
+    assert_equal 'hello', prompt_sent_to_model
+  end
+
+  it 'waits on stdin past the timeout without a prompt argument' do
+    reader, writer = pipe
+    main = Thread.current
+    feeder = Thread.new do
+      Thread.pass until main.stop?
+      writer.write('the diff')
+      writer.close
+    end
+
+    run_headless(input: reader, stdin_timeout: 0) { |runtime| runtime.agent.provider.stub_response('Hi') }
+    feeder.kill
+
+    assert_equal 'the diff', prompt_sent_to_model
+  end
+
+  it 'reads a stdin closed with no data without a warning' do
+    run_headless(prompt: 'hello', input: '') { |runtime| runtime.agent.provider.stub_response('Hi') }
+
+    assert_empty @error.string
+  end
+
+  it 'warns when stdin sends nothing within the timeout' do
+    run_headless(prompt: 'hello', input: pipe.first, stdin_timeout: 0) do |runtime|
+      runtime.agent.provider.stub_response('Hi')
+    end
+
+    assert_equal "no stdin data received in 0s, proceeding without it; redirect stdin from /dev/null to skip this\n",
+                 @error.string
+  end
+
+  it 'proceeds with the prompt argument alone when stdin sends nothing within the timeout' do
+    run_headless(prompt: 'hello', input: pipe.first, stdin_timeout: 0) do |runtime|
+      runtime.agent.provider.stub_response('Hi')
+    end
 
     assert_equal 'hello', prompt_sent_to_model
   end

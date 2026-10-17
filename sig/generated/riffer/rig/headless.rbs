@@ -5,11 +5,15 @@ class Riffer::Rig::Headless
 
   JOB_IDLE_TIMEOUT: Integer
 
+  STDIN_TIMEOUT: Integer
+
   @break_before_text: bool
 
   @wrote_text: bool
 
   @streamed_text: bool
+
+  @stdin_timeout: Integer
 
   @job_idle_timeout: Integer
 
@@ -31,8 +35,9 @@ class Riffer::Rig::Headless
   # @rbs verbose: bool
   # @rbs json: bool
   # @rbs job_idle_timeout: Integer
+  # @rbs stdin_timeout: Integer
   # @rbs return: Riffer::Rig::Headless
-  def self.for: (input: IO, output: IO, error: IO, ?verbose: bool, ?json: bool, ?job_idle_timeout: Integer) -> Riffer::Rig::Headless
+  def self.for: (input: IO, output: IO, error: IO, ?verbose: bool, ?json: bool, ?job_idle_timeout: Integer, ?stdin_timeout: Integer) -> Riffer::Rig::Headless
 
   # @rbs input: IO
   # @rbs output: IO
@@ -41,8 +46,9 @@ class Riffer::Rig::Headless
   # @rbs verbose: bool
   # @rbs json: bool
   # @rbs job_idle_timeout: Integer
+  # @rbs stdin_timeout: Integer
   # @rbs return: void
-  def initialize: (input: IO, output: IO, error: IO, host: Riffer::Rig::Headless::Host, ?verbose: bool, ?json: bool, ?job_idle_timeout: Integer) -> void
+  def initialize: (input: IO, output: IO, error: IO, host: Riffer::Rig::Headless::Host, ?verbose: bool, ?json: bool, ?job_idle_timeout: Integer, ?stdin_timeout: Integer) -> void
 
   # @rbs prompt: String?
   # @rbs &build: (Riffer::Rig::Hosts::_Host) -> Riffer::Rig::Runtime
@@ -58,6 +64,10 @@ class Riffer::Rig::Headless
   # @rbs prompt: String?
   # @rbs return: String
   def prompt_text: (String? prompt) -> String
+
+  # @rbs argument: String
+  # @rbs return: String
+  def piped: (String argument) -> String
 
   # @rbs message: String
   # @rbs code: Integer
