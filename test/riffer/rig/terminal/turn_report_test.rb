@@ -30,6 +30,8 @@ describe Riffer::Rig::Terminal::TurnReport do
     Riffer::Rig::Terminal::TurnReport.call(turn, session, theme: theme, width: width)
   end
 
+  def wrap(text, width) = Riffer::Rig::Terminal::TurnReport.wrap(text, width)
+
   describe '.call' do
     it 'opens the answer and the footer each below a blank line' do
       assert_equal "\n  All done.\n\n  2 steps · 00:41\n", report(turn)
@@ -72,8 +74,6 @@ describe Riffer::Rig::Terminal::TurnReport do
   end
 
   describe '.wrap' do
-    def wrap(text, width) = Riffer::Rig::Terminal::TurnReport.wrap(text, width)
-
     it 'leaves a blank line empty' do
       assert_equal "  one\n\n  two", wrap("one\n   \ntwo", 20)
     end
@@ -88,6 +88,46 @@ describe Riffer::Rig::Terminal::TurnReport do
 
     it 'wraps a line too long for the width left of its indent' do
       assert_equal "  Reads the\n  rows now", wrap('Reads the rows now', 14)
+    end
+
+    describe 'with a laid-out line too long for the width' do
+      let(:rows) { wrap('17:45:44.375  answer    The README.md contains only the line "# demo"', 50).lines }
+
+      it 'keeps its columns on its first row' do
+        assert_equal "  17:45:44.375  answer    The README.md contains\n", rows.first
+      end
+
+      it 'hangs the rest under its last column' do
+        assert_equal ["#{' ' * 26}only the line \"# demo\""], rows.drop(1)
+      end
+    end
+  end
+
+  describe '.column_head' do
+    it 'counts the leading whitespace of a line toward its head' do
+      hung = "#{' ' * 16}silent    the model went quiet for\n#{' ' * 26}a long while"
+
+      assert_equal hung, wrap("#{' ' * 14}silent    the model went quiet for a long while", 50)
+    end
+
+    it 'ignores a double space past half the row' do
+      line = '17:45:43.243  dispatch  write {"path":"lib/a.rb","content":"class A\n  def x\n    1\n  end\nend\n"}'
+      hung = "  17:45:43.243  dispatch  write {\"path\":\"lib/a.rb\",\"content\":\"class A\\n def x\\n\n" \
+             "#{' ' * 26}1\\n end\\nend\\n\"}"
+
+      assert_equal hung, wrap(line, 80)
+    end
+
+    it 'keeps only the columns that fit in half the row' do
+      hung = "  17:45:43.243  dispatch bash\n#{' ' * 16}{\"command\":\"ls -la\"}"
+
+      assert_equal hung, wrap('17:45:43.243  dispatch  bash {"command":"ls -la"}', 40)
+    end
+
+    it 'wraps a line plainly when no column fits in half the row' do
+      plain = "  17:45:43.243\n  dispatch bash\n  {\"command\":\"ls\n  -la\"}"
+
+      assert_equal plain, wrap('17:45:43.243  dispatch  bash {"command":"ls -la"}', 20)
     end
   end
 
