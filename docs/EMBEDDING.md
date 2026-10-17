@@ -56,7 +56,7 @@ runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: MyHost.new, options: o
 
 | Keyword             | Meaning                                                                                      | Default |
 | ------------------- | -------------------------------------------------------------------------------------------- | ------- |
-| `model:`            | `"provider/name"`, winning over `RIFFER_MODEL` and the settings                              | `nil`   |
+| `model:`            | `"provider/name"`, winning over `RIFFER_MODEL`, the settings and a resumed session's `/model` switch | `nil`   |
 | `extensions: false` | skips the `rig.rb` files and the gem `riffer/rig/extension` autoload; the bundle still loads | `true`  |
 | `skills: false`     | leaves out the bundled [`skills`](SKILLS.md) extension                                       | `true`  |
 | `agents_md: false`  | leaves out the bundled [`agents_md`](INSTRUCTIONS.md#agentsmd) extension                     | `true`  |
@@ -360,7 +360,7 @@ runtime.close
 
 `follow_up` runs a turn with no user text: it tells the model of every exit waiting to be told, as one [notification](#exit-notifications), and streams the model's reply exactly as `prompt` does — with a block it yields each event and returns `nil`, without one it returns an `Enumerator`. It is a turn like any other: one prompt or follow-up runs at a time, it ends with a `turn_end`, and it is [continued](#exit-notifications) for exits that land as the model finishes. With no exit waiting it does not call the model, and its `turn_end` has `stop_reason` `:completed`.
 
-`pending_job_exit_count` is the number of exits the model has not been told of yet. It is thread-safe, and counts an exit by the time a subscriber hears of it — the [terminal](TERMINAL.md#background-jobs) reads it to announce an exit and start a `follow_up` the moment a job exits while it waits for input, and to skip one when a turn has told the model already.
+`pending_job_exit_count` is the number of exits the model has not been told of yet. It is thread-safe, and counts an exit by the time a subscriber hears of it — the [terminal](TERMINAL.md#background-jobs) reads it to start a `follow_up` the moment a job exits while it waits for input, and to skip one when a turn has told the model already.
 
 `close` ends delivery: the jobs it kills, and any exit that lands after it, reach no subscriber. A host that swaps one Runtime for another closes the old one and subscribes on the new one. `close` also removes the output file of every job, so read what you need from an `output_path` first.
 

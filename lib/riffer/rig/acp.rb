@@ -167,8 +167,10 @@ class Riffer::Rig::ACP
       code: ::ACP::RequestError::INVALID_REQUEST,
       message: 'a prompt is already running on this session; wait for it to finish or cancel it'
     )
-  rescue Riffer::Rig::Runtime::ClosedError => e
-    ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: e.message)
+  rescue StandardError => e
+    ::ACP::RequestError.new(
+      code: ::ACP::RequestError::INTERNAL_ERROR, message: Riffer::Rig::Runtime::ErrorMessage.of(e)
+    )
   end
 
   # @rbs request: ::ACP::Types::LoadSessionRequest

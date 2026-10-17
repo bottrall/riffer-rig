@@ -5,6 +5,8 @@ module Riffer::Rig::Terminal::TurnReport
 
   INTERRUPTED: ::String
 
+  COLUMN_HEAD: Regexp
+
   # @rbs turn: Riffer::Rig::Terminal::TurnReport::_Turn
   # @rbs session: Riffer::Providers::TokenUsage?
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -23,6 +25,11 @@ module Riffer::Rig::Terminal::TurnReport
   # @rbs width: Integer?
   # @rbs return: String
   def wrap_line: (String line, Integer? width) -> String
+
+  # @rbs line: String
+  # @rbs limit: Integer
+  # @rbs return: String
+  def column_head: (String line, Integer limit) -> String
 
   # @rbs source: String
   # @rbs theme: Riffer::Rig::Terminal::Theme

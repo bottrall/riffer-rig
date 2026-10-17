@@ -451,7 +451,7 @@ describe Riffer::Rig::Terminal do
       it 'dismisses the picker before the first session on Ctrl-C' do
         seed_session('fix the login bug')
         script = lambda do |pty|
-          pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+          pty.await(Riffer::Rig::Terminal::FramePrompter::HINT)
           pty.type("\u0003")
           pty.await('type /exit to quit')
           pty.type("/exit\r")
@@ -477,7 +477,7 @@ describe Riffer::Rig::Terminal do
     it 'opens the picker over the keys before the first session' do
       path = seed_session('fix the login bug')
       script = lambda do |pty|
-        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.await(Riffer::Rig::Terminal::FramePrompter::HINT)
         pty.type("\rtell me more\r/exit\r")
       end
       run_on_pty(script, open_picker: true)
@@ -549,13 +549,13 @@ describe Riffer::Rig::Terminal do
     it 'replays them above the footer' do
       output = run_on_pty(->(pty) { pty.type("/exit\r") }, resume: seed_history)
 
-      assert_includes output, "↑200 · ↓40\r\n› "
+      assert_includes output, "↑200 · ↓40\r\n\r\n› "
     end
 
     it 'replays the session picked before the first session' do
       seed_history
       script = lambda do |pty|
-        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.await(Riffer::Rig::Terminal::FramePrompter::HINT)
         pty.type("\r/exit\r")
       end
 
@@ -607,13 +607,32 @@ describe Riffer::Rig::Terminal do
         count.times { @exits.pop(timeout: TerminalPty::TIMEOUT_SECONDS) || raise('the job never exited') }
       end
 
-      def idle_exit
+      def idle_exit(reply = 'Mock response')
         lambda do |pty|
           pty.await('type /exit to quit')
           exit_jobs
-          pty.await('Mock response')
+          pty.await(reply)
           pty.type("/exit\r")
         end
+      end
+
+      def follow_up_streams(runtime, events, &failure)
+        runtime.define_singleton_method(:follow_up) do |&block|
+          events.each(&block)
+          failure&.call
+        end
+      end
+
+      def job_exit
+        Riffer::Rig::Events::JobExit.new(
+          Riffer::Rig::Runtime::JobCompletion.new(
+            job_id: 'a1b2c3d4', command: 'true', exit_status: 0, duration: 1.0, output_path: File::NULL, tail: ''
+          )
+        )
+      end
+
+      def reply(text)
+        [Riffer::StreamEvents::TextDelta.new(text), Riffer::Rig::Events::TurnEnd.new(:completed, nil)]
       end
 
       def exits_while_asked(count)
@@ -690,12 +709,61 @@ describe Riffer::Rig::Terminal do
 
         refute_includes output, 'background job'
       end
+
+      it 'counts the exits that land before its turn takes them' do
+        late = 2
+        land = method(:exit_jobs)
+        output = run_watching(idle_exit) do |runtime|
+          runtime.define_singleton_method(:pending_job_exit_count) do
+            super().tap do
+              land.call(late)
+              late = 0
+            end
+          end
+        end
+
+        assert_includes output, "3 background jobs exited\r\n"
+      end
+
+      it 'counts the exits its turn takes past an event ahead of the reply' do
+        events = [job_exit, Riffer::Rig::Events::Notify.new('Reloaded.', :info), job_exit, *reply('Passed.')]
+        output = run_watching(idle_exit('Passed.')) { |runtime| follow_up_streams(runtime, events) }
+
+        assert_includes output, "2 background jobs exited\r\n"
+      end
+
+      it 'leaves out of its notice an exit told once the reply has started' do
+        events = [job_exit, Riffer::StreamEvents::TextDelta.new('Started.'), job_exit, *reply('Passed.')]
+        output = run_watching(idle_exit('Passed.')) { |runtime| follow_up_streams(runtime, events) }
+
+        assert_includes output, "1 background job exited\r\n"
+      end
+
+      it 'shows its notice ahead of the report of a turn that ends before its reply' do
+        events = [job_exit, Riffer::Rig::Events::TurnEnd.new(:completed, nil)]
+        output = run_watching(idle_exit('0 steps')) { |runtime| follow_up_streams(runtime, events) }
+
+        assert_match(/1 background job exited\r\n.*0 steps/m, output)
+      end
+
+      it 'shows no notice for a turn that takes no exit' do
+        output = run_watching(idle_exit('Passed.')) { |runtime| follow_up_streams(runtime, reply('Passed.')) }
+
+        refute_includes output, 'background job'
+      end
+
+      it 'shows its notice ahead of the error that ends its turn' do
+        failing = idle_exit('provider down')
+        output = run_watching(failing) { |runtime| follow_up_streams(runtime, [job_exit]) { raise 'provider down' } }
+
+        assert_match(/1 background job exited\r\n.*provider down/m, output)
+      end
     end
 
     it 'echoes a submitted line above the footer' do
       output = run_on_pty(->(pty) { pty.type("hello\r/exit\r") })
 
-      assert_includes output, "› hello\r\n› "
+      assert_includes output, "› hello\r\n\r\n› "
     end
 
     it 'wraps an echoed line to the terminal width' do
@@ -741,7 +809,7 @@ describe Riffer::Rig::Terminal do
     end
 
     it 'signs off above the footer when the input ends' do
-      assert_includes run_on_pty(->(pty) { pty.type("\u0004") }), "see you on the next riff.\r\n› "
+      assert_includes run_on_pty(->(pty) { pty.type("\u0004") }), "see you on the next riff.\r\n\r\n› "
     end
 
     it 'exits on a second Ctrl-C at the prompt' do
@@ -776,7 +844,7 @@ describe Riffer::Rig::Terminal do
       path = seed_session('fix the login bug')
       script = lambda do |pty|
         pty.type("/resume\r")
-        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.await(Riffer::Rig::Terminal::FramePrompter::HINT)
         pty.type("\r")
         pty.await('▸ model', count: 2)
         pty.type("tell me more\r/exit\r")
@@ -791,7 +859,7 @@ describe Riffer::Rig::Terminal do
       runtime = nil
       script = lambda do |pty|
         pty.type("/resume\r")
-        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.await(Riffer::Rig::Terminal::FramePrompter::HINT)
         pty.type('x')
         pty.await('› x')
         cleared = pty.written.scan("› \r\n").size
@@ -819,7 +887,7 @@ describe Riffer::Rig::Terminal do
       seed_history
       script = lambda do |pty|
         pty.type("/resume\r")
-        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.await(Riffer::Rig::Terminal::FramePrompter::HINT)
         pty.type("\r")
         pty.await('▸ model', count: 2)
         pty.type("/exit\r")
@@ -917,7 +985,7 @@ describe Riffer::Rig::Terminal do
         runtime.agent.provider.stub_response('Hi from the model')
       end
 
-      assert_match(/\r\n  Hi from the model\.\r\n\r\n  1 step · \d\d:\d\d\r\n› /, output)
+      assert_match(/\r\n  Hi from the model\.\r\n\r\n  1 step · \d\d:\d\d\r\n\r\n› /, output)
     end
 
     it 'wraps command output to the width of the terminal' do

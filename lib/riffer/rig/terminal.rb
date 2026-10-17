@@ -242,11 +242,28 @@ class Riffer::Rig::Terminal
   def deliver_job_exits(runtime)
     # An exit delivered inside a turn, or dropped with a swapped-out Runtime,
     # leaves nothing to start one for.
-    exits = runtime.pending_job_exit_count
-    return if exits.zero?
+    return if runtime.pending_job_exit_count.zero?
 
-    @renderer.notice(JobExitNotice.call(exits))
-    turn(runtime) { |emit| runtime.follow_up(&emit) }
+    # Exits that land after the wake are taken along with the first, and those
+    # that land once the reply starts are told later in the turn, so the notice
+    # waits for the reply and counts what was taken before it.
+    taken = 0 #: Integer?
+    announce = lambda do
+      exits = taken
+      taken = nil
+      @renderer.notice(JobExitNotice.call(exits)) if exits&.positive?
+    end
+    turn(runtime) do |emit|
+      runtime.follow_up do |event|
+        case event
+        when Riffer::Rig::Events::JobExit then taken += 1 if taken
+        when Riffer::StreamEvents::Base, Riffer::Rig::Events::TurnEnd then announce.call
+        end
+        emit.call(event)
+      end
+    ensure
+      announce.call
+    end
   end
 
   # @rbs runtime: Riffer::Rig::Runtime

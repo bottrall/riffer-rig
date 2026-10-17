@@ -63,7 +63,7 @@ describe Riffer::Rig::Terminal::Replay do
         entry(assistant('Passed.'), 41)
       ]
 
-      assert_equal "\n› Go\n\n  Passed.\n\n  2 steps · 00:41\n", replay(recorded)
+      assert_equal "\n› Go\n\n  Started.\n\n  Passed.\n\n  2 steps · 00:41\n", replay(recorded)
     end
 
     it 'replays no job notification delivered ahead of a prompt as a turn' do
@@ -77,7 +77,7 @@ describe Riffer::Rig::Terminal::Replay do
 
     it 'replays a turn a job exit started as its own turn' do
       assert_equal(
-        "\n› Go\n\n  Done.\n\n  1 step · 00:41\n\n1 background job exited\n\n  Passed.\n\n  1 step · 00:07\n",
+        "\n› Go\n\n  Done.\n\n  1 step · 00:41\n\n  1 background job exited\n\n  Passed.\n\n  1 step · 00:07\n",
         replay(follow_up)
       )
     end
@@ -156,10 +156,15 @@ describe Riffer::Rig::Terminal::Replay do
       assert_equal "\n› Go\n\n  1 step · 00:41\n", replay([entry(user('Go'), 0), entry(assistant(" \n"), 41)])
     end
 
-    it 'shows the last of the replies a turn recorded' do
-      recorded = [entry(user('Go'), 0), entry(assistant('Half a sen'), 5), entry(assistant('Done.'), 41)]
+    it 'shows each reply with text a turn recorded, in order, a blank line apart' do
+      recorded = [
+        entry(user('Go'), 0),
+        entry(assistant('Started.'), 5),
+        entry(assistant(" \n"), 30),
+        entry(assistant('Passed.'), 41)
+      ]
 
-      assert_equal "\n› Go\n\n  Done.\n\n  2 steps · 00:41\n", replay(recorded)
+      assert_equal "\n› Go\n\n  Started.\n\n  Passed.\n\n  3 steps · 00:41\n", replay(recorded)
     end
 
     it 'takes the wall time from the first entry of the turn to its last' do
@@ -183,7 +188,7 @@ describe Riffer::Rig::Terminal::Replay do
   describe '.heading' do
     it 'paints the job exit line of a turn a job exit started grey' do
       recorded = [entry(notification(follow_up_exits: 2), 0), entry(assistant('Passed.'), 7)]
-      painted = "\n\e[38;2;138;139;154m2 background jobs exited\e[0m\n\n  Passed.\n\n\e[2m  1 step · 00:07\e[0m\n"
+      painted = "\n\e[38;2;138;139;154m  2 background jobs exited\e[0m\n\n  Passed.\n\n\e[2m  1 step · 00:07\e[0m\n"
 
       assert_equal painted, replay(recorded, color: true)
     end

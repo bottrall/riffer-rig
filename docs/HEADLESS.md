@@ -17,6 +17,14 @@ git diff | riffer -p "review this diff"   # argument + stdin as context
 echo "explain this diff" | riffer -p      # stdin is the prompt
 ```
 
+With an argument, stdin gets 3 seconds to send data or close. If it does neither, headless prints `no stdin data received in 3s, proceeding without it; redirect stdin from /dev/null to skip this` on stderr and runs the argument alone, without reading stdin. Once data arrives in time, stdin is read to its end however long that takes. Without an argument stdin is the prompt, so headless waits on it with no limit.
+
+A program that spawns riffer with a stdin pipe it never closes (Node's `child_process.spawn`, Python's `subprocess.PIPE`) pays those 3 seconds on every run, and a shell loop that reads its own stdin loses the rest of its input to the first run, which reads it as context. Redirect stdin from `/dev/null` in both:
+
+```bash
+while read -r p; do riffer -p --no-save "$p" </dev/null; done < prompts.txt
+```
+
 The turn is one prompt: slash commands are not dispatched, and the session is saved like any other unless `--no-save` is given.
 
 ## Output
@@ -27,13 +35,13 @@ By default only the assistant's text is printed, streamed to stdout. Everything 
 
 The REPL's flags all work here: `--model provider/name`, `--no-extensions`, `--no-skills`, `--no-agents-md`, `--tools a,b,c`, `--max-steps N`, `--no-save`, `-c`/`--continue` and `-r ID`/`--resume ID`, plus `--verbose` and `--job-idle-timeout SECONDS`. The same [resolution order](PROVIDERS.md#resolution-order) applies to the model: `--model`, then `RIFFER_MODEL`, then settings.
 
-`-c` and `-r` are the multi-turn headless story: `riffer -p -c "now run the tests"` continues the most recent session in this directory, appending to the same [session file](SESSIONS.md#resuming). Unlike the REPL, a missing session is not a fresh start — headless prints `No saved session …` on stderr and exits 2 (`Sessions are off for this run (--no-save).` under [`--no-save`](SESSIONS.md#opting-out)).
+`-c` and `-r` are the multi-turn headless story: `riffer -p -c "now run the tests"` continues the most recent session in this directory, appending to the same [session file](SESSIONS.md#resuming). Unlike the REPL, a missing session is not a fresh start — headless prints `No saved session …` on stderr and exits 2 (`Sessions are off for this run (--no-save).` under [`--no-save`](SESSIONS.md#opting-out), and `Session … was saved in …, which no longer exists.` when the [directory the session runs in](SESSIONS.md#resuming) is gone).
 
 Headless never prompts. A missing model, a missing credential, or a missing optional SDK is not an interactive setup flow — the reason is printed on stderr with the provider's recipe (its environment variables and key URL), or the exact `gem install` line, and the process exits 2. A `settings.json` or `auth.json` that does not parse exits 2 the same way, with the file named on stderr ([Configuration](CONFIGURATION.md)).
 
 ## Background jobs
 
-A `bash` call with `run_in_background` starts a job that outlives the turn ([Tools](TOOLS.md#background-jobs)). When the model finishes its reply with a job still running, headless does not exit: it prints `waiting for background jobs` on stderr and waits for the next job to exit. Each exit gives the model a further turn, with no user text, in which it is told of the exit and replies; its output is printed like the first turn's, set off from the text before it by a blank line (in `--json` mode the records stay one per line). The run waits again while any job is still running, and exits once none is left, so a model that starts five jobs and replies that it is waiting hears of all five. A run that starts no background job exits as soon as its turn ends.
+A `bash` call with `run_in_background` starts a job that outlives the turn ([Tools](TOOLS.md#background-jobs)). When the model finishes its reply with a job still running, headless does not exit: it prints `waiting for background jobs` on stderr and waits for the next job to exit. Each exit gives the model a further turn, with no user text, in which it is told of the exit and replies; its output is printed like the first turn's, set off from the text before it by a blank line (in `--json` mode the records stay one per line). Within a turn, text the model writes after it is told of an exit ([Tools](TOOLS.md#background-jobs)) is set off by a blank line the same way. The run waits again while any job is still running, and exits once none is left, so a model that starts five jobs and replies that it is waiting hears of all five. A run that starts no background job exits as soon as its turn ends.
 
 Only a turn that finished is followed this way. A turn that failed, was cancelled or did not complete (exit `1`, `130` or `3` below) ends the run at once, and the jobs it left running are killed.
 
@@ -76,6 +84,6 @@ Each [follow-up turn](#background-jobs) streams its records the same way, after 
 
 Each tool call is traced by two records, written as they happen; see [tool call events](EMBEDDING.md#tool-call-events). `tool_call_done` announces the call before it runs. `before_tool_call` is written as the tool starts, with the `args` it runs with; a call that does not run — an extension blocked it, or its arguments are not a JSON object — has no such record. `after_tool_call` is written once for every call, when it finishes. On both, `call_id` matches the `tool_call_done` record and `at` is a monotonic timestamp in seconds, comparable only within the run; `duration` is the seconds the tool itself ran, `0.0` for a call that did not run. `result` is an object of three fields: `content`, the text the model receives; `error`, the error message, `null` on success; and `error_type`, `null` on success and otherwise the kind of failure (`execution_error`, `validation_error`, `unknown_tool`, `timeout_error`, `unhandled_error`, or `blocked` for a call an extension blocked). Text mode prints nothing for either record.
 
-Warnings and notify lines that headless prints on stderr in text mode ride the stream as `notify` records in `--json`; `progress` and the `--verbose` tool trace stay on stderr. The `before_prompt`, `before_request` and `after_response` events are extension-hook traffic, not Runtime output, so they never appear on the stream.
+Warnings and notify lines that headless prints on stderr in text mode ride the stream as `notify` records in `--json`; `progress`, the `--verbose` tool trace and the [stdin warning](#the-prompt), which comes before the session starts, stay on stderr. The `before_prompt`, `before_request` and `after_response` events are extension-hook traffic, not Runtime output, so they never appear on the stream.
 
 A fatal error — a failed configuration, no prompt, or an exception mid-turn — is a last `{"type": "error", "message": "…"}` record and the exit code above. Everything else on stderr stays on stderr: the exit-3 stop reason is printed there as in text mode and also rides on `turn_end`.

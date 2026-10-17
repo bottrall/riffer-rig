@@ -217,11 +217,11 @@ describe Riffer::Rig::ACP::Host do
   end
 
   describe '#notify' do
-    it 'sends a notify after the session id as an agent message chunk with its text' do
+    it 'sends a notify after the session id as a notice' do
       @host.session_id = 'session-1'
       @host.notify('Live')
 
-      assert_equal 'Live', sent.first.last.content.text
+      assert_equal Riffer::Rig::ACP::Mapper.notice('Live').to_h, sent.first.last.to_h
     end
   end
 
@@ -246,7 +246,7 @@ describe Riffer::Rig::ACP::Host do
       @host.session_id = 'session-1'
       @host.progress('Installing')
 
-      assert_equal 'Installing', sent.first.last.content.text
+      assert_equal Riffer::Rig::ACP::Mapper.notice('Installing').to_h, sent.first.last.to_h
     end
 
     it 'sends nothing from progress without a label' do
@@ -270,7 +270,9 @@ describe Riffer::Rig::ACP::Host do
       @host.notify('Second', level: :error)
       @host.session_id = 'session-1'
 
-      assert_equal(%w[First Second], sent.map { |_, update| update.content.text })
+      notices = %w[First Second].map { |text| Riffer::Rig::ACP::Mapper.notice(text).to_h }
+
+      assert_equal(notices, sent.map { |_, update| update.to_h })
     end
   end
 end

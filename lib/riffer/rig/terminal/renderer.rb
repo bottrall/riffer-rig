@@ -53,7 +53,7 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs return: void
   def question(question, options, secret)
     @io.puts
-    Riffer::Rig::Terminal::Question.lines(@theme, question, options).each { |line| @io.puts(line) }
+    Riffer::Rig::Terminal::Question.lines(@theme, question, options, @width.call).each { |line| @io.puts(line) }
     @io.print("#{@theme.pink('›')} #{@theme.grey('(hidden) ') if secret}")
     @io.flush
   end

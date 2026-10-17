@@ -42,15 +42,27 @@ module Riffer::Rig::Terminal::Markdown::Table
   # @rbs return: Integer
   def cell_width: (Array[Riffer::Rig::Terminal::Markdown::Span] spans) -> Integer
 
+  # @rbs spans: Array[Riffer::Rig::Terminal::Markdown::Span]
+  # @rbs return: Array[Integer]
+  def word_widths: (Array[Riffer::Rig::Terminal::Markdown::Span] spans) -> Array[Integer]
+
   # @rbs natural: Array[Integer]
+  # @rbs words: Array[Integer]
   # @rbs room: Integer
   # @rbs return: Array[Integer]?
-  def fit: (Array[Integer] natural, Integer room) -> Array[Integer]?
+  def fit: (Array[Integer] natural, Array[Integer] words, Integer room) -> Array[Integer]?
 
-  # @rbs widths: Array[Integer]
+  # @rbs tops: Array[Integer]
+  # @rbs bottoms: Array[Integer]
+  # @rbs room: Integer
+  # @rbs return: Array[Integer]?
+  def shrink: (Array[Integer] tops, Array[Integer] bottoms, Integer room) -> Array[Integer]?
+
+  # @rbs tops: Array[Integer]
+  # @rbs bottoms: Array[Integer]
   # @rbs cap: Integer
   # @rbs return: Array[Integer]
-  def capped: (Array[Integer] widths, Integer cap) -> Array[Integer]
+  def clamped: (Array[Integer] tops, Array[Integer] bottoms, Integer cap) -> Array[Integer]
 
   # @rbs widths: Array[Integer]
   # @rbs return: Integer

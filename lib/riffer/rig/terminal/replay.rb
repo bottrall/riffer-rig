@@ -39,7 +39,7 @@ module Riffer::Rig::Terminal::Replay
     replies = rest.grep(Riffer::Messages::Assistant) #: Array[Riffer::Messages::Assistant]
     Turn.new(
       heading: heading,
-      answer: replies.reject(&:has_tool_calls?).map(&:content).grep(/\S/).last,
+      answer: replies.reject(&:has_tool_calls?).map(&:content).grep(/\S/).join("\n\n"),
       stats: Riffer::Rig::Terminal::TurnBuffer::Stats.new(
         steps: replies.size,
         wall_time: ended - started,
@@ -56,7 +56,8 @@ module Riffer::Rig::Terminal::Replay
     case opener
     when Riffer::Rig::Runtime::JobNotification
       exits = opener.follow_up_exits
-      "\n#{theme.grey(Riffer::Rig::Terminal::JobExitNotice.call(exits))}\n" if exits
+      notice = Riffer::Rig::Terminal::JobExitNotice.call(exits) if exits
+      "\n#{theme.grey(Riffer::Rig::Terminal::TurnReport.wrap(notice, width))}\n" if notice
     when Riffer::Messages::User
       "\n#{Riffer::Rig::Terminal::Echo.call(opener.content, theme: theme, width: width)}\n"
     end

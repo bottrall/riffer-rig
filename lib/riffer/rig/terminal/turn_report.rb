@@ -7,6 +7,8 @@ module Riffer::Rig::Terminal::TurnReport
 
   INTERRUPTED = 'interrupted'
 
+  COLUMN_HEAD = /\A.*\S {2,}(?=\S)/ #: Regexp
+
   # @rbs turn: Riffer::Rig::Terminal::TurnReport::_Turn
   # @rbs session: Riffer::Providers::TokenUsage?
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -14,7 +16,7 @@ module Riffer::Rig::Terminal::TurnReport
   # @rbs return: String
   def call(turn, session, theme:, width:)
     closing = turn.interrupted? ? INTERRUPTED : footer(turn.stats, session)
-    blocks = [*answer(turn.answer.to_s, theme: theme, width: width), theme.dim(wrap(closing, width))]
+    blocks = [*answer(turn.answer, theme: theme, width: width), theme.dim(wrap(closing, width))]
     blocks.map { |block| "\n#{block}\n" }.join
   end
 
@@ -33,13 +35,26 @@ module Riffer::Rig::Terminal::TurnReport
   def wrap_line(line, width)
     if line.strip.empty?
       ''
-    # Wrapping packs words with single spaces, which would collapse the
-    # columns of a line laid out as a table.
     elsif width.nil? || Riffer::Rig::Terminal::Columns.width(line) <= width - INDENT
       "#{' ' * INDENT}#{line}"
     else
-      (Riffer::Rig::Terminal::Wrapper.new(width: width, indent: INDENT) << "#{line}\n").chomp
+      # Wrapping packs words with single spaces, so the columns of a line laid
+      # out as a table survive only in a head kept out of the wrap.
+      head = column_head(line, width - INDENT)
+      indent = INDENT + Riffer::Rig::Terminal::Columns.width(head)
+      rows = (Riffer::Rig::Terminal::Wrapper.new(width: width, indent: indent) << "#{line.delete_prefix(head)}\n").chomp
+      "#{' ' * INDENT}#{head}#{rows.delete_prefix(' ' * indent)}"
     end
+  end
+
+  # @rbs line: String
+  # @rbs limit: Integer
+  # @rbs return: String
+  def column_head(line, limit)
+    # Only the first half of the row is searched: a wider head would squeeze
+    # the text hung under it to a sliver, and the double spaces of a long
+    # detail (indented code in tool arguments) would pass for its columns.
+    Riffer::Rig::Terminal::Columns.head(line, (limit / 2) + 1)[COLUMN_HEAD].to_s
   end
 
   # @rbs source: String
