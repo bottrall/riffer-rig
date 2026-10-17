@@ -11,7 +11,7 @@ class Riffer::Rig::CLI::Sessions
   # @rbs @cwd: String
   # @rbs @home: String
   # @rbs @store: Riffer::Rig::Stores::_Store?
-  # @rbs @loader: Riffer::Rig::Loader?
+  # @rbs @loaders: Hash[String, Riffer::Rig::Loader]
 
   # @rbs flags: Riffer::Rig::CLI::Flags
   # @rbs env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
@@ -24,7 +24,7 @@ class Riffer::Rig::CLI::Sessions
     @cwd = cwd
     @home = home
     @store = flags.save ? Riffer::Rig::Stores::JSONL.new(home: home) : nil
-    @loader = nil
+    @loaders = {}
   end
 
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -32,7 +32,7 @@ class Riffer::Rig::CLI::Sessions
   def find(host)
     id = resume_id
     if id
-      loader(host).resume(id, @flags.to_options)
+      resume(host, id)
     elsif @flags.continue
       loader(host).continue(@flags.to_options)
     end
@@ -48,7 +48,8 @@ class Riffer::Rig::CLI::Sessions
   # @rbs id: String
   # @rbs return: Riffer::Rig::Runtime?
   def resume(host, id)
-    loader(host).resume(id, @flags.to_options)
+    cwd = saved_cwd(id) || @cwd
+    loader(host, cwd).resume(id, @flags.to_options) if File.directory?(cwd)
   end
 
   # @rbs id: String
@@ -89,7 +90,7 @@ class Riffer::Rig::CLI::Sessions
     return true unless store
 
     id = resume_id
-    id ? store.read(id).empty? : store.list(cwd: @cwd).empty?
+    id ? store.read(id).empty? || !gone(id).nil? : store.list(cwd: @cwd).empty?
   end
 
   # @rbs return: String?
@@ -101,7 +102,7 @@ class Riffer::Rig::CLI::Sessions
   # @rbs return: String
   def missing(id = nil)
     id ||= resume_id
-    off || (id ? "No saved session #{id}." : 'No saved session in this directory.')
+    off || (id ? gone(id) || "No saved session #{id}." : 'No saved session in this directory.')
   end
 
   private
@@ -118,9 +119,24 @@ class Riffer::Rig::CLI::Sessions
   end
 
   # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs cwd: String
   # @rbs return: Riffer::Rig::Loader
-  def loader(host)
-    @loader ||= Riffer::Rig::Loader.new(cwd: @cwd, host: host, env: @env, home: @home, store: @store)
+  def loader(host, cwd = @cwd)
+    @loaders[cwd] ||= Riffer::Rig::Loader.new(cwd: cwd, host: host, env: @env, home: @home, store: @store)
+  end
+
+  # @rbs id: String
+  # @rbs return: String?
+  def saved_cwd(id)
+    header = @store&.read(id)&.first
+    header.cwd if header.is_a?(Riffer::Rig::Stores::Header)
+  end
+
+  # @rbs id: String
+  # @rbs return: String?
+  def gone(id)
+    cwd = saved_cwd(id)
+    "Session #{id} was saved in #{cwd}, which no longer exists." if cwd && !File.directory?(cwd)
   end
 
   # @rbs return: String?
