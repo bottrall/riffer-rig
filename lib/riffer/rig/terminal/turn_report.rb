@@ -16,7 +16,7 @@ module Riffer::Rig::Terminal::TurnReport
   # @rbs return: String
   def call(turn, session, theme:, width:)
     closing = turn.interrupted? ? INTERRUPTED : footer(turn.stats, session)
-    blocks = [*answer(turn.answer.to_s, theme: theme, width: width), theme.dim(wrap(closing, width))]
+    blocks = [*answer(turn.answer, theme: theme, width: width), theme.dim(wrap(closing, width))]
     blocks.map { |block| "\n#{block}\n" }.join
   end
 

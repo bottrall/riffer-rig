@@ -63,7 +63,7 @@ describe Riffer::Rig::Terminal::Replay do
         entry(assistant('Passed.'), 41)
       ]
 
-      assert_equal "\n› Go\n\n  Passed.\n\n  2 steps · 00:41\n", replay(recorded)
+      assert_equal "\n› Go\n\n  Started.\n\n  Passed.\n\n  2 steps · 00:41\n", replay(recorded)
     end
 
     it 'replays no job notification delivered ahead of a prompt as a turn' do
@@ -156,10 +156,15 @@ describe Riffer::Rig::Terminal::Replay do
       assert_equal "\n› Go\n\n  1 step · 00:41\n", replay([entry(user('Go'), 0), entry(assistant(" \n"), 41)])
     end
 
-    it 'shows the last of the replies a turn recorded' do
-      recorded = [entry(user('Go'), 0), entry(assistant('Half a sen'), 5), entry(assistant('Done.'), 41)]
+    it 'shows each reply with text a turn recorded, in order, a blank line apart' do
+      recorded = [
+        entry(user('Go'), 0),
+        entry(assistant('Started.'), 5),
+        entry(assistant(" \n"), 30),
+        entry(assistant('Passed.'), 41)
+      ]
 
-      assert_equal "\n› Go\n\n  Done.\n\n  2 steps · 00:41\n", replay(recorded)
+      assert_equal "\n› Go\n\n  Started.\n\n  Passed.\n\n  3 steps · 00:41\n", replay(recorded)
     end
 
     it 'takes the wall time from the first entry of the turn to its last' do

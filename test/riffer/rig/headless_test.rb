@@ -121,6 +121,14 @@ describe Riffer::Rig::Headless do
     Riffer::Rig::Events::TurnEnd.new(stop_reason, nil)
   end
 
+  def job_exit
+    Riffer::Rig::Events::JobExit.new(
+      Riffer::Rig::Runtime::JobCompletion.new(
+        job_id: 'a1b2c3d4', command: 'true', exit_status: 0, duration: 1.0, output_path: '/tmp/a1b2c3d4', tail: ''
+      )
+    )
+  end
+
   def run_waiting(exits, events: [turn_end(:completed)], follow_up: [turn_end(:completed)], **)
     @runtime = ScriptedRuntime.new(events, exits: exits, follow_up: follow_up)
     run_build(**) { @runtime }
@@ -391,7 +399,7 @@ describe Riffer::Rig::Headless do
       run_waiting(
         [true],
         events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)],
-        follow_up: [Riffer::StreamEvents::TextDone.new('It passed.'), turn_end(:completed)]
+        follow_up: [job_exit, Riffer::StreamEvents::TextDone.new('It passed.'), turn_end(:completed)]
       )
 
       assert_equal "started\n\nIt passed.\n", @output.string
@@ -402,6 +410,7 @@ describe Riffer::Rig::Headless do
         [true],
         events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)],
         follow_up: [
+          job_exit,
           Riffer::StreamEvents::TextDelta.new('It '),
           Riffer::StreamEvents::TextDelta.new('passed.'),
           Riffer::StreamEvents::TextDone.new('It passed.'),
@@ -413,9 +422,30 @@ describe Riffer::Rig::Headless do
     end
 
     it 'prints no blank line for a follow-up that prints nothing' do
-      run_waiting([true], events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)])
+      run_waiting(
+        [true],
+        events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)],
+        follow_up: [job_exit, turn_end(:completed)]
+      )
 
       assert_equal "started\n", @output.string
+    end
+
+    it 'separates the reply a job exit continued the turn with from the reply before with a blank line' do
+      run_scripted(
+        Riffer::StreamEvents::TextDone.new('started'),
+        job_exit,
+        Riffer::StreamEvents::TextDone.new('It passed.'),
+        turn_end(:completed)
+      )
+
+      assert_equal "started\n\nIt passed.\n", @output.string
+    end
+
+    it 'prints no blank line before the reply to a job exit when no text came before it' do
+      run_scripted(job_exit, Riffer::StreamEvents::TextDone.new('It passed.'), turn_end(:completed))
+
+      assert_equal "It passed.\n", @output.string
     end
 
     it 'returns the code of the last follow-up' do
@@ -703,6 +733,21 @@ describe Riffer::Rig::Headless do
         events: [Riffer::StreamEvents::TextDone.new('started'), turn_end(:completed)],
         follow_up: [Riffer::StreamEvents::TextDone.new('It passed.'), turn_end(:completed)]
       )
+
+      refute_match(/\n\n/, @output.string)
+    end
+
+    it 'prints no blank line between the records around a job exit within a turn' do
+      run_build(json: true) do
+        ScriptedRuntime.new(
+          [
+            Riffer::StreamEvents::TextDone.new('started'),
+            job_exit,
+            Riffer::StreamEvents::TextDone.new('It passed.'),
+            turn_end(:completed)
+          ]
+        )
+      end
 
       refute_match(/\n\n/, @output.string)
     end

@@ -75,7 +75,7 @@ Ctrl-T while a turn runs opens a dim panel above the input line with what the mo
 
 ## The turn report
 
-When a turn ends, its answer is printed above the input line, rendered from Markdown: headings, emphasis, inline code and code blocks, lists, quotes, tables, rules and links. Text the model sent along with tool calls is not printed. Under the answer comes a stat line:
+When a turn ends, its answer is printed above the input line, rendered from Markdown: headings, emphasis, inline code and code blocks, lists, quotes, tables, rules and links. Text the model sent along with tool calls is not printed. A turn the model replied to more than once — one continued for a [background job](TOOLS.md#background-jobs) that exited as the model finished its reply — prints each reply in order, a blank line apart. Under the answer comes a stat line:
 
 ```text
 3 steps · 00:12 · ↑5200 · ↓340 · cache_read:4096 · ~$0.0215 · session 18400 tok · ~$0.0731

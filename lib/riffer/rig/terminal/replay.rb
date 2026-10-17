@@ -39,7 +39,7 @@ module Riffer::Rig::Terminal::Replay
     replies = rest.grep(Riffer::Messages::Assistant) #: Array[Riffer::Messages::Assistant]
     Turn.new(
       heading: heading,
-      answer: replies.reject(&:has_tool_calls?).map(&:content).grep(/\S/).last,
+      answer: replies.reject(&:has_tool_calls?).map(&:content).grep(/\S/).join("\n\n"),
       stats: Riffer::Rig::Terminal::TurnBuffer::Stats.new(
         steps: replies.size,
         wall_time: ended - started,

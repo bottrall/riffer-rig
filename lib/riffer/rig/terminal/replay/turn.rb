@@ -3,11 +3,11 @@
 class Riffer::Rig::Terminal::Replay::Turn
   # @dynamic heading, answer, stats
   attr_reader :heading #: String
-  attr_reader :answer #: String?
+  attr_reader :answer #: String
   attr_reader :stats #: Riffer::Rig::Terminal::TurnBuffer::Stats
 
   # @rbs heading: String
-  # @rbs answer: String?
+  # @rbs answer: String
   # @rbs stats: Riffer::Rig::Terminal::TurnBuffer::Stats
   # @rbs return: void
   def initialize(heading:, answer:, stats:)
