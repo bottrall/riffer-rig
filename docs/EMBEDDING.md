@@ -56,7 +56,7 @@ runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: MyHost.new, options: o
 
 | Keyword             | Meaning                                                                                      | Default |
 | ------------------- | -------------------------------------------------------------------------------------------- | ------- |
-| `model:`            | `"provider/name"`, winning over `RIFFER_MODEL` and the settings                              | `nil`   |
+| `model:`            | `"provider/name"`, winning over `RIFFER_MODEL`, the settings and a resumed session's `/model` switch | `nil`   |
 | `extensions: false` | skips the `rig.rb` files and the gem `riffer/rig/extension` autoload; the bundle still loads | `true`  |
 | `skills: false`     | leaves out the bundled [`skills`](SKILLS.md) extension                                       | `true`  |
 | `agents_md: false`  | leaves out the bundled [`agents_md`](INSTRUCTIONS.md#agentsmd) extension                     | `true`  |
