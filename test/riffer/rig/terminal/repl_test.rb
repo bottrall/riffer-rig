@@ -110,7 +110,7 @@ describe Riffer::Rig::Terminal::Repl do
 
   def timeout_seconds = 5
 
-  def repl(interrupt: -> { @interrupts << :interrupt })
+  def repl(interrupt: -> { @interrupts << :interrupt }, builtins: [])
     @repl ||= Riffer::Rig::Terminal::Repl.new(
       console: RecordingConsole.new(@log),
       frame: @frame,
@@ -118,7 +118,8 @@ describe Riffer::Rig::Terminal::Repl do
       asks: @asks,
       prompter: @prompter,
       peek: @peek,
-      interrupt: interrupt
+      interrupt: interrupt,
+      builtins: builtins
     )
   end
 
@@ -229,6 +230,17 @@ describe Riffer::Rig::Terminal::Repl do
       session
 
       assert_equal [%w[model]], @frame.palettes
+    end
+
+    it 'completes the built-in commands alongside those of the Runtime' do
+      repl(builtins: [Riffer::Rig::Terminal::Builtin.new('resume', description: 'Pick a session')])
+      repl.watch(WatchedRuntime.new('reload'))
+      type('/re')
+      @keys.close
+
+      session
+
+      assert_equal %w[reload resume], @frame.palettes.last
     end
   end
 
@@ -596,12 +608,12 @@ describe Riffer::Rig::Terminal::Repl do
       assert_equal '', @frame.lines.last
     end
 
-    it 'sends the typed line on Enter while the palette is open' do
+    it 'sends the selected command on Enter while the palette is open' do
       repl.watch(WatchedRuntime.new('model'))
       type("/mo\r")
       @keys.close
 
-      assert_equal ['/mo'], session
+      assert_equal ['/model'], session
     end
 
     it 'recalls a submitted line from the history' do

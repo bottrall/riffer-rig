@@ -48,8 +48,9 @@ class Riffer::Rig::Terminal::LineEditor
   # @rbs return: Riffer::Rig::Terminal::LineEditor
   def press: (Riffer::Rig::Terminal::Key key) -> Riffer::Rig::Terminal::LineEditor
 
+  # @rbs sent: String
   # @rbs return: Riffer::Rig::Terminal::LineEditor
-  def submit: () -> Riffer::Rig::Terminal::LineEditor
+  def submit: (?String sent) -> Riffer::Rig::Terminal::LineEditor
 
   private
 

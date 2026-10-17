@@ -7,38 +7,41 @@ class Riffer::Rig::Terminal::Autocomplete
 
   @dismissed: bool
 
-  @commands: Array[Riffer::Rig::Command]
+  @commands: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
 
   # @dynamic editor, matches, index
   attr_reader editor: Riffer::Rig::Terminal::LineEditor
 
-  attr_reader matches: Array[Riffer::Rig::Command]
+  attr_reader matches: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
 
   attr_reader index: Integer
 
-  # @rbs commands: Array[Riffer::Rig::Command]
+  # @rbs commands: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
   # @rbs index: Integer
   # @rbs dismissed: bool
   # @rbs return: void
-  def initialize: (commands: Array[Riffer::Rig::Command], ?editor: Riffer::Rig::Terminal::LineEditor, ?index: Integer, ?dismissed: bool) -> void
+  def initialize: (commands: Array[Riffer::Rig::Terminal::Autocomplete::_Entry], ?editor: Riffer::Rig::Terminal::LineEditor, ?index: Integer, ?dismissed: bool) -> void
 
   # @rbs return: bool
   def open?: () -> bool
 
-  # @rbs return: Riffer::Rig::Command?
-  def selected: () -> Riffer::Rig::Command?
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete::_Entry?
+  def selected: () -> Riffer::Rig::Terminal::Autocomplete::_Entry?
 
   # @rbs return: String
   def ghost: () -> String
 
-  # @rbs commands: Array[Riffer::Rig::Command]
+  # @rbs commands: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs return: Riffer::Rig::Terminal::Autocomplete
-  def over: (Array[Riffer::Rig::Command] commands) -> Riffer::Rig::Terminal::Autocomplete
+  def over: (Array[Riffer::Rig::Terminal::Autocomplete::_Entry] commands) -> Riffer::Rig::Terminal::Autocomplete
 
   # @rbs key: Riffer::Rig::Terminal::Key
   # @rbs return: Riffer::Rig::Terminal::Autocomplete
   def press: (Riffer::Rig::Terminal::Key key) -> Riffer::Rig::Terminal::Autocomplete
+
+  # @rbs return: String
+  def line: () -> String
 
   # @rbs return: Riffer::Rig::Terminal::Autocomplete
   def submit: () -> Riffer::Rig::Terminal::Autocomplete
@@ -51,9 +54,12 @@ class Riffer::Rig::Terminal::Autocomplete
   # @rbs return: Riffer::Rig::Terminal::Autocomplete
   def with: (?editor: Riffer::Rig::Terminal::LineEditor, ?index: Integer, ?dismissed: bool) -> Riffer::Rig::Terminal::Autocomplete
 
+  # @rbs return: bool
+  def named?: () -> bool
+
   # @rbs query: String?
-  # @rbs return: Array[Riffer::Rig::Command]
-  def ranked: (String? query) -> Array[Riffer::Rig::Command]
+  # @rbs return: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
+  def ranked: (String? query) -> Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
 
   # @rbs key: Riffer::Rig::Terminal::Key
   # @rbs return: Riffer::Rig::Terminal::Autocomplete

@@ -78,9 +78,10 @@ class Riffer::Rig::Terminal::LineEditor
     end
   end
 
+  # @rbs sent: String
   # @rbs return: Riffer::Rig::Terminal::LineEditor
-  def submit
-    self.class.new(history: text.strip.empty? ? history : [*history, text], kill: @kill)
+  def submit(sent = text)
+    self.class.new(history: sent.strip.empty? ? history : [*history, sent], kill: @kill)
   end
 
   private

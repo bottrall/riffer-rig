@@ -24,20 +24,20 @@ The input line, marked `›`, is always there, including while a turn runs. Ente
 | Ctrl-C                                                   | cancels the running turn; with none running, asks for a second Ctrl-C to exit ([Interrupting and exiting](#interrupting-and-exiting)) |
 | Ctrl-D                                                   | on an empty line, ends the session once the queued messages have run                                                                  |
 
-While the [command palette](#the-command-palette) is open, Up and Down move through it instead of the history, and Tab, Escape and Right at the end of the line act on it. Every other key does nothing.
+While the [command palette](#the-command-palette) is open, Up and Down move through it instead of the history, and Enter, Tab, Escape and Right at the end of the line act on it. Every other key does nothing.
 
 ### The command palette
 
-A `/` at the start of the line opens a palette above the input line listing the session's [commands](#commands) — `/model`, `/auth`, `/reload`, `/cost`, `/trace`, each skill's and each [extension](EXTENSIONS.md)'s — with their descriptions; `/new`, `/resume`, `/exit` and `/quit` are not listed. Typing after the `/` narrows it to the commands whose names hold those letters in order, ignoring case, with the names that start with them first. It shows eight commands at a time, fewer on a short terminal, and scrolls to keep the selected one in view. The selected command is marked `▸`; when its name starts with what you typed and the cursor is at the end of the line, the rest of the name shows dimmed after the cursor.
+A `/` at the start of the line opens a palette above the input line listing the session's [commands](#commands) — `/new`, `/resume`, `/exit`, `/quit`, `/model`, `/auth`, `/reload`, `/cost`, `/trace`, each skill's and each [extension](EXTENSIONS.md)'s — with their descriptions. Typing after the `/` narrows it to the commands whose names hold those letters in order, ignoring case, with the names that start with them first. It shows eight commands at a time, fewer on a short terminal, and scrolls to keep the selected one in view. The selected command is marked `▸`; when its name starts with what you typed and the cursor is at the end of the line, the rest of the name shows dimmed after the cursor.
 
-| Key                             | Does                                                                                  |
-| ------------------------------- | ------------------------------------------------------------------------------------- |
-| Up, Down                        | moves the selection, wrapping round at either end                                     |
-| Tab, Right at the end of a line | replaces the line with the selected command and a space, ready for its arguments      |
-| Escape                          | closes the palette and keeps the line; it stays closed while the line starts with `/` |
-| Enter                           | sends the line as you typed it, not the selected command                              |
+| Key                             | Does                                                                                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Up, Down                        | moves the selection, wrapping round at either end                                                                                          |
+| Tab, Right at the end of a line | replaces the line with the selected command and a space, ready for its arguments                                                           |
+| Escape                          | closes the palette and keeps the line; it stays closed while the line starts with `/`                                                      |
+| Enter                           | sends the selected command, so `/mo` runs `/model`; a line that already names a command in full, such as `/model`, is sent as you typed it |
 
-The palette closes once the line has a space in it, and stays closed on a line recalled with Up, so Up and Down keep stepping through the history. It lists the commands as they are at each key you press, so it follows a `/reload`, `/new` or `/resume`.
+The palette closes once the line has a space in it, so Enter sends a command with arguments as you typed it. It stays closed on a line recalled with Up, so Up and Down keep stepping through the history. It lists the commands as they are at each key you press, so it follows a `/reload`, `/new` or `/resume`.
 
 ### Pasting
 

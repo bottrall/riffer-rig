@@ -5,15 +5,15 @@ class Riffer::Rig::Terminal::Autocomplete
 
   QUERY = %r{\A/(\S*)\z} #: Regexp
 
-  # @rbs @commands: Array[Riffer::Rig::Command]
+  # @rbs @commands: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs @dismissed: bool
 
   # @dynamic editor, matches, index
   attr_reader :editor #: Riffer::Rig::Terminal::LineEditor
-  attr_reader :matches #: Array[Riffer::Rig::Command]
+  attr_reader :matches #: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   attr_reader :index #: Integer
 
-  # @rbs commands: Array[Riffer::Rig::Command]
+  # @rbs commands: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
   # @rbs index: Integer
   # @rbs dismissed: bool
@@ -32,7 +32,7 @@ class Riffer::Rig::Terminal::Autocomplete
     matches.any?
   end
 
-  # @rbs return: Riffer::Rig::Command?
+  # @rbs return: Riffer::Rig::Terminal::Autocomplete::_Entry?
   def selected
     matches[@index]
   end
@@ -46,7 +46,7 @@ class Riffer::Rig::Terminal::Autocomplete
     name[typed.length..].to_s
   end
 
-  # @rbs commands: Array[Riffer::Rig::Command]
+  # @rbs commands: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs return: Riffer::Rig::Terminal::Autocomplete
   def over(commands)
     return self if commands == @commands
@@ -69,9 +69,17 @@ class Riffer::Rig::Terminal::Autocomplete
     end
   end
 
+  # @rbs return: String
+  def line
+    chosen = selected
+    return editor.text unless chosen && !named?
+
+    "#{TRIGGER}#{chosen.name}"
+  end
+
   # @rbs return: Riffer::Rig::Terminal::Autocomplete
   def submit
-    self.class.new(commands: @commands, editor: editor.submit)
+    self.class.new(commands: @commands, editor: editor.submit(line))
   end
 
   private
@@ -84,8 +92,14 @@ class Riffer::Rig::Terminal::Autocomplete
     self.class.new(commands: @commands, editor: editor, index: index, dismissed: dismissed)
   end
 
+  # @rbs return: bool
+  def named?
+    query = editor.text[QUERY, 1]
+    @commands.any? { |command| command.name == query }
+  end
+
   # @rbs query: String?
-  # @rbs return: Array[Riffer::Rig::Command]
+  # @rbs return: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   def ranked(query)
     return [] unless query
 

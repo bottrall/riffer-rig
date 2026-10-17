@@ -231,13 +231,15 @@ class Riffer::Rig::Terminal::Frame
     completion = @completion
     return [] unless completion
 
-    selected = completion.selected
-    shown = completion.matches.drop([completion.index - limit + 1, 0].max).first(limit)
+    first = [completion.index - limit + 1, 0].max
+    shown = completion.matches.drop(first).first(limit)
     width = shown.map { |command| Riffer::Rig::Terminal::Columns.width(command.name) }.max.to_i
-    shown.map { |command| palette_row(command, width, chosen: command.equal?(selected)) }
+    shown.each_with_index.map do |command, offset|
+      palette_row(command, width, chosen: first + offset == completion.index)
+    end
   end
 
-  # @rbs command: Riffer::Rig::Command
+  # @rbs command: Riffer::Rig::Terminal::Autocomplete::_Entry
   # @rbs width: Integer
   # @rbs chosen: bool
   # @rbs return: String

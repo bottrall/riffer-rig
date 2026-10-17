@@ -8,6 +8,7 @@ class Riffer::Rig::Terminal::Repl
   # @rbs @prompter: Riffer::Rig::Terminal::FramePrompter
   # @rbs @peek: Riffer::Rig::Terminal::Peek
   # @rbs @interrupt: ^() -> void
+  # @rbs @builtins: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs @reader: Thread?
   # @rbs @runtime: Riffer::Rig::Runtime?
   # @rbs @completion: Riffer::Rig::Terminal::Autocomplete
@@ -27,8 +28,9 @@ class Riffer::Rig::Terminal::Repl
   # @rbs prompter: Riffer::Rig::Terminal::FramePrompter
   # @rbs peek: Riffer::Rig::Terminal::Peek
   # @rbs interrupt: ^() -> void
+  # @rbs builtins: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs return: void
-  def initialize(console:, frame:, keys:, asks:, prompter:, peek:, interrupt:)
+  def initialize(console:, frame:, keys:, asks:, prompter:, peek:, interrupt:, builtins:)
     @console = console
     @frame = frame
     @keys = keys
@@ -36,6 +38,7 @@ class Riffer::Rig::Terminal::Repl
     @prompter = prompter
     @peek = peek
     @interrupt = interrupt
+    @builtins = builtins
     @reader = nil
     @runtime = nil
     @completion = Riffer::Rig::Terminal::Autocomplete.new(commands: [])
@@ -189,17 +192,16 @@ class Riffer::Rig::Terminal::Repl
   # @rbs key: Riffer::Rig::Terminal::Key
   # @rbs return: Riffer::Rig::Terminal::Autocomplete
   def edit(key)
-    text = @completion.editor.text
     case key.name
     when :enter
-      enqueue(text)
+      enqueue(@completion.line)
       @completion.submit
     when :ctrl_d
-      close if text.empty?
+      close if @completion.editor.text.empty?
       @completion
     else
       # A /reload, /new or /resume changes the commands between keys.
-      @completion.over(@runtime&.commands || []).press(key)
+      @completion.over([*@builtins, *(@runtime&.commands || [])]).press(key)
     end
   end
 

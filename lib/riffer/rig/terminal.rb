@@ -7,6 +7,12 @@ class Riffer::Rig::Terminal
 
   RESUME_COMMAND = 'resume' #: String
 
+  BUILTINS = [
+    Builtin.new(NEW_COMMAND, description: 'Start a fresh session in place'),
+    Builtin.new(RESUME_COMMAND, description: "Pick a session to resume: /resume --all for every directory's"),
+    *EXIT_COMMANDS.map { |line| Builtin.new(line.delete_prefix('/'), description: 'End the session') }
+  ].freeze #: Array[Riffer::Rig::Terminal::Builtin]
+
   NEW_USAGE = 'Usage: /new' #: String
 
   RESUME_USAGE = 'Usage: /resume [--all]' #: String
@@ -56,7 +62,8 @@ class Riffer::Rig::Terminal
       asks: asks,
       prompter: FramePrompter.new(frame: frame, keys: asks, theme: theme),
       peek: peek,
-      interrupt: -> { Process.kill('INT', Process.pid) }
+      interrupt: -> { Process.kill('INT', Process.pid) },
+      builtins: BUILTINS
     )
     opening = Opening.new(
       io: console,

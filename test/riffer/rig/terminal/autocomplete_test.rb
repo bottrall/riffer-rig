@@ -254,9 +254,41 @@ describe Riffer::Rig::Terminal::Autocomplete do
     end
   end
 
+  describe '#line' do
+    def listed(*names)
+      Riffer::Rig::Terminal::Autocomplete.new(
+        commands: names.map { |name| Riffer::Rig::Command.new(name, description: name, extension: :core) { nil } }
+      )
+    end
+
+    it 'is the typed line while closed' do
+      assert_equal 'hi', typed('h', 'i').line
+    end
+
+    it 'is the typed line once dismissed' do
+      assert_equal '/mo', typed('/', 'm', 'o', :escape).line
+    end
+
+    it 'is the typed line when it names a command in full' do
+      assert_equal '/reload', typed(*'/reload'.chars, :down, from: listed('reload', 'reloaded')).line
+    end
+
+    it 'is the selected command on a partial name' do
+      assert_equal '/model', typed('/', 'm', 'o').line
+    end
+
+    it 'is the selected command on a name typed in another case' do
+      assert_equal '/model', typed(*'/MODEL'.chars).line
+    end
+
+    it 'follows the selection' do
+      assert_equal '/commit', typed('/', :down).line
+    end
+  end
+
   describe '#submit' do
-    it 'records the line in the history' do
-      assert_equal %w[/m], typed('/', 'm').submit.editor.history
+    it 'records the sent line in the history' do
+      assert_equal %w[/model], typed('/', 'm').submit.editor.history
     end
 
     it 'opens again after a dismissed line is submitted' do

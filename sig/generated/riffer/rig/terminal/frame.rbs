@@ -131,11 +131,11 @@ class Riffer::Rig::Terminal::Frame
   # @rbs return: Array[String]
   def palette_rows: (Integer limit) -> Array[String]
 
-  # @rbs command: Riffer::Rig::Command
+  # @rbs command: Riffer::Rig::Terminal::Autocomplete::_Entry
   # @rbs width: Integer
   # @rbs chosen: bool
   # @rbs return: String
-  def palette_row: (Riffer::Rig::Command command, Integer width, chosen: bool) -> String
+  def palette_row: (Riffer::Rig::Terminal::Autocomplete::_Entry command, Integer width, chosen: bool) -> String
 
   # @rbs return: String
   def footer: () -> String

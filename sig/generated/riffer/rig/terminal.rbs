@@ -7,6 +7,8 @@ class Riffer::Rig::Terminal
 
   RESUME_COMMAND: String
 
+  BUILTINS: Array[Riffer::Rig::Terminal::Builtin]
+
   NEW_USAGE: String
 
   RESUME_USAGE: String
