@@ -126,9 +126,10 @@ class Riffer::Rig::Loader::ExtensionSource
 
     stored = decisions[path]
     return stored unless stored.nil?
-    return false unless @host.capabilities.include?(:confirm)
 
-    decision = @host.confirm("Trust #{path}?")
+    decision = @host.confirm("Trust #{path}?") if @host.capabilities.include?(:confirm)
+    return false if decision.nil?
+
     Riffer::Rig::Trust.store(trust_path, path, decision) || decision
   end
 

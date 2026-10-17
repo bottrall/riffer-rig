@@ -90,8 +90,8 @@ describe Riffer::Rig::Terminal::Host do
     refute host("\n").confirm('Trust this project?')
   end
 
-  it 'declines at the end of input' do
-    refute host.confirm('Trust this project?')
+  it 'leaves the confirmation unanswered at the end of input' do
+    assert_nil host.confirm('Trust this project?')
   end
 
   it 'shows the confirmation above the footer' do

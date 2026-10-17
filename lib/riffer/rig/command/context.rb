@@ -65,6 +65,6 @@ class Riffer::Rig::Command::Context
   def confirm(question = nil)
     return false unless host.capabilities.include?(:confirm)
 
-    host.confirm(question)
+    host.confirm(question) || false
   end
 end

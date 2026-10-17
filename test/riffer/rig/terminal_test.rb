@@ -967,7 +967,7 @@ describe Riffer::Rig::Terminal do
           pty.await("  interrupted\r\n")
           pty.type("/exit\r")
         end
-        output = run_on_pty(script) do |runtime|
+        run_on_pty(script) do |runtime|
           provider = runtime.agent.provider
           provider.stub_response('Reading.', tool_calls: [{ name: 'read', arguments: '{"path":"notes.txt"}' }])
           requests = 0
@@ -984,7 +984,6 @@ describe Riffer::Rig::Terminal do
             super(*args, **options, &block)
           end
         end
-        [output, rig]
       end
 
       it 'leaves a command question unanswered' do
@@ -999,14 +998,8 @@ describe Riffer::Rig::Terminal do
         assert_includes runtime.agent.provider.calls.last[:messages].last[:content], 'jake'
       end
 
-      it 'declines a trust question a reload asks mid-turn' do
-        _, rig = cancel_reload_question
-
-        refute Riffer::Rig::Trust.read(File.join(@home, '.riffer', 'trust.json')).fetch(rig)
-      end
-
       it 'cancels the turn a reload asked in' do
-        output, = cancel_reload_question
+        output = cancel_reload_question
 
         assert_includes output, "  interrupted\r\n"
       end

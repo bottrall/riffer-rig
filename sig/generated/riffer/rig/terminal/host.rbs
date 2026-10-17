@@ -22,8 +22,8 @@ class Riffer::Rig::Terminal::Host
   def ask: (?String? question, ?options: Array[String]?, ?secret: bool) -> String?
 
   # @rbs question: String?
-  # @rbs return: bool
-  def confirm: (?String? question) -> bool
+  # @rbs return: bool?
+  def confirm: (?String? question) -> bool?
 
   # @rbs message: String?
   # @rbs level: Symbol

@@ -81,4 +81,10 @@ describe Riffer::Rig::Command::Context do
   it 'forwards confirm to a host that supports it' do
     assert context(host: @capable).confirm('Push?')
   end
+
+  it 'returns false from confirm when the host leaves it unanswered' do
+    @capable.define_singleton_method(:confirm) { |_question = nil| nil }
+
+    assert_same false, context(host: @capable).confirm('Push?')
+  end
 end

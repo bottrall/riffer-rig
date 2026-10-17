@@ -23,13 +23,13 @@ The [Loader](EMBEDDING.md#building-a-runtime-with-the-loader) loads two extensio
 
 They are plain Ruby, and the Loader runs each with `load`: they `require` gems, `require_relative` local files, or call `Riffer::Rig.extension` inline. Ruby's require order is the load order, and a later registration under the same name replaces an earlier one. There is no directory scanning, no manifest, and no settings list of extensions: what is required is what loads.
 
-The home file is always trusted. The first time a project `.riffer/rig.rb` is seen, the Loader asks the host to confirm the path, stores the answer by absolute path in `~/.riffer/trust.json`, and never asks again:
+The home file is always trusted. The first time a project `.riffer/rig.rb` is seen, the Loader asks the host to confirm the path, stores a yes or no by absolute path in `~/.riffer/trust.json`, and never asks again:
 
 ```json
 { "/home/jake/project/.riffer/rig.rb": true }
 ```
 
-A host whose `capabilities` leave out `:confirm` — the [null host](HOSTS.md), headless, ACP while `session/new` or `session/load` builds — is never asked: the file is skipped and nothing is stored, so a later terminal session can still ask. A host that answers no stores `false`, skips the file silently, and is not asked again until the entry is removed from `trust.json`.
+A host whose `capabilities` leave out `:confirm` — the [null host](HOSTS.md), headless, ACP while `session/new` or `session/load` builds — is never asked: the file is skipped and nothing is stored, so a later terminal session can still ask. A question the host leaves unanswered (`confirm` returns `nil`, as Ctrl-C or Ctrl-D does in the terminal) is treated the same way: the file is skipped for this load, nothing is stored, and the next load asks again. A host that answers no stores `false`, skips the file silently, and is not asked again until the entry is removed from `trust.json`.
 
 A `trust.json` that is not valid JSON, or does not hold a JSON object, is never written over: the project file is skipped without asking, and the host gets a `notify` at level `:error` naming `trust.json` and, for a parse error, the line and column where parsing stopped.
 
@@ -84,7 +84,7 @@ The block receives a `ctx`:
 | `emit(event)`                           | emits a [rig event](EMBEDDING.md#rig-events), such as `Riffer::Rig::Events::SkillActivated`, to the caller of `run_command`; any object with `type` and `to_h` (`Riffer::Rig::Events::_Event`) qualifies, and including `Riffer::Rig::Support::Equatable` gives it equality by class and `to_h` |
 | `prompt(text)`                          | sends `text` to the model as a user turn, so a prompt template is a command; the turn's events stream to the caller of `run_command` |
 | `ask(question, options: nil, secret: false)` | forwards to the host and returns its answer, or `nil` when the host does not support `:ask`       |
-| `confirm(question)`                     | forwards to the host and returns its answer, or `false` when the host does not support `:confirm`      |
+| `confirm(question)`                     | forwards to the host and returns its answer, or `false` when the question is left unanswered or the host does not support `:confirm` |
 
 `ask` and `confirm` check `host.capabilities` first, so a host that declines them — the null host, headless — is never asked and the command takes the declined path.
 
