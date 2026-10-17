@@ -42,6 +42,12 @@ describe Riffer::Rig::Terminal::FramePrompter do
       assert_equal ['', 'Sign in with?', '  1. chain', '  2. token', *footer], @pty.screen.rows
     end
 
+    it 'wraps the question to the width of the frame' do
+      ask([], 'Resume a session — type to filter, Enter switches on a single match')
+
+      assert_equal ['Resume a session — type to filter,', '  Enter switches on a single match'], @pty.screen.rows[1, 2]
+    end
+
     it 'marks a secret question as hidden' do
       ask([], 'anthropic api_key', secret: true)
 

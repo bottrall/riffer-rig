@@ -24,7 +24,7 @@ class Riffer::Rig::Terminal::FramePrompter
   # @rbs secret: bool
   # @rbs return: String?
   def ask(question, options:, secret:)
-    asked = Riffer::Rig::Terminal::Question.lines(@theme, question, options)
+    asked = Riffer::Rig::Terminal::Question.lines(@theme, question, options, @frame.measure&.last)
     @frame.append(['', *asked, *(@theme.grey(HIDDEN) if secret)].join("\n"))
     editor = read(secret)
     return nil unless editor

@@ -451,7 +451,7 @@ describe Riffer::Rig::Terminal do
       it 'dismisses the picker before the first session on Ctrl-C' do
         seed_session('fix the login bug')
         script = lambda do |pty|
-          pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+          pty.await(Riffer::Rig::Terminal::FramePrompter::HINT)
           pty.type("\u0003")
           pty.await('type /exit to quit')
           pty.type("/exit\r")
@@ -477,7 +477,7 @@ describe Riffer::Rig::Terminal do
     it 'opens the picker over the keys before the first session' do
       path = seed_session('fix the login bug')
       script = lambda do |pty|
-        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.await(Riffer::Rig::Terminal::FramePrompter::HINT)
         pty.type("\rtell me more\r/exit\r")
       end
       run_on_pty(script, open_picker: true)
@@ -555,7 +555,7 @@ describe Riffer::Rig::Terminal do
     it 'replays the session picked before the first session' do
       seed_history
       script = lambda do |pty|
-        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.await(Riffer::Rig::Terminal::FramePrompter::HINT)
         pty.type("\r/exit\r")
       end
 
@@ -776,7 +776,7 @@ describe Riffer::Rig::Terminal do
       path = seed_session('fix the login bug')
       script = lambda do |pty|
         pty.type("/resume\r")
-        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.await(Riffer::Rig::Terminal::FramePrompter::HINT)
         pty.type("\r")
         pty.await('▸ model', count: 2)
         pty.type("tell me more\r/exit\r")
@@ -791,7 +791,7 @@ describe Riffer::Rig::Terminal do
       runtime = nil
       script = lambda do |pty|
         pty.type("/resume\r")
-        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.await(Riffer::Rig::Terminal::FramePrompter::HINT)
         pty.type('x')
         pty.await('› x')
         cleared = pty.written.scan("› \r\n").size
@@ -819,7 +819,7 @@ describe Riffer::Rig::Terminal do
       seed_history
       script = lambda do |pty|
         pty.type("/resume\r")
-        pty.await(Riffer::Rig::Terminal::Picker::HEADER)
+        pty.await(Riffer::Rig::Terminal::FramePrompter::HINT)
         pty.type("\r")
         pty.await('▸ model', count: 2)
         pty.type("/exit\r")
