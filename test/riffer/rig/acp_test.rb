@@ -2,8 +2,11 @@
 
 require 'test_helper'
 require 'acp/sdk'
+require_relative '../../support/rig_files'
 
 describe Riffer::Rig::ACP do
+  include RigFiles
+
   before do
     @home = Dir.mktmpdir
     @cwd = Dir.mktmpdir
@@ -103,6 +106,20 @@ describe Riffer::Rig::ACP do
         rig.on(:session_end) { |event| File.write(#{marker.inspect}, event.reason.to_s) }
       end
     RUBY
+  end
+
+  def write_home_command(name)
+    write_rig(:home, <<~RUBY)
+      Riffer::Rig.extension('acp_command_probe') do |rig|
+        rig.command(#{name.inspect}, description: 'Probes') { |_ctx| nil }
+      end
+    RUBY
+  end
+
+  def sent_commands(updates)
+    updates.grep(ACP::Types::SessionUpdate::AvailableCommandsUpdate).flat_map do |update|
+      update.available_commands.map(&:name)
+    end
   end
 
   def prompt_request(session_id, text)
@@ -524,6 +541,30 @@ describe Riffer::Rig::ACP do
       response, = prompt(session.session_id, 'read it')
 
       assert_equal 'end_turn', response.stop_reason
+    end
+
+    it 'sends the commands a /reload changes' do
+      session = ready_session
+      write_home_command('hello')
+      _response, updates = prompt(session.session_id, '/reload')
+
+      assert_includes sent_commands(updates), 'hello'
+    end
+
+    it 'sends the commands an automatic reload changes' do
+      session = ready_session
+      write_home_command('hello')
+      reply('Hi from ACP.')
+      _response, updates = prompt(session.session_id, 'hello')
+
+      assert_includes sent_commands(updates), 'hello'
+    end
+
+    it 'sends no commands after a reload that leaves them unchanged' do
+      session = ready_session
+      _response, updates = prompt(session.session_id, '/reload')
+
+      assert_empty sent_commands(updates)
     end
 
     it 'answers a prompt on a busy session with an invalid request error' do

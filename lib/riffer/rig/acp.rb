@@ -138,6 +138,7 @@ class Riffer::Rig::ACP
     runtime = session(request.session_id)
     return ::ACP::RequestError.resource_not_found unless runtime
 
+    commands = available_commands(runtime).to_set(&:to_h)
     # A command that runs no turn sends no turn_end.
     stop_reason = :completed
     dispatch(runtime, Riffer::Rig::ACP::Mapper.prompt_text(request.prompt)) do |event|
@@ -156,6 +157,10 @@ class Riffer::Rig::ACP
         stop_reason = event.stop_reason
       end
     end
+    # A reload in the dispatch, by /reload or the automatic check, can change
+    # the commands; its rebuild also reorders them, which is no change.
+    reloaded = available_commands(runtime)
+    client.available_commands(request.session_id, reloaded) unless reloaded.to_set(&:to_h) == commands
     ::ACP::Types::PromptResponse.new(stop_reason: Riffer::Rig::ACP::Mapper.stop_reason_of(stop_reason))
   rescue Riffer::Rig::Runtime::BusyError
     ::ACP::RequestError.new(
