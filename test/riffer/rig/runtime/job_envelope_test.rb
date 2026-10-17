@@ -3,11 +3,12 @@
 require 'test_helper'
 
 describe Riffer::Rig::Runtime::JobEnvelope do
-  def completion(job_id: 'a1b2c3d4', exit_status: 0, tail: "compiled\ndone\n")
+  def completion(job_id: 'a1b2c3d4', exit_status: 0, signal: nil, tail: "compiled\ndone\n")
     Riffer::Rig::Runtime::JobCompletion.new(
       job_id: job_id,
       command: 'make build',
       exit_status: exit_status,
+      signal: signal,
       duration: 12.34,
       output_path: "/tmp/jobs/#{job_id}",
       tail: tail
@@ -32,6 +33,10 @@ describe Riffer::Rig::Runtime::JobEnvelope do
       TEXT
 
       assert_equal envelope, render(completion)
+    end
+
+    it 'reports a job ended by a signal as killed by that signal, without an exit code' do
+      assert_includes render(completion(exit_status: nil, signal: 'TERM')), 'status="killed" signal="TERM" duration='
     end
 
     it 'reports a non-zero exit as failed' do

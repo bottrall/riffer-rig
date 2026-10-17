@@ -5,8 +5,6 @@ class Riffer::Rig::Tools::Bash::Job
 
   @ended_at: Float?
 
-  @status: Integer?
-
   @started_at: Float
 
   @output_path: String
@@ -17,7 +15,7 @@ class Riffer::Rig::Tools::Bash::Job
 
   @id: String
 
-  # @dynamic id, pid, command, output_path, started_at, status, offset
+  # @dynamic id, pid, command, output_path, started_at, offset
   attr_reader id: String
 
   attr_reader pid: Integer
@@ -28,8 +26,6 @@ class Riffer::Rig::Tools::Bash::Job
 
   attr_reader started_at: Float
 
-  attr_reader status: Integer?
-
   attr_reader offset: Integer
 
   # @rbs id: String
@@ -37,11 +33,10 @@ class Riffer::Rig::Tools::Bash::Job
   # @rbs command: String
   # @rbs output_path: String
   # @rbs started_at: Float
-  # @rbs status: Integer?
   # @rbs ended_at: Float?
   # @rbs offset: Integer
   # @rbs return: void
-  def initialize: (id: String, pid: Integer, command: String, output_path: String, started_at: Float, ?status: Integer?, ?ended_at: Float?, ?offset: Integer) -> void
+  def initialize: (id: String, pid: Integer, command: String, output_path: String, started_at: Float, ?ended_at: Float?, ?offset: Integer) -> void
 
   # @rbs return: bool
   def active?: () -> bool
@@ -53,10 +48,9 @@ class Riffer::Rig::Tools::Bash::Job
   # @rbs return: Float
   def elapsed: (Float now) -> Float
 
-  # @rbs status: Integer
   # @rbs ended_at: Float
   # @rbs return: Riffer::Rig::Tools::Bash::Job
-  def finish: (Integer status, Float ended_at) -> Riffer::Rig::Tools::Bash::Job
+  def finish: (Float ended_at) -> Riffer::Rig::Tools::Bash::Job
 
   # @rbs bytes: Integer
   # @rbs return: Riffer::Rig::Tools::Bash::Job
@@ -64,9 +58,8 @@ class Riffer::Rig::Tools::Bash::Job
 
   private
 
-  # @rbs status: Integer?
   # @rbs ended_at: Float?
   # @rbs offset: Integer
   # @rbs return: Riffer::Rig::Tools::Bash::Job
-  def copy: (?status: Integer?, ?ended_at: Float?, ?offset: Integer) -> Riffer::Rig::Tools::Bash::Job
+  def copy: (?ended_at: Float?, ?offset: Integer) -> Riffer::Rig::Tools::Bash::Job
 end

@@ -1,12 +1,14 @@
 # Generated from lib/riffer/rig/runtime/job_completion.rb with RBS::Inline
 
 class Riffer::Rig::Runtime::JobCompletion
-  # @dynamic job_id, command, exit_status, duration, output_path, tail
+  # @dynamic job_id, command, exit_status, signal, duration, output_path, tail
   attr_reader job_id: String
 
   attr_reader command: String
 
-  attr_reader exit_status: Integer
+  attr_reader exit_status: Integer?
+
+  attr_reader signal: String?
 
   attr_reader duration: Float
 
@@ -16,10 +18,11 @@ class Riffer::Rig::Runtime::JobCompletion
 
   # @rbs job_id: String
   # @rbs command: String
-  # @rbs exit_status: Integer
+  # @rbs exit_status: Integer?
+  # @rbs signal: String?
   # @rbs duration: Float
   # @rbs output_path: String
   # @rbs tail: String
   # @rbs return: void
-  def initialize: (job_id: String, command: String, exit_status: Integer, duration: Float, output_path: String, tail: String) -> void
+  def initialize: (job_id: String, command: String, exit_status: Integer?, signal: String?, duration: Float, output_path: String, tail: String) -> void
 end

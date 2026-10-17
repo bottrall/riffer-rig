@@ -80,7 +80,7 @@ class Riffer::Rig::Tools::Bash::Jobs
 
   # @rbs job: Riffer::Rig::Tools::Bash::Job
   # @rbs log: Riffer::Rig::Tools::Bash::JobLog
-  # @rbs exit_status: Integer
+  # @rbs status: Process::Status
   # @rbs return: Riffer::Rig::Runtime::JobCompletion
-  def completion: (Riffer::Rig::Tools::Bash::Job job, Riffer::Rig::Tools::Bash::JobLog log, Integer exit_status) -> Riffer::Rig::Runtime::JobCompletion
+  def completion: (Riffer::Rig::Tools::Bash::Job job, Riffer::Rig::Tools::Bash::JobLog log, Process::Status status) -> Riffer::Rig::Runtime::JobCompletion
 end

@@ -626,7 +626,13 @@ describe Riffer::Rig::Terminal do
       def job_exit
         Riffer::Rig::Events::JobExit.new(
           Riffer::Rig::Runtime::JobCompletion.new(
-            job_id: 'a1b2c3d4', command: 'true', exit_status: 0, duration: 1.0, output_path: File::NULL, tail: ''
+            job_id: 'a1b2c3d4',
+            command: 'true',
+            exit_status: 0,
+            signal: nil,
+            duration: 1.0,
+            output_path: File::NULL,
+            tail: ''
           )
         )
       end

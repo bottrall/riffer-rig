@@ -369,18 +369,32 @@ describe Riffer::Rig::Tools::Bash::Jobs do
       assert_equal 3, @inbox.await&.exit_status
     end
 
-    it 'records a job ended by a signal with status 1' do
+    it 'records no exit status for a job ended by a signal' do
       job = start('sleep 30')
       Process.kill('KILL', job.pid)
 
-      assert_equal 1, @inbox.await&.exit_status
+      assert_nil @inbox.await&.exit_status
     end
 
-    it 'records the exit status on the registered job' do
-      job = start('exit 3')
+    it 'records the signal that ended a job' do
+      job = start('sleep 30')
+      @jobs.kill(job.id)
+
+      assert_equal 'TERM', @inbox.await&.signal
+    end
+
+    it 'records no signal for a job that exited' do
+      start('exit 3')
+
+      assert_nil @inbox.await&.signal
+    end
+
+    it 'records a job ended by a signal as completed on the registry' do
+      job = start('sleep 30')
+      @jobs.kill(job.id)
       @inbox.await
 
-      assert_equal 3, listed(job).status
+      assert_predicate listed(job), :completed?
     end
 
     it 'puts one completion in the inbox per job' do

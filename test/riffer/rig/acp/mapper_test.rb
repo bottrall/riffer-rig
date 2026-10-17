@@ -69,12 +69,33 @@ describe Riffer::Rig::ACP::Mapper do
   describe '.job_completion' do
     it 'is an agent message chunk naming the job, its exit status and its command in a paragraph of its own' do
       completion = Riffer::Rig::Runtime::JobCompletion.new(
-        job_id: 'a1b2c3d4', command: 'make test', exit_status: 2, duration: 1.5, output_path: '/tmp/job.log', tail: ''
+        job_id: 'a1b2c3d4',
+        command: 'make test',
+        exit_status: 2,
+        signal: nil,
+        duration: 1.5,
+        output_path: '/tmp/job.log',
+        tail: ''
       )
       update = Riffer::Rig::ACP::Mapper.job_completion(completion)
       text = "\n\nBackground job a1b2c3d4 exited with status 2: make test\n\n"
 
       assert_equal [ACP::Types::SessionUpdate::AgentMessageChunk, text], [update.class, update.content.text]
+    end
+
+    it 'names the signal that ended a job killed by one' do
+      completion = Riffer::Rig::Runtime::JobCompletion.new(
+        job_id: 'a1b2c3d4',
+        command: 'make serve',
+        exit_status: nil,
+        signal: 'TERM',
+        duration: 1.5,
+        output_path: '/tmp/job.log',
+        tail: ''
+      )
+      text = "\n\nBackground job a1b2c3d4 was killed by SIGTERM: make serve\n\n"
+
+      assert_equal text, Riffer::Rig::ACP::Mapper.job_completion(completion).content.text
     end
   end
 

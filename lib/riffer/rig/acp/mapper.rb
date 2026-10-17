@@ -51,7 +51,7 @@ module Riffer::Rig::ACP::Mapper
   # @rbs completion: Riffer::Rig::Runtime::JobCompletion
   # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
   def job_completion(completion)
-    notice("Background job #{completion.job_id} exited with status #{completion.exit_status}: #{completion.command}")
+    notice("Background job #{completion.job_id} #{ending(completion)}: #{completion.command}")
   end
 
   # @rbs message: Hash[Symbol, untyped]
@@ -209,6 +209,13 @@ module Riffer::Rig::ACP::Mapper
   # @rbs return: ::ACP::Types::ContentBlock::Text
   def text_block(text)
     ::ACP::Types::ContentBlock::Text.new(text: text)
+  end
+
+  # @rbs completion: Riffer::Rig::Runtime::JobCompletion
+  # @rbs return: String
+  def ending(completion)
+    exit_status = completion.exit_status
+    exit_status ? "exited with status #{exit_status}" : "was killed by SIG#{completion.signal}"
   end
 
   # The stored result is all a replayed call has: the arguments live in the
