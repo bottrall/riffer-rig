@@ -83,6 +83,12 @@ describe Riffer::Rig::Terminal::Renderer do
     assert_equal "\nPick one\n  1. chain\n  2. token\n› ", @io.string
   end
 
+  it 'wraps a question to the width it measures' do
+    measured(16).question('Resume a session now', nil, false)
+
+    assert_equal "\nResume a\n  session now\n› ", @io.string
+  end
+
   it 'renders only the prompt marker when there is no question text' do
     @renderer.question(nil, nil, false)
 
