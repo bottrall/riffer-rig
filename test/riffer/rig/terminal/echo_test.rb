@@ -12,8 +12,28 @@ describe Riffer::Rig::Terminal::Echo do
       assert_equal '› hello', echo('hello')
     end
 
-    it 'shows the control characters of a prompt as pictures' do
-      assert_equal '› Go␛[2J␊now', echo("Go\e[2J\nnow")
+    it 'shows a tab in the prompt as spaces' do
+      assert_equal '›     at Foo', echo("\tat Foo")
+    end
+
+    it 'shows each line of the prompt on a row of its own under the hanging indent' do
+      assert_equal "› one\n  two", echo("one\ntwo")
+    end
+
+    it 'breaks the prompt at a carriage return and line feed' do
+      assert_equal "› one\n  two", echo("one\r\ntwo")
+    end
+
+    it 'shows the other control characters of a prompt as pictures' do
+      assert_equal '› Go␛[2J now', echo("Go\e[2J now")
+    end
+
+    it 'keeps the indentation of a line of the prompt' do
+      assert_equal "› trace\n    at Foo", echo("trace\n  at Foo")
+    end
+
+    it 'keeps a blank line inside the prompt' do
+      assert_equal "› one\n\n  two", echo("one\n\ntwo")
     end
 
     it 'wraps the prompt at a word with a hanging indent under its text' do
@@ -22,6 +42,10 @@ describe Riffer::Rig::Terminal::Echo do
 
     it 'keeps a long prompt on one line without a width' do
       assert_equal '› refactor the picker now', echo('refactor the picker now')
+    end
+
+    it 'drops the blank lines around the prompt' do
+      assert_equal '› one', echo("\n  \none\n\n")
     end
 
     it 'keeps the prompt glyph on a prompt of only spaces' do
