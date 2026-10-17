@@ -72,7 +72,7 @@ class Riffer::Rig::Terminal::Autocomplete
   # @rbs return: String
   def line
     chosen = selected
-    return editor.text unless chosen && !named?
+    return editor.text unless chosen && editor.text != TRIGGER
 
     "#{TRIGGER}#{chosen.name}"
   end
@@ -92,12 +92,6 @@ class Riffer::Rig::Terminal::Autocomplete
     self.class.new(commands: @commands, editor: editor, index: index, dismissed: dismissed)
   end
 
-  # @rbs return: bool
-  def named?
-    query = editor.text[QUERY, 1]
-    @commands.any? { |command| command.name == query }
-  end
-
   # @rbs query: String?
   # @rbs return: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   def ranked(query)
@@ -105,9 +99,17 @@ class Riffer::Rig::Terminal::Autocomplete
 
     fuzzy = Regexp.new(query.chars.map { |char| Regexp.escape(char) }.join('.*'), Regexp::IGNORECASE)
     @commands.select { |command| command.name.match?(fuzzy) }
-             .sort_by(&:name)
-             .partition { |command| command.name.downcase.start_with?(query.downcase) }
-             .flatten
+             .sort_by { |command| [rank(command.name.downcase, query.downcase), command.name] }
+  end
+
+  # @rbs name: String
+  # @rbs query: String
+  # @rbs return: Integer
+  def rank(name, query)
+    return 0 if name == query
+    return 1 if name.start_with?(query)
+
+    2
   end
 
   # @rbs key: Riffer::Rig::Terminal::Key

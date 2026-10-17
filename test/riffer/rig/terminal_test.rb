@@ -694,6 +694,17 @@ describe Riffer::Rig::Terminal do
       assert_includes output, "› refactor the\r\n  picker now\r\n"
     end
 
+    it 'asks for a command name on a lone / sent from the palette' do
+      script = lambda do |pty|
+        pty.await('type /exit to quit')
+        pty.type("/\r")
+        pty.await(Riffer::Rig::Terminal::COMMAND_HINT)
+        pty.type("/exit\r")
+      end
+
+      assert_includes run_on_pty(script), Riffer::Rig::Terminal::COMMAND_HINT
+    end
+
     it 'lists the commands the terminal runs itself in the palette' do
       script = lambda do |pty|
         pty.await('type /exit to quit')

@@ -54,12 +54,14 @@ class Riffer::Rig::Terminal::Autocomplete
   # @rbs return: Riffer::Rig::Terminal::Autocomplete
   def with: (?editor: Riffer::Rig::Terminal::LineEditor, ?index: Integer, ?dismissed: bool) -> Riffer::Rig::Terminal::Autocomplete
 
-  # @rbs return: bool
-  def named?: () -> bool
-
   # @rbs query: String?
   # @rbs return: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   def ranked: (String? query) -> Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
+
+  # @rbs name: String
+  # @rbs query: String
+  # @rbs return: Integer
+  def rank: (String name, String query) -> Integer
 
   # @rbs key: Riffer::Rig::Terminal::Key
   # @rbs return: Riffer::Rig::Terminal::Autocomplete
