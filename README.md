@@ -74,7 +74,7 @@ Type a prompt and press Enter. While the turn runs, the status line under the in
 
 - Ctrl-C during a turn cancels it. Ctrl-C with no turn running asks for a second one, which exits.
 - `/exit` or `/quit` ends the session, as does Ctrl-D on an empty line.
-- `/resume [--all]`, `/new`, `/cost`, `/trace`, `/skill:<name>` and the other slash commands are listed in [Terminal](docs/TERMINAL.md#commands); `/model` is covered [below](#switching-the-model).
+- `/help` lists the session's slash commands. `/resume [--all]`, `/new`, `/cost`, `/trace`, `/skill:<name>` and the others are described in [Terminal](docs/TERMINAL.md#commands); `/model` is covered [below](#switching-the-model).
 
 ### Switching the model
 

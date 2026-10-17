@@ -246,7 +246,7 @@ class Riffer::Rig::Terminal::Frame
 
     first = [completion.index - limit + 1, 0].max
     shown = completion.matches.drop(first).first(limit)
-    width = shown.map { |command| Riffer::Rig::Terminal::Columns.width(command.name) }.max.to_i
+    width = Riffer::Rig::Terminal::Help.width(shown)
     shown.each_with_index.map do |command, offset|
       palette_row(command, width, chosen: first + offset == completion.index)
     end
@@ -257,10 +257,8 @@ class Riffer::Rig::Terminal::Frame
   # @rbs chosen: bool
   # @rbs return: String
   def palette_row(command, width, chosen:)
-    padding = ' ' * (width - Riffer::Rig::Terminal::Columns.width(command.name))
-    name = "#{Riffer::Rig::Terminal::Autocomplete::TRIGGER}#{command.name}#{padding}"
-    # A line break in a description would draw a row the erase never counts.
-    about = command.description.gsub(/[[:cntrl:]]+/, ' ').strip
+    name = Riffer::Rig::Terminal::Help.label(command, width)
+    about = Riffer::Rig::Terminal::Help.about(command)
     label = chosen ? "#{SELECTED} #{@theme.pink(name)}" : "#{STATUS_INDENT}#{name}"
     "#{Riffer::Rig::Terminal::Columns.head("#{label}#{DESCRIPTION_GAP}#{@theme.dim(about)}", @width - 1)}\r\n"
   end
