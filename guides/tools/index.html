@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.12.0</span>
+            <span class="version">v0.13.0</span>
           </div>
         </nav>
       </div>
@@ -50,48 +50,53 @@
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
+                <a href="/guides/terminal/"
+                  ><span class="num">03</span>Terminal</a
+                >
+              </li>
+              <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">03</span>Configuration</a
+                  ><span class="num">04</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">04</span>Instructions</a
+                  ><span class="num">05</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/" class="active" aria-current="page"
-                  ><span class="num">05</span>Tools</a
+                  ><span class="num">06</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">06</span>Skills</a
+                  ><span class="num">07</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">07</span>MCP</a
+                  ><span class="num">08</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">08</span>Reloading</a
+                  ><span class="num">09</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">09</span>Sessions</a
+                  ><span class="num">10</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">10</span>Headless mode</a
+                  ><span class="num">11</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/"
-                  ><span class="num">11</span>ACP</a
+                  ><span class="num">12</span>ACP</a
                 >
               </li>
             </ul>
@@ -99,17 +104,17 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">12</span>Extensions</a
+                  ><span class="num">13</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">13</span>Embedding riffer-rig</a
+                  ><span class="num">14</span>Embedding riffer-rig</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">14</span>Hosts</a
+                  ><span class="num">15</span>Hosts</a
                 >
               </li>
             </ul>
@@ -117,12 +122,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">15</span>Providers</a
+                  ><span class="num">16</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">16</span>Custom providers</a
+                  ><span class="num">17</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -132,12 +137,13 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Using the terminal · 05</span></p>
+          <p class="kicker"><span class="chapter">Using the terminal · 06</span></p>
           <h1>Tools</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
             <ul>
-              <li><a href="#the-four-tools">The four tools</a></li>
+              <li><a href="#the-six-tools">The six tools</a></li>
+              <li><a href="#background-jobs">Background jobs</a></li>
               <li><a href="#identifiers">Identifiers</a></li>
               <li><a href="#the-bundled-extensions">The bundled extensions</a></li>
               <li><a href="#provider-native-tools">Provider-native tools</a></li>
@@ -145,9 +151,9 @@
             </ul>
           </nav>
           
-<p>riffer-rig ships four tools — <code>read</code>, <code>write</code>, <code>edit</code> and <code>bash</code> — each registered by its own bundled extension, so a host can pass any subset of them and a later extension can replace any one.</p>
+<p>riffer-rig ships six tools — <code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code> and the two background-job companions of <code>bash</code>, <code>bash_output</code> and <code>bash_kill</code> — registered by four bundled extensions, so a host can pass any subset of them and a later extension can replace any one.</p>
 
-<h2 id="the-four-tools">The four tools</h2>
+<h2 id="the-six-tools">The six tools</h2>
 
 <table>
   <thead>
@@ -160,7 +166,7 @@
   <tbody>
     <tr>
       <td><code>read</code></td>
-      <td>returns a file with line numbers; <code>offset</code> (1-based) and <code>limit</code> (default 2000 lines) slice a large file; a missing file is a tool error</td>
+      <td>returns a file with line numbers; <code>offset</code> (1-based) and <code>limit</code> (default 2000 lines) slice a large file; a missing file is a tool error; bytes that are not valid UTF-8 are replaced</td>
       <td>“Read a file before editing it, and read rather than guess what a file contains.”</td>
     </tr>
     <tr>
@@ -175,8 +181,18 @@
     </tr>
     <tr>
       <td><code>bash</code></td>
-      <td>runs a command in the working directory in its own process group and returns combined stdout/stderr; a non-zero exit is a tool error; <code>timeout_ms</code> (default 120000) caps each call; output is truncated at 30,000 bytes; a Runtime <code>cancel</code> kills the process group</td>
+      <td>runs a command in the working directory in its own process group and returns combined stdout/stderr; a non-zero exit is a tool error; <code>timeout_ms</code> (default 120000) caps each call; the call returns when the command exits, without waiting for anything it left running in the background; output is truncated at 30,000 bytes; a Runtime <code>cancel</code> kills the process group; <code>run_in_background</code> starts the command as a background job and returns a job id and output path immediately, and the model is <a href="#background-jobs">notified when the job exits</a></td>
       <td>“Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers.”</td>
+    </tr>
+    <tr>
+      <td><code>bash_output</code></td>
+      <td>returns what a background job has written since the previous read of it, truncated at 30,000 bytes; an unknown job id is a tool error</td>
+      <td>“Use this to check on a server, watcher or long-running job before it finishes.”</td>
+    </tr>
+    <tr>
+      <td><code>bash_kill</code></td>
+      <td>sends <code>TERM</code>, then <code>CONT</code>, to a background job’s whole process group; an unknown job id is a tool error</td>
+      <td>“Use this to stop a job that is no longer needed rather than leaving it running.”</td>
     </tr>
   </tbody>
 </table>
@@ -185,16 +201,44 @@
 
 <p>Tools never raise. A bad argument, a missing file or a failing command comes back to the model as a tool error it can read and act on.</p>
 
+<h2 id="background-jobs">Background jobs</h2>
+
+<p><code>bash</code> takes a <code>run_in_background</code> flag: instead of waiting, the command runs in its own process group with stdin read from <code>/dev/null</code> and stdout and stderr captured in a private temp file, and the call returns a job id and the output path immediately. The Runtime watches each job and reports its exit to the host as it happens; see <a href="/guides/embedding/#background-jobs">Background jobs</a>. A job outlives a Runtime <code>cancel</code>: it keeps running and its exit is still delivered. <code>close</code> sends <code>TERM</code>, then <code>CONT</code>, to the process group of every job that still has a process running, including a job whose command has exited and left processes behind, then waits for those processes to exit, sends <code>KILL</code> to any still running after two seconds, and removes the output file of every job the Runtime started.</p>
+
+<p>The model never has to ask whether a job is done: the Runtime delivers each exit into the conversation as a notice, a <code>&lt;background-job id="…" status="…" exit-code="…" duration="…"&gt;</code> envelope holding the command, the output path and the last 2,000 bytes of the output. <code>status</code> is <code>completed</code> for exit code <code>0</code> and <code>failed</code> for any other. A job ended by a signal — <code>bash_kill</code>’s <code>TERM</code>, or a crash — has no exit code: its envelope carries <code>status="killed"</code> and the signal’s name in place of <code>exit-code</code>, as in <code>signal="TERM"</code>. Where the notice lands depends on what the turn is doing when the job exits:</p>
+
+<ul>
+  <li><strong>During a turn</strong> it is appended to the next tool result the model receives, after the tool’s own output.</li>
+  <li><strong>As the model finishes its reply</strong> the Runtime adds the notice as a user-role message and runs the model again, so the turn continues. A prompt is continued this way at most five times, and not once the <a href="/guides/embedding/#capping-the-loop">step limit</a> is used up; an exit held back waits for the next prompt.</li>
+  <li><strong>Between turns</strong> it is delivered as a user-role message ahead of the next prompt, or in a <a href="/guides/embedding/#waiting-for-jobs">follow-up</a> turn of its own, which is how <a href="/guides/headless/#background-jobs">headless</a> hears of the jobs a run left running and how the <a href="/guides/terminal/#background-jobs">terminal</a> hears of a job that exits while it waits for input.</li>
+</ul>
+
+<p>Exits that are waiting together arrive as one notice. <code>bash</code>’s description tells the model it will be notified, so it has no reason to wait on a job or poll <code>bash_output</code> for its exit. <a href="/guides/embedding/#exit-notifications">Exit notifications</a> describes what a host sees of each delivery.</p>
+
+<p>An output file holds at most 10,000,000 bytes. When a job writes past that, the oldest output is dropped: the file is rewritten to open with the line <code>[earlier output dropped to keep this file under 10000000 bytes]</code> followed by the most recent 5,000,000 bytes, and carries on growing from there.</p>
+
+<p>A job writes to its file through a pipe the Runtime reads. When the Runtime closes, or the process hosting it ends without closing it, any process still holding that pipe is sent <code>SIGPIPE</code> the next time it writes.</p>
+
+<p><code>bash_output</code> reads a job by the id <code>bash</code> returned; <code>job_id</code> is its only parameter. Each call returns what the job has written since the previous read, or <code>(no new output)</code>, so nothing is delivered twice. It reads the job’s output file and returns at once: it neither waits for the job nor reports its exit status, which reaches the model as a notice and the host through <code>on_job_exit</code>. A read is truncated at 30,000 bytes with the same marker as <code>bash</code>, and the next read starts at whatever the job writes after it — what a truncated read left out is not delivered later, so a job that writes faster than it is read cannot build a backlog. What a read left out stays at the output path until the cap drops it, and a read whose place in the output was dropped starts again at the <code>[earlier output dropped …]</code> line that opens the file. Bytes that are not valid UTF-8 are replaced.</p>
+
+<p><code>bash_kill</code> stops a job early: it sends <code>TERM</code> to the job’s process group, so everything the command started goes with it, then <code>CONT</code>, so a stopped job acts on the <code>TERM</code> rather than holding it pending. It does not wait for the job to end; the exit is reported like any other.</p>
+
+<p>Both tools still accept a job that has exited, until its exit is delivered to the model: <code>bash_output</code> returns whatever it left unread, and <code>bash_kill</code> sends nothing and says the job has already exited. Once the notice is delivered the Runtime forgets the job, both tools answer its id as unknown, and the output path in the notice is where the rest of its output is read.</p>
+
 <p>Relative paths resolve against the Runtime’s <code>cwd:</code> (and <code>bash</code> runs there), not the process directory, so two Runtimes in one process can work in different directories. A tool called outside a Runtime falls back to <code>Dir.pwd</code>.</p>
 
 <h2 id="identifiers">Identifiers</h2>
 
-<p>A tool’s name everywhere — in <code>tools:</code> on <code>Runtime.new</code> and <code>Loader.runtime</code>, and on <code>--tools</code> — is its riffer <code>identifier</code>: <code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, and whatever identifier an extension tool declares.</p>
+<p>A tool’s name everywhere — in <code>tools:</code> on <code>Runtime.new</code> and <a href="/guides/embedding/#loader-options"><code>Loader::Options</code></a>, and on <code>--tools</code> — is its riffer <code>identifier</code>: <code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, <code>bash_output</code>, <code>bash_kill</code>, and whatever identifier an extension tool declares.</p>
 
 <div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Runtime</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s1">'anthropic/claude-sonnet-4-6'</span><span class="p">,</span> <span class="ss">extensions: </span><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">bundled</span><span class="p">,</span> <span class="ss">tools: </span><span class="sx">%w[read bash]</span><span class="p">)</span>
 </code></pre></div></div>
 
+<p>The allowlist names tools, not extensions. All three <code>bash</code> tools come from the <code>bash</code> bundled extension, but the Runtime above allows only <code>bash</code> itself: the model can start background jobs but has no <code>bash_output</code> to follow them and no <code>bash_kill</code> to stop them. Name both as well to keep them.</p>
+
 <p>The allowlist covers the tools extensions register. Tools from <a href="/guides/mcp/">MCP servers</a> are added by riffer inside the agent and are not filtered by it.</p>
+
+<p>For each allowlisted name that matches no tool an extension registered, the Runtime reports it through the host’s <code>notify</code> at level <code>:warning</code>, as “Unknown tool in allowlist: NAME”, so a typo such as <code>--tools raed,bash</code> does not silently drop <code>read</code>. An MCP tool name is reported too, since the allowlist has no effect on it. The Runtime reports them when it is built and again on each <a href="/guides/embedding/#rebuilding-after-a-code-reload">rebuild</a>.</p>
 
 <h2 id="the-bundled-extensions">The bundled extensions</h2>
 
@@ -235,7 +279,7 @@
 <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Runtime</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="s1">'anthropic/claude-sonnet-4-6'</span><span class="p">,</span> <span class="ss">extensions: </span><span class="p">[</span><span class="o">*</span><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">bundled</span><span class="p">,</span> <span class="n">sandbox</span><span class="p">])</span>
 </code></pre></div></div>
 
-<p>The later registration wins and takes the earlier tool’s place in the list. The Runtime reports each replacement through the host’s <code>notify</code> at level <code>:info</code> — “Extension sandbox replaces tool bash from bash” — which also reaches the stream as a <code>notify</code> event. Nothing is deregistered: <code>Riffer::Rig.bundled(:bash)</code> still returns the original. Commands and prompt sections follow the same rule; see <a href="/guides/extensions/">Extensions</a>.</p>
+<p>The later registration wins and takes the earlier tool’s place in the list. The Runtime reports each replacement through the host’s <code>notify</code> at level <code>:info</code> — “Extension sandbox replaces tool bash from bash” — which also reaches the stream as a <code>notify</code> event. Nothing is deregistered: <code>Riffer::Rig.bundled(:bash)</code> still returns the original. Replacement is per identifier, so a replaced <code>bash</code> leaves <code>bash_output</code> and <code>bash_kill</code> registered; they act only on the jobs the bundled <code>bash</code> started. Commands and prompt sections follow the same rule; see <a href="/guides/extensions/">Extensions</a>.</p>
 
         </article>
 

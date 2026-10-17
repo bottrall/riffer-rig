@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.12.0</span>
+            <span class="version">v0.13.0</span>
           </div>
         </nav>
       </div>
@@ -50,48 +50,53 @@
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
+                <a href="/guides/terminal/"
+                  ><span class="num">03</span>Terminal</a
+                >
+              </li>
+              <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">03</span>Configuration</a
+                  ><span class="num">04</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">04</span>Instructions</a
+                  ><span class="num">05</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">05</span>Tools</a
+                  ><span class="num">06</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">06</span>Skills</a
+                  ><span class="num">07</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">07</span>MCP</a
+                  ><span class="num">08</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">08</span>Reloading</a
+                  ><span class="num">09</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/" class="active" aria-current="page"
-                  ><span class="num">09</span>Sessions</a
+                  ><span class="num">10</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">10</span>Headless mode</a
+                  ><span class="num">11</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/"
-                  ><span class="num">11</span>ACP</a
+                  ><span class="num">12</span>ACP</a
                 >
               </li>
             </ul>
@@ -99,17 +104,17 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">12</span>Extensions</a
+                  ><span class="num">13</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">13</span>Embedding riffer-rig</a
+                  ><span class="num">14</span>Embedding riffer-rig</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">14</span>Hosts</a
+                  ><span class="num">15</span>Hosts</a
                 >
               </li>
             </ul>
@@ -117,12 +122,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">15</span>Providers</a
+                  ><span class="num">16</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">16</span>Custom providers</a
+                  ><span class="num">17</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -132,7 +137,7 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Using the terminal · 09</span></p>
+          <p class="kicker"><span class="chapter">Using the terminal · 10</span></p>
           <h1>Sessions</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
@@ -141,6 +146,7 @@
               <li><a href="#where-sessions-live">Where sessions live</a></li>
               <li><a href="#what-an-entry-holds">What an entry holds</a></li>
               <li><a href="#opting-out">Opting out</a></li>
+              <li><a href="#tracing-the-last-turn">Tracing the last turn</a></li>
               <li><a href="#resuming">Resuming</a></li>
               <li><a href="#the-picker">The picker</a></li>
               <li><a href="#what-a-snapshot-holds">What a snapshot holds</a></li>
@@ -153,7 +159,7 @@
 
 <h2 id="the-session-store">The session store</h2>
 
-<p>The Loader appends to a store: any object implementing the four <code>Riffer::Rig::Stores::_Store</code> methods — <code>append(id, entry)</code>, <code>read(id)</code>, <code>list(cwd: nil)</code> and <code>delete(id)</code>. Entries cross the store as typed POROs — <code>Stores::Header</code>, <code>Stores::MessageEntry</code>, <code>Stores::ModelEntry</code> and <code>Stores::SkillEntry</code> — and each store serialises them itself; <code>Hash</code> remains only where it is already the documented currency, the JSON lines on disk and the riffer message payloads. The store defaults to <code>Stores::JSONL</code> and is taken per build with <code>store:</code>; a Rails host implements the four over its own tables and passes its own. Hosts never see the store — they only choose which session to drive.</p>
+<p>The Loader appends to a store: any object implementing the four <code>Riffer::Rig::Stores::_Store</code> methods — <code>append(id, entry)</code>, <code>read(id)</code>, <code>list(cwd: nil)</code> and <code>delete(id)</code>. Entries cross the store as typed POROs — <code>Stores::Header</code>, <code>Stores::MessageEntry</code>, <code>Stores::ModelEntry</code> and <code>Stores::SkillEntry</code> — and each store serialises them itself; <code>Hash</code> remains only where it is already the documented currency, the JSON lines on disk and the riffer message payloads. The store defaults to a <code>Stores::JSONL</code> under the Loader’s <code>home:</code> and is taken per build with <code>store:</code>; a Rails host implements the four over its own tables and passes its own. Hosts never see the store — they only choose which session to drive.</p>
 
 <h2 id="where-sessions-live">Where sessions live</h2>
 
@@ -190,9 +196,68 @@
   </tbody>
 </table>
 
+<p>Every entry but the header also holds <code>recorded_at</code>, the wall-clock time the Loader recorded it — a UTC ISO 8601 string with milliseconds (<code>2026-10-11T02:00:00.123Z</code>), on the entry and on the JSONL line alike; <code>recorded_time</code> reads it as a <code>Time</code>. Within a session it never goes backwards, in file order: when the clock steps back, or a resume lands on a clock behind the session’s latest entry, an entry repeats the latest time already recorded, so two entries may share one. An entry held for the header — a <code>/model</code> before the first prompt — keeps the time it happened, which is earlier than the header’s <code>created_at</code>. The field is additive: a line without it, as every session written before it existed has, or with one that does not parse, reads back with <code>recorded_at</code> nil and resumes as before, and a store of your own that drops it loses nothing a resume needs.</p>
+
 <h2 id="opting-out">Opting out</h2>
 
 <p>Every Loader-built session is saved, one-shots included. Skip one run with <code>store: nil</code> — <code>--no-save</code> on the command line — or all of them with <code>"sessions": {"save": false}</code> in settings (<a href="/guides/configuration/">Configuration</a>).</p>
+
+<p><code>--no-save</code> leaves the saved sessions unread too: <code>-c</code>, <code>-r</code> and <code>/resume</code> print <code>Sessions are off for this run (--no-save).</code> instead of looking for one, and in headless mode <code>-c</code> and <code>-r</code> exit 2 with it. The settings switch only stops recording — saved sessions still resume, and the resumed session is not appended to.</p>
+
+<h2 id="tracing-the-last-turn">Tracing the last turn</h2>
+
+<p><code>/trace</code> replays the last turn from the store. The Loader installs it as a runtime command on every build that records, so it works the same in every host and is absent when the session is not saved (<a href="#opting-out">Opting out</a>). The turn runs from the session’s last prompt to its last entry, so a resumed session can be traced before its next prompt. The command’s <code>command_output</code> holds one line per recorded step — the time, what happened, and the detail:</p>
+
+<pre><code>02:00:01.000  prompt    Fix the failing test
+02:00:02.250  preamble  I'll read both files.
+02:00:02.250  dispatch  read {"path":"a.rb"}
+02:00:02.250  dispatch  read {"path":"b.rb"}
+              silent    6.8s
+02:00:09.050  finish    read
+02:00:09.051  finish    read (execution_error)
+02:00:10.500  answer    Fixed.
+</code></pre>
+
+<table>
+  <thead>
+    <tr>
+      <th>Step</th>
+      <th>Shows</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>prompt</code></td>
+      <td>the first line of the user message that started the turn</td>
+    </tr>
+    <tr>
+      <td><code>preamble</code></td>
+      <td>the first line of the text the assistant sent with tool calls</td>
+    </tr>
+    <tr>
+      <td><code>dispatch</code></td>
+      <td>one line per tool call of that request: the tool’s name and its arguments as the model sent them</td>
+    </tr>
+    <tr>
+      <td><code>finish</code></td>
+      <td>one line per tool result, in call order: the tool’s name, and the error type in parentheses when it failed</td>
+    </tr>
+    <tr>
+      <td><code>answer</code></td>
+      <td>the first line of the text of a request that called no tool</td>
+    </tr>
+    <tr>
+      <td><code>notice</code></td>
+      <td>the first line of a <a href="/guides/embedding/#exit-notifications">job exit notification</a> that continued the turn</td>
+    </tr>
+    <tr>
+      <td><code>silent</code></td>
+      <td>a stretch of 5 seconds or more between two consecutive messages, with its length</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The times are the entries’ <code>recorded_at</code>, in UTC; an entry without one has a blank time and bounds no <code>silent</code> stretch. The tool results of one request are recorded together, once the last of its calls returns, so a <code>dispatch</code> carries its request’s time and the <code>finish</code> lines of one request share the moment the whole batch ended — each call’s own timing is on the stream’s <a href="/guides/embedding/#tool-call-events"><code>after_tool_call</code></a>. A session with no user message yet answers <code>No turn recorded yet</code>.</p>
 
 <h2 id="resuming">Resuming</h2>
 
@@ -212,7 +277,7 @@
     </tr>
     <tr>
       <td><code>resume(id)</code></td>
-      <td>the session with that id, or nil when the store has none</td>
+      <td>the session with that id, or nil when the store has none; <code>extra_extensions:</code> loads into its build as it does for <a href="/guides/embedding/#building-a-runtime-with-the-loader"><code>runtime</code></a></td>
     </tr>
     <tr>
       <td><code>list(all: false)</code></td>
@@ -225,24 +290,28 @@
   </tbody>
 </table>
 
+<p><code>continue</code> and <code>resume</code> build as <code>runtime</code> does and take the same <a href="/guides/embedding/#loader-options"><code>Loader::Options</code></a> as an optional argument: <code>continue(options)</code>, <code>resume(id, options)</code>.</p>
+
 <p>A listed header carries the session’s update time as <code>updated</code>, stamped by the store while it holds the physical artifact — for <code>Stores::JSONL</code> the file’s mtime, which its last append set; <code>continue</code> picks the most recently <code>updated</code> session wherever <code>list</code> happens to place it.</p>
 
 <p>On the command line, <code>riffer -c</code> continues the most recent session in the directory and <code>riffer -r &lt;id&gt;</code> resumes by id. With no match the REPL tells you and starts fresh. Bare <code>riffer -r</code> opens the <a href="#the-picker">picker</a> before the first session starts; picking a session resumes it, leaving the picker starts a fresh one.</p>
 
-<p>Resuming folds the session’s entries back into a snapshot and builds a Runtime over it: the last <code>model</code> entry wins, skill activations accumulate, and the <code>message</code> entries are the history. Everything else is today’s — the settings, credentials, extensions and tools of the new build, and its model selection, unless the session recorded a <code>/model</code> switch, which is restored when its provider still has credentials (<a href="#restoring">Restoring</a> has the rules, including the healed tail of a file cut mid-turn). A resumed session keeps its id and appends to the same file.</p>
+<p>Resuming folds the session’s entries back into a snapshot and builds a Runtime over it: the last <code>model</code> entry wins, skill activations accumulate, and the <code>message</code> entries are the history. Everything else is today’s — the settings, credentials, extensions and tools of the new build, and its model selection, unless the session recorded a <code>/model</code> switch, which is restored over <code>RIFFER_MODEL</code> and the settings when its provider still has credentials (<a href="#restoring">Restoring</a> has the rules, including the healed tail of a file cut mid-turn). A model chosen for the run — <code>--model</code>, or <code>model:</code> in the <a href="/guides/embedding/#loader-options"><code>Loader::Options</code></a> — wins over the switch for that run only: it is not recorded, so a later resume without it restores the switch again. A resumed session keeps its id and appends to the same file, and the terminal replays its earlier turns above the input (<a href="/guides/terminal/#resuming">Terminal</a>).</p>
+
+<p>On the command line and in the REPL, a session resumes in the directory it was saved in — its header’s <code>cwd</code> — wherever you resume it from: <code>riffer -r &lt;id&gt;</code> from another directory, or a pick in <code>/resume --all</code>, builds it there, so its tools, project settings, skills and <code>rig.rb</code> are that directory’s and the banner shows it. When that directory no longer exists, the session is not resumed: the REPL says <code>Session &lt;id&gt; was saved in &lt;dir&gt;, which no longer exists.</code> and starts fresh — or, after <code>/resume</code>, keeps the session you are in — and headless exits 2 with it.</p>
 
 <h2 id="the-picker">The picker</h2>
 
-<p>In the REPL, <code>/resume</code> opens the picker over the sessions of the current directory, and <code>/resume --all</code> over every directory’s. Each row shows the session’s first prompt as its title, the relative time of its last update and its message count, most recent first.</p>
+<p>In the REPL, <code>/resume</code> opens the picker over the sessions of the current directory, and <code>/resume --all</code> over every directory’s. Each row shows the session’s first prompt as its title and the relative time of its last update, most recent first.</p>
 
 <p>The picker reads one line at a time:</p>
 
 <ul>
-  <li>Typing text filters the rows to titles containing it (case-insensitive).</li>
+  <li>Typing text filters the rows to titles containing it (case-insensitive). A filter that matches nothing says so and keeps the previous rows.</li>
   <li>Enter switches to the session when a single row remains.</li>
   <li>A row number — <code>2</code>, Enter — switches to that row directly.</li>
   <li>Ctrl-D starts a delete: type the number of the row, then confirm with <code>y</code> (<code>n</code> or anything else keeps it). The session is removed from the store.</li>
-  <li>Enter with several rows, or Ctrl-C, leaves the picker.</li>
+  <li>Enter with several rows, Ctrl-C, or Ctrl-D at the delete prompt leaves the picker and prints <code>(closed)</code>.</li>
 </ul>
 
 <p>Switching replaces the Runtime the terminal drives and re-renders the banner: the conversation you left is already saved, keeps its id and file, and <code>/resume</code> appends to it. <code>/new</code> starts a fresh session in place the same way — a new id, empty history — and the session you left stays on disk.</p>
@@ -265,7 +334,7 @@
     </tr>
     <tr>
       <td><code>:messages</code></td>
-      <td>the conversation as riffer message hashes (<code>Riffer::Messages::Base#to_h</code>), system message first, read back with <code>Riffer::Messages::Base.from_hash</code></td>
+      <td>the conversation as riffer message hashes (<code>Riffer::Messages::Base#to_h</code>), system message first, read back with <code>Riffer::Messages::Base.from_hash</code>; a <a href="/guides/embedding/#exit-notifications">job exit notification</a> also carries <code>job_notification: true</code> and is read back as one, and one a <a href="/guides/embedding/#waiting-for-jobs">follow-up</a> delivered carries <code>follow_up_exits</code> too</td>
     </tr>
     <tr>
       <td><code>:model</code></td>

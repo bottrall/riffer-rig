@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.12.0</span>
+            <span class="version">v0.13.0</span>
           </div>
         </nav>
       </div>
@@ -50,48 +50,53 @@
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
+                <a href="/guides/terminal/"
+                  ><span class="num">03</span>Terminal</a
+                >
+              </li>
+              <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">03</span>Configuration</a
+                  ><span class="num">04</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">04</span>Instructions</a
+                  ><span class="num">05</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">05</span>Tools</a
+                  ><span class="num">06</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">06</span>Skills</a
+                  ><span class="num">07</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">07</span>MCP</a
+                  ><span class="num">08</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">08</span>Reloading</a
+                  ><span class="num">09</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">09</span>Sessions</a
+                  ><span class="num">10</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">10</span>Headless mode</a
+                  ><span class="num">11</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/"
-                  ><span class="num">11</span>ACP</a
+                  ><span class="num">12</span>ACP</a
                 >
               </li>
             </ul>
@@ -99,17 +104,17 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">12</span>Extensions</a
+                  ><span class="num">13</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">13</span>Embedding riffer-rig</a
+                  ><span class="num">14</span>Embedding riffer-rig</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">14</span>Hosts</a
+                  ><span class="num">15</span>Hosts</a
                 >
               </li>
             </ul>
@@ -117,12 +122,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">15</span>Providers</a
+                  ><span class="num">16</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">16</span>Custom providers</a
+                  ><span class="num">17</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -180,15 +185,16 @@ riffer
 
 <h2 id="the-session">The session</h2>
 
-<p>The banner shows the model, the working directory, how many skills were found and the version. Type a prompt and press Enter:</p>
+<p>The banner shows the model, the working directory, how many skills were found and the version. On a terminal too narrow for the logo it leaves the logo out, and a model or working directory too long for its row is cut from the left behind <code>…</code>. It is drawn again when the session changes — <code>/new</code>, <code>/resume</code> — and for a session that has already used tokens it adds a <code>session</code> row with the total so far, and its cost once the model is priced. Type a prompt and press Enter:</p>
 
 <ul>
-  <li>the reply streams in, with each tool call (<code>⚙ read(path: "lib/app.rb")</code>) and the first line of its result;</li>
-  <li>each turn ends with a token line, and the session cost once the model is priced (<a href="/guides/configuration/#models">Configuration</a>);</li>
-  <li>Ctrl-C cancels a running turn; at the prompt, a second Ctrl-C exits, as do <code>/exit</code>, <code>/quit</code> and Ctrl-D.</li>
+  <li>while the turn runs, the status line under the input shows its time, steps, tool calls, tokens and cost, and Ctrl-T peeks at what the model is writing;</li>
+  <li>when it ends, the reply is printed in one piece, and under it a stat line: the turn’s steps, time and tokens, then the session’s running total, each with its cost once the model is priced (<a href="/guides/configuration/#models">Configuration</a>);</li>
+  <li>you can keep typing while a turn runs: Enter queues the message, and it runs when the turn ends;</li>
+  <li>Ctrl-C cancels a running turn, which prints what the reply had reached and <code>interrupted</code>; with no turn running, a second Ctrl-C exits, as do <code>/exit</code>, <code>/quit</code> and Ctrl-D on an empty line.</li>
 </ul>
 
-<p>The <a href="https://github.com/bottrall/riffer-rig#usage">README</a> lists the flags and slash commands.</p>
+<p><code>/help</code> lists the slash commands, <a href="/guides/terminal/">Terminal</a> has every key and what each command does, and the <a href="https://github.com/bottrall/riffer-rig#usage">README</a> lists the flags.</p>
 
 <h2 id="what-first-run-leaves-behind">What first run leaves behind</h2>
 
@@ -221,10 +227,10 @@ riffer
               ><span class="name">Overview</span></span
             ></a
           >
-          <a class="doc next" href="/guides/configuration/"
+          <a class="doc next" href="/guides/terminal/"
             ><span
               ><span class="desc">Next</span
-              ><span class="name">Configuration</span></span
+              ><span class="name">Terminal</span></span
             ><span class="go">→</span></a
           >
         </nav>

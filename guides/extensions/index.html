@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.12.0</span>
+            <span class="version">v0.13.0</span>
           </div>
         </nav>
       </div>
@@ -50,48 +50,53 @@
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
+                <a href="/guides/terminal/"
+                  ><span class="num">03</span>Terminal</a
+                >
+              </li>
+              <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">03</span>Configuration</a
+                  ><span class="num">04</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">04</span>Instructions</a
+                  ><span class="num">05</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">05</span>Tools</a
+                  ><span class="num">06</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">06</span>Skills</a
+                  ><span class="num">07</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">07</span>MCP</a
+                  ><span class="num">08</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">08</span>Reloading</a
+                  ><span class="num">09</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">09</span>Sessions</a
+                  ><span class="num">10</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">10</span>Headless mode</a
+                  ><span class="num">11</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/"
-                  ><span class="num">11</span>ACP</a
+                  ><span class="num">12</span>ACP</a
                 >
               </li>
             </ul>
@@ -99,17 +104,17 @@
             <ul>
               <li>
                 <a href="/guides/extensions/" class="active" aria-current="page"
-                  ><span class="num">12</span>Extensions</a
+                  ><span class="num">13</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">13</span>Embedding riffer-rig</a
+                  ><span class="num">14</span>Embedding riffer-rig</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">14</span>Hosts</a
+                  ><span class="num">15</span>Hosts</a
                 >
               </li>
             </ul>
@@ -117,12 +122,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">15</span>Providers</a
+                  ><span class="num">16</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">16</span>Custom providers</a
+                  ><span class="num">17</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -132,7 +137,7 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Extending and embedding · 12</span></p>
+          <p class="kicker"><span class="chapter">Extending and embedding · 13</span></p>
           <h1>Extensions</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
@@ -178,12 +183,14 @@
 
 <p>They are plain Ruby, and the Loader runs each with <code>load</code>: they <code>require</code> gems, <code>require_relative</code> local files, or call <code>Riffer::Rig.extension</code> inline. Ruby’s require order is the load order, and a later registration under the same name replaces an earlier one. There is no directory scanning, no manifest, and no settings list of extensions: what is required is what loads.</p>
 
-<p>The home file is always trusted. The first time a project <code>.riffer/rig.rb</code> is seen, the Loader asks the host to confirm the path, stores the answer by absolute path in <code>~/.riffer/trust.json</code>, and never asks again:</p>
+<p>The home file is always trusted. The first time a project <code>.riffer/rig.rb</code> is seen, the Loader asks the host to confirm the path, stores a yes or no by absolute path in <code>~/.riffer/trust.json</code>, and never asks again:</p>
 
 <div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"/home/jake/project/.riffer/rig.rb"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p>A host whose <code>capabilities</code> leave out <code>:confirm</code> — the <a href="/guides/hosts/">null host</a>, headless, ACP — is never asked: the file is skipped and nothing is stored, so a later terminal session can still ask. A host that answers no stores <code>false</code>, skips the file silently, and is not asked again until the entry is removed from <code>trust.json</code>.</p>
+<p>A host whose <code>capabilities</code> leave out <code>:confirm</code> — the <a href="/guides/hosts/">null host</a>, headless, ACP while <code>session/new</code> or <code>session/load</code> builds — is never asked: the file is skipped and nothing is stored, so a later terminal session can still ask. A question the host leaves unanswered (<code>confirm</code> returns <code>nil</code>, as Ctrl-C or Ctrl-D does in the terminal) is treated the same way: the file is skipped for this load, nothing is stored, and the next load asks again. A host that answers no stores <code>false</code>, skips the file silently, and is not asked again until the entry is removed from <code>trust.json</code>.</p>
+
+<p>A <code>trust.json</code> that is not valid JSON, or does not hold a JSON object, is never written over: the project file is skipped without asking, and the host gets a <code>notify</code> at level <code>:error</code> naming <code>trust.json</code> and, for a parse error, the line and column where parsing stopped.</p>
 
 <p>Each file is isolated the way an extension block is: a <code>rig.rb</code> that raises a <code>StandardError</code> is reported to the host through <code>notify</code> at level <code>:error</code>, and none of the extensions it recorded reach the Runtime, while the other file’s extensions still load. A <code>ScriptError</code> — a bad <code>require</code>, say — propagates out of the build. Errors go to the host only, never into the model’s context.</p>
 
@@ -267,7 +274,7 @@
     </tr>
     <tr>
       <td><code>confirm(question)</code></td>
-      <td>forwards to the host and returns its answer, or <code>false</code> when the host does not support <code>:confirm</code></td>
+      <td>forwards to the host and returns its answer, or <code>false</code> when the question is left unanswered or the host does not support <code>:confirm</code></td>
     </tr>
   </tbody>
 </table>
@@ -317,19 +324,19 @@
       <td><code>before_request</code></td>
       <td>vetoable</td>
       <td><code>messages</code> (the whole request)</td>
-      <td>before every LLM call: at the start of the turn and again after each round of tool results</td>
+      <td>before every LLM call: at the start of the turn, after each round of tool results, and when the Runtime continues a turn for a <a href="/guides/embedding/#exit-notifications">job exit notification</a></td>
     </tr>
     <tr>
       <td><code>before_tool_call</code></td>
       <td>vetoable</td>
-      <td><code>tool</code> (the identifier), <code>args</code> (symbol keys)</td>
-      <td>before each tool runs</td>
+      <td><code>call_id</code>, <code>tool</code> (the identifier), <code>args</code> (symbol keys), <code>at</code></td>
+      <td>before each tool runs, once the call’s arguments have parsed into an object</td>
     </tr>
     <tr>
       <td><code>after_tool_call</code></td>
       <td>observe</td>
-      <td><code>tool</code>, <code>args</code> (as run), <code>result</code> (the tool’s <code>Riffer::Tools::Response</code>)</td>
-      <td>after each tool runs</td>
+      <td><code>call_id</code>, <code>tool</code>, <code>args</code> (as run), <code>result</code> (the call’s <code>Riffer::Tools::Response</code>), <code>at</code>, <code>duration</code></td>
+      <td>after every tool call, whether or not the tool ran</td>
     </tr>
     <tr>
       <td><code>after_response</code></td>
@@ -365,6 +372,10 @@
 
 <p>Observe and passthrough hooks change nothing: their return values are ignored, and a <code>stream</code> hook sees each riffer event unchanged, the same object the host receives.</p>
 
+<p><code>after_tool_call</code> fires exactly once for every tool call the model makes, so a hook that counts, logs or times calls sees all of them — including the calls whose tool never ran. A call a <code>before_tool_call</code> hook blocked arrives with the <code>:blocked</code> error as its <code>result</code> and the <code>args</code> the model sent; a call whose arguments are not a JSON object arrives with the <code>:validation_error</code> result and empty <code>args</code>, and no <code>before_tool_call</code> hook ran for it. A hook that should act only on tools that ran checks <code>event.result.error_type</code>, or <code>event.result.error?</code> to skip every failure.</p>
+
+<p>Both tool events carry <code>call_id</code>, riffer’s id for the call (the one on the stream’s <code>ToolCallDone</code> and on the tool message), and <code>at</code>, a monotonic timestamp in seconds. On <code>before_tool_call</code> <code>at</code> is when the call’s hooks began, the same for every hook of the call; on <code>after_tool_call</code> it is when the tool returned, and <code>duration</code> is the seconds the tool itself ran — time spent in hooks is left out, and a call whose tool never ran has <code>0.0</code>. The host receives both as <a href="/guides/embedding/#tool-call-events">stream events</a> too: the <code>after_tool_call</code> event is the one the hooks saw, handed on once they have run. They are rig events, so the <code>stream</code> hook does not see them.</p>
+
 <p>Hooks run on the thread running the turn, one at a time — tools run sequentially so their hooks never overlap.</p>
 
 <h2 id="the-rigskills-seam">The <code>rig.skills</code> seam</h2>
@@ -391,7 +402,7 @@
 
 <h2 id="bundled-extensions-and-replacement">Bundled extensions and replacement</h2>
 
-<p>The four tools ship as bundled extensions — <code>Riffer::Rig.bundled(:read)</code>, <code>:write</code>, <code>:edit</code>, <code>:bash</code> — and so do the <code>:agents_md</code> prompt section, <code>Riffer::Rig.bundled(:agents_md)</code>, the skills directories, <code>Riffer::Rig.bundled(:skills)</code>, and the MCP client, <code>Riffer::Rig.bundled(:mcp)</code>, all built on the same seams as any other extension; <code>Riffer::Rig.bundled</code> returns them all in load order. <a href="/guides/tools/">Tools</a> describes the tools, <a href="/guides/instructions/#agentsmd">Instructions</a> the AGENTS.md section, <a href="/guides/skills/">Skills</a> the skills and <a href="/guides/mcp/">MCP</a> the MCP client.</p>
+<p>The tools ship as four bundled extensions — <code>Riffer::Rig.bundled(:read)</code>, <code>:write</code>, <code>:edit</code>, <code>:bash</code> — and so do the <code>:agents_md</code> prompt section, <code>Riffer::Rig.bundled(:agents_md)</code>, the skills directories, <code>Riffer::Rig.bundled(:skills)</code>, and the MCP client, <code>Riffer::Rig.bundled(:mcp)</code>, all built on the same seams as any other extension; <code>Riffer::Rig.bundled</code> returns them all in load order. <a href="/guides/tools/">Tools</a> describes the tools, <a href="/guides/instructions/#agentsmd">Instructions</a> the AGENTS.md section, <a href="/guides/skills/">Skills</a> the skills and <a href="/guides/mcp/">MCP</a> the MCP client.</p>
 
 <p>A later extension replaces anything an earlier one registered by registering under the same name: a tool with the same identifier, a command with the same name, a prompt section with the same name, an MCP server with the same name. Later wins, and the Runtime reports each replacement across extensions through the host’s <code>notify</code> at level <code>:info</code>, as “Extension LATER replaces KIND NAME from EARLIER”. Nothing is deregistered, so the original extension is still there to pass to another Runtime.</p>
 
@@ -408,7 +419,7 @@
 <ul>
   <li>When the Runtime’s <code>settings:</code> hash lacks the key, the declared default applies; a provided value overrides it. <code>runtime.settings</code> holds the result, so a prompt section reads the same values through <code>ctx.settings[:git]</code>.</li>
   <li>A command’s <code>ctx.settings</code> is its own extension’s namespace only; core keys and other extensions’ namespaces are not in it. Keys present in the namespace but never declared are passed through unchanged.</li>
-  <li><code>runtime.declared_settings</code> lists what each extension declared, extension name → key → default, so a host can render a table of them. Nothing else in core reads it.</li>
+  <li><code>runtime.declared_settings</code> lists what each extension declared — extension name → key → default, names and keys as Symbols — so a host can render a table of them. Nothing else in core reads it.</li>
   <li>A later declaration of the same key replaces the earlier default.</li>
   <li>While the block runs, <code>rig.settings</code> is the same namespace — the Runtime’s <code>settings:</code> values over the defaults declared so far — so an extension can register according to its settings.</li>
 </ul>

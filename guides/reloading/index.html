@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.12.0</span>
+            <span class="version">v0.13.0</span>
           </div>
         </nav>
       </div>
@@ -50,48 +50,53 @@
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
+                <a href="/guides/terminal/"
+                  ><span class="num">03</span>Terminal</a
+                >
+              </li>
+              <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">03</span>Configuration</a
+                  ><span class="num">04</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">04</span>Instructions</a
+                  ><span class="num">05</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">05</span>Tools</a
+                  ><span class="num">06</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">06</span>Skills</a
+                  ><span class="num">07</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">07</span>MCP</a
+                  ><span class="num">08</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/" class="active" aria-current="page"
-                  ><span class="num">08</span>Reloading</a
+                  ><span class="num">09</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">09</span>Sessions</a
+                  ><span class="num">10</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">10</span>Headless mode</a
+                  ><span class="num">11</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/"
-                  ><span class="num">11</span>ACP</a
+                  ><span class="num">12</span>ACP</a
                 >
               </li>
             </ul>
@@ -99,17 +104,17 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">12</span>Extensions</a
+                  ><span class="num">13</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">13</span>Embedding riffer-rig</a
+                  ><span class="num">14</span>Embedding riffer-rig</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">14</span>Hosts</a
+                  ><span class="num">15</span>Hosts</a
                 >
               </li>
             </ul>
@@ -117,12 +122,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">15</span>Providers</a
+                  ><span class="num">16</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">16</span>Custom providers</a
+                  ><span class="num">17</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -132,7 +137,7 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Using the terminal · 08</span></p>
+          <p class="kicker"><span class="chapter">Using the terminal · 09</span></p>
           <h1>Reloading</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
@@ -172,7 +177,7 @@
 
 <h2 id="failure">Failure</h2>
 
-<p>The new registrar is built aside; nothing on the Runtime changes until it is complete. If a <code>rig.rb</code> itself raises, the reload is abandoned: the live registrar stays, the host gets one <code>notify</code>, and the mtime snapshot advances so a failing reload is not retried on every request. A single extension block failing follows the standard rule: skipped and reported, the rest swap in (<a href="/guides/extensions/#error-isolation">Extensions</a>). Errors go to the host only, never into the model’s context.</p>
+<p>The new registrar is built aside; nothing on the Runtime changes until it is complete. If a <code>rig.rb</code> itself raises, or <code>settings.json</code>, <code>auth.json</code> or <code>trust.json</code> no longer parses or <code>settings.json</code> sets a <code>model</code> that is not a string, the reload is abandoned: the live registrar stays, the host gets one <code>notify</code>, and the mtime snapshot advances so a failing reload is not retried on every request. A single extension block failing follows the standard rule: skipped and reported, the rest swap in (<a href="/guides/extensions/#error-isolation">Extensions</a>). Errors go to the host only, never into the model’s context.</p>
 
 <h2 id="known-limits">Known limits</h2>
 

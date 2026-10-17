@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.12.0</span>
+            <span class="version">v0.13.0</span>
           </div>
         </nav>
       </div>
@@ -50,48 +50,53 @@
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
+                <a href="/guides/terminal/"
+                  ><span class="num">03</span>Terminal</a
+                >
+              </li>
+              <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">03</span>Configuration</a
+                  ><span class="num">04</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">04</span>Instructions</a
+                  ><span class="num">05</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">05</span>Tools</a
+                  ><span class="num">06</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">06</span>Skills</a
+                  ><span class="num">07</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/" class="active" aria-current="page"
-                  ><span class="num">07</span>MCP</a
+                  ><span class="num">08</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">08</span>Reloading</a
+                  ><span class="num">09</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">09</span>Sessions</a
+                  ><span class="num">10</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">10</span>Headless mode</a
+                  ><span class="num">11</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/"
-                  ><span class="num">11</span>ACP</a
+                  ><span class="num">12</span>ACP</a
                 >
               </li>
             </ul>
@@ -99,17 +104,17 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">12</span>Extensions</a
+                  ><span class="num">13</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">13</span>Embedding riffer-rig</a
+                  ><span class="num">14</span>Embedding riffer-rig</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">14</span>Hosts</a
+                  ><span class="num">15</span>Hosts</a
                 >
               </li>
             </ul>
@@ -117,12 +122,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">15</span>Providers</a
+                  ><span class="num">16</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">16</span>Custom providers</a
+                  ><span class="num">17</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -132,7 +137,7 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Using the terminal · 07</span></p>
+          <p class="kicker"><span class="chapter">Using the terminal · 08</span></p>
           <h1>MCP</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
@@ -198,7 +203,7 @@
 
 <p>When the Runtime is built, each field resolves like a provider credential: the environment first, then the entry stored under the server’s name in <code>~/.riffer/auth.json</code>, then a prompt — asked once with no echo and stored there for every run after. A field may name several environment variables, tried in order. Header values of a server without an <code>auth</code> block are sent exactly as written; with one, every <code>${field}</code> must name a declared field, and a reference to anything else fails the registration.</p>
 
-<p>A credential that cannot be resolved — unset everywhere, with no stored entry and a host that cannot ask — is reported through <code>notify</code> at level <code>:error</code> as “MCP server NAME failed to register: MCP server NAME has no FIELD (ENV_VAR); set it in the environment or run riffer interactively to paste it”, and the Runtime runs without that server’s tools. A rebuild re-resolves the block, so a server whose resolved headers changed is registered again (<a href="#reload-and-close">Reload and close</a>).</p>
+<p>A credential that cannot be resolved — unset everywhere, with no stored entry and a host that cannot ask — is reported through <code>notify</code> at level <code>:error</code> as “MCP server NAME failed to register: MCP server NAME has no FIELD (ENV_VAR); set it in the environment or run riffer interactively to paste it”, and the Runtime runs without that server’s tools. An <code>auth.json</code> that does not parse fails the registration the same way, with the message naming the file (<a href="/guides/providers/overview/#authjson">Providers</a>). A rebuild re-resolves the block, so a server whose resolved headers changed is registered again (<a href="#reload-and-close">Reload and close</a>).</p>
 
 <h2 id="declaring-servers-from-an-extension">Declaring servers from an extension</h2>
 
@@ -237,7 +242,7 @@
 
 <h2 id="servers-over-acp">Servers over ACP</h2>
 
-<p>An <a href="/guides/acp/">ACP</a> client supplies its own MCP servers with <code>session/new</code>, in stdio shape only: a command, its args and an env map. The agent declares each one through the <code>rig.mcp</code> seam, so it reaches the Runtime as if an extension named <code>acp</code> had declared it, keeps it through a reload rebuild, and can be replaced by a same-name declaration. A server in <code>http</code> or <code>sse</code> shape is skipped with one warning notify.</p>
+<p>An <a href="/guides/acp/">ACP</a> client supplies its own MCP servers with <code>session/new</code> and <code>session/load</code>, in stdio shape only: a command, its args and an env map. The agent declares each one through the <code>rig.mcp</code> seam, so it reaches the Runtime as if an extension named <code>acp</code> had declared it, keeps it through a reload rebuild, and can be replaced by a same-name declaration. A server in <code>http</code> or <code>sse</code> shape is skipped with one warning notify.</p>
 
 <p>A stdio declaration still cannot be registered: riffer’s MCP client speaks HTTPS only, so the Runtime reports “MCP server NAME runs over stdio, which riffer cannot register yet” through <code>notify</code> at level <code>:error</code> and runs without its tools.</p>
 
