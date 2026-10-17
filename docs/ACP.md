@@ -4,18 +4,16 @@
 
 ## Registering with an editor
 
-An editor registers the agent as the command `riffer acp`. In [Zed](https://zed.dev)'s `settings.json`:
+An editor registers the agent as the command `riffer acp`. In [Zed](https://zed.dev), open Agent Settings, go to External Agents, and choose Add Agent, then Add Custom Agent; Zed opens `settings.json` with an `agent_servers` entry to fill in, or you can write it yourself:
 
 ```json
 {
-  "agent": {
-    "version": "1",
-    "profiles": {
-      "riffer": {
-        "name": "Riffer",
-        "command": "riffer",
-        "args": ["acp"]
-      }
+  "agent_servers": {
+    "Riffer": {
+      "type": "custom",
+      "command": "riffer",
+      "args": ["acp"],
+      "env": {}
     }
   }
 }
