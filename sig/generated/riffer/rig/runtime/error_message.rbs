@@ -1,6 +1,6 @@
-# Generated from lib/riffer/rig/hosts/error_message.rb with RBS::Inline
+# Generated from lib/riffer/rig/runtime/error_message.rb with RBS::Inline
 
-module Riffer::Rig::Hosts::ErrorMessage
+module Riffer::Rig::Runtime::ErrorMessage
   # @rbs error: StandardError
   # @rbs return: String
   def of: (StandardError error) -> String

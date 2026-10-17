@@ -33,7 +33,7 @@ The Runtime wraps the host it is given in a `Riffer::Rig::Hosts::Mirror`, which 
 
 ## Writing a host
 
-A host is two pieces: an object implementing `Riffer::Rig::Hosts::_Host`, which the Runtime asks and tells things out of band, and a loop that builds a Runtime and renders its event stream. The `riffer` terminal is the reference for both. Its loop is `Riffer::Rig::Terminal` (`lib/riffer/rig/terminal.rb`, with its presentation under `lib/riffer/rig/terminal/`), and its host object is `Riffer::Rig::Terminal::Host` (`lib/riffer/rig/terminal/host.rb`), which the loop holds as a collaborator rather than being the host itself. Keep your host object inside your host's own namespace, as the terminal does; `Riffer::Rig::Hosts` holds only the contract and the reusable `NonInteractive`, `Null`, `Mirror` and `ErrorMessage`.
+A host is two pieces: an object implementing `Riffer::Rig::Hosts::_Host`, which the Runtime asks and tells things out of band, and a loop that builds a Runtime and renders its event stream. The `riffer` terminal is the reference for both. Its loop is `Riffer::Rig::Terminal` (`lib/riffer/rig/terminal.rb`, with its presentation under `lib/riffer/rig/terminal/`), and its host object is `Riffer::Rig::Terminal::Host` (`lib/riffer/rig/terminal/host.rb`), which the loop holds as a collaborator rather than being the host itself. Keep your host object inside your host's own namespace, as the terminal does; `Riffer::Rig::Hosts` holds only the contract and the reusable `NonInteractive`, `Null` and `Mirror`.
 
 A host uses only the public API of the Runtime, the hosts, the Loader and the events. The terminal is held to that by a test: nothing under `Riffer::Rig::Terminal` names another `Riffer::Rig` constant. Anything a host needs beyond that becomes a Runtime or Loader feature, so embedders get it too.
 
@@ -50,7 +50,6 @@ runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: host, options: options
 ### Driving it
 
 - A line of text is `runtime.prompt(text) { |event| ... }`, which yields riffer's `StreamEvents` and rig's events as the turn runs.
-- An error the turn raises, a provider's HTTP error among them, propagates out of `prompt`. `Riffer::Rig::Hosts::ErrorMessage.of(error)` is the text to show for it: the error's message, followed by the message in the provider's response body when the provider SDK's error carries one its own message leaves out. The terminal prints it after `Error:` and carries on; headless prints it to stderr, or as the `--json` `error` record.
 - A line starting with `/` is `runtime.run_command(name, args) { |event| ... }`; the names come from `runtime.commands`. An unknown name is reported through the host's `notify`, so a host needs no list of its own. Only commands that end or replace the Runtime stay in the host: the terminal's are `/exit` and `/quit`.
 - `runtime.cancel` stops the running turn — a reply in flight at once, a tool call when it returns ([Cancelling a turn](EMBEDDING.md#cancelling-a-turn)); the terminal calls it on Ctrl-C (from a thread, since the cancel flag takes a lock that Ruby refuses inside a signal handler). The turn ends with riffer's `Interrupt` event and a `turn_end` whose `stop_reason` is `:cancelled`.
 - `runtime.on_message` delivers each message as the session records it.

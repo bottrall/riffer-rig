@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Riffer::Rig::Hosts::ErrorMessage
+module Riffer::Rig::Runtime::ErrorMessage
   extend self
 
   # @rbs error: StandardError
