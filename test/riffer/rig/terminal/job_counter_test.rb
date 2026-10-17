@@ -127,13 +127,13 @@ describe Riffer::Rig::Terminal::JobCounter do
     end
 
     it 'shows the counter under an idle prompt' do
-      assert_equal ['›', '  3 jobs running'], @pty.screen.rows
+      assert_equal ['', '›', '  3 jobs running'], @pty.screen.rows
     end
 
     it 'lowers the counter when a job exits off the prompting thread' do
       Thread.new { @runtime.exit_job }.join
 
-      assert_equal ['›', '  2 jobs running'], @pty.screen.rows
+      assert_equal ['', '›', '  2 jobs running'], @pty.screen.rows
     end
   end
 end

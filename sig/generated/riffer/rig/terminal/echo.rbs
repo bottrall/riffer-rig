@@ -6,4 +6,10 @@ module Riffer::Rig::Terminal::Echo
   # @rbs width: Integer?
   # @rbs return: String
   def call: (String prompt, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> String
+
+  private
+
+  # @rbs prompt: String
+  # @rbs return: String
+  def pictured: (String prompt) -> String
 end

@@ -61,7 +61,7 @@ class Riffer::Rig::ACP::Host
   # @rbs level: Symbol
   # @rbs return: void
   def notify(message = nil, level: :info)
-    update(Riffer::Rig::ACP::Mapper.message_chunk(message.to_s))
+    update(Riffer::Rig::ACP::Mapper.notice(message.to_s))
   end
 
   # @rbs update: ::ACP::Types::SessionUpdate::t

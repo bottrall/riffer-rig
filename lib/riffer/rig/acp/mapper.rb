@@ -33,6 +33,14 @@ module Riffer::Rig::ACP::Mapper
     ::ACP::Types::SessionUpdate::AgentMessageChunk.new(content: text_block(content))
   end
 
+  # @rbs text: String
+  # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
+  def notice(text)
+    # ACP has no update for a notice, and without blank lines around it a
+    # notice runs into the reply and into the next notice.
+    message_chunk("\n\n#{text}\n\n")
+  end
+
   # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
   def job_exit
     # ACP has no update for a job exit notice, and without a break the replies
@@ -43,7 +51,7 @@ module Riffer::Rig::ACP::Mapper
   # @rbs completion: Riffer::Rig::Runtime::JobCompletion
   # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
   def job_completion(completion)
-    message_chunk("\n\nBackground job #{completion.job_id} #{ending(completion)}: #{completion.command}\n\n")
+    notice("Background job #{completion.job_id} #{ending(completion)}: #{completion.command}")
   end
 
   # @rbs message: Hash[Symbol, untyped]

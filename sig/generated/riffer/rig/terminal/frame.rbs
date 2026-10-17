@@ -23,9 +23,10 @@ class Riffer::Rig::Terminal::Frame
 
   DESCRIPTION_GAP: String
 
-  # The cursor rests on the input line, the footer's first row, so this wipes
-  # the whole footer.
+  # Sent from the top row the frame drew, so this wipes all of it.
   ERASE: String
+
+  SPACER: String
 
   @io: IO
 

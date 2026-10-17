@@ -87,6 +87,18 @@ describe Riffer::Rig::Terminal::Markdown::Table do
                  lines("| a | b |\n|---|---|\n| one two three | four five six |", width: 23)
   end
 
+  it 'shrinks a column that wraps at spaces before a column of one long word' do
+    assert_equal ['a            │ b', '─────────────┼─────────', 'aaaaaaaaaaaa │ one two', '             │ three',
+                  '             │ four'],
+                 lines("| a | b |\n|---|---|\n| aaaaaaaaaaaa | one two three four |", width: 23)
+  end
+
+  it 'breaks a long word once every column has shrunk to its floor' do
+    assert_equal ['a          │ b', '───────────┼─────────', 'aaaaaaaaaa │ one two', 'aa         │ three',
+                  '           │ four'],
+                 lines("| a | b |\n|---|---|\n| aaaaaaaaaaaa | one two three four |", width: 21)
+  end
+
   it 'lays the rows out as records when the columns cannot shrink enough' do
     assert_equal ['a: one two', 'three', 'b: 2', 'c: 3'],
                  lines("| a | b | c |\n|---|---|---|\n| one two three | 2 | 3 |", width: 14)

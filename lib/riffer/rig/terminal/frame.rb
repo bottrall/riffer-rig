@@ -15,7 +15,7 @@ class Riffer::Rig::Terminal::Frame
 
   JOBS_SEPARATOR = ' · ' #: String
 
-  FOOTER_ROWS = 2 #: Integer
+  FOOTER_ROWS = 3 #: Integer
 
   PEEK_ROWS = 8 #: Integer
 
@@ -25,9 +25,10 @@ class Riffer::Rig::Terminal::Frame
 
   DESCRIPTION_GAP = '  ' #: String
 
-  # The cursor rests on the input line, the footer's first row, so this wipes
-  # the whole footer.
+  # Sent from the top row the frame drew, so this wipes all of it.
   ERASE = "\r\e[J" #: String
+
+  SPACER = "\r\n" #: String
 
   # @rbs @io: IO
   # @rbs @theme: Riffer::Rig::Terminal::Theme
@@ -218,7 +219,8 @@ class Riffer::Rig::Terminal::Frame
     # A row scrolled off the top of the screen could never be erased again.
     above = [@height - FOOTER_ROWS, 0].max
     palette = palette_rows([above, PALETTE_ROWS].min)
-    rows = [*peek_rows([above - palette.size, PEEK_ROWS].min), *palette]
+    spacer = SPACER if @height >= FOOTER_ROWS
+    rows = [*spacer, *peek_rows([above - palette.size, PEEK_ROWS].min), *palette]
     write("#{before}#{rows.join}#{footer}")
     @rows_above = rows.size
   end

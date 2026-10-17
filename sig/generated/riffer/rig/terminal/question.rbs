@@ -1,9 +1,21 @@
 # Generated from lib/riffer/rig/terminal/question.rb with RBS::Inline
 
 module Riffer::Rig::Terminal::Question
+  INDENT: Integer
+
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs question: String?
   # @rbs options: Array[String]?
+  # @rbs width: Integer?
   # @rbs return: Array[String]
-  def lines: (Riffer::Rig::Terminal::Theme theme, String? question, Array[String]? options) -> Array[String]
+  def lines: (Riffer::Rig::Terminal::Theme theme, String? question, Array[String]? options, Integer? width) -> Array[String]
+
+  private
+
+  # @rbs lead: String
+  # @rbs text: String
+  # @rbs indent: Integer
+  # @rbs width: Integer?
+  # @rbs return: Array[String]
+  def hang: (String lead, String text, Integer indent, Integer? width) -> Array[String]
 end

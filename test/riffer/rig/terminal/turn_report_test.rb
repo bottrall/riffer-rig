@@ -30,17 +30,19 @@ describe Riffer::Rig::Terminal::TurnReport do
     Riffer::Rig::Terminal::TurnReport.call(turn, session, theme: theme, width: width)
   end
 
+  def wrap(text, width) = Riffer::Rig::Terminal::TurnReport.wrap(text, width)
+
   describe '.call' do
     it 'opens the answer and the footer each below a blank line' do
       assert_equal "\n  All done.\n\n  2 steps · 00:41\n", report(turn)
     end
 
     it 'prints the footer alone for a turn that gave no answer' do
-      assert_equal "\n  2 steps · 00:41\n", report(turn(answer: nil))
+      assert_equal "\n  2 steps · 00:41\n", report(turn(answer: ''))
     end
 
     it 'marks an interrupted turn instead of printing its stats' do
-      assert_equal "\n  interrupted\n", report(turn(answer: nil, interrupted: true), session: usage(300, 150))
+      assert_equal "\n  interrupted\n", report(turn(answer: '', interrupted: true), session: usage(300, 150))
     end
 
     it 'keeps the partial answer of an interrupted turn above the marker' do
@@ -54,26 +56,24 @@ describe Riffer::Rig::Terminal::TurnReport do
     end
 
     it 'dims the interrupted marker' do
-      assert_equal "\n\e[2m  interrupted\e[0m\n", report(turn(answer: nil, interrupted: true), color: true)
+      assert_equal "\n\e[2m  interrupted\e[0m\n", report(turn(answer: '', interrupted: true), color: true)
     end
 
     it 'wraps the footer to the width' do
-      spent = turn(answer: nil, usage: usage(1200, 340, cost: 0.071))
+      spent = turn(answer: '', usage: usage(1200, 340, cost: 0.071))
       footer = "\n  2 steps · 00:41 ·\n  ↑1200 · ↓340 ·\n  ~$0.0710 · session\n  4500 tok\n"
 
       assert_equal footer, report(spent, session: usage(3000, 1500), width: 24)
     end
 
     it 'dims a wrapped footer as one span' do
-      spent = turn(answer: nil, usage: usage(1200, 340))
+      spent = turn(answer: '', usage: usage(1200, 340))
 
       assert_equal "\n\e[2m  2 steps · 00:41 ·\n  ↑1200 · ↓340\e[0m\n", report(spent, color: true, width: 20)
     end
   end
 
   describe '.wrap' do
-    def wrap(text, width) = Riffer::Rig::Terminal::TurnReport.wrap(text, width)
-
     it 'leaves a blank line empty' do
       assert_equal "  one\n\n  two", wrap("one\n   \ntwo", 20)
     end
@@ -88,6 +88,46 @@ describe Riffer::Rig::Terminal::TurnReport do
 
     it 'wraps a line too long for the width left of its indent' do
       assert_equal "  Reads the\n  rows now", wrap('Reads the rows now', 14)
+    end
+
+    describe 'with a laid-out line too long for the width' do
+      let(:rows) { wrap('17:45:44.375  answer    The README.md contains only the line "# demo"', 50).lines }
+
+      it 'keeps its columns on its first row' do
+        assert_equal "  17:45:44.375  answer    The README.md contains\n", rows.first
+      end
+
+      it 'hangs the rest under its last column' do
+        assert_equal ["#{' ' * 26}only the line \"# demo\""], rows.drop(1)
+      end
+    end
+  end
+
+  describe '.column_head' do
+    it 'counts the leading whitespace of a line toward its head' do
+      hung = "#{' ' * 16}silent    the model went quiet for\n#{' ' * 26}a long while"
+
+      assert_equal hung, wrap("#{' ' * 14}silent    the model went quiet for a long while", 50)
+    end
+
+    it 'ignores a double space past half the row' do
+      line = '17:45:43.243  dispatch  write {"path":"lib/a.rb","content":"class A\n  def x\n    1\n  end\nend\n"}'
+      hung = "  17:45:43.243  dispatch  write {\"path\":\"lib/a.rb\",\"content\":\"class A\\n def x\\n\n" \
+             "#{' ' * 26}1\\n end\\nend\\n\"}"
+
+      assert_equal hung, wrap(line, 80)
+    end
+
+    it 'keeps only the columns that fit in half the row' do
+      hung = "  17:45:43.243  dispatch bash\n#{' ' * 16}{\"command\":\"ls -la\"}"
+
+      assert_equal hung, wrap('17:45:43.243  dispatch  bash {"command":"ls -la"}', 40)
+    end
+
+    it 'wraps a line plainly when no column fits in half the row' do
+      plain = "  17:45:43.243\n  dispatch bash\n  {\"command\":\"ls\n  -la\"}"
+
+      assert_equal plain, wrap('17:45:43.243  dispatch  bash {"command":"ls -la"}', 20)
     end
   end
 
@@ -109,41 +149,41 @@ describe Riffer::Rig::Terminal::TurnReport do
 
   describe '.footer' do
     it 'counts a single step in the singular' do
-      assert_equal "\n  1 step · 00:41\n", report(turn(answer: nil, steps: 1))
+      assert_equal "\n  1 step · 00:41\n", report(turn(answer: '', steps: 1))
     end
 
     it 'shows the wall time in whole minutes and seconds' do
-      assert_equal "\n  2 steps · 02:05\n", report(turn(answer: nil, wall_time: 125.9))
+      assert_equal "\n  2 steps · 02:05\n", report(turn(answer: '', wall_time: 125.9))
     end
 
     it 'closes with the session total and its cost' do
       spent = usage(1200, 340, cost: 0.071)
       footer = "\n  2 steps · 00:41 · ↑1200 · ↓340 · ~$0.0710 · session 4500 tok · ~$0.2500\n"
 
-      assert_equal footer, report(turn(answer: nil, usage: spent), session: usage(3000, 1500, cost: 0.25))
+      assert_equal footer, report(turn(answer: '', usage: spent), session: usage(3000, 1500, cost: 0.25))
     end
 
     it 'shows the session total of a turn that reported no usage' do
-      assert_equal "\n  2 steps · 00:41 · session 4500 tok\n", report(turn(answer: nil), session: usage(3000, 1500))
+      assert_equal "\n  2 steps · 00:41 · session 4500 tok\n", report(turn(answer: ''), session: usage(3000, 1500))
     end
   end
 
   describe '.tokens' do
     it 'shows the real tokens of a turn that reported usage' do
-      assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340\n", report(turn(answer: nil, usage: usage(1200, 340)))
+      assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340\n", report(turn(answer: '', usage: usage(1200, 340)))
     end
 
     it 'adds the cache counts of a turn that wrote to and read from the cache' do
       spent = usage(1200, 340, cache_write_tokens: 400, cache_read_tokens: 200)
       footer = "\n  2 steps · 00:41 · ↑1200 · ↓340 · cache_write:400 · cache_read:200\n"
 
-      assert_equal footer, report(turn(answer: nil, usage: spent))
+      assert_equal footer, report(turn(answer: '', usage: spent))
     end
 
     it 'omits a cache count of zero' do
       spent = usage(1200, 340, cache_write_tokens: 0, cache_read_tokens: 0)
 
-      assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340\n", report(turn(answer: nil, usage: spent))
+      assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340\n", report(turn(answer: '', usage: spent))
     end
   end
 
@@ -151,7 +191,7 @@ describe Riffer::Rig::Terminal::TurnReport do
     it 'shows the cost of a priced turn after its tokens' do
       spent = usage(1200, 340, cost: 0.071)
 
-      assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340 · ~$0.0710\n", report(turn(answer: nil, usage: spent))
+      assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340 · ~$0.0710\n", report(turn(answer: '', usage: spent))
     end
   end
 

@@ -295,6 +295,19 @@ describe Riffer::Rig::Loader do
                      build(model: 'mock/flag', env: { 'MOCK_API_KEY' => 'k', 'RIFFER_MODEL' => 'mock/env' }).model
       end
 
+      it 'restores the snapshot model over RIFFER_MODEL' do
+        snapshot = { id: 'saved', messages: [], model: 'mock/saved', skills: [] }
+
+        assert_equal 'mock/saved',
+                     build(snapshot: snapshot, env: { 'MOCK_API_KEY' => 'k', 'RIFFER_MODEL' => 'mock/env' }).model
+      end
+
+      it 'prefers the model keyword over the snapshot model' do
+        snapshot = { id: 'saved', messages: [], model: 'mock/saved', skills: [] }
+
+        assert_equal 'mock/flag', build(snapshot: snapshot, model: 'mock/flag').model
+      end
+
       it 'rejects a bare model keyword' do
         assert_match(
           %r{\Asonnet is not a provider/name model string; the provider is one of: },

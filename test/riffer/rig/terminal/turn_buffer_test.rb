@@ -64,7 +64,7 @@ describe Riffer::Rig::Terminal::TurnBuffer do
 
   describe '#absorb' do
     it 'keeps no answer while a request is still streaming' do
-      assert_nil buffer(text('Hello')).answer
+      assert_empty buffer(text('Hello')).answer
     end
 
     it 'keeps no ghost while a request is still streaming' do
@@ -81,7 +81,7 @@ describe Riffer::Rig::Terminal::TurnBuffer do
       end
 
       it 'keeps no answer from a request whose prose is blank' do
-        assert_nil buffer(text("\n\n"), finish(:stop)).answer
+        assert_empty buffer(text("\n\n"), finish(:stop)).answer
       end
 
       it 'keeps the earlier ghost when a later request calls tools without prose' do
@@ -99,7 +99,7 @@ describe Riffer::Rig::Terminal::TurnBuffer do
       end
 
       it 'keeps the prose of a request that called tools out of the answer' do
-        assert_nil buffer(text('Let me look.'), finish(:tool_calls)).answer
+        assert_empty buffer(text('Let me look.'), finish(:tool_calls)).answer
       end
 
       it 'joins the deltas of a request that stopped into the answer' do
@@ -153,7 +153,7 @@ describe Riffer::Rig::Terminal::TurnBuffer do
       end
 
       it 'keeps a request that already reported tool calls a preamble' do
-        assert_nil buffer(text('Let me look.'), finish(:tool_calls), interrupt).answer
+        assert_empty buffer(text('Let me look.'), finish(:tool_calls), interrupt).answer
       end
 
       it 'keeps the ghost of the preamble whose tools were running' do
@@ -188,6 +188,26 @@ describe Riffer::Rig::Terminal::TurnBuffer do
 
       it 'keeps the latest preamble as the ghost' do
         assert_equal 'Now the tests.', turn.ghost
+      end
+    end
+
+    describe 'over a turn a job exit continued' do
+      it 'keeps the answer of each reply in order, a blank line apart' do
+        turn = buffer(text('Started.'), finish(:stop), job_exit, text('It passed.'), finish(:stop), turn_end)
+
+        assert_equal "Started.\n\nIt passed.", turn.answer
+      end
+
+      it 'takes the prose of a reply that reported no finish reason as an answer' do
+        assert_equal "Started.\n\nIt passed.", buffer(text('Started.'), job_exit, text('It passed.'), turn_end).answer
+      end
+
+      it 'keeps a reply whose prose is blank out of the answer' do
+        assert_equal 'It passed.', buffer(text("\n"), job_exit, text('It passed.'), turn_end).answer
+      end
+
+      it 'keeps the answer before the exit when the reply to it is interrupted' do
+        assert_equal "Started.\n\nHalf a sen", buffer(text('Started.'), job_exit, text('Half a sen'), interrupt).answer
       end
     end
   end
