@@ -45,6 +45,10 @@ class Riffer::Rig::Terminal::Renderer
   private
 
   # @rbs text: String
+  # @rbs return: String
+  def wrapped: (String text) -> String
+
+  # @rbs text: String
   # @rbs return: void
   def render_block: (String text) -> void
 end

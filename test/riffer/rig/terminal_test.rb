@@ -888,6 +888,12 @@ describe Riffer::Rig::Terminal do
       assert_match(/\r\n  Hi from the model\.\r\n\r\n  1 step · \d\d:\d\d\r\n› /, output)
     end
 
+    it 'wraps command output to the width of the terminal' do
+      output = run_on_pty(->(pty) { pty.type("/model sonnet\r/exit\r") }, columns: 40)
+
+      assert_includes output, "  Use /model provider/name, with a\r\n  provider from: "
+    end
+
     it 'answers a question asked during a turn from the keys' do
       write_asking_command
       script = lambda do |pty|

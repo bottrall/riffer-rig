@@ -42,7 +42,7 @@ class Riffer::Rig::Terminal
     unless frame&.measure
       opening = Opening.new(io: output, theme:, version:, sessions:, width:)
       turns = QuietDisplay.new(io: output, theme: theme, clock: clock)
-      return assemble(input:, renderer: Renderer.new(io: output, theme: theme), sessions:, opening:, turns:)
+      return assemble(input:, renderer: Renderer.new(io: output, theme:, width:), sessions:, opening:, turns:)
     end
 
     pipeline = KeyPipeline.new(input: input, output: output)

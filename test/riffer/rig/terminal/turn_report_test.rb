@@ -56,6 +56,39 @@ describe Riffer::Rig::Terminal::TurnReport do
     it 'dims the interrupted marker' do
       assert_equal "\n\e[2m  interrupted\e[0m\n", report(turn(answer: nil, interrupted: true), color: true)
     end
+
+    it 'wraps the footer to the width' do
+      spent = turn(answer: nil, usage: usage(1200, 340, cost: 0.071))
+      footer = "\n  2 steps · 00:41 ·\n  ↑1200 · ↓340 ·\n  ~$0.0710 · session\n  4500 tok\n"
+
+      assert_equal footer, report(spent, session: usage(3000, 1500), width: 24)
+    end
+
+    it 'dims a wrapped footer as one span' do
+      spent = turn(answer: nil, usage: usage(1200, 340))
+
+      assert_equal "\n\e[2m  2 steps · 00:41 ·\n  ↑1200 · ↓340\e[0m\n", report(spent, color: true, width: 20)
+    end
+  end
+
+  describe '.wrap' do
+    def wrap(text, width) = Riffer::Rig::Terminal::TurnReport.wrap(text, width)
+
+    it 'leaves a blank line empty' do
+      assert_equal "  one\n\n  two", wrap("one\n   \ntwo", 20)
+    end
+
+    it 'indents every line when there is no width' do
+      assert_equal "  one\n  two", wrap("one\ntwo", nil)
+    end
+
+    it 'keeps the spacing of a line that fits the width left of its indent' do
+      assert_equal "  anthropic     ok\n  openai        missing", wrap("anthropic     ok\nopenai        missing", 25)
+    end
+
+    it 'wraps a line too long for the width left of its indent' do
+      assert_equal "  Reads the\n  rows now", wrap('Reads the rows now', 14)
+    end
   end
 
   describe '.answer' do
@@ -119,21 +152,6 @@ describe Riffer::Rig::Terminal::TurnReport do
       spent = usage(1200, 340, cost: 0.071)
 
       assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340 · ~$0.0710\n", report(turn(answer: nil, usage: spent))
-    end
-  end
-
-  describe '.wrap' do
-    it 'wraps the footer to the width' do
-      spent = turn(answer: nil, usage: usage(1200, 340, cost: 0.071))
-      footer = "\n  2 steps · 00:41 ·\n  ↑1200 · ↓340 ·\n  ~$0.0710 · session\n  4500 tok\n"
-
-      assert_equal footer, report(spent, session: usage(3000, 1500), width: 24)
-    end
-
-    it 'dims a wrapped footer as one span' do
-      spent = turn(answer: nil, usage: usage(1200, 340))
-
-      assert_equal "\n\e[2m  2 steps · 00:41 ·\n  ↑1200 · ↓340\e[0m\n", report(spent, color: true, width: 20)
     end
   end
 
