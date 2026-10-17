@@ -11,7 +11,7 @@ module Riffer::Rig::Runtime::JobEnvelope
   # @rbs return: String
   def envelope: (Riffer::Rig::Runtime::JobCompletion completion) -> String
 
-  # @rbs exit_status: Integer
+  # @rbs completion: Riffer::Rig::Runtime::JobCompletion
   # @rbs return: String
-  def status: (Integer exit_status) -> String
+  def outcome: (Riffer::Rig::Runtime::JobCompletion completion) -> String
 end

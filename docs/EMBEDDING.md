@@ -178,7 +178,7 @@ The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-
 | `notify`          | `message`, `level`               | mirrors every `host.notify`, so a stream consumer sees extension errors too |
 | `before_tool_call` | `call_id`, `tool`, `args`, `at` | as a tool starts, after its `before_tool_call` hooks               |
 | `after_tool_call` | `call_id`, `tool`, `args`, `result`, `at`, `duration` | as every tool call finishes, after its `after_tool_call` hooks |
-| `job_exit`        | `job_id`, `command`, `exit_status`, `duration`, `output_path` | as a [background job's exit](#exit-notifications) is delivered to the model, one per job |
+| `job_exit`        | `job_id`, `command`, `exit_status`, `signal`, `duration`, `output_path` | as a [background job's exit](#exit-notifications) is delivered to the model, one per job |
 | `turn_end`        | `stop_reason`, `usage`, `cost`   | the last event of every `prompt`; `stop_reason` is riffer's outcome reason, or `:cancelled` after a `cancel`; `usage` is riffer's `TokenUsage` and `cost` its USD figure, `nil` when unpriced |
 
 `session_start` carries `:new`, `:restore` on a Runtime built from a [snapshot](#snapshots), or `:reload` after a [rebuild](#rebuilding-after-a-code-reload); `session_end` carries `:reload` or `:close`. `close` refuses further prompts and asks with `Riffer::Rig::Runtime::ClosedError` and unregisters every [MCP server](MCP.md) the Runtime registered; its `session_end` reaches extension hooks but not the stream, since no prompt follows it.
@@ -333,7 +333,8 @@ runtime.running_job_count # => 2
 | ------------- | -------------------------------------------------------------------------------------------------------------- |
 | `job_id`      | The id `bash` returned when it started the job                                                                 |
 | `command`     | The shell command                                                                                              |
-| `exit_status` | The exit status; `1` for a job ended by a signal                                                               |
+| `exit_status` | The exit status; `nil` for a job ended by a signal                                                             |
+| `signal`      | The signal that ended the job, named without `SIG` (`"TERM"`); `nil` for a job that exited                     |
 | `duration`    | Seconds from start to exit, as a `Float`                                                                       |
 | `output_path` | The file holding the job's output, or the most recent of it once it passes the [cap](TOOLS.md#background-jobs) |
 | `tail`        | The last 2,000 bytes of that output, with invalid characters replaced                                          |

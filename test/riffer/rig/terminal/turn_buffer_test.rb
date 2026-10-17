@@ -43,7 +43,13 @@ describe Riffer::Rig::Terminal::TurnBuffer do
   def job_exit
     Riffer::Rig::Events::JobExit.new(
       Riffer::Rig::Runtime::JobCompletion.new(
-        job_id: 'a1b2c3d4', command: 'true', exit_status: 0, duration: 1.0, output_path: '/tmp/a1b2c3d4', tail: ''
+        job_id: 'a1b2c3d4',
+        command: 'true',
+        exit_status: 0,
+        signal: nil,
+        duration: 1.0,
+        output_path: '/tmp/a1b2c3d4',
+        tail: ''
       )
     )
   end

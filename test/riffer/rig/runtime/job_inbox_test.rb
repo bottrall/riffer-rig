@@ -9,6 +9,7 @@ describe Riffer::Rig::Runtime::JobInbox do
       job_id: 'abc123',
       command: 'true',
       exit_status: 0,
+      signal: nil,
       duration: 1.5,
       output_path: '/tmp/riffer-rig-job-test',
       tail: ''

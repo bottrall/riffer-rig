@@ -7,17 +7,15 @@ class Riffer::Rig::Tools::Bash::Job
   # @rbs @command: String
   # @rbs @output_path: String
   # @rbs @started_at: Float
-  # @rbs @status: Integer?
   # @rbs @ended_at: Float?
   # @rbs @offset: Integer
 
-  # @dynamic id, pid, command, output_path, started_at, status, offset
+  # @dynamic id, pid, command, output_path, started_at, offset
   attr_reader :id #: String
   attr_reader :pid #: Integer
   attr_reader :command #: String
   attr_reader :output_path #: String
   attr_reader :started_at #: Float
-  attr_reader :status #: Integer?
   attr_reader :offset #: Integer
 
   # @rbs id: String
@@ -25,17 +23,15 @@ class Riffer::Rig::Tools::Bash::Job
   # @rbs command: String
   # @rbs output_path: String
   # @rbs started_at: Float
-  # @rbs status: Integer?
   # @rbs ended_at: Float?
   # @rbs offset: Integer
   # @rbs return: void
-  def initialize(id:, pid:, command:, output_path:, started_at:, status: nil, ended_at: nil, offset: 0)
+  def initialize(id:, pid:, command:, output_path:, started_at:, ended_at: nil, offset: 0)
     @id = id
     @pid = pid
     @command = command
     @output_path = output_path
     @started_at = started_at
-    @status = status
     @ended_at = ended_at
     @offset = offset
     freeze
@@ -43,12 +39,12 @@ class Riffer::Rig::Tools::Bash::Job
 
   # @rbs return: bool
   def active?
-    status.nil?
+    @ended_at.nil?
   end
 
   # @rbs return: bool
   def completed?
-    !status.nil?
+    !@ended_at.nil?
   end
 
   # @rbs now: Float
@@ -57,11 +53,10 @@ class Riffer::Rig::Tools::Bash::Job
     (@ended_at || now) - @started_at
   end
 
-  # @rbs status: Integer
   # @rbs ended_at: Float
   # @rbs return: Riffer::Rig::Tools::Bash::Job
-  def finish(status, ended_at)
-    copy(status: status, ended_at: ended_at)
+  def finish(ended_at)
+    copy(ended_at: ended_at)
   end
 
   # @rbs bytes: Integer
@@ -72,18 +67,16 @@ class Riffer::Rig::Tools::Bash::Job
 
   private
 
-  # @rbs status: Integer?
   # @rbs ended_at: Float?
   # @rbs offset: Integer
   # @rbs return: Riffer::Rig::Tools::Bash::Job
-  def copy(status: @status, ended_at: @ended_at, offset: @offset)
+  def copy(ended_at: @ended_at, offset: @offset)
     self.class.new(
       id: id,
       pid: pid,
       command: command,
       output_path: output_path,
       started_at: @started_at,
-      status: status,
       ended_at: ended_at,
       offset: offset
     )

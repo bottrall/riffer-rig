@@ -88,6 +88,10 @@ module Riffer::Rig::ACP::Mapper
   # @rbs return: ::ACP::Types::ContentBlock::Text
   def text_block: (String text) -> ::ACP::Types::ContentBlock::Text
 
+  # @rbs completion: Riffer::Rig::Runtime::JobCompletion
+  # @rbs return: String
+  def ending: (Riffer::Rig::Runtime::JobCompletion completion) -> String
+
   # The stored result is all a replayed call has: the arguments live in the
   # assistant message's tool_calls, so the title is the name alone.
   # @rbs message: Hash[Symbol, untyped]

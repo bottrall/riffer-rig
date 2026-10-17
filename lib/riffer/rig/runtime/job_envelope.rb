@@ -16,8 +16,8 @@ module Riffer::Rig::Runtime::JobEnvelope
   def envelope(completion)
     tail = completion.tail.strip
     [
-      %(<background-job id="#{completion.job_id}" status="#{status(completion.exit_status)}" ) +
-        %(exit-code="#{completion.exit_status}" duration="#{format('%.1fs', completion.duration)}">),
+      %(<background-job id="#{completion.job_id}" #{outcome(completion)} ) +
+        %(duration="#{format('%.1fs', completion.duration)}">),
       "<command>#{completion.command}</command>",
       "<output-path>#{completion.output_path}</output-path>",
       "<output-tail>\n#{tail.empty? ? '(no output)' : tail}\n</output-tail>",
@@ -25,9 +25,12 @@ module Riffer::Rig::Runtime::JobEnvelope
     ].join("\n")
   end
 
-  # @rbs exit_status: Integer
+  # @rbs completion: Riffer::Rig::Runtime::JobCompletion
   # @rbs return: String
-  def status(exit_status)
-    exit_status.zero? ? 'completed' : 'failed'
+  def outcome(completion)
+    exit_status = completion.exit_status
+    return %(status="killed" signal="#{completion.signal}") unless exit_status
+
+    %(status="#{exit_status.zero? ? 'completed' : 'failed'}" exit-code="#{exit_status}")
   end
 end

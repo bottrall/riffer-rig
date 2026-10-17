@@ -140,12 +140,11 @@ class Riffer::Rig::Tools::Bash::Jobs
     # members. An emptied group is forgotten before the number can name one
     # that is not ours: here, ahead of the subscribers, and by the poll below.
     retain(job.pid)
-    exit_status = status.exitstatus || 1
-    finished = @mutex.synchronize { @jobs[job.id] = @jobs.fetch(job.id).finish(exit_status, monotonic_now) }
+    finished = @mutex.synchronize { @jobs[job.id] = @jobs.fetch(job.id).finish(monotonic_now) }
     # Bounded because a process the job left behind can hold the pipe open
     # long after the job itself has exited.
     log.drain(DRAIN_SECONDS)
-    @inbox.push(completion(finished, log, exit_status))
+    @inbox.push(completion(finished, log, status))
     sleep(Riffer::Rig::Tools::Bash::POLL_SECONDS) while retain(job.pid)
   rescue Errno::ECHILD
     @mutex.synchronize do
@@ -181,13 +180,14 @@ class Riffer::Rig::Tools::Bash::Jobs
 
   # @rbs job: Riffer::Rig::Tools::Bash::Job
   # @rbs log: Riffer::Rig::Tools::Bash::JobLog
-  # @rbs exit_status: Integer
+  # @rbs status: Process::Status
   # @rbs return: Riffer::Rig::Runtime::JobCompletion
-  def completion(job, log, exit_status)
+  def completion(job, log, status)
     Riffer::Rig::Runtime::JobCompletion.new(
       job_id: job.id,
       command: job.command,
-      exit_status: exit_status,
+      exit_status: status.exitstatus,
+      signal: status.termsig&.then { |number| Signal.signame(number) },
       duration: job.elapsed(monotonic_now),
       output_path: job.output_path,
       # Scrubbed because the cut can split a multibyte character.

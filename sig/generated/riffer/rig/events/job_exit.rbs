@@ -5,12 +5,14 @@ class Riffer::Rig::Events::JobExit
 
   include Riffer::Rig::Support::TypedValue[Symbol]
 
-  # @dynamic job_id, command, exit_status, duration, output_path
+  # @dynamic job_id, command, exit_status, signal, duration, output_path
   attr_reader job_id: String
 
   attr_reader command: String
 
-  attr_reader exit_status: Integer
+  attr_reader exit_status: Integer?
+
+  attr_reader signal: String?
 
   attr_reader duration: Float
 
