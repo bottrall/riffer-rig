@@ -37,10 +37,11 @@ through.
 
 │ no language here
 
-Flag         │ Meaning
-─────────────┼───────────
-`-p`         │ print once
-`--no-color` │ plain
+Flag        │ Meaning
+────────────┼───────────
+`-p`        │ print once
+`--no-color │ plain
+`           │
 
 <b>HTML</b> stays
 literal, and see the
