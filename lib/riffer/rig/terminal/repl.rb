@@ -86,6 +86,13 @@ class Riffer::Rig::Terminal::Repl
       @frame.input(Riffer::Rig::Terminal::LineEditor.new)
     end
     @prompter.ask(question, options: options, secret: secret)
+  rescue Interrupt
+    # A Ctrl-C leaves the question unanswered and is then sent on as the
+    # signal, which lands where one at the input line would: on the trap of
+    # a running turn, which cancels it, or, for whatever asked outside one,
+    # as an Interrupt raised right here.
+    @interrupt.call
+    nil
   ensure
     @mutex.synchronize do
       @asking = false
@@ -158,8 +165,8 @@ class Riffer::Rig::Terminal::Repl
   # @rbs return: void
   def hand_on(key)
     if @asking
-      # Ctrl-C too, which cancels the question: as the signal it could land
-      # on the trap of the turn that asked, and leave the question open.
+      # Ctrl-C too: the question has to close before the signal is sent on,
+      # or the next line typed would be its answer.
       @asks << key
     elsif key.name == :ctrl_c
       # Raw mode delivers Ctrl-C as a key. Sent on as the signal it stands
