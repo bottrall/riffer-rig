@@ -612,9 +612,10 @@ describe Riffer::Rig::ACP do
       @updates.clear
       load(session.session_id)
       @built_runtimes.last.host.notify('still here')
-      wait_for { message_texts.include?('still here') }
+      notice = Riffer::Rig::ACP::Mapper.notice('still here').content.text
+      wait_for { message_texts.include?(notice) }
 
-      assert_includes message_texts, 'still here'
+      assert_includes message_texts, notice
     end
 
     it 'sends the job exits of an adopted runtime to the later connection' do
@@ -677,7 +678,9 @@ describe Riffer::Rig::ACP do
       session = save_session('first prompt')
       _response, updates = load(session.session_id, mcp_servers: [http_server('httpdocs')])
 
-      assert_includes texts_of(updates), 'Skipped MCP server httpdocs: only stdio servers are supported'
+      warning = Riffer::Rig::ACP::Mapper.notice('Skipped MCP server httpdocs: only stdio servers are supported')
+
+      assert_includes texts_of(updates), warning.content.text
     end
 
     it 'declares the client stdio mcpServers to the Runtime it restores' do
