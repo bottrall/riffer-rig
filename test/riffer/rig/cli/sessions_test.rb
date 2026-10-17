@@ -7,12 +7,14 @@ describe Riffer::Rig::CLI::Sessions do
   before do
     @home = Dir.mktmpdir
     @cwd = Dir.mktmpdir
+    @elsewhere = Dir.mktmpdir
     @host = ConfirmingHost.new
   end
 
   after do
     FileUtils.remove_entry(@home)
     FileUtils.remove_entry(@cwd)
+    FileUtils.remove_entry(@elsewhere)
   end
 
   def sessions(*argv)
@@ -66,6 +68,12 @@ describe Riffer::Rig::CLI::Sessions do
       save('aaa')
 
       assert_equal 'aaa', sessions('-r', 'aaa').find(@host).id
+    end
+
+    it 'resumes the --resume id in the directory it was saved in' do
+      save('aaa', cwd: @elsewhere)
+
+      assert_equal @elsewhere, sessions('-r', 'aaa').find(@host).cwd
     end
 
     it 'prefers the --resume id over --continue' do
@@ -128,6 +136,12 @@ describe Riffer::Rig::CLI::Sessions do
   end
 
   describe '#resume' do
+    it 'resumes nothing when the directory the session was saved in is gone' do
+      save('aaa', cwd: File.join(@elsewhere, 'gone'))
+
+      assert_nil sessions.resume(@host, 'aaa')
+    end
+
     it 'resumes the session with the given id' do
       save('aaa')
 
@@ -136,6 +150,12 @@ describe Riffer::Rig::CLI::Sessions do
 
     it 'resumes nothing for an unknown id' do
       assert_nil sessions.resume(@host, 'nope')
+    end
+
+    it 'resumes the session in the directory it was saved in' do
+      save('aaa', cwd: @elsewhere)
+
+      assert_equal @elsewhere, sessions.resume(@host, 'aaa').cwd
     end
   end
 
@@ -251,6 +271,12 @@ describe Riffer::Rig::CLI::Sessions do
       assert_predicate sessions('-r', 'nope'), :missing?
     end
 
+    it 'is true for a --resume id saved in a directory that is gone' do
+      save('aaa', cwd: File.join(@elsewhere, 'gone'))
+
+      assert_predicate sessions('-r', 'aaa'), :missing?
+    end
+
     it 'is false for a saved --resume id' do
       save('aaa')
 
@@ -283,6 +309,13 @@ describe Riffer::Rig::CLI::Sessions do
   describe '#missing' do
     it 'says sessions are off under --no-save' do
       assert_equal Riffer::Rig::CLI::Sessions::OFF, sessions('--no-save', '-r', 'aaa').missing
+    end
+
+    it 'names the directory a session was saved in when it is gone' do
+      gone = File.join(@elsewhere, 'gone')
+      save('aaa', cwd: gone)
+
+      assert_equal "Session aaa was saved in #{gone}, which no longer exists.", sessions.missing('aaa')
     end
 
     it 'names the given id' do

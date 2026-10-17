@@ -3,7 +3,7 @@
 class Riffer::Rig::CLI::Sessions
   OFF: String
 
-  @loader: Riffer::Rig::Loader?
+  @loaders: Hash[String, Riffer::Rig::Loader]
 
   @store: Riffer::Rig::Stores::_Store?
 
@@ -69,8 +69,17 @@ class Riffer::Rig::CLI::Sessions
   def row: (Riffer::Rig::Stores::Header header) -> ::Riffer::Rig::Terminal::Session
 
   # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs cwd: String
   # @rbs return: Riffer::Rig::Loader
-  def loader: (Riffer::Rig::Hosts::_Host host) -> Riffer::Rig::Loader
+  def loader: (Riffer::Rig::Hosts::_Host host, ?String cwd) -> Riffer::Rig::Loader
+
+  # @rbs id: String
+  # @rbs return: String?
+  def saved_cwd: (String id) -> String?
+
+  # @rbs id: String
+  # @rbs return: String?
+  def gone: (String id) -> String?
 
   # @rbs return: String?
   def resume_id: () -> String?
