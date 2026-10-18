@@ -3,17 +3,23 @@
 class Riffer::Rig::Terminal::Console
   # @rbs @frame: Riffer::Rig::Terminal::Frame
   # @rbs @pipeline: Riffer::Rig::Terminal::KeyPipeline
+  # @rbs @loading: Riffer::Rig::Terminal::Loading
 
   # @rbs frame: Riffer::Rig::Terminal::Frame
   # @rbs pipeline: Riffer::Rig::Terminal::KeyPipeline
+  # @rbs loading: Riffer::Rig::Terminal::Loading
   # @rbs return: void
-  def initialize(frame:, pipeline:)
+  def initialize(frame:, pipeline:, loading:)
     @frame = frame
     @pipeline = pipeline
+    @loading = loading
   end
 
   # @rbs return: void
   def start
+    # The first tick pushes the animated line before the frame draws, so the
+    # loading row is animated from its first write.
+    @loading.start
     @frame.start
     @pipeline.start
   end
@@ -22,6 +28,7 @@ class Riffer::Rig::Terminal::Console
   def stop
     @pipeline.stop
     @frame.stop
+    @loading.stop
   end
 
   # @rbs *chunks: String

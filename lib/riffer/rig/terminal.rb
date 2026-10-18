@@ -49,7 +49,7 @@ class Riffer::Rig::Terminal
     theme = Theme.for(output, no_color: no_color)
     clock = -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
     width = -> { Frame.measure(output)&.last }
-    frame = Frame.new(io: output, theme: theme) if input.tty?
+    frame = Frame.new(io: output, theme: theme, loading: true) if input.tty?
     unless frame&.measure
       opening = Opening.new(io: output, theme:, version:, sessions:, width:)
       turns = QuietDisplay.new(io: output, theme: theme, clock: clock)
@@ -57,7 +57,7 @@ class Riffer::Rig::Terminal
     end
 
     pipeline = KeyPipeline.new(input: input, output: output)
-    console = Console.new(frame: frame, pipeline: pipeline)
+    console = Console.new(frame: frame, pipeline: pipeline, loading: Loading.new(frame: frame, random: Random.new))
     asks = Queue.new #: Thread::Queue[Riffer::Rig::Terminal::Key]
     peek = Peek.new(frame: frame)
     repl = Repl.new(
