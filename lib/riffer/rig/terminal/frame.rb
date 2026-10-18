@@ -210,7 +210,7 @@ class Riffer::Rig::Terminal::Frame
 
   # @rbs return: String
   def erase
-    @rows_above.zero? ? ERASE : "\e[#{@rows_above}A#{ERASE}"
+    "\e[#{@rows_above + 1}A#{ERASE}"
   end
 
   # @rbs before: String
@@ -283,7 +283,7 @@ class Riffer::Rig::Terminal::Frame
     spare = typing - Riffer::Rig::Terminal::Columns.width(shown)
     input = Riffer::Rig::Terminal::Columns.head("#{@theme.pink(PROMPT)} #{shown}#{chip(spare)}", room)
     column = [PROMPT_COLUMNS + Riffer::Rig::Terminal::Columns.width(before), room].min
-    "#{input}\r\n#{status_line(room)}\e[1A\e[#{column + 1}G"
+    "#{status_line(room)}\r\n#{input}\e[#{column + 1}G"
   end
 
   # @rbs room: Integer

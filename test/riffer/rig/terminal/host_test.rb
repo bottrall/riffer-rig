@@ -97,7 +97,7 @@ describe Riffer::Rig::Terminal::Host do
   it 'shows the confirmation above the footer' do
     at_the_footer("y\r") { |host| host.confirm('Trust this project?') }
 
-    assert_equal ['', 'Trust this project? [y/N]', '› y', '', '›', ''], @pty.screen.rows
+    assert_equal ['', 'Trust this project? [y/N]', '› y', '', '', '›'], @pty.screen.rows
   end
 
   it 'confirms on a yes typed at the footer' do

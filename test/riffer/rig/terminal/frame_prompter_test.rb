@@ -27,7 +27,7 @@ describe Riffer::Rig::Terminal::FramePrompter do
                                         .ask(question, options: options, secret: secret)
   end
 
-  def footer = ['', '›', '']
+  def footer = ['', '', '›']
 
   describe '#ask' do
     it 'shows the question above the footer, below a blank line' do
@@ -82,7 +82,7 @@ describe Riffer::Rig::Terminal::FramePrompter do
       ask([*typed('abc'), key(:enter)], color: true)
       prompt = "\e[38;2;255;106;193m›\e[0m"
 
-      assert_includes @pty.transcript, "#{prompt} abc\r\n\r\n#{prompt} \r\n"
+      assert_includes @pty.transcript, "#{prompt} abc\r\n\r\n  \r\n#{prompt} \e[3G"
     end
 
     it 'leaves a secret answer out of the scrollback' do
@@ -100,7 +100,7 @@ describe Riffer::Rig::Terminal::FramePrompter do
     it 'shows the hint on the status line while the line is read' do
       ask([])
 
-      assert_includes @pty.transcript, "› \r\n  answer above · Ctrl-C cancels\e[1A"
+      assert_includes @pty.transcript, "  answer above · Ctrl-C cancels\r\n› \e[3G"
     end
 
     it 'dims the hint when color is on' do
@@ -128,7 +128,7 @@ describe Riffer::Rig::Terminal::FramePrompter do
     it 'draws the line on the footer as it is typed' do
       ask(typed('abc'))
 
-      assert_includes @pty.transcript, "› abc\r\n  answer above · Ctrl-C cancels\e[1A"
+      assert_includes @pty.transcript, "  answer above · Ctrl-C cancels\r\n› abc\e[6G"
     end
 
     it 'never draws a secret line' do
