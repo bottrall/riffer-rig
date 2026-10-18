@@ -50,7 +50,7 @@ describe Riffer::Rig::Terminal::TurnReport do
     end
 
     it 'styles the answer as markdown above a dimmed footer' do
-      styled = "\n  All \e[1mdone\e[0m.\n\n\e[2m  2 steps · 00:41\e[0m\n"
+      styled = "\n  All \e[1mdone\e[0m.\n\n  \e[2m2 steps · 00:41\e[0m\n"
 
       assert_equal styled, report(turn(answer: 'All **done**.'), color: true)
     end
@@ -61,15 +61,33 @@ describe Riffer::Rig::Terminal::TurnReport do
 
     it 'wraps the footer to the width' do
       spent = turn(answer: '', usage: usage(1200, 340, cost: 0.071))
-      footer = "\n  2 steps · 00:41 ·\n  ↑1200 · ↓340 ·\n  ~$0.0710 · session\n  4500 tok\n"
+      footer = "\n  2 steps · 00:41 ·\n  ↑1.2k · ↓340 ·\n  ~$0.0710 · session\n  4.5k tok\n"
 
       assert_equal footer, report(spent, session: usage(3000, 1500), width: 24)
     end
 
-    it 'dims a wrapped footer as one span' do
+    it 'paints a wrapped footer dim across its lines' do
       spent = turn(answer: '', usage: usage(1200, 340))
 
-      assert_equal "\n\e[2m  2 steps · 00:41 ·\n  ↑1200 · ↓340\e[0m\n", report(spent, color: true, width: 20)
+      assert_equal "\n  \e[2m2 steps · 00:41 ·\n  ↑1.2k · ↓340\e[0m\n", report(spent, color: true, width: 20)
+    end
+
+    it 'paints the costs cyan between the dim figures' do
+      spent = usage(1200, 340, cost: 0.071)
+      session = usage(3000, 1500, cost: 0.25)
+      footer = "\n  \e[2m2 steps · 00:41 · ↑1.2k · ↓340 ·\e[0m \e[38;2;45;226;230m~$0.0710\e[0m " \
+               "\e[2m· session 4.5k tok ·\e[0m \e[38;2;45;226;230m~$0.2500\e[0m\n"
+
+      assert_equal footer, report(turn(answer: '', usage: spent), session: session, color: true)
+    end
+
+    it 'paints the runs of a wrapped footer across its lines' do
+      spent = usage(1200, 340, cost: 0.071)
+      session = usage(3000, 1500, cost: 0.25)
+      footer = "\n  \e[2m2 steps · 00:41 ·\n  ↑1.2k · ↓340 ·\e[0m\n  \e[38;2;45;226;230m~$0.0710\e[0m " \
+               "\e[2m· session\n  4.5k tok ·\e[0m \e[38;2;45;226;230m~$0.2500\e[0m\n"
+
+      assert_equal footer, report(turn(answer: '', usage: spent), session: session, color: true, width: 24)
     end
   end
 
@@ -158,24 +176,24 @@ describe Riffer::Rig::Terminal::TurnReport do
 
     it 'closes with the session total and its cost' do
       spent = usage(1200, 340, cost: 0.071)
-      footer = "\n  2 steps · 00:41 · ↑1200 · ↓340 · ~$0.0710 · session 4500 tok · ~$0.2500\n"
+      footer = "\n  2 steps · 00:41 · ↑1.2k · ↓340 · ~$0.0710 · session 4.5k tok · ~$0.2500\n"
 
       assert_equal footer, report(turn(answer: '', usage: spent), session: usage(3000, 1500, cost: 0.25))
     end
 
     it 'shows the session total of a turn that reported no usage' do
-      assert_equal "\n  2 steps · 00:41 · session 4500 tok\n", report(turn(answer: ''), session: usage(3000, 1500))
+      assert_equal "\n  2 steps · 00:41 · session 4.5k tok\n", report(turn(answer: ''), session: usage(3000, 1500))
     end
   end
 
   describe '.tokens' do
     it 'shows the real tokens of a turn that reported usage' do
-      assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340\n", report(turn(answer: '', usage: usage(1200, 340)))
+      assert_equal "\n  2 steps · 00:41 · ↑1.2k · ↓340\n", report(turn(answer: '', usage: usage(1200, 340)))
     end
 
     it 'adds the cache counts of a turn that wrote to and read from the cache' do
       spent = usage(1200, 340, cache_write_tokens: 400, cache_read_tokens: 200)
-      footer = "\n  2 steps · 00:41 · ↑1200 · ↓340 · cache_write:400 · cache_read:200\n"
+      footer = "\n  2 steps · 00:41 · ↑1.2k · ↓340 · cache_write:400 · cache_read:200\n"
 
       assert_equal footer, report(turn(answer: '', usage: spent))
     end
@@ -183,7 +201,7 @@ describe Riffer::Rig::Terminal::TurnReport do
     it 'omits a cache count of zero' do
       spent = usage(1200, 340, cache_write_tokens: 0, cache_read_tokens: 0)
 
-      assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340\n", report(turn(answer: '', usage: spent))
+      assert_equal "\n  2 steps · 00:41 · ↑1.2k · ↓340\n", report(turn(answer: '', usage: spent))
     end
   end
 
@@ -191,7 +209,7 @@ describe Riffer::Rig::Terminal::TurnReport do
     it 'shows the cost of a priced turn after its tokens' do
       spent = usage(1200, 340, cost: 0.071)
 
-      assert_equal "\n  2 steps · 00:41 · ↑1200 · ↓340 · ~$0.0710\n", report(turn(answer: '', usage: spent))
+      assert_equal "\n  2 steps · 00:41 · ↑1.2k · ↓340 · ~$0.0710\n", report(turn(answer: '', usage: spent))
     end
   end
 
@@ -230,7 +248,7 @@ describe Riffer::Rig::Terminal::TurnReport do
         "  \e[2mruby\e[0m",
         "  \e[2m│\e[0m \e[38;2;45;226;230mPicker.new(registrar)\e[0m",
         '',
-        "\e[2m  2 steps · 00:41 · ↑250 · ↓50 · session 300 tok\e[0m"
+        "  \e[2m2 steps · 00:41 · ↑250 · ↓50 · session 300 tok\e[0m"
       ]
 
       assert_equal golden(rows), report(answered, session: usage(250, 50), color: true, width: 60)

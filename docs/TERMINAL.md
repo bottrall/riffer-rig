@@ -83,10 +83,10 @@ Ctrl-T while a turn runs opens a dim panel above the input line with what the mo
 When a turn ends, its answer is printed above the input line, rendered from Markdown: headings, emphasis, inline code and code blocks, lists, quotes, tables, rules and links. Text the model sent along with tool calls is not printed. A turn the model replied to more than once — one continued for a [background job](TOOLS.md#background-jobs) that exited as the model finished its reply — prints each reply in order, a blank line apart. Under the answer comes a stat line:
 
 ```text
-3 steps · 00:12 · ↑5200 · ↓340 · cache_read:4096 · ~$0.0215 · session 18400 tok · ~$0.0731
+3 steps · 00:12 · ↑5.2k · ↓340 · cache_read:4k · ~$0.0215 · session 18.4k tok · ~$0.0731
 ```
 
-That is the turn's model calls, its time, its input and output tokens, each cache count above zero, and its cost, then the session's total tokens and cost; the costs appear once the model is [priced](CONFIGURATION.md#catalog_files). A cancelled turn prints the answer it had reached and `interrupted` in place of the stat line. Command output, such as `/cost`'s, is printed as it arrives.
+That is the turn's model calls, its time, its input and output tokens, each cache count above zero, and its cost, then the session's total tokens and cost; the counts read as the status bar's do (`5.2k`), the costs are cyan and the rest of the line dim, and the costs appear once the model is [priced](CONFIGURATION.md#catalog_files). A cancelled turn prints the answer it had reached and `interrupted` in place of the stat line. Command output, such as `/cost`'s, is printed as it arrives.
 
 ## Interrupting and exiting
 
