@@ -135,7 +135,7 @@ describe Riffer::Rig::Terminal::Ticker do
       absorbing.run
       [absorbing, drawing].each(&:join)
 
-      assert_equal '⠋ turn 1  00:00 ↑0     ↓0 tok     ~$0.0000 0 jobs', footer.statuses.last
+      assert_equal '⠋ step 1  00:00 ↑0     ↓0 tok     ~$0.0000 0 jobs', footer.statuses.last
     end
 
     it 'estimates a token for every four characters of reasoning' do
@@ -143,7 +143,7 @@ describe Riffer::Rig::Terminal::Ticker do
     end
 
     it 'estimates a token for every four characters of prose' do
-      assert_equal '⠋ turn 1  00:00 ↑0     ↓100 tok   ~$0.0000 0 jobs', drawn(text('x' * 400))
+      assert_equal '⠋ step 1  00:00 ↑0     ↓100 tok   ~$0.0000 0 jobs', drawn(text('x' * 400))
     end
 
     it 'estimates a token for every four characters of tool arguments' do
@@ -151,13 +151,13 @@ describe Riffer::Rig::Terminal::Ticker do
     end
 
     it 'drops the estimate for the usage the request reports' do
-      assert_equal '⠋ turn 1  00:00 ↑1.2k  ↓80 tok    ~$0.0000 0 jobs', drawn(text('x' * 400), usage(1_200, 80))
+      assert_equal '⠋ step 1  00:00 ↑1.2k  ↓80 tok    ~$0.0000 0 jobs', drawn(text('x' * 400), usage(1_200, 80))
     end
 
     it 'estimates what streams after a usage report on top of it' do
       status = drawn(text('x' * 400), usage(1_200, 80), text('x' * 40))
 
-      assert_equal '⠋ turn 1  00:00 ↑1.2k  ↓90 tok    ~$0.0000 0 jobs', status
+      assert_equal '⠋ step 1  00:00 ↑1.2k  ↓90 tok    ~$0.0000 0 jobs', status
     end
   end
 
@@ -214,7 +214,7 @@ describe Riffer::Rig::Terminal::Ticker do
       ticker(color: true)
 
       assert_equal(
-        "\e[38;2;45;226;230m⠋\e[0m turn 1  00:00 \e[2m↑0    \e[0m \e[2m↓1 tok    \e[0m " \
+        "\e[38;2;45;226;230m⠋\e[0m step 1  00:00 \e[2m↑0    \e[0m \e[2m↓1 tok    \e[0m " \
         "\e[38;2;45;226;230m~$0.0000\e[0m \e[38;2;192;76;253m0 jobs\e[0m",
         drawn(text('Hello'))
       )
@@ -222,7 +222,7 @@ describe Riffer::Rig::Terminal::Ticker do
 
     {
       'keeps every slot the room has columns for' =>
-        [49, '⠋ turn 1  00:00 ↑18.2k ↓3.1k tok  ~$0.0712 0 jobs'],
+        [49, '⠋ step 1  00:00 ↑18.2k ↓3.1k tok  ~$0.0712 0 jobs'],
       'keeps the glyph and the jobs count whole when nothing else fits' => [5, '⠋ 0 jobs']
     }.each do |behaviour, (room, status)|
       it behaviour do
@@ -257,13 +257,13 @@ describe Riffer::Rig::Terminal::Ticker do
     it 'prices the estimate on the model rates' do
       ticker(rates: rates)
 
-      assert_equal '⠋ turn 1  00:00 ↑0     ↓100 tok   ~$0.0050 0 jobs', drawn(text('x' * 400))
+      assert_equal '⠋ step 1  00:00 ↑0     ↓100 tok   ~$0.0050 0 jobs', drawn(text('x' * 400))
     end
 
     it 'sums the reported usage and the estimate' do
       ticker(rates: rates)
 
-      assert_equal '⠋ turn 1  00:00 ↑1.2k  ↓180 tok   ~$0.0762 0 jobs',
+      assert_equal '⠋ step 1  00:00 ↑1.2k  ↓180 tok   ~$0.0762 0 jobs',
                    drawn(text('x' * 400), usage(1_200, 80, cost: 0.0712), text('x' * 400))
     end
   end

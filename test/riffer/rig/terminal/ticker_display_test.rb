@@ -97,9 +97,9 @@ describe Riffer::Rig::Terminal::TickerDisplay do
       display.start(@runtime)
 
       display.absorb(text('Let me look.'))
-      await { status.include?('turn 1') }
+      await { status.include?('step 1') }
 
-      assert_includes status, 'turn 1'
+      assert_includes status, 'step 1'
     end
 
     it 'keeps an open peek up with the turn' do

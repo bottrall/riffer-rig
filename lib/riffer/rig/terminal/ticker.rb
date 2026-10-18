@@ -83,7 +83,7 @@ class Riffer::Rig::Terminal::Ticker
     estimate = @unmetered / CHARS_PER_TOKEN
     Riffer::Rig::Terminal::StatusBar.working(
       glyph: Riffer::Rig::Terminal::Spinner.call(@tick),
-      state: stats.steps.zero? ? '' : "turn #{stats.steps}",
+      state: stats.steps.zero? ? '' : "step #{stats.steps}",
       clock: clock(stats.wall_time),
       up_tokens: usage&.input_tokens || 0,
       down_tokens: (usage&.output_tokens || 0) + estimate,
