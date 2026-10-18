@@ -203,6 +203,8 @@ class Riffer::Rig::Headless
     return @output.write(Ndjson.line(event)) if @json
 
     case event
+    when Riffer::Rig::Events::SessionStart
+      @error.puts("session #{event.id}")
     when Riffer::StreamEvents::TextDelta
       write_text(event.content)
       @streamed_text = true
