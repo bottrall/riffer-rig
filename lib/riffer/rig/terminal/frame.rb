@@ -316,7 +316,7 @@ class Riffer::Rig::Terminal::Frame
   # column on that row.
   # @rbs return: [Array[String], Integer, Integer]
   def input_rows
-    return viewport if @width - 1 < PROMPT_COLUMNS + 1
+    return viewport if typing < 1
 
     # The last column stays empty: a glyph written there leaves the cursor
     # in a pending wrap, which terminals resolve differently.
@@ -325,7 +325,7 @@ class Riffer::Rig::Terminal::Frame
     wrapped = "#{wrapper << "#{@editor.printable_before}#{CURSOR}#{@editor.printable_after}"}#{wrapper.flush}"
     rows = wrapped.lines(chomp: true)
     row = rows.index { |line| line.include?(CURSOR) } || 0
-    prefix = rows.fetch(row).split(CURSOR).first.delete_prefix(INDENT)
+    prefix = rows.fetch(row).partition(CURSOR).first.delete_prefix(INDENT)
     column = PROMPT_COLUMNS + Riffer::Rig::Terminal::Columns.width(prefix)
 
     first = (rows.size - input_cap).clamp(0, row)
@@ -379,7 +379,7 @@ class Riffer::Rig::Terminal::Frame
   # @rbs column: Integer
   # @rbs return: String
   def footer(rows, row, column)
-    "#{rows.map { |line| "#{line}\r\n" }.join}#{status_line(@width - 1)}\e[#{rows.size - row}A\e[#{column + 1}G"
+    "#{rows.join("\r\n")}\r\n#{status_line(@width - 1)}\e[#{rows.size - row}A\e[#{column + 1}G"
   end
 
   # @rbs room: Integer

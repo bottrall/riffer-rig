@@ -48,7 +48,7 @@ class Riffer::Rig::Terminal::FramePrompter
       raise Interrupt if key.name == :ctrl_c
       # A prompt answer is one value, so every Enter-flavoured key sends it:
       # the editor's newline keys exist for the prompt line, not for answers.
-      return editor if %i[enter newline alt_enter].include?(key.name)
+      return editor if key.name == :enter || Riffer::Rig::Terminal::LineEditor::NEWLINE_KEYS.include?(key.name)
 
       editor = editor.press(key)
       @frame.input(editor) unless secret

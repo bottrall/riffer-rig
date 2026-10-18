@@ -124,6 +124,70 @@ describe Riffer::Rig::Terminal::KeyDecoder do
                    pairs("\e[1~\e[2~\e[3~\e[5~\e[6~")
     end
 
+    it 'decodes Shift-Enter through a CSI-u sequence' do
+      assert_equal [[:shift_enter, nil]], pairs("\e[13;2u")
+    end
+
+    it 'decodes Alt-Enter through a CSI-u sequence' do
+      assert_equal [[:alt_enter, nil]], pairs("\e[13;3u")
+    end
+
+    it 'decodes an Enter CSI-u sequence without a modifier as Enter' do
+      assert_equal [[:enter, nil]], pairs("\e[13u")
+    end
+
+    it 'decodes Ctrl-Shift-Enter through a CSI-u sequence as Enter' do
+      assert_equal [[:enter, nil]], pairs("\e[13;6u")
+    end
+
+    it 'decodes Ctrl-J through a CSI-u sequence as a newline' do
+      assert_equal [[:newline, nil]], pairs("\e[106;5u")
+    end
+
+    it 'decodes Ctrl-I through a CSI-u sequence as a tab' do
+      assert_equal [[:tab, nil]], pairs("\e[105;5u")
+    end
+
+    it 'decodes Ctrl-H through a CSI-u sequence as a backspace' do
+      assert_equal [[:backspace, nil]], pairs("\e[104;5u")
+    end
+
+    it 'decodes Ctrl-M through a CSI-u sequence as Enter' do
+      assert_equal [[:enter, nil]], pairs("\e[109;5u")
+    end
+
+    it 'decodes Ctrl-chords through CSI-u sequences by letter' do
+      assert_equal [[:ctrl_w, nil], [:ctrl_c, nil]], pairs("\e[119;5u\e[99;5u")
+    end
+
+    it 'decodes Alt-chords through CSI-u sequences by letter' do
+      assert_equal [[:alt_b, nil], [:alt_f, nil]], pairs("\e[98;3u\e[102;3u")
+    end
+
+    it 'decodes a lone escape through a CSI-u sequence' do
+      assert_equal [[:escape, nil]], pairs("\e[27u")
+    end
+
+    it 'decodes Shift-Tab through a CSI-u sequence' do
+      assert_equal [[:shift_tab, nil]], pairs("\e[9;2u")
+    end
+
+    it 'decodes Ctrl-Tab through a CSI-u sequence as a tab' do
+      assert_equal [[:tab, nil]], pairs("\e[9;5u")
+    end
+
+    it 'decodes Ctrl-Backspace through a CSI-u sequence as a backspace' do
+      assert_equal [[:backspace, nil]], pairs("\e[127;5u")
+    end
+
+    it 'decodes Alt-Backspace through a CSI-u sequence as a backspace' do
+      assert_equal [[:backspace, nil]], pairs("\e[127;3u")
+    end
+
+    it 'drops CSI-u sequences for keys without a chord' do
+      assert_empty pairs("\e[32;5u\e[49;2u")
+    end
+
     it 'drops unknown CSI sequences' do
       assert_empty pairs("\e[?u\e[999~")
     end

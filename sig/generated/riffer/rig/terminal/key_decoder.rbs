@@ -11,6 +11,20 @@ class Riffer::Rig::Terminal::KeyDecoder
 
   TILDE_KEYS: Hash[String, Symbol]
 
+  CSI_U_TAB: Integer
+
+  CSI_U_ENTER: Integer
+
+  CSI_U_ESCAPE: Integer
+
+  # The flag's exception list keeps Enter, Tab, and Backspace legacy but not
+  # the letters sharing their C0 bytes, so Ctrl-J arrives as CSI-u while its
+  # legacy byte "\n" decodes as :newline. The table's second number is the
+  # modifier bitfield: 4 = Ctrl, 2 = Alt.
+  CSI_U_LEGACY_KEYS: Hash[String, Symbol]
+
+  CSI_U_LETTERS: Range[Integer]
+
   PASTE_START: String
 
   PASTE_END: String
@@ -70,6 +84,21 @@ class Riffer::Rig::Terminal::KeyDecoder
   # @rbs final: String
   # @rbs return: Array[Riffer::Rig::Terminal::Key]
   def finish_csi: (String final) -> Array[Riffer::Rig::Terminal::Key]
+
+  # The protocol is enabled by KeyPipeline, not here; its keys must land on the
+  # names the legacy encodings produce so no chord changes when it turns on.
+  # @rbs codepoint: String?
+  # @rbs modifiers: String?
+  # @rbs return: Symbol?
+  def csi_u_key: (String? codepoint, String? modifiers) -> Symbol?
+
+  # @rbs mods: Integer
+  # @rbs return: Symbol
+  def csi_u_enter: (Integer mods) -> Symbol
+
+  # @rbs key: Integer
+  # @rbs return: String?
+  def csi_u_letter: (Integer key) -> String?
 
   # @rbs char: String
   # @rbs return: Array[Riffer::Rig::Terminal::Key]

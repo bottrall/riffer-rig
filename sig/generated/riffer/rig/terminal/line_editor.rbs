@@ -11,6 +11,8 @@ class Riffer::Rig::Terminal::LineEditor
 
   WORD: Regexp
 
+  NEWLINE_KEYS: Array[Symbol]
+
   @kill: String
 
   @pastes: Array[String]

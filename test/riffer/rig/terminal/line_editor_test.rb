@@ -78,6 +78,18 @@ describe Riffer::Rig::Terminal::LineEditor do
     assert_equal '[pasted 6.0k chars]', editor([:paste, large], :backspace, [:paste, longer]).printable_before
   end
 
+  it 'inserts a line break at the cursor on Ctrl-J' do
+    assert_equal "a\nb", editor('a', :newline, 'b').text
+  end
+
+  it 'inserts a line break at the cursor on Alt-Enter' do
+    assert_equal "a\nb", editor('a', :alt_enter, 'b').text
+  end
+
+  it 'inserts a line break at the cursor on Shift-Enter' do
+    assert_equal "a\nb", editor('a', :shift_enter, 'b').text
+  end
+
   it 'inserts typed characters' do
     assert_equal 'abc', typed('abc').text
   end
@@ -96,14 +108,6 @@ describe Riffer::Rig::Terminal::LineEditor do
 
   it 'inserts a multi-line paste literally' do
     assert_equal "one\ntwo", editor([:paste, "one\ntwo"]).text
-  end
-
-  it 'inserts a line break at the cursor on Ctrl-J' do
-    assert_equal "a\nb", editor('a', :newline, 'b').text
-  end
-
-  it 'inserts a line break at the cursor on Alt-Enter' do
-    assert_equal "a\nb", editor('a', :alt_enter, 'b').text
   end
 
   it 'keeps an elided paste whole in the text' do

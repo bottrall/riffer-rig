@@ -125,6 +125,10 @@ describe Riffer::Rig::Terminal::FramePrompter do
       assert_equal '', ask([key(:enter)])
     end
 
+    it 'answers the line on Shift-Enter' do
+      assert_equal 'abc', ask([*typed('abc'), key(:shift_enter)])
+    end
+
     it 'draws the line on the footer as it is typed' do
       ask(typed('abc'))
 

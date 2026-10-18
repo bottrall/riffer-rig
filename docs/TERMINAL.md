@@ -12,6 +12,7 @@ The input line, marked `›`, is always there, including while a turn runs. It c
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Enter                                                    | sends the input ([Queueing](#queueing-messages))                                                                                                     |
 | Ctrl-J, Alt-Enter (Option-Enter)                         | starts a new row at the cursor instead of sending                                                                                                    |
+| Shift-Enter                                              | starts a new row at the cursor instead of sending, on terminals that report it                                                                       |
 | Left, Right                                              | moves one character                                                                                                                                  |
 | Ctrl-Left, Ctrl-Right, Alt-Left, Alt-Right, Alt-B, Alt-F | moves one word, a run of letters and digits                                                                                                          |
 | Home, End                                                | moves to the start or the end of the input                                                                                                           |
@@ -24,6 +25,8 @@ The input line, marked `›`, is always there, including while a turn runs. It c
 | Ctrl-T                                                   | opens or closes the [peek](#peek) while a turn runs                                                                                                  |
 | Ctrl-C                                                   | cancels the running turn or an open question; with neither, asks for a second Ctrl-C to exit ([Interrupting and exiting](#interrupting-and-exiting)) |
 | Ctrl-D                                                   | on an empty line, ends the session once the queued messages have run                                                                                 |
+
+Shift-Enter is reported only by terminals that implement the Kitty keyboard protocol: `riffer` enables its disambiguate escape codes when the session starts and pops them when it ends, and a terminal without the protocol ignores both and sends Shift-Enter as plain Enter, which sends the input.
 
 While the [command palette](#the-command-palette) is open, Up and Down move through it instead of the history, and Enter, Tab, Escape and Right at the end of the line act on it. Every other key does nothing.
 

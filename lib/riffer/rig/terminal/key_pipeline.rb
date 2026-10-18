@@ -10,6 +10,12 @@ class Riffer::Rig::Terminal::KeyPipeline
 
   BRACKETED_PASTE_OFF = "\e[?2004l" #: String
 
+  # Terminals without the Kitty keyboard protocol ignore both sequences and
+  # keep sending legacy bytes.
+  KITTY_KEYBOARD_ON = "\e[>1u" #: String
+
+  KITTY_KEYBOARD_OFF = "\e[<u" #: String
+
   # @rbs @input: IO
   # @rbs @output: IO
   # @rbs @decoder: Riffer::Rig::Terminal::KeyDecoder
@@ -39,6 +45,7 @@ class Riffer::Rig::Terminal::KeyPipeline
   def start
     return @queue.close unless @input.tty?
 
+    write(KITTY_KEYBOARD_ON)
     write(BRACKETED_PASTE_ON)
     @stopping = false
     @thread = Thread.new { read_loop }
@@ -53,6 +60,7 @@ class Riffer::Rig::Terminal::KeyPipeline
     @stopping = true
     thread.join
     write(BRACKETED_PASTE_OFF)
+    write(KITTY_KEYBOARD_OFF)
   end
 
   private

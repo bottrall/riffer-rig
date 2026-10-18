@@ -11,6 +11,8 @@ class Riffer::Rig::Terminal::LineEditor
 
   WORD = /[[:alnum:]]/ #: Regexp
 
+  NEWLINE_KEYS = %i[newline alt_enter shift_enter].freeze #: Array[Symbol]
+
   # @rbs @recall: Integer
   # @rbs @draft: String
   # @rbs @pastes: Array[String]
@@ -58,10 +60,11 @@ class Riffer::Rig::Terminal::LineEditor
   # @rbs key: Riffer::Rig::Terminal::Key
   # @rbs return: Riffer::Rig::Terminal::LineEditor
   def press(key)
+    return with(before: "#{before}\n") if NEWLINE_KEYS.include?(key.name)
+
     case key.name
     when :text then with(before: before + key.text.to_s)
     when :paste then paste(key.text.to_s)
-    when :newline, :alt_enter then with(before: "#{before}\n")
     when :backspace then with(before: before.delete_suffix(unit_before))
     when :delete then with(after: after.delete_prefix(unit_after))
     when :left then left
