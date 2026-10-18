@@ -477,6 +477,25 @@ describe Riffer::Rig::Terminal::Repl do
 
       assert_equal ['one'], turns
     end
+
+    it 'arms the exit when a Ctrl-C interrupts a turn' do
+      type("one\r")
+      @keys.close
+      session { |_line| raise Interrupt }
+
+      assert_equal [hint], @frame.statuses
+    end
+
+    it 'ends the session when a Ctrl-C interrupts a turn while armed' do
+      type("one\r")
+      @keys.close
+      session do |_line|
+        repl.arm
+        raise Interrupt
+      end
+
+      assert_equal 1, @frame.statuses.count(hint)
+    end
   end
 
   describe '#take' do

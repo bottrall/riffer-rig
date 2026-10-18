@@ -75,6 +75,11 @@ class Riffer::Rig::Terminal::Repl
   # @rbs return: void
   def run: () { (String | :job_exit) -> void } -> void
 
+  # Records a Ctrl-C for the idle prompt: the first one arms the exit hint, a
+  # second one while armed ends the session.
+  # @rbs return: bool
+  def arm: () -> bool
+
   private
 
   # @rbs return: (String | :job_exit)?
@@ -82,9 +87,6 @@ class Riffer::Rig::Terminal::Repl
 
   # @rbs return: :job_exit | nil
   def job_exit: () -> (:job_exit | nil)
-
-  # @rbs return: bool
-  def arm: () -> bool
 
   # @rbs return: void
   def read: () -> void
