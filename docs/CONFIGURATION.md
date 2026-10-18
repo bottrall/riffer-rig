@@ -49,11 +49,19 @@ A `model` that is not a string is never skipped as unset: the Loader raises `Rif
 
 ## `reasoning`
 
-`reasoning` is the reasoning effort: `off`, `low`, `medium`, `high`, `xhigh` or `max`. Riffer translates the level into the provider's own request parameters: each provider maps it to its own shape (Anthropic's `thinking` and `output_config`, OpenAI's and OpenRouter's `reasoning`, Gemini's `thinkingConfig`, Bedrock's `additional_model_request_fields`), and an entry for the model in a [catalog file](#catalog_files) overrides the provider's default mapping. Which levels a provider accepts is the provider's business: a level it does not know reaches the provider as written. A level outside the six raises `Riffer::ArgumentError` when the session starts. Omitting `reasoning` leaves the model's default. Anthropic models also get prompt caching (`cache_control`) whatever the level.
+`reasoning` is the reasoning effort: `off`, `low`, `medium`, `high`, `xhigh` or `max`. Riffer translates the level into the provider's own request parameters: each provider maps the six to its own shape (Anthropic's `thinking` and `output_config`, OpenAI's and OpenRouter's `reasoning`, Gemini's `thinkingConfig`, Bedrock's `additional_model_request_fields`), and an entry for the model in a [catalog file](#catalog_files) overrides the provider's default mapping. `off` turns reasoning off where the provider's shape has a way to: thinking disabled on Anthropic and Bedrock, `reasoning: none` on OpenAI and OpenRouter. A provider that maps no level of its own — one an extension registers, whose model has no catalog `reasoning` entry — raises `Riffer::ArgumentError` before the request, with the catalog file to add in the message. Omitting `reasoning` leaves the model's default. Anthropic models also get prompt caching (`cache_control`) whatever the level.
 
 ```json
 { "model": "anthropic/claude-sonnet-4-6", "reasoning": "high" }
 ```
+
+The level is the first of these that is set, highest first: the `--reasoning` flag, a resumed session's recorded `/reasoning` switch, the `RIFFER_REASONING` environment variable, then `reasoning` in the settings.
+
+A level from `--reasoning` or `RIFFER_REASONING` that riffer does not accept is rejected before the session starts with a `Riffer::Rig::Loader::ConfigurationError`: `turbo is not a reasoning level; riffer accepts: off low medium high xhigh max`. A level from the settings is never rejected: one riffer does not accept silently leaves the model's default, so a level every provider accepts can stay in the file across model switches.
+
+`/reasoning level` switches the level for the current session only: `/reasoning` alone shows the level in effect — `off` when off is the level, `default` when none is — a level riffer does not accept is refused naming the levels riffer accepts, and `/reasoning --save` writes the level in effect to the home settings, leaving every other key unchanged — or, when the home file no longer parses, writes nothing and reports the file. A switch is recorded in the [session store](SESSIONS.md#resuming) and restored on resume; a `--reasoning` chosen for the run wins over the restored switch for that run only.
+
+When the model switches mid-session — `/model` — the level stays in effect, riding on the agent config the switch shares. A level the new provider has no mapping for raises before the next request, with the catalog file to add in the message.
 
 ## `catalog_files`
 

@@ -48,12 +48,20 @@ class ObservedRuntime
     @model_listener = block
   end
 
+  def on_reasoning_change(&block)
+    @reasoning_listener = block
+  end
+
   def announce(message)
     @message_listener.call(message)
   end
 
   def switch(model)
     @model_listener.call(model)
+  end
+
+  def switch_reasoning(level)
+    @reasoning_listener.call(level)
   end
 end
 
@@ -153,6 +161,16 @@ describe Riffer::Rig::Stores::Recorder do
       runtime.switch('mock/other')
 
       assert_equal ['mock/other'], store.appended.grep(Riffer::Rig::Stores::ModelEntry).map(&:model)
+    end
+
+    it 'records the reasoning changes the runtime announces' do
+      store = SeededStore.new
+      runtime = ObservedRuntime.new
+      Riffer::Rig::Stores::Recorder.new(store: store, clock: SteppingClock.new([at(1), at(2), at(3)])).attach(runtime)
+      runtime.announce(user)
+      runtime.switch_reasoning('high')
+
+      assert_equal ['high'], store.appended.grep(Riffer::Rig::Stores::ReasoningEntry).map(&:reasoning)
     end
   end
 
@@ -336,6 +354,33 @@ describe Riffer::Rig::Stores::Recorder do
       recording.message(user)
 
       assert_equal [at(1), at(3)], stamps(store)
+    end
+  end
+
+  describe '#switched_reasoning' do
+    it 'holds an entry until the header is written' do
+      store = SeededStore.new
+      recorder(store, [at(1)]).switched_reasoning('high')
+
+      assert_empty store.appended
+    end
+
+    it 'records the level' do
+      store = SeededStore.new
+      recording = recorder(store, [at(1), at(2), at(3)])
+      recording.message(user)
+      recording.switched_reasoning('high')
+
+      assert_equal ['high'], store.appended.grep(Riffer::Rig::Stores::ReasoningEntry).map(&:reasoning)
+    end
+
+    it 'stamps a reasoning entry with the clock' do
+      store = SeededStore.new
+      recording = recorder(store, [at(1), at(2)], resumed: true)
+      recording.switched_reasoning('high')
+      recording.message(user)
+
+      assert_equal at(1), store.appended.grep(Riffer::Rig::Stores::ReasoningEntry).first.recorded_time
     end
   end
 

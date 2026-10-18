@@ -33,7 +33,7 @@ By default only the assistant's text is printed, streamed to stdout. Everything 
 
 ## Flags
 
-The REPL's flags all work here: `--model provider/name`, `--no-extensions`, `--no-skills`, `--no-agents-md`, `--tools a,b,c`, `--max-steps N`, `--no-save`, `-c`/`--continue` and `-r ID`/`--resume ID`, plus `--verbose` and `--job-idle-timeout SECONDS`. The same [resolution order](PROVIDERS.md#resolution-order) applies to the model: `--model`, then `RIFFER_MODEL`, then settings.
+The REPL's flags all work here: `--model provider/name`, `--reasoning off|low|medium|high|xhigh|max`, `--no-extensions`, `--no-skills`, `--no-agents-md`, `--tools a,b,c`, `--max-steps N`, `--no-save`, `-c`/`--continue` and `-r ID`/`--resume ID`, plus `--verbose` and `--job-idle-timeout SECONDS`. The same [resolution order](PROVIDERS.md#resolution-order) applies to the model: `--model`, then `RIFFER_MODEL`, then settings — and to the reasoning level: `--reasoning`, then `RIFFER_REASONING`, then settings.
 
 `-c` and `-r` are the multi-turn headless story: `riffer -p -c "now run the tests"` continues the most recent session in this directory, appending to the same [session file](SESSIONS.md#resuming). Unlike the REPL, a missing session is not a fresh start — headless prints `No saved session …` on stderr and exits 2 (`Sessions are off for this run (--no-save).` under [`--no-save`](SESSIONS.md#opting-out), and `Session … was saved in …, which no longer exists.` when the [directory the session runs in](SESSIONS.md#resuming) is gone).
 

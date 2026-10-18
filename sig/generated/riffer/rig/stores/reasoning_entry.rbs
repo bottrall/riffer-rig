@@ -1,0 +1,23 @@
+# Generated from lib/riffer/rig/stores/reasoning_entry.rb with RBS::Inline
+
+class Riffer::Rig::Stores::ReasoningEntry
+  extend Riffer::Rig::Support::TypedValue::Schema[String]
+
+  include Riffer::Rig::Support::TypedValue[String]
+
+  include Riffer::Rig::Stores::Stamped
+
+  # @dynamic reasoning, recorded_at
+  attr_reader reasoning: String
+
+  attr_reader recorded_at: String?
+
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs return: ::Riffer::Rig::Stores::ReasoningEntry?
+  def self.from_hash: (Hash[Symbol, untyped] hash) -> ::Riffer::Rig::Stores::ReasoningEntry?
+
+  # @rbs reasoning: String
+  # @rbs recorded_at: String?
+  # @rbs return: void
+  def initialize: (reasoning: String, ?recorded_at: String?) -> void
+end

@@ -40,6 +40,41 @@ describe Riffer::Rig::Settings::ModelOptions do
     end
   end
 
+  describe '.reasoning_rejection' do
+    def rejection(level)
+      Riffer::Rig::Settings::ModelOptions.reasoning_rejection(level)
+    end
+
+    it 'is nil for a level riffer accepts' do
+      assert_nil rejection('high')
+    end
+
+    it 'is nil for off' do
+      assert_nil rejection('off')
+    end
+
+    it 'names the levels riffer accepts' do
+      assert_equal(
+        'turbo is not a reasoning level; riffer accepts: off low medium high xhigh max',
+        rejection('turbo')
+      )
+    end
+  end
+
+  describe '.reasoning_level' do
+    it 'is the level riffer accepts' do
+      assert_equal 'high', Riffer::Rig::Settings::ModelOptions.reasoning_level('high')
+    end
+
+    it 'is nil for a level riffer does not accept' do
+      assert_nil Riffer::Rig::Settings::ModelOptions.reasoning_level('turbo')
+    end
+
+    it 'is nil without a level' do
+      assert_nil Riffer::Rig::Settings::ModelOptions.reasoning_level(nil)
+    end
+  end
+
   describe '.model_options' do
     it 'includes cache control for an anthropic model' do
       assert_equal({ cache_control: { type: :ephemeral } }, Riffer::Rig::Settings::ModelOptions.model_options('anthropic/claude-sonnet-4-6'))

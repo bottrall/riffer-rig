@@ -1,12 +1,14 @@
 # Generated from lib/riffer/rig/runtime/snapshot.rb with RBS::Inline
 
 class Riffer::Rig::Runtime::Snapshot
-  # @dynamic id, messages, model, skills
+  # @dynamic id, messages, model, reasoning, skills
   attr_reader id: String
 
   attr_reader messages: Array[Riffer::Messages::Base]
 
   attr_reader model: String?
+
+  attr_reader reasoning: String?
 
   attr_reader skills: Array[String]
 
@@ -21,9 +23,10 @@ class Riffer::Rig::Runtime::Snapshot
   # @rbs id: String
   # @rbs messages: Array[Riffer::Messages::Base]
   # @rbs model: String?
+  # @rbs reasoning: String?
   # @rbs skills: Array[String]
   # @rbs return: void
-  def initialize: (id: String, messages: Array[Riffer::Messages::Base], model: String?, skills: Array[String]) -> void
+  def initialize: (id: String, messages: Array[Riffer::Messages::Base], model: String?, skills: Array[String], ?reasoning: String?) -> void
 
   # @rbs return: Hash[Symbol, untyped]
   def to_h: () -> Hash[Symbol, untyped]

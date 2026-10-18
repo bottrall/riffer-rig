@@ -170,6 +170,36 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def home_auth_path: () -> String
 
+  # A reasoning level from the flag or the environment is refused, the way a
+  # bad model string is; one from the settings document or a session's recorded
+  # switch falls back to the model's default instead.
+  # @rbs options: Riffer::Rig::Loader::Options
+  # @rbs return: void
+  def check_reasoning: (Riffer::Rig::Loader::Options options) -> void
+
+  # The reasoning in effect for the build, over the settings document: the flag,
+  # then the session's recorded switch, then RIFFER_REASONING.
+  # @rbs options: Riffer::Rig::Loader::Options
+  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs return: String?
+  def forced_reasoning: (Riffer::Rig::Loader::Options options, Hash[Symbol, untyped]? snapshot) -> String?
+
+  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs return: String?
+  def recorded_reasoning: (Hash[Symbol, untyped]? snapshot) -> String?
+
+  # A settings level riffer does not accept silently keeps the model's default.
+  # @rbs document: Riffer::Rig::Settings::Document
+  # @rbs return: String?
+  def settings_reasoning: (Riffer::Rig::Settings::Document document) -> String?
+
+  # A model or reasoning level chosen for the run wins for that run only: it is
+  # not recorded, so a later resume restores the session's own switches.
+  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs options: Riffer::Rig::Loader::Options
+  # @rbs return: Hash[Symbol, untyped]?
+  def snapshot_without_forced: (Hash[Symbol, untyped]? snapshot, Riffer::Rig::Loader::Options options) -> Hash[Symbol, untyped]?
+
   # The store records unless it was declined with store: nil or globally with
   # "sessions": {"save": false}.
   # @rbs document: Riffer::Rig::Settings::Document

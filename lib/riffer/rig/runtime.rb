@@ -64,6 +64,7 @@ class Riffer::Rig::Runtime
   # @rbs @reasoning: String?
   # @rbs @message_observers: Array[^(Riffer::Messages::Base) -> void]
   # @rbs @model_observers: Array[^(String) -> void]
+  # @rbs @reasoning_observers: Array[^(String) -> void]
   # @rbs @system_prompt: Riffer::Rig::Runtime::SystemPrompt
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
   # @rbs @core_commands: Array[Riffer::Rig::Command]
@@ -148,6 +149,7 @@ class Riffer::Rig::Runtime
     @session_start_reason = saved ? :restore : :new
     @message_observers = []
     @model_observers = []
+    @reasoning_observers = []
     @reasoning = reasoning
     @errors = []
     @tool_allowlist = tools
@@ -258,6 +260,21 @@ class Riffer::Rig::Runtime
     @model_observers.each { |observer| observer.call(model) }
   end
 
+  # @rbs return: String?
+  def reasoning
+    @reasoning || Riffer::Rig::Settings::ModelOptions.reasoning_level(Riffer::Rig::Settings::Document.new(@settings).reasoning)
+  end
+
+  # @rbs level: String
+  # @rbs return: void
+  def reasoning=(level)
+    # Riffer's own validation raises before anything is assigned, so a level it
+    # refuses leaves both the level and the config unchanged.
+    @agent.config.reasoning = level
+    @reasoning = level
+    @reasoning_observers.each { |observer| observer.call(level) }
+  end
+
   # @rbs provider: Symbol
   # @rbs values: Hash[Symbol, String]
   # @rbs return: void
@@ -289,7 +306,11 @@ class Riffer::Rig::Runtime
   # @rbs return: Hash[Symbol, untyped]
   def to_h
     Riffer::Rig::Runtime::Snapshot.new(
-      id: @id, messages: @agent.session.messages, model: @model_override, skills: activated_skills
+      id: @id,
+      messages: @agent.session.messages,
+      model: @model_override,
+      reasoning: @reasoning,
+      skills: activated_skills
     ).to_h
   end
 
@@ -304,6 +325,13 @@ class Riffer::Rig::Runtime
   # @rbs return: nil
   def on_model_change(&block)
     @model_observers << block
+    nil
+  end
+
+  # @rbs &block: (String) -> void
+  # @rbs return: nil
+  def on_reasoning_change(&block)
+    @reasoning_observers << block
     nil
   end
 
@@ -464,6 +492,7 @@ class Riffer::Rig::Runtime
       *@core_commands,
       Riffer::Rig::Commands::Auth.command,
       Riffer::Rig::Commands::Model.command,
+      Riffer::Rig::Commands::Reasoning.command,
       Riffer::Rig::Commands::Cost.command,
       *skills.map { |skill| Riffer::Rig::Commands::Skill.command(skill) },
       *registrars.flat_map { |registrar| registrar.commands.values }
@@ -797,6 +826,7 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Agent
   def restore(snapshot, model, config)
     @model_override = snapshot.restorable_model(@credentials, @host, model)
+    @reasoning = Riffer::Rig::Settings::ModelOptions.reasoning_level(snapshot.reasoning) if snapshot.reasoning
     agent = build_agent(@model_override || model, config, session: snapshot.session)
     agent.context.token_usage = snapshot.usage
     reactivate(agent.context.skills, snapshot.skills)

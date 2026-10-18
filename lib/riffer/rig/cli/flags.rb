@@ -9,9 +9,10 @@ class Riffer::Rig::CLI::Flags
            riffer acp           serve Runtimes as an ACP agent over stdio
   TEXT
 
-  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, version
+  # @dynamic model, reasoning, extensions, skills, agents_md, tools, max_steps, help, version
   # @dynamic save, verbose, json, job_idle_timeout, headless, prompt, continue, resume
   attr_reader :model #: String?
+  attr_reader :reasoning #: String?
   attr_reader :extensions, :skills, :agents_md, :help, :version, :verbose, :json, :headless #: bool
   attr_reader :tools #: Array[String]?
   attr_reader :max_steps #: Integer?
@@ -47,6 +48,7 @@ class Riffer::Rig::CLI::Flags
   def to_options
     Riffer::Rig::Loader::Options.new(
       model: model,
+      reasoning: reasoning,
       extensions: extensions,
       skills: skills,
       agents_md: agents_md,
@@ -61,6 +63,7 @@ class Riffer::Rig::CLI::Flags
       parser.banner = BANNER
       parser.separator('')
       parser.on('--model PROVIDER/NAME', String, 'Model for this session, over RIFFER_MODEL and settings')
+      parser.on('--reasoning LEVEL', String, 'Reasoning level for this session, over RIFFER_REASONING and settings')
       parser.on('--no-extensions', 'Skip extension files and autoload; the bundle still loads')
       parser.on('--no-skills', 'Leave out Agent Skills')
       parser.on('--no-agents-md', 'Leave out AGENTS.md instructions')
@@ -94,6 +97,7 @@ class Riffer::Rig::CLI::Flags
   def self.assemble(values, prompt)
     new(
       model: values[:model],
+      reasoning: values[:reasoning],
       extensions: !values.key?(:'no-extensions'),
       skills: !values.key?(:'no-skills'),
       agents_md: !values.key?(:'no-agents-md'),
@@ -114,6 +118,7 @@ class Riffer::Rig::CLI::Flags
   private_class_method :assemble
 
   # @rbs model: String?
+  # @rbs reasoning: String?
   # @rbs extensions: bool
   # @rbs skills: bool
   # @rbs agents_md: bool
@@ -132,6 +137,7 @@ class Riffer::Rig::CLI::Flags
   # @rbs return: void
   def initialize(
     model: nil,
+    reasoning: nil,
     extensions: true,
     skills: true,
     agents_md: true,
@@ -149,6 +155,7 @@ class Riffer::Rig::CLI::Flags
     version: false
   )
     @model = model
+    @reasoning = reasoning
     @extensions = extensions
     @skills = skills
     @agents_md = agents_md

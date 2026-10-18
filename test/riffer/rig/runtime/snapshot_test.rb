@@ -15,8 +15,14 @@ describe Riffer::Rig::Runtime::Snapshot do
     [Riffer::Messages::User.new('hello'), Riffer::Messages::Assistant.new('Hi there.', token_usage: usage(10, 5))]
   end
 
-  def snapshot(messages: conversation, model: nil, skills: [])
-    Riffer::Rig::Runtime::Snapshot.new(id: 'session-1', messages: messages, model: model, skills: skills)
+  def snapshot(messages: conversation, model: nil, reasoning: nil, skills: [])
+    Riffer::Rig::Runtime::Snapshot.new(
+      id: 'session-1',
+      messages: messages,
+      model: model,
+      reasoning: reasoning,
+      skills: skills
+    )
   end
 
   def orphaned_call
@@ -47,6 +53,18 @@ describe Riffer::Rig::Runtime::Snapshot do
 
       assert_instance_of Riffer::Rig::Runtime::JobNotification, Riffer::Rig::Runtime::Snapshot.from_h(saved).messages.last
     end
+
+    it 'reads a hash without a reasoning level as unswitched' do
+      saved = { id: 'session-1', messages: [], model: nil, skills: [] }
+
+      assert_nil Riffer::Rig::Runtime::Snapshot.from_h(saved).reasoning
+    end
+
+    it 'reads a reasoning level that is not a string as unswitched' do
+      saved = { id: 'session-1', messages: [], model: nil, reasoning: 3, skills: [] }
+
+      assert_nil Riffer::Rig::Runtime::Snapshot.from_h(saved).reasoning
+    end
   end
 
   describe '.message' do
@@ -64,11 +82,13 @@ describe Riffer::Rig::Runtime::Snapshot do
   end
 
   describe '#to_h' do
-    it 'holds the id, the messages as riffer hashes, the model and the skills' do
+    it 'holds the id, the messages as riffer hashes, the model, the reasoning and the skills' do
       messages = conversation
-      expected = { id: 'session-1', messages: messages.map(&:to_h), model: 'mock/other', skills: %w[a] }
+      expected = {
+        id: 'session-1', messages: messages.map(&:to_h), model: 'mock/other', reasoning: 'high', skills: %w[a]
+      }
 
-      assert_equal expected, snapshot(messages: messages, model: 'mock/other', skills: %w[a]).to_h
+      assert_equal expected, snapshot(messages: messages, model: 'mock/other', reasoning: 'high', skills: %w[a]).to_h
     end
   end
 

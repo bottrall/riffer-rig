@@ -17,6 +17,9 @@ module Riffer::Rig::Stores::Entries
       id: id,
       messages: messages(entries),
       model: entries.filter_map { |entry| entry.model if entry.is_a?(Riffer::Rig::Stores::ModelEntry) }.last,
+      reasoning: entries.filter_map do |entry|
+        entry.reasoning if entry.is_a?(Riffer::Rig::Stores::ReasoningEntry)
+      end.last,
       skills: entries.filter_map { |entry| entry.skill if entry.is_a?(Riffer::Rig::Stores::SkillEntry) }
     }
   end

@@ -66,4 +66,36 @@ describe Riffer::Rig::Settings::File do
       end
     end
   end
+
+  describe '.store_reasoning' do
+    it 'reports a malformed file' do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, 'settings.json')
+        File.write(path, '{"reasoning":"low",}')
+
+        assert_equal(
+          "#{path} is not valid JSON at line 1 column 20",
+          Riffer::Rig::Settings::File.store_reasoning('high', path: path)
+        )
+      end
+    end
+
+    it 'writes the level' do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, '.riffer', 'settings.json')
+        Riffer::Rig::Settings::File.store_reasoning('high', path: path)
+
+        assert_equal 'high', JSON.parse(File.read(path))['reasoning']
+      end
+    end
+
+    it 'keeps the other keys' do
+      Dir.mktmpdir do |dir|
+        path = settings_file(dir, { 'model' => 'anthropic/a', 'reasoning' => 'low' })
+        Riffer::Rig::Settings::File.store_reasoning('high', path: path)
+
+        assert_equal 'anthropic/a', JSON.parse(File.read(path))['model']
+      end
+    end
+  end
 end

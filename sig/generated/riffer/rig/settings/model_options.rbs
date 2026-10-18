@@ -11,6 +11,14 @@ module Riffer::Rig::Settings::ModelOptions
   # @rbs return: String?
   def rejection: (String model) -> String?
 
+  # @rbs level: String?
+  # @rbs return: String?
+  def reasoning_level: (String? level) -> String?
+
+  # @rbs level: String
+  # @rbs return: String?
+  def reasoning_rejection: (String level) -> String?
+
   # @rbs model: String
   # @rbs return: Hash[Symbol, untyped]
   def model_options: (String model) -> Hash[Symbol, untyped]

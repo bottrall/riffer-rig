@@ -24,6 +24,10 @@ describe Riffer::Rig::Stores::Entries do
     Riffer::Rig::Stores::ModelEntry.new(model: name)
   end
 
+  def reasoning_entry(level)
+    Riffer::Rig::Stores::ReasoningEntry.new(reasoning: level)
+  end
+
   def skill_entry(name)
     Riffer::Rig::Stores::SkillEntry.new(skill: name)
   end
@@ -34,6 +38,7 @@ describe Riffer::Rig::Stores::Entries do
       skill_entry('a'),
       message_entry('first'),
       model_entry('mock/one'),
+      reasoning_entry('low'),
       message_entry('second'),
       model_entry('mock/two'),
       skill_entry('b')
@@ -54,8 +59,8 @@ describe Riffer::Rig::Stores::Entries do
   end
 
   describe '.snapshot' do
-    it 'holds the id, messages, model and skills' do
-      assert_equal %i[id messages model skills], Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa').keys
+    it 'holds the id, messages, model, reasoning and skills' do
+      assert_equal %i[id messages model reasoning skills], Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa').keys
     end
 
     it 'carries the id it is given' do
@@ -75,6 +80,14 @@ describe Riffer::Rig::Stores::Entries do
 
     it 'has no model without a model entry' do
       assert_nil Riffer::Rig::Stores::Entries.snapshot([header, message_entry('first')], 'aaa')[:model]
+    end
+
+    it 'lets the last reasoning entry win' do
+      assert_equal 'low', Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa')[:reasoning]
+    end
+
+    it 'has no reasoning without a reasoning entry' do
+      assert_nil Riffer::Rig::Stores::Entries.snapshot([header, message_entry('first')], 'aaa')[:reasoning]
     end
 
     it 'carries every skill entry in recorded order' do

@@ -90,6 +90,7 @@ describe Riffer::Rig::Stores::JSONL do
       header('aaa'),
       message_entry('hello'),
       Riffer::Rig::Stores::ModelEntry.new(model: 'mock/one'),
+      Riffer::Rig::Stores::ReasoningEntry.new(reasoning: 'high'),
       Riffer::Rig::Stores::SkillEntry.new(skill: 'a')
     ]
     entries.each { |entry| @store.append('aaa', entry) }

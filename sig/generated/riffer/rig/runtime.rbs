@@ -69,6 +69,8 @@ class Riffer::Rig::Runtime
 
   @model_observers: Array[^(String) -> void]
 
+  @reasoning_observers: Array[^(String) -> void]
+
   @system_prompt: Riffer::Rig::Runtime::SystemPrompt
 
   @commands: Hash[String, Riffer::Rig::Command]
@@ -177,6 +179,13 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def model=: (String model) -> void
 
+  # @rbs return: String?
+  def reasoning: () -> String?
+
+  # @rbs level: String
+  # @rbs return: void
+  def reasoning=: (String level) -> void
+
   # @rbs provider: Symbol
   # @rbs values: Hash[Symbol, String]
   # @rbs return: void
@@ -197,6 +206,10 @@ class Riffer::Rig::Runtime
   # @rbs &block: (String) -> void
   # @rbs return: nil
   def on_model_change: () { (String) -> void } -> nil
+
+  # @rbs &block: (String) -> void
+  # @rbs return: nil
+  def on_reasoning_change: () { (String) -> void } -> nil
 
   # @rbs &: (Riffer::Rig::Runtime::JobCompletion) -> void
   # @rbs return: nil

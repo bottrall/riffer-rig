@@ -1,0 +1,16 @@
+# Generated from lib/riffer/rig/commands/reasoning.rb with RBS::Inline
+
+module Riffer::Rig::Commands::Reasoning
+  SAVE: String
+
+  SAVED_TO: String
+
+  DEFAULT: String
+
+  # @rbs return: Riffer::Rig::Command
+  def command: () -> Riffer::Rig::Command
+
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs return: void
+  def run: (Riffer::Rig::Command::Context ctx) -> void
+end
