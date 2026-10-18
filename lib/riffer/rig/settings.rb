@@ -15,7 +15,10 @@ module Riffer::Rig::Settings
     if home_mcp.is_a?(Hash) && project_mcp.is_a?(Hash)
       merged = merged.merge(mcp: Riffer::Rig::Mcp.merge(home_mcp, project_mcp))
     end
-    disabled = [home, project].flat_map { |scope| Document.new(scope).disabled }.uniq
+    documents = [home, project].map { |scope| Document.new(scope) }
+    disabled = documents.flat_map(&:disabled).uniq
+    catalog_files = documents.flat_map(&:catalog_files).uniq
+    merged = merged.merge(catalog_files: catalog_files) if catalog_files.any?
     return merged if disabled.empty?
 
     extensions = merged[:extensions].is_a?(Hash) ? merged[:extensions] : {} #: Hash[Symbol, untyped]

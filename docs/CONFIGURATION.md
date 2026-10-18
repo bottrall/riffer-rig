@@ -5,7 +5,7 @@ Settings live in two files with the same name and shape, both optional:
 - `~/.riffer/settings.json` — the home scope, for every project.
 - `<cwd>/.riffer/settings.json` — the project scope, for sessions started in that directory.
 
-`Riffer::Rig::Loader` reads home then project and merges them key by key, the project winning: a top-level key set in both takes the project's value, and an extension namespace merges the same way one level down, so a project can change one key of a namespace and keep the rest from home. Two keys merge differently: `extensions.disabled` lists add up across both scopes, and an [MCP server](MCP.md) declared in both is replaced whole by the project's. A file that is missing or blank counts as empty.
+`Riffer::Rig::Loader` reads home then project and merges them key by key, the project winning: a top-level key set in both takes the project's value, and an extension namespace merges the same way one level down, so a project can change one key of a namespace and keep the rest from home. Three keys merge differently: `extensions.disabled` and `catalog_files` lists add up across both scopes, and an [MCP server](MCP.md) declared in both is replaced whole by the project's. A file that is missing or blank counts as empty.
 
 A file that is not valid JSON, or does not hold a JSON object, is never read as empty and never written over. The Loader raises `Riffer::Rig::Loader::ConfigurationError` naming the file and, for a parse error, the line and column where parsing stopped, so `riffer` stops before the session starts; fix the file and run it again. The file's text is left out of the message.
 
@@ -13,15 +13,15 @@ A file that is not valid JSON, or does not hold a JSON object, is never read as 
 
 Every core key is top level and optional:
 
-| Key          | What it sets |
-| ------------ | ------------ |
-| `model`      | the model new sessions start with, as `"provider/name"` ([below](#model)) |
-| `reasoning`  | the reasoning effort, translated to the provider's own parameter ([below](#reasoning)) |
-| `models`     | the pricing table, model → USD per million tokens ([below](#models)) |
-| `providers`  | non-secret provider fields such as an endpoint or region ([Providers](PROVIDERS.md#the-providers-block-in-settings); read from the home file only) |
-| `extensions` | `disabled`, the bundled extensions to leave out ([below](#extensions)); `autoload`, gem extension autoload ([below](#extensions)) |
-| `reload`     | `"auto"` (default) or `"manual"`, the hot-reload trigger ([Reloading](RELOADING.md#triggers)) |
-| `sessions`   | `save`, set it to `false` to stop saving sessions to the store ([Sessions](SESSIONS.md)) |
+| Key             | What it sets |
+| --------------- | ------------ |
+| `model`         | the model new sessions start with, as `"provider/name"` ([below](#model)) |
+| `reasoning`     | the reasoning effort, which riffer translates to the provider's own parameter ([below](#reasoning)) |
+| `catalog_files` | the model catalog JSON files holding pricing and reasoning maps ([below](#catalog_files)) |
+| `providers`     | non-secret provider fields such as an endpoint or region ([Providers](PROVIDERS.md#the-providers-block-in-settings); read from the home file only) |
+| `extensions`    | `disabled`, the bundled extensions to leave out ([below](#extensions)); `autoload`, gem extension autoload ([below](#extensions)) |
+| `reload`        | `"auto"` (default) or `"manual"`, the hot-reload trigger ([Reloading](RELOADING.md#triggers)) |
+| `sessions`      | `save`, set it to `false` to stop saving sessions to the store ([Sessions](SESSIONS.md)) |
 | `tools`      | the provider-native tool switches (`native`) ([below](#toolsnative)) |
 
 ## `model`
@@ -49,39 +49,25 @@ A `model` that is not a string is never skipped as unset: the Loader raises `Rif
 
 ## `reasoning`
 
-`reasoning` is the reasoning effort, translated to the provider's own parameter: Anthropic accepts `low`, `medium`, `high`, `xhigh` and `max`; OpenAI and OpenRouter accept `low`, `medium`, `high` and `xhigh`. Omitting it, or giving a level the provider does not accept, leaves the model's default. Anthropic models also get prompt caching (`cache_control`) whatever the level. The Loader passes the result to the Runtime as riffer `model_options`.
+`reasoning` is the reasoning effort: `off`, `low`, `medium`, `high`, `xhigh` or `max`. Riffer translates the level into the provider's own request parameters: each provider maps it to its own shape (Anthropic's `thinking` and `output_config`, OpenAI's and OpenRouter's `reasoning`, Gemini's `thinkingConfig`, Bedrock's `additional_model_request_fields`), and an entry for the model in a [catalog file](#catalog_files) overrides the provider's default mapping. Which levels a provider accepts is the provider's business: a level it does not know reaches the provider as written. A level outside the six raises `Riffer::ArgumentError` when the session starts. Omitting `reasoning` leaves the model's default. Anthropic models also get prompt caching (`cache_control`) whatever the level.
 
 ```json
 { "model": "anthropic/claude-sonnet-4-6", "reasoning": "high" }
 ```
 
-## `models`
+## `catalog_files`
 
-`models` prices each model, keyed by its `"provider/name"` string. Rates are USD per million tokens:
+`catalog_files` lists the [model catalog](https://github.com/bottrall/riffer/blob/main/docs/CATALOG.md) JSON files the Loader hands to riffer — per-model pricing and per-level reasoning mappings riffer cannot derive from the model name:
 
 ```json
-{
-  "models": {
-    "anthropic/claude-sonnet-4-6": {
-      "input": 3.0,
-      "output": 15.0,
-      "cache_write": 3.75,
-      "cache_read": 0.3
-    }
-  }
-}
+{ "catalog_files": ["~/.riffer/models.json", ".riffer/models.json"] }
 ```
 
-| Key           | Prices                                   | When absent |
-| ------------- | ---------------------------------------- | ----------- |
-| `input`       | input tokens not read from or written to the cache | `0` |
-| `output`      | output tokens, reasoning included        | `0`         |
-| `cache_write` | input tokens written to the prompt cache | `0`         |
-| `cache_read`  | input tokens read from the prompt cache  | `0`         |
+The lists of the two scopes add up, the home files loading before the project's, and a later file wins a repeated model key, so a project file can add models or override a price. The file format — `version`, `pricing`, per-level `reasoning` fragments and aliases — is riffer's, documented at the link above.
 
-Each entry becomes a `Riffer::Rig::Settings::Pricing` and reaches the Runtime through its `pricing:` keyword, which registers it into riffer's `Riffer.config.pricing` so every turn and the running total carry a cost (see [Embedding](EMBEDDING.md#token-tally-and-cost)).
+A model without an entry has no cost: it is shown as missing, never as zero. A value that is not an array of strings is ignored.
 
-A model without an entry has no cost: it is shown as missing, never as zero. An entry that is not an object is ignored.
+`catalog_files` replaces the `models` pricing table: move each entry into a catalog file's `pricing` — the same four rates, USD per million tokens — and point `catalog_files` at the file.
 
 ## `mcp`
 
@@ -132,7 +118,7 @@ A switch value can be an object, passed through to the provider as the tool's op
 
 ## Extension namespaces
 
-Core keys — `model`, `reasoning`, `models`, `reload`, `extensions`, `sessions`, `providers` and `tools` — stay at the top level. Every other top-level key is an extension's namespace, named after the extension, holding the keys that extension declares with [`rig.setting`](EXTENSIONS.md#the-rigsetting-seam); `mcp` is one of these, the bundled `mcp` extension's own namespace:
+Core keys — `model`, `reasoning`, `catalog_files`, `reload`, `extensions`, `sessions`, `providers` and `tools` — stay at the top level. Every other top-level key is an extension's namespace, named after the extension, holding the keys that extension declares with [`rig.setting`](EXTENSIONS.md#the-rigsetting-seam); `mcp` is one of these, the bundled `mcp` extension's own namespace:
 
 ```json
 {

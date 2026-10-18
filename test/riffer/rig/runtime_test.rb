@@ -105,18 +105,16 @@ describe Riffer::Rig::Runtime do
     assert_same credentials, runtime.credentials
   end
 
-  it 'registers its pricing into the riffer config it is given' do
-    riffer_config = Riffer::Config.new
-    pricing = { 'mock/test' => Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 0.0, cache_read: 0.0) }
-    Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], pricing: pricing, riffer_config: riffer_config)
-
-    assert_in_delta 3.0, riffer_config.pricing.rates_for('mock/test').input
-  end
-
   it 'hands its model options to the agent' do
     runtime = Riffer::Rig::Runtime.new('mock/test', model_options: { reasoning: 'high' })
 
     assert_equal({ reasoning: 'high' }, runtime.agent.config.model_options)
+  end
+
+  it 'hands the reasoning level to the agent' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', reasoning: 'high')
+
+    assert_equal :high, runtime.agent.config.reasoning
   end
 
   it 'sends its model options with each request' do
@@ -1358,12 +1356,19 @@ describe Riffer::Rig::Runtime do
   end
 
   it 're-derives its model options for the new provider on a switch' do
-    runtime = Riffer::Rig::Runtime.new(
-      'mock/test', model_options: { reasoning: 'high' }, settings: { reasoning: 'high' }
-    )
-    runtime.model = 'gemini/gem-2.5-pro'
+    runtime = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6')
+
+    runtime.model = 'mock/test'
 
     assert_equal({}, runtime.agent.config.model_options)
+  end
+
+  it 'keeps the reasoning level across a switch' do
+    runtime = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', reasoning: 'high')
+
+    runtime.model = 'mock/test'
+
+    assert_equal :high, runtime.agent.config.reasoning
   end
 
   it 're-derives the provider option for the new provider on a switch' do
@@ -2672,16 +2677,32 @@ describe Riffer::Rig::Runtime do
     before do
       @riffer_config = Riffer.config
       # Riffer's providers price usage from the global Riffer.config, so the
-      # tests swap in a fresh one rather than leak pricing into other tests.
+      # tests swap in a fresh one rather than leak the catalog into other tests.
       Riffer.instance_variable_set(:@config, Riffer::Config.new)
+      Riffer.config.catalog_files = [catalog_file]
     end
 
     after do
+      FileUtils.remove_entry(File.dirname(catalog_file))
       Riffer.instance_variable_set(:@config, @riffer_config)
     end
 
-    def priced_runtime(pricing)
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], pricing: pricing)
+    def catalog_file
+      @catalog_file ||= begin
+        path = File.join(Dir.mktmpdir, 'catalog.json')
+        File.write(
+          path,
+          JSON.generate(
+            version: 1,
+            models: { 'mock/test' => { pricing: { input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3 } } }
+          )
+        )
+        path
+      end
+    end
+
+    def priced_runtime
+      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
       runtime.agent.provider.stub_response(
         'One.', token_usage: Riffer::Providers::TokenUsage.new(input_tokens: 1_000_000, output_tokens: 200_000)
       )
@@ -2694,16 +2715,12 @@ describe Riffer::Rig::Runtime do
       runtime
     end
 
-    def pricing
-      { 'mock/test' => Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3) }
-    end
-
     it 'is nil before the first turn' do
-      assert_nil priced_runtime(pricing).tally
+      assert_nil priced_runtime.tally
     end
 
     it 'sums usage across turns' do
-      runtime = priced_runtime(pricing)
+      runtime = priced_runtime
       runtime.ask('hello')
       runtime.prompt('again') { |event| event }
 

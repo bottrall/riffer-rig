@@ -105,6 +105,12 @@ describe Riffer::Rig::Loader do
     File.write(File.join(dir, '.riffer', 'settings.json'), JSON.generate(data))
   end
 
+  def write_catalog(dir, data)
+    path = File.join(dir, 'models.json')
+    File.write(path, JSON.generate(data))
+    path
+  end
+
   def home_settings
     JSON.parse(File.read(File.join(@home, '.riffer', 'settings.json')))
   end
@@ -643,21 +649,18 @@ describe Riffer::Rig::Loader do
       assert_equal({ depth: 3, remote: 'origin' }, build(model: 'mock/test').settings[:git])
     end
 
-    it 'hands the pricing table to the Runtime' do
-      write_settings(@home, { models: { 'mock/test' => { input: 3.0, output: 15.0 } } })
+    it 'hands the catalog files to the riffer config' do
+      catalog = write_catalog(@home, version: 1, models: { 'mock/test' => { pricing: { input: 3.0, output: 15.0 } } })
+      write_settings(@home, { catalog_files: [catalog] })
       build(model: 'mock/test')
 
-      refute_nil @config.pricing.rates_for('mock/test')
+      assert_in_delta 3.0, @config.catalog.rates_for('mock/test').input
     end
 
-    it 'hands the model options to the Runtime' do
+    it 'hands the reasoning level to the agent' do
       write_settings(@home, { reasoning: 'high' })
-      options = Riffer::Rig::Settings::ModelOptions.method(:model_options)
-      Riffer::Rig::Settings::ModelOptions.define_singleton_method(:model_options) { |*_args| { reasoning: 'high' } }
-      model_options = build(model: 'mock/test').agent.config.model_options
-      Riffer::Rig::Settings::ModelOptions.define_singleton_method(:model_options, options)
 
-      assert_equal({ reasoning: 'high' }, model_options)
+      assert_equal :high, build(model: 'mock/test').agent.config.reasoning
     end
 
     it 'hands the native tool switches to the Runtime' do

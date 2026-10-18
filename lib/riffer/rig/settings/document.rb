@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Settings::Document
-  # @dynamic model, reasoning, models, providers, disabled, autoload, native_tools, save, reload
+  # @dynamic model, reasoning, catalog_files, providers, disabled, autoload, native_tools, save, reload
   attr_reader :model #: String?
   attr_reader :reasoning #: String?
-  attr_reader :models #: Hash[String, Riffer::Rig::Settings::Pricing]
+  attr_reader :catalog_files #: Array[String]
   attr_reader :providers #: Hash[String, Hash[String, String]]
   attr_reader :disabled #: Array[String]
   attr_reader :autoload #: bool
@@ -17,9 +17,9 @@ class Riffer::Rig::Settings::Document
   def initialize(source)
     @model = source[:model].is_a?(String) ? source[:model] : nil
     @reasoning = source[:reasoning].is_a?(String) ? source[:reasoning] : nil
-    @models = hash_or_empty(source[:models]).filter_map do |name, entry|
-      [name.to_s, Riffer::Rig::Settings::Pricing.from(entry)] if entry.is_a?(Hash)
-    end.to_h.freeze
+    paths = source[:catalog_files]
+    no_files = [] #: Array[String]
+    @catalog_files = paths.is_a?(Array) && paths.all?(String) ? paths.dup.freeze : no_files.freeze
     @providers = hash_or_empty(source[:providers]).filter_map do |identifier, fields|
       if fields.is_a?(Hash)
         [identifier.to_s, fields.select do |_name, value|

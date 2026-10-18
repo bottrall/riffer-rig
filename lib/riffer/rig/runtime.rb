@@ -61,6 +61,7 @@ class Riffer::Rig::Runtime
   # @rbs @session_start_pending: bool
   # @rbs @session_start_reason: Symbol
   # @rbs @model_override: String?
+  # @rbs @reasoning: String?
   # @rbs @message_observers: Array[^(Riffer::Messages::Base) -> void]
   # @rbs @model_observers: Array[^(String) -> void]
   # @rbs @system_prompt: Riffer::Rig::Runtime::SystemPrompt
@@ -97,7 +98,7 @@ class Riffer::Rig::Runtime
   # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
-  # @rbs pricing: Hash[String, Riffer::Rig::Settings::Pricing]
+  # @rbs reasoning: String?
   # @rbs riffer_config: Riffer::Config
   # @rbs mcp_registry: Riffer::Rig::Mcp::_Registry
   # @rbs max_steps: Integer?
@@ -118,7 +119,7 @@ class Riffer::Rig::Runtime
     credentials: {},
     env: Riffer::Rig::Env.new,
     auth_path: Riffer::Rig::Credentials::PATH,
-    pricing: {},
+    reasoning: nil,
     riffer_config: Riffer.config,
     mcp_registry: Riffer::Mcp,
     max_steps: DEFAULT_MAX_STEPS,
@@ -147,7 +148,7 @@ class Riffer::Rig::Runtime
     @session_start_reason = saved ? :restore : :new
     @message_observers = []
     @model_observers = []
-    Riffer::Rig::Settings::Pricing.register(pricing, riffer_config.pricing)
+    @reasoning = reasoning
     @errors = []
     @tool_allowlist = tools
     @native_tools = native_tools
@@ -388,15 +389,15 @@ class Riffer::Rig::Runtime
   end
 
   # The options the settings built for the starting model are provider-shaped
-  # (cache control, per-provider reasoning levels), so a switch re-derives them.
-  # Runs after the successor is built, so a failed build leaves the running
-  # agent's options alone; riffer reads config.model_options per request, so the
-  # swap still reaches the new agent through the shared config.
+  # (anthropic cache control), so a switch re-derives them; the reasoning level
+  # is provider-agnostic and travels on the config. Runs after the successor is
+  # built, so a failed build leaves the running agent's options alone; riffer
+  # reads config.model_options per request, so the swap still reaches the new
+  # agent through the shared config.
   # @rbs model: String
   # @rbs return: void
   def rederive_options(model)
-    reasoning = Riffer::Rig::Settings::Document.new(@settings).reasoning
-    @model_options = Riffer::Rig::Settings::ModelOptions.model_options(model, reasoning).merge(native_options(model))
+    @model_options = Riffer::Rig::Settings::ModelOptions.model_options(model).merge(native_options(model))
     @agent.config.model_options = @model_options
   end
 
@@ -423,6 +424,7 @@ class Riffer::Rig::Runtime
       model: ->(context) { context[:model] },
       model_options: @model_options,
       instructions: @system_prompt.bare,
+      reasoning: @reasoning,
       tools_config: select_tools(registrars.flat_map { |registrar| registrar.tools.to_a }.to_h.values, @tool_allowlist),
       max_steps: max_steps,
       tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(hooks, emit: ->(event) { emit(event) }, clock: @clock),

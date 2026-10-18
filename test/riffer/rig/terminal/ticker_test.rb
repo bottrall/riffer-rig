@@ -95,7 +95,7 @@ describe Riffer::Rig::Terminal::Ticker do
   end
 
   def output_rate(per_million)
-    Riffer::Config::Pricing::Rates.new(input: 0.0, output: per_million)
+    Riffer::Catalog::Rates.new(input: 0.0, output: per_million)
   end
 
   describe '#start' do

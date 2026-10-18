@@ -83,7 +83,7 @@ class Riffer::Rig::Terminal
       frame: frame,
       theme: theme,
       peek: peek,
-      pricing: Riffer.config.pricing,
+      catalog: Riffer.config.catalog,
       random: Random.new,
       clock: clock
     )
