@@ -1,6 +1,6 @@
 # Terminal
 
-`riffer` with no `-p` opens the interactive terminal. It keeps the input at the bottom of the screen — as many rows as it wraps to, and a status line under them — and prints everything else above, a blank row clear of the input: the banner, each message as it starts, each turn's answer and stat line, and command output. While the session is still starting, the rows are replaced by a single dim line that animates while it waits — a braille spinner rolling through riff-themed quips like `⠹ warming the amp…`; the input line and the banner take their place together, once the banner's content is known. When there is no terminal to draw on, it reads plain lines instead ([Without a terminal](#without-a-terminal)).
+`riffer` with no `-p` opens the interactive terminal. It keeps the input at the bottom of the screen — as many rows as it wraps to, a blank row under them, and the status line under that — and prints everything else above, a blank row clear of the input: the banner, each message as it starts, each turn's answer and stat line, and command output. While the session is still starting, the rows are replaced by a single dim line that animates while it waits — a braille spinner rolling through riff-themed quips like `⠹ warming the amp…`; the input line and the banner take their place together, once the banner's content is known. When there is no terminal to draw on, it reads plain lines instead ([Without a terminal](#without-a-terminal)).
 
 Colour is on when the output is a terminal; set `NO_COLOR` to turn it off.
 
@@ -62,7 +62,7 @@ The row under the input line is a row of fixed slots — the same columns at the
 - the cost, as `~$1.4000`: the session's total between turns, the turn's running cost while it runs; `~$0.0000` until the model is [priced](CONFIGURATION.md#catalog_files);
 - the background jobs, as `2 jobs`, always shown, even as `0 jobs`.
 
-Every figure sits inside its slot's fixed width, so `18.2k` and `132k` occupy the same box. While a turn runs the row is redrawn about eight times a second, the spinner and the cost in green and the jobs count in amber; the output tokens and the cost count text still streaming, at an estimated four characters per token, until the provider reports the request's usage, which the input tokens show in place of an opening `↑0`. Between turns the whole row is dim, and the clock keeps current while the terminal waits.
+Every figure sits inside its slot's fixed width, so `18.2k` and `132k` occupy the same box. While a turn runs the row is redrawn about eight times a second, the spinner and the cost in cyan and the jobs count in magenta; the output tokens and the cost count text still streaming, at an estimated four characters per token, until the provider reports the request's usage, which the input tokens show in place of an opening `↑0`. Between turns the whole row is dim, and the clock keeps current while the terminal waits.
 
 On a narrow terminal the slots leave whole from the left — the clock first, then the cost, then the tokens, then the state — so the jobs count at the right edge survives longest.
 

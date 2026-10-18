@@ -5,7 +5,7 @@ require 'stringio'
 require_relative '../../../support/frame_pty'
 
 describe Riffer::Rig::Terminal::Frame do
-  def empty_footer = "› \r\n  \e[1A\e[3G"
+  def empty_footer = "› \r\n\r\n  \e[2A\e[3G"
 
   def empty_frame = "\r\n#{empty_footer}"
 
@@ -117,7 +117,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, color: true)
 
-      assert_equal "\r\n\e[38;2;255;106;193m›\e[0m \r\n  \e[1A\e[3G", io.string
+      assert_equal "\r\n\e[38;2;255;106;193m›\e[0m \r\n\r\n  \e[2A\e[3G", io.string
     end
 
     it 'draws the editor it was built with' do
@@ -125,7 +125,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('hi'))
 
-      assert_equal "\r\n› hi\r\n  \e[1A\e[5G", io.string
+      assert_equal "\r\n› hi\r\n\r\n  \e[2A\e[5G", io.string
     end
 
     it 'draws the peek it was given before it started under the blank row' do
@@ -249,7 +249,7 @@ describe Riffer::Rig::Terminal::Frame do
         Thread.new { 20.times { |n| frame.input(editing('x' * n)) } }
       ].each(&:join)
 
-      assert_equal [*Array.new(20) { |n| "line #{n}" }, '', "› #{'x' * 19}", '  tick 19'], @pty.screen.rows
+      assert_equal [*Array.new(20) { |n| "line #{n}" }, '', "› #{'x' * 19}", '', '  tick 19'], @pty.screen.rows
     end
 
     it 'keeps the frame on the last rows once the content scrolls' do
@@ -257,7 +257,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       5.times { |n| frame.append("line #{n}") }
 
-      assert_equal ['line 3', 'line 4', '', '›', ''], @pty.screen.rows
+      assert_equal ['line 4', '', '›', '', ''], @pty.screen.rows
     end
 
     it 'leaves the cursor on the input line' do
@@ -283,7 +283,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io).input(editing('hi', 'yo'))
 
-      assert_equal "#{empty_frame}\e[1A\r\e[J\r\n› hiyo\r\n  \e[1A\e[5G", io.string
+      assert_equal "#{empty_frame}\e[1A\r\e[J\r\n› hiyo\r\n\r\n  \e[2A\e[5G", io.string
     end
 
     it 'leaves the cursor at the edit point' do
@@ -307,7 +307,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.input(editing('one two three four five'))
 
-      assert_equal [4, 6], [@pty.screen.row, @pty.screen.column]
+      assert_equal [3, 6], [@pty.screen.row, @pty.screen.column]
     end
 
     it 'draws runs of spaces as typed' do
@@ -315,7 +315,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('foo  bar  baz'))
 
-      assert_operator io.string, :end_with?, "› foo  bar  baz\r\n  \e[1A\e[16G"
+      assert_operator io.string, :end_with?, "› foo  bar  baz\r\n\r\n  \e[2A\e[16G"
     end
 
     it 'draws the spaces trailing the text' do
@@ -323,7 +323,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('foo  '))
 
-      assert_operator io.string, :end_with?, "› foo  \r\n  \e[1A\e[8G"
+      assert_operator io.string, :end_with?, "› foo  \r\n\r\n  \e[2A\e[8G"
     end
 
     it 'leaves the cursor on the fresh row after a trailing line break' do
@@ -340,7 +340,7 @@ describe Riffer::Rig::Terminal::Frame do
       frame.input(editing('one two three four five'))
       frame.input(editing(''))
 
-      assert_equal ['', '›', ''], @pty.screen.rows
+      assert_equal ['', '›', '', ''], @pty.screen.rows
     end
 
     it 'caps the wrapped input at the rows a short terminal has' do
@@ -348,7 +348,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.input(editing('a' * 84))
 
-      assert_equal ['  aaaaaaaaa', '  aaaaaaaaa', '  aaaaaaaaa', '  aaa', ''], @pty.screen.rows
+      assert_equal ['  aaaaaaaaa', '  aaaaaaaaa', '  aaa', '', ''], @pty.screen.rows
     end
 
     it 'erases the palette of an earlier completion' do
@@ -358,7 +358,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.input(editing('hi'))
 
-      assert_operator io.string, :end_with?, "\e[3A\r\e[J\r\n› hi\r\n  \e[1A\e[5G"
+      assert_operator io.string, :end_with?, "\e[3A\r\e[J\r\n› hi\r\n\r\n  \e[2A\e[5G"
     end
 
     it 'keeps the loading line over an edit made before the first content' do
@@ -392,7 +392,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.append('banner')
 
-      assert_operator io.string, :end_with?, "banner\r\n\r\n› hi\r\n  \e[1A\e[5G"
+      assert_operator io.string, :end_with?, "banner\r\n\r\n› hi\r\n\r\n  \e[2A\e[5G"
     end
   end
 
@@ -410,7 +410,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io).complete(completing('/'))
 
-      assert_equal "#{empty_frame}\e[1A\r\e[J\r\n#{palette}› /auth\r\n  \e[1A\e[4G", io.string
+      assert_equal "#{empty_frame}\e[1A\r\e[J\r\n#{palette}› /auth\r\n\r\n  \e[2A\e[4G", io.string
     end
 
     it 'erases the palette once the completion closes' do
@@ -420,7 +420,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.complete(completing('/', :escape))
 
-      assert_operator io.string, :end_with?, "\e[3A\r\e[J\r\n› /\r\n  \e[1A\e[4G"
+      assert_operator io.string, :end_with?, "\e[3A\r\e[J\r\n› /\r\n\r\n  \e[2A\e[4G"
     end
 
     it 'leaves the cursor at the edit point' do
@@ -446,7 +446,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io).status('working')
 
-      assert_equal "#{empty_frame}\e[1A\r\e[J\r\n› \r\n  working\e[1A\e[3G", io.string
+      assert_equal "#{empty_frame}\e[1A\r\e[J\r\n› \r\n\r\n  working\e[2A\e[3G", io.string
     end
 
     it 'leaves the cursor on the input line' do
@@ -474,7 +474,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.hint('answer')
 
-      assert_operator io.string, :end_with?, "\e[J\r\n› \r\n  answer\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\e[J\r\n› \r\n\r\n  answer\e[2A\e[3G"
     end
 
     it 'keeps the hint over a status set after it' do
@@ -484,7 +484,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.status('working')
 
-      assert_operator io.string, :end_with?, "\e[J\r\n› \r\n  answer\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\e[J\r\n› \r\n\r\n  answer\e[2A\e[3G"
     end
 
     it 'brings back the status once the hint is cleared' do
@@ -495,7 +495,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.hint(nil)
 
-      assert_operator io.string, :end_with?, "\e[J\r\n› \r\n  working\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\e[J\r\n› \r\n\r\n  working\e[2A\e[3G"
     end
 
     it 'leaves the cursor on the input line' do
@@ -521,7 +521,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io).queued(2)
 
-      assert_equal "#{empty_frame}\e[1A\r\e[J\r\n› #{' ' * 64}   · 2 queued\r\n  \e[1A\e[3G", io.string
+      assert_equal "#{empty_frame}\e[1A\r\e[J\r\n› #{' ' * 64}   · 2 queued\r\n\r\n  \e[2A\e[3G", io.string
     end
 
     it 'leaves the count off when the text leaves no room for it' do
@@ -562,7 +562,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.jobs(2)
 
-      assert_operator io.string, :end_with?, "\r\n  · idle    14:32 ↑132k  ↓218k tok  ~$1.4000 2 jobs\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n\r\n  · idle    14:32 ↑132k  ↓218k tok  ~$1.4000 2 jobs\e[2A\e[3G"
     end
 
     it 'leaves the cursor on the input line' do
@@ -600,7 +600,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       assert_operator io.string,
                       :end_with?,
-                      "\r\n  · idle    14:32 ↑132k  ↓218k tok  ~$1.4000 0 jobs\e[1A\e[3G"
+                      "\r\n\r\n  · idle    14:32 ↑132k  ↓218k tok  ~$1.4000 0 jobs\e[2A\e[3G"
     end
 
     it 'draws zeros before the session has used tokens' do
@@ -608,7 +608,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       session(io, tally: nil)
 
-      assert_operator io.string, :end_with?, "\r\n  · idle    14:32 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n\r\n  · idle    14:32 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[2A\e[3G"
     end
 
     it 'reads the clock when it draws, not when the session was set' do
@@ -619,7 +619,7 @@ describe Riffer::Rig::Terminal::Frame do
       time = Time.new(2026, 1, 1, 14, 33)
       frame.status('')
 
-      assert_operator io.string, :end_with?, "\r\n  · idle    14:33 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n\r\n  · idle    14:33 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[2A\e[3G"
     end
 
     it 'gives way to the hint' do
@@ -628,7 +628,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.hint('answer')
 
-      assert_operator io.string, :end_with?, "\r\n  answer\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n\r\n  answer\e[2A\e[3G"
     end
 
     it 'gives way to the status a turn sets' do
@@ -637,7 +637,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.status('working')
 
-      assert_operator io.string, :end_with?, "\r\n  working\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n\r\n  working\e[2A\e[3G"
     end
 
     it 'comes back once the status clears' do
@@ -647,7 +647,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.status('')
 
-      assert_operator io.string, :end_with?, "\r\n  · idle    14:32 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n\r\n  · idle    14:32 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[2A\e[3G"
     end
 
     it 'sheds whole slots from the left on a narrow terminal' do
@@ -655,7 +655,7 @@ describe Riffer::Rig::Terminal::Frame do
       frame = session(io)
       frame.jobs(2)
 
-      assert_operator io.string, :end_with?, "\r\n  · idle    2 jobs\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n\r\n  · idle    2 jobs\e[2A\e[3G"
     end
   end
 
@@ -774,7 +774,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.peek('thinking')
 
-      assert_equal ['', '  thinking', '› hi', '  working'], @pty.screen.rows
+      assert_equal ['', '  thinking', '› hi', '', '  working'], @pty.screen.rows
     end
 
     it 'leaves the cursor at the edit point' do
@@ -864,7 +864,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       @pty.resize(12)
 
-      assert_equal ['', '›', '  working t'], @pty.screen.rows
+      assert_equal ['', '›', '', '  working t'], @pty.screen.rows
     end
 
     it 'leaves the cursor at the edit point after a resize' do
@@ -882,7 +882,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       @pty.report(0)
 
-      assert_equal ['', '›', '  working t'], @pty.screen.rows
+      assert_equal ['', '›', '', '  working t'], @pty.screen.rows
     end
 
     it 'refits the peek to the rows left above the footer' do
@@ -891,7 +891,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       @pty.report(40, rows: 5)
 
-      assert_equal ['', '  three', '  four', '›', ''], @pty.screen.rows
+      assert_equal ['', '  four', '›', '', ''], @pty.screen.rows
     end
   end
 
@@ -899,11 +899,13 @@ describe Riffer::Rig::Terminal::Frame do
     def peeking(columns, content, rows: 24, color: false)
       io = tty(columns, rows: rows)
       started(io, color: color).peek(content)
-      io.string.delete_prefix("#{empty_frame}\e[1A\r\e[J\r\n")
+      tall = rows >= 4
+      erase = tall ? "\e[1A\r\e[J\r\n" : "\r\e[J"
+      io.string.delete_prefix("#{tall ? empty_frame : empty_footer}#{erase}")
     end
 
     it 'draws no more rows than a short terminal has above its frame' do
-      assert_equal "  two\r\n  three\r\n#{empty_footer}", peeking(80, "one\ntwo\nthree", rows: 5)
+      assert_equal "  three\r\n#{empty_footer}", peeking(80, "one\ntwo\nthree", rows: 5)
     end
 
     it 'draws no row on a terminal with none above its frame' do
@@ -941,7 +943,7 @@ describe Riffer::Rig::Terminal::Frame do
       frame.peek(Array.new(10) { |n| "peeked #{n}" }.join("\n"))
       frame.peek('')
 
-      assert_equal [*Array.new(5) { |n| "line #{n}" }, '', '›', ''], @pty.screen.scrollback + @pty.screen.rows
+      assert_equal [*Array.new(5) { |n| "line #{n}" }, '', '›', '', ''], @pty.screen.scrollback + @pty.screen.rows
     end
 
     it 'dims each row when color is on' do
@@ -959,24 +961,24 @@ describe Riffer::Rig::Terminal::Frame do
     it 'draws no more rows than a short terminal has above its frame' do
       shown = completed(80, completing('/', listed: commands('auth' => 'a', 'commit' => 'c', 'model' => 'm')), rows: 5)
 
-      assert_equal "▸ /auth    a\r\n  /commit  c\r\n› /auth\r\n  \e[1A\e[4G", shown
+      assert_equal "▸ /auth  a\r\n› /auth\r\n\r\n  \e[2A\e[4G", shown
     end
 
     it 'leaves the peek the rows the palette does not take' do
-      io = tty(80, rows: 6)
+      io = tty(80, rows: 7)
       frame = started(io)
       frame.peek("one\ntwo")
 
       frame.complete(completing('/'))
 
-      assert_operator io.string, :end_with?, "\e[3A\r\e[J\r\n  two\r\n#{palette}› /auth\r\n  \e[1A\e[4G"
+      assert_operator io.string, :end_with?, "\e[3A\r\e[J\r\n  two\r\n#{palette}› /auth\r\n\r\n  \e[2A\e[4G"
     end
 
     it 'scrolls the matches to keep the selection on the last row' do
       rows = (2..8).map { |n| "  /c#{n}  about #{n}\r\n" }.join
       shown = completed(80, completing('/', :up, listed: commands((0..9).to_h { |n| ["c#{n}", "about #{n}"] })))
 
-      assert_equal "#{rows}▸ /c9  about 9\r\n› /c9\r\n  \e[1A\e[4G", shown
+      assert_equal "#{rows}▸ /c9  about 9\r\n› /c9\r\n\r\n  \e[2A\e[4G", shown
     end
 
     it 'joins the lines of a description into one row' do
@@ -1002,7 +1004,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io).status('0123456789')
 
-      assert_operator io.string, :end_with?, "\r\n  0123456\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n\r\n  0123456\e[2A\e[3G"
     end
 
     it 'wraps the input that outgrows the width' do
@@ -1010,7 +1012,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('abcdefgh'))
 
-      assert_equal "\r\n› abcde\r\n  fgh\r\n  \e[1A\e[6G", io.string
+      assert_equal "\r\n› abcde\r\n  fgh\r\n\r\n  \e[2A\e[6G", io.string
     end
 
     it 'carries the text that follows the cursor onto the wrapped rows' do
@@ -1018,7 +1020,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('ab', 'cdefgh'))
 
-      assert_equal "\r\n› abcd\r\n  efgh\r\n  \e[2A\e[5G", io.string
+      assert_equal "\r\n› abcd\r\n  efgh\r\n\r\n  \e[3A\e[5G", io.string
     end
 
     it 'places the cursor by columns, not characters' do
@@ -1026,7 +1028,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('日本'))
 
-      assert_equal "\r\n› 日本\r\n  \e[1A\e[7G", io.string
+      assert_equal "\r\n› 日本\r\n\r\n  \e[2A\e[7G", io.string
     end
 
     it 'lines continuation rows up under the prompt text' do
@@ -1034,7 +1036,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('one two three four five'))
 
-      assert_equal "\r\n› one two \r\n  three \r\n  four \r\n  five\r\n  \e[1A\e[7G", io.string
+      assert_equal "\r\n› one two \r\n  three \r\n  four \r\n  five\r\n\r\n  \e[2A\e[7G", io.string
     end
 
     it 'keeps a blank row of the input' do
@@ -1042,7 +1044,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing("one\n\ntwo"))
 
-      assert_equal "\r\n› one\r\n  \r\n  two\r\n  \e[1A\e[6G", io.string
+      assert_equal "\r\n› one\r\n  \r\n  two\r\n\r\n  \e[2A\e[6G", io.string
     end
 
     it 'puts the cursor on a fresh row after a trailing line break' do
@@ -1050,7 +1052,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing("hi\n"))
 
-      assert_equal "\r\n› hi\r\n  \r\n  \e[1A\e[3G", io.string
+      assert_equal "\r\n› hi\r\n  \r\n\r\n  \e[2A\e[3G", io.string
     end
 
     it 'puts the queued chip on the last row of a wrapped input' do
@@ -1058,7 +1060,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('x' * 30)).queued(2)
 
-      assert_operator io.string, :end_with?, "  xxx   · 2 queued\r\n  \e[1A\e[6G"
+      assert_operator io.string, :end_with?, "  xxx              · 2 queued\r\n\r\n  \e[2A\e[6G"
     end
 
     it 'scrolls a window of rows once the input wraps past the cap' do
@@ -1068,7 +1070,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       rows = Array.new(7) { "  #{'a' * 9}" }
 
-      assert_operator io.string, :end_with?, "#{rows.join("\r\n")}\r\n  aaa\r\n  \e[1A\e[6G"
+      assert_operator io.string, :end_with?, "#{rows.join("\r\n")}\r\n  aaa\r\n\r\n  \e[2A\e[6G"
     end
 
     it 'keeps the cursor row in the window it scrolls' do
@@ -1076,7 +1078,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('a' * 84, 'z'))
 
-      assert_operator io.string, :end_with?, "  aaaz\r\n  \e[1A\e[6G"
+      assert_operator io.string, :end_with?, "  aaaz\r\n\r\n  \e[2A\e[6G"
     end
 
     it 'cuts the prompt when the width has no room for it' do
@@ -1084,7 +1086,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('hi'))
 
-      assert_equal "\r\n›\r\n \e[1A\e[2G", io.string
+      assert_equal "\r\n›\r\n\r\n \e[2A\e[2G", io.string
     end
 
     it 'keeps the style reset of a status cut short' do
@@ -1092,7 +1094,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io).status("\e[2mworking\e[0m")
 
-      assert_operator io.string, :end_with?, "\r\n  \e[2mworki\e[0m\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n\r\n  \e[2mworki\e[0m\e[2A\e[3G"
     end
 
     it 'draws the rest of the selected name after the cursor' do
@@ -1100,7 +1102,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io).complete(completing('/', 'm', 'o'))
 
-      assert_operator io.string, :end_with?, "› /model\r\n  \e[1A\e[6G"
+      assert_operator io.string, :end_with?, "› /model\r\n\r\n  \e[2A\e[6G"
     end
 
     it 'cuts the rest of the name at the free last column' do
@@ -1108,7 +1110,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io).complete(completing('/', 'm', 'o'))
 
-      assert_operator io.string, :end_with?, "› /mod\r\n  \e[1A\e[6G"
+      assert_operator io.string, :end_with?, "› /mod\r\n\r\n  \e[2A\e[6G"
     end
 
     it 'dims the rest of the name when color is on' do
@@ -1136,7 +1138,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('hi')).queued(2)
 
-      assert_operator io.string, :end_with?, "\e[J\r\n› hi\r\n  \e[1A\e[5G"
+      assert_operator io.string, :end_with?, "\e[J\r\n› hi\r\n\r\n  \e[2A\e[5G"
     end
 
     it 'is dimmed when color is on' do
@@ -1144,7 +1146,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, color: true).queued(2)
 
-      assert_operator io.string, :end_with?, "   \e[2m· 2 queued\e[0m\r\n  \e[1A\e[3G"
+      assert_operator io.string, :end_with?, "   \e[2m· 2 queued\e[0m\r\n\r\n  \e[2A\e[3G"
     end
 
     it 'follows the text either side of the cursor' do
@@ -1152,7 +1154,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('hi', 'yo')).queued(2)
 
-      assert_operator io.string, :end_with?, "› hiyo#{' ' * 60}   · 2 queued\r\n  \e[1A\e[5G"
+      assert_operator io.string, :end_with?, "› hiyo#{' ' * 60}   · 2 queued\r\n\r\n  \e[2A\e[5G"
     end
 
     it 'follows the rest of a completed name' do
@@ -1162,7 +1164,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.queued(2)
 
-      assert_operator io.string, :end_with?, "› /model#{' ' * 58}   · 2 queued\r\n  \e[1A\e[6G"
+      assert_operator io.string, :end_with?, "› /model#{' ' * 58}   · 2 queued\r\n\r\n  \e[2A\e[6G"
     end
 
     it 'fills the input line up to the free last column' do
@@ -1170,7 +1172,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('hi')).queued(2)
 
-      assert_operator io.string, :end_with?, "› hi   · 2 queued\r\n  \e[1A\e[5G"
+      assert_operator io.string, :end_with?, "› hi   · 2 queued\r\n\r\n  \e[2A\e[5G"
     end
   end
 
@@ -1184,15 +1186,15 @@ describe Riffer::Rig::Terminal::Frame do
     end
 
     it 'is blank without a status' do
-      assert_operator shown(80), :end_with?, "\r\n  \e[1A\e[3G"
+      assert_operator shown(80), :end_with?, "\r\n\r\n  \e[2A\e[3G"
     end
 
     it 'is the status alone, with the jobs count left to the idle bar' do
-      assert_operator shown(80, status: 'working'), :end_with?, "\r\n  working\e[1A\e[3G"
+      assert_operator shown(80, status: 'working'), :end_with?, "\r\n\r\n  working\e[2A\e[3G"
     end
 
     it 'cuts the status to the free last column' do
-      assert_operator shown(16, status: 'working through'), :end_with?, "\r\n  working throu\e[1A\e[3G"
+      assert_operator shown(16, status: 'working through'), :end_with?, "\r\n\r\n  working throu\e[2A\e[3G"
     end
   end
 end

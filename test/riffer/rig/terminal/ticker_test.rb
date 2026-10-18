@@ -214,8 +214,8 @@ describe Riffer::Rig::Terminal::Ticker do
       ticker(color: true)
 
       assert_equal(
-        "\e[38;2;126;201;160m⠋\e[0m turn 1  00:00 \e[2m↑0    \e[0m \e[2m↓1 tok    \e[0m " \
-        "\e[38;2;126;201;160m~$0.0000\e[0m \e[38;2;217;176;108m0 jobs\e[0m",
+        "\e[38;2;45;226;230m⠋\e[0m turn 1  00:00 \e[2m↑0    \e[0m \e[2m↓1 tok    \e[0m " \
+        "\e[38;2;45;226;230m~$0.0000\e[0m \e[38;2;192;76;253m0 jobs\e[0m",
         drawn(text('Hello'))
       )
     end

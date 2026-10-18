@@ -281,9 +281,9 @@ class Riffer::Rig::Terminal::Frame
     shown, row, column = input_rows
     # A row scrolled off the top of the screen could never be erased again.
     # The status sits under the input and the spacer above everything drawn.
-    above = [@height - shown.size - 2, 0].max
+    above = [@height - shown.size - 3, 0].max
     palette = palette_rows([above, PALETTE_ROWS].min)
-    spacer = SPACER if @height >= shown.size + 2
+    spacer = SPACER if @height >= shown.size + 3
     lead = [*spacer, *peek_rows([above - palette.size, PEEK_ROWS].min), *palette]
     write("#{before}#{lead.join}#{footer(shown, row, column)}")
     @rows_above = lead.size + row
@@ -406,7 +406,7 @@ class Riffer::Rig::Terminal::Frame
   # @rbs column: Integer
   # @rbs return: String
   def footer(rows, row, column)
-    "#{rows.join("\r\n")}\r\n#{status_line(@width - 1)}\e[#{rows.size - row}A\e[#{column + 1}G"
+    "#{rows.join("\r\n")}\r\n\r\n#{status_line(@width - 1)}\e[#{rows.size - row + 1}A\e[#{column + 1}G"
   end
 
   # @rbs typing: Integer

@@ -253,10 +253,7 @@ describe Riffer::Rig::Terminal::Peek do
     it 'draws the buffered prose above the footer on Ctrl-T' do
       type("\x14")
 
-      assert_equal(
-        ['› fix the flaky test', '', '  Let me look at the session test.', '›', '  working'],
-        @pty.screen.rows
-      )
+      assert_equal(['', '  Let me look at the session test.', '›', '', '  working'], @pty.screen.rows)
     end
 
     it 'follows the turn while the peek is open' do
@@ -264,13 +261,13 @@ describe Riffer::Rig::Terminal::Peek do
 
       stream(tool_calls, before_tool)
 
-      assert_equal ['', '  Let me look at the session test.', '  ⚙ read', '›', '  working'], @pty.screen.rows
+      assert_equal ['', '  ⚙ read', '›', '', '  working'], @pty.screen.rows
     end
 
     it 'erases the peek on the next Ctrl-T' do
       type("\x14\x14")
 
-      assert_equal ['earlier answer', '› fix the flaky test', '', '›', '  working'], page
+      assert_equal ['earlier answer', '› fix the flaky test', '', '›', '', '  working'], page
     end
 
     it 'leaves the scrollback clean after a peek toggled on and off' do
@@ -282,7 +279,7 @@ describe Riffer::Rig::Terminal::Peek do
 
       @footer.append('All done.')
 
-      assert_equal ['earlier answer', '› fix the flaky test', 'All done.', '', '›', '  working'], page
+      assert_equal ['earlier answer', '› fix the flaky test', 'All done.', '', '›', '', '  working'], page
     end
 
     it 'leaves the scrollback clean when the turn ends with the peek open' do
@@ -292,7 +289,7 @@ describe Riffer::Rig::Terminal::Peek do
 
       @footer.append('All done.')
 
-      assert_equal ['earlier answer', '› fix the flaky test', 'All done.', '', '›', '  working'], page
+      assert_equal ['earlier answer', '› fix the flaky test', 'All done.', '', '›', '', '  working'], page
     end
 
     it 'does nothing on Ctrl-T once the turn has ended' do
@@ -300,7 +297,7 @@ describe Riffer::Rig::Terminal::Peek do
 
       type("\x14")
 
-      assert_equal ['earlier answer', '› fix the flaky test', '', '›', '  working'], page
+      assert_equal ['earlier answer', '› fix the flaky test', '', '›', '', '  working'], page
     end
   end
 end

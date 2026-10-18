@@ -117,8 +117,8 @@ module Riffer::Rig::Terminal::StatusBar
   # @rbs return: String
   def color(text, key, theme)
     case key
-    when :glyph, :cost then theme.green(text)
-    when :jobs then theme.amber(text)
+    when :glyph, :cost then theme.cyan(text)
+    when :jobs then theme.magenta(text)
     when :up, :down then theme.dim(text)
     else text
     end

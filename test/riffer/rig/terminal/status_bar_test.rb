@@ -74,8 +74,8 @@ describe Riffer::Rig::Terminal::StatusBar do
 
     it 'paints the spinner and the cost green and the jobs count amber' do
       assert_equal(
-        "\e[38;2;126;201;160m⠸\e[0m turn 7  00:41 \e[2m↑18.2k\e[0m \e[2m↓3.1k tok \e[0m " \
-        "\e[38;2;126;201;160m~$0.0710\e[0m \e[38;2;217;176;108m2 jobs\e[0m",
+        "\e[38;2;45;226;230m⠸\e[0m turn 7  00:41 \e[2m↑18.2k\e[0m \e[2m↓3.1k tok \e[0m " \
+        "\e[38;2;45;226;230m~$0.0710\e[0m \e[38;2;192;76;253m2 jobs\e[0m",
         working(color: true)
       )
     end
