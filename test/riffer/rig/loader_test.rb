@@ -78,7 +78,7 @@ class ReversedStore
   end
 end
 
-LOADER_OPTION_KEYS = %i[model extensions skills agents_md tools max_steps].freeze
+LOADER_OPTION_KEYS = %i[model reasoning extensions skills agents_md tools max_steps].freeze
 
 describe Riffer::Rig::Loader do
   include RigFiles
@@ -321,6 +321,123 @@ describe Riffer::Rig::Loader do
         write_settings(@home, { model: 'sonnet' })
 
         assert_raises(Riffer::Rig::Loader::ConfigurationError) { build }
+      end
+    end
+
+    describe 'reasoning selection' do
+      it 'takes the reasoning level from the settings' do
+        write_settings(@home, { reasoning: 'high' })
+
+        assert_equal 'high', build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' }).reasoning
+      end
+
+      it 'prefers RIFFER_REASONING over the settings' do
+        write_settings(@home, { reasoning: 'low' })
+
+        assert_equal(
+          'high',
+          build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'high' }).reasoning
+        )
+      end
+
+      it 'prefers the reasoning keyword over RIFFER_REASONING' do
+        assert_equal(
+          'high',
+          build(
+            model: 'openai/o3',
+            reasoning: 'high',
+            env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'low' }
+          ).reasoning
+        )
+      end
+
+      it 'derives the model options from the reasoning in effect' do
+        write_settings(@home, { reasoning: 'high' })
+        runtime = build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
+
+        assert_equal 'high', runtime.agent.config.model_options[:reasoning]
+      end
+
+      it 'rejects a reasoning keyword the model provider does not accept' do
+        assert_match(
+          %r{\Aturbo is not a reasoning level openai/o3 accepts; it accepts: low medium high xhigh\z},
+          refusal { build(model: 'openai/o3', reasoning: 'turbo', env: { 'OPENAI_API_KEY' => 'sk' }) }
+        )
+      end
+
+      it 'rejects a reasoning keyword a provider without levels does not accept' do
+        assert_equal('mock/test accepts no reasoning level', refusal { build(model: 'mock/test', reasoning: 'high') })
+      end
+
+      it 'rejects a RIFFER_REASONING the model provider does not accept' do
+        assert_match(
+          %r{\ARIFFER_REASONING: turbo is not a reasoning level openai/o3 accepts},
+          refusal { build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'turbo' }) }
+        )
+      end
+
+      it 'rejects RIFFER_REASONING even when the settings also set a level' do
+        write_settings(@home, { reasoning: 'high' })
+
+        assert_raises(Riffer::Rig::Loader::ConfigurationError) do
+          build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'turbo' })
+        end
+      end
+
+      it 'leaves an unrecognized settings level at the model default' do
+        write_settings(@home, { reasoning: 'turbo' })
+        runtime = build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
+
+        assert_nil runtime.agent.config.model_options[:reasoning]
+      end
+
+      it 'restores the snapshot reasoning over RIFFER_REASONING' do
+        snapshot = { id: 'saved', messages: [], model: nil, reasoning: 'low', skills: [] }
+
+        assert_equal(
+          'low',
+          build(
+            snapshot: snapshot,
+            model: 'openai/o3',
+            env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'high' }
+          ).reasoning
+        )
+      end
+
+      it 'derives the model options from the snapshot reasoning' do
+        snapshot = { id: 'saved', messages: [], model: nil, reasoning: 'low', skills: [] }
+        runtime = build(snapshot: snapshot, model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
+
+        assert_equal 'low', runtime.agent.config.model_options[:reasoning]
+      end
+
+      it 'ignores a snapshot reasoning that is not a string' do
+        snapshot = { id: 'saved', messages: [], model: nil, reasoning: 3, skills: [] }
+
+        assert_equal(
+          'high',
+          build(
+            snapshot: snapshot,
+            model: 'openai/o3',
+            env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'high' }
+          ).reasoning
+        )
+      end
+
+      it 'prefers the reasoning keyword over the snapshot reasoning' do
+        snapshot = { id: 'saved', messages: [], model: nil, reasoning: 'low', skills: [] }
+
+        assert_equal(
+          'high',
+          build(snapshot: snapshot, model: 'openai/o3', reasoning: 'high', env: { 'OPENAI_API_KEY' => 'sk' }).reasoning
+        )
+      end
+
+      it 'drops a snapshot reasoning level the settings model provider does not accept' do
+        snapshot = { id: 'saved', messages: [], model: nil, reasoning: 'max', skills: [] }
+        runtime = build(snapshot: snapshot, model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
+
+        assert_nil runtime.agent.config.model_options[:reasoning]
       end
     end
 

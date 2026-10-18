@@ -26,13 +26,30 @@ module Riffer::Rig::Settings::ModelOptions
     "#{model} is not a provider/name model string; the provider is one of: #{Riffer::Rig::Providers.list}"
   end
 
+  # @rbs level: String
+  # @rbs model: String
+  # @rbs return: String?
+  def reasoning_rejection(level, model)
+    levels = levels_for(model)
+    return if levels.include?(level)
+    return "#{model} accepts no reasoning level" if levels.empty?
+
+    "#{level} is not a reasoning level #{model} accepts; it accepts: #{levels.join(' ')}"
+  end
+
+  # @rbs model: String
+  # @rbs return: Array[String]
+  def levels_for(model)
+    provider = provider_for(model)
+    (provider && REASONING_LEVELS_BY_PROVIDER[provider]) || []
+  end
+
   # @rbs model: String
   # @rbs reasoning: String?
   # @rbs return: Hash[Symbol, untyped]
   def model_options(model, reasoning)
     provider = provider_for(model)
-    levels = (provider && REASONING_LEVELS_BY_PROVIDER[provider]) || []
-    level = reasoning if levels.include?(reasoning)
+    level = reasoning if levels_for(model).include?(reasoning)
     base_options(provider).merge(reasoning_options(level, provider))
   end
 

@@ -16,9 +16,9 @@ In order, it:
 2. resolves the model's provider credentials ([Providers](PROVIDERS.md#resolution-order)), assigns them to `Riffer.config` and keeps them for the Runtime's `credentials:`;
 3. takes the [bundled extensions](TOOLS.md), minus those named in `extensions.disabled` and those the options strip;
 4. runs `riffer/rig/extension` from every gem when [`extensions.autoload`](CONFIGURATION.md#extensions) is set, then `~/.riffer/rig.rb` and, once [trusted](EXTENSIONS.md#the-rigrb-files), `<cwd>/.riffer/rig.rb`, and appends the extensions the loads record to the bundle ([Extensions](EXTENSIONS.md#the-rigrb-files));
-5. constructs the Runtime with the model, the credentials, the extensions, the merged settings, the `models` pricing table, the `reasoning` level as riffer `model_options`, and the options and keywords below.
+5. constructs the Runtime with the model, the credentials, the extensions, the merged settings, the `models` pricing table, the `reasoning` level — the `reasoning:` [option](#loader-options), then a resumed session's recorded `/reasoning` switch, then `RIFFER_REASONING`, then the settings — as riffer `model_options`, and the options and keywords below.
 
-Whatever `store:` records the build: the [header](SESSIONS.md#what-an-entry-holds) lands on the first message, then one entry per message, per `/model` switch and per model skill activation; `store: nil`, or `"sessions": {"save": false}` in settings ([Configuration](CONFIGURATION.md)), writes nothing ([Sessions](SESSIONS.md)). A build that records also gets the [`/trace`](SESSIONS.md#tracing-the-last-turn) command, which replays the last turn from the same store.
+Whatever `store:` records the build: the [header](SESSIONS.md#what-an-entry-holds) lands on the first message, then one entry per message, per `/model` switch, per `/reasoning` switch and per model skill activation; `store: nil`, or `"sessions": {"save": false}` in settings ([Configuration](CONFIGURATION.md)), writes nothing ([Sessions](SESSIONS.md)). A build that records also gets the [`/trace`](SESSIONS.md#tracing-the-last-turn) command, which replays the last turn from the same store.
 
 | Keyword       | Meaning                                                                  | Default |
 | ------------- | ------------------------------------------------------------------------ | ------- |
@@ -34,7 +34,7 @@ Whatever `store:` records the build: the [header](SESSIONS.md#what-an-entry-hold
 
 `Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)` takes the same setup and builds with `runtime(options, reload:, extra_extensions:)` for a host that keeps the Loader.
 
-The host is asked only when its `capabilities` include `:ask`. With no model set anywhere, the Loader asks it for a model string, listing the providers, and writes the answer to `~/.riffer/settings.json`; a required credential that does not resolve is asked for the same way and stored ([Providers](PROVIDERS.md#rifferrigcredentials)). Anything the Loader cannot settle raises `Riffer::Rig::Loader::ConfigurationError` with a message fit to show the user: no model and a host that cannot ask (the null host), a model string without a known provider prefix, a bare `RIFFER_MODEL`, a required credential still missing, a `settings.json` or `auth.json` that does not parse, or a `settings.json` whose `model` is not a string ([Configuration](CONFIGURATION.md)). A headless host should map it to exit status 2.
+The host is asked only when its `capabilities` include `:ask`. With no model set anywhere, the Loader asks it for a model string, listing the providers, and writes the answer to `~/.riffer/settings.json`; a required credential that does not resolve is asked for the same way and stored ([Providers](PROVIDERS.md#rifferrigcredentials)). Anything the Loader cannot settle raises `Riffer::Rig::Loader::ConfigurationError` with a message fit to show the user: no model and a host that cannot ask (the null host), a model string without a known provider prefix, a bare `RIFFER_MODEL`, a `--reasoning` or `RIFFER_REASONING` the model's provider does not accept, a required credential still missing, a `settings.json` or `auth.json` that does not parse, or a `settings.json` whose `model` is not a string ([Configuration](CONFIGURATION.md)). A headless host should map it to exit status 2.
 
 ```ruby
 begin
@@ -57,6 +57,7 @@ runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: MyHost.new, options: o
 | Keyword             | Meaning                                                                                      | Default |
 | ------------------- | -------------------------------------------------------------------------------------------- | ------- |
 | `model:`            | `"provider/name"`, winning over `RIFFER_MODEL`, the settings and a resumed session's `/model` switch | `nil`   |
+| `reasoning:`        | the reasoning effort, winning over `RIFFER_REASONING`, the settings and a resumed session's `/reasoning` switch | `nil`   |
 | `extensions: false` | skips the `rig.rb` files and the gem `riffer/rig/extension` autoload; the bundle still loads | `true`  |
 | `skills: false`     | leaves out the bundled [`skills`](SKILLS.md) extension                                       | `true`  |
 | `agents_md: false`  | leaves out the bundled [`agents_md`](INSTRUCTIONS.md#agentsmd) extension                     | `true`  |
@@ -73,7 +74,7 @@ runtime = Riffer::Rig::Runtime.new(
 )
 ```
 
-The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `model_options:`, `native_tools:`, `credentials:`, `env:`, `auth_path:`, `pricing:`, `riffer_config:`, `mcp_registry:`, `clock:`, `snapshot:`. All except the model are optional. `credentials:` is stored and exposed (`runtime.credentials`); only `/model` and a [restore](#snapshots) read it so far. It takes the shape the [Loader](#building-a-runtime-with-the-loader) passes — each provider's resolved field values. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.install` resolves a provider's values and assigns them (see [Providers](PROVIDERS.md#rifferrigcredentials)), or set them yourself with `Riffer.configure`.
+The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `model_options:`, `reasoning:`, `native_tools:`, `credentials:`, `env:`, `auth_path:`, `pricing:`, `riffer_config:`, `mcp_registry:`, `clock:`, `snapshot:`. All except the model are optional. `credentials:` is stored and exposed (`runtime.credentials`); only `/model` and a [restore](#snapshots) read it so far. It takes the shape the [Loader](#building-a-runtime-with-the-loader) passes — each provider's resolved field values. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.install` resolves a provider's values and assigns them (see [Providers](PROVIDERS.md#rifferrigcredentials)), or set them yourself with `Riffer.configure`.
 
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
@@ -87,6 +88,7 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `instructions:` | replaces the base prompt; sections and the environment block still apply    | `nil` (use the base)    |
 | `max_steps:`    | agent-loop step limit; `nil` runs the loop without a limit                  | `nil`                   |
 | `model_options:` | riffer `model_options` sent with every model call (`{ reasoning: 'high' }`, `{ cache_control: { type: :ephemeral } }`); `Riffer::Rig::Settings::ModelOptions.model_options(model, reasoning)` builds them from the settings | `{}` |
+| `reasoning:` | the reasoning level in effect, the one `/reasoning` reports and a switch replaces; a `reasoning` key in `settings:` is the fallback when it is `nil` | `nil` |
 | `native_tools:` | the [provider-native tool](TOOLS.md#provider-native-tools) switches, as the `tools.native` setting holds them (`{ web_search: true }`) | `{}` |
 | `credentials:`  | provider → resolved field values (`{ anthropic: { api_key: "…" } }`), stored as given and exposed; read by `/model` and a restore | `{}` |
 | `env:`          | the `Riffer::Rig::Env` an MCP server's [`auth` fields](MCP.md#secret-headers) resolve from | `Riffer::Rig::Env.new` |
@@ -248,6 +250,17 @@ runtime.model = 'openai/gpt-5'
 
 `model` is also a core command, listed in `commands` after [`auth`](PROVIDERS.md#auth) and ahead of the [`skill:<name>`](SKILLS.md#skillname) commands and every extension's: `run_command('model', 'openai/gpt-5')` validates before it assigns. A bare name or an unknown provider gets a `command_output` listing the providers; the provider is set up first, its SDK gem ensured and then any required field missing from the Runtime's `credentials:` resolved through [`Credentials.install`](PROVIDERS.md#rifferrigcredentials), and the switch is refused through `notify` at level `:error` when the gem cannot be loaded or a field is still missing. `--save` also writes the model to `~/.riffer/settings.json`, and on its own saves the current one. With no argument it reports the current model.
 
+## Switching the reasoning level
+
+`reasoning` is the reasoning level in effect — the `reasoning:` the Runtime was built with, else the `reasoning` key of `settings:`, else `nil` for the model's default. Assigning `reasoning=` switches it for this Runtime only and re-derives the `model_options` for the current model, so the next model call carries the new level; a `/model` switch re-derives them for the new provider with the level still in effect.
+
+```ruby
+runtime.reasoning # => "high"
+runtime.reasoning = 'low'
+```
+
+`reasoning` is also a core command, listed after [`model`](#switching-the-model): `run_command('reasoning', 'high')` refuses a level the current model's provider does not accept with a `command_output` naming the levels it does, and leaves the level unchanged. `--save` also writes the level to `~/.riffer/settings.json`, and on its own saves the level in effect. With no argument it reports the current level.
+
 ## Rebuilding after a code reload
 
 `rebuild(extensions:, settings:)` replaces everything the Runtime's extensions registered — tools, commands, prompt sections, hooks, skills sources, declared settings and MCP servers — with what the given extension list registers, run against a fresh registrar. It is the primitive behind hot reloading: an embedder without the Loader calls it after its own code reload (a Rails `to_prepare` block, say) with the re-created extension objects and the settings it wants now, and a Loader-built Runtime gets it through `/reload` ([Reloading](RELOADING.md)). The Runtime watches no files and has no `/reload` of its own, since it knows no filesystem conventions.
@@ -260,7 +273,7 @@ end
 
 The new registrations are built aside and swapped in only once every extension in the list has loaded. If any fails — its block raises, its `requires` is unmet, or its name collides with a core settings key — `rebuild` raises that error and nothing on the Runtime changes. This is stricter than construction, which skips a failing extension and records it on `errors`: a rebuild either swaps in the whole list or leaves the working one in place. After a successful rebuild `errors` is empty, and replacements across the new list are reported through `notify` as at construction.
 
-Kept across a rebuild: the message history, the [tally](#token-tally-and-cost), the model (including a [`model=`](#switching-the-model) override — a `model` key in the new settings does not clobber it), `id`, `host`, and every constructor keyword other than `extensions:` and `settings:` (`tools:` still filters the new tools, and reports the names they lack). An MCP server whose name, url and headers are unchanged is not registered again; a changed one is re-registered and a dropped one unregistered ([MCP](MCP.md#reload-and-close)). Providers are process-wide: riffer never unregisters one, so a provider registered before the rebuild stays registered, and an extension that registers it again just replaces the entry.
+Kept across a rebuild: the message history, the [tally](#token-tally-and-cost), the model (including a [`model=`](#switching-the-model) override — a `model` key in the new settings does not clobber it), the reasoning level (including a [`reasoning=`](#switching-the-reasoning-level) override), `id`, `host`, and every constructor keyword other than `extensions:` and `settings:` (`tools:` still filters the new tools, and reports the names they lack). An MCP server whose name, url and headers are unchanged is not registered again; a changed one is re-registered and a dropped one unregistered ([MCP](MCP.md#reload-and-close)). Providers are process-wide: riffer never unregisters one, so a provider registered before the rebuild stays registered, and an extension that registers it again just replaces the entry.
 
 Once the Runtime's session has started, the old hooks get `session_end(reason: :reload)` before the swap and the new ones `session_start(reason: :reload)` after it — where an extension releases and re-acquires process-wide state — and the next prompt's stream opens with those two events. Before the first turn a rebuild fires neither, and the first prompt opens with `session_start(reason: :new)` as usual.
 
@@ -303,6 +316,7 @@ History is data, and the present wins, so nothing in a snapshot blocks a restore
 - A tool call for a tool that no longer exists is just history the model reads.
 - Tool calls at the tail with no result — a process killed mid-turn — are filled with an "interrupted" tool error on load, as a [cancel](#cancelling-a-turn) does, and are never run.
 - The saved model (a `model=` or `/model` switch) applies only if its provider has an entry in `credentials:`; otherwise the given model is used and the host gets one `notify` at level `:warning`. A Runtime restored with its saved model keeps it as its own override, so its next `to_h` saves it again.
+- The saved reasoning level (a `reasoning=` or `/reasoning` switch) is restored as the override the same way; a level the restored model's provider does not accept is simply not sent, so the model's default applies.
 - Activated skills re-apply by name; a skill that no longer exists is dropped.
 
 The first prompt of a restored Runtime opens with `session_start` carrying the snapshot's `id` and reason `:restore`, and extensions' `session_start` hooks see the same reason.

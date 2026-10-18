@@ -66,6 +66,14 @@ describe Riffer::Rig::CLI::Flags do
       assert_equal 'openai/gpt-5', parse('--model', 'openai/gpt-5').model
     end
 
+    it 'leaves the reasoning level to the Loader by default' do
+      assert_nil parse.reasoning
+    end
+
+    it 'reads --reasoning' do
+      assert_equal 'high', parse('--reasoning', 'high').reasoning
+    end
+
     it 'reads --no-extensions' do
       refute parse('--no-extensions').extensions
     end
@@ -221,7 +229,7 @@ describe Riffer::Rig::CLI::Flags do
 
       assert(
         %w[
-          --model --no-extensions --no-skills --no-agents-md --tools --max-steps
+          --model --reasoning --no-extensions --no-skills --no-agents-md --tools --max-steps
           -p --verbose --job-idle-timeout --version
         ].all? do |flag|
           usage.include?(flag)
@@ -232,10 +240,12 @@ describe Riffer::Rig::CLI::Flags do
 
   describe '#to_options' do
     it 'builds the Loader options from the flags' do
-      options = parse('--model', 'openai/gpt-5', '--no-skills', '--tools', 'read,bash', '--max-steps', '5').to_options
+      options = parse(
+        '--model', 'openai/gpt-5', '--reasoning', 'high', '--no-skills', '--tools', 'read,bash', '--max-steps', '5'
+      ).to_options
 
-      assert_equal ['openai/gpt-5', false, %w[read bash], 5],
-                   [options.model, options.skills, options.tools, options.max_steps]
+      assert_equal ['openai/gpt-5', 'high', false, %w[read bash], 5],
+                   [options.model, options.reasoning, options.skills, options.tools, options.max_steps]
     end
 
     it 'keeps the Loader defaults in the options' do

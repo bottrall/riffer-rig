@@ -15,10 +15,10 @@ class Riffer::Rig::Stores::Recorder
 
   # Records one Loader-built session into the store: the header on the first
   # message (its title needs the first prompt), one entry per message, one per
-  # model switch and one per skill activation. Entries that land before the
-  # first message (a /model before the first prompt) wait for the header. A
-  # resumed session appends to the file its first run wrote, so it rewrites
-  # no header.
+  # model switch, one per reasoning switch and one per skill activation. Entries
+  # that land before the first message (a /model before the first prompt) wait
+  # for the header. A resumed session appends to the file its first run wrote,
+  # so it rewrites no header.
   # @rbs store: Riffer::Rig::Stores::_Store
   # @rbs resumed: bool
   # @rbs clock: singleton(Time)
@@ -40,6 +40,7 @@ class Riffer::Rig::Stores::Recorder
     @last_recorded_at = last_recorded_at(runtime.id) if @resumed
     runtime.on_message { |message| message(message) }
     runtime.on_model_change { |model| switched(model) }
+    runtime.on_reasoning_change { |level| switched_reasoning(level) }
   end
 
   # @rbs event: Riffer::StreamEvents::SkillActivation
@@ -61,6 +62,12 @@ class Riffer::Rig::Stores::Recorder
   # @rbs return: void
   def switched(model)
     record(Riffer::Rig::Stores::ModelEntry.new(model: model, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
+  end
+
+  # @rbs level: String
+  # @rbs return: void
+  def switched_reasoning(level)
+    record(Riffer::Rig::Stores::ReasoningEntry.new(reasoning: level, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
   end
 
   # The extension rides the build as its last extension, so its :stream hook

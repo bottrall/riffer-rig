@@ -3,9 +3,11 @@
 class Riffer::Rig::CLI::Flags
   BANNER: String
 
-  # @dynamic model, extensions, skills, agents_md, tools, max_steps, help, version
+  # @dynamic model, reasoning, extensions, skills, agents_md, tools, max_steps, help, version
   # @dynamic save, verbose, json, job_idle_timeout, headless, prompt, continue, resume
   attr_reader model: String?
+
+  attr_reader reasoning: String?
 
   attr_reader extensions: bool
 
@@ -56,6 +58,7 @@ class Riffer::Rig::CLI::Flags
   def self.assemble: (Hash[Symbol, untyped] values, String? prompt) -> Riffer::Rig::CLI::Flags
 
   # @rbs model: String?
+  # @rbs reasoning: String?
   # @rbs extensions: bool
   # @rbs skills: bool
   # @rbs agents_md: bool
@@ -72,5 +75,5 @@ class Riffer::Rig::CLI::Flags
   # @rbs help: bool
   # @rbs version: bool
   # @rbs return: void
-  def initialize: (?model: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?verbose: bool, ?json: bool, ?job_idle_timeout: Integer?, ?headless: bool, ?prompt: String?, ?continue: bool, ?resume: String?, ?help: bool, ?version: bool) -> void
+  def initialize: (?model: String?, ?reasoning: String?, ?extensions: bool, ?skills: bool, ?agents_md: bool, ?tools: Array[String]?, ?max_steps: Integer?, ?save: bool, ?verbose: bool, ?json: bool, ?job_idle_timeout: Integer?, ?headless: bool, ?prompt: String?, ?continue: bool, ?resume: String?, ?help: bool, ?version: bool) -> void
 end

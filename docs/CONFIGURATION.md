@@ -55,6 +55,14 @@ A `model` that is not a string is never skipped as unset: the Loader raises `Rif
 { "model": "anthropic/claude-sonnet-4-6", "reasoning": "high" }
 ```
 
+The level is the first of these that is set, highest first: the `--reasoning` flag, a resumed session's recorded `/reasoning` switch, the `RIFFER_REASONING` environment variable, then `reasoning` in the settings.
+
+A level from `--reasoning` or `RIFFER_REASONING` that the selected model's provider does not accept — including any level for a provider that takes none, such as gemini — is rejected before the session starts with a `Riffer::Rig::Loader::ConfigurationError` naming the levels the provider accepts. A level from the settings is never rejected: an unrecognized one silently leaves the model's default, so a level every provider accepts can stay in the file across model switches.
+
+`/reasoning level` switches the level for the current session only: `/reasoning` alone shows the level in effect, a level the current model's provider does not accept is refused with the levels it does, and `/reasoning --save` writes the level in effect to the home settings, leaving every other key unchanged — or, when the home file no longer parses, writes nothing and reports the file. A switch is recorded in the [session store](SESSIONS.md#resuming) and restored on resume; a `--reasoning` chosen for the run wins over the restored switch for that run only.
+
+When the model switches mid-session — `/model` — the level is re-derived for the new provider: one it does not accept silently leaves the new model's default.
+
 ## `models`
 
 `models` prices each model, keyed by its `"provider/name"` string. Rates are USD per million tokens:

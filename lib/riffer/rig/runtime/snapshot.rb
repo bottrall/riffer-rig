@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Runtime::Snapshot
-  # @dynamic id, messages, model, skills
+  # @dynamic id, messages, model, reasoning, skills
   attr_reader :id #: String
   attr_reader :messages #: Array[Riffer::Messages::Base]
   attr_reader :model #: String?
+  attr_reader :reasoning #: String?
   attr_reader :skills #: Array[String]
 
   # @rbs hash: Hash[Symbol, untyped]
@@ -17,6 +18,7 @@ class Riffer::Rig::Runtime::Snapshot
       # a Session.from_h could also heal orphaned tool calls on load.
       messages: hash.fetch(:messages).map { |stored| message(stored) },
       model: hash.fetch(:model),
+      reasoning: hash[:reasoning].is_a?(String) ? hash[:reasoning] : nil,
       skills: hash.fetch(:skills)
     )
   end
@@ -34,19 +36,21 @@ class Riffer::Rig::Runtime::Snapshot
   # @rbs id: String
   # @rbs messages: Array[Riffer::Messages::Base]
   # @rbs model: String?
+  # @rbs reasoning: String?
   # @rbs skills: Array[String]
   # @rbs return: void
-  def initialize(id:, messages:, model:, skills:)
+  def initialize(id:, messages:, model:, skills:, reasoning: nil)
     @id = id
     @messages = messages
     @model = model
+    @reasoning = reasoning
     @skills = skills
     freeze
   end
 
   # @rbs return: Hash[Symbol, untyped]
   def to_h
-    { id: @id, messages: @messages.map(&:to_h), model: @model, skills: @skills }
+    { id: @id, messages: @messages.map(&:to_h), model: @model, reasoning: @reasoning, skills: @skills }
   end
 
   # @rbs return: Riffer::Agent::Session

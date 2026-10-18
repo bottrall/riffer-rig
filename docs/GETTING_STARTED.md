@@ -28,6 +28,8 @@ Which model should riffer use? Enter provider/name, with a provider from: amazon
 
 The answer is saved as `model` in `~/.riffer/settings.json`, so later runs skip the question. A model already set by `--model`, `RIFFER_MODEL` or either settings file is used without asking ([Configuration](CONFIGURATION.md#model)).
 
+The reasoning effort follows the same pattern: `--reasoning`, then `RIFFER_REASONING`, then `reasoning` in the settings, and `/reasoning` switches it inside the session ([Configuration](CONFIGURATION.md#reasoning)).
+
 Next it looks for the provider's credentials in the environment and in `~/.riffer/auth.json`. When one is missing it asks for it, reading a key without echo:
 
 ```text

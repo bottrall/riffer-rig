@@ -10,6 +10,7 @@ class Riffer::Rig::Stores::JSONL
     Riffer::Rig::Stores::Header.type => Riffer::Rig::Stores::Header,
     Riffer::Rig::Stores::MessageEntry.type => Riffer::Rig::Stores::MessageEntry,
     Riffer::Rig::Stores::ModelEntry.type => Riffer::Rig::Stores::ModelEntry,
+    Riffer::Rig::Stores::ReasoningEntry.type => Riffer::Rig::Stores::ReasoningEntry,
     Riffer::Rig::Stores::SkillEntry.type => Riffer::Rig::Stores::SkillEntry
   }.freeze #: Hash[String, Riffer::Rig::Stores::entry_type]
 

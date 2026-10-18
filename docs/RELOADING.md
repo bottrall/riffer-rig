@@ -1,6 +1,6 @@
 # Reloading
 
-A reload rebuilds the registrar from the extension files re-executed as they are on disk: `/reload`, the runtime command the Loader installs, scrubs the tracked files from Ruby's `$LOADED_FEATURES`, loads both `rig.rb` files again ([Extensions](EXTENSIONS.md#the-rigrb-files)), re-reads the settings, credentials and trust, and swaps a freshly built registrar in atomically. History, the tally, the `/model` override and the session id survive the swap; the tools, commands, prompt sections and handlers are whatever the files say now.
+A reload rebuilds the registrar from the extension files re-executed as they are on disk: `/reload`, the runtime command the Loader installs, scrubs the tracked files from Ruby's `$LOADED_FEATURES`, loads both `rig.rb` files again ([Extensions](EXTENSIONS.md#the-rigrb-files)), re-reads the settings, credentials and trust, and swaps a freshly built registrar in atomically. History, the tally, the `/model` and `/reasoning` overrides and the session id survive the swap; the tools, commands, prompt sections and handlers are whatever the files say now.
 
 ## What reloads
 

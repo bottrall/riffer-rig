@@ -29,6 +29,16 @@ describe Riffer::Rig::Env do
     end
   end
 
+  describe '#reasoning' do
+    it 'is RIFFER_REASONING' do
+      assert_equal 'high', Riffer::Rig::Env.new('RIFFER_REASONING' => 'high').reasoning
+    end
+
+    it 'is nil when RIFFER_REASONING is unset' do
+      assert_nil Riffer::Rig::Env.new({}).reasoning
+    end
+  end
+
   describe '.load' do
     it 'returns the environment when RIFFER_MODEL is unset' do
       assert_instance_of Riffer::Rig::Env, Riffer::Rig::Env.load({})

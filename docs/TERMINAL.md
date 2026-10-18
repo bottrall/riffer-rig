@@ -104,6 +104,7 @@ A line starting with `/` runs a command. Besides `/exit` and `/quit`:
 | `/new`                            | starts a fresh session in place; the one you left stays on disk ([Sessions](SESSIONS.md#the-picker))                       |
 | `/resume [--all]`                 | opens [the picker](SESSIONS.md#the-picker) over this directory's sessions, or every directory's                            |
 | `/model [provider/name] [--save]` | shows or switches the model ([Configuration](CONFIGURATION.md#model))                                                      |
+| `/reasoning [level] [--save]`     | shows or switches the reasoning level ([Configuration](CONFIGURATION.md#reasoning))                                        |
 | `/auth`                           | lists, re-runs or removes provider credentials ([Providers](PROVIDERS.md#auth))                                            |
 | `/reload`                         | reloads the extensions and settings ([Reloading](RELOADING.md))                                                            |
 | `/cost`                           | shows the session's token usage and cost, then each turn's ([Embedding](EMBEDDING.md#token-tally-and-cost) has the format) |

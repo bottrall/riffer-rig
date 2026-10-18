@@ -85,6 +85,7 @@ class Riffer::Rig::Loader
 
     document = Riffer::Rig::Settings::Document.new(settings)
     selected = select_model(options.model || @env.model || document.model)
+    check_reasoning(options, selected)
     provider = Riffer::Rig::Settings::ModelOptions.provider_for(selected).to_s
     ensure_sdk(provider)
     credentials = install_credentials(provider)
@@ -102,6 +103,9 @@ class Riffer::Rig::Loader
     @recorder_extensions = recorder ? [Riffer::Rig::Stores::Recorder.extension(recorder)] : []
     loaded += @recorder_extensions
 
+    snapshot = snapshot_without_forced(snapshot, options)
+    reasoning = forced_reasoning(options, snapshot)
+
     built = Riffer::Rig::Runtime.new(
       selected,
       extensions: loaded,
@@ -115,9 +119,10 @@ class Riffer::Rig::Loader
       auth_path: home_auth_path,
       pricing: document.models,
       riffer_config: @riffer_config,
-      model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected, document.reasoning),
+      model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected, reasoning || document.reasoning),
+      reasoning: reasoning,
       native_tools: document.native_tools,
-      snapshot: options.model ? snapshot&.merge(model: nil) : snapshot
+      snapshot: snapshot
     )
     built.install_command(Riffer::Rig::Commands::Reload.command(self))
     store = @store
@@ -368,6 +373,49 @@ class Riffer::Rig::Loader
   # @rbs return: String
   def home_auth_path
     File.join(@home, '.riffer', 'auth.json')
+  end
+
+  # A reasoning level from the flag or the environment is refused, the way a
+  # bad model string is; one from the settings document or a session's recorded
+  # switch falls back to the model's default instead.
+  # @rbs options: Riffer::Rig::Loader::Options
+  # @rbs selected: String
+  # @rbs return: void
+  def check_reasoning(options, selected)
+    forced = options.reasoning || @env.reasoning
+    return unless forced
+
+    rejection = Riffer::Rig::Settings::ModelOptions.reasoning_rejection(forced, selected)
+    return unless rejection
+
+    raise ConfigurationError, options.reasoning ? rejection : "RIFFER_REASONING: #{rejection}"
+  end
+
+  # The reasoning in effect for the build, over the settings document: the flag,
+  # then the session's recorded switch, then RIFFER_REASONING.
+  # @rbs options: Riffer::Rig::Loader::Options
+  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs return: String?
+  def forced_reasoning(options, snapshot)
+    options.reasoning || recorded_reasoning(snapshot) || @env.reasoning
+  end
+
+  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs return: String?
+  def recorded_reasoning(snapshot)
+    saved = snapshot && snapshot[:reasoning]
+    saved.is_a?(String) ? saved : nil
+  end
+
+  # A model or reasoning level chosen for the run wins for that run only: it is
+  # not recorded, so a later resume restores the session's own switches.
+  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs options: Riffer::Rig::Loader::Options
+  # @rbs return: Hash[Symbol, untyped]?
+  def snapshot_without_forced(snapshot, options)
+    snapshot = snapshot&.merge(model: nil) if options.model
+    snapshot = snapshot&.merge(reasoning: nil) if options.reasoning
+    snapshot
   end
 
   # The store records unless it was declined with store: nil or globally with

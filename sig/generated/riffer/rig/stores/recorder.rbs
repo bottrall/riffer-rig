@@ -19,10 +19,10 @@ class Riffer::Rig::Stores::Recorder
 
   # Records one Loader-built session into the store: the header on the first
   # message (its title needs the first prompt), one entry per message, one per
-  # model switch and one per skill activation. Entries that land before the
-  # first message (a /model before the first prompt) wait for the header. A
-  # resumed session appends to the file its first run wrote, so it rewrites
-  # no header.
+  # model switch, one per reasoning switch and one per skill activation. Entries
+  # that land before the first message (a /model before the first prompt) wait
+  # for the header. A resumed session appends to the file its first run wrote,
+  # so it rewrites no header.
   # @rbs store: Riffer::Rig::Stores::_Store
   # @rbs resumed: bool
   # @rbs clock: singleton(Time)
@@ -44,6 +44,10 @@ class Riffer::Rig::Stores::Recorder
   # @rbs model: String
   # @rbs return: void
   def switched: (String model) -> void
+
+  # @rbs level: String
+  # @rbs return: void
+  def switched_reasoning: (String level) -> void
 
   # The extension rides the build as its last extension, so its :stream hook
   # sees the model's skill activations. Per build, unlike the extensions in

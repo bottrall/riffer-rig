@@ -45,7 +45,7 @@ describe 'Riffer::Rig::Bundled::Skills' do
   end
 
   it 'lists one command per skill in the project directory' do
-    assert_equal %w[auth model cost skill:a skill:b], runtime.commands.map(&:name)
+    assert_equal %w[auth model reasoning cost skill:a skill:b], runtime.commands.map(&:name)
   end
 
   it 'lists a command for a skill in the home directory' do

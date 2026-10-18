@@ -33,6 +33,8 @@ class Riffer::Rig::Runtime
   # tests and embedders can exercise the switches.
   NATIVE_TOOLS_BY_PROVIDER: Hash[Symbol, Hash[Symbol, bool]]
 
+  @reasoning_override: String?
+
   @model_override: String?
 
   @session_start_reason: Symbol
@@ -66,6 +68,8 @@ class Riffer::Rig::Runtime
   @message_observers: Array[^(Riffer::Messages::Base) -> void]
 
   @model_observers: Array[^(String) -> void]
+
+  @reasoning_observers: Array[^(String) -> void]
 
   @system_prompt: Riffer::Rig::Runtime::SystemPrompt
 
@@ -124,11 +128,12 @@ class Riffer::Rig::Runtime
   # @rbs mcp_registry: Riffer::Rig::Mcp::_Registry
   # @rbs max_steps: Integer?
   # @rbs model_options: Hash[Symbol, untyped]
+  # @rbs reasoning: String?
   # @rbs native_tools: Hash[Symbol, untyped]
   # @rbs clock: ^() -> Float
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
-  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?env: Riffer::Rig::Env, ?auth_path: String, ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?native_tools: Hash[Symbol, untyped], ?clock: ^() -> Float, ?snapshot: Hash[Symbol, untyped]?) -> void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?env: Riffer::Rig::Env, ?auth_path: String, ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?reasoning: String?, ?native_tools: Hash[Symbol, untyped], ?clock: ^() -> Float, ?snapshot: Hash[Symbol, untyped]?) -> void
 
   # @rbs text: String
   # @rbs &: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
@@ -175,6 +180,13 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def model=: (String model) -> void
 
+  # @rbs return: String?
+  def reasoning: () -> String?
+
+  # @rbs level: String
+  # @rbs return: void
+  def reasoning=: (String level) -> void
+
   # @rbs provider: Symbol
   # @rbs values: Hash[Symbol, String]
   # @rbs return: void
@@ -195,6 +207,10 @@ class Riffer::Rig::Runtime
   # @rbs &block: (String) -> void
   # @rbs return: nil
   def on_model_change: () { (String) -> void } -> nil
+
+  # @rbs &block: (String) -> void
+  # @rbs return: nil
+  def on_reasoning_change: () { (String) -> void } -> nil
 
   # @rbs &: (Riffer::Rig::Runtime::JobCompletion) -> void
   # @rbs return: nil

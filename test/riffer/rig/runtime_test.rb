@@ -379,7 +379,7 @@ describe Riffer::Rig::Runtime do
     it 'lists no skill commands when the sources hold no skills' do
       FileUtils.remove_entry(File.join(skills_dir, 'a'))
 
-      assert_equal %w[auth model cost], skilled_runtime.commands.map(&:name)
+      assert_equal %w[auth model reasoning cost], skilled_runtime.commands.map(&:name)
     end
 
     it 're-activates a snapshot skill by name on restore' do
@@ -1373,6 +1373,82 @@ describe Riffer::Rig::Runtime do
     assert_equal({}, runtime.agent.config.model_options)
   end
 
+  describe '#reasoning' do
+    it 'is the level from the settings' do
+      assert_equal 'high', Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'high' }).reasoning
+    end
+
+    it 'is nil without a level anywhere' do
+      assert_nil Riffer::Rig::Runtime.new('mock/test').reasoning
+    end
+
+    it 'is the override over the settings' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'low' }, reasoning: 'high')
+
+      assert_equal 'high', runtime.reasoning
+    end
+
+    it 'is the level the snapshot restored' do
+      runtime = Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'low' })
+      runtime.reasoning = 'high'
+      restored = Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'low' }, snapshot: runtime.to_h)
+
+      assert_equal 'high', restored.reasoning
+    end
+  end
+
+  describe '#reasoning=' do
+    it 're-derives the model options for the switched level' do
+      runtime = Riffer::Rig::Runtime.new('openai/gpt-5', reasoning: 'low')
+      runtime.reasoning = 'high'
+
+      assert_equal 'high', runtime.agent.config.model_options[:reasoning]
+    end
+
+    it 'keeps the switched level when the model switches' do
+      runtime = Riffer::Rig::Runtime.new('openai/gpt-5', settings: { reasoning: 'low' })
+      runtime.reasoning = 'high'
+      runtime.model = 'openai/o3'
+
+      assert_equal 'high', runtime.reasoning
+    end
+
+    it 're-derives the model options for the model a switch lands on' do
+      runtime = Riffer::Rig::Runtime.new('openai/gpt-5', settings: { reasoning: 'low' })
+      runtime.reasoning = 'high'
+      runtime.model = 'openai/o3'
+
+      assert_equal 'high', runtime.agent.config.model_options[:reasoning]
+    end
+
+    it 'keeps the session across a level switch' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      session = runtime.agent.session
+      runtime.reasoning = 'high'
+
+      assert_same session, runtime.agent.session
+    end
+  end
+
+  describe '#on_reasoning_change' do
+    it 'sends the switch to the subscriber' do
+      seen = []
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      runtime.on_reasoning_change { |level| seen << level }
+      runtime.reasoning = 'high'
+
+      assert_equal %w[high], seen
+    end
+
+    it 'sends nothing while no level is switched' do
+      seen = []
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      runtime.on_reasoning_change { |level| seen << level }
+
+      assert_empty seen
+    end
+  end
+
   it 'merges the credentials of a provider into the ones it holds' do
     runtime = Riffer::Rig::Runtime.new('mock/test', credentials: { anthropic: { api_key: 'sk-ant-test' } })
     runtime.merge_credentials(:openai, { api_key: 'sk-test' })
@@ -1452,7 +1528,7 @@ describe Riffer::Rig::Runtime do
       it 'keeps the old commands' do
         attempt
 
-        assert_equal %w[auth model cost old], @runtime.commands.map(&:name)
+        assert_equal %w[auth model reasoning cost old], @runtime.commands.map(&:name)
       end
 
       it 'keeps the old settings' do
@@ -1484,7 +1560,7 @@ describe Riffer::Rig::Runtime do
     end
 
     it 'swaps in the commands of the new list' do
-      assert_equal %w[auth model cost new], rebuilt.commands.map(&:name)
+      assert_equal %w[auth model reasoning cost new], rebuilt.commands.map(&:name)
     end
 
     it 'lists a skill added before a rebuild' do
@@ -1679,6 +1755,24 @@ describe Riffer::Rig::Runtime do
       runtime.model = 'mock/other'
 
       assert_equal 'mock/other', runtime.to_h[:model]
+    end
+
+    it 'holds no reasoning without a switch' do
+      assert_nil saved_runtime.to_h[:reasoning]
+    end
+
+    it 'holds the reasoning switch' do
+      runtime = saved_runtime
+      runtime.reasoning = 'high'
+
+      assert_equal 'high', runtime.to_h[:reasoning]
+    end
+
+    it 'restores the reasoning switch' do
+      runtime = saved_runtime
+      runtime.reasoning = 'high'
+
+      assert_equal 'high', restored(runtime.to_h).reasoning
     end
 
     it 'holds no skills while none are activated' do

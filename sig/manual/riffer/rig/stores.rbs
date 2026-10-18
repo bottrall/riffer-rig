@@ -2,8 +2,8 @@
 # explicitly so the compact `Riffer::Rig::Stores::*` signatures resolve.
 
 module Riffer::Rig::Stores
-  type entry = Header | MessageEntry | ModelEntry | SkillEntry
-  type entry_type = singleton(Header) | singleton(MessageEntry) | singleton(ModelEntry) | singleton(SkillEntry)
+  type entry = Header | MessageEntry | ModelEntry | ReasoningEntry | SkillEntry
+  type entry_type = singleton(Header) | singleton(MessageEntry) | singleton(ModelEntry) | singleton(ReasoningEntry) | singleton(SkillEntry)
 
   interface _Stamped
     def recorded_at: () -> String?

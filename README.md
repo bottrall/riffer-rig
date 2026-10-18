@@ -34,13 +34,14 @@ riffer
 
 The first run asks which model to use, as `provider/name` (for example `anthropic/claude-sonnet-4-6`), and saves the answer as `model` in `~/.riffer/settings.json`; it then asks for any missing credential ([Authentication](#authentication)). After that, `riffer` opens straight into the prompt. [Getting started](docs/GETTING_STARTED.md) walks through a first session.
 
-The model is the first of these that is set: `--model`, `RIFFER_MODEL`, `model` in `<cwd>/.riffer/settings.json`, then in `~/.riffer/settings.json` ([Configuration](docs/CONFIGURATION.md#model)).
+The model is the first of these that is set: `--model`, `RIFFER_MODEL`, `model` in `<cwd>/.riffer/settings.json`, then in `~/.riffer/settings.json` ([Configuration](docs/CONFIGURATION.md#model)). The reasoning effort resolves the same way: `--reasoning`, `RIFFER_REASONING`, then `reasoning` in the settings ([Configuration](docs/CONFIGURATION.md#reasoning)).
 
 ### Flags
 
 | Flag                    | Effect                                                                     |
 | ----------------------- | -------------------------------------------------------------------------- |
 | `--model provider/name` | the model for this session, over `RIFFER_MODEL` and the settings            |
+| `--reasoning LEVEL`     | the reasoning effort for this session, over `RIFFER_REASONING` and the settings |
 | `--no-extensions`       | skips the [`rig.rb` files](docs/EXTENSIONS.md#the-rigrb-files) and gem autoload; the bundle still loads |
 | `--no-skills`           | leaves out [Agent Skills](docs/SKILLS.md)                                   |
 | `--no-agents-md`        | leaves out the [AGENTS.md](docs/INSTRUCTIONS.md#agentsmd) instructions      |
@@ -74,11 +75,15 @@ Type a prompt and press Enter. While the turn runs, the status line under the in
 
 - Ctrl-C during a turn cancels it. Ctrl-C with no turn running asks for a second one, which exits.
 - `/exit` or `/quit` ends the session, as does Ctrl-D on an empty line.
-- `/help` lists the session's slash commands. `/resume [--all]`, `/new`, `/cost`, `/trace`, `/skill:<name>` and the others are described in [Terminal](docs/TERMINAL.md#commands); `/model` is covered [below](#switching-the-model).
+- `/help` lists the session's slash commands. `/resume [--all]`, `/new`, `/cost`, `/trace`, `/skill:<name>` and the others are described in [Terminal](docs/TERMINAL.md#commands); `/model` is covered [below](#switching-the-model), and `/reasoning` works the same way for the reasoning effort.
 
 ### Switching the model
 
 `/model provider/name` switches the model for the current session only, keeping the conversation so far, and confirms it in one line: `/model openai/gpt-5` prints `Model switched to openai/gpt-5`. The provider prefix is required: a bare name such as `/model sonnet` is rejected with the list of providers. `/model` alone shows the model in use. Switching runs the same setup for the new provider as startup does: its SDK gem is offered for install (or refused with the exact Gemfile line), and missing credentials are resolved — you are prompted for them when the host can ask, and the values apply to the running session immediately. The switch is refused with one error when the host cannot supply what is missing, and the model is left unchanged. `/model --save` writes the model in effect to the home `settings.json`, so new sessions start with it; `/model provider/name --save` switches and saves in one step, printing `Model switched to openai/gpt-5 and saved to ~/.riffer/settings.json` (a bare `/model --save` prints `Saved openai/gpt-5 to ~/.riffer/settings.json`), and a refused switch saves nothing ([Configuration](docs/CONFIGURATION.md#model)).
+
+### Switching the reasoning level
+
+`/reasoning level` switches the reasoning effort for the current session only, keeping the conversation so far: `/reasoning high` prints `Reasoning switched to high`, and `/reasoning` alone shows the level in effect. A level the current model's provider does not accept is rejected with the levels it does. `/reasoning --save` writes the level in effect to the home `settings.json` (`/reasoning high --save` switches and saves in one step), and a home file that no longer parses is reported instead of written. The switch survives a resume, and a `--reasoning` chosen for the run wins over it for that run only ([Configuration](docs/CONFIGURATION.md#reasoning)).
 
 ## Authentication
 
@@ -127,6 +132,7 @@ Settings live in two scopes, both optional: `~/.riffer/settings.json` for every 
 | `tools`      | the provider-native tool switches (`native`), off by default                     |
 
 - `RIFFER_MODEL` — the model for this run as `provider/name`, winning over the `model` setting. A bare name such as `sonnet` is rejected with the list of providers.
+- `RIFFER_REASONING` — the reasoning effort for this run, winning over the `reasoning` setting; a level the model's provider does not accept is rejected with the levels it does.
 - `AGENTS.md` — `~/.riffer/AGENTS.md` and an `AGENTS.md` in the current working directory or any directory above it are re-read every turn as instructions that take precedence over the default norms ([Instructions](docs/INSTRUCTIONS.md#agentsmd)).
 - Skills — Agent Skills in `.agents/skills/` from the working directory up to the repository root, and in `~/.agents/skills/`, are offered to the model, and `/skill:<name> [text]` runs one ([Skills](docs/SKILLS.md)).
 - MCP servers — declared under the `mcp` key in either settings file and registered with the Runtime ([MCP](docs/MCP.md)).

@@ -797,7 +797,7 @@ describe Riffer::Rig::Terminal do
         pty.type("\u0015/exit\r")
       end
 
-      assert_includes run_on_pty(script), "/resume  Pick a session to resume: /resume --all for every directory's"
+      assert_includes run_on_pty(script), "/resume     Pick a session to resume: /resume --all for every directory's"
     end
 
     it 'ends the session at /exit' do

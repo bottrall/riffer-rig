@@ -24,4 +24,11 @@ module Riffer::Rig::Settings::File
   def store_model(model, path: PATH)
     update(path) { |document| document.merge(model: model) }
   end
+
+  # @rbs level: String
+  # @rbs path: String
+  # @rbs return: String?
+  def store_reasoning(level, path: PATH)
+    update(path) { |document| document.merge(reasoning: level) }
+  end
 end
