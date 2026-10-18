@@ -46,7 +46,9 @@ class Riffer::Rig::Terminal::FramePrompter
       # Raw mode delivers Ctrl-C as a key instead of the signal a blocking
       # read is interrupted by.
       raise Interrupt if key.name == :ctrl_c
-      return editor if key.name == :enter
+      # A prompt answer is one value, so every Enter-flavoured key sends it:
+      # the editor's newline keys exist for the prompt line, not for answers.
+      return editor if %i[enter newline alt_enter].include?(key.name)
 
       editor = editor.press(key)
       @frame.input(editor) unless secret

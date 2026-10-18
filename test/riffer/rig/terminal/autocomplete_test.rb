@@ -266,6 +266,14 @@ describe Riffer::Rig::Terminal::Autocomplete do
     it 'closes when the slash is deleted' do
       refute_predicate typed('/', :backspace), :open?
     end
+
+    it 'closes on a line break' do
+      refute_predicate typed('/', 'm', :newline), :open?
+    end
+
+    it 'inserts the line break into the line' do
+      assert_equal "/m\n", typed('/', 'm', :newline).editor.text
+    end
   end
 
   describe '#line' do

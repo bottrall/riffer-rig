@@ -5,6 +5,8 @@ class Riffer::Rig::Terminal::Frame
 
   PROMPT_COLUMNS: Integer
 
+  INDENT: String
+
   STATUS_INDENT: String
 
   # The first column is the cursor's own cell when it rests at the end of the
@@ -13,7 +15,7 @@ class Riffer::Rig::Terminal::Frame
 
   JOBS_SEPARATOR: String
 
-  FOOTER_ROWS: Integer
+  INPUT_ROWS: Integer
 
   PEEK_ROWS: Integer
 
@@ -29,6 +31,11 @@ class Riffer::Rig::Terminal::Frame
   LOADING: String
 
   SPACER: String
+
+  # Marks the cursor's cell in the text handed to the wrapper, so the wrapped
+  # row and column can be read back off it: a private-use code point, which no
+  # terminal draws.
+  CURSOR: String
 
   @io: IO
 
@@ -164,8 +171,31 @@ class Riffer::Rig::Terminal::Frame
   # @rbs return: String
   def palette_row: (Riffer::Rig::Terminal::Autocomplete::_Entry command, Integer width, chosen: bool) -> String
 
+  # The input rows as drawn, the row the cursor sits on among them, and its
+  # column on that row.
+  # @rbs return: [Array[String], Integer, Integer]
+  def input_rows: () -> [ Array[String], Integer, Integer ]
+
+  # @rbs return: Integer
+  def input_cap: () -> Integer
+
+  # @rbs line: String
   # @rbs return: String
-  def footer: () -> String
+  def ghosted: (String line) -> String
+
+  # @rbs return: Integer
+  def typing: () -> Integer
+
+  # The wrapped rows need a column for the prompt and one of text; on a
+  # narrower terminal the input stays the one-row viewport, cut to fit.
+  # @rbs return: [Array[String], Integer, Integer]
+  def viewport: () -> [ Array[String], Integer, Integer ]
+
+  # @rbs rows: Array[String]
+  # @rbs row: Integer
+  # @rbs column: Integer
+  # @rbs return: String
+  def footer: (Array[String] rows, Integer row, Integer column) -> String
 
   # @rbs room: Integer
   # @rbs return: String
