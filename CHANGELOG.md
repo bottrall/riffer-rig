@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.15.0](https://github.com/bottrall/riffer-rig/compare/v0.14.0...v0.15.0) (2026-10-18)
+
+
+### Features
+
+* **terminal:** style the turn report like the status bar ([#562](https://github.com/bottrall/riffer-rig/issues/562)) ([710bd34](https://github.com/bottrall/riffer-rig/commit/710bd34b993d2743a78935ebbf3116d50cc063d7))
+
+
+### Bug Fixes
+
+* label the status-bar step counter as steps, not turns ([#560](https://github.com/bottrall/riffer-rig/issues/560)) ([80e6b2b](https://github.com/bottrall/riffer-rig/commit/80e6b2b60756ba4896878ef7df736511a3ec2ed0))
+
 ## [0.14.0](https://github.com/bottrall/riffer-rig/compare/v0.13.0...v0.14.0) (2026-10-18)
 
 
