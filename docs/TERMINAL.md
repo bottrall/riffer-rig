@@ -65,7 +65,7 @@ While a turn runs, the row under the input line shows its progress, redrawn abou
 
 The output tokens and the cost count text still streaming, at an estimated four characters per token, until the provider reports the request's usage; the input tokens appear once it has. On a narrow terminal the line drops whole figures from the right rather than show one cut short. The line clears when the turn ends.
 
-Between turns the row shows the session instead, all dim, from the left: the model, the tokens the session has used so far as `↑132k ↓218k tok` (`k` and `M` for thousands and millions), the session's cost so far as `~$1.4000` once the model is [priced](CONFIGURATION.md#models), and the time of day as `14:32`, kept current while the terminal waits. A session that has not used tokens shows the model and the time alone.
+Between turns the row shows the session instead, all dim, from the left: the model, the tokens the session has used so far as `↑132k ↓218k tok` (`k` and `M` for thousands and millions), the session's cost so far as `~$1.4000` once the model is [priced](CONFIGURATION.md#catalog_files), and the time of day as `14:32`, kept current while the terminal waits. A session that has not used tokens shows the model and the time alone.
 
 While a question waits for your answer — a credential prompt from `/auth`, say, or [the picker](SESSIONS.md#the-picker) — the status line shows `answer above · Ctrl-C cancels` in place of the turn's figures, which come back once the question closes.
 
