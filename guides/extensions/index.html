@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.13.0</span>
+            <span class="version">v0.14.0</span>
           </div>
         </nav>
       </div>
@@ -424,7 +424,7 @@
   <li>While the block runs, <code>rig.settings</code> is the same namespace — the Runtime’s <code>settings:</code> values over the defaults declared so far — so an extension can register according to its settings.</li>
 </ul>
 
-<p>Core settings keys stay top level, so an extension cannot take one as its name: an extension named <code>model</code>, <code>reasoning</code>, <code>models</code>, <code>reload</code>, <code>extensions</code>, <code>sessions</code>, <code>providers</code> or <code>tools</code> is rejected with a <code>Riffer::Rig::Registrar::NameCollisionError</code> before its block runs, and reported as a load error (see <a href="#error-isolation">Error isolation</a>).</p>
+<p>Core settings keys stay top level, so an extension cannot take one as its name: an extension named <code>model</code>, <code>reasoning</code>, <code>catalog_files</code>, <code>reload</code>, <code>extensions</code>, <code>sessions</code>, <code>providers</code> or <code>tools</code> is rejected with a <code>Riffer::Rig::Registrar::NameCollisionError</code> before its block runs, and reported as a load error (see <a href="#error-isolation">Error isolation</a>).</p>
 
 <h2 id="error-isolation">Error isolation</h2>
 

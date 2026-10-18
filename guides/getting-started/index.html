@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.13.0</span>
+            <span class="version">v0.14.0</span>
           </div>
         </nav>
       </div>
@@ -175,6 +175,8 @@ riffer
 
 <p>The answer is saved as <code>model</code> in <code>~/.riffer/settings.json</code>, so later runs skip the question. A model already set by <code>--model</code>, <code>RIFFER_MODEL</code> or either settings file is used without asking (<a href="/guides/configuration/#model">Configuration</a>).</p>
 
+<p>The reasoning effort follows the same pattern: <code>--reasoning</code>, then <code>RIFFER_REASONING</code>, then <code>reasoning</code> in the settings, and <code>/reasoning</code> switches it inside the session (<a href="/guides/configuration/#reasoning">Configuration</a>).</p>
+
 <p>Next it looks for the provider’s credentials in the environment and in <code>~/.riffer/auth.json</code>. When one is missing it asks for it, reading a key without echo:</p>
 
 <pre><code class="language-text">anthropic api_key
@@ -188,8 +190,8 @@ riffer
 <p>The banner shows the model, the working directory, how many skills were found and the version. On a terminal too narrow for the logo it leaves the logo out, and a model or working directory too long for its row is cut from the left behind <code>…</code>. It is drawn again when the session changes — <code>/new</code>, <code>/resume</code> — and for a session that has already used tokens it adds a <code>session</code> row with the total so far, and its cost once the model is priced. Type a prompt and press Enter:</p>
 
 <ul>
-  <li>while the turn runs, the status line under the input shows its time, steps, tool calls, tokens and cost, and Ctrl-T peeks at what the model is writing;</li>
-  <li>when it ends, the reply is printed in one piece, and under it a stat line: the turn’s steps, time and tokens, then the session’s running total, each with its cost once the model is priced (<a href="/guides/configuration/#models">Configuration</a>);</li>
+  <li>while the turn runs, the status line under the input shows its turn number, time, tokens and cost, and Ctrl-T peeks at what the model is writing; between turns it shows the same slots as <code>idle</code> — the time, the tokens and cost used so far, the background jobs — at the same positions, so starting or ending a turn moves nothing;</li>
+  <li>when it ends, the reply is printed in one piece, and under it a stat line: the turn’s steps, time and tokens, then the session’s running total, each with its cost once the model is priced (<a href="/guides/configuration/#catalog_files">Configuration</a>);</li>
   <li>you can keep typing while a turn runs: Enter queues the message, and it runs when the turn ends;</li>
   <li>Ctrl-C cancels a running turn, which prints what the reply had reached and <code>interrupted</code>; with no turn running, a second Ctrl-C exits, as do <code>/exit</code>, <code>/quit</code> and Ctrl-D on an empty line.</li>
 </ul>

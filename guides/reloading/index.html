@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.13.0</span>
+            <span class="version">v0.14.0</span>
           </div>
         </nav>
       </div>
@@ -151,7 +151,7 @@
             </ul>
           </nav>
           
-<p>A reload rebuilds the registrar from the extension files re-executed as they are on disk: <code>/reload</code>, the runtime command the Loader installs, scrubs the tracked files from Ruby’s <code>$LOADED_FEATURES</code>, loads both <code>rig.rb</code> files again (<a href="/guides/extensions/#the-rigrb-files">Extensions</a>), re-reads the settings, credentials and trust, and swaps a freshly built registrar in atomically. History, the tally, the <code>/model</code> override and the session id survive the swap; the tools, commands, prompt sections and handlers are whatever the files say now.</p>
+<p>A reload rebuilds the registrar from the extension files re-executed as they are on disk: <code>/reload</code>, the runtime command the Loader installs, scrubs the tracked files from Ruby’s <code>$LOADED_FEATURES</code>, loads both <code>rig.rb</code> files again (<a href="/guides/extensions/#the-rigrb-files">Extensions</a>), re-reads the settings, credentials and trust, and swaps a freshly built registrar in atomically. History, the tally, the <code>/model</code> and <code>/reasoning</code> overrides and the session id survive the swap; the tools, commands, prompt sections and handlers are whatever the files say now.</p>
 
 <h2 id="what-reloads">What reloads</h2>
 

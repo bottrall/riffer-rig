@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.13.0</span>
+            <span class="version">v0.14.0</span>
           </div>
         </nav>
       </div>
@@ -190,6 +190,10 @@
       <td>one per <code>/model</code> switch, holding the new <code>model</code> string</td>
     </tr>
     <tr>
+      <td><code>Stores::ReasoningEntry</code></td>
+      <td>one per <code>/reasoning</code> switch, holding the new <code>reasoning</code> level</td>
+    </tr>
+    <tr>
       <td><code>Stores::SkillEntry</code></td>
       <td>one per skill the model activated, holding the skill name; a <code>/skill:&lt;name&gt;</code> run is not one</td>
     </tr>
@@ -296,7 +300,7 @@
 
 <p>On the command line, <code>riffer -c</code> continues the most recent session in the directory and <code>riffer -r &lt;id&gt;</code> resumes by id. With no match the REPL tells you and starts fresh. Bare <code>riffer -r</code> opens the <a href="#the-picker">picker</a> before the first session starts; picking a session resumes it, leaving the picker starts a fresh one.</p>
 
-<p>Resuming folds the session’s entries back into a snapshot and builds a Runtime over it: the last <code>model</code> entry wins, skill activations accumulate, and the <code>message</code> entries are the history. Everything else is today’s — the settings, credentials, extensions and tools of the new build, and its model selection, unless the session recorded a <code>/model</code> switch, which is restored over <code>RIFFER_MODEL</code> and the settings when its provider still has credentials (<a href="#restoring">Restoring</a> has the rules, including the healed tail of a file cut mid-turn). A model chosen for the run — <code>--model</code>, or <code>model:</code> in the <a href="/guides/embedding/#loader-options"><code>Loader::Options</code></a> — wins over the switch for that run only: it is not recorded, so a later resume without it restores the switch again. A resumed session keeps its id and appends to the same file, and the terminal replays its earlier turns above the input (<a href="/guides/terminal/#resuming">Terminal</a>).</p>
+<p>Resuming folds the session’s entries back into a snapshot and builds a Runtime over it: the last <code>model</code> entry wins, the last <code>reasoning</code> entry wins, skill activations accumulate, and the <code>message</code> entries are the history. Everything else is today’s — the settings, credentials, extensions and tools of the new build, and its model selection, unless the session recorded a <code>/model</code> switch, which is restored over <code>RIFFER_MODEL</code> and the settings when its provider still has credentials (<a href="#restoring">Restoring</a> has the rules, including the healed tail of a file cut mid-turn); a recorded <code>/reasoning</code> switch is restored the same way, over <code>RIFFER_REASONING</code> and the settings, and a recorded level riffer does not accept silently leaves the model’s default. A model or reasoning level chosen for the run — <code>--model</code> or <code>--reasoning</code>, or <code>model:</code> or <code>reasoning:</code> in the <a href="/guides/embedding/#loader-options"><code>Loader::Options</code></a> — wins over the recorded switch for that run only: it is not recorded, so a later resume without it restores the switch again. A resumed session keeps its id and appends to the same file, and the terminal replays its earlier turns above the input (<a href="/guides/terminal/#resuming">Terminal</a>).</p>
 
 <p>On the command line and in the REPL, a session resumes in the directory it was saved in — its header’s <code>cwd</code> — wherever you resume it from: <code>riffer -r &lt;id&gt;</code> from another directory, or a pick in <code>/resume --all</code>, builds it there, so its tools, project settings, skills and <code>rig.rb</code> are that directory’s and the banner shows it. When that directory no longer exists, the session is not resumed: the REPL says <code>Session &lt;id&gt; was saved in &lt;dir&gt;, which no longer exists.</code> and starts fresh — or, after <code>/resume</code>, keeps the session you are in — and headless exits 2 with it.</p>
 
@@ -339,6 +343,10 @@
     <tr>
       <td><code>:model</code></td>
       <td>the model the session switched to with <code>model=</code> or <code>/model</code>, or <code>nil</code> when it kept the model it was built with</td>
+    </tr>
+    <tr>
+      <td><code>:reasoning</code></td>
+      <td>the reasoning level in effect — a <code>reasoning=</code> or <code>/reasoning</code> switch, or the level the Runtime was built with; <code>nil</code> when it has none</td>
     </tr>
     <tr>
       <td><code>:skills</code></td>

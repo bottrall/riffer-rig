@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.13.0</span>
+            <span class="version">v0.14.0</span>
           </div>
         </nav>
       </div>
@@ -177,11 +177,11 @@
 
 <h2 id="output">Output</h2>
 
-<p>By default only the assistant’s text is printed, streamed to stdout. Everything else goes to stderr: errors, configuration refusals, and the <a href="/guides/hosts/">notify</a> lines extensions and the Runtime emit. Reasoning is not printed. <code>--verbose</code> adds a one-line trace of each tool call to stderr.</p>
+<p>By default only the assistant’s text is printed, streamed to stdout. Everything else goes to stderr: errors, configuration refusals, and the <a href="/guides/hosts/">notify</a> lines extensions and the Runtime emit. When the session starts, headless prints <code>session &lt;id&gt;</code> on stderr — the id <code>riffer -p -r &lt;id&gt; "follow-up"</code> <a href="/guides/sessions/#resuming">resumes</a> — so a caller that spawned headless can find the session without reading the <a href="/guides/sessions/">sessions directory</a>. In <code>--json</code> mode that line is dropped: the id rides on the <code>session_start</code> record of the <a href="#the-ndjson-stream---json">NDJSON stream</a> instead. Reasoning is not printed. <code>--verbose</code> adds a one-line trace of each tool call to stderr.</p>
 
 <h2 id="flags">Flags</h2>
 
-<p>The REPL’s flags all work here: <code>--model provider/name</code>, <code>--no-extensions</code>, <code>--no-skills</code>, <code>--no-agents-md</code>, <code>--tools a,b,c</code>, <code>--max-steps N</code>, <code>--no-save</code>, <code>-c</code>/<code>--continue</code> and <code>-r ID</code>/<code>--resume ID</code>, plus <code>--verbose</code> and <code>--job-idle-timeout SECONDS</code>. The same <a href="/guides/providers/overview/#resolution-order">resolution order</a> applies to the model: <code>--model</code>, then <code>RIFFER_MODEL</code>, then settings.</p>
+<p>The REPL’s flags all work here: <code>--model provider/name</code>, <code>--reasoning off|low|medium|high|xhigh|max</code>, <code>--no-extensions</code>, <code>--no-skills</code>, <code>--no-agents-md</code>, <code>--tools a,b,c</code>, <code>--max-steps N</code>, <code>--no-save</code>, <code>-c</code>/<code>--continue</code> and <code>-r ID</code>/<code>--resume ID</code>, plus <code>--verbose</code> and <code>--job-idle-timeout SECONDS</code>. The same <a href="/guides/providers/overview/#resolution-order">resolution order</a> applies to the model: <code>--model</code>, then <code>RIFFER_MODEL</code>, then settings — and to the reasoning level: <code>--reasoning</code>, then <code>RIFFER_REASONING</code>, then settings.</p>
 
 <p><code>-c</code> and <code>-r</code> are the multi-turn headless story: <code>riffer -p -c "now run the tests"</code> continues the most recent session in this directory, appending to the same <a href="/guides/sessions/#resuming">session file</a>. Unlike the REPL, a missing session is not a fresh start — headless prints <code>No saved session …</code> on stderr and exits 2 (<code>Sessions are off for this run (--no-save).</code> under <a href="/guides/sessions/#opting-out"><code>--no-save</code></a>, and <code>Session … was saved in …, which no longer exists.</code> when the <a href="/guides/sessions/#resuming">directory the session runs in</a> is gone).</p>
 

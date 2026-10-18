@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.13.0</span>
+            <span class="version">v0.14.0</span>
           </div>
         </nav>
       </div>
@@ -397,7 +397,7 @@
 
 <p><code>install</code>, <code>store</code> and <code>remove</code> take <code>auth_path:</code> and <code>settings_path:</code> to point at other files, and <code>status</code> takes <code>auth_path:</code>. <code>install</code> and <code>status</code> take <code>env:</code>, a <code>Riffer::Rig::Env</code>; <code>install</code>, <code>store</code> and <code>status</code> take <code>setup:</code> in place of the <code>Riffer::Rig::ProviderSetup.for(identifier)</code> lookup; <code>install</code> and <code>apply</code> take <code>config:</code> in place of <code>Riffer.config</code>, and <code>install</code> with <code>config: nil</code> assigns nothing. <code>install</code> also takes <code>known:</code>, the values the caller already holds for the provider: a required field named there is not reported as <code>missing</code>.</p>
 
-<p>A <code>Riffer::Rig::Env</code> is a frozen snapshot of the process environment, and <code>riffer-rig</code> reads the process environment nowhere else. <code>Riffer::Rig::Env.new</code> snapshots the real one; <code>Riffer::Rig::Env.new('ANTHROPIC_API_KEY' =&gt; '…')</code> builds one from a hash, for an embedder or a test. <code>env.model</code> is <code>RIFFER_MODEL</code>. <code>Riffer::Rig::Env.load</code> snapshots the same way but checks it: when <code>RIFFER_MODEL</code> is not a <code>provider/name</code> string it returns a <code>Riffer::Rig::Env::Invalid</code>, whose <code>message</code> names the variable and lists the providers, instead of an <code>Env</code>. <code>Loader.runtime</code> uses <code>Env.load</code> by default and raises its message as a <code>Riffer::Rig::Loader::ConfigurationError</code>.</p>
+<p>A <code>Riffer::Rig::Env</code> is a frozen snapshot of the process environment, and <code>riffer-rig</code> reads the process environment nowhere else. <code>Riffer::Rig::Env.new</code> snapshots the real one; <code>Riffer::Rig::Env.new('ANTHROPIC_API_KEY' =&gt; '…')</code> builds one from a hash, for an embedder or a test. <code>env.model</code> is <code>RIFFER_MODEL</code> and <code>env.reasoning</code> is <code>RIFFER_REASONING</code>. <code>Riffer::Rig::Env.load</code> snapshots the same way but checks it: when <code>RIFFER_MODEL</code> is not a <code>provider/name</code> string it returns a <code>Riffer::Rig::Env::Invalid</code>, whose <code>message</code> names the variable and lists the providers, instead of an <code>Env</code>. <code>Loader.runtime</code> uses <code>Env.load</code> by default and raises its message as a <code>Riffer::Rig::Loader::ConfigurationError</code>. A <code>RIFFER_REASONING</code> is checked against the levels riffer accepts instead, by the Loader (<a href="/guides/configuration/#reasoning">Configuration</a>).</p>
 
 <h2 id="rifferrigprovidersetup">Riffer::Rig::ProviderSetup</h2>
 

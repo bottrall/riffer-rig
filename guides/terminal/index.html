@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.13.0</span>
+            <span class="version">v0.14.0</span>
           </div>
         </nav>
       </div>
@@ -154,13 +154,13 @@
             </ul>
           </nav>
           
-<p><code>riffer</code> with no <code>-p</code> opens the interactive terminal. It keeps two rows at the bottom of the screen — the input line, and a status line under it — and prints everything else above them, a blank row clear of the input line: the banner, each message as it starts, each turn’s answer and stat line, and command output. When there is no terminal to draw on, it reads plain lines instead (<a href="#without-a-terminal">Without a terminal</a>).</p>
+<p><code>riffer</code> with no <code>-p</code> opens the interactive terminal. It keeps the input at the bottom of the screen — as many rows as it wraps to, a blank row under them, and the status line under that — and prints everything else above, a blank row clear of the input: the banner, each message as it starts, each turn’s answer and stat line, and command output. While the session is still starting, the rows are replaced by a single dim line that animates while it waits — a braille spinner rolling through riff-themed quips like <code>⠹ warming the amp…</code>; the input line and the banner take their place together, once the banner’s content is known. When there is no terminal to draw on, it reads plain lines instead (<a href="#without-a-terminal">Without a terminal</a>).</p>
 
 <p>Colour is on when the output is a terminal; set <code>NO_COLOR</code> to turn it off.</p>
 
 <h2 id="the-input-line">The input line</h2>
 
-<p>The input line, marked <code>›</code>, is always there, including while a turn runs. Enter sends the line; a line that is empty or only spaces is not sent.</p>
+<p>The input line, marked <code>›</code>, is always there, including while a turn runs. It can be more than one row: text wraps at the edge of the screen and each row that follows lines up under the prompt, spaces show as you typed them, and Ctrl-J or Alt-Enter starts a new row at the cursor. An input that wraps past the screen shows a window of at most eight rows, scrolled to keep the cursor’s row in view. Enter sends the input; an input that is empty or only spaces is not sent.</p>
 
 <table>
   <thead>
@@ -172,7 +172,15 @@
   <tbody>
     <tr>
       <td>Enter</td>
-      <td>sends the line (<a href="#queueing-messages">Queueing</a>)</td>
+      <td>sends the input (<a href="#queueing-messages">Queueing</a>)</td>
+    </tr>
+    <tr>
+      <td>Ctrl-J, Alt-Enter (Option-Enter)</td>
+      <td>starts a new row at the cursor instead of sending</td>
+    </tr>
+    <tr>
+      <td>Shift-Enter</td>
+      <td>starts a new row at the cursor instead of sending, on terminals that report it</td>
     </tr>
     <tr>
       <td>Left, Right</td>
@@ -184,7 +192,7 @@
     </tr>
     <tr>
       <td>Home, End</td>
-      <td>moves to the start or the end of the line</td>
+      <td>moves to the start or the end of the input</td>
     </tr>
     <tr>
       <td>Backspace, Delete</td>
@@ -208,7 +216,7 @@
     </tr>
     <tr>
       <td>Up, Down</td>
-      <td>steps through the lines sent since <code>riffer</code> started; Down past the newest brings back the line you were typing</td>
+      <td>steps through the inputs sent since <code>riffer</code> started; Down past the newest brings back the input you were typing</td>
     </tr>
     <tr>
       <td>Ctrl-T</td>
@@ -224,6 +232,8 @@
     </tr>
   </tbody>
 </table>
+
+<p>Shift-Enter is reported only by terminals that implement the Kitty keyboard protocol: <code>riffer</code> enables its disambiguate escape codes when the session starts and pops them when it ends, and a terminal without the protocol ignores both and sends Shift-Enter as plain Enter, which sends the input.</p>
 
 <p>While the <a href="#the-command-palette">command palette</a> is open, Up and Down move through it instead of the history, and Enter, Tab, Escape and Right at the end of the line act on it. Every other key does nothing.</p>
 
@@ -262,33 +272,34 @@
 
 <h3 id="pasting">Pasting</h3>
 
-<p>A paste arrives as text, not as keystrokes: a line break in it does not send the line, and shows as <code>␊</code> (a tab as <code>␉</code>). A paste of 1,000 characters or more shows as <code>[pasted 1.2k chars]</code>, and Backspace, Delete and the arrows treat it as a single character; the whole text is sent. Once sent, it is printed above with its line breaks and indentation kept, a tab as four spaces. Bytes that are not valid UTF-8 are dropped.</p>
+<p>A paste arrives as text, not as keystrokes: a line break in it does not send the input, and shows as a line break, as if typed (a tab as <code>␉</code>). A paste of 1,000 characters or more shows as <code>[pasted 1.2k chars]</code>, and Backspace, Delete and the arrows treat it as a single character; the whole text is sent. Once sent, it is printed above with its line breaks and indentation kept, a tab as four spaces. Bytes that are not valid UTF-8 are dropped.</p>
 
 <h2 id="queueing-messages">Queueing messages</h2>
 
-<p>Enter takes the line even while a turn runs. A message sent then waits its turn, and the input line shows how many are waiting, as <code>· 2 queued</code> after what you are typing. Queued messages run one at a time, in the order you sent them, each as a turn of its own once the one before has ended; each is printed above as <code>› message</code> when it starts. Slash commands queue the same way, and <code>/exit</code> or <code>/quit</code> ends the session when it reaches the front, dropping anything queued behind it.</p>
+<p>Enter takes the line even while a turn runs. A message sent then waits its turn, and the input line shows how many are waiting, as <code>· 2 queued</code> at the right edge of the line, so a message queued while you type moves nothing you have already written. Queued messages run one at a time, in the order you sent them, each as a turn of its own once the one before has ended; each is printed above as <code>› message</code> when it starts. Slash commands queue the same way, and <code>/exit</code> or <code>/quit</code> ends the session when it reaches the front, dropping anything queued behind it.</p>
 
 <h2 id="the-status-line">The status line</h2>
 
-<p>While a turn runs, the row under the input line shows its progress, redrawn about eight times a second. From the left:</p>
+<p>The row under the input line is a row of fixed slots — the same columns at the same character positions while a turn runs and between turns, so starting or ending a turn moves nothing on screen. From the left:</p>
 
 <ul>
-  <li>an animated equalizer;</li>
-  <li>the time since the turn started, as <code>mm:ss</code>;</li>
-  <li><code>step N</code>, the model calls so far;</li>
-  <li><code>N tools</code>, the tool calls the model has made;</li>
-  <li>the tokens, as <code>↑in ↓out tok</code> (<code>k</code> and <code>M</code> for thousands and millions);</li>
-  <li>the cost so far, as <code>$0.012</code>, when the model is <a href="/guides/configuration/#models">priced</a>;</li>
-  <li>a label: <code>riffing…</code>, a rotating phrase while the model is reasoning, or <code>✦ skill: &lt;name&gt;</code> for a moment after a skill activates.</li>
+  <li>a glyph: a dim <code>·</code> between turns, a spinner while a turn runs;</li>
+  <li>the state, as <code>idle</code> between turns and <code>turn N</code> — N the model’s requests so far — while a turn runs;</li>
+  <li>the clock: the time of day, as <code>14:32</code>, between turns, and the time since the turn started, as <code>mm:ss</code>, while one runs;</li>
+  <li>the tokens, as <code>↑in ↓out tok</code> (<code>k</code> and <code>M</code> for thousands and millions): the session’s total between turns, the request’s running count while a turn runs;</li>
+  <li>the cost, as <code>~$1.4000</code>: the session’s total between turns, the turn’s running cost while it runs; <code>~$0.0000</code> until the model is <a href="/guides/configuration/#catalog_files">priced</a>;</li>
+  <li>the background jobs, as <code>2 jobs</code>, always shown, even as <code>0 jobs</code>.</li>
 </ul>
 
-<p>The output tokens and the cost count text still streaming, at an estimated four characters per token, until the provider reports the request’s usage; the input tokens appear once it has. On a narrow terminal the line drops whole figures from the right rather than show one cut short. The line clears when the turn ends.</p>
+<p>Every figure sits inside its slot’s fixed width, so <code>18.2k</code> and <code>132k</code> occupy the same box. While a turn runs the row is redrawn about eight times a second, the spinner and the cost in cyan and the jobs count in magenta; the output tokens and the cost count text still streaming, at an estimated four characters per token, until the provider reports the request’s usage, which the input tokens show in place of an opening <code>↑0</code>. Between turns the whole row is dim, and the clock keeps current while the terminal waits.</p>
 
-<p>While a question waits for your answer — a credential prompt from <code>/auth</code>, say, or <a href="/guides/sessions/#the-picker">the picker</a> — the status line shows <code>answer above · Ctrl-C cancels</code> in place of the turn’s figures, which come back once the question closes.</p>
+<p>On a narrow terminal the slots leave whole from the left — the clock first, then the cost, then the tokens, then the state — so the jobs count at the right edge survives longest.</p>
+
+<p>While a question waits for your answer — a credential prompt from <code>/auth</code>, say, or <a href="/guides/sessions/#the-picker">the picker</a> — the status line shows <code>answer above · Ctrl-C cancels</code> in place of the row, which comes back untouched once the question closes.</p>
 
 <h3 id="background-jobs">Background jobs</h3>
 
-<p>While background <code>bash</code> jobs are running (<a href="/guides/tools/#background-jobs">Tools</a>), the status line ends with their count — <code>1 job running</code>, <code>2 jobs running</code> — between turns as well as during them. When the line is too narrow for both, the turn’s figures are cut to keep the count whole.</p>
+<p>The last slot of the status line always counts background <code>bash</code> jobs (<a href="/guides/tools/#background-jobs">Tools</a>) — <code>2 jobs</code> between turns as well as during them, <code>0 jobs</code> when none runs. On a narrow terminal it is the last slot to leave.</p>
 
 <p>When a job exits while the terminal waits for input, it starts a turn by itself: <code>1 background job exited</code> is printed above the input line (<code>2 background jobs exited</code> for exits that arrive together, which share one turn), and the model receives the exit and acts on it. The turn runs like one you sent — the status line, Ctrl-C and the turn report work the same — and anything you were typing stays on the input line. Messages you have queued run first, and the first prompt among them carries the exit to the model instead. A job that exits during a turn is reported in that turn instead (<a href="/guides/tools/#background-jobs">Tools</a>), and one that exits while a question or <a href="/guides/sessions/#the-picker">the picker</a> is open waits until you answer it. After <code>/new</code> or <code>/resume</code>, exits from the session you left start nothing.</p>
 
@@ -303,7 +314,7 @@
 <pre><code class="language-text">3 steps · 00:12 · ↑5200 · ↓340 · cache_read:4096 · ~$0.0215 · session 18400 tok · ~$0.0731
 </code></pre>
 
-<p>That is the turn’s model calls, its time, its input and output tokens, each cache count above zero, and its cost, then the session’s total tokens and cost; the costs appear once the model is <a href="/guides/configuration/#models">priced</a>. A cancelled turn prints the answer it had reached and <code>interrupted</code> in place of the stat line. Command output, such as <code>/cost</code>’s, is printed as it arrives.</p>
+<p>That is the turn’s model calls, its time, its input and output tokens, each cache count above zero, and its cost, then the session’s total tokens and cost; the costs appear once the model is <a href="/guides/configuration/#catalog_files">priced</a>. A cancelled turn prints the answer it had reached and <code>interrupted</code> in place of the stat line. Command output, such as <code>/cost</code>’s, is printed as it arrives.</p>
 
 <h2 id="interrupting-and-exiting">Interrupting and exiting</h2>
 
@@ -345,6 +356,10 @@
     <tr>
       <td><code>/model [provider/name] [--save]</code></td>
       <td>shows or switches the model (<a href="/guides/configuration/#model">Configuration</a>)</td>
+    </tr>
+    <tr>
+      <td><code>/reasoning [level] [--save]</code></td>
+      <td>shows or switches the reasoning level (<a href="/guides/configuration/#reasoning">Configuration</a>)</td>
     </tr>
     <tr>
       <td><code>/auth</code></td>
