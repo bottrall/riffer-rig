@@ -88,7 +88,7 @@ describe Riffer::Rig::Terminal::TickerDisplay do
     it 'draws the ticker on the status line' do
       display.start(@runtime)
 
-      assert_equal ['', '›', '', '  ⠋         00:00 ↑0     ↓0 tok     ~$0.0000 0 jobs'], rows
+      assert_equal ['', '›', '', '  ⠋         default 00:00 ↑0     ↓0 tok     ~$0.0000 0 jobs'], rows
     end
   end
 

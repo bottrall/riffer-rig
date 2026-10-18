@@ -4,14 +4,15 @@ require 'test_helper'
 require 'stringio'
 
 class OpenedRuntime
-  attr_reader :id, :commands, :model, :cwd, :tally
+  attr_reader :id, :commands, :model, :cwd, :tally, :reasoning
 
-  def initialize(commands: [])
+  def initialize(commands: [], reasoning: nil)
     @id = 'opened'
     @commands = commands.map { |name| Riffer::Rig::Command.new(name, description: name, extension: :test) { nil } }
     @model = 'mock/test'
     @cwd = '/work/proj'
     @tally = nil
+    @reasoning = reasoning
   end
 end
 
@@ -94,8 +95,27 @@ describe Riffer::Rig::Terminal::Opening do
       assert_match(/skills\s+none$/, banner(OpenedRuntime.new(commands: %w[model])))
     end
 
+    it 'shows default in the banner without a reasoning level' do
+      assert_match(/reasoning default$/, banner(OpenedRuntime.new))
+    end
+
+    it 'shows the reasoning level of the Runtime' do
+      assert_match(/reasoning high$/, banner(OpenedRuntime.new(reasoning: 'high')))
+    end
+
     it 'prints the banner of the Runtime' do
       assert_match(%r{model\s+mock/test$}, banner(OpenedRuntime.new))
+    end
+
+    it 'puts the reasoning row right after the model row' do
+      lines = banner(OpenedRuntime.new(reasoning: 'high')).lines(chomp: true)
+
+      assert_equal(
+        lines.index { |line| line.include?('model ') } + 1,
+        lines.index do |line|
+          line.include?('reasoning')
+        end
+      )
     end
 
     it 'fits the banner to the measured width' do

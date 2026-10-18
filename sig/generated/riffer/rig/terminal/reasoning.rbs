@@ -1,0 +1,5 @@
+# Generated from lib/riffer/rig/terminal/reasoning.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Reasoning
+  DEFAULT: String
+end

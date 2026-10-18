@@ -57,6 +57,7 @@ The row under the input line is a row of fixed slots — the same columns at the
 
 - a glyph: a dim `·` between turns, a spinner while a turn runs;
 - the state, as `idle` between turns and `step N` — N the model's requests so far — while a turn runs;
+- the reasoning level, as `default` when no level is in effect, and the level itself otherwise;
 - the clock: the time of day, as `14:32`, between turns, and the time since the turn started, as `mm:ss`, while one runs;
 - the tokens, as `↑in ↓out tok` (`k` and `M` for thousands and millions): the session's total between turns, the request's running count while a turn runs;
 - the cost, as `~$1.4000`: the session's total between turns, the turn's running cost while it runs; `~$0.0000` until the model is [priced](CONFIGURATION.md#catalog_files);
@@ -64,7 +65,7 @@ The row under the input line is a row of fixed slots — the same columns at the
 
 Every figure sits inside its slot's fixed width, so `18.2k` and `132k` occupy the same box. While a turn runs the row is redrawn about eight times a second, the spinner and the cost in cyan and the jobs count in magenta; the output tokens and the cost count text still streaming, at an estimated four characters per token, until the provider reports the request's usage, which the input tokens show in place of an opening `↑0`. Between turns the whole row is dim, and the clock keeps current while the terminal waits.
 
-On a narrow terminal the slots leave whole from the left — the clock first, then the cost, then the tokens, then the state — so the jobs count at the right edge survives longest.
+On a narrow terminal the slots leave whole from the left — the reasoning level first, then the clock, then the cost, then the tokens, then the state — so the jobs count at the right edge survives longest.
 
 While a question waits for your answer — a credential prompt from `/auth`, say, or [the picker](SESSIONS.md#the-picker) — the status line shows `answer above · Ctrl-C cancels` in place of the row, which comes back untouched once the question closes.
 

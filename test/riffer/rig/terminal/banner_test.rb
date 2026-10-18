@@ -8,7 +8,14 @@ describe Riffer::Rig::Terminal::Banner do
   end
 
   it 'emits no ansi escapes when theme disabled' do
-    banner = Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: 'none', version: '1')
+    banner = Riffer::Rig::Terminal::Banner.call(
+      @theme,
+      model: 'm',
+      reasoning: 'default',
+      cwd: 'c',
+      skills: 'none',
+      version: '1'
+    )
 
     refute_includes banner, "\e["
   end
@@ -17,6 +24,7 @@ describe Riffer::Rig::Terminal::Banner do
     banner = Riffer::Rig::Terminal::Banner.call(
       @theme,
       model: 'anthropic/claude-x',
+      reasoning: 'default',
       cwd: '/tmp/proj',
       skills: '2',
       version: '9.9.9'
@@ -29,6 +37,7 @@ describe Riffer::Rig::Terminal::Banner do
     banner = Riffer::Rig::Terminal::Banner.call(
       @theme,
       model: 'anthropic/claude-x',
+      reasoning: 'default',
       cwd: '/tmp/proj',
       skills: 'none',
       version: '9.9.9'
@@ -37,15 +46,70 @@ describe Riffer::Rig::Terminal::Banner do
     assert_includes banner, 'anthropic/claude-x'
   end
 
+  it 'shows the reasoning level in a row of its own' do
+    banner = Riffer::Rig::Terminal::Banner.call(
+      @theme,
+      model: 'm',
+      reasoning: 'high',
+      cwd: 'c',
+      skills: 'none',
+      version: '1'
+    )
+
+    assert_match(/reasoning high$/, banner)
+  end
+
+  it 'shows default when no reasoning level is in effect' do
+    banner = Riffer::Rig::Terminal::Banner.call(
+      @theme,
+      model: 'm',
+      reasoning: nil,
+      cwd: 'c',
+      skills: 'none',
+      version: '1'
+    )
+
+    assert_match(/reasoning default$/, banner)
+  end
+
+  it 'puts the reasoning row right after the model row' do
+    banner = Riffer::Rig::Terminal::Banner.call(
+      @theme,
+      model: 'm',
+      reasoning: 'high',
+      cwd: 'c',
+      skills: 'none',
+      version: '1'
+    )
+    lines = banner.lines(chomp: true)
+
+    assert_equal(lines.index { |line| line.include?('model ') } + 1, lines.index { |line| line.include?('reasoning') })
+  end
+
   it 'includes the skills count' do
-    banner = Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: '3', version: '1')
+    banner = Riffer::Rig::Terminal::Banner.call(
+      @theme,
+      model: 'm',
+      reasoning: 'default',
+      cwd: 'c',
+      skills: '3',
+      version: '1'
+    )
 
     assert_includes banner, '3'
   end
 
   describe 'the logo' do
     def banner(width)
-      Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: 'none', version: '1', width: width)
+      Riffer::Rig::Terminal::Banner.call(
+        @theme,
+        model: 'm',
+        reasoning: 'default',
+        cwd: 'c',
+        skills: 'none',
+        version: '1',
+        width: width
+      )
     end
 
     it 'is drawn when the width is unknown' do
@@ -67,7 +131,15 @@ describe Riffer::Rig::Terminal::Banner do
 
   describe 'a value too long for its row' do
     def banner(model: 'm', cwd: 'c', width: 30)
-      Riffer::Rig::Terminal::Banner.call(@theme, model: model, cwd: cwd, skills: 'none', version: '1', width: width)
+      Riffer::Rig::Terminal::Banner.call(
+        @theme,
+        model: model,
+        reasoning: 'default',
+        cwd: cwd,
+        skills: 'none',
+        version: '1',
+        width: width
+      )
     end
 
     it 'keeps a long value whole when the width is unknown' do
@@ -75,15 +147,15 @@ describe Riffer::Rig::Terminal::Banner do
     end
 
     it 'keeps a model that fits whole' do
-      assert_match(%r{model\s+anthropic/claude-x$}, banner(model: 'anthropic/claude-x'))
+      assert_match(%r{model\s+anthropic/claude-x$}, banner(model: 'anthropic/claude-x', width: 32))
     end
 
     it 'cuts a long model from the left' do
-      assert_match(/model\s+…claude-sonnet-4-5$/, banner(model: 'anthropic/claude-sonnet-4-5'))
+      assert_match(/model\s+…aude-sonnet-4-5$/, banner(model: 'anthropic/claude-sonnet-4-5'))
     end
 
     it 'cuts a long working directory from the left' do
-      assert_match(%r{cwd\s+…/repos/riffer-rig$}, banner(cwd: '/home/someone/repos/riffer-rig'))
+      assert_match(%r{cwd\s+…epos/riffer-rig$}, banner(cwd: '/home/someone/repos/riffer-rig'))
     end
 
     it 'fits the cut row to the width' do
@@ -95,7 +167,15 @@ describe Riffer::Rig::Terminal::Banner do
 
   describe 'the session row' do
     def banner(tally)
-      Riffer::Rig::Terminal::Banner.call(@theme, model: 'm', cwd: 'c', skills: 'none', version: '1', tally: tally)
+      Riffer::Rig::Terminal::Banner.call(
+        @theme,
+        model: 'm',
+        reasoning: 'default',
+        cwd: 'c',
+        skills: 'none',
+        version: '1',
+        tally: tally
+      )
     end
 
     it 'shows the tally in a session row' do

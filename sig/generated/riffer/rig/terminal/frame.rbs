@@ -67,6 +67,8 @@ class Riffer::Rig::Terminal::Frame
 
   @tally: (^() -> Riffer::Providers::TokenUsage?)?
 
+  @reasoning: (^() -> String?)?
+
   @now: ^() -> Time
 
   @mutex: Mutex
@@ -127,8 +129,9 @@ class Riffer::Rig::Terminal::Frame
   def jobs: (Integer count) -> void
 
   # @rbs tally: ^() -> Riffer::Providers::TokenUsage?
+  # @rbs reasoning: ^() -> String?
   # @rbs return: void
-  def session: (tally: ^() -> Riffer::Providers::TokenUsage?) -> void
+  def session: (tally: ^() -> Riffer::Providers::TokenUsage?, reasoning: ^() -> String?) -> void
 
   # @rbs return: void
   def idle_tick: () -> void
@@ -138,6 +141,9 @@ class Riffer::Rig::Terminal::Frame
 
   # @rbs return: Integer
   def job_count: () -> Integer
+
+  # @rbs return: String?
+  def reasoning: () -> String?
 
   # @rbs content: String
   # @rbs return: void

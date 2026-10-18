@@ -11,6 +11,8 @@ module Riffer::Rig::Terminal::StatusBar
 
   STATE_WIDTH = 7 #: Integer
 
+  REASONING_WIDTH = 7 #: Integer
+
   CLOCK_WIDTH = 5 #: Integer
 
   TOKEN_WIDTH = 6 #: Integer
@@ -25,19 +27,22 @@ module Riffer::Rig::Terminal::StatusBar
 
   SEPARATOR = ' ' #: String
 
-  SLOTS = %i[glyph state clock up down cost jobs].freeze #: Array[Symbol]
+  SLOTS = %i[glyph state reasoning clock up down cost jobs].freeze #: Array[Symbol]
 
   # A narrow terminal sheds whole slots from the left in this order — the
-  # clock first, then the cost, then the tokens, then the state — so the jobs
-  # count at the right edge survives longest.
+  # reasoning level first, since it is static and recoverable via /reasoning,
+  # then the clock, then the cost, then the tokens, then the state — so the
+  # dynamic slots and the jobs count at the right edge survive longest.
   KEEP_SETS = [
     SLOTS,
-    SLOTS - %i[clock],
-    SLOTS - %i[clock cost],
-    SLOTS - %i[clock cost up down],
+    SLOTS - %i[reasoning],
+    SLOTS - %i[reasoning clock],
+    SLOTS - %i[reasoning clock cost],
+    SLOTS - %i[reasoning clock cost up down],
     %i[glyph jobs]
   ].freeze #: Array[Array[Symbol]]
 
+  # @rbs reasoning: String?
   # @rbs clock: String
   # @rbs up_tokens: Integer
   # @rbs down_tokens: Integer
@@ -46,13 +51,14 @@ module Riffer::Rig::Terminal::StatusBar
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs room: Integer
   # @rbs return: String
-  def idle(clock:, up_tokens:, down_tokens:, cost:, jobs:, theme:, room:)
-    slots = segments(IDLE_GLYPH, IDLE_STATE, clock, up_tokens, down_tokens, cost, jobs)
+  def idle(reasoning:, clock:, up_tokens:, down_tokens:, cost:, jobs:, theme:, room:)
+    slots = segments(IDLE_GLYPH, IDLE_STATE, reasoning, clock, up_tokens, down_tokens, cost, jobs)
     theme.dim(kept(slots, room).values.join(SEPARATOR))
   end
 
   # @rbs glyph: String
   # @rbs state: String
+  # @rbs reasoning: String?
   # @rbs clock: String
   # @rbs up_tokens: Integer
   # @rbs down_tokens: Integer
@@ -61,8 +67,8 @@ module Riffer::Rig::Terminal::StatusBar
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs room: Integer
   # @rbs return: String
-  def working(glyph:, state:, clock:, up_tokens:, down_tokens:, cost:, jobs:, theme:, room:)
-    slots = segments(glyph, state, clock, up_tokens, down_tokens, cost, jobs)
+  def working(glyph:, state:, reasoning:, clock:, up_tokens:, down_tokens:, cost:, jobs:, theme:, room:)
+    slots = segments(glyph, state, reasoning, clock, up_tokens, down_tokens, cost, jobs)
     kept(slots, room).map { |key, text| color(text, key, theme) }.join(SEPARATOR)
   end
 
@@ -70,16 +76,18 @@ module Riffer::Rig::Terminal::StatusBar
 
   # @rbs glyph: String
   # @rbs state: String
+  # @rbs reasoning: String?
   # @rbs clock: String
   # @rbs up_tokens: Integer
   # @rbs down_tokens: Integer
   # @rbs cost: Float
   # @rbs jobs: Integer
   # @rbs return: Hash[Symbol, String]
-  def segments(glyph, state, clock, up_tokens, down_tokens, cost, jobs)
+  def segments(glyph, state, reasoning, clock, up_tokens, down_tokens, cost, jobs)
     {
       glyph: field(glyph, GLYPH_WIDTH),
       state: field(state, STATE_WIDTH),
+      reasoning: field(reasoning || Riffer::Rig::Terminal::Reasoning::DEFAULT, REASONING_WIDTH),
       clock: field(clock, CLOCK_WIDTH),
       up: field("↑#{Riffer::Rig::Terminal::Count.call(up_tokens)}", TOKEN_WIDTH),
       down: field("↓#{Riffer::Rig::Terminal::Count.call(down_tokens)} tok", DOWN_WIDTH),

@@ -3,8 +3,9 @@
 require 'test_helper'
 
 describe Riffer::Rig::Terminal::StatusBar do
-  def idle(room: 120, color: false, jobs: 1)
+  def idle(room: 120, color: false, jobs: 1, reasoning: 'high')
     Riffer::Rig::Terminal::StatusBar.idle(
+      reasoning: reasoning,
       clock: '14:32',
       up_tokens: 132_000,
       down_tokens: 218_000,
@@ -15,10 +16,11 @@ describe Riffer::Rig::Terminal::StatusBar do
     )
   end
 
-  def working(room: 120, color: false)
+  def working(room: 120, color: false, reasoning: 'high')
     Riffer::Rig::Terminal::StatusBar.working(
       glyph: '⠸',
       state: 'step 7',
+      reasoning: reasoning,
       clock: '00:41',
       up_tokens: 18_240,
       down_tokens: 3_100,
@@ -31,14 +33,22 @@ describe Riffer::Rig::Terminal::StatusBar do
 
   describe '#idle' do
     it 'pads every slot to its fixed width' do
-      assert_equal '· idle    14:32 ↑132k  ↓218k tok  ~$1.4000 1 job ', idle
+      assert_equal '· idle    high    14:32 ↑132k  ↓218k tok  ~$1.4000 1 job ', idle
+    end
+
+    it 'shows default when no level is in effect' do
+      assert_equal '· idle    default 14:32 ↑132k  ↓218k tok  ~$1.4000 1 job ', idle(reasoning: nil)
     end
 
     it 'cuts a value that overflows its slot' do
-      assert_equal '· idle    14:32 ↑132k  ↓218k tok  ~$1.4000 12 job', idle(jobs: 12)
+      assert_equal '· idle    high    14:32 ↑132k  ↓218k tok  ~$1.4000 12 job', idle(jobs: 12)
     end
 
-    it 'sheds the clock whole when the row does not fit' do
+    it 'sheds the reasoning level whole when the row does not fit' do
+      assert_equal '· idle    14:32 ↑132k  ↓218k tok  ~$1.4000 1 job ', idle(room: 49)
+    end
+
+    it 'sheds the clock after the reasoning level' do
       assert_equal '· idle    ↑132k  ↓218k tok  ~$1.4000 1 job ', idle(room: 43)
     end
 
@@ -59,13 +69,17 @@ describe Riffer::Rig::Terminal::StatusBar do
     end
 
     it 'dims the whole row' do
-      assert_equal "\e[2m· idle    14:32 ↑132k  ↓218k tok  ~$1.4000 1 job \e[0m", idle(color: true)
+      assert_equal "\e[2m· idle    high    14:32 ↑132k  ↓218k tok  ~$1.4000 1 job \e[0m", idle(color: true)
     end
   end
 
   describe '#working' do
     it 'pads every slot to the same widths as the idle state' do
-      assert_equal '⠸ step 7  00:41 ↑18.2k ↓3.1k tok  ~$0.0710 2 jobs', working
+      assert_equal '⠸ step 7  high    00:41 ↑18.2k ↓3.1k tok  ~$0.0710 2 jobs', working
+    end
+
+    it 'shows default when no level is in effect' do
+      assert_equal '⠸ step 7  default 00:41 ↑18.2k ↓3.1k tok  ~$0.0710 2 jobs', working(reasoning: nil)
     end
 
     it 'renders both states at the same visible width' do
@@ -74,7 +88,7 @@ describe Riffer::Rig::Terminal::StatusBar do
 
     it 'paints the spinner and the cost green and the jobs count amber' do
       assert_equal(
-        "\e[38;2;45;226;230m⠸\e[0m step 7  00:41 \e[2m↑18.2k\e[0m \e[2m↓3.1k tok \e[0m " \
+        "\e[38;2;45;226;230m⠸\e[0m step 7  high    00:41 \e[2m↑18.2k\e[0m \e[2m↓3.1k tok \e[0m " \
         "\e[38;2;45;226;230m~$0.0710\e[0m \e[38;2;192;76;253m2 jobs\e[0m",
         working(color: true)
       )

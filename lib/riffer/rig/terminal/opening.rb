@@ -38,6 +38,7 @@ class Riffer::Rig::Terminal::Opening
     Riffer::Rig::Terminal::Banner.lines(
       @theme,
       model: runtime.model,
+      reasoning: runtime.reasoning,
       cwd: runtime.cwd,
       skills: skills.zero? ? 'none' : skills.to_s,
       version: @version,
