@@ -47,6 +47,9 @@ class Riffer::Rig::Terminal::Frame
   # @rbs @active: bool
   # @rbs @loading: bool
   # @rbs @loading_line: String
+  # @rbs @model: String?
+  # @rbs @tally: ^() -> Riffer::Providers::TokenUsage?
+  # @rbs @now: ^() -> Time
   # @rbs @mutex: Mutex
   # @rbs @previous_resize: Signal::trap_command
 
@@ -68,8 +71,9 @@ class Riffer::Rig::Terminal::Frame
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
   # @rbs loading: bool
+  # @rbs now: ^() -> Time
   # @rbs return: void
-  def initialize(io:, theme:, editor: Riffer::Rig::Terminal::LineEditor.new, loading: false)
+  def initialize(io:, theme:, editor: Riffer::Rig::Terminal::LineEditor.new, loading: false, now: -> { Time.now })
     @io = io
     @theme = theme
     @editor = editor
@@ -85,6 +89,9 @@ class Riffer::Rig::Terminal::Frame
     @active = false
     @loading = loading
     @loading_line = LOADING
+    @model = nil
+    @tally = -> {}
+    @now = now
     @mutex = Mutex.new
     @previous_resize = nil
   end
@@ -186,6 +193,24 @@ class Riffer::Rig::Terminal::Frame
     @mutex.synchronize do
       @jobs = count
       redraw
+    end
+  end
+
+  # @rbs model: String
+  # @rbs tally: ^() -> Riffer::Providers::TokenUsage?
+  # @rbs return: void
+  def session(model:, tally:)
+    @mutex.synchronize do
+      @model = model
+      @tally = tally
+      redraw
+    end
+  end
+
+  # @rbs return: void
+  def idle_tick
+    @mutex.synchronize do
+      redraw if idle_bar_showing?
     end
   end
 
@@ -342,7 +367,7 @@ class Riffer::Rig::Terminal::Frame
   def status_line(room)
     # A running ticker sets the status on every tick, so a hint outranks it
     # rather than being drawn over.
-    shown = @hint || @status
+    shown = idle_bar_showing? ? idle_bar : (@hint || @status)
     label = counter(room)
     return Riffer::Rig::Terminal::Columns.head("#{STATUS_INDENT}#{shown}", room) unless label
 
@@ -359,6 +384,19 @@ class Riffer::Rig::Terminal::Frame
   def status_columns(room)
     label = counter(room)
     room - STATUS_INDENT.size - (label ? JOBS_SEPARATOR.size + label.size : 0)
+  end
+
+  # @rbs return: bool
+  def idle_bar_showing?
+    !@loading && @hint.nil? && @status.empty? && !@model.nil?
+  end
+
+  # @rbs return: String
+  def idle_bar
+    model = @model
+    return '' unless model
+
+    @theme.dim(Riffer::Rig::Terminal::IdleBar.call(model: model, tally: @tally.call, now: @now.call))
   end
 
   # @rbs room: Integer

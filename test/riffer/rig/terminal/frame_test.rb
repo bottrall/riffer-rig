@@ -21,9 +21,17 @@ describe Riffer::Rig::Terminal::Frame do
     io
   end
 
-  def frame(io, color: false, editor: Riffer::Rig::Terminal::LineEditor.new, loading: false)
+  def frame(
+    io,
+    color: false,
+    editor: Riffer::Rig::Terminal::LineEditor.new,
+    loading: false,
+    now: lambda {
+      Time.new(2026, 1, 1, 14, 32)
+    }
+  )
     theme = Riffer::Rig::Terminal::Theme.new(enabled: color)
-    @frame = Riffer::Rig::Terminal::Frame.new(io: io, theme: theme, editor: editor, loading: loading)
+    @frame = Riffer::Rig::Terminal::Frame.new(io: io, theme: theme, editor: editor, loading: loading, now: now)
   end
 
   def started(io, **)
@@ -492,6 +500,162 @@ describe Riffer::Rig::Terminal::Frame do
       frame.jobs(2)
 
       assert_equal [1, 2], [@pty.screen.row, @pty.screen.column]
+    end
+  end
+
+  describe '#session' do
+    def usage(input: 132_000, output: 218_000, cost: 1.4)
+      Riffer::Providers::TokenUsage.new(input_tokens: input, output_tokens: output, cost: cost)
+    end
+
+    def session(io, tally: usage, model: 'sonnet-4-6', now: -> { Time.new(2026, 1, 1, 14, 32) })
+      frame = started(io, now: now)
+      frame.session(model: model, tally: -> { tally })
+      frame
+    end
+
+    it 'draws nothing when there is no footer' do
+      io = StringIO.new
+
+      started(io).session(model: 'sonnet-4-6', tally: -> {})
+
+      assert_equal '', io.string
+    end
+
+    it 'draws the model, the session odometer, the cost and the time under the input line' do
+      io = tty(80)
+
+      session(io)
+
+      assert_operator io.string,
+                      :end_with?,
+                      "\r\n  sonnet-4-6 · ↑132k ↓218k tok · ~$1.4000 · 14:32\e[1A\e[3G"
+    end
+
+    it 'draws only the model and the time before the session has used tokens' do
+      io = tty(80)
+
+      session(io, tally: nil)
+
+      assert_operator io.string, :end_with?, "\r\n  sonnet-4-6 · 14:32\e[1A\e[3G"
+    end
+
+    it 'reads the clock when it draws, not when the session was set' do
+      io = tty(80)
+      time = Time.new(2026, 1, 1, 14, 32)
+      frame = session(io, tally: nil, now: -> { time })
+
+      time = Time.new(2026, 1, 1, 14, 33)
+      frame.status('')
+
+      assert_operator io.string, :end_with?, "\r\n  sonnet-4-6 · 14:33\e[1A\e[3G"
+    end
+
+    it 'gives way to the hint' do
+      io = tty(80)
+      frame = session(io, tally: nil)
+
+      frame.hint('answer')
+
+      assert_operator io.string, :end_with?, "\r\n  answer\e[1A\e[3G"
+    end
+
+    it 'gives way to the status a turn sets' do
+      io = tty(80)
+      frame = session(io, tally: nil)
+
+      frame.status('working')
+
+      assert_operator io.string, :end_with?, "\r\n  working\e[1A\e[3G"
+    end
+
+    it 'comes back once the status clears' do
+      io = tty(80)
+      frame = session(io, tally: nil)
+      frame.status('working')
+
+      frame.status('')
+
+      assert_operator io.string, :end_with?, "\r\n  sonnet-4-6 · 14:32\e[1A\e[3G"
+    end
+
+    it 'is cut to keep the job counter whole on a narrow terminal' do
+      io = tty(26)
+      frame = session(io)
+      frame.jobs(2)
+
+      assert_operator io.string, :end_with?, "\r\n  sonnet · 2 jobs running\e[1A\e[3G"
+    end
+  end
+
+  describe '#idle_tick' do
+    def usage = Riffer::Providers::TokenUsage.new(input_tokens: 132_000, output_tokens: 218_000, cost: 1.4)
+
+    def session(io, loading: false)
+      frame = frame(io, loading: loading)
+      frame.loading('warming the amp…') if loading
+      frame.session(model: 'sonnet-4-6', tally: -> { usage })
+      frame.start
+      frame
+    end
+
+    it 'draws nothing when there is no footer' do
+      io = StringIO.new
+
+      session(io).idle_tick
+
+      assert_equal '', io.string
+    end
+
+    it 'redraws the idle bar with the clock read again' do
+      io = tty(80)
+      frame = session(io)
+
+      frame.idle_tick
+
+      assert_equal 2, io.string.scan('14:32').size
+    end
+
+    it 'leaves the footer alone while a status is shown' do
+      io = tty(80)
+      frame = session(io)
+      frame.status('working')
+      drawn = io.string
+
+      frame.idle_tick
+
+      assert_equal drawn, io.string
+    end
+
+    it 'leaves the footer alone while a hint is shown' do
+      io = tty(80)
+      frame = session(io)
+      frame.hint('answer')
+      drawn = io.string
+
+      frame.idle_tick
+
+      assert_equal drawn, io.string
+    end
+
+    it 'leaves the loading row alone' do
+      io = tty(80)
+      session(io, loading: true)
+      drawn = io.string
+
+      @frame.idle_tick
+
+      assert_equal drawn, io.string
+    end
+
+    it 'leaves the footer alone before the session is known' do
+      io = tty(80)
+      frame = started(io)
+      drawn = io.string
+
+      frame.idle_tick
+
+      assert_equal drawn, io.string
     end
   end
 

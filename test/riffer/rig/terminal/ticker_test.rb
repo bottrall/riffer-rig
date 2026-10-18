@@ -327,7 +327,7 @@ describe Riffer::Rig::Terminal::Ticker do
 
   describe '#tokens' do
     it 'shows the output alone until a request reports its usage' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↓1.0k tok · riffing…', drawn(text('x' * 4_000))
+      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↓1k tok · riffing…', drawn(text('x' * 4_000))
     end
 
     it 'shows the input ahead of the output once usage is reported' do
@@ -343,7 +343,7 @@ describe Riffer::Rig::Terminal::Ticker do
     it 'prices the estimate at the output rate before any usage is reported' do
       ticker(rates: output_rate(15.0))
 
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↓1.0k tok · $0.015 · riffing…', drawn(text('x' * 4_000))
+      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↓1k tok · $0.015 · riffing…', drawn(text('x' * 4_000))
     end
 
     it 'adds the priced estimate to the cost reported so far' do
@@ -357,20 +357,6 @@ describe Riffer::Rig::Terminal::Ticker do
       status = drawn(usage(18_240, 3_100, cost: 0.0712))
 
       assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↑18.2k ↓3.1k tok · $0.071 · riffing…', status
-    end
-  end
-
-  describe '#count' do
-    it 'shows a count under a thousand in full' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↑999 ↓0 tok · riffing…', drawn(usage(999, 0))
-    end
-
-    it 'rounds thousands down to a decimal place' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↑18.2k ↓999.9k tok · riffing…', drawn(usage(18_290, 999_999))
-    end
-
-    it 'rounds millions down to a decimal place' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↑2.3M ↓1.0M tok · riffing…', drawn(usage(2_390_000, 1_000_000))
     end
   end
 

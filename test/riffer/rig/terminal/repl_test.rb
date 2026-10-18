@@ -42,6 +42,10 @@ class LoggingFrame
     @log << [:status, status]
   end
 
+  def session(model:, tally:)
+    @log << [:session, model, tally.call]
+  end
+
   def queued(count)
     @counts << count
     @log << [:queued, count]
@@ -82,6 +86,7 @@ class WatchedRuntime
 
   def initialize(*names)
     @subscribers = []
+    @model_observers = []
     reload(*names)
   end
 
@@ -92,6 +97,14 @@ class WatchedRuntime
   def on_job_exit(&block) = @subscribers << block
 
   def exit_job = @subscribers.each(&:call)
+
+  def on_model_change(&block) = @model_observers << block
+
+  def switch_model(model) = @model_observers.each { |observer| observer.call(model) }
+
+  def model = 'mock/test'
+
+  def tally = nil
 end
 
 class RecordingPeek
@@ -217,6 +230,20 @@ describe Riffer::Rig::Terminal::Repl do
   end
 
   describe '#watch' do
+    it 'gives the status bar the session of the Runtime' do
+      repl.watch(WatchedRuntime.new)
+
+      assert_equal [:session, 'mock/test', nil], logged.last
+    end
+
+    it 'updates the status bar when the Runtime switches model' do
+      runtime = WatchedRuntime.new
+      repl.watch(runtime)
+      runtime.switch_model('mock/other')
+
+      assert_equal [:session, 'mock/other', nil], logged.last
+    end
+
     it 'runs a job exit from the Runtime as a turn' do
       runtime = WatchedRuntime.new
       repl.watch(runtime)

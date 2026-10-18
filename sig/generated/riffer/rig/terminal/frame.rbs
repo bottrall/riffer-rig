@@ -60,6 +60,12 @@ class Riffer::Rig::Terminal::Frame
 
   @loading_line: String
 
+  @model: String?
+
+  @tally: ^() -> Riffer::Providers::TokenUsage?
+
+  @now: ^() -> Time
+
   @mutex: Mutex
 
   @previous_resize: Signal::trap_command
@@ -75,8 +81,9 @@ class Riffer::Rig::Terminal::Frame
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
   # @rbs loading: bool
+  # @rbs now: ^() -> Time
   # @rbs return: void
-  def initialize: (io: IO, theme: Riffer::Rig::Terminal::Theme, ?editor: Riffer::Rig::Terminal::LineEditor, ?loading: bool) -> void
+  def initialize: (io: IO, theme: Riffer::Rig::Terminal::Theme, ?editor: Riffer::Rig::Terminal::LineEditor, ?loading: bool, ?now: ^() -> Time) -> void
 
   # @rbs return: void
   def start: () -> void
@@ -115,6 +122,14 @@ class Riffer::Rig::Terminal::Frame
   # @rbs count: Integer
   # @rbs return: void
   def jobs: (Integer count) -> void
+
+  # @rbs model: String
+  # @rbs tally: ^() -> Riffer::Providers::TokenUsage?
+  # @rbs return: void
+  def session: (model: String, tally: ^() -> Riffer::Providers::TokenUsage?) -> void
+
+  # @rbs return: void
+  def idle_tick: () -> void
 
   # @rbs return: Integer
   def status_room: () -> Integer
@@ -178,6 +193,12 @@ class Riffer::Rig::Terminal::Frame
   # @rbs room: Integer
   # @rbs return: Integer
   def status_columns: (Integer room) -> Integer
+
+  # @rbs return: bool
+  def idle_bar_showing?: () -> bool
+
+  # @rbs return: String
+  def idle_bar: () -> String
 
   # @rbs room: Integer
   # @rbs return: String?
