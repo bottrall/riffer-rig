@@ -286,6 +286,63 @@ describe Riffer::Rig::Terminal::Frame do
       assert_equal [1, 4], [@pty.screen.row, @pty.screen.column]
     end
 
+    it 'leaves the cursor at the edit point past a run of spaces' do
+      frame = on_pty
+
+      frame.input(editing('foo  bar', '  baz'))
+
+      assert_equal [1, 10], [@pty.screen.row, @pty.screen.column]
+    end
+
+    it 'leaves the cursor on its wrapped row' do
+      frame = on_pty(columns: 12)
+
+      frame.input(editing('one two three four five'))
+
+      assert_equal [4, 6], [@pty.screen.row, @pty.screen.column]
+    end
+
+    it 'draws runs of spaces as typed' do
+      io = tty(80)
+
+      started(io, editor: editing('foo  bar  baz'))
+
+      assert_operator io.string, :end_with?, "› foo  bar  baz\r\n  \e[1A\e[16G"
+    end
+
+    it 'draws the spaces trailing the text' do
+      io = tty(80)
+
+      started(io, editor: editing('foo  '))
+
+      assert_operator io.string, :end_with?, "› foo  \r\n  \e[1A\e[8G"
+    end
+
+    it 'leaves the cursor on the fresh row after a trailing line break' do
+      frame = on_pty
+
+      frame.input(editing("hi\n"))
+
+      assert_equal [2, 2], [@pty.screen.row, @pty.screen.column]
+    end
+
+    it 'erases every wrapped row when the input is redrawn' do
+      frame = on_pty(columns: 12)
+
+      frame.input(editing('one two three four five'))
+      frame.input(editing(''))
+
+      assert_equal ['', '›', ''], @pty.screen.rows
+    end
+
+    it 'caps the wrapped input at the rows a short terminal has' do
+      frame = on_pty(columns: 12, rows: 5)
+
+      frame.input(editing('a' * 84))
+
+      assert_equal ['  aaaaaaaaa', '  aaaaaaaaa', '  aaaaaaaaa', '  aaa', ''], @pty.screen.rows
+    end
+
     it 'erases the palette of an earlier completion' do
       io = tty(80)
       frame = started(io)
@@ -654,7 +711,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       @pty.resize(8)
 
-      assert_equal [1, 7], [@pty.screen.row, @pty.screen.column]
+      assert_equal [3, 2], [@pty.screen.row, @pty.screen.column]
     end
 
     it 'keeps the last width when the new one is unknowable' do
@@ -786,20 +843,20 @@ describe Riffer::Rig::Terminal::Frame do
       assert_operator io.string, :end_with?, "\r\n  0123456\e[1A\e[3G"
     end
 
-    it 'shows the text nearest the cursor when the input outgrows the width' do
+    it 'wraps the input that outgrows the width' do
       io = tty(8)
 
       started(io, editor: editing('abcdefgh'))
 
-      assert_equal "\r\n› defgh\r\n  \e[1A\e[8G", io.string
+      assert_equal "\r\n› abcde\r\n  fgh\r\n  \e[1A\e[6G", io.string
     end
 
-    it 'fills the room left after the cursor with the text that follows it' do
+    it 'carries the text that follows the cursor onto the wrapped rows' do
       io = tty(8)
 
       started(io, editor: editing('ab', 'cdefgh'))
 
-      assert_equal "\r\n› abcde\r\n  \e[1A\e[5G", io.string
+      assert_equal "\r\n› abcd\r\n  efgh\r\n  \e[2A\e[5G", io.string
     end
 
     it 'places the cursor by columns, not characters' do
@@ -808,6 +865,56 @@ describe Riffer::Rig::Terminal::Frame do
       started(io, editor: editing('日本'))
 
       assert_equal "\r\n› 日本\r\n  \e[1A\e[7G", io.string
+    end
+
+    it 'lines continuation rows up under the prompt text' do
+      io = tty(12)
+
+      started(io, editor: editing('one two three four five'))
+
+      assert_equal "\r\n› one two \r\n  three \r\n  four \r\n  five\r\n  \e[1A\e[7G", io.string
+    end
+
+    it 'keeps a blank row of the input' do
+      io = tty(80)
+
+      started(io, editor: editing("one\n\ntwo"))
+
+      assert_equal "\r\n› one\r\n  \r\n  two\r\n  \e[1A\e[6G", io.string
+    end
+
+    it 'puts the cursor on a fresh row after a trailing line break' do
+      io = tty(80)
+
+      started(io, editor: editing("hi\n"))
+
+      assert_equal "\r\n› hi\r\n  \r\n  \e[1A\e[3G", io.string
+    end
+
+    it 'puts the queued chip on the last row of a wrapped input' do
+      io = tty(30)
+
+      started(io, editor: editing('x' * 30)).queued(2)
+
+      assert_operator io.string, :end_with?, "  xxx   · 2 queued\r\n  \e[1A\e[6G"
+    end
+
+    it 'scrolls a window of rows once the input wraps past the cap' do
+      io = tty(12)
+
+      started(io, editor: editing('a' * 84))
+
+      rows = Array.new(7) { "  #{'a' * 9}" }
+
+      assert_operator io.string, :end_with?, "#{rows.join("\r\n")}\r\n  aaa\r\n  \e[1A\e[6G"
+    end
+
+    it 'keeps the cursor row in the window it scrolls' do
+      io = tty(12)
+
+      started(io, editor: editing('a' * 84, 'z'))
+
+      assert_operator io.string, :end_with?, "  aaaz\r\n  \e[1A\e[6G"
     end
 
     it 'cuts the prompt when the width has no room for it' do

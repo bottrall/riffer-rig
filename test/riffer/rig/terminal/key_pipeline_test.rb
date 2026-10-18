@@ -71,8 +71,8 @@ describe Riffer::Rig::Terminal::KeyPipeline do
       assert_empty output.string
     end
 
-    it 'turns bracketed paste on' do
-      assert_equal "\e[?2004h", @pty.written(8)
+    it 'turns on the Kitty keyboard protocol and bracketed paste' do
+      assert_equal "\e[>1u\e[?2004h", @pty.written(13)
     end
 
     it 'reads again after a stop' do
@@ -97,10 +97,10 @@ describe Riffer::Rig::Terminal::KeyPipeline do
       assert_predicate @pty.slave, :echo?
     end
 
-    it 'turns bracketed paste off' do
+    it 'turns off bracketed paste and pops the Kitty keyboard protocol' do
       @pty.pipeline.stop
 
-      assert_equal "\e[?2004h\e[?2004l", @pty.written(16)
+      assert_equal "\e[>1u\e[?2004h\e[?2004l\e[<u", @pty.written(25)
     end
   end
 
@@ -152,6 +152,18 @@ describe Riffer::Rig::Terminal::KeyPipeline do
       @pty.type("\e[B")
 
       assert_equal Riffer::Rig::Terminal::Key.new(:down), @pty.key
+    end
+
+    it 'decodes Shift-Enter reported as a CSI-u sequence' do
+      @pty.type("\e[13;2u")
+
+      assert_equal Riffer::Rig::Terminal::Key.new(:shift_enter), @pty.key
+    end
+
+    it 'decodes a Ctrl-chord reported as a CSI-u sequence' do
+      @pty.type("\e[99;5u")
+
+      assert_equal Riffer::Rig::Terminal::Key.new(:ctrl_c), @pty.key
     end
 
     it 'emits a lone escape once the reader gives up waiting for a sequence' do

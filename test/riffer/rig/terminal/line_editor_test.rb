@@ -37,11 +37,19 @@ describe Riffer::Rig::Terminal::LineEditor do
   end
 
   it 'prints control characters before the cursor as one-column pictures' do
-    assert_equal 'one␊two␛', editor([:paste, "one\ntwo\e"]).printable_before
+    assert_equal 'one␉two␛', editor([:paste, "one\ttwo\e"]).printable_before
+  end
+
+  it 'prints a line break before the cursor as a line break' do
+    assert_equal "one\ntwo", editor([:paste, "one\ntwo"]).printable_before
   end
 
   it 'prints C1 control characters before the cursor as placeholders' do
     assert_equal 'a␦␦␦b', editor([:paste, "a\u0080\u009b\u009fb"]).printable_before
+  end
+
+  it 'drops a cursor sentinel pasted before the cursor' do
+    assert_equal 'ab', editor([:paste, "a\uE000b"]).printable_before
   end
 
   it 'prints control characters after the cursor as one-column pictures' do
@@ -68,6 +76,18 @@ describe Riffer::Rig::Terminal::LineEditor do
     longer = "#{large}#{'y' * 1800}"
 
     assert_equal '[pasted 6.0k chars]', editor([:paste, large], :backspace, [:paste, longer]).printable_before
+  end
+
+  it 'inserts a line break at the cursor on Ctrl-J' do
+    assert_equal "a\nb", editor('a', :newline, 'b').text
+  end
+
+  it 'inserts a line break at the cursor on Alt-Enter' do
+    assert_equal "a\nb", editor('a', :alt_enter, 'b').text
+  end
+
+  it 'inserts a line break at the cursor on Shift-Enter' do
+    assert_equal "a\nb", editor('a', :shift_enter, 'b').text
   end
 
   it 'inserts typed characters' do

@@ -1,6 +1,7 @@
 # Generated from lib/riffer/rig/terminal/line_editor.rb with RBS::Inline
 
 class Riffer::Rig::Terminal::LineEditor
+  # A line feed is left out: it stays a line break, on screen and in the echo.
   CONTROLS: String
 
   # C1 has no pictures of its own: tr pads the set with its last character.
@@ -9,6 +10,8 @@ class Riffer::Rig::Terminal::LineEditor
   ELIDE_FROM: Integer
 
   WORD: Regexp
+
+  NEWLINE_KEYS: Array[Symbol]
 
   @kill: String
 

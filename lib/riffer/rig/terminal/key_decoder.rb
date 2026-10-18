@@ -19,6 +19,23 @@ class Riffer::Rig::Terminal::KeyDecoder
     '5' => :page_up, '6' => :page_down, '7' => :home, '8' => :end
   }.freeze #: Hash[String, Symbol]
 
+  CSI_U_TAB = 9 #: Integer
+
+  CSI_U_ENTER = 13 #: Integer
+
+  CSI_U_ESCAPE = 27 #: Integer
+
+  # The flag's exception list keeps Enter, Tab, and Backspace legacy but not
+  # the letters sharing their C0 bytes, so Ctrl-J arrives as CSI-u while its
+  # legacy byte "\n" decodes as :newline. The table's second number is the
+  # modifier bitfield: 4 = Ctrl, 2 = Alt.
+  CSI_U_LEGACY_KEYS = {
+    '9;4' => :tab, '104;4' => :backspace, '105;4' => :tab, '106;4' => :newline,
+    '109;4' => :enter, '127;4' => :backspace, '127;2' => :backspace
+  }.freeze #: Hash[String, Symbol]
+
+  CSI_U_LETTERS = 97..122 #: Range[Integer]
+
   PASTE_START = '200' #: String
 
   PASTE_END = "\e[201~" #: String
@@ -78,8 +95,10 @@ class Riffer::Rig::Terminal::KeyDecoder
     when ESCAPE
       @state = :escape
       []
-    when "\r", "\n"
+    when "\r"
       [Riffer::Rig::Terminal::Key.new(:enter)]
+    when "\n"
+      [Riffer::Rig::Terminal::Key.new(:newline)]
     when "\t"
       [Riffer::Rig::Terminal::Key.new(:tab)]
     when "\x7f", "\x08"
@@ -152,6 +171,9 @@ class Riffer::Rig::Terminal::KeyDecoder
     when 'O'
       @state = :ss3
       []
+    when "\r"
+      @state = :ground
+      [Riffer::Rig::Terminal::Key.new(:alt_enter)]
     else
       @state = :ground
       name = META_KEYS.fetch(char, nil)
@@ -189,10 +211,52 @@ class Riffer::Rig::Terminal::KeyDecoder
       end
 
       name = param ? TILDE_KEYS[param] : nil
+    elsif final == 'u'
+      name = csi_u_key(param, modifier)
     else
       name = MODIFIED_CSI_KEYS.fetch("#{modifier}#{final}") { CSI_KEYS[final] }
     end
     name ? [Riffer::Rig::Terminal::Key.new(name)] : []
+  end
+
+  # The protocol is enabled by KeyPipeline, not here; its keys must land on the
+  # names the legacy encodings produce so no chord changes when it turns on.
+  # @rbs codepoint: String?
+  # @rbs modifiers: String?
+  # @rbs return: Symbol?
+  def csi_u_key(codepoint, modifiers)
+    key = codepoint.to_i
+    mods = modifiers.to_i - 1
+    mods = 0 if mods.negative?
+    return :escape if key == CSI_U_ESCAPE
+    return csi_u_enter(mods) if key == CSI_U_ENTER
+    return :shift_tab if key == CSI_U_TAB && mods.allbits?(1)
+
+    name = CSI_U_LEGACY_KEYS["#{key};#{mods}"]
+    return name if name
+
+    letter = csi_u_letter(key)
+    return :"ctrl_#{letter}" if letter && mods.allbits?(4)
+    return :"alt_#{letter}" if letter && mods.allbits?(2)
+
+    nil
+  end
+
+  # @rbs mods: Integer
+  # @rbs return: Symbol
+  def csi_u_enter(mods)
+    # Legacy encodes Ctrl-Enter as a bare carriage return, Shift alongside or not.
+    return :enter if mods.allbits?(4)
+    return :alt_enter if mods.allbits?(2)
+    return :shift_enter if mods.allbits?(1)
+
+    :enter
+  end
+
+  # @rbs key: Integer
+  # @rbs return: String?
+  def csi_u_letter(key)
+    CSI_U_LETTERS.cover?(key) ? key.chr : nil
   end
 
   # @rbs char: String

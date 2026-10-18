@@ -1,14 +1,17 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Terminal::LineEditor
-  CONTROLS = "\u0000-\u001f\u007f-\u009f" #: String
+  # A line feed is left out: it stays a line break, on screen and in the echo.
+  CONTROLS = "\u0000-\u0009\u000b-\u001f\u007f-\u009f" #: String
 
   # C1 has no pictures of its own: tr pads the set with its last character.
-  CONTROL_PICTURES = '␀-␟␡␦' #: String
+  CONTROL_PICTURES = '␀-␉␋-␟␡␦' #: String
 
   ELIDE_FROM = 1000 #: Integer
 
   WORD = /[[:alnum:]]/ #: Regexp
+
+  NEWLINE_KEYS = %i[newline alt_enter shift_enter].freeze #: Array[Symbol]
 
   # @rbs @recall: Integer
   # @rbs @draft: String
@@ -57,6 +60,8 @@ class Riffer::Rig::Terminal::LineEditor
   # @rbs key: Riffer::Rig::Terminal::Key
   # @rbs return: Riffer::Rig::Terminal::LineEditor
   def press(key)
+    return with(before: "#{before}\n") if NEWLINE_KEYS.include?(key.name)
+
     case key.name
     when :text then with(before: before + key.text.to_s)
     when :paste then paste(key.text.to_s)
@@ -104,6 +109,9 @@ class Riffer::Rig::Terminal::LineEditor
   def printable(text)
     text.gsub(Regexp.union(@pastes)) { |paste| format('[pasted %.1fk chars]', paste.size / 1000.0) }
         .tr(CONTROLS, CONTROL_PICTURES)
+        # The Frame marks the cursor's cell with this code point: a pasted one
+        # would masquerade as the cursor.
+        .delete(Riffer::Rig::Terminal::Frame::CURSOR)
   end
 
   # @rbs text: String

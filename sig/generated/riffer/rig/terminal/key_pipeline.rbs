@@ -7,6 +7,12 @@ class Riffer::Rig::Terminal::KeyPipeline
 
   BRACKETED_PASTE_OFF: String
 
+  # Terminals without the Kitty keyboard protocol ignore both sequences and
+  # keep sending legacy bytes.
+  KITTY_KEYBOARD_ON: String
+
+  KITTY_KEYBOARD_OFF: String
+
   @stopping: bool
 
   @thread: Thread?

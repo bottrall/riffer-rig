@@ -5,12 +5,15 @@ class Riffer::Rig::Terminal::Wrapper
 
   @indent: Integer
 
+  @verbatim: bool
+
   @line: String
 
   # @rbs width: Integer?
   # @rbs indent: Integer
+  # @rbs verbatim: bool
   # @rbs return: void
-  def initialize: (width: Integer?, indent: Integer) -> void
+  def initialize: (width: Integer?, indent: Integer, ?verbatim: bool) -> void
 
   # @rbs text: String
   # @rbs return: String
@@ -20,6 +23,10 @@ class Riffer::Rig::Terminal::Wrapper
   def flush: () -> String
 
   private
+
+  # @rbs text: String
+  # @rbs return: bool
+  def blank?: (String text) -> bool
 
   # @rbs text: String
   # @rbs return: Array[String]
