@@ -49,6 +49,26 @@ Documentation lives in the guides, not in comments. What a signature can't expre
 
 The guides in `docs/` are written for consumers: people running `riffer`, embedding rig, or writing a host, provider, or extension. A guide documents only what a consumer can use or observe. Internal modules, implementation limits, and behaviour nothing public reaches yet are not documented anywhere — tests and names carry them. If a change has no consumer-visible effect, it changes no guide.
 
+How much to say, and where:
+
+- **One home per fact.** Each fact is explained in one guide; every other guide links to it and never restates it. The shared homes: precedence and merge rules → `CONFIGURATION.md`; flags → `CLI.md`; background jobs → `TOOLS.md` (the model's side) and `EMBEDDING.md` (the API); events → `EVENTS.md`; error messages → `TROUBLESHOOTING.md`.
+- **Document an edge case only if a reader would act on it.** The tests pin the rest.
+- **A paragraph that lists conditions and outcomes is a table.** A paragraph over ~120 words needs a reason. Draw diagrams as ` ```text ` blocks, which render on GitHub and the site alike.
+- **No source paths, test references or internal mechanics** in a guide — no `lib/` paths, no "a test enforces", no how a mixin builds its methods.
+- **History goes in `CHANGELOG.md`.** A guide describes current behaviour only: no "earlier versions", no "replaces the old X". A breaking change's upgrade steps go in the changelog entry.
+- **The README is the front door**: pitch, install, quickstart, one example each of extending and embedding, and links. It never restates a guide. `docs:check` validates its links along with the site's.
+
+# Where code goes
+
+Everything in the project is one of four tiers. Ask in order; the first "yes" wins.
+
+1. **Core** — something an extension cannot do, or something every host needs in exactly the same form?
+2. **Host** — about how one front end drives the Runtime? The terminal, headless printer and ACP adapter are hosts.
+3. **Bundled** — the coding toolkit (read, write, edit, bash), or a convention at least two of pi, OpenCode, Claude Code and Codex already share? It ships in the gem, is built only on the extension API, and can be disabled or replaced.
+4. **Third-party** — everything else: extensions people write and publish themselves.
+
+Three rules follow. Provider-native tools are core and off by default, so a provider change never silently changes what the agent can do. Standards never touch core: a new convention only asks whether the extension API can express it, and if not, that is a seam to add. Core lives in riffer-rig first, and moves to riffer only when a second riffer agent needs the same thing.
+
 # Typing policy
 
 Steep runs `D::Ruby.all_error`: every diagnostic Steep can emit is an error, including the hints and informations that editors surface via the language server — there are no advisory severities. No method body may fall back to `untyped` for lack of an annotation. The bar applies to every change, not just new code.
