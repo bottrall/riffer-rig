@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.15.0</span>
+            <span class="version">v0.16.0</span>
           </div>
         </nav>
       </div>
@@ -46,57 +46,67 @@
                   ><span class="num">02</span>Getting started</a
                 >
               </li>
+              <li>
+                <a href="/guides/troubleshooting/"
+                  ><span class="num">03</span>Troubleshooting</a
+                >
+              </li>
             </ul>
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
                 <a href="/guides/terminal/"
-                  ><span class="num">03</span>Terminal</a
+                  ><span class="num">04</span>Terminal</a
+                >
+              </li>
+              <li>
+                <a href="/guides/cli/"
+                  ><span class="num">05</span>Command line</a
                 >
               </li>
               <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">04</span>Configuration</a
+                  ><span class="num">06</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">05</span>Instructions</a
+                  ><span class="num">07</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">06</span>Tools</a
+                  ><span class="num">08</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">07</span>Skills</a
+                  ><span class="num">09</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">08</span>MCP</a
+                  ><span class="num">10</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">09</span>Reloading</a
+                  ><span class="num">11</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">10</span>Sessions</a
+                  ><span class="num">12</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">11</span>Headless mode</a
+                  ><span class="num">13</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/"
-                  ><span class="num">12</span>ACP</a
+                  ><span class="num">14</span>ACP</a
                 >
               </li>
             </ul>
@@ -104,17 +114,27 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">13</span>Extensions</a
+                  ><span class="num">15</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">14</span>Embedding riffer-rig</a
+                  ><span class="num">16</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/events/"
+                  ><span class="num">17</span>Events</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">15</span>Hosts</a
+                  ><span class="num">18</span>Hosts</a
+                >
+              </li>
+              <li>
+                <a href="/guides/stores/"
+                  ><span class="num">19</span>Session stores</a
                 >
               </li>
             </ul>
@@ -122,12 +142,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">16</span>Providers</a
+                  ><span class="num">20</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/" class="active" aria-current="page"
-                  ><span class="num">17</span>Custom providers</a
+                  ><span class="num">21</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -137,7 +157,7 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Providers · 17</span></p>
+          <p class="kicker"><span class="chapter">Providers · 21</span></p>
           <h1>Custom providers</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
@@ -148,56 +168,113 @@
             </ul>
           </nav>
           
-<p>An extension registers a provider class under a new prefix, and the Loader then treats it like a built-in: onboarding, <code>/model</code> hints and <code>/auth</code> list it, and its credentials resolve the same way. See <a href="/guides/providers/overview/">Providers</a> for how resolution and storage work.</p>
+<p>An extension can register a provider class under a new model prefix. riffer-rig then treats it like a built-in: first-run onboarding, <code>/model</code> and <code>/auth</code> list it, its credentials resolve the <a href="/guides/providers/overview/#resolution-order">same way</a>, and its SDK gem is offered like a built-in’s.</p>
 
 <h2 id="registering-a-provider">Registering a provider</h2>
 
 <div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># .riffer/rig.rb</span>
-<span class="nb">require</span> <span class="s1">'acme_sdk'</span>
-
 <span class="k">class</span> <span class="nc">AcmeProvider</span> <span class="o">&lt;</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Providers</span><span class="o">::</span><span class="no">Base</span>
-  <span class="c1"># ... the provider hooks (see riffer's custom-provider guide)</span>
-<span class="k">end</span>
-
-<span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">extension</span><span class="p">(</span><span class="s1">'acme'</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">rig</span><span class="o">|</span>
-  <span class="n">rig</span><span class="p">.</span><span class="nf">provider</span><span class="p">(</span><span class="ss">:acme</span><span class="p">,</span> <span class="ss">setup: </span><span class="p">{</span>
-    <span class="ss">url: </span><span class="s1">'https://acme.example.com/keys'</span><span class="p">,</span>
-    <span class="ss">fields: </span><span class="p">[{</span> <span class="ss">name: :api_key</span><span class="p">,</span> <span class="ss">env: </span><span class="p">[</span><span class="s1">'ACME_API_KEY'</span><span class="p">],</span> <span class="ss">secret: </span><span class="kp">true</span><span class="p">,</span> <span class="ss">required: </span><span class="kp">true</span> <span class="p">}]</span>
-  <span class="p">})</span> <span class="p">{</span> <span class="no">AcmeProvider</span> <span class="p">}</span>
-<span class="k">end</span>
-</code></pre></div></div>
-
-<p><code>rig.provider(prefix, setup: nil) { klass }</code> is process-wide: it registers the class with riffer’s provider repository (<code>Riffer::Providers::Repository.register</code>) the first time an extension runs it, and the registration never goes away. Re-registering the same prefix — a reload, or a second Runtime building the extension — replaces the entry with the same class and is idempotent. Providers are stateless, so the one repository and one set of credentials per process is by design.</p>
-
-<h2 id="the-setup">The setup</h2>
-
-<p>The <code>setup:</code> hash describes what rig needs before it can use the provider, the same way the built-in table does. Rig converts it to a frozen <code>Riffer::Rig::ProviderSetup</code> (with <code>ProviderSetup::Field</code> entries) when the extension registers and stores it, so <code>ProviderSetup.for(:acme)</code> returns it and the Loader resolves the provider like a built-in.</p>
-
-<ul>
-  <li><code>url</code> (optional) — where to create a key, shown in credential messages.</li>
-  <li><code>fields</code> — each field has <code>name</code> (the value’s key), <code>env</code> (one or more env var names, tried in order), <code>secret</code> (hidden input, stored in <code>auth.json</code>; default false), <code>required</code> (only required fields are prompted; default false), and an optional <code>fallback:</code> Proc tried after env and disk, before prompting. The full field behaviour is in <a href="/guides/providers/overview/#resolution-order">Providers</a>.</li>
-  <li><code>chain</code> (optional, default false) — offers the SDK’s own credential chain.</li>
-  <li><code>sdk</code> (optional) — a <code>[gem, requirement]</code> pair the Loader or <code>/model</code> installs on demand, exactly like a built-in provider’s.</li>
-</ul>
-
-<p>Without a <code>setup:</code>, the generic fallback applies: one required secret <code>api_key</code> read from <code>&lt;IDENTIFIER&gt;_API_KEY</code> — for <code>:acme</code>, <code>ACME_API_KEY</code>.</p>
-
-<h2 id="reading-the-credentials">Reading the credentials</h2>
-
-<p>The provider class reads the resolved values through <code>Riffer::Rig.credentials(:acme)</code> when it builds its client:</p>
-
-<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">AcmeProvider</span> <span class="o">&lt;</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Providers</span><span class="o">::</span><span class="no">Base</span>
   <span class="kp">private</span>
 
   <span class="k">def</span> <span class="nf">build_client</span>
     <span class="no">AcmeSdk</span><span class="o">::</span><span class="no">Client</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="ss">api_key: </span><span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">credentials</span><span class="p">(</span><span class="ss">:acme</span><span class="p">)[</span><span class="ss">:api_key</span><span class="p">])</span>
   <span class="k">end</span>
+
+  <span class="c1"># build_request_params, execute_generate, execute_stream, extract_token_usage,</span>
+  <span class="c1"># extract_assistant_message, convert_messages and the rest of riffer's provider hooks</span>
+<span class="k">end</span>
+
+<span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">extension</span><span class="p">(</span><span class="s1">'acme'</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">rig</span><span class="o">|</span>
+  <span class="n">rig</span><span class="p">.</span><span class="nf">provider</span><span class="p">(</span><span class="ss">:acme</span><span class="p">,</span> <span class="ss">setup: </span><span class="p">{</span>
+    <span class="ss">url: </span><span class="s1">'https://acme.example.com/keys'</span><span class="p">,</span>
+    <span class="ss">sdk: </span><span class="p">[</span><span class="s1">'acme_sdk'</span><span class="p">,</span> <span class="s1">'~&gt; 2.0'</span><span class="p">],</span>
+    <span class="ss">fields: </span><span class="p">[{</span> <span class="ss">name: :api_key</span><span class="p">,</span> <span class="ss">env: </span><span class="p">[</span><span class="s1">'ACME_API_KEY'</span><span class="p">],</span> <span class="ss">secret: </span><span class="kp">true</span><span class="p">,</span> <span class="ss">required: </span><span class="kp">true</span> <span class="p">}]</span>
+  <span class="p">})</span> <span class="p">{</span> <span class="no">AcmeProvider</span> <span class="p">}</span>
 <span class="k">end</span>
 </code></pre></div></div>
 
-<p><code>Riffer::Rig.credentials(identifier)</code> is a process-wide read of the values <code>Riffer::Rig::Credentials.apply</code> last received for that provider; it is nil before anything is applied. Built-in providers get the same lookup plus the assignment onto <code>Riffer.config</code>; a custom provider has no config member, so the process-wide read is its delivery path. Both stay current across <code>/model</code> switches and <code>/auth</code> re-runs, which re-apply the values.</p>
+<p>Then <code>acme/some-model</code> works anywhere a model string does. The provider class itself is riffer’s: riffer’s <a href="https://riffer.ai/guides/providers/custom/">custom provider guide</a> covers every hook, streaming, tool calls and reasoning.</p>
 
-<p>A Loader-built Runtime resolves the provider’s required fields at build time: it reads the env vars, the stored <code>auth.json</code> entry and the <code>providers</code> block of the home settings, prompts for what is still missing when the host can ask, and raises the configuration error naming the missing fields and their env vars otherwise — the same flow a built-in provider goes through.</p>
+<p>A provider registration is process-wide and is never removed: a reload or a second Runtime registering the same prefix replaces it with the same class.</p>
+
+<h2 id="the-setup">The setup</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Meaning</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>fields</code></td>
+      <td>the values the provider needs (below)</td>
+      <td>required</td>
+    </tr>
+    <tr>
+      <td><code>url</code></td>
+      <td>where to create a key, shown when one is missing</td>
+      <td>none</td>
+    </tr>
+    <tr>
+      <td><code>sdk</code></td>
+      <td>a <code>[gem, requirement]</code> pair, offered for install like a <a href="/guides/providers/overview/#sdk-gems">built-in’s</a></td>
+      <td>none</td>
+    </tr>
+    <tr>
+      <td><code>chain</code></td>
+      <td><code>true</code> when the SDK’s own credential chain is a valid way to authenticate</td>
+      <td><code>false</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Each field:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Meaning</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>name</code></td>
+      <td>the key the value is read under</td>
+      <td>required</td>
+    </tr>
+    <tr>
+      <td><code>env</code></td>
+      <td>one or more environment variable names, tried in order</td>
+      <td>required</td>
+    </tr>
+    <tr>
+      <td><code>secret</code></td>
+      <td><code>true</code> hides the input and stores the value in <code>auth.json</code>; <code>false</code> stores it in settings</td>
+      <td><code>false</code></td>
+    </tr>
+    <tr>
+      <td><code>required</code></td>
+      <td>only required fields are asked for</td>
+      <td><code>false</code></td>
+    </tr>
+    <tr>
+      <td><code>fallback</code></td>
+      <td>a <code>Proc</code> tried after the environment and the stored value, before asking</td>
+      <td>none</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Without a <code>setup:</code>, the provider needs one required secret, <code>api_key</code>, read from <code>&lt;IDENTIFIER&gt;_API_KEY</code> — <code>ACME_API_KEY</code> for <code>:acme</code>.</p>
+
+<h2 id="reading-the-credentials">Reading the credentials</h2>
+
+<p><code>Riffer::Rig.credentials(:acme)</code> returns the provider’s resolved values as a hash, or <code>nil</code> before any are resolved. Read it when building the client, as above, rather than caching it: <code>/model</code> switches and <code>/auth</code> re-runs replace the values.</p>
 
         </article>
 

@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Command line — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/overview/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.16.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/overview/"
+                  ><span class="num">01</span>Overview</a
+                >
+              </li>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">02</span>Getting started</a
+                >
+              </li>
+              <li>
+                <a href="/guides/troubleshooting/"
+                  ><span class="num">03</span>Troubleshooting</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/terminal/"
+                  ><span class="num">04</span>Terminal</a
+                >
+              </li>
+              <li>
+                <a href="/guides/cli/" class="active" aria-current="page"
+                  ><span class="num">05</span>Command line</a
+                >
+              </li>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">06</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">07</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">08</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">09</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">10</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/reloading/"
+                  ><span class="num">11</span>Reloading</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">12</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">13</span>Headless mode</a
+                >
+              </li>
+              <li>
+                <a href="/guides/acp/"
+                  ><span class="num">14</span>ACP</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">15</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">16</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/events/"
+                  ><span class="num">17</span>Events</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">18</span>Hosts</a
+                >
+              </li>
+              <li>
+                <a href="/guides/stores/"
+                  ><span class="num">19</span>Session stores</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">20</span>Providers</a
+                >
+              </li>
+              <li>
+                <a href="/guides/providers/custom/"
+                  ><span class="num">21</span>Custom providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Using the terminal · 05</span></p>
+          <h1>Command line</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#flags">Flags</a></li>
+              <li><a href="#environment-variables">Environment variables</a></li>
+              <li><a href="#exit-codes">Exit codes</a></li>
+            </ul>
+          </nav>
+          
+<pre><code class="language-text">riffer [options]            open the terminal
+riffer -p [prompt] [options] run one prompt headless and exit
+riffer acp                  serve the agent over ACP on stdio
+</code></pre>
+
+<p><code>riffer acp</code> takes no options; an editor configures it through the same <a href="/guides/configuration/">settings</a> as the terminal (<a href="/guides/acp/">ACP</a>).</p>
+
+<h2 id="flags">Flags</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Flag</th>
+      <th>Effect</th>
+      <th style="text-align: center">Terminal</th>
+      <th style="text-align: center"><code>-p</code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>--model provider/name</code></td>
+      <td>the model for this run (<a href="/guides/configuration/#where-each-value-comes-from">precedence</a>)</td>
+      <td style="text-align: center">✓</td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>--reasoning LEVEL</code></td>
+      <td>the reasoning level for this run: <code>off</code> <code>low</code> <code>medium</code> <code>high</code> <code>xhigh</code> <code>max</code></td>
+      <td style="text-align: center">✓</td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>--tools read,bash</code></td>
+      <td>only these tools, by identifier (<a href="/guides/tools/#identifiers">Tools</a>)</td>
+      <td style="text-align: center">✓</td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>--max-steps N</code></td>
+      <td>stops a turn after <code>N</code> model calls</td>
+      <td style="text-align: center">✓</td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>--no-extensions</code></td>
+      <td>skips the <a href="/guides/extensions/#the-rigrb-files"><code>rig.rb</code> files</a> and gem autoload; bundled extensions still load</td>
+      <td style="text-align: center">✓</td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>--no-skills</code></td>
+      <td>leaves out <a href="/guides/skills/">Agent Skills</a></td>
+      <td style="text-align: center">✓</td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>--no-agents-md</code></td>
+      <td>leaves out <a href="/guides/instructions/#agentsmd">AGENTS.md</a></td>
+      <td style="text-align: center">✓</td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>--no-save</code></td>
+      <td>neither saves this session nor reads saved ones (<a href="/guides/sessions/#opting-out">Sessions</a>)</td>
+      <td style="text-align: center">✓</td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>-c</code>, <code>--continue</code></td>
+      <td>continues the most recent session in this directory (<a href="/guides/sessions/#resuming">Sessions</a>)</td>
+      <td style="text-align: center">✓</td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>-r ID</code>, <code>--resume ID</code></td>
+      <td>resumes the session with that id</td>
+      <td style="text-align: center">✓</td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>-r</code>, <code>--resume</code> (no id)</td>
+      <td>opens the <a href="/guides/sessions/#the-picker">session picker</a></td>
+      <td style="text-align: center">✓</td>
+      <td style="text-align: center"> </td>
+    </tr>
+    <tr>
+      <td><code>-p</code>, <code>--print</code></td>
+      <td>runs one prompt with no terminal (<a href="/guides/headless/">Headless</a>)</td>
+      <td style="text-align: center"> </td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>--json</code></td>
+      <td>streams every event as <a href="/guides/headless/#the-ndjson-stream---json">NDJSON</a> instead of the reply text</td>
+      <td style="text-align: center"> </td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>--verbose</code></td>
+      <td>adds a one-line trace of each tool call to stderr</td>
+      <td style="text-align: center"> </td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>--job-idle-timeout SECONDS</code></td>
+      <td>how long to wait for a <a href="/guides/headless/#background-jobs">background job</a> to exit (default 600, <code>0</code> for no limit)</td>
+      <td style="text-align: center"> </td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>-h</code>, <code>--help</code></td>
+      <td>prints the usage</td>
+      <td style="text-align: center">✓</td>
+      <td style="text-align: center">✓</td>
+    </tr>
+    <tr>
+      <td><code>-v</code>, <code>--version</code></td>
+      <td>prints the version</td>
+      <td style="text-align: center">✓</td>
+      <td style="text-align: center">✓</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="environment-variables">Environment variables</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>RIFFER_MODEL</code></td>
+      <td>the model, below <code>--model</code> (<a href="/guides/configuration/#where-each-value-comes-from">precedence</a>)</td>
+    </tr>
+    <tr>
+      <td><code>RIFFER_REASONING</code></td>
+      <td>the reasoning level, below <code>--reasoning</code></td>
+    </tr>
+    <tr>
+      <td><code>NO_COLOR</code></td>
+      <td>turns colour off in the terminal</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Each provider’s credential variables are listed in <a href="/guides/providers/overview/">Providers</a>.</p>
+
+<h2 id="exit-codes">Exit codes</h2>
+
+<p>Headless runs exit with a code that says how the turn ended; <a href="/guides/headless/#exit-codes">Headless</a> has the table.</p>
+
+        </article>
+
+        <nav class="pager">
+          <a class="doc" href="/guides/terminal/"
+            ><span class="go">←</span
+            ><span
+              ><span class="desc">Previous</span
+              ><span class="name">Terminal</span></span
+            ></a
+          >
+          <a class="doc next" href="/guides/configuration/"
+            ><span
+              ><span class="desc">Next</span
+              ><span class="name">Configuration</span></span
+            ><span class="go">→</span></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

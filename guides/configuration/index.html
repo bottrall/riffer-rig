@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.15.0</span>
+            <span class="version">v0.16.0</span>
           </div>
         </nav>
       </div>
@@ -46,57 +46,67 @@
                   ><span class="num">02</span>Getting started</a
                 >
               </li>
+              <li>
+                <a href="/guides/troubleshooting/"
+                  ><span class="num">03</span>Troubleshooting</a
+                >
+              </li>
             </ul>
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
                 <a href="/guides/terminal/"
-                  ><span class="num">03</span>Terminal</a
+                  ><span class="num">04</span>Terminal</a
+                >
+              </li>
+              <li>
+                <a href="/guides/cli/"
+                  ><span class="num">05</span>Command line</a
                 >
               </li>
               <li>
                 <a href="/guides/configuration/" class="active" aria-current="page"
-                  ><span class="num">04</span>Configuration</a
+                  ><span class="num">06</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">05</span>Instructions</a
+                  ><span class="num">07</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">06</span>Tools</a
+                  ><span class="num">08</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">07</span>Skills</a
+                  ><span class="num">09</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">08</span>MCP</a
+                  ><span class="num">10</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">09</span>Reloading</a
+                  ><span class="num">11</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">10</span>Sessions</a
+                  ><span class="num">12</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">11</span>Headless mode</a
+                  ><span class="num">13</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/"
-                  ><span class="num">12</span>ACP</a
+                  ><span class="num">14</span>ACP</a
                 >
               </li>
             </ul>
@@ -104,17 +114,27 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">13</span>Extensions</a
+                  ><span class="num">15</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">14</span>Embedding riffer-rig</a
+                  ><span class="num">16</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/events/"
+                  ><span class="num">17</span>Events</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">15</span>Hosts</a
+                  ><span class="num">18</span>Hosts</a
+                >
+              </li>
+              <li>
+                <a href="/guides/stores/"
+                  ><span class="num">19</span>Session stores</a
                 >
               </li>
             </ul>
@@ -122,12 +142,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">16</span>Providers</a
+                  ><span class="num">20</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">17</span>Custom providers</a
+                  ><span class="num">21</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -137,11 +157,13 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Using the terminal · 04</span></p>
+          <p class="kicker"><span class="chapter">Using the terminal · 06</span></p>
           <h1>Configuration</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
             <ul>
+              <li><a href="#where-each-value-comes-from">Where each value comes from</a></li>
+              <li><a href="#scopes-and-merging">Scopes and merging</a></li>
               <li><a href="#core-keys">Core keys</a></li>
               <li><a href="#model">model</a></li>
               <li><a href="#reasoning">reasoning</a></li>
@@ -161,13 +183,102 @@
   <li><code>&lt;cwd&gt;/.riffer/settings.json</code> — the project scope, for sessions started in that directory.</li>
 </ul>
 
-<p><code>Riffer::Rig::Loader</code> reads home then project and merges them key by key, the project winning: a top-level key set in both takes the project’s value, and an extension namespace merges the same way one level down, so a project can change one key of a namespace and keep the rest from home. Three keys merge differently: <code>extensions.disabled</code> and <code>catalog_files</code> lists add up across both scopes, and an <a href="/guides/mcp/">MCP server</a> declared in both is replaced whole by the project’s. A file that is missing or blank counts as empty.</p>
+<p>A file that is missing or blank counts as empty. A file that is not valid JSON, or does not hold a JSON object, is never read as empty and never written over: <code>riffer</code> stops before the session starts, naming the file and the line and column where parsing stopped, and leaves the file’s text out of the message.</p>
 
-<p>A file that is not valid JSON, or does not hold a JSON object, is never read as empty and never written over. The Loader raises <code>Riffer::Rig::Loader::ConfigurationError</code> naming the file and, for a parse error, the line and column where parsing stopped, so <code>riffer</code> stops before the session starts; fix the file and run it again. The file’s text is left out of the message.</p>
+<h2 id="where-each-value-comes-from">Where each value comes from</h2>
+
+<p>The highest source that is set wins.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Value</th>
+      <th>1</th>
+      <th>2</th>
+      <th>3</th>
+      <th>4</th>
+      <th>5</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Model</td>
+      <td><code>--model</code></td>
+      <td>a resumed session’s <code>/model</code> switch<sup id="fnref:1"><a href="#fn:1" class="footnote" rel="footnote" role="doc-noteref">1</a></sup></td>
+      <td><code>RIFFER_MODEL</code></td>
+      <td><code>model</code> in project, then home settings</td>
+      <td>asked on first run, saved to home<sup id="fnref:2"><a href="#fn:2" class="footnote" rel="footnote" role="doc-noteref">2</a></sup></td>
+    </tr>
+    <tr>
+      <td>Reasoning level</td>
+      <td><code>--reasoning</code></td>
+      <td>a resumed session’s <code>/reasoning</code> switch</td>
+      <td><code>RIFFER_REASONING</code></td>
+      <td><code>reasoning</code> in project, then home settings</td>
+      <td>the model’s own default</td>
+    </tr>
+    <tr>
+      <td>Provider credential</td>
+      <td>the provider’s environment variables</td>
+      <td><code>auth.json</code> (secrets) or the <code>providers</code> block (plain values)</td>
+      <td>a provider fallback, such as the AWS shared config for the Bedrock region</td>
+      <td>asked for, then stored (required fields only)</td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Inside a session, <code>/model</code> and <code>/reasoning</code> override all of these until the session ends (<a href="#model">below</a>). <a href="/guides/providers/overview/#resolution-order">Providers</a> has the credential details.</p>
+
+<h2 id="scopes-and-merging">Scopes and merging</h2>
+
+<p>The project file wins over the home file key by key. A few keys merge differently:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Read from</th>
+      <th>When both scopes set it</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>most core keys</td>
+      <td>both</td>
+      <td>the project’s value wins</td>
+    </tr>
+    <tr>
+      <td>an extension namespace</td>
+      <td>both</td>
+      <td>merged one level down, so a project can change one key and keep the rest</td>
+    </tr>
+    <tr>
+      <td><code>extensions.disabled</code></td>
+      <td>both</td>
+      <td>the lists add up: a project can disable more, never re-enable</td>
+    </tr>
+    <tr>
+      <td><code>catalog_files</code></td>
+      <td>both</td>
+      <td>the lists add up, home files first; a later file wins a repeated model</td>
+    </tr>
+    <tr>
+      <td><code>mcp.servers</code></td>
+      <td>both</td>
+      <td>merged by server name; a project server replaces a home one whole</td>
+    </tr>
+    <tr>
+      <td><code>providers</code></td>
+      <td>home only</td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table>
 
 <h2 id="core-keys">Core keys</h2>
 
-<p>Every core key is top level and optional:</p>
+<p>Every core key is top level and optional. Every other top-level key is an <a href="#extension-namespaces">extension namespace</a>.</p>
 
 <table>
   <thead>
@@ -183,154 +294,145 @@
     </tr>
     <tr>
       <td><code>reasoning</code></td>
-      <td>the reasoning effort, which riffer translates to the provider’s own parameter (<a href="#reasoning">below</a>)</td>
+      <td>the reasoning effort (<a href="#reasoning">below</a>)</td>
     </tr>
     <tr>
       <td><code>catalog_files</code></td>
-      <td>the model catalog JSON files holding pricing and reasoning maps (<a href="#catalog_files">below</a>)</td>
+      <td>the model catalog files holding pricing and reasoning maps (<a href="#catalog_files">below</a>)</td>
     </tr>
     <tr>
       <td><code>providers</code></td>
-      <td>non-secret provider fields such as an endpoint or region (<a href="/guides/providers/overview/#the-providers-block-in-settings">Providers</a>; read from the home file only)</td>
+      <td>non-secret provider fields such as an endpoint or region (<a href="/guides/providers/overview/#the-providers-block-in-settings">Providers</a>)</td>
     </tr>
     <tr>
       <td><code>extensions</code></td>
-      <td><code>disabled</code>, the bundled extensions to leave out (<a href="#extensions">below</a>); <code>autoload</code>, gem extension autoload (<a href="#extensions">below</a>)</td>
+      <td><code>disabled</code> and <code>autoload</code> (<a href="#extensions">below</a>)</td>
     </tr>
     <tr>
       <td><code>reload</code></td>
-      <td><code>"auto"</code> (default) or <code>"manual"</code>, the hot-reload trigger (<a href="/guides/reloading/#triggers">Reloading</a>)</td>
+      <td><code>"auto"</code> (default) or <code>"manual"</code> (<a href="#reload">below</a>)</td>
     </tr>
     <tr>
       <td><code>sessions</code></td>
-      <td><code>save</code>, set it to <code>false</code> to stop saving sessions to the store (<a href="/guides/sessions/">Sessions</a>)</td>
+      <td><code>{"save": false}</code> stops saving sessions (<a href="/guides/sessions/#opting-out">Sessions</a>)</td>
     </tr>
     <tr>
       <td><code>tools</code></td>
-      <td>the provider-native tool switches (<code>native</code>) (<a href="#toolsnative">below</a>)</td>
+      <td>the provider-native tool switches (<a href="#toolsnative">below</a>)</td>
     </tr>
   </tbody>
 </table>
 
 <h2 id="model"><code>model</code></h2>
 
-<p><code>model</code> is the model new sessions start with, as a <code>"provider/name"</code> string: the provider’s identifier, a slash, then the provider’s own model name.</p>
-
 <div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"anthropic/claude-sonnet-4-6"</span><span class="w"> </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p>The provider is one of <code>anthropic</code>, <code>openai</code>, <code>gemini</code>, <code>openrouter</code>, <code>azure_openai</code> or <code>amazon_bedrock</code> (<a href="/guides/providers/overview/">Providers</a> has each one’s setup). Everything after the first slash is passed to the provider unchanged, so a name with slashes of its own works as written: <code>openrouter/anthropic/claude-sonnet-4-6</code>. A string without a provider prefix, or with a provider riffer does not know, is rejected with a hint listing the providers, never inferred from the bare name.</p>
+<p>The provider’s identifier, a slash, then the provider’s own model name. The provider is one of <code>anthropic</code>, <code>openai</code>, <code>gemini</code>, <code>openrouter</code>, <code>azure_openai</code> or <code>amazon_bedrock</code>, or one an <a href="/guides/providers/custom/">extension registers</a>. Everything after the first slash goes to the provider unchanged, so <code>openrouter/anthropic/claude-sonnet-4-6</code> works as written.</p>
 
-<p>There is no built-in default. The model is the first of these that is set, highest first:</p>
+<p>A name without a known provider prefix is rejected with the list of providers; riffer never guesses the provider from a bare name. A bare <code>RIFFER_MODEL</code> is rejected even when <code>--model</code> is also given.</p>
 
-<ol>
-  <li><code>model:</code> in the <a href="/guides/embedding/#loader-options"><code>Loader::Options</code></a> given to <code>Loader.runtime</code> (the <code>--model</code> flag);</li>
-  <li>the <code>RIFFER_MODEL</code> environment variable, e.g. <code>RIFFER_MODEL=openai/gpt-5 riffer</code>;</li>
-  <li><code>model</code> in the project settings, then in the home settings;</li>
-  <li>onboarding: the Loader asks the host for a model string, listing the providers, and writes the answer to <code>~/.riffer/settings.json</code>. A host that cannot ask (the null host, so headless and embedded use) declines, and the Loader raises <code>Riffer::Rig::Loader::ConfigurationError</code> instead.</li>
-</ol>
+<p><code>/model provider/name</code> switches the model for the current session, keeping the conversation. It sets up the new provider the way startup does — offering its <a href="/guides/providers/overview/#sdk-gems">SDK gem</a> and asking for missing credentials — and leaves the model unchanged if that fails. <code>/model</code> alone shows the model in use.</p>
 
-<p>A bare <code>RIFFER_MODEL</code> is rejected even when a higher source wins, since it is a mistake in the environment either way.</p>
-
-<p>A <code>model</code> that is not a string is never skipped as unset: the Loader raises <code>Riffer::Rig::Loader::ConfigurationError</code> naming the file, even when a higher source wins, the same as for a file that does not parse.</p>
-
-<p><code>/model provider/name</code> overrides this key for the current session only: the override wins until the session ends. Switching resolves the new provider’s missing credentials and missing SDK gem the same way startup does, and <code>/model --save</code> writes the model in effect to this key in the home settings, leaving every other key unchanged — or, when the home file no longer parses, writes nothing and reports the file (<a href="https://github.com/bottrall/riffer-rig#switching-the-model">Switching the model</a>).</p>
+<p><code>/model --save</code> writes the model in effect to the home <code>settings.json</code>, so new sessions start with it; <code>/model provider/name --save</code> switches and saves in one step. A switch that fails saves nothing.</p>
 
 <h2 id="reasoning"><code>reasoning</code></h2>
-
-<p><code>reasoning</code> is the reasoning effort: <code>off</code>, <code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code> or <code>max</code>. Riffer translates the level into the provider’s own request parameters: each provider maps the six to its own shape (Anthropic’s <code>thinking</code> and <code>output_config</code>, OpenAI’s and OpenRouter’s <code>reasoning</code>, Gemini’s <code>thinkingConfig</code>, Bedrock’s <code>additional_model_request_fields</code>), and an entry for the model in a <a href="#catalog_files">catalog file</a> overrides the provider’s default mapping. <code>off</code> turns reasoning off where the provider’s shape has a way to: thinking disabled on Anthropic and Bedrock, <code>reasoning: none</code> on OpenAI and OpenRouter. A provider that maps no level of its own — one an extension registers, whose model has no catalog <code>reasoning</code> entry — raises <code>Riffer::ArgumentError</code> before the request, with the catalog file to add in the message. Omitting <code>reasoning</code> leaves the model’s default. Anthropic models also get prompt caching (<code>cache_control</code>) whatever the level.</p>
 
 <div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"anthropic/claude-sonnet-4-6"</span><span class="p">,</span><span class="w"> </span><span class="nl">"reasoning"</span><span class="p">:</span><span class="w"> </span><span class="s2">"high"</span><span class="w"> </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p>The level is the first of these that is set, highest first: the <code>--reasoning</code> flag, a resumed session’s recorded <code>/reasoning</code> switch, the <code>RIFFER_REASONING</code> environment variable, then <code>reasoning</code> in the settings.</p>
+<p>One of <code>off</code>, <code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code> or <code>max</code>. riffer translates the level into each provider’s own parameters, and a model’s entry in a <a href="#catalog_files">catalog file</a> can override that mapping. Leaving <code>reasoning</code> out keeps the model’s default.</p>
 
-<p>A level from <code>--reasoning</code> or <code>RIFFER_REASONING</code> that riffer does not accept is rejected before the session starts with a <code>Riffer::Rig::Loader::ConfigurationError</code>: <code>turbo is not a reasoning level; riffer accepts: off low medium high xhigh max</code>. A level from the settings is never rejected: one riffer does not accept silently leaves the model’s default, so a level every provider accepts can stay in the file across model switches.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Source</th>
+      <th>A level riffer does not accept…</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>--reasoning</code>, <code>RIFFER_REASONING</code></td>
+      <td>is rejected before the session starts, listing the accepted levels</td>
+    </tr>
+    <tr>
+      <td><code>settings.json</code></td>
+      <td>is ignored, and the model’s default applies</td>
+    </tr>
+  </tbody>
+</table>
 
-<p><code>/reasoning level</code> switches the level for the current session only: <code>/reasoning</code> alone shows the level in effect — <code>off</code> when off is the level, <code>default</code> when none is — a level riffer does not accept is refused naming the levels riffer accepts, and <code>/reasoning --save</code> writes the level in effect to the home settings, leaving every other key unchanged — or, when the home file no longer parses, writes nothing and reports the file. A switch is recorded in the <a href="/guides/sessions/#resuming">session store</a> and restored on resume; a <code>--reasoning</code> chosen for the run wins over the restored switch for that run only.</p>
+<p>Settings are lenient so that one level can stay in the file while you switch between providers.</p>
 
-<p>When the model switches mid-session — <code>/model</code> — the level stays in effect, riding on the agent config the switch shares. A level the new provider has no mapping for raises before the next request, with the catalog file to add in the message.</p>
+<p><code>/reasoning level</code> switches the level for the current session and is restored when you resume it; <code>/reasoning</code> alone shows the level in effect (<code>default</code> when none is set). <code>/reasoning --save</code> and <code>/reasoning level --save</code> save to the home settings, as <code>/model</code> does. The level stays in effect across a <code>/model</code> switch. A custom provider with no mapping for the level fails the next request, naming the catalog file to add.</p>
 
 <h2 id="catalog_files"><code>catalog_files</code></h2>
-
-<p><code>catalog_files</code> lists the <a href="https://github.com/bottrall/riffer/blob/main/docs/CATALOG.md">model catalog</a> JSON files the Loader hands to riffer — per-model pricing and per-level reasoning mappings riffer cannot derive from the model name:</p>
 
 <div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"catalog_files"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"~/.riffer/models.json"</span><span class="p">,</span><span class="w"> </span><span class="s2">".riffer/models.json"</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p>The lists of the two scopes add up, the home files loading before the project’s, and a later file wins a repeated model key, so a project file can add models or override a price. The file format — <code>version</code>, <code>pricing</code>, per-level <code>reasoning</code> fragments and aliases — is riffer’s, documented at the link above.</p>
-
-<p>A model without an entry has no cost: it is shown as missing, never as zero. A value that is not an array of strings is ignored.</p>
-
-<p><code>catalog_files</code> replaces the <code>models</code> pricing table: move each entry into a catalog file’s <code>pricing</code> — the same four rates, USD per million tokens — and point <code>catalog_files</code> at the file.</p>
+<p>The <a href="https://riffer.ai/guides/catalog/">model catalog</a> files riffer reads for per-model pricing and reasoning mappings. Without a catalog entry a model has no cost: it is shown as missing, never as zero. The file format is riffer’s.</p>
 
 <h2 id="mcp"><code>mcp</code></h2>
 
-<p><code>mcp</code> is the bundled <code>mcp</code> extension’s namespace. <code>mcp.servers</code> declares the HTTPS MCP servers whose tools the model gets, keyed by server name — a <code>url</code> with optional <code>headers</code>:</p>
-
-<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
-  </span><span class="nl">"mcp"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-    </span><span class="nl">"servers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-      </span><span class="nl">"docs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://docs.example.com/mcp"</span><span class="w"> </span><span class="p">},</span><span class="w">
-      </span><span class="nl">"tracker"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://tracker.example.com/mcp"</span><span class="p">,</span><span class="w"> </span><span class="nl">"headers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"Authorization"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Bearer &lt;token&gt;"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">
-    </span><span class="p">}</span><span class="w">
-  </span><span class="p">}</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre></div></div>
-
-<p>Keep a server with a secret header in <code>~/.riffer/settings.json</code> rather than a committed project file. <a href="/guides/mcp/">MCP</a> has the format, how a project server overrides a home one, and what happens on reload.</p>
+<p>The bundled <code>mcp</code> extension’s namespace, declaring the MCP servers whose tools the model gets. <a href="/guides/mcp/">MCP</a> has the format.</p>
 
 <h2 id="extensions"><code>extensions</code></h2>
 
-<p><code>extensions.disabled</code> names bundled extensions the Loader leaves out — any of <code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, <code>agents_md</code>, <code>skills</code> and <code>mcp</code>:</p>
-
-<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"disabled"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"mcp"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bash"</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"disabled"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"mcp"</span><span class="p">,</span><span class="w"> </span><span class="s2">"bash"</span><span class="p">],</span><span class="w"> </span><span class="nl">"autoload"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p>The lists in the two scopes add up, so a project can disable more but cannot re-enable what home disabled. A disabled extension is simply not passed to the Runtime; nothing it would register exists. An embedder calling <code>Loader.runtime</code> can also strip <code>skills</code> and <code>agents_md</code> for one Runtime, with <code>skills: false</code> and <code>agents_md: false</code> in its <a href="/guides/embedding/#loader-options"><code>Loader::Options</code></a>.</p>
+<ul>
+  <li><code>disabled</code> leaves out bundled extensions: any of <code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, <code>agents_md</code>, <code>skills</code> and <code>mcp</code>. Nothing a disabled extension would register exists.</li>
+  <li><code>autoload</code> (default <code>false</code>) loads every installed gem that ships <code>riffer/rig/extension</code> (<a href="/guides/extensions/#gem-extensions">Gem extensions</a>).</li>
+</ul>
 
-<p><code>extensions.autoload</code> (default <code>false</code>) makes the Loader run <code>riffer/rig/extension</code> from every gem <code>Gem.find_files</code> finds, before the <code>rig.rb</code> files (<a href="/guides/extensions/#gem-extensions">Gem extensions</a>). Set it in either scope; the project’s value wins. <code>extensions: false</code> in the <code>Loader::Options</code> (the <code>--no-extensions</code> flag) skips both the autoload and the <code>rig.rb</code> files; the bundle still loads.</p>
+<p><code>--no-extensions</code> skips autoload and the <code>rig.rb</code> files for one run; the bundled extensions still load.</p>
 
 <h2 id="toolsnative"><code>tools.native</code></h2>
-
-<p><code>tools.native</code> switches the provider-native tools on, per tool. They are off by default; a switch the current provider cannot honour does nothing and raises nothing (<a href="/guides/tools/#provider-native-tools">Tools</a>):</p>
 
 <div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"tools"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"native"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"web_search"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p>A switch value can be an object, passed through to the provider as the tool’s options. The Loader hands the switches to the Runtime at build, and a <code>/model</code> switch re-derives them for the new provider, so the tool is there exactly when the provider supports it.</p>
+<p>Switches on <a href="/guides/tools/#provider-native-tools">provider-native tools</a>, per tool. They are off by default. A value can be an object instead of <code>true</code>, passed to the provider as the tool’s options: <code>{"web_search": {"max_uses": 3}}</code>. A switch the current provider does not support does nothing.</p>
 
 <h2 id="reload"><code>reload</code></h2>
-
-<p><code>reload</code> picks the hot-reload trigger: <code>"auto"</code> (the default) reloads the <code>rig.rb</code> files, settings, credentials and trust automatically at every <code>before_request</code> boundary, <code>"manual"</code> drops that check and leaves <a href="/guides/reloading/#triggers"><code>/reload</code></a> and <a href="/guides/embedding/#rebuilding-after-a-code-reload"><code>Runtime#rebuild</code></a>. The mode is read when the Runtime is built; an automatic session honours a later flip to <code>manual</code> at its next boundary, while a manual session picks up <code>auto</code> on the next build. The Loader keyword <code>reload: :manual</code> on <code>Loader.runtime</code> overrides the setting for one build (<a href="/guides/reloading/#triggers">Reloading</a>):</p>
 
 <div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"reload"</span><span class="p">:</span><span class="w"> </span><span class="s2">"manual"</span><span class="w"> </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
+<p><code>"auto"</code> (the default) reloads automatically when a <code>rig.rb</code> file or a file it requires changes; <code>"manual"</code> reloads only on <code>/reload</code>. Either way, <code>/reload</code> picks up settings changes. <a href="/guides/reloading/">Reloading</a> has the details.</p>
+
 <h2 id="extension-namespaces">Extension namespaces</h2>
 
-<p>Core keys — <code>model</code>, <code>reasoning</code>, <code>catalog_files</code>, <code>reload</code>, <code>extensions</code>, <code>sessions</code>, <code>providers</code> and <code>tools</code> — stay at the top level. Every other top-level key is an extension’s namespace, named after the extension, holding the keys that extension declares with <a href="/guides/extensions/#the-rigsetting-seam"><code>rig.setting</code></a>; <code>mcp</code> is one of these, the bundled <code>mcp</code> extension’s own namespace:</p>
+<p>Every top-level key that is not a core key belongs to the extension of that name, holding the keys it declares with <a href="/guides/extensions/#the-rigsetting-seam"><code>rig.setting</code></a>:</p>
 
 <div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
   </span><span class="nl">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"anthropic/claude-sonnet-4-6"</span><span class="p">,</span><span class="w">
-  </span><span class="nl">"git"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-    </span><span class="nl">"depth"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="w">
-  </span><span class="p">}</span><span class="w">
+  </span><span class="nl">"git"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"depth"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="p">}</span><span class="w">
 </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p>A key left out takes the default the extension declared. An extension cannot be named after a core key; one that is fails to load and is reported.</p>
-
-<p>An embedder passes the same shape as the Runtime’s <code>settings:</code> hash, with symbol keys — <code>{ model: '…', git: { depth: 10 } }</code> (see <a href="/guides/embedding/#constructing-a-runtime">Embedding</a>).</p>
+<p>A key left out takes the extension’s declared default. An extension cannot be named after a core key.</p>
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:1">
+      <p>Restored only when its provider still has credentials. <a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:2">
+      <p>Headless and ACP never ask: a missing model is a configuration error. <a href="#fnref:2" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
 
         </article>
 
         <nav class="pager">
-          <a class="doc" href="/guides/terminal/"
+          <a class="doc" href="/guides/cli/"
             ><span class="go">←</span
             ><span
               ><span class="desc">Previous</span
-              ><span class="name">Terminal</span></span
+              ><span class="name">Command line</span></span
             ></a
           >
           <a class="doc next" href="/guides/instructions/"

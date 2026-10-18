@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.15.0</span>
+            <span class="version">v0.16.0</span>
           </div>
         </nav>
       </div>
@@ -46,57 +46,67 @@
                   ><span class="num">02</span>Getting started</a
                 >
               </li>
+              <li>
+                <a href="/guides/troubleshooting/"
+                  ><span class="num">03</span>Troubleshooting</a
+                >
+              </li>
             </ul>
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
                 <a href="/guides/terminal/"
-                  ><span class="num">03</span>Terminal</a
+                  ><span class="num">04</span>Terminal</a
+                >
+              </li>
+              <li>
+                <a href="/guides/cli/"
+                  ><span class="num">05</span>Command line</a
                 >
               </li>
               <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">04</span>Configuration</a
+                  ><span class="num">06</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">05</span>Instructions</a
+                  ><span class="num">07</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">06</span>Tools</a
+                  ><span class="num">08</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">07</span>Skills</a
+                  ><span class="num">09</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">08</span>MCP</a
+                  ><span class="num">10</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">09</span>Reloading</a
+                  ><span class="num">11</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">10</span>Sessions</a
+                  ><span class="num">12</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/" class="active" aria-current="page"
-                  ><span class="num">11</span>Headless mode</a
+                  ><span class="num">13</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/"
-                  ><span class="num">12</span>ACP</a
+                  ><span class="num">14</span>ACP</a
                 >
               </li>
             </ul>
@@ -104,17 +114,27 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">13</span>Extensions</a
+                  ><span class="num">15</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">14</span>Embedding riffer-rig</a
+                  ><span class="num">16</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/events/"
+                  ><span class="num">17</span>Events</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">15</span>Hosts</a
+                  ><span class="num">18</span>Hosts</a
+                >
+              </li>
+              <li>
+                <a href="/guides/stores/"
+                  ><span class="num">19</span>Session stores</a
                 >
               </li>
             </ul>
@@ -122,12 +142,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">16</span>Providers</a
+                  ><span class="num">20</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">17</span>Custom providers</a
+                  ><span class="num">21</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -137,7 +157,7 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Using the terminal · 11</span></p>
+          <p class="kicker"><span class="chapter">Using the terminal · 13</span></p>
           <h1>Headless mode</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
@@ -151,51 +171,41 @@
             </ul>
           </nav>
           
-<p>Run one prompt with no terminal: <code>riffer -p "prompt"</code> runs a single turn through everything the REPL loads, waits for any <a href="#background-jobs">background jobs</a> the turn left running, and exits with a code that says how it ended. A pipe in, a pipe out — CI jobs, cron jobs, and other tools drive riffer-rig exactly as a human does, minus the TTY.</p>
+<p><code>riffer -p "prompt"</code> runs one prompt with no terminal and exits with a code that says how it ended. It loads everything the terminal does — settings, credentials, extensions, skills, AGENTS.md — so CI jobs, cron jobs and other programs drive riffer-rig just as you would.</p>
 
 <h2 id="the-prompt">The prompt</h2>
 
-<p>The prompt is the argument:</p>
-
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>riffer <span class="nt">-p</span> <span class="s2">"what does this repo do"</span>
+git diff | riffer <span class="nt">-p</span> <span class="s2">"review this diff"</span>   <span class="c"># stdin is added to the prompt as context</span>
+<span class="nb">echo</span> <span class="s2">"explain this diff"</span> | riffer <span class="nt">-p</span>      <span class="c"># stdin alone is the prompt</span>
 </code></pre></div></div>
 
-<p>Piped stdin is appended to the argument as context, and with no argument stdin alone is the prompt. Bytes that are not valid UTF-8 are replaced. A TTY stdin is never read, so <code>riffer -p</code> in a terminal without an argument has nothing to run and exits 2.</p>
+<p>Slash commands are not run: the text goes to the model as typed.</p>
 
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git diff | riffer <span class="nt">-p</span> <span class="s2">"review this diff"</span>   <span class="c"># argument + stdin as context</span>
-<span class="nb">echo</span> <span class="s2">"explain this diff"</span> | riffer <span class="nt">-p</span>      <span class="c"># stdin is the prompt</span>
-</code></pre></div></div>
-
-<p>With an argument, stdin gets 3 seconds to send data or close. If it does neither, headless prints <code>no stdin data received in 3s, proceeding without it; redirect stdin from /dev/null to skip this</code> on stderr and runs the argument alone, without reading stdin. Once data arrives in time, stdin is read to its end however long that takes. Without an argument stdin is the prompt, so headless waits on it with no limit.</p>
-
-<p>A program that spawns riffer with a stdin pipe it never closes (Node’s <code>child_process.spawn</code>, Python’s <code>subprocess.PIPE</code>) pays those 3 seconds on every run, and a shell loop that reads its own stdin loses the rest of its input to the first run, which reads it as context. Redirect stdin from <code>/dev/null</code> in both:</p>
+<p>With a prompt argument, riffer waits up to 3 seconds for stdin to send data or close. If it does neither, it warns on stderr and runs the argument alone; once data arrives, it reads stdin to the end. A program that spawns riffer with a stdin pipe it never closes (Node’s <code>child_process.spawn</code>, Python’s <code>subprocess.PIPE</code>) pays those 3 seconds on every run, and a shell loop that reads its own stdin loses the rest of its input to the first run. Redirect stdin from <code>/dev/null</code> in both cases:</p>
 
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">while </span><span class="nb">read</span> <span class="nt">-r</span> p<span class="p">;</span> <span class="k">do </span>riffer <span class="nt">-p</span> <span class="nt">--no-save</span> <span class="s2">"</span><span class="nv">$p</span><span class="s2">"</span> &lt;/dev/null<span class="p">;</span> <span class="k">done</span> &lt; prompts.txt
 </code></pre></div></div>
 
-<p>The turn is one prompt: slash commands are not dispatched, and the session is saved like any other unless <code>--no-save</code> is given.</p>
-
 <h2 id="output">Output</h2>
 
-<p>By default only the assistant’s text is printed, streamed to stdout. Everything else goes to stderr: errors, configuration refusals, and the <a href="/guides/hosts/">notify</a> lines extensions and the Runtime emit. When the session starts, headless prints <code>session &lt;id&gt;</code> on stderr — the id <code>riffer -p -r &lt;id&gt; "follow-up"</code> <a href="/guides/sessions/#resuming">resumes</a> — so a caller that spawned headless can find the session without reading the <a href="/guides/sessions/">sessions directory</a>. In <code>--json</code> mode that line is dropped: the id rides on the <code>session_start</code> record of the <a href="#the-ndjson-stream---json">NDJSON stream</a> instead. Reasoning is not printed. <code>--verbose</code> adds a one-line trace of each tool call to stderr.</p>
+<p>Only the assistant’s reply goes to stdout, streamed as it arrives. Everything else goes to stderr: errors, warnings, notices from extensions, and <code>session &lt;id&gt;</code> when the session starts — the id <code>riffer -p -r &lt;id&gt; "follow-up"</code> resumes. <code>--verbose</code> adds a one-line trace of each tool call to stderr. Reasoning is not printed.</p>
 
 <h2 id="flags">Flags</h2>
 
-<p>The REPL’s flags all work here: <code>--model provider/name</code>, <code>--reasoning off|low|medium|high|xhigh|max</code>, <code>--no-extensions</code>, <code>--no-skills</code>, <code>--no-agents-md</code>, <code>--tools a,b,c</code>, <code>--max-steps N</code>, <code>--no-save</code>, <code>-c</code>/<code>--continue</code> and <code>-r ID</code>/<code>--resume ID</code>, plus <code>--verbose</code> and <code>--job-idle-timeout SECONDS</code>. The same <a href="/guides/providers/overview/#resolution-order">resolution order</a> applies to the model: <code>--model</code>, then <code>RIFFER_MODEL</code>, then settings — and to the reasoning level: <code>--reasoning</code>, then <code>RIFFER_REASONING</code>, then settings.</p>
+<p>Every terminal flag works here, plus <code>--json</code>, <code>--verbose</code> and <code>--job-idle-timeout</code> (<a href="/guides/cli/#flags">Command line</a>).</p>
 
-<p><code>-c</code> and <code>-r</code> are the multi-turn headless story: <code>riffer -p -c "now run the tests"</code> continues the most recent session in this directory, appending to the same <a href="/guides/sessions/#resuming">session file</a>. Unlike the REPL, a missing session is not a fresh start — headless prints <code>No saved session …</code> on stderr and exits 2 (<code>Sessions are off for this run (--no-save).</code> under <a href="/guides/sessions/#opting-out"><code>--no-save</code></a>, and <code>Session … was saved in …, which no longer exists.</code> when the <a href="/guides/sessions/#resuming">directory the session runs in</a> is gone).</p>
+<p><code>-c</code> and <code>-r &lt;id&gt;</code> continue a session across runs: <code>riffer -p -c "now run the tests"</code> carries on the most recent session in this directory. If there is no such session, headless exits 2 rather than starting a fresh one.</p>
 
-<p>Headless never prompts. A missing model, a missing credential, or a missing optional SDK is not an interactive setup flow — the reason is printed on stderr with the provider’s recipe (its environment variables and key URL), or the exact <code>gem install</code> line, and the process exits 2. A <code>settings.json</code> or <code>auth.json</code> that does not parse exits 2 the same way, with the file named on stderr (<a href="/guides/configuration/">Configuration</a>).</p>
+<p>Headless never asks anything. A missing model, credential or <a href="/guides/providers/overview/#sdk-gems">SDK gem</a> prints what to set or install on stderr and exits 2, as does a settings or <code>auth.json</code> file that doesn’t parse. A project <code>rig.rb</code> you haven’t trusted in the terminal is skipped.</p>
 
 <h2 id="background-jobs">Background jobs</h2>
 
-<p>A <code>bash</code> call with <code>run_in_background</code> starts a job that outlives the turn (<a href="/guides/tools/#background-jobs">Tools</a>). When the model finishes its reply with a job still running, headless does not exit: it prints <code>waiting for background jobs</code> on stderr and waits for the next job to exit. Each exit gives the model a further turn, with no user text, in which it is told of the exit and replies; its output is printed like the first turn’s, set off from the text before it by a blank line (in <code>--json</code> mode the records stay one per line). Within a turn, text the model writes after it is told of an exit (<a href="/guides/tools/#background-jobs">Tools</a>) is set off by a blank line the same way. The run waits again while any job is still running, and exits once none is left, so a model that starts five jobs and replies that it is waiting hears of all five. A run that starts no background job exits as soon as its turn ends.</p>
+<p>When the model finishes with <a href="/guides/tools/#background-jobs">background jobs</a> still running, headless prints <code>waiting for background jobs</code> on stderr and waits. Each exit gives the model a further turn to react, printed like the first; the run exits once no job is left.</p>
 
-<p>Only a turn that finished is followed this way. A turn that failed, was cancelled or did not complete (exit <code>1</code>, <code>130</code> or <code>3</code> below) ends the run at once, and the jobs it left running are killed.</p>
+<p>When no job has exited for <code>--job-idle-timeout</code> seconds (600 by default), headless kills the rest and exits 3 — so a dev server or file watcher can’t hold a run open forever. <code>--job-idle-timeout 0</code> waits without limit.</p>
 
-<p>The wait has an idle timeout: when no job has exited for <code>--job-idle-timeout</code> seconds, 600 by default, headless prints <code>no background job exited in 600s; killing the jobs still running</code> on stderr, kills them, and exits 3. It is what keeps a dev server or a file watcher from holding the run open forever. <code>--job-idle-timeout 0</code> removes the timeout, and the run waits for as long as any job runs. Each wait starts the timeout afresh, so it counts from the end of the most recent turn.</p>
-
-<p>SIGINT while waiting kills the jobs and exits 130.</p>
+<p>Only a turn that finished is followed this way. A turn that fails, is cancelled or doesn’t complete kills its jobs and exits at once.</p>
 
 <h2 id="exit-codes">Exit codes</h2>
 
@@ -209,54 +219,95 @@
   <tbody>
     <tr>
       <td><code>0</code></td>
-      <td>the turn finished, and so did every <a href="#background-jobs">follow-up turn</a></td>
+      <td>the turn finished, and so did every background-job follow-up</td>
     </tr>
     <tr>
       <td><code>1</code></td>
-      <td>runtime error: provider failure, network failure, an exception in a tool or handler</td>
+      <td>runtime error: provider or network failure, an exception in a tool or extension</td>
     </tr>
     <tr>
       <td><code>2</code></td>
-      <td>usage or configuration: unknown flag, no prompt, a bare model name, no credentials, a missing optional SDK, a settings or auth file that does not parse</td>
+      <td>usage or configuration: unknown flag, no prompt, a bare model name, no credentials, a missing SDK gem, a file that doesn’t parse, no session to resume</td>
     </tr>
     <tr>
       <td><code>3</code></td>
-      <td>the turn ended but did not complete: <code>max_steps</code>, <code>context_window</code>, <code>length</code>, <code>content_filter</code>, or <code>malformed_output</code>; the reason is on stderr. Also a run whose background jobs passed the <a href="#background-jobs">idle timeout</a></td>
+      <td>the turn ended without completing — the step limit, the context window, an output length limit, a content filter, malformed output — or background jobs passed the idle timeout; the reason is on stderr</td>
     </tr>
     <tr>
       <td><code>130</code></td>
-      <td>SIGINT: the turn is cancelled first — orphaned tool calls healed, the session closed — then exit. While waiting for background jobs, they are killed and the session closed</td>
+      <td>interrupted (SIGINT): the turn is cancelled, background jobs are killed, and the session is saved</td>
     </tr>
   </tbody>
 </table>
 
-<p>With follow-up turns, the code is the last turn’s. A script that only needs success or failure can therefore test the code alone; a caller that wants the reason reads stderr or waits for <code>--json</code> (below).</p>
+<p>With follow-up turns, the code is the last turn’s.</p>
 
 <h2 id="the-ndjson-stream---json">The NDJSON stream (<code>--json</code>)</h2>
 
-<p><code>--json</code> replaces the streamed text with one JSON object per line on stdout, one record for every event the Runtime yields: riffer’s <a href="https://github.com/bottrall/riffer">StreamEvents</a> plus the rig-level events (<code>session_start</code>, <code>notify</code>, <code>before_tool_call</code>, <code>after_tool_call</code>, <code>job_exit</code>, <code>turn_end</code>). The envelope is flat — the event’s <code>to_h</code> fields, plus a <code>"type"</code> of the snake_case event class (<code>text_delta</code>, <code>tool_call_done</code>, <code>session_start</code>, <code>turn_end</code>, …). Nested riffer values (a <code>TokenUsage</code>, an assistant message, a tool response) serialize through their own <code>to_h</code>.</p>
+<p><code>--json</code> replaces the reply text on stdout with one JSON object per line, one for every event of the run. Each record is flat: the event’s fields plus a <code>type</code>.</p>
 
 <div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"session_start"</span><span class="p">,</span><span class="nl">"id"</span><span class="p">:</span><span class="s2">"0198…"</span><span class="p">,</span><span class="nl">"reason"</span><span class="p">:</span><span class="s2">"new"</span><span class="p">}</span><span class="w">
-</span><span class="p">{</span><span class="nl">"message"</span><span class="p">:</span><span class="s2">"heads up"</span><span class="p">,</span><span class="nl">"level"</span><span class="p">:</span><span class="s2">"warning"</span><span class="p">,</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"notify"</span><span class="p">}</span><span class="w">
-</span><span class="p">{</span><span class="nl">"role"</span><span class="p">:</span><span class="s2">"assistant"</span><span class="p">,</span><span class="nl">"content"</span><span class="p">:</span><span class="s2">"Reading the failing test first. "</span><span class="p">,</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"text_delta"</span><span class="p">}</span><span class="w">
 </span><span class="p">{</span><span class="nl">"role"</span><span class="p">:</span><span class="s2">"assistant"</span><span class="p">,</span><span class="nl">"content"</span><span class="p">:</span><span class="s2">"Reading the failing test first."</span><span class="p">,</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"text_done"</span><span class="p">}</span><span class="w">
-</span><span class="p">{</span><span class="nl">"role"</span><span class="p">:</span><span class="s2">"assistant"</span><span class="p">,</span><span class="nl">"item_id"</span><span class="p">:</span><span class="s2">"call_1"</span><span class="p">,</span><span class="nl">"name"</span><span class="p">:</span><span class="s2">"read"</span><span class="p">,</span><span class="nl">"arguments_delta"</span><span class="p">:</span><span class="s2">"{</span><span class="se">\"</span><span class="s2">path</span><span class="se">\"</span><span class="s2">:</span><span class="se">\"</span><span class="s2">x</span><span class="se">\"</span><span class="s2">}"</span><span class="p">,</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"tool_call_delta"</span><span class="p">}</span><span class="w">
 </span><span class="p">{</span><span class="nl">"role"</span><span class="p">:</span><span class="s2">"assistant"</span><span class="p">,</span><span class="nl">"item_id"</span><span class="p">:</span><span class="s2">"call_1"</span><span class="p">,</span><span class="nl">"call_id"</span><span class="p">:</span><span class="s2">"call_1"</span><span class="p">,</span><span class="nl">"name"</span><span class="p">:</span><span class="s2">"read"</span><span class="p">,</span><span class="nl">"arguments"</span><span class="p">:</span><span class="s2">"{</span><span class="se">\"</span><span class="s2">path</span><span class="se">\"</span><span class="s2">:</span><span class="se">\"</span><span class="s2">x</span><span class="se">\"</span><span class="s2">}"</span><span class="p">,</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"tool_call_done"</span><span class="p">}</span><span class="w">
-</span><span class="p">{</span><span class="nl">"role"</span><span class="p">:</span><span class="s2">"assistant"</span><span class="p">,</span><span class="nl">"token_usage"</span><span class="p">:{</span><span class="nl">"input_tokens"</span><span class="p">:</span><span class="mi">1423</span><span class="p">,</span><span class="nl">"output_tokens"</span><span class="p">:</span><span class="mi">89</span><span class="p">},</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"token_usage_done"</span><span class="p">}</span><span class="w">
 </span><span class="p">{</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"before_tool_call"</span><span class="p">,</span><span class="nl">"call_id"</span><span class="p">:</span><span class="s2">"call_1"</span><span class="p">,</span><span class="nl">"tool"</span><span class="p">:</span><span class="s2">"read"</span><span class="p">,</span><span class="nl">"args"</span><span class="p">:{</span><span class="nl">"path"</span><span class="p">:</span><span class="s2">"x"</span><span class="p">},</span><span class="nl">"at"</span><span class="p">:</span><span class="mf">81234.513</span><span class="p">}</span><span class="w">
 </span><span class="p">{</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"after_tool_call"</span><span class="p">,</span><span class="nl">"call_id"</span><span class="p">:</span><span class="s2">"call_1"</span><span class="p">,</span><span class="nl">"tool"</span><span class="p">:</span><span class="s2">"read"</span><span class="p">,</span><span class="nl">"args"</span><span class="p">:{</span><span class="nl">"path"</span><span class="p">:</span><span class="s2">"x"</span><span class="p">},</span><span class="nl">"result"</span><span class="p">:{</span><span class="nl">"content"</span><span class="p">:</span><span class="s2">"1: …"</span><span class="p">,</span><span class="nl">"error"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nl">"error_type"</span><span class="p">:</span><span class="kc">null</span><span class="p">},</span><span class="nl">"at"</span><span class="p">:</span><span class="mf">81234.531</span><span class="p">,</span><span class="nl">"duration"</span><span class="p">:</span><span class="mf">0.018</span><span class="p">}</span><span class="w">
 </span><span class="p">{</span><span class="nl">"stop_reason"</span><span class="p">:</span><span class="s2">"completed"</span><span class="p">,</span><span class="nl">"usage"</span><span class="p">:{</span><span class="nl">"input_tokens"</span><span class="p">:</span><span class="mi">1423</span><span class="p">,</span><span class="nl">"output_tokens"</span><span class="p">:</span><span class="mi">89</span><span class="p">},</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"turn_end"</span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p><code>session_start</code> is the first record, carrying the session id. The remaining StreamEvents follow the turn in order — the ones a tool-using turn produces are shown above; reasoning (<code>reasoning_delta</code>, <code>reasoning_done</code>), web search (<code>web_search_status</code>, <code>web_search_done</code>), finish reasons, guardrails and interrupts serialize the same way whenever the provider emits them. <code>turn_end</code> is always the last record of a prompt: <code>stop_reason</code> is riffer’s outcome vocabulary (<code>completed</code>, <code>length</code>, <code>max_steps</code>, <code>cancelled</code>, …), <code>usage</code> is the run’s token totals, and <code>cost</code> (USD, present when the model is priced) rides on <code>usage</code>. A consumer that only reads the last line still knows how the turn ended and what it cost.</p>
+<table>
+  <thead>
+    <tr>
+      <th><code>type</code></th>
+      <th>When</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>session_start</code></td>
+      <td>first, once per run; carries the session <code>id</code></td>
+    </tr>
+    <tr>
+      <td><code>text_delta</code>, <code>text_done</code></td>
+      <td>the reply as it streams, then complete</td>
+    </tr>
+    <tr>
+      <td><code>reasoning_delta</code>, <code>reasoning_done</code></td>
+      <td>the model’s reasoning, when the provider sends it</td>
+    </tr>
+    <tr>
+      <td><code>tool_call_delta</code>, <code>tool_call_done</code></td>
+      <td>a tool call the model makes</td>
+    </tr>
+    <tr>
+      <td><code>before_tool_call</code>, <code>after_tool_call</code></td>
+      <td>a tool starting and finishing (<a href="/guides/events/#tool-call-events">fields</a>)</td>
+    </tr>
+    <tr>
+      <td><code>token_usage_done</code></td>
+      <td>each model call’s token usage</td>
+    </tr>
+    <tr>
+      <td><code>job_exit</code></td>
+      <td>a background job’s exit, as the model is told of it</td>
+    </tr>
+    <tr>
+      <td><code>notify</code></td>
+      <td>a warning or notice that text mode prints on stderr</td>
+    </tr>
+    <tr>
+      <td><code>turn_end</code></td>
+      <td>last record of every turn: <code>stop_reason</code>, and <code>usage</code> with <code>cost</code> when the model is priced</td>
+    </tr>
+    <tr>
+      <td><code>error</code></td>
+      <td>a fatal error, as the final record: <code>{"type": "error", "message": "…"}</code></td>
+    </tr>
+  </tbody>
+</table>
 
-<p>Each <a href="#background-jobs">follow-up turn</a> streams its records the same way, after the previous turn’s <code>turn_end</code>: one <code>job_exit</code> record per job the model is told of, then the turn’s events, then its own <code>turn_end</code>, whose <code>usage</code> covers that turn alone. <code>session_start</code> is written once, at the start of the run. The <code>waiting for background jobs</code> note stays on stderr. When the idle timeout passes, the last record is a <code>notify</code> at level <code>warning</code> carrying the message text mode prints on stderr.</p>
+<p>Other riffer stream events — web search, guardrails, interrupts — appear the same way when they happen (<a href="/guides/events/">Events</a>). A consumer that only reads the last <code>turn_end</code> still knows how the turn ended and what it cost.</p>
 
-<p>Each tool call is traced by two records, written as they happen; see <a href="/guides/embedding/#tool-call-events">tool call events</a>. <code>tool_call_done</code> announces the call before it runs. <code>before_tool_call</code> is written as the tool starts, with the <code>args</code> it runs with; a call that does not run — an extension blocked it, or its arguments are not a JSON object — has no such record. <code>after_tool_call</code> is written once for every call, when it finishes. On both, <code>call_id</code> matches the <code>tool_call_done</code> record and <code>at</code> is a monotonic timestamp in seconds, comparable only within the run; <code>duration</code> is the seconds the tool itself ran, <code>0.0</code> for a call that did not run. <code>result</code> is an object of three fields: <code>content</code>, the text the model receives; <code>error</code>, the error message, <code>null</code> on success; and <code>error_type</code>, <code>null</code> on success and otherwise the kind of failure (<code>execution_error</code>, <code>validation_error</code>, <code>unknown_tool</code>, <code>timeout_error</code>, <code>unhandled_error</code>, or <code>blocked</code> for a call an extension blocked). Text mode prints nothing for either record.</p>
-
-<p>Warnings and notify lines that headless prints on stderr in text mode ride the stream as <code>notify</code> records in <code>--json</code>; <code>progress</code>, the <code>--verbose</code> tool trace and the <a href="#the-prompt">stdin warning</a>, which comes before the session starts, stay on stderr. The <code>before_prompt</code>, <code>before_request</code> and <code>after_response</code> events are extension-hook traffic, not Runtime output, so they never appear on the stream.</p>
-
-<p>A fatal error — a failed configuration, no prompt, or an exception mid-turn — is a last <code>{"type": "error", "message": "…"}</code> record and the exit code above. Everything else on stderr stays on stderr: the exit-3 stop reason is printed there as in text mode and also rides on <code>turn_end</code>.</p>
+<p>The stdin warning, <code>waiting for background jobs</code>, the exit-3 reason and <code>--verbose</code> traces stay on stderr.</p>
 
         </article>
 

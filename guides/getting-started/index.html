@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.15.0</span>
+            <span class="version">v0.16.0</span>
           </div>
         </nav>
       </div>
@@ -46,57 +46,67 @@
                   ><span class="num">02</span>Getting started</a
                 >
               </li>
+              <li>
+                <a href="/guides/troubleshooting/"
+                  ><span class="num">03</span>Troubleshooting</a
+                >
+              </li>
             </ul>
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
                 <a href="/guides/terminal/"
-                  ><span class="num">03</span>Terminal</a
+                  ><span class="num">04</span>Terminal</a
+                >
+              </li>
+              <li>
+                <a href="/guides/cli/"
+                  ><span class="num">05</span>Command line</a
                 >
               </li>
               <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">04</span>Configuration</a
+                  ><span class="num">06</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">05</span>Instructions</a
+                  ><span class="num">07</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">06</span>Tools</a
+                  ><span class="num">08</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">07</span>Skills</a
+                  ><span class="num">09</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">08</span>MCP</a
+                  ><span class="num">10</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">09</span>Reloading</a
+                  ><span class="num">11</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">10</span>Sessions</a
+                  ><span class="num">12</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">11</span>Headless mode</a
+                  ><span class="num">13</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/"
-                  ><span class="num">12</span>ACP</a
+                  ><span class="num">14</span>ACP</a
                 >
               </li>
             </ul>
@@ -104,17 +114,27 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">13</span>Extensions</a
+                  ><span class="num">15</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">14</span>Embedding riffer-rig</a
+                  ><span class="num">16</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/events/"
+                  ><span class="num">17</span>Events</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">15</span>Hosts</a
+                  ><span class="num">18</span>Hosts</a
+                >
+              </li>
+              <li>
+                <a href="/guides/stores/"
+                  ><span class="num">19</span>Session stores</a
                 >
               </li>
             </ul>
@@ -122,12 +142,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">16</span>Providers</a
+                  ><span class="num">20</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">17</span>Custom providers</a
+                  ><span class="num">21</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -157,7 +177,7 @@
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gem <span class="nb">install </span>riffer-rig
 </code></pre></div></div>
 
-<p>This installs the <code>riffer</code> executable.</p>
+<p>This installs the <code>riffer</code> command.</p>
 
 <h2 id="first-run">First run</h2>
 
@@ -173,50 +193,52 @@ riffer
 › anthropic/claude-sonnet-4-6
 </code></pre>
 
-<p>The answer is saved as <code>model</code> in <code>~/.riffer/settings.json</code>, so later runs skip the question. A model already set by <code>--model</code>, <code>RIFFER_MODEL</code> or either settings file is used without asking (<a href="/guides/configuration/#model">Configuration</a>).</p>
+<p>The answer is saved to <code>~/.riffer/settings.json</code>, so later runs skip the question. <a href="/guides/configuration/#where-each-value-comes-from">Configuration</a> lists the other places a model can come from.</p>
 
-<p>The reasoning effort follows the same pattern: <code>--reasoning</code>, then <code>RIFFER_REASONING</code>, then <code>reasoning</code> in the settings, and <code>/reasoning</code> switches it inside the session (<a href="/guides/configuration/#reasoning">Configuration</a>).</p>
-
-<p>Next it looks for the provider’s credentials in the environment and in <code>~/.riffer/auth.json</code>. When one is missing it asks for it, reading a key without echo:</p>
+<p>If the provider’s SDK gem is missing, it offers to install it (<a href="/guides/providers/overview/#sdk-gems">SDK gems</a>). Then it looks for the provider’s API key in the environment and in <code>~/.riffer/auth.json</code>, and asks for it if it finds none:</p>
 
 <pre><code class="language-text">anthropic api_key
 › (hidden)
 </code></pre>
 
-<p>A pasted key is saved to <code>~/.riffer/auth.json</code> (permissions <code>600</code>) and reused from then on. Leaving the answer empty stops with a message naming the environment variable to set instead. <a href="/guides/providers/overview/">Providers</a> lists each provider’s variables and where to create a key.</p>
+<p>The key is saved to <code>~/.riffer/auth.json</code> with permissions <code>600</code>. Leave the answer empty to stop and set the environment variable instead; <a href="/guides/providers/overview/">Providers</a> lists each provider’s variables and where to create a key.</p>
+
+<blockquote>
+  <p><strong>Tools run without asking.</strong> The model can read and write files and run shell commands in this directory with no confirmation step. <a href="/guides/tools/#what-runs-without-asking">What runs without asking</a> explains what you can restrict.</p>
+</blockquote>
 
 <h2 id="the-session">The session</h2>
 
-<p>The banner shows the model, the working directory, how many skills were found and the version. On a terminal too narrow for the logo it leaves the logo out, and a model or working directory too long for its row is cut from the left behind <code>…</code>. It is drawn again when the session changes — <code>/new</code>, <code>/resume</code> — and for a session that has already used tokens it adds a <code>session</code> row with the total so far, and its cost once the model is priced. Type a prompt and press Enter:</p>
+<p>The banner shows the model, the reasoning level, the working directory and how many skills were found. Type a prompt and press Enter.</p>
 
 <ul>
-  <li>while the turn runs, the status line under the input shows its turn number, time, tokens and cost, and Ctrl-T peeks at what the model is writing; between turns it shows the same slots as <code>idle</code> — the time, the tokens and cost used so far, the background jobs — at the same positions, so starting or ending a turn moves nothing;</li>
-  <li>when it ends, the reply is printed in one piece, and under it a stat line: the turn’s steps, time and tokens, then the session’s running total, each with its cost once the model is priced (<a href="/guides/configuration/#catalog_files">Configuration</a>);</li>
-  <li>you can keep typing while a turn runs: Enter queues the message, and it runs when the turn ends;</li>
-  <li>Ctrl-C cancels a running turn, which prints what the reply had reached and <code>interrupted</code>; with no turn running, a second Ctrl-C exits, as do <code>/exit</code>, <code>/quit</code> and Ctrl-D on an empty line.</li>
+  <li>While the turn runs, the status line under the input shows its progress, time, tokens and cost, and Ctrl-T <a href="/guides/terminal/#peek">peeks</a> at what the model is writing.</li>
+  <li>When it ends, the reply is printed, followed by a <a href="/guides/terminal/#the-turn-report">stat line</a> for the turn and the session.</li>
+  <li>You can keep typing while a turn runs: Enter <a href="/guides/terminal/#queueing-messages">queues</a> the message for when the turn ends.</li>
+  <li>Ctrl-C cancels a running turn. With no turn running, press it twice to exit, or type <code>/exit</code>.</li>
 </ul>
 
-<p><code>/help</code> lists the slash commands, <a href="/guides/terminal/">Terminal</a> has every key and what each command does, and the <a href="https://github.com/bottrall/riffer-rig#usage">README</a> lists the flags.</p>
+<p><code>/help</code> lists the commands. <a href="/guides/terminal/">Terminal</a> has every key and command, and <a href="/guides/cli/">Command line</a> has every flag.</p>
 
 <h2 id="what-first-run-leaves-behind">What first run leaves behind</h2>
 
 <p>In <code>~/.riffer/</code>:</p>
 
 <ul>
-  <li><code>settings.json</code> — the model you picked, and any other settings (<a href="/guides/configuration/">Configuration</a>);</li>
-  <li><code>auth.json</code> — the credentials you pasted, permissions <code>600</code> (<a href="/guides/providers/overview/">Providers</a>);</li>
-  <li><code>sessions/</code> — one JSONL file per saved session (<a href="/guides/sessions/">Sessions</a>).</li>
+  <li><code>settings.json</code> — the model you picked (<a href="/guides/configuration/">Configuration</a>);</li>
+  <li><code>auth.json</code> — the key you pasted (<a href="/guides/providers/overview/">Providers</a>);</li>
+  <li><code>sessions/</code> — one file per saved session (<a href="/guides/sessions/">Sessions</a>).</li>
 </ul>
 
-<p>In the project, nothing: <code>.riffer/</code> is only there if you add a project <code>settings.json</code> or <code>rig.rb</code> (<a href="/guides/configuration/">Configuration</a>, <a href="/guides/extensions/">Extensions</a>), and the first run of a project <code>rig.rb</code> asks you to trust it.</p>
+<p>Nothing is written to the project. A project <code>.riffer/</code> exists only if you add a <code>settings.json</code> or <code>rig.rb</code> to it.</p>
 
 <h2 id="where-to-next">Where to next</h2>
 
 <ul>
-  <li><a href="/guides/overview/">Overview</a> — what riffer-rig is, the four tiers, the runtime and host layers</li>
-  <li><a href="/guides/configuration/">Configuration</a> — the settings scopes and every core key</li>
+  <li><a href="/guides/configuration/">Configuration</a> — settings for every project or one</li>
   <li><a href="/guides/tools/">Tools</a> and <a href="/guides/skills/">Skills</a> — what the agent can do out of the box</li>
-  <li><a href="/guides/extensions/">Extending</a> — your own tools, commands and prompts in <code>rig.rb</code></li>
+  <li><a href="/guides/extensions/">Extensions</a> — your own tools, commands and prompts</li>
+  <li><a href="/guides/troubleshooting/">Troubleshooting</a> — common errors and their fixes</li>
 </ul>
 
         </article>
@@ -229,10 +251,10 @@ riffer
               ><span class="name">Overview</span></span
             ></a
           >
-          <a class="doc next" href="/guides/terminal/"
+          <a class="doc next" href="/guides/troubleshooting/"
             ><span
               ><span class="desc">Next</span
-              ><span class="name">Terminal</span></span
+              ><span class="name">Troubleshooting</span></span
             ><span class="go">→</span></a
           >
         </nav>

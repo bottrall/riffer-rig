@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.15.0</span>
+            <span class="version">v0.16.0</span>
           </div>
         </nav>
       </div>
@@ -46,57 +46,67 @@
                   ><span class="num">02</span>Getting started</a
                 >
               </li>
+              <li>
+                <a href="/guides/troubleshooting/"
+                  ><span class="num">03</span>Troubleshooting</a
+                >
+              </li>
             </ul>
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
                 <a href="/guides/terminal/"
-                  ><span class="num">03</span>Terminal</a
+                  ><span class="num">04</span>Terminal</a
+                >
+              </li>
+              <li>
+                <a href="/guides/cli/"
+                  ><span class="num">05</span>Command line</a
                 >
               </li>
               <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">04</span>Configuration</a
+                  ><span class="num">06</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/" class="active" aria-current="page"
-                  ><span class="num">05</span>Instructions</a
+                  ><span class="num">07</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">06</span>Tools</a
+                  ><span class="num">08</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">07</span>Skills</a
+                  ><span class="num">09</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">08</span>MCP</a
+                  ><span class="num">10</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">09</span>Reloading</a
+                  ><span class="num">11</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">10</span>Sessions</a
+                  ><span class="num">12</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">11</span>Headless mode</a
+                  ><span class="num">13</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/"
-                  ><span class="num">12</span>ACP</a
+                  ><span class="num">14</span>ACP</a
                 >
               </li>
             </ul>
@@ -104,17 +114,27 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">13</span>Extensions</a
+                  ><span class="num">15</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">14</span>Embedding riffer-rig</a
+                  ><span class="num">16</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/events/"
+                  ><span class="num">17</span>Events</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">15</span>Hosts</a
+                  ><span class="num">18</span>Hosts</a
+                >
+              </li>
+              <li>
+                <a href="/guides/stores/"
+                  ><span class="num">19</span>Session stores</a
                 >
               </li>
             </ul>
@@ -122,12 +142,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">16</span>Providers</a
+                  ><span class="num">20</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">17</span>Custom providers</a
+                  ><span class="num">21</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -137,75 +157,57 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Using the terminal · 05</span></p>
+          <p class="kicker"><span class="chapter">Using the terminal · 07</span></p>
           <h1>Instructions</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
             <ul>
-              <li><a href="#assembly">Assembly</a></li>
               <li><a href="#agentsmd">AGENTS.md</a></li>
-              <li><a href="#overrides">Overrides</a></li>
+              <li><a href="#changing-the-base-prompt">Changing the base prompt</a></li>
             </ul>
           </nav>
           
-<p>A <code>Riffer::Rig::Runtime</code> builds one system message for its agent. The default base prompt is a short, task-neutral text owned by the Runtime: it names the agent, says it is general purpose and works through whatever tools it has, and states three norms. It lists no tools and names no conventions — each arrives through the prompt seam and introduces itself when present, so a Runtime with no extensions says nothing untrue.</p>
-
-<p>The base prompt is a heredoc in the Runtime’s agent definition (<a href="https://github.com/bottrall/riffer-rig/blob/main/lib/riffer/rig/runtime.rb">permalink</a>); this guide deliberately does not restate its text.</p>
-
-<h2 id="assembly">Assembly</h2>
-
-<p>The system message is three parts joined by blank lines:</p>
+<p>Every turn, riffer-rig builds the model’s system message from three parts, joined by blank lines:</p>
 
 <ol>
-  <li><strong>Base prompt</strong> — the default text above, or the <code>instructions:</code> replacement.</li>
-  <li><strong>Prompt sections</strong> — every <code>rig.prompt(:name) { |ctx| }</code> block the Runtime’s extensions registered, in load order, a later registration of a name replacing the earlier one. See <a href="/guides/extensions/">Extensions</a>.</li>
+  <li><strong>The base prompt</strong> — a short, task-neutral text: it names the agent, says it is general purpose and works through whatever tools it has, and states three operating norms. It names no tools and no conventions, so a session without them says nothing untrue.</li>
+  <li><strong>Prompt sections</strong> — the text each extension adds with <a href="/guides/extensions/#the-rigprompt-seam"><code>rig.prompt</code></a>, in load order. AGENTS.md (below) is one of these.</li>
   <li>
-    <p><strong>Environment block</strong> — always appended by the Runtime:</p>
+    <p><strong>The environment</strong> — always last:</p>
 
-    <pre><code>Current date: &lt;today&gt;
+    <pre><code class="language-text">Current date: &lt;today&gt;
 Current working directory: &lt;cwd&gt;
 </code></pre>
   </li>
 </ol>
 
-<p>When skills exist, riffer follows it with a second system message of its own, the skills catalog (<a href="/guides/skills/#what-the-model-sees">Skills</a>). The Runtime does not touch it.</p>
+<p>When skills exist, a second system message follows with the <a href="/guides/skills/#what-the-model-sees">skills catalog</a>.</p>
 
-<p>The Runtime re-renders the three parts at the start of every turn: section blocks run again and the date is read again, so nothing needs a reload to stay current. The base prompt is fixed at construction. The cwd is the <code>cwd:</code> keyword; the Runtime itself performs no disk scanning — a section that reads a file does so in its extension.</p>
+<p>Sections and the date are re-read at the start of every turn, so a change takes effect on the next turn without a reload.</p>
 
 <h2 id="agentsmd">AGENTS.md</h2>
 
-<p>The bundled <code>agents_md</code> extension (<code>Riffer::Rig.bundled(:agents_md)</code>) registers one prompt section, <code>:agents_md</code>. It reads these files, whichever exist, in this order:</p>
+<p>The bundled <code>agents_md</code> extension adds these files, whichever exist, in this order:</p>
 
 <ol>
   <li><code>~/.riffer/AGENTS.md</code> — your instructions for every project.</li>
-  <li>An <code>AGENTS.md</code> in every directory from the filesystem root down to <code>&lt;cwd&gt;</code>, outermost first, where <code>&lt;cwd&gt;</code> is the Runtime’s <code>cwd:</code>. A monorepo can keep shared instructions at its root and a package’s own in the package, and a run from inside the package reads both.</li>
+  <li>An <code>AGENTS.md</code> in every directory from the filesystem root down to the working directory, outermost first. A monorepo can keep shared instructions at its root and a package’s own in the package, and a session in the package reads both.</li>
 </ol>
 
-<p>A file is read once even when it sits on both paths, as <code>~/.riffer/AGENTS.md</code> does when <code>&lt;cwd&gt;</code> is <code>~/.riffer</code>.</p>
+<p>The section tells the model these are instructions you wrote, which take precedence over the base prompt’s norms, and that a file closer to the working directory wins over one further out. Each file appears as its own block, tagged with its path:</p>
 
-<p>The section opens with one sentence framing what follows as instructions the user wrote, which take precedence over the base prompt’s norms where they conflict, and among themselves the later file (the one closer to <code>&lt;cwd&gt;</code>) wins. Each file follows as its own block, tagged with its absolute path:</p>
-
-<pre><code>&lt;project_instructions path="/home/you/project/AGENTS.md"&gt;
+<pre><code class="language-text">&lt;project_instructions path="/home/you/project/AGENTS.md"&gt;
 …the file's contents…
 &lt;/project_instructions&gt;
 </code></pre>
 
-<p>With no file present the section renders nothing, so the system message does not mention AGENTS.md at all.</p>
+<p>With no file present the section is empty, and the system message doesn’t mention AGENTS.md. Relative paths inside a file are left as written; the model resolves them with its tools.</p>
 
-<p>The files are read at the start of every turn, so an edit takes effect on the next turn with no reload or rebuild.</p>
+<p>To leave AGENTS.md out, run with <code>--no-agents-md</code> or disable <code>agents_md</code> in <a href="/guides/configuration/#extensions">settings</a>. To change what it adds, register your own <code>:agents_md</code> section from an extension, which <a href="/guides/extensions/#bundled-extensions-and-replacement">replaces</a> the bundled one.</p>
 
-<p>Relative paths written inside an AGENTS.md are left as written; the extension does not resolve them. Reading what they point to is the model’s business, with its tools, from the working directory.</p>
+<h2 id="changing-the-base-prompt">Changing the base prompt</h2>
 
-<p>To leave AGENTS.md out, do not pass the extension to the Runtime: list <code>agents_md</code> in <code>extensions.disabled</code> (<a href="/guides/configuration/#extensions">Configuration</a>), or build with <code>agents_md: false</code> in the <a href="/guides/embedding/#loader-options"><code>Loader::Options</code></a>. To change what it says, register your own <code>:agents_md</code> section from a later extension; the later registration replaces the bundled one (<a href="/guides/extensions/#bundled-extensions-and-replacement">Extensions</a>).</p>
-
-<h2 id="overrides">Overrides</h2>
-
-<ul>
-  <li><code>name:</code> (default <code>"riffer"</code>) swaps the name interpolated inside the default base.</li>
-  <li><code>instructions:</code> replaces the base wholesale.</li>
-</ul>
-
-<p>Sections and the environment block are appended in both cases.</p>
+<p>When <a href="/guides/embedding/#constructing-a-runtime">embedding</a>, <code>name:</code> changes the agent’s name inside the base prompt (default <code>"riffer"</code>), and <code>instructions:</code> replaces the base prompt entirely. Prompt sections and the environment are added either way.</p>
 
         </article>
 

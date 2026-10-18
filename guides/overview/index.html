@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.15.0</span>
+            <span class="version">v0.16.0</span>
           </div>
         </nav>
       </div>
@@ -46,57 +46,67 @@
                   ><span class="num">02</span>Getting started</a
                 >
               </li>
+              <li>
+                <a href="/guides/troubleshooting/"
+                  ><span class="num">03</span>Troubleshooting</a
+                >
+              </li>
             </ul>
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
                 <a href="/guides/terminal/"
-                  ><span class="num">03</span>Terminal</a
+                  ><span class="num">04</span>Terminal</a
+                >
+              </li>
+              <li>
+                <a href="/guides/cli/"
+                  ><span class="num">05</span>Command line</a
                 >
               </li>
               <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">04</span>Configuration</a
+                  ><span class="num">06</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">05</span>Instructions</a
+                  ><span class="num">07</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">06</span>Tools</a
+                  ><span class="num">08</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">07</span>Skills</a
+                  ><span class="num">09</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">08</span>MCP</a
+                  ><span class="num">10</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">09</span>Reloading</a
+                  ><span class="num">11</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">10</span>Sessions</a
+                  ><span class="num">12</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">11</span>Headless mode</a
+                  ><span class="num">13</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/"
-                  ><span class="num">12</span>ACP</a
+                  ><span class="num">14</span>ACP</a
                 >
               </li>
             </ul>
@@ -104,17 +114,27 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">13</span>Extensions</a
+                  ><span class="num">15</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">14</span>Embedding riffer-rig</a
+                  ><span class="num">16</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/events/"
+                  ><span class="num">17</span>Events</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">15</span>Hosts</a
+                  ><span class="num">18</span>Hosts</a
+                >
+              </li>
+              <li>
+                <a href="/guides/stores/"
+                  ><span class="num">19</span>Session stores</a
                 >
               </li>
             </ul>
@@ -122,12 +142,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">16</span>Providers</a
+                  ><span class="num">20</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">17</span>Custom providers</a
+                  ><span class="num">21</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -142,86 +162,113 @@
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
             <ul>
-              <li><a href="#the-two-claims">The two claims</a></li>
-              <li><a href="#the-four-tiers">The four tiers</a></li>
-              <li><a href="#the-layers">The layers</a></li>
+              <li><a href="#why-it-exists">Why it exists</a></li>
+              <li><a href="#how-it-fits-together">How it fits together</a></li>
+              <li><a href="#glossary">Glossary</a></li>
               <li><a href="#where-to-next">Where to next</a></li>
             </ul>
           </nav>
           
-<p>riffer-rig is <strong>a general-purpose agent for Ruby developers who want to own their harness</strong>. It runs as a terminal agent and, because the runtime is separate from the terminal, it also runs inside any Ruby process: a Rails app, a script, a job. You extend it in Ruby — tools, commands, providers and hooks are ordinary Ruby classes on <a href="https://github.com/janeapp/riffer">riffer</a>’s primitives, and the same objects work whether the host is the terminal or your app. It ships with a coding toolkit (read, write, edit, bash) as the default bundle, because a shell and file access are the most efficient way to get almost any task done, but the prompt gives it no coding identity. It is built and maintained by riffer’s lead maintainer as a personal MIT project, so the framework grows whatever the agent needs.</p>
+<p>riffer-rig is <strong>a general-purpose agent for Ruby developers who want to own their harness</strong>. It runs as a terminal agent, and because the runtime is separate from the terminal it also runs inside any Ruby process. You extend it in Ruby: tools, commands, providers and hooks are ordinary classes on <a href="https://riffer.ai">riffer</a>’s primitives.</p>
 
-<h2 id="the-two-claims">The two claims</h2>
+<h2 id="why-it-exists">Why it exists</h2>
 
-<p>Measured against pi, OpenCode, Claude Code and Codex:</p>
-
-<ol>
-  <li><strong>Runs in your Ruby process.</strong> None of the four can be embedded from Ruby; all give Ruby a subprocess with JSONL, HTTP or RPC.</li>
-  <li><strong>Extend it in Ruby.</strong> pi offers in-process code extensions in TypeScript; nobody offers them in Ruby.</li>
-</ol>
-
-<p>The agent is general purpose, not a “coding agent”: the default tools are the coding toolkit, but the prompt states operating norms as task-neutral rules and gives no coding identity. It does not compete on provider breadth, on polish with Claude Code, as a hosted product, or for non-Ruby developers — they get <a href="/guides/acp/">ACP</a> or a subprocess. There is no permission model for tool execution: the tool trusts the model.</p>
-
-<h2 id="the-four-tiers">The four tiers</h2>
-
-<p>Everything in the project is one of four things. Ask in order; the first “yes” wins.</p>
+<p>Compared with pi, OpenCode, Claude Code and Codex:</p>
 
 <ol>
-  <li><strong>Core</strong> — is it something an extension cannot do, <em>or</em> something every host needs in exactly the same form?</li>
-  <li><strong>Host</strong> — is it about how one front-end drives the runtime? The terminal is one host; the headless printer, the ACP adapter and a Rails app are others.</li>
-  <li><strong>Bundled</strong> — is it the coding toolkit (read, write, edit, bash), or a convention at least two of pi, OpenCode, Claude Code and Codex already share? Then it ships in the gem, is built only on the extension API, and you can disable or replace it.</li>
-  <li><strong>Third-party</strong> — everything else: ordinary Ruby extensions people write and publish themselves.</li>
+  <li><strong>It runs in your Ruby process.</strong> None of the four can be embedded from Ruby; they offer Ruby a subprocess speaking JSONL, HTTP or RPC.</li>
+  <li><strong>You extend it in Ruby.</strong> pi has in-process extensions in TypeScript; nobody offers them in Ruby.</li>
 </ol>
+
+<p>It is general purpose, not a coding agent: the default tools are a coding toolkit, but the prompt gives the agent no coding identity. It does not try to match Claude Code’s polish or other agents’ provider breadth, and it is not a hosted product. Developers outside Ruby can still drive it over <a href="/guides/acp/">ACP</a> or as a <a href="/guides/headless/">subprocess</a>.</p>
+
+<p>There is no permission model: <a href="/guides/tools/#what-runs-without-asking">tools run without asking</a>.</p>
+
+<h2 id="how-it-fits-together">How it fits together</h2>
+
+<pre><code class="language-text"> riffer          riffer -p        riffer acp       your Ruby app
+ (terminal)      (headless)       (editors)        (Rails, a job, a script)
+     │                │                │                  │
+     └────────────────┴───────┬────────┴──────────────────┘
+                              ▼
+                           Loader   ◄── settings.json, auth.json, rig.rb,
+                              │         AGENTS.md, skills, saved sessions
+                              ▼
+                           Runtime  ◄── extensions: the bundled toolkit + yours
+                              │
+                              ▼
+                           riffer: the agent loop and the providers
+</code></pre>
+
+<ul>
+  <li><strong>Hosts</strong> are the front ends. Three ship with the gem — the <a href="/guides/terminal/">terminal</a>, <a href="/guides/headless/">headless</a> and <a href="/guides/acp/">ACP</a> — and an app can <a href="/guides/hosts/">write its own</a>.</li>
+  <li><strong>The Loader</strong> knows riffer-rig’s files on disk and builds a Runtime from them, the same way for every shipped host. An app can use it or skip it (<a href="/guides/embedding/">Embedding</a>).</li>
+  <li><strong>The Runtime</strong> runs the conversation. It reads no files and assumes no terminal; everything it does comes from the extensions it is given.</li>
+  <li><strong>Extensions</strong> register tools, commands, prompt sections, hooks, skills, MCP servers, settings and providers (<a href="/guides/extensions/">Extensions</a>). The read, write, edit and bash tools, AGENTS.md, Agent Skills and the MCP client are themselves bundled extensions, so each can be disabled or replaced.</li>
+</ul>
+
+<p>Provider-native tools such as web search are part of the core rather than an extension, and are <a href="/guides/configuration/#toolsnative">off by default</a>, so changing provider never silently changes what the agent can do.</p>
+
+<h2 id="glossary">Glossary</h2>
 
 <table>
   <thead>
     <tr>
-      <th>Tier</th>
-      <th>Contents</th>
+      <th>Term</th>
+      <th>Meaning</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>Core</td>
-      <td>agent loop (riffer); registration seams for tools, commands, providers, prompt contributions and events; extension loader; host interface; settings mechanism and precedence; credentials store and recipe table; session save/resume; token tally and pricing; provider-native tools (off by default)</td>
+      <td><strong>session</strong></td>
+      <td>one conversation, with an id; saved as you go and <a href="/guides/sessions/">resumable</a></td>
     </tr>
     <tr>
-      <td>Host</td>
-      <td>terminal REPL and UI; headless printer; ACP adapter; extension-directory discovery; provider onboarding prompts</td>
+      <td><strong>turn</strong></td>
+      <td>one prompt and everything the agent does until it replies</td>
     </tr>
     <tr>
-      <td>Bundled</td>
-      <td>read/write/edit/bash; Agent Skills; AGENTS.md; MCP client</td>
+      <td><strong>step</strong></td>
+      <td>one model call; a turn that uses tools takes several. <code>--max-steps</code> counts these</td>
     </tr>
     <tr>
-      <td>Third-party</td>
-      <td>hooks, models.dev catalog, MCP server, git context, SQLite session store, any tool beyond the four</td>
+      <td><strong>run</strong></td>
+      <td>one pass of the agent loop. A turn is one run, unless a <a href="/guides/tools/#background-jobs">background job’s exit</a> continues it, which starts another</td>
+    </tr>
+    <tr>
+      <td><strong>Runtime</strong></td>
+      <td>the object that holds a session and runs its turns</td>
+    </tr>
+    <tr>
+      <td><strong>Loader</strong></td>
+      <td>builds a Runtime from the files on disk</td>
+    </tr>
+    <tr>
+      <td><strong>host</strong></td>
+      <td>a front end, and the object it gives the Runtime for asking questions and showing notices</td>
+    </tr>
+    <tr>
+      <td><strong>extension</strong></td>
+      <td>a named Ruby block that registers things with a Runtime</td>
+    </tr>
+    <tr>
+      <td><strong>seam</strong></td>
+      <td>one of the <code>rig.*</code> methods an extension registers through</td>
+    </tr>
+    <tr>
+      <td><strong>bundled extension</strong></td>
+      <td>an extension that ships with the gem and can be disabled or replaced</td>
     </tr>
   </tbody>
 </table>
-
-<p>Three rules follow. <strong>Provider-native tools are core and off by default</strong>: they arrive through riffer’s provider seam and are switched on in <a href="/guides/configuration/#toolsnative">settings</a>, so a provider change never silently changes what the agent can do. <strong>Standards never touch core</strong>: a new convention only asks whether the extension API is rich enough to express it, and if not, that is a seam to add. <strong>Core lives in riffer-rig first</strong>, and is extracted to riffer only when a second riffer agent needs the same thing.</p>
-
-<h2 id="the-layers">The layers</h2>
-
-<p>Hosts drive a Runtime; the <a href="/guides/embedding/#building-a-runtime-with-the-loader">Loader</a> builds one from the filesystem for the shipped hosts, and an embedding app may skip it and register objects directly.</p>
-
-<ul>
-  <li><strong>Hosts</strong> render events and own the TTY or the wire. Three ship: the terminal REPL (<a href="/guides/getting-started/"><code>riffer</code></a>), the headless printer (<a href="/guides/headless/"><code>riffer -p</code></a>), and the ACP adapter (<a href="/guides/acp/"><code>riffer acp</code></a>); a Ruby app writes its own on the <a href="/guides/hosts/">Host interface</a>.</li>
-  <li><strong>The Loader</strong> holds the filesystem conventions — <code>rig.rb</code>, <code>settings.json</code>, <code>auth.json</code>, trust, <code>AGENTS.md</code>, skills, the reload trigger, the session store — and builds a Runtime for a working directory the way the shipped hosts do.</li>
-  <li><strong>The <a href="/guides/embedding/">Runtime</a></strong> assumes no TTY and reads no disk: it accepts registered objects only. It assembles the prompt, streams events, cancels turns, dispatches commands, and snapshots and rebuilds for hot reload. Extensions sit beside it in the runtime layer — the registrar and its <a href="/guides/extensions/">eight seams</a>, carrying the bundled read, write, edit, bash, skills, AGENTS.md and MCP client.</li>
-</ul>
-
-<p>Two seams keep the boundary honest. Extension discovery — scanning the config and project directories — lives in the Loader; the Runtime only accepts registered objects. And global state allows several agents in one process: each Runtime builds its own agent and registrar, and provider credentials are one set per process. The runtime assumes no TTY, and no further embedding accommodation is made until a real host exists.</p>
 
 <h2 id="where-to-next">Where to next</h2>
 
 <ul>
   <li><a href="/guides/getting-started/">Getting started</a> — install, pick a model, first session</li>
-  <li><a href="/guides/configuration/">Configuration</a> — the settings scopes and every core key</li>
-  <li><a href="/guides/extensions/">Extending</a> — <code>rig.rb</code> and the eight seams</li>
-  <li><a href="/guides/embedding/">Embedding</a> — <code>Loader.runtime</code> and the Runtime from Ruby</li>
-  <li><a href="/guides/providers/overview/">Providers</a> — model strings and credentials</li>
+  <li><a href="/guides/configuration/">Configuration</a> — settings and where each value comes from</li>
+  <li><a href="/guides/extensions/">Extensions</a> — your own tools, commands and hooks</li>
+  <li><a href="/guides/embedding/">Embedding</a> — the Runtime from Ruby</li>
 </ul>
 
         </article>

@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Troubleshooting — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/overview/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.16.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/overview/"
+                  ><span class="num">01</span>Overview</a
+                >
+              </li>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">02</span>Getting started</a
+                >
+              </li>
+              <li>
+                <a href="/guides/troubleshooting/" class="active" aria-current="page"
+                  ><span class="num">03</span>Troubleshooting</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/terminal/"
+                  ><span class="num">04</span>Terminal</a
+                >
+              </li>
+              <li>
+                <a href="/guides/cli/"
+                  ><span class="num">05</span>Command line</a
+                >
+              </li>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">06</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">07</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">08</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">09</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">10</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/reloading/"
+                  ><span class="num">11</span>Reloading</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">12</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">13</span>Headless mode</a
+                >
+              </li>
+              <li>
+                <a href="/guides/acp/"
+                  ><span class="num">14</span>ACP</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">15</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">16</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/events/"
+                  ><span class="num">17</span>Events</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">18</span>Hosts</a
+                >
+              </li>
+              <li>
+                <a href="/guides/stores/"
+                  ><span class="num">19</span>Session stores</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">20</span>Providers</a
+                >
+              </li>
+              <li>
+                <a href="/guides/providers/custom/"
+                  ><span class="num">21</span>Custom providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Start here · 03</span></p>
+          <h1>Troubleshooting</h1>
+          
+<table>
+  <thead>
+    <tr>
+      <th>You see</th>
+      <th>Why</th>
+      <th>Fix</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>sonnet is not a provider/name model string; the provider is one of: …</code></td>
+      <td>the model has no provider prefix</td>
+      <td>write it as <code>provider/name</code>, such as <code>anthropic/claude-sonnet-4-6</code>; check <code>--model</code>, <code>RIFFER_MODEL</code> and both settings files (<a href="/guides/configuration/#where-each-value-comes-from">precedence</a>)</td>
+    </tr>
+    <tr>
+      <td><code>turbo is not a reasoning level; riffer accepts: off low medium high xhigh max</code></td>
+      <td><code>--reasoning</code> or <code>RIFFER_REASONING</code> holds an unknown level</td>
+      <td>use one of the listed levels (<a href="/guides/configuration/#reasoning">Configuration</a>)</td>
+    </tr>
+    <tr>
+      <td><code>…/settings.json is not valid JSON at line 4 column 3</code></td>
+      <td>a settings, <code>auth.json</code> or <code>trust.json</code> file doesn’t parse</td>
+      <td>fix the file at that position; riffer-rig never overwrites a broken file</td>
+    </tr>
+    <tr>
+      <td><code>anthropic has no api_key (ANTHROPIC_API_KEY); set it in the environment or run riffer interactively to paste it …</code></td>
+      <td>headless or ACP found no credential, and can’t ask</td>
+      <td>set the variable, or run <code>riffer</code> once in a terminal to store the key (<a href="/guides/providers/overview/">Providers</a>)</td>
+    </tr>
+    <tr>
+      <td><code>anthropic is not installed; install it with gem install anthropic …</code></td>
+      <td>the provider’s SDK gem is missing, and riffer-rig can’t or may not install it</td>
+      <td>run the printed command, or add the gem to your Gemfile (<a href="/guides/providers/overview/#sdk-gems">SDK gems</a>)</td>
+    </tr>
+    <tr>
+      <td><code>… is not installed and Bundler manages the load path; add gem …</code></td>
+      <td>riffer-rig runs under Bundler, which it can’t install into</td>
+      <td>add the printed line to your Gemfile and <code>bundle install</code></td>
+    </tr>
+    <tr>
+      <td><code>Extension NAME failed to load: …</code></td>
+      <td>an extension raised while loading, or its <code>requires:</code> doesn’t match</td>
+      <td>fix the extension; the others still loaded (<a href="/guides/extensions/#error-isolation">Error isolation</a>)</td>
+    </tr>
+    <tr>
+      <td><code>Unknown tool in allowlist: NAME</code></td>
+      <td><code>--tools</code> names a tool that doesn’t exist</td>
+      <td>check the spelling against <a href="/guides/tools/#identifiers">the identifiers</a></td>
+    </tr>
+    <tr>
+      <td><code>MCP server NAME failed to register: …</code></td>
+      <td>the server isn’t <code>https://</code>, didn’t answer, or is missing a credential</td>
+      <td>see <a href="/guides/mcp/#when-a-server-fails">MCP</a></td>
+    </tr>
+    <tr>
+      <td><code>No saved session in this directory.</code> (headless exits 2)</td>
+      <td><code>-c</code> found nothing to continue</td>
+      <td>drop <code>-c</code>, or run from the directory the session was saved in</td>
+    </tr>
+    <tr>
+      <td><code>no stdin data received in 3s, proceeding without it; …</code></td>
+      <td>headless was given a prompt and a stdin that stayed open</td>
+      <td>redirect stdin from <code>/dev/null</code> (<a href="/guides/headless/#the-prompt">Headless</a>)</td>
+    </tr>
+    <tr>
+      <td>your project’s <code>rig.rb</code> doesn’t load in headless or ACP</td>
+      <td>it hasn’t been trusted, and those hosts can’t ask</td>
+      <td>run <code>riffer</code> once in the project and answer yes (<a href="/guides/extensions/#the-rigrb-files">trust</a>)</td>
+    </tr>
+    <tr>
+      <td>an edit to <code>settings.json</code> has no effect mid-session</td>
+      <td>automatic reloading watches only <code>rig.rb</code> files</td>
+      <td>run <code>/reload</code> (<a href="/guides/reloading/#when-it-reloads">Reloading</a>)</td>
+    </tr>
+    <tr>
+      <td>Shift-Enter sends instead of starting a new row</td>
+      <td>the terminal doesn’t support the Kitty keyboard protocol</td>
+      <td>use Ctrl-J or Alt-Enter (<a href="/guides/terminal/#the-input-line">Terminal</a>)</td>
+    </tr>
+    <tr>
+      <td>colour codes in captured output</td>
+      <td>output is going to a terminal-like destination</td>
+      <td>set <code>NO_COLOR=1</code>, or use <code>riffer -p</code></td>
+    </tr>
+    <tr>
+      <td>costs show <code>~$0.0000</code> or are missing</td>
+      <td>the model has no pricing in a catalog file</td>
+      <td>add it to a <a href="/guides/configuration/#catalog_files">catalog file</a></td>
+    </tr>
+  </tbody>
+</table>
+
+        </article>
+
+        <nav class="pager">
+          <a class="doc" href="/guides/getting-started/"
+            ><span class="go">←</span
+            ><span
+              ><span class="desc">Previous</span
+              ><span class="name">Getting started</span></span
+            ></a
+          >
+          <a class="doc next" href="/guides/terminal/"
+            ><span
+              ><span class="desc">Next</span
+              ><span class="name">Terminal</span></span
+            ><span class="go">→</span></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

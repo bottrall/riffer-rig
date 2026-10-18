@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Events — riffer rig</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/site.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="/copy.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <nav>
+          <a class="wordmark" href="/">riffer rig<span class="gem"><svg viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor"><polygon fill-opacity=".75" points="4,2 6,6 1,6"/><polygon fill-opacity=".75" points="12,2 15,6 10,6"/><polygon points="4,2 12,2 10,6 6,6"/><polygon fill-opacity=".5" points="1,6 6,6 8,14"/><polygon fill-opacity=".5" points="15,6 10,6 8,14"/><polygon fill-opacity=".3" points="6,6 10,6 8,14"/></g></svg></span></a>
+          <div class="links">
+            <a href="/guides/overview/">Guides</a>
+            <a href="/api/">API Reference</a>
+            <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
+            <span class="version">v0.16.0</span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap docs-layout">
+      <aside class="sidebar">
+        <details class="sidebar-nav">
+          <summary>Chapters</summary>
+          <div class="sidebar-links">
+            <span class="group-label">Start here</span>
+            <ul>
+              <li>
+                <a href="/guides/overview/"
+                  ><span class="num">01</span>Overview</a
+                >
+              </li>
+              <li>
+                <a href="/guides/getting-started/"
+                  ><span class="num">02</span>Getting started</a
+                >
+              </li>
+              <li>
+                <a href="/guides/troubleshooting/"
+                  ><span class="num">03</span>Troubleshooting</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Using the terminal</span>
+            <ul>
+              <li>
+                <a href="/guides/terminal/"
+                  ><span class="num">04</span>Terminal</a
+                >
+              </li>
+              <li>
+                <a href="/guides/cli/"
+                  ><span class="num">05</span>Command line</a
+                >
+              </li>
+              <li>
+                <a href="/guides/configuration/"
+                  ><span class="num">06</span>Configuration</a
+                >
+              </li>
+              <li>
+                <a href="/guides/instructions/"
+                  ><span class="num">07</span>Instructions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/tools/"
+                  ><span class="num">08</span>Tools</a
+                >
+              </li>
+              <li>
+                <a href="/guides/skills/"
+                  ><span class="num">09</span>Skills</a
+                >
+              </li>
+              <li>
+                <a href="/guides/mcp/"
+                  ><span class="num">10</span>MCP</a
+                >
+              </li>
+              <li>
+                <a href="/guides/reloading/"
+                  ><span class="num">11</span>Reloading</a
+                >
+              </li>
+              <li>
+                <a href="/guides/sessions/"
+                  ><span class="num">12</span>Sessions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/headless/"
+                  ><span class="num">13</span>Headless mode</a
+                >
+              </li>
+              <li>
+                <a href="/guides/acp/"
+                  ><span class="num">14</span>ACP</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Extending and embedding</span>
+            <ul>
+              <li>
+                <a href="/guides/extensions/"
+                  ><span class="num">15</span>Extensions</a
+                >
+              </li>
+              <li>
+                <a href="/guides/embedding/"
+                  ><span class="num">16</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/events/" class="active" aria-current="page"
+                  ><span class="num">17</span>Events</a
+                >
+              </li>
+              <li>
+                <a href="/guides/hosts/"
+                  ><span class="num">18</span>Hosts</a
+                >
+              </li>
+              <li>
+                <a href="/guides/stores/"
+                  ><span class="num">19</span>Session stores</a
+                >
+              </li>
+            </ul>
+            <span class="group-label">Providers</span>
+            <ul>
+              <li>
+                <a href="/guides/providers/overview/"
+                  ><span class="num">20</span>Providers</a
+                >
+              </li>
+              <li>
+                <a href="/guides/providers/custom/"
+                  ><span class="num">21</span>Custom providers</a
+                >
+              </li>
+            </ul>
+          </div>
+        </details>
+      </aside>
+
+      <main>
+        <article>
+          <p class="kicker"><span class="chapter">Extending and embedding · 17</span></p>
+          <h1>Events</h1>
+          <nav class="toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ul>
+              <li><a href="#rig-events">Rig events</a></li>
+              <li><a href="#tool-call-events">Tool call events</a></li>
+              <li><a href="#custom-events">Custom events</a></li>
+            </ul>
+          </nav>
+          
+<p>A turn streams events: riffer’s <a href="https://riffer.ai/guides/stream-events/">stream events</a> unchanged — text and reasoning deltas, tool calls, token usage — plus riffer-rig’s own events below. <code>Runtime#prompt</code> yields them, <a href="/guides/headless/#the-ndjson-stream---json"><code>--json</code></a> prints them, and a <a href="/guides/hosts/">host</a> renders them. Match on the events you know and ignore the rest; new events can be added in a minor release.</p>
+
+<p>Every rig event has <code>type</code>, its snake_case name, and <code>to_h</code>, its fields with the type included, so each one prints as a JSON record as-is.</p>
+
+<h2 id="rig-events">Rig events</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Event</th>
+      <th>Carries</th>
+      <th>When</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>session_start</code></td>
+      <td><code>id</code>, <code>reason</code> (<code>:new</code>, <code>:restore</code>, <code>:reload</code>)</td>
+      <td>opens the first prompt of a new or <a href="/guides/embedding/#snapshots">restored</a> session, and the first after a <a href="/guides/embedding/#rebuilding-after-a-code-reload">rebuild</a></td>
+    </tr>
+    <tr>
+      <td><code>session_end</code></td>
+      <td><code>reason</code> (<code>:reload</code>)</td>
+      <td>opens the first prompt after a rebuild, just before its <code>session_start</code></td>
+    </tr>
+    <tr>
+      <td><code>command_output</code></td>
+      <td><code>command</code>, <code>text</code></td>
+      <td>a command called <code>ctx.say</code></td>
+    </tr>
+    <tr>
+      <td><code>skill_activated</code></td>
+      <td><code>name</code></td>
+      <td>a skill was run with <code>/skill:&lt;name&gt;</code></td>
+    </tr>
+    <tr>
+      <td><code>notify</code></td>
+      <td><code>message</code>, <code>level</code></td>
+      <td>every notice the host was given, such as an extension failing to load</td>
+    </tr>
+    <tr>
+      <td><code>before_tool_call</code></td>
+      <td><code>call_id</code>, <code>tool</code>, <code>args</code>, <code>at</code></td>
+      <td>a tool is about to run (<a href="#tool-call-events">below</a>)</td>
+    </tr>
+    <tr>
+      <td><code>after_tool_call</code></td>
+      <td><code>call_id</code>, <code>tool</code>, <code>args</code>, <code>result</code>, <code>at</code>, <code>duration</code></td>
+      <td>a tool call has finished (<a href="#tool-call-events">below</a>)</td>
+    </tr>
+    <tr>
+      <td><code>job_exit</code></td>
+      <td><code>job_id</code>, <code>command</code>, <code>exit_status</code>, <code>signal</code>, <code>duration</code>, <code>output_path</code></td>
+      <td>the model is told a <a href="/guides/embedding/#background-jobs">background job</a> exited, one per job</td>
+    </tr>
+    <tr>
+      <td><code>turn_end</code></td>
+      <td><code>stop_reason</code>, <code>usage</code>, <code>cost</code></td>
+      <td>always the last event of a prompt</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><code>turn_end</code>’s <code>stop_reason</code> is riffer’s outcome (<code>:completed</code>, <code>:length</code>, <code>:max_steps</code>, <code>:guardrail_blocked</code>, …) or <code>:cancelled</code> after a <a href="/guides/embedding/#cancelling-a-turn">cancel</a>. <code>usage</code> is the turn’s riffer <code>TokenUsage</code>, and <code>cost</code> its price in USD, or <code>nil</code> when the model is not <a href="/guides/configuration/#catalog_files">priced</a>. A consumer never needs <code>ask</code> to learn how a streamed turn ended.</p>
+
+<h2 id="tool-call-events">Tool call events</h2>
+
+<p>When the model asks for tools, riffer first announces every call of the response with <code>ToolCallDone</code>. The tools then run one at a time, each between a <code>before_tool_call</code> and an <code>after_tool_call</code>:</p>
+
+<pre><code class="language-text">model response
+  ├─ ToolCallDone        call 1
+  ├─ ToolCallDone        call 2
+  ├─ before_tool_call    call 1 ─┐
+  │                              │ tool 1 runs   (duration)
+  ├─ after_tool_call     call 1 ─┘
+  ├─ before_tool_call    call 2 ─┐
+  │                              │ tool 2 runs
+  └─ after_tool_call     call 2 ─┘
+next model response
+</code></pre>
+
+<p>Every call gets exactly one <code>after_tool_call</code>, whatever happened to it:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>The call…</th>
+      <th><code>before_tool_call</code></th>
+      <th><code>after_tool_call</code>’s <code>result</code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>ran</td>
+      <td>yes, with the arguments it ran with</td>
+      <td>the tool’s response; <code>error_type</code> set if it failed</td>
+    </tr>
+    <tr>
+      <td>named a tool that doesn’t exist</td>
+      <td>yes</td>
+      <td>an <code>:unknown_tool</code> error</td>
+    </tr>
+    <tr>
+      <td>was blocked by a <a href="/guides/extensions/#the-rigon-seam">hook</a></td>
+      <td>no</td>
+      <td>a <code>:blocked</code> error, with the arguments the model sent</td>
+    </tr>
+    <tr>
+      <td>had arguments that aren’t a JSON object</td>
+      <td>no</td>
+      <td>a <code>:validation_error</code>, with empty <code>args</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><code>result</code> is a <code>Riffer::Tools::Response</code>: <code>result.error?</code> says whether the call failed. <code>call_id</code> matches the call’s <code>ToolCallDone</code>. <code>at</code> is a monotonic timestamp in seconds, comparable only within one process, and <code>duration</code> is how long the tool itself ran, leaving out time spent in hooks; a call that never ran has <code>0.0</code>. The timestamps come from the Runtime’s <code>clock:</code>, which a test can replace.</p>
+
+<p>These are the same event objects the <code>before_tool_call</code> and <code>after_tool_call</code> hooks receive.</p>
+
+<h2 id="custom-events">Custom events</h2>
+
+<p>A command can send its own events to whoever ran it with <code>ctx.emit(event)</code>. Any object with <code>type</code> and <code>to_h</code> qualifies (the RBS interface <code>Riffer::Rig::Events::_Event</code>).</p>
+
+        </article>
+
+        <nav class="pager">
+          <a class="doc" href="/guides/embedding/"
+            ><span class="go">←</span
+            ><span
+              ><span class="desc">Previous</span
+              ><span class="name">Embedding riffer-rig</span></span
+            ></a
+          >
+          <a class="doc next" href="/guides/hosts/"
+            ><span
+              ><span class="desc">Next</span
+              ><span class="name">Hosts</span></span
+            ><span class="go">→</span></a
+          >
+        </nav>
+      </main>
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <span>MIT License · Built on <a href="https://github.com/janeapp/riffer">riffer</a></span>
+        <span><a href="https://github.com/bottrall/riffer-rig">github.com/bottrall/riffer-rig</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

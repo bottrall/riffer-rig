@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.15.0</span>
+            <span class="version">v0.16.0</span>
           </div>
         </nav>
       </div>
@@ -46,57 +46,67 @@
                   ><span class="num">02</span>Getting started</a
                 >
               </li>
+              <li>
+                <a href="/guides/troubleshooting/"
+                  ><span class="num">03</span>Troubleshooting</a
+                >
+              </li>
             </ul>
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
                 <a href="/guides/terminal/"
-                  ><span class="num">03</span>Terminal</a
+                  ><span class="num">04</span>Terminal</a
+                >
+              </li>
+              <li>
+                <a href="/guides/cli/"
+                  ><span class="num">05</span>Command line</a
                 >
               </li>
               <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">04</span>Configuration</a
+                  ><span class="num">06</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">05</span>Instructions</a
+                  ><span class="num">07</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">06</span>Tools</a
+                  ><span class="num">08</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">07</span>Skills</a
+                  ><span class="num">09</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">08</span>MCP</a
+                  ><span class="num">10</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">09</span>Reloading</a
+                  ><span class="num">11</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/" class="active" aria-current="page"
-                  ><span class="num">10</span>Sessions</a
+                  ><span class="num">12</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">11</span>Headless mode</a
+                  ><span class="num">13</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/"
-                  ><span class="num">12</span>ACP</a
+                  ><span class="num">14</span>ACP</a
                 >
               </li>
             </ul>
@@ -104,17 +114,27 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">13</span>Extensions</a
+                  ><span class="num">15</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">14</span>Embedding riffer-rig</a
+                  ><span class="num">16</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/events/"
+                  ><span class="num">17</span>Events</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">15</span>Hosts</a
+                  ><span class="num">18</span>Hosts</a
+                >
+              </li>
+              <li>
+                <a href="/guides/stores/"
+                  ><span class="num">19</span>Session stores</a
                 >
               </li>
             </ul>
@@ -122,12 +142,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">16</span>Providers</a
+                  ><span class="num">20</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">17</span>Custom providers</a
+                  ><span class="num">21</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -137,82 +157,120 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Using the terminal · 10</span></p>
+          <p class="kicker"><span class="chapter">Using the terminal · 12</span></p>
           <h1>Sessions</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
             <ul>
-              <li><a href="#the-session-store">The session store</a></li>
-              <li><a href="#where-sessions-live">Where sessions live</a></li>
-              <li><a href="#what-an-entry-holds">What an entry holds</a></li>
-              <li><a href="#opting-out">Opting out</a></li>
-              <li><a href="#tracing-the-last-turn">Tracing the last turn</a></li>
               <li><a href="#resuming">Resuming</a></li>
               <li><a href="#the-picker">The picker</a></li>
-              <li><a href="#what-a-snapshot-holds">What a snapshot holds</a></li>
-              <li><a href="#what-it-leaves-out">What it leaves out</a></li>
-              <li><a href="#restoring">Restoring</a></li>
+              <li><a href="#tracing-the-last-turn">Tracing the last turn</a></li>
+              <li><a href="#opting-out">Opting out</a></li>
             </ul>
           </nav>
           
-<p>A session is one conversation with a <code>Riffer::Rig::Runtime</code>: its id, its history and the choices made during it. The Runtime can save a session as a plain hash and carry on from one (<a href="#what-a-snapshot-holds">below</a>); the Loader stores every session it builds as it runs, one JSONL file per session under <code>~/.riffer/sessions/</code>, and picks one to resume (<a href="#resuming">below</a>). An embedder without the Loader reads the entries directly or keeps snapshots itself (<a href="/guides/embedding/#snapshots">Embedding</a>).</p>
+<p>Every session is saved as it runs, one file per session at <code>~/.riffer/sessions/&lt;directory&gt;/&lt;session id&gt;.jsonl</code>, one JSON object per line, so <code>cat</code> and <code>jq</code> work on it and a crash loses at most the last line.</p>
 
-<h2 id="the-session-store">The session store</h2>
-
-<p>The Loader appends to a store: any object implementing the four <code>Riffer::Rig::Stores::_Store</code> methods — <code>append(id, entry)</code>, <code>read(id)</code>, <code>list(cwd: nil)</code> and <code>delete(id)</code>. Entries cross the store as typed POROs — <code>Stores::Header</code>, <code>Stores::MessageEntry</code>, <code>Stores::ModelEntry</code> and <code>Stores::SkillEntry</code> — and each store serialises them itself; <code>Hash</code> remains only where it is already the documented currency, the JSON lines on disk and the riffer message payloads. The store defaults to a <code>Stores::JSONL</code> under the Loader’s <code>home:</code> and is taken per build with <code>store:</code>; a Rails host implements the four over its own tables and passes its own. Hosts never see the store — they only choose which session to drive.</p>
-
-<h2 id="where-sessions-live">Where sessions live</h2>
-
-<p><code>Stores::JSONL</code> writes one file per session at <code>~/.riffer/sessions/&lt;cwd-slug&gt;/&lt;session id&gt;.jsonl</code>, one entry per line, so <code>cat</code> and <code>jq</code> work and a crash loses at most one line. The slug is the cwd with every run of characters outside alphanumerics, <code>.</code>, <code>_</code> and <code>-</code> collapsed to a single hyphen; it groups a project’s sessions so listing is a directory read, but the <code>cwd</code> in the header entry is the truth, not the directory name.</p>
-
-<h2 id="what-an-entry-holds">What an entry holds</h2>
-
-<p>Each entry is a frozen PORO in <code>Riffer::Rig::Stores</code> — a new entry type is a new class. The JSONL store serialises each one to a line of JSON under its <code>type</code>; the line holds:</p>
+<h2 id="resuming">Resuming</h2>
 
 <table>
   <thead>
     <tr>
-      <th>Class</th>
-      <th>Holds</th>
+      <th>To…</th>
+      <th>Run</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><code>Stores::Header</code></td>
-      <td>written on the first message: <code>schema_version</code>, <code>id</code>, <code>cwd</code>, <code>created_at</code>, <code>model</code>, <code>riffer_rig_version</code>, <code>riffer_version</code>, <code>title</code> (the first prompt truncated to one line); the store stamps the listed header with <code>updated</code></td>
+      <td>continue the most recent session in this directory</td>
+      <td><code>riffer -c</code></td>
     </tr>
     <tr>
-      <td><code>Stores::MessageEntry</code></td>
-      <td>one conversation message as a riffer message hash under <code>message</code>, appended as it lands; the system message is not among them</td>
+      <td>resume a session by id</td>
+      <td><code>riffer -r &lt;id&gt;</code></td>
     </tr>
     <tr>
-      <td><code>Stores::ModelEntry</code></td>
-      <td>one per <code>/model</code> switch, holding the new <code>model</code> string</td>
+      <td>pick from this directory’s sessions</td>
+      <td><code>riffer -r</code>, or <code>/resume</code> in a session</td>
     </tr>
     <tr>
-      <td><code>Stores::ReasoningEntry</code></td>
-      <td>one per <code>/reasoning</code> switch, holding the new <code>reasoning</code> level</td>
-    </tr>
-    <tr>
-      <td><code>Stores::SkillEntry</code></td>
-      <td>one per skill the model activated, holding the skill name; a <code>/skill:&lt;name&gt;</code> run is not one</td>
+      <td>pick from every directory’s sessions</td>
+      <td><code>/resume --all</code></td>
     </tr>
   </tbody>
 </table>
 
-<p>Every entry but the header also holds <code>recorded_at</code>, the wall-clock time the Loader recorded it — a UTC ISO 8601 string with milliseconds (<code>2026-10-11T02:00:00.123Z</code>), on the entry and on the JSONL line alike; <code>recorded_time</code> reads it as a <code>Time</code>. Within a session it never goes backwards, in file order: when the clock steps back, or a resume lands on a clock behind the session’s latest entry, an entry repeats the latest time already recorded, so two entries may share one. An entry held for the header — a <code>/model</code> before the first prompt — keeps the time it happened, which is earlier than the header’s <code>created_at</code>. The field is additive: a line without it, as every session written before it existed has, or with one that does not parse, reads back with <code>recorded_at</code> nil and resumes as before, and a store of your own that drops it loses nothing a resume needs.</p>
+<p>A session resumes in the directory it was saved in, wherever you resume it from, so its tools, project settings, skills and <code>rig.rb</code> are that directory’s. If that directory no longer exists, the session isn’t resumed. When there is no session to continue, the terminal starts a fresh one; <a href="/guides/headless/#flags">headless</a> exits 2 instead.</p>
 
-<h2 id="opting-out">Opting out</h2>
+<p>A resumed session keeps its id and carries on in the same file. What comes back:</p>
 
-<p>Every Loader-built session is saved, one-shots included. Skip one run with <code>store: nil</code> — <code>--no-save</code> on the command line — or all of them with <code>"sessions": {"save": false}</code> in settings (<a href="/guides/configuration/">Configuration</a>).</p>
+<table>
+  <thead>
+    <tr>
+      <th>Restored from the session</th>
+      <th>Taken from today</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>the conversation</td>
+      <td>settings, credentials and extensions</td>
+    </tr>
+    <tr>
+      <td>a <code>/model</code> switch, if its provider still has credentials</td>
+      <td>the tools, and the system prompt</td>
+    </tr>
+    <tr>
+      <td>a <code>/reasoning</code> switch</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>the skills the model activated, if they still exist</td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table>
 
-<p><code>--no-save</code> leaves the saved sessions unread too: <code>-c</code>, <code>-r</code> and <code>/resume</code> print <code>Sessions are off for this run (--no-save).</code> instead of looking for one, and in headless mode <code>-c</code> and <code>-r</code> exit 2 with it. The settings switch only stops recording — saved sessions still resume, and the resumed session is not appended to.</p>
+<p><code>--model</code> or <code>--reasoning</code> wins over a restored switch for that run only, so resuming again without the flag restores the switch. If a crash cut off a turn mid-tool-call, the unfinished calls are marked as interrupted rather than run again.</p>
+
+<h2 id="the-picker">The picker</h2>
+
+<p><code>/resume</code> lists sessions newest first, each with its first prompt and when it was last used.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Input</th>
+      <th>Does</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>text, then Enter</td>
+      <td>filters to sessions whose title contains it; with one left, Enter resumes it</td>
+    </tr>
+    <tr>
+      <td>a row number, then Enter</td>
+      <td>resumes that session</td>
+    </tr>
+    <tr>
+      <td>Ctrl-D, a row number, <code>y</code></td>
+      <td>deletes that session</td>
+    </tr>
+    <tr>
+      <td>Ctrl-C</td>
+      <td>closes the picker</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Switching keeps the session you left saved, as does <code>/new</code>, which starts a fresh session in place.</p>
 
 <h2 id="tracing-the-last-turn">Tracing the last turn</h2>
 
-<p><code>/trace</code> replays the last turn from the store. The Loader installs it as a runtime command on every build that records, so it works the same in every host and is absent when the session is not saved (<a href="#opting-out">Opting out</a>). The turn runs from the session’s last prompt to its last entry, so a resumed session can be traced before its next prompt. The command’s <code>command_output</code> holds one line per recorded step — the time, what happened, and the detail:</p>
+<p><code>/trace</code> shows the last turn step by step from the saved session — including in a session you just resumed:</p>
 
-<pre><code>02:00:01.000  prompt    Fix the failing test
+<pre><code class="language-text">02:00:01.000  prompt    Fix the failing test
 02:00:02.250  preamble  I'll read both files.
 02:00:02.250  dispatch  read {"path":"a.rb"}
 02:00:02.250  dispatch  read {"path":"b.rb"}
@@ -232,145 +290,64 @@
   <tbody>
     <tr>
       <td><code>prompt</code></td>
-      <td>the first line of the user message that started the turn</td>
+      <td>the first line of your message</td>
     </tr>
     <tr>
       <td><code>preamble</code></td>
-      <td>the first line of the text the assistant sent with tool calls</td>
+      <td>the first line of text the model sent along with tool calls</td>
     </tr>
     <tr>
       <td><code>dispatch</code></td>
-      <td>one line per tool call of that request: the tool’s name and its arguments as the model sent them</td>
+      <td>a tool call: the tool and its arguments</td>
     </tr>
     <tr>
       <td><code>finish</code></td>
-      <td>one line per tool result, in call order: the tool’s name, and the error type in parentheses when it failed</td>
+      <td>a tool result, with the error type when it failed</td>
     </tr>
     <tr>
       <td><code>answer</code></td>
-      <td>the first line of the text of a request that called no tool</td>
+      <td>the first line of a reply that called no tool</td>
     </tr>
     <tr>
       <td><code>notice</code></td>
-      <td>the first line of a <a href="/guides/embedding/#exit-notifications">job exit notification</a> that continued the turn</td>
+      <td>a <a href="/guides/tools/#background-jobs">background job</a> exit that continued the turn</td>
     </tr>
     <tr>
       <td><code>silent</code></td>
-      <td>a stretch of 5 seconds or more between two consecutive messages, with its length</td>
+      <td>a gap of 5 seconds or more, and its length</td>
     </tr>
   </tbody>
 </table>
 
-<p>The times are the entries’ <code>recorded_at</code>, in UTC; an entry without one has a blank time and bounds no <code>silent</code> stretch. The tool results of one request are recorded together, once the last of its calls returns, so a <code>dispatch</code> carries its request’s time and the <code>finish</code> lines of one request share the moment the whole batch ended — each call’s own timing is on the stream’s <a href="/guides/embedding/#tool-call-events"><code>after_tool_call</code></a>. A session with no user message yet answers <code>No turn recorded yet</code>.</p>
+<p>Times are UTC. The results of one batch of tool calls are saved together, so their <code>finish</code> lines share a time; <a href="/guides/headless/#the-ndjson-stream---json"><code>--json</code></a> has each call’s own timing.</p>
 
-<h2 id="resuming">Resuming</h2>
-
-<p>The Loader picks the session to drive; hosts never see the store:</p>
+<h2 id="opting-out">Opting out</h2>
 
 <table>
   <thead>
     <tr>
-      <th>Method</th>
-      <th>Picks</th>
+      <th>Setting</th>
+      <th style="text-align: center">Saves this session</th>
+      <th style="text-align: center">Can resume saved sessions</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><code>continue</code></td>
-      <td>the most recently updated session whose header cwd matches the build’s, or nil</td>
+      <td><code>--no-save</code></td>
+      <td style="text-align: center">no</td>
+      <td style="text-align: center">no</td>
     </tr>
     <tr>
-      <td><code>resume(id)</code></td>
-      <td>the session with that id, or nil when the store has none; <code>extra_extensions:</code> loads into its build as it does for <a href="/guides/embedding/#building-a-runtime-with-the-loader"><code>runtime</code></a></td>
-    </tr>
-    <tr>
-      <td><code>list(all: false)</code></td>
-      <td>the header entries, the build’s cwd only unless <code>all: true</code> escapes the scope</td>
-    </tr>
-    <tr>
-      <td><code>delete(id)</code></td>
-      <td>removes the session; an unknown id is a no-op</td>
+      <td><code>"sessions": {"save": false}</code> in settings</td>
+      <td style="text-align: center">no</td>
+      <td style="text-align: center">yes, without adding to them</td>
     </tr>
   </tbody>
 </table>
 
-<p><code>continue</code> and <code>resume</code> build as <code>runtime</code> does and take the same <a href="/guides/embedding/#loader-options"><code>Loader::Options</code></a> as an optional argument: <code>continue(options)</code>, <code>resume(id, options)</code>.</p>
+<p><code>/trace</code> needs a saved session, so it is not available when saving is off.</p>
 
-<p>A listed header carries the session’s update time as <code>updated</code>, stamped by the store while it holds the physical artifact — for <code>Stores::JSONL</code> the file’s mtime, which its last append set; <code>continue</code> picks the most recently <code>updated</code> session wherever <code>list</code> happens to place it.</p>
-
-<p>On the command line, <code>riffer -c</code> continues the most recent session in the directory and <code>riffer -r &lt;id&gt;</code> resumes by id. With no match the REPL tells you and starts fresh. Bare <code>riffer -r</code> opens the <a href="#the-picker">picker</a> before the first session starts; picking a session resumes it, leaving the picker starts a fresh one.</p>
-
-<p>Resuming folds the session’s entries back into a snapshot and builds a Runtime over it: the last <code>model</code> entry wins, the last <code>reasoning</code> entry wins, skill activations accumulate, and the <code>message</code> entries are the history. Everything else is today’s — the settings, credentials, extensions and tools of the new build, and its model selection, unless the session recorded a <code>/model</code> switch, which is restored over <code>RIFFER_MODEL</code> and the settings when its provider still has credentials (<a href="#restoring">Restoring</a> has the rules, including the healed tail of a file cut mid-turn); a recorded <code>/reasoning</code> switch is restored the same way, over <code>RIFFER_REASONING</code> and the settings, and a recorded level riffer does not accept silently leaves the model’s default. A model or reasoning level chosen for the run — <code>--model</code> or <code>--reasoning</code>, or <code>model:</code> or <code>reasoning:</code> in the <a href="/guides/embedding/#loader-options"><code>Loader::Options</code></a> — wins over the recorded switch for that run only: it is not recorded, so a later resume without it restores the switch again. A resumed session keeps its id and appends to the same file, and the terminal replays its earlier turns above the input (<a href="/guides/terminal/#resuming">Terminal</a>).</p>
-
-<p>On the command line and in the REPL, a session resumes in the directory it was saved in — its header’s <code>cwd</code> — wherever you resume it from: <code>riffer -r &lt;id&gt;</code> from another directory, or a pick in <code>/resume --all</code>, builds it there, so its tools, project settings, skills and <code>rig.rb</code> are that directory’s and the banner shows it. When that directory no longer exists, the session is not resumed: the REPL says <code>Session &lt;id&gt; was saved in &lt;dir&gt;, which no longer exists.</code> and starts fresh — or, after <code>/resume</code>, keeps the session you are in — and headless exits 2 with it.</p>
-
-<h2 id="the-picker">The picker</h2>
-
-<p>In the REPL, <code>/resume</code> opens the picker over the sessions of the current directory, and <code>/resume --all</code> over every directory’s. Each row shows the session’s first prompt as its title and the relative time of its last update, most recent first.</p>
-
-<p>The picker reads one line at a time:</p>
-
-<ul>
-  <li>Typing text filters the rows to titles containing it (case-insensitive). A filter that matches nothing says so and keeps the previous rows.</li>
-  <li>Enter switches to the session when a single row remains.</li>
-  <li>A row number — <code>2</code>, Enter — switches to that row directly.</li>
-  <li>Ctrl-D starts a delete: type the number of the row, then confirm with <code>y</code> (<code>n</code> or anything else keeps it). The session is removed from the store.</li>
-  <li>Enter with several rows, Ctrl-C, or Ctrl-D at the delete prompt leaves the picker and prints <code>(closed)</code>.</li>
-</ul>
-
-<p>Switching replaces the Runtime the terminal drives and re-renders the banner: the conversation you left is already saved, keeps its id and file, and <code>/resume</code> appends to it. <code>/new</code> starts a fresh session in place the same way — a new id, empty history — and the session you left stays on disk.</p>
-
-<h2 id="what-a-snapshot-holds">What a snapshot holds</h2>
-
-<p><code>runtime.to_h</code> returns a hash with symbol keys:</p>
-
-<table>
-  <thead>
-    <tr>
-      <th>Key</th>
-      <th>Holds</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>:id</code></td>
-      <td>the Runtime’s id, a UUIDv7 minted when the session began; a restored Runtime keeps it, so it names the session across restarts</td>
-    </tr>
-    <tr>
-      <td><code>:messages</code></td>
-      <td>the conversation as riffer message hashes (<code>Riffer::Messages::Base#to_h</code>), system message first, read back with <code>Riffer::Messages::Base.from_hash</code>; a <a href="/guides/embedding/#exit-notifications">job exit notification</a> also carries <code>job_notification: true</code> and is read back as one, and one a <a href="/guides/embedding/#waiting-for-jobs">follow-up</a> delivered carries <code>follow_up_exits</code> too</td>
-    </tr>
-    <tr>
-      <td><code>:model</code></td>
-      <td>the model the session switched to with <code>model=</code> or <code>/model</code>, or <code>nil</code> when it kept the model it was built with</td>
-    </tr>
-    <tr>
-      <td><code>:reasoning</code></td>
-      <td>the reasoning level in effect — a <code>reasoning=</code> or <code>/reasoning</code> switch, or the level the Runtime was built with; <code>nil</code> when it has none</td>
-    </tr>
-    <tr>
-      <td><code>:skills</code></td>
-      <td>the names of the skills the model activated in the session (<a href="/guides/skills/#what-the-model-sees">Skills</a>); a skill run with <code>/skill:&lt;name&gt;</code> is not one</td>
-    </tr>
-  </tbody>
-</table>
-
-<p>A snapshot survives a JSON round trip: generate it with <code>JSON.generate</code>, parse it back with <code>symbolize_names: true</code>, and pass the result as <code>snapshot:</code>.</p>
-
-<h2 id="what-it-leaves-out">What it leaves out</h2>
-
-<p>Nothing a restore can rebuild from the present is stored:</p>
-
-<ul>
-  <li><strong>Registrations</strong> — tools, commands, hooks, prompt sections and declared settings come from the extensions and settings the restoring Runtime is given, so a session resumed after an extension changed runs the extension as it is now.</li>
-  <li><strong>The tally</strong> — a restored Runtime sums its messages’ token usage instead.</li>
-  <li><strong>The base prompt and environment</strong> — the system message is rebuilt at the start of every turn, so the saved one is replaced on the first prompt after a restore.</li>
-  <li><strong>Credentials</strong> — they come from the restoring Runtime’s <code>credentials:</code>; a saved model whose provider has none there is not applied.</li>
-</ul>
-
-<h2 id="restoring">Restoring</h2>
-
-<p>History is data, and the present wins: nothing in a snapshot blocks a restore. A tool call for a tool that no longer exists is just history; tool calls left without a result by a crash are filled with an “interrupted” tool error rather than run; a skill that no longer exists is dropped; and a saved model without credentials falls back to the given model with one <code>notify</code>. The first prompt after a restore opens with <code>session_start</code> carrying the saved id and reason <code>:restore</code>. <a href="/guides/embedding/#snapshots">Embedding</a> has the details and an example.</p>
+<p>To keep sessions somewhere else — your app’s database, say — see <a href="/guides/stores/">Session stores</a>.</p>
 
         </article>
 

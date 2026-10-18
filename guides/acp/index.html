@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.15.0</span>
+            <span class="version">v0.16.0</span>
           </div>
         </nav>
       </div>
@@ -46,57 +46,67 @@
                   ><span class="num">02</span>Getting started</a
                 >
               </li>
+              <li>
+                <a href="/guides/troubleshooting/"
+                  ><span class="num">03</span>Troubleshooting</a
+                >
+              </li>
             </ul>
             <span class="group-label">Using the terminal</span>
             <ul>
               <li>
                 <a href="/guides/terminal/"
-                  ><span class="num">03</span>Terminal</a
+                  ><span class="num">04</span>Terminal</a
+                >
+              </li>
+              <li>
+                <a href="/guides/cli/"
+                  ><span class="num">05</span>Command line</a
                 >
               </li>
               <li>
                 <a href="/guides/configuration/"
-                  ><span class="num">04</span>Configuration</a
+                  ><span class="num">06</span>Configuration</a
                 >
               </li>
               <li>
                 <a href="/guides/instructions/"
-                  ><span class="num">05</span>Instructions</a
+                  ><span class="num">07</span>Instructions</a
                 >
               </li>
               <li>
                 <a href="/guides/tools/"
-                  ><span class="num">06</span>Tools</a
+                  ><span class="num">08</span>Tools</a
                 >
               </li>
               <li>
                 <a href="/guides/skills/"
-                  ><span class="num">07</span>Skills</a
+                  ><span class="num">09</span>Skills</a
                 >
               </li>
               <li>
                 <a href="/guides/mcp/"
-                  ><span class="num">08</span>MCP</a
+                  ><span class="num">10</span>MCP</a
                 >
               </li>
               <li>
                 <a href="/guides/reloading/"
-                  ><span class="num">09</span>Reloading</a
+                  ><span class="num">11</span>Reloading</a
                 >
               </li>
               <li>
                 <a href="/guides/sessions/"
-                  ><span class="num">10</span>Sessions</a
+                  ><span class="num">12</span>Sessions</a
                 >
               </li>
               <li>
                 <a href="/guides/headless/"
-                  ><span class="num">11</span>Headless mode</a
+                  ><span class="num">13</span>Headless mode</a
                 >
               </li>
               <li>
                 <a href="/guides/acp/" class="active" aria-current="page"
-                  ><span class="num">12</span>ACP</a
+                  ><span class="num">14</span>ACP</a
                 >
               </li>
             </ul>
@@ -104,17 +114,27 @@
             <ul>
               <li>
                 <a href="/guides/extensions/"
-                  ><span class="num">13</span>Extensions</a
+                  ><span class="num">15</span>Extensions</a
                 >
               </li>
               <li>
                 <a href="/guides/embedding/"
-                  ><span class="num">14</span>Embedding riffer-rig</a
+                  ><span class="num">16</span>Embedding riffer-rig</a
+                >
+              </li>
+              <li>
+                <a href="/guides/events/"
+                  ><span class="num">17</span>Events</a
                 >
               </li>
               <li>
                 <a href="/guides/hosts/"
-                  ><span class="num">15</span>Hosts</a
+                  ><span class="num">18</span>Hosts</a
+                >
+              </li>
+              <li>
+                <a href="/guides/stores/"
+                  ><span class="num">19</span>Session stores</a
                 >
               </li>
             </ul>
@@ -122,12 +142,12 @@
             <ul>
               <li>
                 <a href="/guides/providers/overview/"
-                  ><span class="num">16</span>Providers</a
+                  ><span class="num">20</span>Providers</a
                 >
               </li>
               <li>
                 <a href="/guides/providers/custom/"
-                  ><span class="num">17</span>Custom providers</a
+                  ><span class="num">21</span>Custom providers</a
                 >
               </li>
             </ul>
@@ -137,57 +157,204 @@
 
       <main>
         <article>
-          <p class="kicker"><span class="chapter">Using the terminal · 12</span></p>
+          <p class="kicker"><span class="chapter">Using the terminal · 14</span></p>
           <h1>ACP</h1>
           <nav class="toc" aria-label="On this page">
             <span class="toc-label">On this page</span>
             <ul>
               <li><a href="#registering-with-an-editor">Registering with an editor</a></li>
               <li><a href="#what-the-agent-supports">What the agent supports</a></li>
+              <li><a href="#what-the-client-sees">What the client sees</a></li>
+              <li><a href="#commands">Commands</a></li>
+              <li><a href="#questions">Questions</a></li>
+              <li><a href="#limits">Limits</a></li>
               <li><a href="#serving-connections-from-your-own-process">Serving connections from your own process</a></li>
-              <li><a href="#what-it-skips">What it skips</a></li>
-              <li><a href="#relaying-questions-to-the-client">Relaying questions to the client</a></li>
             </ul>
           </nav>
           
-<p><code>riffer acp</code> serves the same Runtimes the REPL drives as an <a href="https://agentclientprotocol.com">Agent Client Protocol</a> (ACP) agent over stdio, so editors and other ACP clients can run riffer without a terminal. The wire layer is the <a href="https://github.com/bottrall/acp-sdk"><code>acp-sdk</code></a> gem; the agent is <code>Riffer::Rig::ACP</code> (<code>lib/riffer/rig/acp.rb</code>) and its host object is <code>Riffer::Rig::ACP::Host</code> (<code>lib/riffer/rig/acp/host.rb</code>).</p>
+<p><code>riffer acp</code> runs riffer-rig as an <a href="https://agentclientprotocol.com">Agent Client Protocol</a> agent over stdio, so editors and other ACP clients can use it without a terminal.</p>
 
 <h2 id="registering-with-an-editor">Registering with an editor</h2>
 
-<p>An editor registers the agent as the command <code>riffer acp</code>. In <a href="https://zed.dev">Zed</a>, open Agent Settings, go to External Agents, and choose Add Agent, then Add Custom Agent; Zed opens <code>settings.json</code> with an <code>agent_servers</code> entry to fill in, or you can write it yourself:</p>
+<p>Register the command <code>riffer acp</code>. In <a href="https://zed.dev">Zed</a>, open Agent Settings → External Agents → Add Agent → Add Custom Agent, or add it to <code>settings.json</code> yourself:</p>
 
 <div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
   </span><span class="nl">"agent_servers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-    </span><span class="nl">"Riffer"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-      </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"custom"</span><span class="p">,</span><span class="w">
-      </span><span class="nl">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"riffer"</span><span class="p">,</span><span class="w">
-      </span><span class="nl">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"acp"</span><span class="p">],</span><span class="w">
-      </span><span class="nl">"env"</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span><span class="w">
-    </span><span class="p">}</span><span class="w">
+    </span><span class="nl">"Riffer"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"custom"</span><span class="p">,</span><span class="w"> </span><span class="nl">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"riffer"</span><span class="p">,</span><span class="w"> </span><span class="nl">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"acp"</span><span class="p">],</span><span class="w"> </span><span class="nl">"env"</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span><span class="w"> </span><span class="p">}</span><span class="w">
   </span><span class="p">}</span><span class="w">
 </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p>Everything loads exactly as the REPL does — settings from both scopes, credentials, <code>rig.rb</code> files (once trusted), skills — because each session builds its Runtime through the <a href="/guides/embedding/#building-a-runtime-with-the-loader">Loader</a> at the <code>cwd</code> the client sends in <code>session/new</code>. The model comes from the same <a href="/guides/providers/overview/#resolution-order">resolution order</a> as everywhere else: <code>RIFFER_MODEL</code>, then settings. The host cannot ask while a session builds, so a session whose model or credentials are missing is refused: <code>session/new</code> or <code>session/load</code> fails with the reason, and nothing is built.</p>
+<p>Each session loads exactly as the terminal does — settings, credentials, trusted <code>rig.rb</code> files, skills — for the working directory the client sends. The model comes from <code>RIFFER_MODEL</code> or the settings (<a href="/guides/configuration/#where-each-value-comes-from">precedence</a>). The agent can’t ask while a session starts, so a session whose model or credentials are missing is refused with the reason: set them up in the terminal first.</p>
 
 <h2 id="what-the-agent-supports">What the agent supports</h2>
 
-<ul>
-  <li><code>session/new</code> builds a Runtime and answers with the Runtime’s UUID as the <code>sessionId</code>. Each session is independent; a <code>session/cancel</code> during a turn reaches <a href="/guides/embedding/#cancelling-a-turn"><code>Runtime#cancel</code></a> from the transport’s reader thread, and the running turn ends with <code>stopReason: cancelled</code>.</li>
-  <li><code>session/prompt</code> streams text as <code>agent_message_chunk</code> updates and reports each tool call as a <code>tool_call</code> update, in progress, once its arguments are complete, then a <code>tool_call_update</code> for the same <code>toolCallId</code> when the call finishes: <code>completed</code>, or <code>failed</code> when its result is an error — a call an extension blocked or whose arguments did not parse included. The update carries the status and the result’s text as its content; it is the stream’s <a href="/guides/embedding/#tool-call-events"><code>after_tool_call</code></a>, and <code>before_tool_call</code> has no update of its own. A delivered <a href="/guides/embedding/#exit-notifications">job exit notification</a> arrives as a blank-line <code>agent_message_chunk</code>, so the replies either side of it stay apart. Prompt blocks arrive as text and resource links; a resource link is included as its name and URI. A completed turn answers <code>end_turn</code>, a step cap <code>max_turn_requests</code>, and a turn that stopped for tokens, the context window or a blocked output <code>max_tokens</code>. A turn that raises — a provider failure or a network failure — answers with an internal error whose message is the one the terminal and headless print, the provider’s own explanation included, and the session takes the next <code>session/prompt</code> as usual.</li>
-  <li><code>available_commands_update</code> lists the Runtime’s commands — <code>/reload</code>, <code>/trace</code>, <code>/auth</code>, <code>/model</code>, <code>/reasoning</code>, <code>/cost</code> and every skill — right after <code>session/new</code>, during <code>session/load</code> once the stored messages have replayed, and again before a <code>session/prompt</code> answers when a <a href="/guides/reloading/">reload</a> during it changed them.</li>
-  <li>A <code>session/prompt</code> whose text starts with <code>/</code> followed by a name runs that <a href="/guides/embedding/#commands">command</a> instead of prompting the model: the name runs up to the first whitespace and the rest of the text is its arguments. The command’s output streams as <code>agent_message_chunk</code> updates, a turn it starts streams as any other, and an unknown name is answered with <code>Unknown command: &lt;name&gt;</code>. A command that starts no turn answers <code>end_turn</code>.</li>
-  <li>Notify lines (<a href="/guides/extensions/#error-isolation">Extensions</a>) reach the client as <code>agent_message_chunk</code> updates, each a paragraph of its own so it stays apart from the next notify and from the reply. Load-time ones flush right after the <code>session/new</code> reply.</li>
-  <li>A <a href="/guides/embedding/#background-jobs">background job</a> that exits while no <code>session/prompt</code> is in flight is reported at once, as an <code>agent_message_chunk</code> paragraph of its own: <code>Background job &lt;id&gt; exited with status &lt;status&gt;: &lt;command&gt;</code>, or <code>Background job &lt;id&gt; was killed by SIG&lt;signal&gt;: &lt;command&gt;</code> for a job ended by a signal. ACP has no agent-started turn, so the model is told at the start of the next <code>session/prompt</code>, whose stream opens with the blank-line break above. A job that exits while a prompt is in flight sends no update of its own.</li>
-  <li>Tool calls always run: no tool call waits on the client. The agent sends <code>session/request_permission</code> only for a <a href="#relaying-questions-to-the-client">question the host relays</a>.</li>
-  <li><code>session/list</code> maps the saved sessions of the store — scoped to the <code>cwd</code> the client sends, all of them when it sends none — to ACP session info: the session id, the cwd, the first prompt as the title, and the session file’s last update as <code>updated_at</code>.</li>
-  <li><code>session/load</code> restores a saved session: a <a href="/guides/embedding/#building-a-runtime-with-the-loader">Loader</a> at the request’s <code>cwd</code> reads the stored entries and rebuilds the Runtime, the stored messages replay as updates in the order they were recorded — user turns as <code>user_message_chunk</code>, the assistant’s text as <code>agent_message_chunk</code>, and each tool result as its completed <code>tool_call</code> (the result as its content; the arguments are not replayed), while a <a href="/guides/embedding/#exit-notifications">job exit notification</a> replays as a blank-line <code>agent_message_chunk</code> rather than as the user’s turn, since the user never typed it — then the Runtime’s commands go out as <code>available_commands_update</code>, and then the request answers. A following <code>session/prompt</code> continues the conversation; an unknown id fails with resource not found.</li>
-  <li>MCP servers the client sends on <code>session/new</code> or <code>session/load</code> in stdio shape are declared to the Runtime through the <a href="/guides/mcp/#declaring-servers-from-an-extension"><code>rig.mcp</code> seam</a> as if an extension had declared them, so a reload rebuild keeps them and a same-name declaration replaces them. See <a href="/guides/mcp/#servers-over-acp">MCP</a> for the stdio limit.</li>
-</ul>
+<table>
+  <thead>
+    <tr>
+      <th>ACP method</th>
+      <th>Support</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>session/new</code></td>
+      <td>starts a session; the <code>sessionId</code> is the riffer-rig session id</td>
+    </tr>
+    <tr>
+      <td><code>session/prompt</code></td>
+      <td>runs a turn, or a <a href="#commands">command</a> when the text starts with <code>/</code></td>
+    </tr>
+    <tr>
+      <td><code>session/cancel</code></td>
+      <td>cancels the running turn; it ends with <code>cancelled</code></td>
+    </tr>
+    <tr>
+      <td><code>session/load</code></td>
+      <td>resumes a <a href="/guides/sessions/">saved session</a>, replaying its messages first; an unknown id is “resource not found”</td>
+    </tr>
+    <tr>
+      <td><code>session/list</code></td>
+      <td>lists saved sessions for the client’s <code>cwd</code> (all of them without one), titled by their first prompt</td>
+    </tr>
+    <tr>
+      <td><code>session/request_permission</code></td>
+      <td>sent only to <a href="#questions">relay a question</a>; tool calls never wait for permission</td>
+    </tr>
+    <tr>
+      <td><code>elicitation/create</code></td>
+      <td>sent only to <a href="#questions">relay a free-text question</a></td>
+    </tr>
+    <tr>
+      <td><code>session/resume</code>, <code>session/close</code>, <code>session/delete</code>, <code>authenticate</code></td>
+      <td>not offered</td>
+    </tr>
+    <tr>
+      <td><code>terminal/*</code>, <code>fs/*</code></td>
+      <td>never requested</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Prompts may contain text and resource links; a resource link is passed to the model as its name and URI.</p>
+
+<h2 id="what-the-client-sees">What the client sees</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>In the session</th>
+      <th>ACP update</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>the reply streaming</td>
+      <td><code>agent_message_chunk</code></td>
+    </tr>
+    <tr>
+      <td>a tool call, once its arguments are complete</td>
+      <td><code>tool_call</code>, in progress</td>
+    </tr>
+    <tr>
+      <td>that tool call finishing</td>
+      <td><code>tool_call_update</code>: <code>completed</code>, or <code>failed</code> for an error (a blocked call included), with the result text</td>
+    </tr>
+    <tr>
+      <td>a notice or warning</td>
+      <td><code>agent_message_chunk</code>, as a paragraph of its own</td>
+    </tr>
+    <tr>
+      <td>a <a href="/guides/tools/#background-jobs">background job</a> exiting between prompts</td>
+      <td><code>agent_message_chunk</code>: <code>Background job &lt;id&gt; exited with status &lt;status&gt;: &lt;command&gt;</code>; the model hears at the next prompt</td>
+    </tr>
+    <tr>
+      <td>the available commands</td>
+      <td><code>available_commands_update</code>, after <code>session/new</code>, after a <code>session/load</code> replay, and when a reload changes them</td>
+    </tr>
+  </tbody>
+</table>
+
+<table>
+  <thead>
+    <tr>
+      <th>How the turn ended</th>
+      <th><code>stopReason</code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>completed, or a command that started no turn</td>
+      <td><code>end_turn</code></td>
+    </tr>
+    <tr>
+      <td>hit the step limit</td>
+      <td><code>max_turn_requests</code></td>
+    </tr>
+    <tr>
+      <td>output length limit, context window, or blocked output</td>
+      <td><code>max_tokens</code></td>
+    </tr>
+    <tr>
+      <td>cancelled</td>
+      <td><code>cancelled</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>A turn that fails — a provider or network error — answers with an internal error carrying the same message the terminal would print, and the session stays usable.</p>
+
+<h2 id="commands">Commands</h2>
+
+<p>A prompt starting with <code>/name</code> runs that command instead of prompting the model, with the rest of the text as its arguments: <code>/reload</code>, <code>/trace</code>, <code>/auth</code>, <code>/model</code>, <code>/reasoning</code>, <code>/cost</code>, every <code>/skill:&lt;name&gt;</code>, and commands from extensions. Output arrives as <code>agent_message_chunk</code> updates; an unknown name answers <code>Unknown command: &lt;name&gt;</code>.</p>
+
+<h2 id="questions">Questions</h2>
+
+<p>When riffer-rig needs an answer — trusting a project <code>rig.rb</code>, a missing credential during <code>/auth</code>, an extension’s own question — it asks the client:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>riffer-rig asks</th>
+      <th>The client gets</th>
+      <th>The answer</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>yes or no</td>
+      <td><code>session/request_permission</code> with <code>Yes</code> and <code>No</code></td>
+      <td>yes only if <code>Yes</code> was selected</td>
+    </tr>
+    <tr>
+      <td>a choice</td>
+      <td><code>session/request_permission</code> with one option per choice</td>
+      <td>the selected option</td>
+    </tr>
+    <tr>
+      <td>free text</td>
+      <td><code>elicitation/create</code>, one required string field named <code>answer</code></td>
+      <td>the submitted text; declined if the client doesn’t support form elicitation</td>
+    </tr>
+    <tr>
+      <td>a secret</td>
+      <td>nothing — ACP forbids asking for secrets in a form</td>
+      <td>declined</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Each question appears in the session as a pending tool call titled with the question, closed when it is answered. Anything other than a selected option or a submitted form — cancelling, an error, a disconnect — declines the question.</p>
+
+<p>Questions can’t be asked while a session is starting. A project <code>rig.rb</code> that isn’t trusted yet is therefore skipped at <code>session/new</code>, and the client is asked about it the next time the file changes. To avoid that, trust it once in the terminal.</p>
+
+<h2 id="limits">Limits</h2>
+
+<p>MCP servers the client sends with <code>session/new</code> or <code>session/load</code> aren’t used: stdio servers can’t be registered, because riffer-rig’s <a href="/guides/mcp/#limits">MCP client</a> speaks only HTTPS, and servers in ACP’s <code>http</code> or <code>sse</code> shape are skipped. Each is reported.</p>
 
 <h2 id="serving-connections-from-your-own-process">Serving connections from your own process</h2>
 
-<p><code>riffer acp</code> serves one connection on stdio, closes its sessions’ Runtimes — killing their background jobs — and exits. A Ruby process that owns its transports builds the agent itself, one per connection, over that connection’s IO pair:</p>
+<p><code>riffer acp</code> serves one connection on stdio, then exits. A Ruby process that manages its own connections builds the agent itself, once per connection:</p>
 
 <div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">live</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="n">build</span> <span class="o">=</span> <span class="nb">lambda</span> <span class="k">do</span> <span class="o">|</span><span class="n">cwd</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">servers</span><span class="o">|</span>
@@ -199,40 +366,38 @@
 <span class="k">end</span>
 </code></pre></div></div>
 
-<ul>
-  <li><code>input:</code> and <code>output:</code> are the connection’s IO pair. <code>env:</code> — a <code>Riffer::Rig::Env</code>, or what <code>Riffer::Rig::Env.load</code> returned — and <code>home:</code> are what every session’s Loader is built with, and <code>cwd:</code> is the working directory the agent falls back to when a <code>session/list</code> names none. All five are required.</li>
-  <li><code>build:</code> replaces how <code>session/new</code> builds its Runtime. It receives the request’s <code>cwd</code>, the session’s host and the client’s MCP declarations, and returns the Runtime; <code>Riffer::Rig::ACP.build_runtime</code> is the default.</li>
-  <li><code>adopt:</code> lets a Runtime outlive the connection that built it. <code>session/load</code> calls it with the session id before reading the store: a Runtime it returns serves the session as it is — nothing is rebuilt and the request’s MCP servers are not declared, so a client that reconnects reaches the Runtime still running its turn, and its <code>session/cancel</code> cancels that turn — and <code>nil</code> restores the session from the store as usual. The stored messages replay either way. An adopted Runtime’s notify lines, job exit updates and <a href="#relaying-questions-to-the-client">relayed questions</a> move to the adopting connection; a turn an earlier connection started keeps streaming to that one. The hook runs on a request thread, so guard what it reads.</li>
-  <li><code>run</code> blocks until the client disconnects, then yields the <code>ACP::AgentConnection</code> to its block, if one is given, and returns <code>0</code>. Requests still running when the client disconnects are not waited for. Once the block returns, <code>run</code> cancels any turn still running on the Runtimes the agent built itself — through the default <code>build:</code>, or restored from the store by <code>session/load</code> — and closes them, which kills their background jobs. A Runtime your <code>build:</code> returned or <code>adopt:</code> handed over stays open: closing it is yours to do.</li>
-</ul>
+<table>
+  <thead>
+    <tr>
+      <th>Keyword</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>input:</code>, <code>output:</code></td>
+      <td>the connection’s IO pair</td>
+    </tr>
+    <tr>
+      <td><code>env:</code>, <code>home:</code></td>
+      <td>what each session’s <a href="/guides/embedding/#building-a-runtime-with-the-loader">Loader</a> is built with: a <code>Riffer::Rig::Env</code> (or <code>Env.load</code>’s result) and the home directory</td>
+    </tr>
+    <tr>
+      <td><code>cwd:</code></td>
+      <td>the directory <code>session/list</code> uses when the client sends none</td>
+    </tr>
+    <tr>
+      <td><code>build:</code></td>
+      <td>how <code>session/new</code> builds a Runtime from the client’s <code>cwd</code>, host and MCP servers; default <code>ACP.build_runtime</code></td>
+    </tr>
+    <tr>
+      <td><code>adopt:</code></td>
+      <td>called by <code>session/load</code> with the session id; return a still-running Runtime to hand it to this connection — a client that reconnects mid-turn reaches the same turn — or <code>nil</code> to restore from the store. It runs on a request thread</td>
+    </tr>
+  </tbody>
+</table>
 
-<h2 id="what-it-skips">What it skips</h2>
-
-<ul>
-  <li>The other session-lifecycle methods: <code>session/resume</code>, <code>session/close</code>, <code>session/delete</code> and <code>authenticate</code> are not offered. <a href="/guides/sessions/">Sessions</a> are still recorded to the store for the terminal to resume.</li>
-  <li>MCP servers in <code>http</code> or <code>sse</code> shape are skipped with a warning; only the stdio shape is read.</li>
-  <li>Terminal delegation (<code>terminal/*</code>) and file delegation (<code>fs/*</code>) to the client are never requested. Elicitation is requested only for a <a href="#relaying-questions-to-the-client">question the host relays</a>.</li>
-  <li>Prompt blocks of other kinds than text and resource links are not advertised in <code>promptCapabilities</code>, so a compliant client does not send them.</li>
-</ul>
-
-<p>A project <code>rig.rb</code> loads only once it is trusted: neither <code>session/new</code> nor <code>session/load</code> can <a href="#relaying-questions-to-the-client">ask about it</a> while it builds the Runtime, so an untrusted file is skipped and nothing is stored. The session asks the client at its next <a href="/guides/reloading/#triggers">automatic reload</a>, which a change to the file sets off.</p>
-
-<h2 id="relaying-questions-to-the-client">Relaying questions to the client</h2>
-
-<p>The host’s <code>ask</code> and <code>confirm</code> reach the client, and each question blocks the turn until the client answers:</p>
-
-<ul>
-  <li><code>confirm</code> sends <code>session/request_permission</code> with two options, <code>Yes</code> (<code>allow_once</code>) and <code>No</code> (<code>reject_once</code>). Only <code>Yes</code> confirms.</li>
-  <li><code>ask</code> with <code>options:</code> sends <code>session/request_permission</code> with one <code>allow_once</code> option per choice and answers with the one the client selects.</li>
-  <li><code>ask</code> without options sends <code>elicitation/create</code> in form mode, scoped to the session, for one required string field named <code>answer</code>, and answers with what the client submits. A client that does not advertise <code>elicitation.form</code> is not sent the request, and the ask is declined.</li>
-  <li><code>ask</code> with <code>secret: true</code> is always declined: ACP forbids asking for a secret in a form.</li>
-</ul>
-
-<p>A permission request has to name a tool call and a question has none, so each one carries a tool call of its own — a fresh <code>toolCallId</code>, <code>pending</code>, with the question as its <code>title</code>. Before the request is sent, a <code>tool_call</code> update announces that tool call on the session. When the request ends, a <code>tool_call_update</code> closes that <code>toolCallId</code>: <code>completed</code> when the client selected an option, <code>No</code> included, and <code>failed</code> otherwise.</p>
-
-<p>Anything but a selected option or an accepted form — the client cancels, declines, answers with an error, or the connection closes — declines the question: <code>confirm</code> is <code>false</code> and <code>ask</code> is <code>nil</code>. A trust question the client declines is stored as a no, like any other (<a href="/guides/extensions/#the-rigrb-files">Extensions</a>).</p>
-
-<p>A question is relayed only once the session is built. While <code>session/new</code> or <code>session/load</code> is building the Runtime the host reports only <code>:notify</code>, so the questions of the build — trusting a project <code>rig.rb</code> included — are declined without being sent, and no answer is stored. The client learns the id of a new session only from the <code>session/new</code> reply, and a question sent during a <code>session/load</code> would hold up the load it belongs to.</p>
+<p><code>run</code> blocks until the client disconnects, yields the connection, and returns <code>0</code>. It then cancels and closes the Runtimes it built or restored itself; a Runtime your <code>build:</code> returned or <code>adopt:</code> handed over is yours to close.</p>
 
         </article>
 
