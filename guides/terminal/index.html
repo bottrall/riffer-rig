@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.14.0</span>
+            <span class="version">v0.15.0</span>
           </div>
         </nav>
       </div>
@@ -284,7 +284,7 @@
 
 <ul>
   <li>a glyph: a dim <code>·</code> between turns, a spinner while a turn runs;</li>
-  <li>the state, as <code>idle</code> between turns and <code>turn N</code> — N the model’s requests so far — while a turn runs;</li>
+  <li>the state, as <code>idle</code> between turns and <code>step N</code> — N the model’s requests so far — while a turn runs;</li>
   <li>the clock: the time of day, as <code>14:32</code>, between turns, and the time since the turn started, as <code>mm:ss</code>, while one runs;</li>
   <li>the tokens, as <code>↑in ↓out tok</code> (<code>k</code> and <code>M</code> for thousands and millions): the session’s total between turns, the request’s running count while a turn runs;</li>
   <li>the cost, as <code>~$1.4000</code>: the session’s total between turns, the turn’s running cost while it runs; <code>~$0.0000</code> until the model is <a href="/guides/configuration/#catalog_files">priced</a>;</li>
@@ -311,10 +311,10 @@
 
 <p>When a turn ends, its answer is printed above the input line, rendered from Markdown: headings, emphasis, inline code and code blocks, lists, quotes, tables, rules and links. Text the model sent along with tool calls is not printed. A turn the model replied to more than once — one continued for a <a href="/guides/tools/#background-jobs">background job</a> that exited as the model finished its reply — prints each reply in order, a blank line apart. Under the answer comes a stat line:</p>
 
-<pre><code class="language-text">3 steps · 00:12 · ↑5200 · ↓340 · cache_read:4096 · ~$0.0215 · session 18400 tok · ~$0.0731
+<pre><code class="language-text">3 steps · 00:12 · ↑5.2k · ↓340 · cache_read:4k · ~$0.0215 · session 18.4k tok · ~$0.0731
 </code></pre>
 
-<p>That is the turn’s model calls, its time, its input and output tokens, each cache count above zero, and its cost, then the session’s total tokens and cost; the costs appear once the model is <a href="/guides/configuration/#catalog_files">priced</a>. A cancelled turn prints the answer it had reached and <code>interrupted</code> in place of the stat line. Command output, such as <code>/cost</code>’s, is printed as it arrives.</p>
+<p>That is the turn’s model calls, its time, its input and output tokens, each cache count above zero, and its cost, then the session’s total tokens and cost; the counts read as the status bar’s do (<code>5.2k</code>), the costs are cyan and the rest of the line dim, and the costs appear once the model is <a href="/guides/configuration/#catalog_files">priced</a>. A cancelled turn prints the answer it had reached and <code>interrupted</code> in place of the stat line. Command output, such as <code>/cost</code>’s, is printed as it arrives.</p>
 
 <h2 id="interrupting-and-exiting">Interrupting and exiting</h2>
 
