@@ -1,0 +1,20 @@
+# Troubleshooting
+
+| You see                                                                  | Why                                                                     | Fix |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------- | --- |
+| `sonnet is not a provider/name model string; the provider is one of: …`  | the model has no provider prefix                                        | write it as `provider/name`, such as `anthropic/claude-sonnet-4-6`; check `--model`, `RIFFER_MODEL` and both settings files ([precedence](CONFIGURATION.md#where-each-value-comes-from)) |
+| `turbo is not a reasoning level; riffer accepts: off low medium high xhigh max` | `--reasoning` or `RIFFER_REASONING` holds an unknown level       | use one of the listed levels ([Configuration](CONFIGURATION.md#reasoning)) |
+| `…/settings.json is not valid JSON at line 4 column 3`                   | a settings, `auth.json` or `trust.json` file doesn't parse              | fix the file at that position; riffer-rig never overwrites a broken file |
+| `anthropic has no api_key (ANTHROPIC_API_KEY); set it in the environment or run riffer interactively to paste it …` | headless or ACP found no credential, and can't ask | set the variable, or run `riffer` once in a terminal to store the key ([Providers](PROVIDERS.md)) |
+| `anthropic is not installed; install it with gem install anthropic …`    | the provider's SDK gem is missing, and riffer-rig can't or may not install it | run the printed command, or add the gem to your Gemfile ([SDK gems](PROVIDERS.md#sdk-gems)) |
+| `… is not installed and Bundler manages the load path; add gem …`        | riffer-rig runs under Bundler, which it can't install into              | add the printed line to your Gemfile and `bundle install` |
+| `Extension NAME failed to load: …`                                       | an extension raised while loading, or its `requires:` doesn't match     | fix the extension; the others still loaded ([Error isolation](EXTENSIONS.md#error-isolation)) |
+| `Unknown tool in allowlist: NAME`                                        | `--tools` names a tool that doesn't exist                               | check the spelling against [the identifiers](TOOLS.md#identifiers) |
+| `MCP server NAME failed to register: …`                                  | the server isn't `https://`, didn't answer, or is missing a credential  | see [MCP](MCP.md#when-a-server-fails) |
+| `No saved session in this directory.` (headless exits 2)                 | `-c` found nothing to continue                                          | drop `-c`, or run from the directory the session was saved in |
+| `no stdin data received in 3s, proceeding without it; …`                 | headless was given a prompt and a stdin that stayed open                | redirect stdin from `/dev/null` ([Headless](HEADLESS.md#the-prompt)) |
+| your project's `rig.rb` doesn't load in headless or ACP                  | it hasn't been trusted, and those hosts can't ask                       | run `riffer` once in the project and answer yes ([trust](EXTENSIONS.md#the-rigrb-files)) |
+| an edit to `settings.json` has no effect mid-session                     | automatic reloading watches only `rig.rb` files                         | run `/reload` ([Reloading](RELOADING.md#when-it-reloads)) |
+| Shift-Enter sends instead of starting a new row                          | the terminal doesn't support the Kitty keyboard protocol                | use Ctrl-J or Alt-Enter ([Terminal](TERMINAL.md#the-input-line)) |
+| colour codes in captured output                                          | output is going to a terminal-like destination                          | set `NO_COLOR=1`, or use `riffer -p` |
+| costs show `~$0.0000` or are missing                                     | the model has no pricing in a catalog file                              | add it to a [catalog file](CONFIGURATION.md#catalog_files) |

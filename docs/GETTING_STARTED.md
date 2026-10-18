@@ -8,7 +8,7 @@ riffer-rig needs Ruby 4.0 or later.
 gem install riffer-rig
 ```
 
-This installs the `riffer` executable.
+This installs the `riffer` command.
 
 ## First run
 
@@ -26,43 +26,43 @@ Which model should riffer use? Enter provider/name, with a provider from: amazon
 › anthropic/claude-sonnet-4-6
 ```
 
-The answer is saved as `model` in `~/.riffer/settings.json`, so later runs skip the question. A model already set by `--model`, `RIFFER_MODEL` or either settings file is used without asking ([Configuration](CONFIGURATION.md#model)).
+The answer is saved to `~/.riffer/settings.json`, so later runs skip the question. [Configuration](CONFIGURATION.md#where-each-value-comes-from) lists the other places a model can come from.
 
-The reasoning effort follows the same pattern: `--reasoning`, then `RIFFER_REASONING`, then `reasoning` in the settings, and `/reasoning` switches it inside the session ([Configuration](CONFIGURATION.md#reasoning)).
-
-Next it looks for the provider's credentials in the environment and in `~/.riffer/auth.json`. When one is missing it asks for it, reading a key without echo:
+If the provider's SDK gem is missing, it offers to install it ([SDK gems](PROVIDERS.md#sdk-gems)). Then it looks for the provider's API key in the environment and in `~/.riffer/auth.json`, and asks for it if it finds none:
 
 ```text
 anthropic api_key
 › (hidden)
 ```
 
-A pasted key is saved to `~/.riffer/auth.json` (permissions `600`) and reused from then on. Leaving the answer empty stops with a message naming the environment variable to set instead. [Providers](PROVIDERS.md) lists each provider's variables and where to create a key.
+The key is saved to `~/.riffer/auth.json` with permissions `600`. Leave the answer empty to stop and set the environment variable instead; [Providers](PROVIDERS.md) lists each provider's variables and where to create a key.
+
+> **Tools run without asking.** The model can read and write files and run shell commands in this directory with no confirmation step. [What runs without asking](TOOLS.md#what-runs-without-asking) explains what you can restrict.
 
 ## The session
 
-The banner shows the model, the reasoning level in effect, the working directory, how many skills were found and the version. On a terminal too narrow for the logo it leaves the logo out, and a model or working directory too long for its row is cut from the left behind `…`. It is drawn again when the session changes — `/new`, `/resume` — and for a session that has already used tokens it adds a `session` row with the total so far, and its cost once the model is priced. Type a prompt and press Enter:
+The banner shows the model, the reasoning level, the working directory and how many skills were found. Type a prompt and press Enter.
 
-- while the turn runs, the status line under the input shows its turn number, time, tokens and cost, and Ctrl-T peeks at what the model is writing; between turns it shows the same slots as `idle` — the time, the tokens and cost used so far, the background jobs — at the same positions, so starting or ending a turn moves nothing;
-- when it ends, the reply is printed in one piece, and under it a stat line: the turn's steps, time and tokens, then the session's running total, each with its cost once the model is priced ([Configuration](CONFIGURATION.md#catalog_files));
-- you can keep typing while a turn runs: Enter queues the message, and it runs when the turn ends;
-- Ctrl-C cancels a running turn, which prints what the reply had reached and `interrupted`; with no turn running, a second Ctrl-C exits, as do `/exit`, `/quit` and Ctrl-D on an empty line.
+- While the turn runs, the status line under the input shows its progress, time, tokens and cost, and Ctrl-T [peeks](TERMINAL.md#peek) at what the model is writing.
+- When it ends, the reply is printed, followed by a [stat line](TERMINAL.md#the-turn-report) for the turn and the session.
+- You can keep typing while a turn runs: Enter [queues](TERMINAL.md#queueing-messages) the message for when the turn ends.
+- Ctrl-C cancels a running turn. With no turn running, press it twice to exit, or type `/exit`.
 
-`/help` lists the slash commands, [Terminal](TERMINAL.md) has every key and what each command does, and the [README](https://github.com/bottrall/riffer-rig#usage) lists the flags.
+`/help` lists the commands. [Terminal](TERMINAL.md) has every key and command, and [Command line](CLI.md) has every flag.
 
 ## What first run leaves behind
 
 In `~/.riffer/`:
 
-- `settings.json` — the model you picked, and any other settings ([Configuration](CONFIGURATION.md));
-- `auth.json` — the credentials you pasted, permissions `600` ([Providers](PROVIDERS.md));
-- `sessions/` — one JSONL file per saved session ([Sessions](SESSIONS.md)).
+- `settings.json` — the model you picked ([Configuration](CONFIGURATION.md));
+- `auth.json` — the key you pasted ([Providers](PROVIDERS.md));
+- `sessions/` — one file per saved session ([Sessions](SESSIONS.md)).
 
-In the project, nothing: `.riffer/` is only there if you add a project `settings.json` or `rig.rb` ([Configuration](CONFIGURATION.md), [Extensions](EXTENSIONS.md)), and the first run of a project `rig.rb` asks you to trust it.
+Nothing is written to the project. A project `.riffer/` exists only if you add a `settings.json` or `rig.rb` to it.
 
 ## Where to next
 
-- [Overview](OVERVIEW.md) — what riffer-rig is, the four tiers, the runtime and host layers
-- [Configuration](CONFIGURATION.md) — the settings scopes and every core key
+- [Configuration](CONFIGURATION.md) — settings for every project or one
 - [Tools](TOOLS.md) and [Skills](SKILLS.md) — what the agent can do out of the box
-- [Extending](EXTENSIONS.md) — your own tools, commands and prompts in `rig.rb`
+- [Extensions](EXTENSIONS.md) — your own tools, commands and prompts
+- [Troubleshooting](TROUBLESHOOTING.md) — common errors and their fixes

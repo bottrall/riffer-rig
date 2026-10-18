@@ -15,6 +15,10 @@
 ## [0.14.0](https://github.com/bottrall/riffer-rig/compare/v0.13.0...v0.14.0) (2026-10-18)
 
 
+### Upgrading
+
+* the `models` pricing table in `settings.json` is no longer read. Move each entry into a [model catalog](https://riffer.ai/guides/catalog/) file's `pricing` — the same four rates, USD per million tokens — and list the file in `catalog_files`.
+
 ### Features
 
 * **headless:** print the session id on stderr ([#556](https://github.com/bottrall/riffer-rig/issues/556)) ([2816938](https://github.com/bottrall/riffer-rig/commit/2816938f66d32ccf557d83a33e40300e68a68032))

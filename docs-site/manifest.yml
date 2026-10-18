@@ -8,27 +8,33 @@ groups:
     pages:
       - source: OVERVIEW.md
         slug: overview
-        description: What riffer-rig is, the four tiers, the runtime and host layers
+        description: What riffer-rig is, how it fits together, and a glossary
       - source: GETTING_STARTED.md
         slug: getting-started
         featured: true
         description: Install, pick a model, first session
+      - source: TROUBLESHOOTING.md
+        slug: troubleshooting
+        description: Common errors, what causes them, and the fix
 
   - label: Using the terminal
     tone: rose
     pages:
       - source: TERMINAL.md
         slug: terminal
-        description: The input line and its keys, queueing, the status line, peek, resume replay
+        description: The input line and its keys, queueing, the status line, peek, commands
+      - source: CLI.md
+        slug: cli
+        description: Every flag and environment variable
       - source: CONFIGURATION.md
         slug: configuration
-        description: Settings scopes and every core key
+        description: Settings, where each value comes from, and every core key
       - source: INSTRUCTIONS.md
         slug: instructions
         description: How the system message is built; AGENTS.md
       - source: TOOLS.md
         slug: tools
-        description: The bundled toolkit and provider-native tools
+        description: The bundled tools, background jobs, and what runs without asking
       - source: SKILLS.md
         slug: skills
         description: Agent Skills directories and activation
@@ -37,10 +43,10 @@ groups:
         description: Declaring MCP servers
       - source: RELOADING.md
         slug: reloading
-        description: The /reload command, what reloads and what does not
+        description: What reloads, when, and what needs a restart
       - source: SESSIONS.md
         slug: sessions
-        description: Saving, resuming, the picker, the JSONL store
+        description: Resuming, the picker, /trace, opting out
       - source: HEADLESS.md
         slug: headless
         description: riffer -p, NDJSON, exit codes
@@ -53,20 +59,26 @@ groups:
     pages:
       - source: EXTENSIONS.md
         slug: extensions
-        description: rig.rb, the registrar, the eight seams, commands, handlers, gems
+        description: A complete example, rig.rb, the eight seams, hooks, gems
       - source: EMBEDDING.md
         slug: embedding
-        description: Runtime and Loader from Ruby; snapshots; rebuild
+        description: Runtime and Loader from Ruby; cancelling, snapshots, background jobs
+      - source: EVENTS.md
+        slug: events
+        description: The event stream, and the order of tool call events
       - source: HOSTS.md
         slug: hosts
-        description: The Host interface and writing a host
+        description: A minimal host, the host interface, and the shipped hosts
+      - source: STORES.md
+        slug: stores
+        description: Saving sessions to your own store
 
   - label: Providers
     tone: teal
     pages:
       - source: PROVIDERS.md
         slug: providers/overview
-        description: Model strings, precedence, credentials, /auth
+        description: Credentials, SDK gems, auth.json, /auth
       - source: CUSTOM_PROVIDERS.md
         slug: providers/custom
-        description: Registering a provider from an extension; the setup, credentials, listings
+        description: Registering a provider from an extension

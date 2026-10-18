@@ -1,40 +1,47 @@
 # Sessions
 
-A session is one conversation with a `Riffer::Rig::Runtime`: its id, its history and the choices made during it. The Runtime can save a session as a plain hash and carry on from one ([below](#what-a-snapshot-holds)); the Loader stores every session it builds as it runs, one JSONL file per session under `~/.riffer/sessions/`, and picks one to resume ([below](#resuming)). An embedder without the Loader reads the entries directly or keeps snapshots itself ([Embedding](EMBEDDING.md#snapshots)).
+Every session is saved as it runs, one file per session at `~/.riffer/sessions/<directory>/<session id>.jsonl`, one JSON object per line, so `cat` and `jq` work on it and a crash loses at most the last line.
 
-## The session store
+## Resuming
 
-The Loader appends to a store: any object implementing the four `Riffer::Rig::Stores::_Store` methods — `append(id, entry)`, `read(id)`, `list(cwd: nil)` and `delete(id)`. Entries cross the store as typed POROs — `Stores::Header`, `Stores::MessageEntry`, `Stores::ModelEntry` and `Stores::SkillEntry` — and each store serialises them itself; `Hash` remains only where it is already the documented currency, the JSON lines on disk and the riffer message payloads. The store defaults to a `Stores::JSONL` under the Loader's `home:` and is taken per build with `store:`; a Rails host implements the four over its own tables and passes its own. Hosts never see the store — they only choose which session to drive.
+| To…                                              | Run                     |
+| ------------------------------------------------ | ----------------------- |
+| continue the most recent session in this directory | `riffer -c`           |
+| resume a session by id                           | `riffer -r <id>`        |
+| pick from this directory's sessions              | `riffer -r`, or `/resume` in a session |
+| pick from every directory's sessions             | `/resume --all`         |
 
-## Where sessions live
+A session resumes in the directory it was saved in, wherever you resume it from, so its tools, project settings, skills and `rig.rb` are that directory's. If that directory no longer exists, the session isn't resumed. When there is no session to continue, the terminal starts a fresh one; [headless](HEADLESS.md#flags) exits 2 instead.
 
-`Stores::JSONL` writes one file per session at `~/.riffer/sessions/<cwd-slug>/<session id>.jsonl`, one entry per line, so `cat` and `jq` work and a crash loses at most one line. The slug is the cwd with every run of characters outside alphanumerics, `.`, `_` and `-` collapsed to a single hyphen; it groups a project's sessions so listing is a directory read, but the `cwd` in the header entry is the truth, not the directory name.
+A resumed session keeps its id and carries on in the same file. What comes back:
 
-## What an entry holds
+| Restored from the session                         | Taken from today                                       |
+| ------------------------------------------------- | ------------------------------------------------------ |
+| the conversation                                  | settings, credentials and extensions                   |
+| a `/model` switch, if its provider still has credentials | the tools, and the system prompt                |
+| a `/reasoning` switch                             |                                                        |
+| the skills the model activated, if they still exist |                                                      |
 
-Each entry is a frozen PORO in `Riffer::Rig::Stores` — a new entry type is a new class. The JSONL store serialises each one to a line of JSON under its `type`; the line holds:
+`--model` or `--reasoning` wins over a restored switch for that run only, so resuming again without the flag restores the switch. If a crash cut off a turn mid-tool-call, the unfinished calls are marked as interrupted rather than run again.
 
-| Class                  | Holds                                                                                                                                               |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Stores::Header`       | written on the first message: `schema_version`, `id`, `cwd`, `created_at`, `model`, `riffer_rig_version`, `riffer_version`, `title` (the first prompt truncated to one line); the store stamps the listed header with `updated` |
-| `Stores::MessageEntry` | one conversation message as a riffer message hash under `message`, appended as it lands; the system message is not among them                        |
-| `Stores::ModelEntry`   | one per `/model` switch, holding the new `model` string                                                                                              |
-| `Stores::ReasoningEntry` | one per `/reasoning` switch, holding the new `reasoning` level                                                                                     |
-| `Stores::SkillEntry`   | one per skill the model activated, holding the skill name; a `/skill:<name>` run is not one                                                          |
+## The picker
 
-Every entry but the header also holds `recorded_at`, the wall-clock time the Loader recorded it — a UTC ISO 8601 string with milliseconds (`2026-10-11T02:00:00.123Z`), on the entry and on the JSONL line alike; `recorded_time` reads it as a `Time`. Within a session it never goes backwards, in file order: when the clock steps back, or a resume lands on a clock behind the session's latest entry, an entry repeats the latest time already recorded, so two entries may share one. An entry held for the header — a `/model` before the first prompt — keeps the time it happened, which is earlier than the header's `created_at`. The field is additive: a line without it, as every session written before it existed has, or with one that does not parse, reads back with `recorded_at` nil and resumes as before, and a store of your own that drops it loses nothing a resume needs.
+`/resume` lists sessions newest first, each with its first prompt and when it was last used.
 
-## Opting out
+| Input                    | Does                                                    |
+| ------------------------ | ------------------------------------------------------- |
+| text, then Enter         | filters to sessions whose title contains it; with one left, Enter resumes it |
+| a row number, then Enter | resumes that session                                    |
+| Ctrl-D, a row number, `y` | deletes that session                                   |
+| Ctrl-C                   | closes the picker                                       |
 
-Every Loader-built session is saved, one-shots included. Skip one run with `store: nil` — `--no-save` on the command line — or all of them with `"sessions": {"save": false}` in settings ([Configuration](CONFIGURATION.md)).
-
-`--no-save` leaves the saved sessions unread too: `-c`, `-r` and `/resume` print `Sessions are off for this run (--no-save).` instead of looking for one, and in headless mode `-c` and `-r` exit 2 with it. The settings switch only stops recording — saved sessions still resume, and the resumed session is not appended to.
+Switching keeps the session you left saved, as does `/new`, which starts a fresh session in place.
 
 ## Tracing the last turn
 
-`/trace` replays the last turn from the store. The Loader installs it as a runtime command on every build that records, so it works the same in every host and is absent when the session is not saved ([Opting out](#opting-out)). The turn runs from the session's last prompt to its last entry, so a resumed session can be traced before its next prompt. The command's `command_output` holds one line per recorded step — the time, what happened, and the detail:
+`/trace` shows the last turn step by step from the saved session — including in a session you just resumed:
 
-```
+```text
 02:00:01.000  prompt    Fix the failing test
 02:00:02.250  preamble  I'll read both files.
 02:00:02.250  dispatch  read {"path":"a.rb"}
@@ -45,76 +52,25 @@ Every Loader-built session is saved, one-shots included. Skip one run with `stor
 02:00:10.500  answer    Fixed.
 ```
 
-| Step       | Shows                                                                                                   |
-| ---------- | ------------------------------------------------------------------------------------------------------- |
-| `prompt`   | the first line of the user message that started the turn                                                |
-| `preamble` | the first line of the text the assistant sent with tool calls                                           |
-| `dispatch` | one line per tool call of that request: the tool's name and its arguments as the model sent them        |
-| `finish`   | one line per tool result, in call order: the tool's name, and the error type in parentheses when it failed |
-| `answer`   | the first line of the text of a request that called no tool                                             |
-| `notice`   | the first line of a [job exit notification](EMBEDDING.md#exit-notifications) that continued the turn      |
-| `silent`   | a stretch of 5 seconds or more between two consecutive messages, with its length                        |
+| Step       | Shows                                                                          |
+| ---------- | ------------------------------------------------------------------------------ |
+| `prompt`   | the first line of your message                                                 |
+| `preamble` | the first line of text the model sent along with tool calls                    |
+| `dispatch` | a tool call: the tool and its arguments                                        |
+| `finish`   | a tool result, with the error type when it failed                              |
+| `answer`   | the first line of a reply that called no tool                                  |
+| `notice`   | a [background job](TOOLS.md#background-jobs) exit that continued the turn      |
+| `silent`   | a gap of 5 seconds or more, and its length                                     |
 
-The times are the entries' `recorded_at`, in UTC; an entry without one has a blank time and bounds no `silent` stretch. The tool results of one request are recorded together, once the last of its calls returns, so a `dispatch` carries its request's time and the `finish` lines of one request share the moment the whole batch ended — each call's own timing is on the stream's [`after_tool_call`](EMBEDDING.md#tool-call-events). A session with no user message yet answers `No turn recorded yet`.
+Times are UTC. The results of one batch of tool calls are saved together, so their `finish` lines share a time; [`--json`](HEADLESS.md#the-ndjson-stream---json) has each call's own timing.
 
-## Resuming
+## Opting out
 
-The Loader picks the session to drive; hosts never see the store:
+| Setting                                  | Saves this session | Can resume saved sessions |
+| ---------------------------------------- | :----------------: | :-----------------------: |
+| `--no-save`                              | no                 | no                        |
+| `"sessions": {"save": false}` in settings | no                | yes, without adding to them |
 
-| Method           | Picks                                                                          |
-| ---------------- | ------------------------------------------------------------------------------ |
-| `continue`       | the most recently updated session whose header cwd matches the build's, or nil |
-| `resume(id)`     | the session with that id, or nil when the store has none; `extra_extensions:` loads into its build as it does for [`runtime`](EMBEDDING.md#building-a-runtime-with-the-loader) |
-| `list(all: false)` | the header entries, the build's cwd only unless `all: true` escapes the scope |
-| `delete(id)`     | removes the session; an unknown id is a no-op                                   |
+`/trace` needs a saved session, so it is not available when saving is off.
 
-`continue` and `resume` build as `runtime` does and take the same [`Loader::Options`](EMBEDDING.md#loader-options) as an optional argument: `continue(options)`, `resume(id, options)`.
-
-A listed header carries the session's update time as `updated`, stamped by the store while it holds the physical artifact — for `Stores::JSONL` the file's mtime, which its last append set; `continue` picks the most recently `updated` session wherever `list` happens to place it.
-
-On the command line, `riffer -c` continues the most recent session in the directory and `riffer -r <id>` resumes by id. With no match the REPL tells you and starts fresh. Bare `riffer -r` opens the [picker](#the-picker) before the first session starts; picking a session resumes it, leaving the picker starts a fresh one.
-
-Resuming folds the session's entries back into a snapshot and builds a Runtime over it: the last `model` entry wins, the last `reasoning` entry wins, skill activations accumulate, and the `message` entries are the history. Everything else is today's — the settings, credentials, extensions and tools of the new build, and its model selection, unless the session recorded a `/model` switch, which is restored over `RIFFER_MODEL` and the settings when its provider still has credentials ([Restoring](#restoring) has the rules, including the healed tail of a file cut mid-turn); a recorded `/reasoning` switch is restored the same way, over `RIFFER_REASONING` and the settings, and a recorded level riffer does not accept silently leaves the model's default. A model or reasoning level chosen for the run — `--model` or `--reasoning`, or `model:` or `reasoning:` in the [`Loader::Options`](EMBEDDING.md#loader-options) — wins over the recorded switch for that run only: it is not recorded, so a later resume without it restores the switch again. A resumed session keeps its id and appends to the same file, and the terminal replays its earlier turns above the input ([Terminal](TERMINAL.md#resuming)).
-
-On the command line and in the REPL, a session resumes in the directory it was saved in — its header's `cwd` — wherever you resume it from: `riffer -r <id>` from another directory, or a pick in `/resume --all`, builds it there, so its tools, project settings, skills and `rig.rb` are that directory's and the banner shows it. When that directory no longer exists, the session is not resumed: the REPL says `Session <id> was saved in <dir>, which no longer exists.` and starts fresh — or, after `/resume`, keeps the session you are in — and headless exits 2 with it.
-
-## The picker
-
-In the REPL, `/resume` opens the picker over the sessions of the current directory, and `/resume --all` over every directory's. Each row shows the session's first prompt as its title and the relative time of its last update, most recent first.
-
-The picker reads one line at a time:
-
-- Typing text filters the rows to titles containing it (case-insensitive). A filter that matches nothing says so and keeps the previous rows.
-- Enter switches to the session when a single row remains.
-- A row number — `2`, Enter — switches to that row directly.
-- Ctrl-D starts a delete: type the number of the row, then confirm with `y` (`n` or anything else keeps it). The session is removed from the store.
-- Enter with several rows, Ctrl-C, or Ctrl-D at the delete prompt leaves the picker and prints `(closed)`.
-
-Switching replaces the Runtime the terminal drives and re-renders the banner: the conversation you left is already saved, keeps its id and file, and `/resume` appends to it. `/new` starts a fresh session in place the same way — a new id, empty history — and the session you left stays on disk.
-
-## What a snapshot holds
-
-`runtime.to_h` returns a hash with symbol keys:
-
-| Key         | Holds                                                                                                                                  |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `:id`       | the Runtime's id, a UUIDv7 minted when the session began; a restored Runtime keeps it, so it names the session across restarts        |
-| `:messages` | the conversation as riffer message hashes (`Riffer::Messages::Base#to_h`), system message first, read back with `Riffer::Messages::Base.from_hash`; a [job exit notification](EMBEDDING.md#exit-notifications) also carries `job_notification: true` and is read back as one, and one a [follow-up](EMBEDDING.md#waiting-for-jobs) delivered carries `follow_up_exits` too |
-| `:model`    | the model the session switched to with `model=` or `/model`, or `nil` when it kept the model it was built with                          |
-| `:reasoning` | the reasoning level in effect — a `reasoning=` or `/reasoning` switch, or the level the Runtime was built with; `nil` when it has none        |
-| `:skills`   | the names of the skills the model activated in the session ([Skills](SKILLS.md#what-the-model-sees)); a skill run with `/skill:<name>` is not one |
-
-A snapshot survives a JSON round trip: generate it with `JSON.generate`, parse it back with `symbolize_names: true`, and pass the result as `snapshot:`.
-
-## What it leaves out
-
-Nothing a restore can rebuild from the present is stored:
-
-- **Registrations** — tools, commands, hooks, prompt sections and declared settings come from the extensions and settings the restoring Runtime is given, so a session resumed after an extension changed runs the extension as it is now.
-- **The tally** — a restored Runtime sums its messages' token usage instead.
-- **The base prompt and environment** — the system message is rebuilt at the start of every turn, so the saved one is replaced on the first prompt after a restore.
-- **Credentials** — they come from the restoring Runtime's `credentials:`; a saved model whose provider has none there is not applied.
-
-## Restoring
-
-History is data, and the present wins: nothing in a snapshot blocks a restore. A tool call for a tool that no longer exists is just history; tool calls left without a result by a crash are filled with an "interrupted" tool error rather than run; a skill that no longer exists is dropped; and a saved model without credentials falls back to the given model with one `notify`. The first prompt after a restore opens with `session_start` carrying the saved id and reason `:restore`. [Embedding](EMBEDDING.md#snapshots) has the details and an example.
+To keep sessions somewhere else — your app's database, say — see [Session stores](STORES.md).

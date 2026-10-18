@@ -1,76 +1,87 @@
 # Hosts
 
-A host receives questions and out-of-band messages from a `Riffer::Rig::Runtime`. The contract is the RBS interface `Riffer::Rig::Hosts::_Host`: a host is any object that implements every method below.
+A host is a front end for a Runtime: the terminal, headless mode and the ACP adapter are hosts, and so is anything you build — a Rails controller, a Slack bot, a job. It has two parts:
 
-| Method                             | Purpose                                                     |
-| ---------------------------------- | ----------------------------------------------------------- |
-| `ask(question, options:, secret:)` | free text or a choice from `options`; `secret:` hides input |
-| `confirm(question)`                | `true` for yes, `false` for no, `nil` when left unanswered  |
-| `notify(message, level:)`          | out-of-band message; never enters the model's context       |
-| `progress(label) { }`              | wraps slow work                                             |
-| `capabilities`                     | the `Set` of methods the host truly supports                |
+- **a host object**, which the Runtime asks questions and gives notices to;
+- **a loop**, which builds a Runtime, sends it prompts and renders its [events](EVENTS.md).
 
-A host implements all five, including the ones it declines. Whoever calls `ask` or `confirm` checks `capabilities` first, so a host that declines one is never asked and the caller takes the declined path. A host whose user can walk away from a question returns `nil` from `confirm`, as `ask` does, so the caller can tell "not now" from "no": an unanswered [trust question](EXTENSIONS.md#the-rigrb-files) is asked again at the next load, while a `false` is stored as a no. A host that always answers `true` or `false` still meets the contract. `progress` is always called, because its block is the work.
-
-A host that cannot interact includes `Riffer::Rig::Hosts::NonInteractive`, which supplies the declines (`ask` returns `nil`, `confirm` returns `false`, `progress` yields), and leaves `:ask` and `:confirm` out of its `capabilities`. A method the host defines itself replaces the mixin's.
+## A minimal host
 
 ```ruby
-class MyHost
+require 'riffer/rig'
+
+class ConsoleHost
   include Riffer::Rig::Hosts::NonInteractive
 
   def capabilities = Set[:notify].freeze
   def notify(message = nil, level: :info) = warn("[#{level}] #{message}")
 end
+
+def render(event)
+  case event
+  when Riffer::StreamEvents::TextDelta then print event.content
+  when Riffer::Rig::Events::CommandOutput then puts event.text
+  when Riffer::Rig::Events::TurnEnd then puts "\n(#{event.stop_reason})"
+  end
+end
+
+runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: ConsoleHost.new)
+trap('INT') { Thread.new { runtime.cancel } }
+
+while (line = $stdin.gets&.chomp)
+  next if line.empty?
+
+  if line.start_with?('/')
+    name, args = line.delete_prefix('/').split(' ', 2)
+    runtime.run_command(name, args.to_s) { |event| render(event) }
+  else
+    runtime.prompt(line) { |event| render(event) }
+  end
+end
+
+runtime.close
 ```
 
-## The null host
+`cancel` is called from a new thread because it takes a lock, which Ruby doesn't allow inside a signal handler. This host can't ask questions, so a missing model or credential raises a [`ConfigurationError`](EMBEDDING.md#building-a-runtime-with-the-loader) at startup, and an untrusted project `rig.rb` is skipped.
 
-`Riffer::Rig::Hosts::Null` is the do-nothing host and the Runtime's default: every capability is declined (`NonInteractive` declines `ask`, `confirm` and `progress`, and `notify` is a no-op).
+## The host object
 
-## The mirror
+A host object implements every method of the RBS interface `Riffer::Rig::Hosts::_Host`:
 
-The Runtime wraps the host it is given in a `Riffer::Rig::Hosts::Mirror`, which is what `runtime.host` returns. The mirror forwards every call to the wrapped host and queues a `notify` event for each `notify`, so a consumer of the event stream sees what the host saw. `runtime.host.host` is the host the Runtime was given.
+| Method                             | Called for                                                    |
+| ---------------------------------- | ------------------------------------------------------------- |
+| `ask(question, options:, secret:)` | free text, or a choice from `options`; `secret:` hides input   |
+| `confirm(question)`                | yes or no: `true`, `false`, or `nil` when left unanswered      |
+| `notify(message, level:)`          | a notice for the user (`:info`, `:warning`, `:error`); never shown to the model |
+| `progress(label) { }`              | slow work, such as installing a gem; must run the block        |
+| `capabilities`                     | the `Set` of the methods above the host really supports         |
 
-## Writing a host
+Callers check `capabilities` before calling `ask` or `confirm`, so a host that can't ask is never asked and the caller carries on without an answer. Return `nil` from `confirm` when the user walks away rather than answering: a `nil` trust answer asks again next time, while `false` is remembered as a no.
 
-A host is two pieces: an object implementing `Riffer::Rig::Hosts::_Host`, which the Runtime asks and tells things out of band, and a loop that builds a Runtime and renders its event stream. The `riffer` terminal is the reference for both. Its loop is `Riffer::Rig::Terminal` (`lib/riffer/rig/terminal.rb`, with its presentation under `lib/riffer/rig/terminal/`), and its host object is `Riffer::Rig::Terminal::Host` (`lib/riffer/rig/terminal/host.rb`), which the loop holds as a collaborator rather than being the host itself. Keep your host object inside your host's own namespace, as the terminal does; `Riffer::Rig::Hosts` holds only the contract and the reusable `NonInteractive`, `Null` and `Mirror`.
+`Riffer::Rig::Hosts::NonInteractive` supplies the declining versions — `ask` returns `nil`, `confirm` returns `false`, `progress` runs the block — for a host that leaves `:ask` and `:confirm` out of its capabilities. `Riffer::Rig::Hosts::Null` is the do-nothing host the Runtime uses by default.
 
-A host uses only the public API of the Runtime, the hosts, the Loader and the events. The terminal is held to that by a test: nothing under `Riffer::Rig::Terminal` names another `Riffer::Rig` constant. Anything a host needs beyond that becomes a Runtime or Loader feature, so embedders get it too.
+`runtime.host` returns the host wrapped so that each `notify` also appears on the event stream; `runtime.host.host` is the object you passed.
 
-### Building the Runtime
+## The loop
 
-Build the Runtime with [`Loader.runtime`](EMBEDDING.md#building-a-runtime-with-the-loader), passing your host object as `host:`. Command-line flags are [`Loader::Options`](EMBEDDING.md#loader-options) keywords (`model:`, `extensions:`, `skills:`, `agents_md:`, `tools:`, `max_steps:`); a host translates its arguments into an `Options`, passes it as `options:`, and does nothing else with configuration. Onboarding and credential prompts reach the host through `ask` (with `secret: true` for a key), and only when `capabilities` includes `:ask`; the offer to install a provider's SDK gem reaches it through `confirm`, and only when `capabilities` includes `:confirm`. `Riffer::Rig::Loader::ConfigurationError` carries a message written for the user: the terminal prints it and exits with status 1.
+| Task                    | Use                                                                                          |
+| ----------------------- | -------------------------------------------------------------------------------------------- |
+| build                   | [`Loader.runtime`](EMBEDDING.md#building-a-runtime-with-the-loader), turning your flags into [`Loader::Options`](EMBEDDING.md#loader-options) |
+| send a message          | `runtime.prompt(text) { |event| … }`                                                          |
+| run a slash command     | `runtime.run_command(name, args) { |event| … }`; an unknown name is reported through `notify`, so you need no list of your own |
+| stop a turn             | [`runtime.cancel`](EMBEDDING.md#cancelling-a-turn), from another thread                      |
+| save as you go          | [`runtime.on_message`](EMBEDDING.md#observing-messages), or let the Loader's store do it      |
+| follow background jobs  | [`on_job_exit`, `follow_up` and friends](EMBEDDING.md#background-jobs)                        |
+| end the session         | `runtime.close`                                                                              |
 
-```ruby
-host = MyHost.new
-options = Riffer::Rig::Loader::Options.new(model: 'anthropic/claude-sonnet-4-6', skills: false)
-runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: host, options: options)
-```
+A host that offers `/exit`, `/new`, `/resume` or `/help` implements them itself: they end, replace or describe the Runtime. A host that swaps one Runtime for another closes the old one and subscribes again on the new one.
 
-### Driving it
+Use only the public API of the Runtime, the Loader, the host classes and the events; anything else a host needs should become part of that API, so every embedder gets it.
 
-- A line of text is `runtime.prompt(text) { |event| ... }`, which yields riffer's `StreamEvents` and rig's events as the turn runs.
-- A line starting with `/` is `runtime.run_command(name, args) { |event| ... }`; the names come from `runtime.commands`. An unknown name is reported through the host's `notify`, so a host needs no list of its own. Only commands the Runtime cannot run stay in the host: the terminal's `/exit`, `/quit`, `/new` and `/resume` end or replace the Runtime, and its `/help` lists them alongside `runtime.commands`.
-- `runtime.cancel` stops the running turn — a reply in flight at once, a tool call when it returns ([Cancelling a turn](EMBEDDING.md#cancelling-a-turn)); the terminal calls it on Ctrl-C (from a thread, since the cancel flag takes a lock that Ruby refuses inside a signal handler). The turn ends with riffer's `Interrupt` event and a `turn_end` whose `stop_reason` is `:cancelled`.
-- `runtime.on_message` delivers each message as the session records it.
-- `runtime.on_job_exit` delivers each [background job](EMBEDDING.md#background-jobs) as it exits, on a background thread, and `runtime.running_job_count` is how many are still running. A host that replaces its Runtime subscribes again on the new one; the closed one delivers nothing more. The stream's `job_exit` event marks the later moment the model is told of the exit, on the turn's own thread. A host that waits for its jobs uses `runtime.pending_jobs?`, `runtime.await_job_exit(timeout:)` and `runtime.follow_up` ([Waiting for jobs](EMBEDDING.md#waiting-for-jobs)). The terminal calls `follow_up` when a job exits while it waits for input, after any queued messages, and never while a question or the picker is open.
-- `runtime.close` when the session ends.
+## The shipped hosts
 
-### Rendering the stream
-
-While a turn streams, the terminal prints no lines; it draws the turn's progress on its status line instead ([Terminal](TERMINAL.md#the-status-line)). Each response counts a step and each `ToolCallDone` a tool call; the streamed `TextDelta`, `ReasoningDelta` and `ToolCallDelta` text gives a token estimate until `TokenUsageDone` reports the usage; and a skill activation shows the skill's name. The [peek](TERMINAL.md#peek) shows the `TextDelta` text, and the tool running between the stream's [`before_tool_call` and `after_tool_call`](EMBEDDING.md#tool-call-events) events; headless prints those two as NDJSON records, and ACP turns `after_tool_call` into the call's completing `tool_call_update`. Without a terminal to draw on, none of this is shown.
-
-At `turn_end` the terminal prints the text of the response that ended the turn — text a response sent along with tool calls is not printed — and under it a stat line: the turn's steps, its time, its token usage and `cost`, and `runtime.tally` (every turn so far). A turn that ended on an `Interrupt` prints the text it had reached and `interrupted` in place of the stat line. `command_output` is printed as a line of its own when it arrives. It skips the stream's `notify` events: the mirror queues one for each `host.notify`, which the terminal's host has already printed. A host that matches on the events it knows and ignores the rest needs no change when the stream grows.
-
-### The terminal's host
-
-`Riffer::Rig::Terminal::Host` reports all four capabilities:
-
-| Method     | In the terminal                                                                           |
-| ---------- | ----------------------------------------------------------------------------------------- |
-| `ask`      | prints the question and reads a line; `secret:` reads without echo; `options:` are numbered and a number picks one |
-| `confirm`  | asks `[y/N]`; only an answer starting with `y` confirms, and Ctrl-C or Ctrl-D leaves it unanswered (`nil`) |
-| `notify`   | prints the message as a line of its own, red for `level: :error`                           |
-| `progress` | prints the label and runs the block                                                        |
-
-The other two tiers follow the same shape and include `NonInteractive`. `Riffer::Rig::Headless::Host` reports `Set[:notify, :progress]` and prints both to stderr ([Headless](HEADLESS.md)). `Riffer::Rig::ACP::Host` turns `notify` into a `session/update` on the session it belongs to and buffers the ones raised while the Runtime is still building ([ACP](ACP.md)). It reports `Set[:notify]` while its session is still building and `Set[:notify, :ask, :confirm]` from then on, and [relays `ask` and `confirm` to the client](ACP.md#relaying-questions-to-the-client).
+| Host     | Capabilities                     | `ask`                                    | `confirm`                         | `notify`                              |
+| -------- | -------------------------------- | ---------------------------------------- | --------------------------------- | ------------------------------------- |
+| terminal | all four                         | reads a line, without echo for a secret; numbered options | `[y/N]`                 | a line above the input, red for errors |
+| headless | `notify`, `progress`             | declined                                 | declined                          | stderr                                |
+| ACP      | `notify`, then `ask` and `confirm` once the session has started | [relayed to the client](ACP.md#questions) | relayed to the client | an `agent_message_chunk`          |
