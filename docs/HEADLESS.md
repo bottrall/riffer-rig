@@ -29,7 +29,7 @@ The turn is one prompt: slash commands are not dispatched, and the session is sa
 
 ## Output
 
-By default only the assistant's text is printed, streamed to stdout. Everything else goes to stderr: errors, configuration refusals, and the [notify](HOSTS.md) lines extensions and the Runtime emit. When the session starts, headless prints `session <id>` on stderr — the id `riffer -p -r <id> "follow-up"` [resumes](SESSIONS.md#resuming) — so a caller that spawned headless can find the session without reading the [sessions directory](SESSIONS.md). In `--json` mode that line is dropped: the id rides on the `session_start` record of the [NDJSON stream](#the-ndjson-stream--json) instead. Reasoning is not printed. `--verbose` adds a one-line trace of each tool call to stderr.
+By default only the assistant's text is printed, streamed to stdout. Everything else goes to stderr: errors, configuration refusals, and the [notify](HOSTS.md) lines extensions and the Runtime emit. When the session starts, headless prints `session <id>` on stderr — the id `riffer -p -r <id> "follow-up"` [resumes](SESSIONS.md#resuming) — so a caller that spawned headless can find the session without reading the [sessions directory](SESSIONS.md). In `--json` mode that line is dropped: the id rides on the `session_start` record of the [NDJSON stream](#the-ndjson-stream---json) instead. Reasoning is not printed. `--verbose` adds a one-line trace of each tool call to stderr.
 
 ## Flags
 
