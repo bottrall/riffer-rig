@@ -56,7 +56,7 @@ While a turn runs, the row under the input line shows its progress, redrawn abou
 - `step N`, the model calls so far;
 - `N tools`, the tool calls the model has made;
 - the tokens, as `↑in ↓out tok` (`k` and `M` for thousands and millions);
-- the cost so far, as `$0.012`, when the model is [priced](CONFIGURATION.md#models);
+- the cost so far, as `$0.012`, when the model is [priced](CONFIGURATION.md#catalog_files);
 - a label: `riffing…`, a rotating phrase while the model is reasoning, or `✦ skill: <name>` for a moment after a skill activates.
 
 The output tokens and the cost count text still streaming, at an estimated four characters per token, until the provider reports the request's usage; the input tokens appear once it has. On a narrow terminal the line drops whole figures from the right rather than show one cut short. The line clears when the turn ends.
@@ -81,7 +81,7 @@ When a turn ends, its answer is printed above the input line, rendered from Mark
 3 steps · 00:12 · ↑5200 · ↓340 · cache_read:4096 · ~$0.0215 · session 18400 tok · ~$0.0731
 ```
 
-That is the turn's model calls, its time, its input and output tokens, each cache count above zero, and its cost, then the session's total tokens and cost; the costs appear once the model is [priced](CONFIGURATION.md#models). A cancelled turn prints the answer it had reached and `interrupted` in place of the stat line. Command output, such as `/cost`'s, is printed as it arrives.
+That is the turn's model calls, its time, its input and output tokens, each cache count above zero, and its cost, then the session's total tokens and cost; the costs appear once the model is [priced](CONFIGURATION.md#catalog_files). A cancelled turn prints the answer it had reached and `interrupted` in place of the stat line. Command output, such as `/cost`'s, is printed as it arrives.
 
 ## Interrupting and exiting
 

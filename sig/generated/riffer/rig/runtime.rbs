@@ -33,6 +33,8 @@ class Riffer::Rig::Runtime
   # tests and embedders can exercise the switches.
   NATIVE_TOOLS_BY_PROVIDER: Hash[Symbol, Hash[Symbol, bool]]
 
+  @reasoning: String?
+
   @model_override: String?
 
   @session_start_reason: Symbol
@@ -119,7 +121,7 @@ class Riffer::Rig::Runtime
   # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
-  # @rbs pricing: Hash[String, Riffer::Rig::Settings::Pricing]
+  # @rbs reasoning: String?
   # @rbs riffer_config: Riffer::Config
   # @rbs mcp_registry: Riffer::Rig::Mcp::_Registry
   # @rbs max_steps: Integer?
@@ -128,7 +130,7 @@ class Riffer::Rig::Runtime
   # @rbs clock: ^() -> Float
   # @rbs snapshot: Hash[Symbol, untyped]?
   # @rbs return: void
-  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?env: Riffer::Rig::Env, ?auth_path: String, ?pricing: Hash[String, Riffer::Rig::Settings::Pricing], ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?native_tools: Hash[Symbol, untyped], ?clock: ^() -> Float, ?snapshot: Hash[Symbol, untyped]?) -> void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?env: Riffer::Rig::Env, ?auth_path: String, ?reasoning: String?, ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?native_tools: Hash[Symbol, untyped], ?clock: ^() -> Float, ?snapshot: Hash[Symbol, untyped]?) -> void
 
   # @rbs text: String
   # @rbs &: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
@@ -239,10 +241,11 @@ class Riffer::Rig::Runtime
   def successor: (String model, Riffer::Agent::Config config) -> Riffer::Agent
 
   # The options the settings built for the starting model are provider-shaped
-  # (cache control, per-provider reasoning levels), so a switch re-derives them.
-  # Runs after the successor is built, so a failed build leaves the running
-  # agent's options alone; riffer reads config.model_options per request, so the
-  # swap still reaches the new agent through the shared config.
+  # (anthropic cache control), so a switch re-derives them; the reasoning level
+  # is provider-agnostic and travels on the config. Runs after the successor is
+  # built, so a failed build leaves the running agent's options alone; riffer
+  # reads config.model_options per request, so the swap still reaches the new
+  # agent through the shared config.
   # @rbs model: String
   # @rbs return: void
   def rederive_options: (String model) -> void

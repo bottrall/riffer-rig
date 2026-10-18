@@ -6,7 +6,7 @@ class Riffer::Rig::Terminal::TickerDisplay
   # @rbs @frame: Riffer::Rig::Terminal::Frame
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @peek: Riffer::Rig::Terminal::Peek
-  # @rbs @pricing: ::Riffer::Config::Pricing
+  # @rbs @catalog: ::Riffer::Catalog
   # @rbs @random: Random
   # @rbs @clock: ^() -> Float
   # @rbs @mutex: Mutex
@@ -16,15 +16,15 @@ class Riffer::Rig::Terminal::TickerDisplay
   # @rbs frame: Riffer::Rig::Terminal::Frame
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs peek: Riffer::Rig::Terminal::Peek
-  # @rbs pricing: ::Riffer::Config::Pricing
+  # @rbs catalog: ::Riffer::Catalog
   # @rbs random: Random
   # @rbs clock: ^() -> Float
   # @rbs return: void
-  def initialize(frame:, theme:, peek:, pricing:, random:, clock:)
+  def initialize(frame:, theme:, peek:, catalog:, random:, clock:)
     @frame = frame
     @theme = theme
     @peek = peek
-    @pricing = pricing
+    @catalog = catalog
     @random = random
     @clock = clock
     @mutex = Mutex.new
@@ -40,7 +40,7 @@ class Riffer::Rig::Terminal::TickerDisplay
       footer: @frame,
       theme: @theme,
       buffer: buffer,
-      rates: @pricing.rates_for(runtime.model),
+      rates: @catalog.rates_for(runtime.model),
       random: @random
     )
     @mutex.synchronize do

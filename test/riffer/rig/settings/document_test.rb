@@ -3,10 +3,6 @@
 require 'test_helper'
 
 describe Riffer::Rig::Settings::Document do
-  let(:pricing) do
-    { models: { 'anthropic/claude-sonnet-4-6': { input: 3, output: 15.0, cache_write: 3.75, cache_read: 0 } } }
-  end
-
   it 'ignores a model that is not a string' do
     assert_nil Riffer::Rig::Settings::Document.new({ model: 42 }).model
   end
@@ -23,20 +19,18 @@ describe Riffer::Rig::Settings::Document do
     assert_equal 'high', Riffer::Rig::Settings::Document.new({ reasoning: 'high' }).reasoning
   end
 
-  it 'has no pricing when the models block is not an object' do
-    assert_empty Riffer::Rig::Settings::Document.new({ models: 'anthropic' }).models
+  it 'has no catalog files when the value is not an array' do
+    assert_empty Riffer::Rig::Settings::Document.new({ catalog_files: 'models.json' }).catalog_files
   end
 
-  it 'ignores a pricing entry that is not an object' do
-    assert_empty Riffer::Rig::Settings::Document.new({ models: { 'openai/o3': 3 } }).models
+  it 'has no catalog files when an entry is not a string' do
+    assert_empty Riffer::Rig::Settings::Document.new({ catalog_files: ['models.json', 3] }).catalog_files
   end
 
-  it 'keys the pricing table by model string' do
-    assert_equal ['anthropic/claude-sonnet-4-6'], Riffer::Rig::Settings::Document.new(pricing).models.keys
-  end
+  it 'reads the catalog file paths' do
+    document = Riffer::Rig::Settings::Document.new({ catalog_files: ['~/.riffer/models.json'] })
 
-  it 'reads each price' do
-    assert_in_delta(15.0, Riffer::Rig::Settings::Document.new(pricing).models['anthropic/claude-sonnet-4-6'].output)
+    assert_equal ['~/.riffer/models.json'], document.catalog_files
   end
 
   it 'has no provider blocks when the providers block is not an object' do

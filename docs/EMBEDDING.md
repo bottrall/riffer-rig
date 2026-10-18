@@ -16,7 +16,7 @@ In order, it:
 2. resolves the model's provider credentials ([Providers](PROVIDERS.md#resolution-order)), assigns them to `Riffer.config` and keeps them for the Runtime's `credentials:`;
 3. takes the [bundled extensions](TOOLS.md), minus those named in `extensions.disabled` and those the options strip;
 4. runs `riffer/rig/extension` from every gem when [`extensions.autoload`](CONFIGURATION.md#extensions) is set, then `~/.riffer/rig.rb` and, once [trusted](EXTENSIONS.md#the-rigrb-files), `<cwd>/.riffer/rig.rb`, and appends the extensions the loads record to the bundle ([Extensions](EXTENSIONS.md#the-rigrb-files));
-5. constructs the Runtime with the model, the credentials, the extensions, the merged settings, the `models` pricing table, the `reasoning` level as riffer `model_options`, and the options and keywords below.
+5. constructs the Runtime with the model, the credentials, the extensions, the merged settings and the `reasoning` level, and the options and keywords below, having handed the `catalog_files` to `Riffer.config`;
 
 Whatever `store:` records the build: the [header](SESSIONS.md#what-an-entry-holds) lands on the first message, then one entry per message, per `/model` switch and per model skill activation; `store: nil`, or `"sessions": {"save": false}` in settings ([Configuration](CONFIGURATION.md)), writes nothing ([Sessions](SESSIONS.md)). A build that records also gets the [`/trace`](SESSIONS.md#tracing-the-last-turn) command, which replays the last turn from the same store.
 
@@ -29,7 +29,7 @@ Whatever `store:` records the build: the [header](SESSIONS.md#what-an-entry-hold
 | `extra_extensions:` | extensions loaded with the bundle and kept through a [reload](#rebuilding-after-a-code-reload), after the bundle and the `rig.rb` files | `[]` |
 | `env:`        | a `Riffer::Rig::Env`, or what `Riffer::Rig::Env.load` returned            | `Riffer::Rig::Env.load` |
 | `home:`       | the directory whose `.riffer/` holds `settings.json`, `auth.json`, `rig.rb`, `trust.json` and the default store's `sessions/` | `Dir.home` |
-| `riffer_config:` | the `Riffer::Config` that receives the credentials and pricing        | `Riffer.config` |
+| `riffer_config:` | the `Riffer::Config` that receives the credentials and the catalog files | `Riffer.config` |
 | `store:`      | the [session store](SESSIONS.md#the-session-store) that records the build; `nil` opts one run out | `Stores::JSONL.new(home: home)` |
 
 `Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)` takes the same setup and builds with `runtime(options, reload:, extra_extensions:)` for a host that keeps the Loader.
@@ -73,7 +73,7 @@ runtime = Riffer::Rig::Runtime.new(
 )
 ```
 
-The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `model_options:`, `native_tools:`, `credentials:`, `env:`, `auth_path:`, `pricing:`, `riffer_config:`, `mcp_registry:`, `clock:`, `snapshot:`. All except the model are optional. `credentials:` is stored and exposed (`runtime.credentials`); only `/model` and a [restore](#snapshots) read it so far. It takes the shape the [Loader](#building-a-runtime-with-the-loader) passes — each provider's resolved field values. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.install` resolves a provider's values and assigns them (see [Providers](PROVIDERS.md#rifferrigcredentials)), or set them yourself with `Riffer.configure`.
+The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `model_options:`, `native_tools:`, `credentials:`, `env:`, `auth_path:`, `reasoning:`, `riffer_config:`, `mcp_registry:`, `clock:`, `snapshot:`. All except the model are optional. `credentials:` is stored and exposed (`runtime.credentials`); only `/model` and a [restore](#snapshots) read it so far. It takes the shape the [Loader](#building-a-runtime-with-the-loader) passes — each provider's resolved field values. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.install` resolves a provider's values and assigns them (see [Providers](PROVIDERS.md#rifferrigcredentials)), or set them yourself with `Riffer.configure`.
 
 | Keyword         | Meaning                                                                     | Default                 |
 | --------------- | --------------------------------------------------------------------------- | ----------------------- |
@@ -86,13 +86,13 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `name:`         | the name interpolated into the [base prompt](INSTRUCTIONS.md)               | `"riffer"`              |
 | `instructions:` | replaces the base prompt; sections and the environment block still apply    | `nil` (use the base)    |
 | `max_steps:`    | agent-loop step limit; `nil` runs the loop without a limit                  | `nil`                   |
-| `model_options:` | riffer `model_options` sent with every model call (`{ reasoning: 'high' }`, `{ cache_control: { type: :ephemeral } }`); `Riffer::Rig::Settings::ModelOptions.model_options(model, reasoning)` builds them from the settings | `{}` |
+| `model_options:` | riffer `model_options` sent with every model call (`{ cache_control: { type: :ephemeral } }` for an anthropic model); `Riffer::Rig::Settings::ModelOptions.model_options(model)` builds them, and reasoning travels on `reasoning:` instead | `{}` |
 | `native_tools:` | the [provider-native tool](TOOLS.md#provider-native-tools) switches, as the `tools.native` setting holds them (`{ web_search: true }`) | `{}` |
 | `credentials:`  | provider → resolved field values (`{ anthropic: { api_key: "…" } }`), stored as given and exposed; read by `/model` and a restore | `{}` |
 | `env:`          | the `Riffer::Rig::Env` an MCP server's [`auth` fields](MCP.md#secret-headers) resolve from | `Riffer::Rig::Env.new` |
 | `auth_path:`    | the `auth.json` those fields are read from and stored in | `~/.riffer/auth.json` |
-| `pricing:`      | model → `Riffer::Rig::Settings::Pricing` entries (USD per million tokens), registered into riffer's pricing when the Runtime is built; see [tally](#token-tally-and-cost) | `{}` |
-| `riffer_config:` | the `Riffer::Config` whose `pricing` receives the `pricing:` entries      | `Riffer.config`         |
+| `reasoning:`     | the reasoning effort (`off` `low` `medium` `high` `xhigh` `max`), validated and translated per provider by riffer ([Configuration](CONFIGURATION.md#reasoning)) | `nil` |
+| `riffer_config:` | the `Riffer::Config` the agent reads its reasoning and catalog from       | `Riffer.config`         |
 | `mcp_registry:` | where declared [MCP servers](MCP.md) are registered and unregistered: an object with riffer's `register(name:, endpoint:, tags:, discovery_headers:)` and `unregister(name)` | `Riffer::Mcp` |
 | `clock:`        | a callable returning seconds as a `Float`, which stamps the [tool call events](#tool-call-events) | the process's monotonic clock |
 | `snapshot:`     | a hash from `to_h` to restore; see [Snapshots](#snapshots)                 | `nil`                   |
@@ -140,11 +140,11 @@ How the run ended is riffer's `response.outcome` — `reason` is one of riffer's
 
 ## Token tally and cost
 
-riffer prices usage at source: each provider looks its model up in `Riffer.config.pricing` and sets `cost` on the usage it reports. The Runtime registers every `pricing:` entry there when it is built, and `tally` returns riffer's running total for the Runtime's agent — `agent.context.token_usage`, a `Riffer::Providers::TokenUsage` summed over every model call of every `prompt` and `ask`, or `nil` before the first turn.
+riffer prices usage at source: each provider looks its model up in `Riffer.config.catalog` and sets `cost` on the usage it reports. The Loader hands the `catalog_files` setting to that config when it builds a Runtime ([Configuration](CONFIGURATION.md#catalog_files)), and `tally` returns riffer's running total for the Runtime's agent — `agent.context.token_usage`, a `Riffer::Providers::TokenUsage` summed over every model call of every `prompt` and `ask`, or `nil` before the first turn.
 
 ```ruby
-pricing = { 'anthropic/claude-sonnet-4-6' => Riffer::Rig::Settings::Pricing.new(input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3) }
-runtime = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', pricing: pricing)
+Riffer.config.catalog_files = ['catalog.json']
+runtime = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6')
 response = runtime.ask('Fix the failing test')
 response.token_usage.cost # => this turn, in USD
 runtime.tally.input_tokens # => every turn so far
@@ -153,7 +153,7 @@ runtime.tally.cost         # => every turn so far, in USD
 
 Each turn's usage is riffer's: on the `ask` response as `response.token_usage`, and on the stream as the closing `turn_end` event's `usage` and `cost` — the same values. Rates are USD per million tokens. riffer counts cache reads and writes inside `input_tokens`, so the cached share is priced at the `cache_read` and `cache_write` rates and only the rest at `input`.
 
-Missing pricing means `nil`, never zero: a model `Riffer.config.pricing` has no rates for reports no `cost`, and neither does the tally. Pricing is process-wide and keyed by model id, so two Runtimes that price the same model differently share whichever registered last. The terminal takes its pricing from the merged `models` blocks of the two settings files ([Configuration](CONFIGURATION.md#models)); an embedder passes its own, or registers rates itself with `Riffer.config.pricing.set`.
+Missing pricing means `nil`, never zero: a model the catalog has no rates for reports no `cost`, and neither does the tally. The catalog is process-wide and keyed by model id. The terminal takes its rates from the catalog the Loader built from the merged `catalog_files` of the two settings files ([Configuration](CONFIGURATION.md#catalog_files)); an embedder sets `Riffer.config.catalog_files` itself, before the first request.
 
 `cost` is a core command, listed in `commands` after [`model`](#switching-the-model). `run_command('cost')` answers with one `command_output`: the tally on the `session` line, then a line for each turn in the order the session's messages hold them:
 

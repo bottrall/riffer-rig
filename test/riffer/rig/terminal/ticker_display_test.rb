@@ -11,7 +11,7 @@ describe Riffer::Rig::Terminal::TickerDisplay do
     @frame = Riffer::Rig::Terminal::Frame.new(io: @pty.slave, theme: @theme)
     @frame.start
     @peek = Riffer::Rig::Terminal::Peek.new(frame: @frame)
-    @pricing = Riffer::Config::Pricing.new
+    @catalog = Riffer::Catalog.new(models: {}, aliases: {})
     @runtime = DisplayRuntime.new
   end
 
@@ -26,7 +26,7 @@ describe Riffer::Rig::Terminal::TickerDisplay do
       frame: @frame,
       theme: theme,
       peek: @peek,
-      pricing: @pricing,
+      catalog: @catalog,
       random: Random.new(1),
       clock: -> { 0.0 }
     )
@@ -65,7 +65,10 @@ describe Riffer::Rig::Terminal::TickerDisplay do
 
   describe '#start' do
     it "prices the ticker's estimate at the rates of the Runtime's model" do
-      @pricing.set('mock/test', input: 0, output: 1_000_000)
+      @catalog = Riffer::Catalog.new(
+        models: { 'mock/test' => { pricing: Riffer::Catalog::Rates.new(input: 0.0, output: 1_000_000.0) } },
+        aliases: {}
+      )
       display.start(@runtime)
 
       display.absorb(text('x' * 8))
