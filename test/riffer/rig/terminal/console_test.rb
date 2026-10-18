@@ -5,7 +5,11 @@ require 'test_helper'
 describe Riffer::Rig::Terminal::Console do
   def setup
     @log = []
-    @console = Riffer::Rig::Terminal::Console.new(frame: recording_frame(@log), pipeline: recording_pipeline(@log))
+    @console = Riffer::Rig::Terminal::Console.new(
+      frame: recording_frame(@log),
+      pipeline: recording_pipeline(@log),
+      loading: recording_loading(@log)
+    )
   end
 
   def recording_frame(log)
@@ -30,19 +34,29 @@ describe Riffer::Rig::Terminal::Console do
     end.new(log)
   end
 
+  def recording_loading(log)
+    Class.new do
+      def initialize(log) = @log = log
+
+      def start = @log << :loading_start
+
+      def stop = @log << :loading_stop
+    end.new(log)
+  end
+
   describe '#start' do
-    it 'draws the footer before the keys are read' do
+    it 'animates the loading row, then draws the footer, before the keys are read' do
       @console.start
 
-      assert_equal %i[frame_start pipeline_start], @log
+      assert_equal %i[loading_start frame_start pipeline_start], @log
     end
   end
 
   describe '#stop' do
-    it 'stops the keys before it erases the footer' do
+    it 'stops the keys, then the footer, then the loading animation' do
       @console.stop
 
-      assert_equal %i[pipeline_stop frame_stop], @log
+      assert_equal %i[pipeline_stop frame_stop loading_stop], @log
     end
   end
 

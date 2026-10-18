@@ -1,0 +1,42 @@
+# Generated from lib/riffer/rig/terminal/loading.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::Loading
+  TICK_SECONDS: Float
+
+  QUIP_TICKS: Integer
+
+  FRAMES: Array[String]
+
+  QUIPS: Array[String]
+
+  @frame: Riffer::Rig::Terminal::Frame
+
+  @random: Random
+
+  @halt: Thread::Queue[true]
+
+  @thread: Thread?
+
+  @tick: Integer
+
+  @quip: String
+
+  # @rbs frame: Riffer::Rig::Terminal::Frame
+  # @rbs random: Random
+  # @rbs return: void
+  def initialize: (frame: Riffer::Rig::Terminal::Frame, random: Random) -> void
+
+  # @rbs return: void
+  def start: () -> void
+
+  # @rbs return: void
+  def stop: () -> void
+
+  # @rbs return: void
+  def tick: () -> void
+
+  private
+
+  # @rbs return: void
+  def roll: () -> void
+end

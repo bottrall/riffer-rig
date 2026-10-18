@@ -57,7 +57,7 @@ class Riffer::Rig::Terminal
     end
 
     pipeline = KeyPipeline.new(input: input, output: output)
-    console = Console.new(frame: frame, pipeline: pipeline)
+    console = Console.new(frame: frame, pipeline: pipeline, loading: Loading.new(frame: frame, random: Random.new))
     asks = Queue.new #: Thread::Queue[Riffer::Rig::Terminal::Key]
     peek = Peek.new(frame: frame)
     repl = Repl.new(

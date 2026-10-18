@@ -58,6 +58,8 @@ class Riffer::Rig::Terminal::Frame
 
   @loading: bool
 
+  @loading_line: String
+
   @mutex: Mutex
 
   @previous_resize: Signal::trap_command
@@ -94,6 +96,13 @@ class Riffer::Rig::Terminal::Frame
   # @rbs status: String
   # @rbs return: void
   def status: (String status) -> void
+
+  # @rbs line: String
+  # @rbs return: void
+  def loading: (String line) -> void
+
+  # @rbs return: bool
+  def loading?: () -> bool
 
   # @rbs hint: String?
   # @rbs return: void

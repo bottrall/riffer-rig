@@ -46,6 +46,7 @@ class Riffer::Rig::Terminal::Frame
   # @rbs @width: Integer
   # @rbs @active: bool
   # @rbs @loading: bool
+  # @rbs @loading_line: String
   # @rbs @mutex: Mutex
   # @rbs @previous_resize: Signal::trap_command
 
@@ -83,6 +84,7 @@ class Riffer::Rig::Terminal::Frame
     @width = 0
     @active = false
     @loading = loading
+    @loading_line = LOADING
     @mutex = Mutex.new
     @previous_resize = nil
   end
@@ -144,6 +146,22 @@ class Riffer::Rig::Terminal::Frame
     end
   end
 
+  # @rbs line: String
+  # @rbs return: void
+  def loading(line)
+    @mutex.synchronize do
+      @loading_line = line
+      # A tick still in flight once the banner drew would otherwise redraw the
+      # footer under it.
+      redraw if @loading
+    end
+  end
+
+  # @rbs return: bool
+  def loading?
+    @mutex.synchronize { @loading }
+  end
+
   # @rbs hint: String?
   # @rbs return: void
   def hint(hint)
@@ -191,6 +209,9 @@ class Riffer::Rig::Terminal::Frame
       return unless @active
 
       @active = false
+      # Ends the loading animation's thread, which stops itself from its next
+      # tick once the row it draws is gone.
+      @loading = false
       write(erase)
     end
     Signal.trap('WINCH', @previous_resize)
@@ -240,7 +261,7 @@ class Riffer::Rig::Terminal::Frame
   # @rbs before: String
   # @rbs return: void
   def draw_loading(before)
-    line = "#{STATUS_INDENT}#{@theme.dim(LOADING)}"
+    line = "#{STATUS_INDENT}#{@theme.dim(@loading_line)}"
     write("#{before}#{Riffer::Rig::Terminal::Columns.head(line, @width - 1)}")
   end
 

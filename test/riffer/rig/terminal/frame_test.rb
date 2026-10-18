@@ -30,6 +30,13 @@ describe Riffer::Rig::Terminal::Frame do
     frame(io, **).tap(&:start)
   end
 
+  def started_loading(io, line)
+    frame = frame(io, loading: true)
+    frame.loading(line)
+    frame.start
+    frame
+  end
+
   def on_pty(columns: 40, rows: 6)
     @pty = FramePty.new(columns: columns, rows: rows)
     started(@pty.slave)
@@ -130,6 +137,22 @@ describe Riffer::Rig::Terminal::Frame do
 
       assert_equal '  loading…', io.string
     end
+
+    it 'draws the loading line it was pushed in place of the input row' do
+      io = tty(80)
+
+      started_loading(io, '⠙ warming the amp…')
+
+      assert_equal '  ⠙ warming the amp…', io.string
+    end
+
+    it 'cuts the loading line it was pushed to the width of the terminal' do
+      io = tty(10)
+
+      started_loading(io, '⠙ warming the amp…')
+
+      assert_equal '  ⠙ warmi', io.string
+    end
   end
 
   describe '#append' do
@@ -163,6 +186,24 @@ describe Riffer::Rig::Terminal::Frame do
       started(io, loading: true).append('one')
 
       assert_equal "  loading…\r\e[Jone\r\n#{empty_frame}", io.string
+    end
+
+    it 'swaps a pushed loading line for the content and the input row in one write' do
+      io = tty(80)
+
+      started_loading(io, '⠙ warming the amp…').append('one')
+
+      assert_equal "  ⠙ warming the amp…\r\e[Jone\r\n#{empty_frame}", io.string
+    end
+
+    it 'draws nothing for a loading line pushed after the first content' do
+      io = tty(80)
+      frame = started_loading(io, '⠙ warming the amp…')
+      frame.append('one')
+
+      frame.loading('⠹ rolling the tape…')
+
+      assert_equal "  ⠙ warming the amp…\r\e[Jone\r\n#{empty_frame}", io.string
     end
 
     it 'replaces the footer with the content on a terminal with no row to spare for a blank row' do
@@ -261,6 +302,22 @@ describe Riffer::Rig::Terminal::Frame do
       started(io, loading: true).input(editing('hi'))
 
       assert_equal "  loading…\r\e[J  loading…", io.string
+    end
+
+    it 'keeps the pushed loading line over an edit made before the first content' do
+      io = tty(80)
+
+      started_loading(io, '⠙ warming the amp…').input(editing('hi'))
+
+      assert_equal "  ⠙ warming the amp…\r\e[J  ⠙ warming the amp…", io.string
+    end
+
+    it 'redraws the loading row when another line is pushed while it loads' do
+      io = tty(80)
+
+      started_loading(io, '⠙ warming the amp…').loading('⠸ checking the levels…')
+
+      assert_equal "  ⠙ warming the amp…\r\e[J  ⠸ checking the levels…", io.string
     end
 
     it 'shows an edit typed while loading once the first content draws the input row' do

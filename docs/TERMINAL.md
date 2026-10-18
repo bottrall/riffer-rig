@@ -1,6 +1,6 @@
 # Terminal
 
-`riffer` with no `-p` opens the interactive terminal. It keeps two rows at the bottom of the screen — the input line, and a status line under it — and prints everything else above them, a blank row clear of the input line: the banner, each message as it starts, each turn's answer and stat line, and command output. While the session is still starting, the two rows are replaced by a single dim `loading…` line; the input line and the banner take their place together, once the banner's content is known. When there is no terminal to draw on, it reads plain lines instead ([Without a terminal](#without-a-terminal)).
+`riffer` with no `-p` opens the interactive terminal. It keeps two rows at the bottom of the screen — the input line, and a status line under it — and prints everything else above them, a blank row clear of the input line: the banner, each message as it starts, each turn's answer and stat line, and command output. While the session is still starting, the two rows are replaced by a single dim line that animates while it waits — a braille spinner rolling through riff-themed quips like `⠹ warming the amp…`; the input line and the banner take their place together, once the banner's content is known. When there is no terminal to draw on, it reads plain lines instead ([Without a terminal](#without-a-terminal)).
 
 Colour is on when the output is a terminal; set `NO_COLOR` to turn it off.
 
