@@ -18,7 +18,7 @@ describe Riffer::Rig::Terminal::StatusBar do
   def working(room: 120, color: false)
     Riffer::Rig::Terminal::StatusBar.working(
       glyph: '⠸',
-      state: 'turn 7',
+      state: 'step 7',
       clock: '00:41',
       up_tokens: 18_240,
       down_tokens: 3_100,
@@ -65,7 +65,7 @@ describe Riffer::Rig::Terminal::StatusBar do
 
   describe '#working' do
     it 'pads every slot to the same widths as the idle state' do
-      assert_equal '⠸ turn 7  00:41 ↑18.2k ↓3.1k tok  ~$0.0710 2 jobs', working
+      assert_equal '⠸ step 7  00:41 ↑18.2k ↓3.1k tok  ~$0.0710 2 jobs', working
     end
 
     it 'renders both states at the same visible width' do
@@ -74,7 +74,7 @@ describe Riffer::Rig::Terminal::StatusBar do
 
     it 'paints the spinner and the cost green and the jobs count amber' do
       assert_equal(
-        "\e[38;2;45;226;230m⠸\e[0m turn 7  00:41 \e[2m↑18.2k\e[0m \e[2m↓3.1k tok \e[0m " \
+        "\e[38;2;45;226;230m⠸\e[0m step 7  00:41 \e[2m↑18.2k\e[0m \e[2m↓3.1k tok \e[0m " \
         "\e[38;2;45;226;230m~$0.0710\e[0m \e[38;2;192;76;253m2 jobs\e[0m",
         working(color: true)
       )
