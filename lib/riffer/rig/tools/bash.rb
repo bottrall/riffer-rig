@@ -10,7 +10,10 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
   identifier 'bash'
   description 'Run a shell command in the working directory and return its combined stdout/stderr and exit status. ' \
               'A run_in_background command keeps running after the call returns, and you are notified when it ' \
-              'exits, with its exit status and the tail of its output, so do not wait or poll for it. ' \
+              'exits, with its exit status and the tail of its output. NEVER wait for or check on a background ' \
+              'job: do not call bash_output, do not sleep and re-check, do not tail or read its output path, do ' \
+              'not run any foreground command that waits on it. After starting a job, your only valid next acts ' \
+              'are other unrelated work or ending your turn — the exit notice wakes you with the result. ' \
               'Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers.'
 
   timeout 600
@@ -65,7 +68,11 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
     writer.close
     job = jobs.register(pid, command, reader)
 
-    text("Job #{job.id} started in background\nOutput: #{job.output_path}")
+    text(
+      "Job #{job.id} started in background\n" \
+      "Output: #{job.output_path}\n" \
+      'End your turn; the exit notice brings the result.'
+    )
   end
 
   # @rbs command: String

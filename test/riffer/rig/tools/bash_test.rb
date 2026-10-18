@@ -59,7 +59,7 @@ describe Riffer::Rig::Tools::Bash do
   end
 
   def output_path(response)
-    response.content.split("\n").last.delete_prefix('Output: ')
+    response.content.split("\n").find { |line| line.start_with?('Output: ') }.delete_prefix('Output: ')
   end
 
   def with_background_job(command)
@@ -72,7 +72,9 @@ describe Riffer::Rig::Tools::Bash do
 
   it 'returns a job id and output path when run_in_background is set' do
     with_background_job('echo hello') do |response, _jobs|
-      assert_match(/\AJob \h{8} started in background\nOutput: \S+\z/, response.content)
+      expected = /\AJob \h{8} started in background\nOutput: \S+\nEnd your turn; the exit notice brings the result\.\z/
+
+      assert_match(expected, response.content)
     end
   end
 
