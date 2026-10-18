@@ -7,6 +7,22 @@
 }
 @keyframes cursor-blink { 50% { opacity: 0; } }
 @keyframes typing { to { width: calc(var(--chars) * 1ch); } }
+@keyframes st-beat {
+  0% { opacity: 0; }
+  18% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* the palette the terminal paints with (lib/riffer/rig/terminal/palette.rb) */
+:root {
+  --term-pink: #ff6ac1;
+  --term-magenta: #c04cfd;
+  --term-purple: #7a5cff;
+  --term-blue: #4d7cff;
+  --term-cyan: #2de2e6;
+  --term-grey: #8a8b9a;
+}
 
 .rise { animation: rise-fade 0.65s var(--ease) both; }
 .focus-line {
@@ -105,18 +121,17 @@
   white-space: pre-wrap;
   animation: rise-fade 0.45s var(--ease) both;
 }
-.session .you { color: var(--ink); }
 .session .dim { color: var(--muted); }
-.session .rig { color: var(--accent); }
-.session .ok { color: var(--ink); }
-.session .rig::before { content: "◆ "; font-size: 0.8em; }
+.session .cyan { color: var(--term-cyan); }
+.session .magenta { color: var(--term-magenta); }
 .session .ps1 { color: var(--muted); }
+.session .pr { color: var(--term-pink); }
 .session .prompt-row {
   display: block;
   margin-top: 14px;
   color: var(--ink);
 }
-.session .prompt-row .ps1 { color: var(--accent); }
+.session .prompt-row .ps1 { color: var(--term-pink); }
 .session .cursor {
   display: inline-block;
   width: 0.55em;
@@ -126,7 +141,30 @@
   margin-left: 0.15em;
   animation: cursor-blink 1.1s steps(1) infinite;
 }
-.session .ok::before { content: "✔ "; color: var(--gold); }
+
+.session .banner,
+.session .report { white-space: normal; }
+.session .banner .row,
+.session .report .row {
+  display: block;
+  white-space: pre;
+}
+.session .gap { height: 1.65em; }
+.session .wm-1 { color: var(--term-pink); }
+.session .wm-2 { color: var(--term-magenta); }
+.session .wm-3 { color: var(--term-purple); }
+.session .wm-4 { color: var(--term-blue); }
+.session .label { color: var(--term-grey); }
+.session .hint { color: var(--muted); }
+
+/* the live turn: one status line the refreshes replace in place */
+.session .status { display: grid; }
+.session .st {
+  grid-area: 1 / 1;
+  white-space: pre;
+  opacity: 0;
+  animation: st-beat 1s var(--ease) both;
+}
 
 /* commands type themselves out */
 .session .type {
@@ -139,18 +177,18 @@
 }
 
 /* the beat sequence */
-.session .cap + .line { animation-delay: 0.55s; }
-.session .cap + .line .type { animation-delay: 0.7s; }
-.session .cap + .line + .line { animation-delay: 1.75s; }
-.session .line:nth-child(4) { animation-delay: 1.95s; }
-.session .line:nth-child(4) .type { animation-delay: 2.05s; animation-duration: 0.45s; }
-.session .line:nth-child(5) { animation-delay: 2.75s; }
-.session .line:nth-child(6) { animation-delay: 3.15s; }
-.session .line:nth-child(7) { animation-delay: 3.45s; }
-.session .line:nth-child(8) { animation-delay: 3.9s; }
-.session .line:nth-child(9) { animation-delay: 4.2s; }
-.session .line:nth-child(10) { animation-delay: 4.75s; }
-.session .prompt-row { animation: rise-fade 0.45s var(--ease) 5.15s both; }
+.session .cmd-install { animation-delay: 0.55s; }
+.session .cmd-install .type { animation-delay: 0.7s; }
+.session .notice { animation-delay: 1.75s; }
+.session .launch { animation-delay: 2.05s; }
+.session .launch .type { animation-delay: 2.15s; animation-duration: 0.45s; }
+.session .banner { animation-delay: 2.75s; }
+.session .echo { animation-delay: 3.55s; }
+.session .st-1 { animation-delay: 4.25s; }
+.session .st-2 { animation-delay: 5.25s; }
+.session .st-3 { animation-delay: 6.25s; }
+.session .report { animation-delay: 7.35s; }
+.session .prompt-row { animation: rise-fade 0.45s var(--ease) 8.15s both; }
 
 /* a quiet cue that the details are below */
 .scroll-cue {
@@ -342,10 +380,26 @@
   }
 }
 
+/* below ~520px the card is too narrow for the 45-column wordmark and the
+   49-column status line — the real banner sheds the wordmark below its own
+   column budget, and the status bar sheds clock/cost/tokens the same way */
+@media (max-width: 520px) {
+  .session .wm {
+    display: none;
+  }
+  .session .st .clock,
+  .session .st .up,
+  .session .st .down,
+  .session .st .cost {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rise,
   .focus-line,
   .session .line,
+  .session .st,
   .session .prompt-row,
   .session .cursor,
   .toc-list .leader,
@@ -357,6 +411,9 @@
   .group-label,
   .toc-list li {
     animation: none;
+  }
+  .session .st:last-child {
+    opacity: 1;
   }
   .session .type {
     animation: none;
