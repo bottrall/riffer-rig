@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/bottrall/riffer-rig/compare/v0.15.0...v0.16.0) (2026-10-18)
+
+
+### Features
+
+* **terminal:** show the reasoning level in the banner and status bar ([#565](https://github.com/bottrall/riffer-rig/issues/565)) ([ead3588](https://github.com/bottrall/riffer-rig/commit/ead358834580a4fcab18432cbe5414e3e21b7feb))
+
 ## [0.15.0](https://github.com/bottrall/riffer-rig/compare/v0.14.0...v0.15.0) (2026-10-18)
 
 
