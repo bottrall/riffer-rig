@@ -21,9 +21,9 @@ describe Riffer::Rig::Terminal::Frame do
     io
   end
 
-  def frame(io, color: false, editor: Riffer::Rig::Terminal::LineEditor.new)
+  def frame(io, color: false, editor: Riffer::Rig::Terminal::LineEditor.new, loading: false)
     theme = Riffer::Rig::Terminal::Theme.new(enabled: color)
-    @frame = Riffer::Rig::Terminal::Frame.new(io: io, theme: theme, editor: editor)
+    @frame = Riffer::Rig::Terminal::Frame.new(io: io, theme: theme, editor: editor, loading: loading)
   end
 
   def started(io, **)
@@ -122,6 +122,14 @@ describe Riffer::Rig::Terminal::Frame do
 
       assert_equal "\r\n  thinking\r\n#{empty_footer}", io.string
     end
+
+    it 'draws the loading line in place of the input row when it starts loading' do
+      io = tty(80)
+
+      started(io, loading: true)
+
+      assert_equal '  loading…', io.string
+    end
   end
 
   describe '#append' do
@@ -147,6 +155,14 @@ describe Riffer::Rig::Terminal::Frame do
       started(io).append('one')
 
       assert_equal "#{empty_frame}\e[1A\r\e[Jone\r\n#{empty_frame}", io.string
+    end
+
+    it 'swaps the loading line for the content and the input row in one write' do
+      io = tty(80)
+
+      started(io, loading: true).append('one')
+
+      assert_equal "  loading…\r\e[Jone\r\n#{empty_frame}", io.string
     end
 
     it 'replaces the footer with the content on a terminal with no row to spare for a blank row' do
@@ -237,6 +253,24 @@ describe Riffer::Rig::Terminal::Frame do
       frame.input(editing('hi'))
 
       assert_operator io.string, :end_with?, "\e[3A\r\e[J\r\n› hi\r\n  \e[1A\e[5G"
+    end
+
+    it 'keeps the loading line over an edit made before the first content' do
+      io = tty(80)
+
+      started(io, loading: true).input(editing('hi'))
+
+      assert_equal "  loading…\r\e[J  loading…", io.string
+    end
+
+    it 'shows an edit typed while loading once the first content draws the input row' do
+      io = tty(80)
+      frame = started(io, loading: true)
+      frame.input(editing('hi'))
+
+      frame.append('banner')
+
+      assert_operator io.string, :end_with?, "banner\r\n\r\n› hi\r\n  \e[1A\e[5G"
     end
   end
 
@@ -502,6 +536,14 @@ describe Riffer::Rig::Terminal::Frame do
       frame.stop
 
       assert_operator io.string, :end_with?, "#{empty_footer}\e[2A\r\e[J"
+    end
+
+    it 'erases the loading line when it stops before any content' do
+      io = tty(80)
+
+      started(io, loading: true).stop
+
+      assert_equal "  loading…\r\e[J", io.string
     end
 
     it 'leaves the cursor at the start of the row under the content' do

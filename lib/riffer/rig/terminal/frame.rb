@@ -28,6 +28,8 @@ class Riffer::Rig::Terminal::Frame
   # Sent from the top row the frame drew, so this wipes all of it.
   ERASE = "\r\e[J" #: String
 
+  LOADING = 'loading…' #: String
+
   SPACER = "\r\n" #: String
 
   # @rbs @io: IO
@@ -43,6 +45,7 @@ class Riffer::Rig::Terminal::Frame
   # @rbs @height: Integer
   # @rbs @width: Integer
   # @rbs @active: bool
+  # @rbs @loading: bool
   # @rbs @mutex: Mutex
   # @rbs @previous_resize: Signal::trap_command
 
@@ -63,8 +66,9 @@ class Riffer::Rig::Terminal::Frame
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
+  # @rbs loading: bool
   # @rbs return: void
-  def initialize(io:, theme:, editor: Riffer::Rig::Terminal::LineEditor.new)
+  def initialize(io:, theme:, editor: Riffer::Rig::Terminal::LineEditor.new, loading: false)
     @io = io
     @theme = theme
     @editor = editor
@@ -78,6 +82,7 @@ class Riffer::Rig::Terminal::Frame
     @height = 0
     @width = 0
     @active = false
+    @loading = loading
     @mutex = Mutex.new
     @previous_resize = nil
   end
@@ -101,6 +106,9 @@ class Riffer::Rig::Terminal::Frame
   def append(content)
     lines = content.end_with?("\n") ? content : "#{content}\n"
     @mutex.synchronize do
+      # The first content and the footer it draws go out in this one write, so
+      # this is where the loading screen ends.
+      @loading = false
       # The key pipeline's raw mode turns off output post-processing, so a
       # bare line feed would not return the carriage.
       @active ? draw("#{erase}#{lines.gsub(/\r?\n/, "\r\n")}") : write(lines)
@@ -216,6 +224,8 @@ class Riffer::Rig::Terminal::Frame
   # @rbs before: String
   # @rbs return: void
   def draw(before = '')
+    return draw_loading(before) if @loading
+
     # A row scrolled off the top of the screen could never be erased again.
     above = [@height - FOOTER_ROWS, 0].max
     palette = palette_rows([above, PALETTE_ROWS].min)
@@ -223,6 +233,15 @@ class Riffer::Rig::Terminal::Frame
     rows = [*spacer, *peek_rows([above - palette.size, PEEK_ROWS].min), *palette]
     write("#{before}#{rows.join}#{footer}")
     @rows_above = rows.size
+  end
+
+  # The cursor stays on the row the loading line was written to, so the erase
+  # that replaces it wipes it like the footer's own row.
+  # @rbs before: String
+  # @rbs return: void
+  def draw_loading(before)
+    line = "#{STATUS_INDENT}#{@theme.dim(LOADING)}"
+    write("#{before}#{Riffer::Rig::Terminal::Columns.head(line, @width - 1)}")
   end
 
   # @rbs limit: Integer
