@@ -13,8 +13,6 @@ class Riffer::Rig::Terminal::Frame
   # text.
   QUEUED_GAP: String
 
-  JOBS_SEPARATOR: String
-
   INPUT_ROWS: Integer
 
   PEEK_ROWS: Integer
@@ -67,9 +65,7 @@ class Riffer::Rig::Terminal::Frame
 
   @loading_line: String
 
-  @model: String?
-
-  @tally: ^() -> Riffer::Providers::TokenUsage?
+  @tally: (^() -> Riffer::Providers::TokenUsage?)?
 
   @now: ^() -> Time
 
@@ -130,16 +126,18 @@ class Riffer::Rig::Terminal::Frame
   # @rbs return: void
   def jobs: (Integer count) -> void
 
-  # @rbs model: String
   # @rbs tally: ^() -> Riffer::Providers::TokenUsage?
   # @rbs return: void
-  def session: (model: String, tally: ^() -> Riffer::Providers::TokenUsage?) -> void
+  def session: (tally: ^() -> Riffer::Providers::TokenUsage?) -> void
 
   # @rbs return: void
   def idle_tick: () -> void
 
   # @rbs return: Integer
   def status_room: () -> Integer
+
+  # @rbs return: Integer
+  def job_count: () -> Integer
 
   # @rbs content: String
   # @rbs return: void
@@ -212,27 +210,21 @@ class Riffer::Rig::Terminal::Frame
   # @rbs return: String
   def footer: (Array[String] rows, Integer row, Integer column) -> String
 
-  # @rbs room: Integer
+  # @rbs typing: Integer
+  # @rbs text: Integer
   # @rbs return: String
-  def chip: (Integer room) -> String
+  def chip: (Integer typing, Integer text) -> String
 
   # @rbs room: Integer
   # @rbs return: String
   def status_line: (Integer room) -> String
 
-  # @rbs room: Integer
-  # @rbs return: Integer
-  def status_columns: (Integer room) -> Integer
-
   # @rbs return: bool
   def idle_bar_showing?: () -> bool
 
-  # @rbs return: String
-  def idle_bar: () -> String
-
   # @rbs room: Integer
-  # @rbs return: String?
-  def counter: (Integer room) -> String?
+  # @rbs return: String
+  def idle_bar: (Integer room) -> String
 
   # @rbs bytes: String
   # @rbs return: void

@@ -114,9 +114,11 @@ describe Riffer::Rig::Terminal::JobCounter do
       @pty = FramePty.new(columns: 40, rows: 6)
       @frame = Riffer::Rig::Terminal::Frame.new(
         io: @pty.slave,
-        theme: Riffer::Rig::Terminal::Theme.new(enabled: false)
+        theme: Riffer::Rig::Terminal::Theme.new(enabled: false),
+        now: -> { Time.new(2026, 1, 1, 14, 32) }
       )
       @frame.start
+      @frame.session(tally: -> {})
       @runtime = JobsRuntime.new(3)
       Riffer::Rig::Terminal::JobCounter.new(footer: @frame).watch(@runtime)
     end
@@ -126,14 +128,14 @@ describe Riffer::Rig::Terminal::JobCounter do
       @pty.close
     end
 
-    it 'shows the counter under an idle prompt' do
-      assert_equal ['', '›', '  3 jobs running'], @pty.screen.rows
+    it 'shows the counter in the idle bar under an idle prompt' do
+      assert_includes @pty.screen.rows.last, '3 jobs'
     end
 
     it 'lowers the counter when a job exits off the prompting thread' do
       Thread.new { @runtime.exit_job }.join
 
-      assert_equal ['', '›', '  2 jobs running'], @pty.screen.rows
+      assert_includes @pty.screen.rows.last, '2 jobs'
     end
   end
 end

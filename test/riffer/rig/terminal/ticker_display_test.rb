@@ -27,7 +27,6 @@ describe Riffer::Rig::Terminal::TickerDisplay do
       theme: theme,
       peek: @peek,
       catalog: @catalog,
-      random: Random.new(1),
       clock: -> { 0.0 }
     )
   end
@@ -89,7 +88,7 @@ describe Riffer::Rig::Terminal::TickerDisplay do
     it 'draws the ticker on the status line' do
       display.start(@runtime)
 
-      assert_equal ['', '›', '  ▁▅██▆▂▄ 00:00 · ↓0 tok · riffing…'], rows
+      assert_equal ['', '›', '  ⠋         00:00 ↑0     ↓0     tok ~$0.0000 0 jobs'], rows
     end
   end
 
@@ -98,9 +97,9 @@ describe Riffer::Rig::Terminal::TickerDisplay do
       display.start(@runtime)
 
       display.absorb(text('Let me look.'))
-      await { status.include?('step') }
+      await { status.include?('turn 1') }
 
-      assert_includes status, 'step 1'
+      assert_includes status, 'turn 1'
     end
 
     it 'keeps an open peek up with the turn' do

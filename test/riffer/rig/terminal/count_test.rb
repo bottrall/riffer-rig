@@ -15,6 +15,14 @@ describe Riffer::Rig::Terminal::Count do
     assert_equal '132k', Riffer::Rig::Terminal::Count.call(132_000)
   end
 
+  it 'drops the decimal once a thousand count fills its slot' do
+    assert_equal '132k', Riffer::Rig::Terminal::Count.call(132_500)
+  end
+
+  it 'drops the decimal once a million count fills its slot' do
+    assert_equal '132M', Riffer::Rig::Terminal::Count.call(132_500_000)
+  end
+
   it 'rounds millions down to a decimal place' do
     assert_equal '2.3M', Riffer::Rig::Terminal::Count.call(2_390_000)
   end

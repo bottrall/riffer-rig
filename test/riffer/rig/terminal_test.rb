@@ -525,7 +525,7 @@ describe Riffer::Rig::Terminal do
         runtime.define_singleton_method(:running_job_count) { 2 }
       end
 
-      assert_includes output, '2 jobs running'
+      assert_includes output, '2 jobs'
     end
 
     it 'replays nothing in a fresh session' do
@@ -886,7 +886,7 @@ describe Riffer::Rig::Terminal do
         runtime.define_singleton_method(:running_job_count) { count }
       end
 
-      assert_includes output, '3 jobs running'
+      assert_includes output, '3 jobs'
     end
 
     it 'replays the session /resume picks below its banner' do
@@ -954,13 +954,13 @@ describe Riffer::Rig::Terminal do
       script = lambda do |pty|
         pty.type("hello\r")
         started.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
-        pty.await('riffing…')
+        pty.await('~$0.0000')
         release << true
         pty.type("/exit\r")
       end
       output = run_on_pty(script) { |runtime| hold_turns(runtime, started, release) }
 
-      assert_includes output, 'riffing…'
+      assert_includes output, '~$0.0000'
     end
 
     it 'peeks at the running turn on Ctrl-T' do

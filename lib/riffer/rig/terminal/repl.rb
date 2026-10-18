@@ -71,10 +71,8 @@ class Riffer::Rig::Terminal::Repl
   # @rbs return: void
   def watch(runtime)
     @mutex.synchronize { @runtime = runtime }
-    wire = ->(model) { @frame.session(model: model, tally: -> { runtime.tally }) }
-    wire.call(runtime.model)
+    @frame.session(tally: -> { runtime.tally })
     runtime.on_job_exit { wake }
-    runtime.on_model_change(&wire)
   end
 
   # @rbs recorded: Array[Riffer::Rig::Terminal::Replay::_Recorded]

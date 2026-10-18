@@ -516,12 +516,20 @@ describe Riffer::Rig::Terminal::Frame do
       assert_equal '', io.string
     end
 
-    it 'redraws the footer with the count after the input line' do
+    it 'redraws the footer with the count flush right on the input line' do
       io = tty(80)
 
       started(io).queued(2)
 
-      assert_equal "#{empty_frame}\e[1A\r\e[J\r\n›    · 2 queued\r\n  \e[1A\e[3G", io.string
+      assert_equal "#{empty_frame}\e[1A\r\e[J\r\n› #{' ' * 64}   · 2 queued\r\n  \e[1A\e[3G", io.string
+    end
+
+    it 'leaves the count off when the text leaves no room for it' do
+      io = tty(30)
+
+      started(io, editor: editing('x' * 20)).queued(2)
+
+      refute_includes io.string, 'queued'
     end
 
     it 'leaves the cursor at the edit point' do
@@ -535,6 +543,10 @@ describe Riffer::Rig::Terminal::Frame do
   end
 
   describe '#jobs' do
+    def usage
+      Riffer::Providers::TokenUsage.new(input_tokens: 132_000, output_tokens: 218_000, cost: 1.4)
+    end
+
     it 'draws nothing when there is no footer' do
       io = StringIO.new
 
@@ -543,12 +555,14 @@ describe Riffer::Rig::Terminal::Frame do
       assert_equal '', io.string
     end
 
-    it 'redraws the footer with the count on the status line' do
+    it 'draws the count in the idle bar' do
       io = tty(80)
+      frame = started(io, now: -> { Time.new(2026, 1, 1, 14, 32) })
+      frame.session(tally: -> { usage })
 
-      started(io).jobs(2)
+      frame.jobs(2)
 
-      assert_equal "#{empty_frame}\e[1A\r\e[J\r\n› \r\n  2 jobs running\e[1A\e[3G", io.string
+      assert_operator io.string, :end_with?, "\r\n  · idle    14:32 ↑132k  ↓218k  tok ~$1.4000 2 jobs\e[1A\e[3G"
     end
 
     it 'leaves the cursor on the input line' do
@@ -565,36 +579,36 @@ describe Riffer::Rig::Terminal::Frame do
       Riffer::Providers::TokenUsage.new(input_tokens: input, output_tokens: output, cost: cost)
     end
 
-    def session(io, tally: usage, model: 'sonnet-4-6', now: -> { Time.new(2026, 1, 1, 14, 32) })
+    def session(io, tally: usage, now: -> { Time.new(2026, 1, 1, 14, 32) })
       frame = started(io, now: now)
-      frame.session(model: model, tally: -> { tally })
+      frame.session(tally: -> { tally })
       frame
     end
 
     it 'draws nothing when there is no footer' do
       io = StringIO.new
 
-      started(io).session(model: 'sonnet-4-6', tally: -> {})
+      started(io).session(tally: -> {})
 
       assert_equal '', io.string
     end
 
-    it 'draws the model, the session odometer, the cost and the time under the input line' do
+    it 'draws the idle bar under the input line' do
       io = tty(80)
 
       session(io)
 
       assert_operator io.string,
                       :end_with?,
-                      "\r\n  sonnet-4-6 · ↑132k ↓218k tok · ~$1.4000 · 14:32\e[1A\e[3G"
+                      "\r\n  · idle    14:32 ↑132k  ↓218k  tok ~$1.4000 0 jobs\e[1A\e[3G"
     end
 
-    it 'draws only the model and the time before the session has used tokens' do
+    it 'draws zeros before the session has used tokens' do
       io = tty(80)
 
       session(io, tally: nil)
 
-      assert_operator io.string, :end_with?, "\r\n  sonnet-4-6 · 14:32\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n  · idle    14:32 ↑0     ↓0     tok ~$0.0000 0 jobs\e[1A\e[3G"
     end
 
     it 'reads the clock when it draws, not when the session was set' do
@@ -605,7 +619,7 @@ describe Riffer::Rig::Terminal::Frame do
       time = Time.new(2026, 1, 1, 14, 33)
       frame.status('')
 
-      assert_operator io.string, :end_with?, "\r\n  sonnet-4-6 · 14:33\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n  · idle    14:33 ↑0     ↓0     tok ~$0.0000 0 jobs\e[1A\e[3G"
     end
 
     it 'gives way to the hint' do
@@ -633,15 +647,15 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.status('')
 
-      assert_operator io.string, :end_with?, "\r\n  sonnet-4-6 · 14:32\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n  · idle    14:32 ↑0     ↓0     tok ~$0.0000 0 jobs\e[1A\e[3G"
     end
 
-    it 'is cut to keep the job counter whole on a narrow terminal' do
+    it 'sheds whole slots from the left on a narrow terminal' do
       io = tty(26)
       frame = session(io)
       frame.jobs(2)
 
-      assert_operator io.string, :end_with?, "\r\n  sonnet · 2 jobs running\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n  · idle    2 jobs\e[1A\e[3G"
     end
   end
 
@@ -651,7 +665,7 @@ describe Riffer::Rig::Terminal::Frame do
     def session(io, loading: false)
       frame = frame(io, loading: loading)
       frame.loading('warming the amp…') if loading
-      frame.session(model: 'sonnet-4-6', tally: -> { usage })
+      frame.session(tally: -> { usage })
       frame.start
       frame
     end
@@ -723,22 +737,6 @@ describe Riffer::Rig::Terminal::Frame do
 
     it 'is the row less the indent and the free last column' do
       assert_equal 77, started(tty(80)).status_room
-    end
-
-    it 'leaves out the columns of the job counter and its separator' do
-      frame = started(tty(80))
-
-      frame.jobs(2)
-
-      assert_equal 60, frame.status_room
-    end
-
-    it 'keeps the columns of a job counter the width has no room to draw' do
-      frame = started(tty(16))
-
-      frame.jobs(2)
-
-      assert_equal 13, frame.status_room
     end
   end
 
@@ -1146,7 +1144,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, color: true).queued(2)
 
-      assert_operator io.string, :end_with?, "\e[0m    \e[2m· 2 queued\e[0m\r\n  \e[1A\e[3G"
+      assert_operator io.string, :end_with?, "   \e[2m· 2 queued\e[0m\r\n  \e[1A\e[3G"
     end
 
     it 'follows the text either side of the cursor' do
@@ -1154,7 +1152,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       started(io, editor: editing('hi', 'yo')).queued(2)
 
-      assert_operator io.string, :end_with?, "› hiyo   · 2 queued\r\n  \e[1A\e[5G"
+      assert_operator io.string, :end_with?, "› hiyo#{' ' * 60}   · 2 queued\r\n  \e[1A\e[5G"
     end
 
     it 'follows the rest of a completed name' do
@@ -1164,7 +1162,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.queued(2)
 
-      assert_operator io.string, :end_with?, "› /model   · 2 queued\r\n  \e[1A\e[6G"
+      assert_operator io.string, :end_with?, "› /model#{' ' * 58}   · 2 queued\r\n  \e[1A\e[6G"
     end
 
     it 'fills the input line up to the free last column' do
@@ -1177,77 +1175,24 @@ describe Riffer::Rig::Terminal::Frame do
   end
 
   describe '#status_line' do
-    def counting(columns, jobs, status: '', color: false)
+    def shown(columns, status: '', color: false)
       io = tty(columns)
       frame = started(io, color: color)
       frame.status(status)
-      frame.jobs(jobs)
+      frame.jobs(2)
       io.string
     end
 
-    it 'is the status alone once no job is running' do
-      io = tty(80)
-      frame = started(io)
-      frame.status('working')
-
-      frame.jobs(2)
-      frame.jobs(0)
-
-      assert_operator io.string, :end_with?, "\e[J\r\n› \r\n  working\e[1A\e[3G"
+    it 'is blank without a status' do
+      assert_operator shown(80), :end_with?, "\r\n  \e[1A\e[3G"
     end
 
-    it 'is the status alone rather than a counter cut short when the width has no room for it' do
-      assert_operator counting(16, 2, status: 'working'), :end_with?, "\r\n  working\e[1A\e[3G"
+    it 'is the status alone, with the jobs count left to the idle bar' do
+      assert_operator shown(80, status: 'working'), :end_with?, "\r\n  working\e[1A\e[3G"
     end
 
-    it 'counts one job in the singular' do
-      assert_operator counting(80, 1), :end_with?, "\r\n  1 job running\e[1A\e[3G"
-    end
-
-    it 'counts several jobs in the plural' do
-      assert_operator counting(80, 12), :end_with?, "\r\n  12 jobs running\e[1A\e[3G"
-    end
-
-    it 'puts the counter after the status' do
-      assert_operator counting(80, 2, status: 'working'), :end_with?, "\r\n  working · 2 jobs running\e[1A\e[3G"
-    end
-
-    it 'puts the counter after a hint' do
-      io = tty(80)
-      frame = started(io)
-      frame.hint('answer')
-
-      frame.jobs(2)
-
-      assert_operator io.string, :end_with?, "\r\n  answer · 2 jobs running\e[1A\e[3G"
-    end
-
-    it 'cuts the status short to keep the counter whole on the one row' do
-      assert_operator counting(26, 2, status: 'working through'), :end_with?, "\r\n  workin · 2 jobs running\e[1A\e[3G"
-    end
-
-    it 'draws the counter alone when the width has no room for any status' do
-      assert_operator counting(20, 2, status: 'working'), :end_with?, "\r\n  2 jobs running\e[1A\e[3G"
-    end
-
-    it 'leaves no separator after a status cut down to its styles' do
-      output = counting(20, 2, status: "\e[2mworking\e[0m")
-
-      assert_operator output, :end_with?, "\r\n  \e[2m\e[0m2 jobs running\e[1A\e[3G"
-    end
-
-    it 'fills the status line up to the free last column' do
-      assert_operator counting(17, 2), :end_with?, "\r\n  2 jobs running\e[1A\e[3G"
-    end
-
-    it 'dims the counter when color is on' do
-      assert_operator counting(80, 2, color: true), :end_with?, "\r\n  \e[2m2 jobs running\e[0m\e[1A\e[3G"
-    end
-
-    it 'dims the separator with the counter when color is on' do
-      output = counting(80, 2, status: 'working', color: true)
-
-      assert_operator output, :end_with?, "\r\n  working\e[2m · 2 jobs running\e[0m\e[1A\e[3G"
+    it 'cuts the status to the free last column' do
+      assert_operator shown(16, status: 'working through'), :end_with?, "\r\n  working throu\e[1A\e[3G"
     end
   end
 end
