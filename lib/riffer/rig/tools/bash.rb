@@ -71,7 +71,7 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
     text(
       "Job #{job.id} started in background\n" \
       "Output: #{job.output_path}\n" \
-      'End your turn; the exit notice brings the result.'
+      'Do not wait or check on it; do other work or end your turn — the exit notice brings the result.'
     )
   end
 
