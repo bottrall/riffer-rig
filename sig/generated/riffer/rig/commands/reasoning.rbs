@@ -13,11 +13,4 @@ module Riffer::Rig::Commands::Reasoning
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs return: void
   def run: (Riffer::Rig::Command::Context ctx) -> void
-
-  private
-
-  # @rbs model: String
-  # @rbs levels: Array[String]
-  # @rbs return: String
-  def hint: (String model, Array[String] levels) -> String
 end

@@ -117,6 +117,12 @@ describe Riffer::Rig::Runtime do
     assert_equal :high, runtime.agent.config.reasoning
   end
 
+  it 'hands off to the agent as a level of its own' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', reasoning: 'off')
+
+    assert_equal :off, runtime.agent.config.reasoning
+  end
+
   it 'sends its model options with each request' do
     runtime = Riffer::Rig::Runtime.new('mock/test', model_options: { reasoning: 'high' })
     runtime.agent.provider.stub_response('All done.')
@@ -1383,6 +1389,10 @@ describe Riffer::Rig::Runtime do
       assert_equal 'high', Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'high' }).reasoning
     end
 
+    it 'leaves an unrecognized settings level unread' do
+      assert_nil Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'turbo' }).reasoning
+    end
+
     it 'is nil without a level anywhere' do
       assert_nil Riffer::Rig::Runtime.new('mock/test').reasoning
     end
@@ -1403,11 +1413,11 @@ describe Riffer::Rig::Runtime do
   end
 
   describe '#reasoning=' do
-    it 're-derives the model options for the switched level' do
+    it 'carries the switched level to the agent config' do
       runtime = Riffer::Rig::Runtime.new('openai/gpt-5', reasoning: 'low')
       runtime.reasoning = 'high'
 
-      assert_equal 'high', runtime.agent.config.model_options[:reasoning]
+      assert_equal :high, runtime.agent.config.reasoning
     end
 
     it 'keeps the switched level when the model switches' do
@@ -1418,12 +1428,12 @@ describe Riffer::Rig::Runtime do
       assert_equal 'high', runtime.reasoning
     end
 
-    it 're-derives the model options for the model a switch lands on' do
+    it 'carries the switched level to the config the switch lands on' do
       runtime = Riffer::Rig::Runtime.new('openai/gpt-5', settings: { reasoning: 'low' })
       runtime.reasoning = 'high'
       runtime.model = 'openai/o3'
 
-      assert_equal 'high', runtime.agent.config.model_options[:reasoning]
+      assert_equal :high, runtime.agent.config.reasoning
     end
 
     it 'keeps the session across a level switch' do
@@ -1617,6 +1627,13 @@ describe Riffer::Rig::Runtime do
       assert_equal 'mock/other', rebuilt(runtime, settings: { model: 'mock/test' }).model
     end
 
+    it 'keeps the reasoning level' do
+      runtime = started(@runtime)
+      runtime.reasoning = 'high'
+
+      assert_equal :high, rebuilt(runtime).agent.config.reasoning
+    end
+
     it 'keeps the id' do
       id = @runtime.id
 
@@ -1778,6 +1795,13 @@ describe Riffer::Rig::Runtime do
       runtime.reasoning = 'high'
 
       assert_equal 'high', restored(runtime.to_h).reasoning
+    end
+
+    it 'leaves an unrecognized snapshot level unrestored' do
+      saved = saved_runtime.to_h
+      saved[:reasoning] = 'turbo'
+
+      assert_nil restored(saved).reasoning
     end
 
     it 'holds no skills while none are activated' do

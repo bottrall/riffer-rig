@@ -43,16 +43,6 @@ describe Riffer::Rig::Commands::Reasoning do
     Riffer::Rig::Events::Notify.new("#{path} is not valid JSON at line 1 column 20", :error)
   end
 
-  # The levels are per provider and the mock provider takes none, so the tests
-  # that exercise a switch read the openai levels off any model string.
-  def with_openai_levels
-    provider_for = Riffer::Rig::Settings::ModelOptions.method(:provider_for)
-    Riffer::Rig::Settings::ModelOptions.define_singleton_method(:provider_for) { |_model| 'openai' }
-    yield
-  ensure
-    Riffer::Rig::Settings::ModelOptions.define_singleton_method(:provider_for, provider_for)
-  end
-
   it 'reports the level in effect without arguments' do
     runtime = Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'high' })
 
@@ -66,9 +56,8 @@ describe Riffer::Rig::Commands::Reasoning do
   describe 'a level switch' do
     def switch(args)
       runtime = Riffer::Rig::Runtime.new('mock/test')
-      events = with_openai_levels { command_events(runtime, args) }
 
-      [runtime, events]
+      [runtime, command_events(runtime, args)]
     end
 
     it 'switches the level for the session' do
@@ -77,10 +66,10 @@ describe Riffer::Rig::Commands::Reasoning do
       assert_equal 'high', runtime.reasoning
     end
 
-    it 're-derives the model options for the level' do
+    it 'carries the switched level to the agent config' do
       runtime, = switch('high')
 
-      assert_equal 'high', runtime.agent.config.model_options[:reasoning]
+      assert_equal :high, runtime.agent.config.reasoning
     end
 
     it 'reports the switch' do
@@ -108,13 +97,13 @@ describe Riffer::Rig::Commands::Reasoning do
       assert_equal 'openai/gpt-5', saved_settings['model']
     end
 
-    it 'refuses a level the provider does not accept' do
+    it 'refuses a level riffer does not accept' do
       _, events = switch('turbo')
 
-      assert_equal([output('Use /reasoning level, with a level from: low, medium, high, xhigh')], events)
+      assert_equal([output('turbo is not a reasoning level; riffer accepts: off low medium high xhigh max')], events)
     end
 
-    it 'keeps the level after refusing one the provider does not accept' do
+    it 'keeps the level after refusing one riffer does not accept' do
       runtime, = switch('turbo')
 
       assert_nil runtime.reasoning
@@ -127,11 +116,26 @@ describe Riffer::Rig::Commands::Reasoning do
     end
   end
 
-  describe 'a provider without levels' do
-    it 'refuses any level naming the provider' do
-      events = command_events(Riffer::Rig::Runtime.new('mock/test'), 'high')
+  describe 'the off level' do
+    it 'switches reasoning off for the session' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      command_events(runtime, 'off')
 
-      assert_equal [output('mock accepts no reasoning level')], events
+      assert_equal :off, runtime.agent.config.reasoning
+    end
+
+    it 'reports off as the level in effect' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      command_events(runtime, 'off')
+
+      assert_equal [output('Reasoning: off')], command_events(runtime, '')
+    end
+
+    it 'saves off with --save' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      command_events(runtime, 'off --save')
+
+      assert_equal 'off', saved_settings['reasoning']
     end
   end
 
@@ -174,7 +178,7 @@ describe Riffer::Rig::Commands::Reasoning do
     it 'reports the switch and then the file for the save of a switch' do
       malform(Riffer::Rig::Settings::File::PATH)
       runtime = Riffer::Rig::Runtime.new('mock/test')
-      events = with_openai_levels { command_events(runtime, 'high --save') }
+      events = command_events(runtime, 'high --save')
 
       assert_equal([output('Reasoning switched to high'), malformed(Riffer::Rig::Settings::File::PATH)], events)
     end
@@ -182,7 +186,7 @@ describe Riffer::Rig::Commands::Reasoning do
     it 'keeps the switched level when the save is refused' do
       malform(Riffer::Rig::Settings::File::PATH)
       runtime = Riffer::Rig::Runtime.new('mock/test')
-      with_openai_levels { command_events(runtime, 'high --save') }
+      command_events(runtime, 'high --save')
 
       assert_equal 'high', runtime.reasoning
     end

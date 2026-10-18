@@ -85,7 +85,7 @@ class Riffer::Rig::Loader
 
     document = Riffer::Rig::Settings::Document.new(settings)
     selected = select_model(options.model || @env.model || document.model)
-    check_reasoning(options, selected)
+    check_reasoning(options)
     provider = Riffer::Rig::Settings::ModelOptions.provider_for(selected).to_s
     ensure_sdk(provider)
     credentials = install_credentials(provider)
@@ -118,7 +118,7 @@ class Riffer::Rig::Loader
       credentials: { provider.to_sym => credentials },
       env: @env,
       auth_path: home_auth_path,
-      reasoning: reasoning || document.reasoning,
+      reasoning: reasoning || settings_reasoning(document),
       riffer_config: @riffer_config,
       model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected),
       native_tools: document.native_tools,
@@ -379,13 +379,12 @@ class Riffer::Rig::Loader
   # bad model string is; one from the settings document or a session's recorded
   # switch falls back to the model's default instead.
   # @rbs options: Riffer::Rig::Loader::Options
-  # @rbs selected: String
   # @rbs return: void
-  def check_reasoning(options, selected)
+  def check_reasoning(options)
     forced = options.reasoning || @env.reasoning
     return unless forced
 
-    rejection = Riffer::Rig::Settings::ModelOptions.reasoning_rejection(forced, selected)
+    rejection = Riffer::Rig::Settings::ModelOptions.reasoning_rejection(forced)
     return unless rejection
 
     raise ConfigurationError, options.reasoning ? rejection : "RIFFER_REASONING: #{rejection}"
@@ -404,7 +403,14 @@ class Riffer::Rig::Loader
   # @rbs return: String?
   def recorded_reasoning(snapshot)
     saved = snapshot && snapshot[:reasoning]
-    saved.is_a?(String) ? saved : nil
+    Riffer::Rig::Settings::ModelOptions.reasoning_level(saved) if saved.is_a?(String)
+  end
+
+  # A settings level riffer does not accept silently keeps the model's default.
+  # @rbs document: Riffer::Rig::Settings::Document
+  # @rbs return: String?
+  def settings_reasoning(document)
+    Riffer::Rig::Settings::ModelOptions.reasoning_level(document.reasoning)
   end
 
   # A model or reasoning level chosen for the run wins for that run only: it is

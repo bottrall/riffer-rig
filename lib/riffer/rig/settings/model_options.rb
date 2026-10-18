@@ -20,6 +20,20 @@ module Riffer::Rig::Settings::ModelOptions
     "#{model} is not a provider/name model string; the provider is one of: #{Riffer::Rig::Providers.list}"
   end
 
+  # @rbs level: String?
+  # @rbs return: String?
+  def reasoning_level(level)
+    level if level && Riffer::Agent::Config::REASONING_LEVELS.include?(level.to_sym)
+  end
+
+  # @rbs level: String
+  # @rbs return: String?
+  def reasoning_rejection(level)
+    return if reasoning_level(level)
+
+    "#{level} is not a reasoning level; riffer accepts: #{Riffer::Agent::Config::REASONING_LEVELS.join(' ')}"
+  end
+
   # @rbs model: String
   # @rbs return: Hash[Symbol, untyped]
   def model_options(model)

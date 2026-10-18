@@ -34,24 +34,13 @@ module Riffer::Rig::Commands::Reasoning
       return ctx.say("Saved #{current} to #{SAVED_TO}")
     end
 
-    levels = Riffer::Rig::Settings::ModelOptions.levels_for(ctx.runtime.model)
-    return ctx.say(hint(ctx.runtime.model, levels)) unless levels.include?(level)
+    rejection = Riffer::Rig::Settings::ModelOptions.reasoning_rejection(level)
+    return ctx.say(rejection) if rejection
 
     ctx.runtime.reasoning = level
     refusal = Riffer::Rig::Settings::File.store_reasoning(level) if save
     ctx.host.notify(refusal, level: :error) if refusal
     saved = save && !refusal
     ctx.say(saved ? "Reasoning switched to #{level} and saved to #{SAVED_TO}" : "Reasoning switched to #{level}")
-  end
-
-  private
-
-  # @rbs model: String
-  # @rbs levels: Array[String]
-  # @rbs return: String
-  def hint(model, levels)
-    return "#{Riffer::Rig::Settings::ModelOptions.provider_for(model)} accepts no reasoning level" if levels.empty?
-
-    "Use /reasoning level, with a level from: #{levels.join(', ')}"
   end
 end

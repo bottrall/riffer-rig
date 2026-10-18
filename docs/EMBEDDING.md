@@ -34,7 +34,7 @@ Whatever `store:` records the build: the [header](SESSIONS.md#what-an-entry-hold
 
 `Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)` takes the same setup and builds with `runtime(options, reload:, extra_extensions:)` for a host that keeps the Loader.
 
-The host is asked only when its `capabilities` include `:ask`. With no model set anywhere, the Loader asks it for a model string, listing the providers, and writes the answer to `~/.riffer/settings.json`; a required credential that does not resolve is asked for the same way and stored ([Providers](PROVIDERS.md#rifferrigcredentials)). Anything the Loader cannot settle raises `Riffer::Rig::Loader::ConfigurationError` with a message fit to show the user: no model and a host that cannot ask (the null host), a model string without a known provider prefix, a bare `RIFFER_MODEL`, a `--reasoning` or `RIFFER_REASONING` the model's provider does not accept, a required credential still missing, a `settings.json` or `auth.json` that does not parse, or a `settings.json` whose `model` is not a string ([Configuration](CONFIGURATION.md)). A headless host should map it to exit status 2.
+The host is asked only when its `capabilities` include `:ask`. With no model set anywhere, the Loader asks it for a model string, listing the providers, and writes the answer to `~/.riffer/settings.json`; a required credential that does not resolve is asked for the same way and stored ([Providers](PROVIDERS.md#rifferrigcredentials)). Anything the Loader cannot settle raises `Riffer::Rig::Loader::ConfigurationError` with a message fit to show the user: no model and a host that cannot ask (the null host), a model string without a known provider prefix, a bare `RIFFER_MODEL`, a `--reasoning` or `RIFFER_REASONING` that is not a level riffer accepts, a required credential still missing, a `settings.json` or `auth.json` that does not parse, or a `settings.json` whose `model` is not a string ([Configuration](CONFIGURATION.md)). A headless host should map it to exit status 2.
 
 ```ruby
 begin
@@ -92,7 +92,7 @@ The constructor takes everything as keywords — `model:` (positional, required)
 | `credentials:`  | provider → resolved field values (`{ anthropic: { api_key: "…" } }`), stored as given and exposed; read by `/model` and a restore | `{}` |
 | `env:`          | the `Riffer::Rig::Env` an MCP server's [`auth` fields](MCP.md#secret-headers) resolve from | `Riffer::Rig::Env.new` |
 | `auth_path:`    | the `auth.json` those fields are read from and stored in | `~/.riffer/auth.json` |
-| `reasoning:`     | the reasoning effort (`off` `low` `medium` `high` `xhigh` `max`), validated and translated per provider by riffer ([Configuration](CONFIGURATION.md#reasoning)) | `nil` |
+| `reasoning:`     | the reasoning effort (`off` `low` `medium` `high` `xhigh` `max`), validated and translated to the provider's own parameters by riffer ([Configuration](CONFIGURATION.md#reasoning)) | `nil` |
 | `riffer_config:` | the `Riffer::Config` the agent reads its reasoning and catalog from       | `Riffer.config`         |
 | `mcp_registry:` | where declared [MCP servers](MCP.md) are registered and unregistered: an object with riffer's `register(name:, endpoint:, tags:, discovery_headers:)` and `unregister(name)` | `Riffer::Mcp` |
 | `clock:`        | a callable returning seconds as a `Float`, which stamps the [tool call events](#tool-call-events) | the process's monotonic clock |
@@ -251,14 +251,14 @@ runtime.model = 'openai/gpt-5'
 
 ## Switching the reasoning level
 
-`reasoning` is the reasoning level in effect — the `reasoning:` the Runtime was built with, else the `reasoning` key of `settings:`, else `nil` for the model's default. Assigning `reasoning=` switches it for this Runtime only and re-derives the `model_options` for the current model, so the next model call carries the new level; a `/model` switch re-derives them for the new provider with the level still in effect.
+`reasoning` is the reasoning level in effect — the `reasoning:` the Runtime was built with, else the `reasoning` key of `settings:`, else `nil` for the model's default. Assigning `reasoning=` switches it for this Runtime only, and the next model call carries it: the level rides on the agent config, which a `/model` switch shares, so a switch keeps the level in effect. A level riffer refuses raises from `reasoning=` before anything changes.
 
 ```ruby
 runtime.reasoning # => "high"
 runtime.reasoning = 'low'
 ```
 
-`reasoning` is also a core command, listed after [`model`](#switching-the-model): `run_command('reasoning', 'high')` refuses a level the current model's provider does not accept with a `command_output` naming the levels it does, and leaves the level unchanged. `--save` also writes the level to `~/.riffer/settings.json`, and on its own saves the level in effect. With no argument it reports the current level.
+`reasoning` is also a core command, listed after [`model`](#switching-the-model): `run_command('reasoning', 'high')` refuses a level riffer does not accept with a `command_output` naming the levels riffer accepts, and leaves the level unchanged. `--save` also writes the level to `~/.riffer/settings.json`, and on its own saves the level in effect. With no argument it reports the current level.
 
 ## Rebuilding after a code reload
 
@@ -315,7 +315,7 @@ History is data, and the present wins, so nothing in a snapshot blocks a restore
 - A tool call for a tool that no longer exists is just history the model reads.
 - Tool calls at the tail with no result — a process killed mid-turn — are filled with an "interrupted" tool error on load, as a [cancel](#cancelling-a-turn) does, and are never run.
 - The saved model (a `model=` or `/model` switch) applies only if its provider has an entry in `credentials:`; otherwise the given model is used and the host gets one `notify` at level `:warning`. A Runtime restored with its saved model keeps it as its own override, so its next `to_h` saves it again.
-- The saved reasoning level (a `reasoning=` or `/reasoning` switch) is restored as the override the same way; a level the restored model's provider does not accept is simply not sent, so the model's default applies.
+- The saved reasoning level (a `reasoning=` or `/reasoning` switch) is restored as the level in effect the same way.
 - Activated skills re-apply by name; a skill that no longer exists is dropped.
 
 The first prompt of a restored Runtime opens with `session_start` carrying the snapshot's `id` and reason `:restore`, and extensions' `session_start` hooks see the same reason.

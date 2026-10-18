@@ -41,45 +41,37 @@ describe Riffer::Rig::Settings::ModelOptions do
   end
 
   describe '.reasoning_rejection' do
-    def rejection(level, model)
-      Riffer::Rig::Settings::ModelOptions.reasoning_rejection(level, model)
+    def rejection(level)
+      Riffer::Rig::Settings::ModelOptions.reasoning_rejection(level)
     end
 
-    it 'is nil for a level the provider accepts' do
-      assert_nil rejection('high', 'openai/o3')
+    it 'is nil for a level riffer accepts' do
+      assert_nil rejection('high')
     end
 
-    it 'names the levels the provider accepts' do
+    it 'is nil for off' do
+      assert_nil rejection('off')
+    end
+
+    it 'names the levels riffer accepts' do
       assert_equal(
-        'turbo is not a reasoning level openai/o3 accepts; it accepts: low medium high xhigh',
-        rejection('turbo', 'openai/o3')
+        'turbo is not a reasoning level; riffer accepts: off low medium high xhigh max',
+        rejection('turbo')
       )
-    end
-
-    it 'names max for an anthropic model' do
-      assert_equal(
-        'turbo is not a reasoning level anthropic/claude-sonnet-4-6 accepts; it accepts: low medium high xhigh max',
-        rejection('turbo', 'anthropic/claude-sonnet-4-6')
-      )
-    end
-
-    it 'rejects any level for a provider without support' do
-      assert_equal 'gemini/gemini-2.5-flash accepts no reasoning level', rejection('high', 'gemini/gemini-2.5-flash')
     end
   end
 
-  describe '.levels_for' do
-    it 'lists the provider levels' do
-      assert_equal %w[low medium high xhigh max],
-                   Riffer::Rig::Settings::ModelOptions.levels_for('anthropic/claude-sonnet-4-6')
+  describe '.reasoning_level' do
+    it 'is the level riffer accepts' do
+      assert_equal 'high', Riffer::Rig::Settings::ModelOptions.reasoning_level('high')
     end
 
-    it 'is empty for a provider without support' do
-      assert_empty Riffer::Rig::Settings::ModelOptions.levels_for('gemini/gemini-2.5-flash')
+    it 'is nil for a level riffer does not accept' do
+      assert_nil Riffer::Rig::Settings::ModelOptions.reasoning_level('turbo')
     end
 
-    it 'is empty for a model without a provider' do
-      assert_empty Riffer::Rig::Settings::ModelOptions.levels_for('sonnet')
+    it 'is nil without a level' do
+      assert_nil Riffer::Rig::Settings::ModelOptions.reasoning_level(nil)
     end
   end
 

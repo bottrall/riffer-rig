@@ -151,7 +151,6 @@ class Riffer::Rig::Runtime
     @model_observers = []
     @reasoning_observers = []
     @reasoning = reasoning
-    Riffer::Rig::Settings::Pricing.register(pricing, riffer_config.pricing)
     @errors = []
     @tool_allowlist = tools
     @native_tools = native_tools
@@ -263,14 +262,16 @@ class Riffer::Rig::Runtime
 
   # @rbs return: String?
   def reasoning
-    @reasoning_override || Riffer::Rig::Settings::Document.new(@settings).reasoning
+    @reasoning || Riffer::Rig::Settings::ModelOptions.reasoning_level(Riffer::Rig::Settings::Document.new(@settings).reasoning)
   end
 
   # @rbs level: String
   # @rbs return: void
   def reasoning=(level)
-    @reasoning_override = level
-    rederive_options(@model_override || model)
+    # Riffer's own validation raises before anything is assigned, so a level it
+    # refuses leaves both the level and the config unchanged.
+    @agent.config.reasoning = level
+    @reasoning = level
     @reasoning_observers.each { |observer| observer.call(level) }
   end
 
@@ -308,7 +309,7 @@ class Riffer::Rig::Runtime
       id: @id,
       messages: @agent.session.messages,
       model: @model_override,
-      reasoning: @reasoning_override,
+      reasoning: @reasoning,
       skills: activated_skills
     ).to_h
   end
@@ -825,7 +826,7 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Agent
   def restore(snapshot, model, config)
     @model_override = snapshot.restorable_model(@credentials, @host, model)
-    @reasoning_override = snapshot.reasoning if snapshot.reasoning
+    @reasoning = Riffer::Rig::Settings::ModelOptions.reasoning_level(snapshot.reasoning) if snapshot.reasoning
     agent = build_agent(@model_override || model, config, session: snapshot.session)
     agent.context.token_usage = snapshot.usage
     reactivate(agent.context.skills, snapshot.skills)

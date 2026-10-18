@@ -357,27 +357,23 @@ describe Riffer::Rig::Loader do
         )
       end
 
-      it 'derives the model options from the reasoning in effect' do
+      it 'hands the level in effect to the agent config' do
         write_settings(@home, { reasoning: 'high' })
         runtime = build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
 
-        assert_equal 'high', runtime.agent.config.model_options[:reasoning]
+        assert_equal :high, runtime.agent.config.reasoning
       end
 
-      it 'rejects a reasoning keyword the model provider does not accept' do
-        assert_match(
-          %r{\Aturbo is not a reasoning level openai/o3 accepts; it accepts: low medium high xhigh\z},
+      it 'rejects a reasoning keyword riffer does not accept' do
+        assert_equal(
+          'turbo is not a reasoning level; riffer accepts: off low medium high xhigh max',
           refusal { build(model: 'openai/o3', reasoning: 'turbo', env: { 'OPENAI_API_KEY' => 'sk' }) }
         )
       end
 
-      it 'rejects a reasoning keyword a provider without levels does not accept' do
-        assert_equal('mock/test accepts no reasoning level', refusal { build(model: 'mock/test', reasoning: 'high') })
-      end
-
-      it 'rejects a RIFFER_REASONING the model provider does not accept' do
-        assert_match(
-          %r{\ARIFFER_REASONING: turbo is not a reasoning level openai/o3 accepts},
+      it 'rejects a RIFFER_REASONING riffer does not accept' do
+        assert_equal(
+          'RIFFER_REASONING: turbo is not a reasoning level; riffer accepts: off low medium high xhigh max',
           refusal { build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'turbo' }) }
         )
       end
@@ -390,11 +386,17 @@ describe Riffer::Rig::Loader do
         end
       end
 
+      it 'takes off from the settings as a level of its own' do
+        write_settings(@home, { reasoning: 'off' })
+
+        assert_equal :off, build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' }).agent.config.reasoning
+      end
+
       it 'leaves an unrecognized settings level at the model default' do
         write_settings(@home, { reasoning: 'turbo' })
         runtime = build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
 
-        assert_nil runtime.agent.config.model_options[:reasoning]
+        assert_nil runtime.agent.config.reasoning
       end
 
       it 'restores the snapshot reasoning over RIFFER_REASONING' do
@@ -410,11 +412,11 @@ describe Riffer::Rig::Loader do
         )
       end
 
-      it 'derives the model options from the snapshot reasoning' do
+      it 'carries the snapshot reasoning to the agent config' do
         snapshot = { id: 'saved', messages: [], model: nil, reasoning: 'low', skills: [] }
         runtime = build(snapshot: snapshot, model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
 
-        assert_equal 'low', runtime.agent.config.model_options[:reasoning]
+        assert_equal :low, runtime.agent.config.reasoning
       end
 
       it 'ignores a snapshot reasoning that is not a string' do
@@ -439,11 +441,11 @@ describe Riffer::Rig::Loader do
         )
       end
 
-      it 'drops a snapshot reasoning level the settings model provider does not accept' do
-        snapshot = { id: 'saved', messages: [], model: nil, reasoning: 'max', skills: [] }
+      it 'drops a snapshot reasoning level riffer does not accept' do
+        snapshot = { id: 'saved', messages: [], model: nil, reasoning: 'turbo', skills: [] }
         runtime = build(snapshot: snapshot, model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
 
-        assert_nil runtime.agent.config.model_options[:reasoning]
+        assert_nil runtime.agent.config.reasoning
       end
     end
 

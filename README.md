@@ -83,7 +83,7 @@ Type a prompt and press Enter. While the turn runs, the status line under the in
 
 ### Switching the reasoning level
 
-`/reasoning level` switches the reasoning effort for the current session only, keeping the conversation so far: `/reasoning high` prints `Reasoning switched to high`, and `/reasoning` alone shows the level in effect. A level the current model's provider does not accept is rejected with the levels it does. `/reasoning --save` writes the level in effect to the home `settings.json` (`/reasoning high --save` switches and saves in one step), and a home file that no longer parses is reported instead of written. The switch survives a resume, and a `--reasoning` chosen for the run wins over it for that run only ([Configuration](docs/CONFIGURATION.md#reasoning)).
+`/reasoning level` switches the reasoning effort for the current session only, keeping the conversation so far: `/reasoning high` prints `Reasoning switched to high`, `/reasoning off` turns reasoning off, and `/reasoning` alone shows the level in effect. A level riffer does not accept is rejected naming the levels it accepts. `/reasoning --save` writes the level in effect to the home `settings.json` (`/reasoning high --save` switches and saves in one step), and a home file that no longer parses is reported instead of written. The switch survives a resume, and a `--reasoning` chosen for the run wins over it for that run only ([Configuration](docs/CONFIGURATION.md#reasoning)).
 
 ## Authentication
 
@@ -132,7 +132,7 @@ Settings live in two scopes, both optional: `~/.riffer/settings.json` for every 
 | `tools`        | the provider-native tool switches (`native`), off by default                     |
 
 - `RIFFER_MODEL` — the model for this run as `provider/name`, winning over the `model` setting. A bare name such as `sonnet` is rejected with the list of providers.
-- `RIFFER_REASONING` — the reasoning effort for this run, winning over the `reasoning` setting; a level the model's provider does not accept is rejected with the levels it does.
+- `RIFFER_REASONING` — the reasoning effort for this run, winning over the `reasoning` setting; a level riffer does not accept is rejected naming the levels it accepts.
 - `AGENTS.md` — `~/.riffer/AGENTS.md` and an `AGENTS.md` in the current working directory or any directory above it are re-read every turn as instructions that take precedence over the default norms ([Instructions](docs/INSTRUCTIONS.md#agentsmd)).
 - Skills — Agent Skills in `.agents/skills/` from the working directory up to the repository root, and in `~/.agents/skills/`, are offered to the model, and `/skill:<name> [text]` runs one ([Skills](docs/SKILLS.md)).
 - MCP servers — declared under the `mcp` key in either settings file and registered with the Runtime ([MCP](docs/MCP.md)).
