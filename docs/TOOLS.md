@@ -1,86 +1,109 @@
 # Tools
 
-riffer-rig ships six tools — `read`, `write`, `edit`, `bash` and the two background-job companions of `bash`, `bash_output` and `bash_kill` — registered by four bundled extensions, so a host can pass any subset of them and a later extension can replace any one.
+riffer-rig ships six tools: `read`, `write`, `edit`, `bash`, and `bash`'s two background-job companions, `bash_output` and `bash_kill`. Each comes from a bundled extension, so you can leave any of them out or replace it.
 
 ## The six tools
 
-| Tool    | Does                                                                                                                                                        | Guidance in its description                                                                          |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `read`  | returns a file with line numbers; `offset` (1-based) and `limit` (default 2000 lines) slice a large file; a missing file is a tool error; bytes that are not valid UTF-8 are replaced | "Read a file before editing it, and read rather than guess what a file contains."                   |
-| `write` | creates or overwrites a file, making any parent directories                                                                                                 | "Use this for new files or full rewrites; prefer edit for changes to an existing file."             |
-| `edit`  | replaces an exact string, which must be unique unless `replace_all` is set; a missing or ambiguous match is a tool error                                    | "Prefer this over write for existing files; pass enough surrounding text to make old_string unique." |
-| `bash`  | runs a command in the working directory in its own process group and returns combined stdout/stderr; a non-zero exit is a tool error; `timeout_ms` (default 120000) caps each call; the call returns when the command exits, without waiting for anything it left running in the background; output is truncated at 30,000 bytes; a Runtime `cancel` kills the process group; `run_in_background` starts the command as a background job and returns a job id and output path immediately, and the model is [notified when the job exits](#background-jobs) | "Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers."    |
-| `bash_output` | returns what a background job has written since the previous read of it, truncated at 30,000 bytes; an unknown job id is a tool error | "Use this to check on a server, watcher or long-running job before it finishes." |
-| `bash_kill` | sends `TERM`, then `CONT`, to a background job's whole process group; an unknown job id is a tool error | "Use this to stop a job that is no longer needed rather than leaving it running." |
+| Tool          | Does                                                                                         | Guidance in its description                                                                          |
+| ------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `read`        | returns a file with line numbers; `offset` and `limit` (default 2,000 lines) read a slice     | "Read a file before editing it, and read rather than guess what a file contains."                   |
+| `write`       | creates or overwrites a file, making parent directories                                       | "Use this for new files or full rewrites; prefer edit for changes to an existing file."             |
+| `edit`        | replaces an exact string, which must be unique unless `replace_all` is set                     | "Prefer this over write for existing files; pass enough surrounding text to make old_string unique." |
+| `bash`        | runs a shell command in the working directory and returns its combined output ([limits](#bash-limits)) | "Use this for exploring and running things: ls, rg or grep, find, tests, git, package managers."    |
+| `bash_output` | returns what a [background job](#background-jobs) has written since the last read             | "Use this to check on a server, watcher or long-running job before it finishes."                    |
+| `bash_kill`   | stops a background job and everything it started                                              | "Use this to stop a job that is no longer needed rather than leaving it running."                   |
 
-The guidance sentence ends each tool's description. It is the only coding guidance the model gets: the base prompt names no tools, so the guidance travels with the tool and disappears when the tool is left out.
+The guidance sentence is the only coding advice the model gets. The base prompt names no tools, so the advice disappears with the tool when you leave it out.
 
-Tools never raise. A bad argument, a missing file or a failing command comes back to the model as a tool error it can read and act on.
+A bad argument, a missing file or a failing command never crashes a turn: it comes back to the model as a tool error it can read and act on. Relative paths resolve against the session's working directory.
+
+### `bash` limits
+
+| Limit            | Value                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------- |
+| timeout          | `timeout_ms`, default 120,000 ms per call                                              |
+| output           | truncated at 30,000 bytes                                                              |
+| non-zero exit    | a tool error                                                                           |
+| returns          | when the command exits, without waiting for anything it left running in the background |
+| on cancel        | the command and everything it started are killed, and the call returns `[cancelled]`   |
+
+## What runs without asking
+
+riffer-rig has no permission prompts for tool calls. Every call the model makes — to these six tools, to [MCP](MCP.md) tools and to tools from extensions — runs as soon as the model makes it, with your user's access to the files and shell.
+
+riffer-rig asks only before:
+
+- loading a project's `.riffer/rig.rb` for the first time ([trust](EXTENSIONS.md#the-rigrb-files));
+- installing a provider's [SDK gem](PROVIDERS.md#sdk-gems);
+- storing a credential you type.
+
+To narrow what the model can do:
+
+| To…                                  | Use                                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| allow only some tools for one run    | `--tools read,edit` ([Identifiers](#identifiers)); MCP tools are not filtered                    |
+| never load some tools                | `"extensions": {"disabled": ["bash", "write"]}` in [settings](CONFIGURATION.md#extensions)       |
+| refuse certain calls                 | a [`before_tool_call` hook](EXTENSIONS.md#the-rigon-seam) that returns `:block`                  |
+| run commands somewhere safer         | [replace `bash`](#replacing-a-tool) with your own                                                |
 
 ## Background jobs
 
-`bash` takes a `run_in_background` flag: instead of waiting, the command runs in its own process group with stdin read from `/dev/null` and stdout and stderr captured in a private temp file, and the call returns a job id and the output path immediately. The Runtime watches each job and reports its exit to the host as it happens; see [Background jobs](EMBEDDING.md#background-jobs). A job outlives a Runtime `cancel`: it keeps running and its exit is still delivered. `close` sends `TERM`, then `CONT`, to the process group of every job that still has a process running, including a job whose command has exited and left processes behind, then waits for those processes to exit, sends `KILL` to any still running after two seconds, and removes the output file of every job the Runtime started.
+`bash` with `run_in_background` starts the command as a job and returns a job id and an output file path at once. The job keeps running after the call, and after the turn. Its stdin is `/dev/null`, and everything it writes goes to the output file, which keeps the most recent output once it passes 10 MB.
 
-The model never has to ask whether a job is done: the Runtime delivers each exit into the conversation as a notice, a `<background-job id="…" status="…" exit-code="…" duration="…">` envelope holding the command, the output path and the last 2,000 bytes of the output. `status` is `completed` for exit code `0` and `failed` for any other. A job ended by a signal — `bash_kill`'s `TERM`, or a crash — has no exit code: its envelope carries `status="killed"` and the signal's name in place of `exit-code`, as in `signal="TERM"`. Where the notice lands depends on what the turn is doing when the job exits:
+The model never has to poll for the exit: riffer-rig tells it, with a notice holding the command, the exit status (or the signal that killed it), the duration, the output path and the last 2,000 bytes of output:
 
-- **During a turn** it is appended to the next tool result the model receives, after the tool's own output.
-- **As the model finishes its reply** the Runtime adds the notice as a user-role message and runs the model again, so the turn continues. A prompt is continued this way at most five times, and not once the [step limit](EMBEDDING.md#capping-the-loop) is used up; an exit held back waits for the next prompt.
-- **Between turns** it is delivered as a user-role message ahead of the next prompt, or in a [follow-up](EMBEDDING.md#waiting-for-jobs) turn of its own, which is how [headless](HEADLESS.md#background-jobs) hears of the jobs a run left running and how the [terminal](TERMINAL.md#background-jobs) hears of a job that exits while it waits for input.
+```text
+<background-job id="a1b2c3d4" status="completed" exit-code="0" duration="12.3s">
+<command>make build</command>
+<output-path>/tmp/jobs/a1b2c3d4</output-path>
+<output-tail>
+compiled
+done
+</output-tail>
+</background-job>
+```
 
-Exits that are waiting together arrive as one notice. `bash`'s description tells the model it will be notified, so it has no reason to wait on a job or poll `bash_output` for its exit. [Exit notifications](EMBEDDING.md#exit-notifications) describes what a host sees of each delivery.
+When the model hears depends on what the session is doing when the job exits:
 
-An output file holds at most 10,000,000 bytes. When a job writes past that, the oldest output is dropped: the file is rewritten to open with the line `[earlier output dropped to keep this file under 10000000 bytes]` followed by the most recent 5,000,000 bytes, and carries on growing from there.
+```text
+  a turn running                    idle               the next turn
+ |=============================|   |----------------|  |============
+          ^                    ^          ^
+          1                    2          3
+```
 
-A job writes to its file through a pipe the Runtime reads. When the Runtime closes, or the process hosting it ends without closing it, any process still holding that pipe is sent `SIGPIPE` the next time it writes.
+| The job exits…             | The model hears…                                                     |
+| -------------------------- | -------------------------------------------------------------------- |
+| 1. during a turn           | in the next tool result it reads                                     |
+| 2. as the reply finishes   | at once: the turn continues with the notice, up to 5 times per prompt |
+| 3. between turns           | at the next prompt, or in a turn the host starts for it              |
 
-`bash_output` reads a job by the id `bash` returned; `job_id` is its only parameter. Each call returns what the job has written since the previous read, or `(no new output)`, so nothing is delivered twice. It reads the job's output file and returns at once: it neither waits for the job nor reports its exit status, which reaches the model as a notice and the host through `on_job_exit`. A read is truncated at 30,000 bytes with the same marker as `bash`, and the next read starts at whatever the job writes after it — what a truncated read left out is not delivered later, so a job that writes faster than it is read cannot build a backlog. What a read left out stays at the output path until the cap drops it, and a read whose place in the output was dropped starts again at the `[earlier output dropped …]` line that opens the file. Bytes that are not valid UTF-8 are replaced.
+What the host does at 3:
 
-`bash_kill` stops a job early: it sends `TERM` to the job's process group, so everything the command started goes with it, then `CONT`, so a stopped job acts on the `TERM` rather than holding it pending. It does not wait for the job to end; the exit is reported like any other.
+| Host                      | When a job exits between turns                                                                |
+| ------------------------- | --------------------------------------------------------------------------------------------- |
+| [terminal](TERMINAL.md#background-jobs) | starts a turn by itself, if it is waiting for your input                        |
+| [headless](HEADLESS.md#background-jobs) | waits for running jobs before exiting, giving the model a turn for each exit    |
+| [ACP](ACP.md)             | shows the exit to the client at once; the model hears at the next prompt                      |
+| your app                  | decides for itself ([Embedding](EMBEDDING.md#background-jobs))                                |
 
-Both tools still accept a job that has exited, until its exit is delivered to the model: `bash_output` returns whatever it left unread, and `bash_kill` sends nothing and says the job has already exited. Once the notice is delivered the Runtime forgets the job, both tools answer its id as unknown, and the output path in the notice is where the rest of its output is read.
-
-Relative paths resolve against the Runtime's `cwd:` (and `bash` runs there), not the process directory, so two Runtimes in one process can work in different directories. A tool called outside a Runtime falls back to `Dir.pwd`.
+Cancelling a turn does not stop its jobs. `bash_kill` stops one; ending the session stops them all and deletes their output files. Once the model has been told of an exit, `bash_output` and `bash_kill` no longer know the job, and the rest of its output is in the file named in the notice.
 
 ## Identifiers
 
-A tool's name everywhere — in `tools:` on `Runtime.new` and [`Loader::Options`](EMBEDDING.md#loader-options), and on `--tools` — is its riffer `identifier`: `read`, `write`, `edit`, `bash`, `bash_output`, `bash_kill`, and whatever identifier an extension tool declares.
+A tool's name everywhere — `--tools`, the `tools:` allowlist when [embedding](EMBEDDING.md), a replacement — is its riffer identifier: `read`, `write`, `edit`, `bash`, `bash_output`, `bash_kill`, or the identifier an extension tool declares.
 
-```ruby
-Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', extensions: Riffer::Rig.bundled, tools: %w[read bash])
-```
-
-The allowlist names tools, not extensions. All three `bash` tools come from the `bash` bundled extension, but the Runtime above allows only `bash` itself: the model can start background jobs but has no `bash_output` to follow them and no `bash_kill` to stop them. Name both as well to keep them.
-
-The allowlist covers the tools extensions register. Tools from [MCP servers](MCP.md) are added by riffer inside the agent and are not filtered by it.
-
-For each allowlisted name that matches no tool an extension registered, the Runtime reports it through the host's `notify` at level `:warning`, as "Unknown tool in allowlist: NAME", so a typo such as `--tools raed,bash` does not silently drop `read`. An MCP tool name is reported too, since the allowlist has no effect on it. The Runtime reports them when it is built and again on each [rebuild](EMBEDDING.md#rebuilding-after-a-code-reload).
-
-## The bundled extensions
-
-`Riffer::Rig.bundled(:read)` returns the bundled extension of that name — the same `Riffer::Rig::Extension` type `Riffer::Rig.extension` returns — and `Riffer::Rig.bundled` with no argument returns all of them in load order: `read`, `write`, `edit`, `bash`, then `agents_md` ([Instructions](INSTRUCTIONS.md#agentsmd)), `skills` ([Skills](SKILLS.md)) and `mcp` ([MCP](MCP.md)). An unknown name raises `KeyError`. An embedder composes them with its own:
-
-```ruby
-Riffer::Rig::Runtime.new(
-  'anthropic/claude-sonnet-4-6',
-  extensions: [Riffer::Rig.bundled(:read), Riffer::Rig.bundled(:bash), MyExt]
-)
-```
-
-The bundled extensions are not recorded in the `Riffer::Rig.extensions` registry, so a user extension that happens to share a name never overwrites one.
+The allowlist names tools, not extensions: `--tools bash` gives the model `bash` without `bash_output` and `bash_kill`, so it can start background jobs but not follow or stop them. A name that matches no tool is reported as `Unknown tool in allowlist: NAME`, so a typo doesn't silently drop a tool. The allowlist does not apply to [MCP](MCP.md#tool-names) tools.
 
 ## Provider-native tools
 
-Web search — and, later, code execution and file search — is a provider-native tool: the model runs it inside the provider's own request, so it is core, not something an extension could add. It is off by default and switched on per tool in the `tools.native` block of settings ([Configuration](CONFIGURATION.md#toolsnative)):
+Web search runs inside the provider's own request, so it is part of the core rather than an extension. It is off by default; switch it on in [settings](CONFIGURATION.md#toolsnative):
 
 ```json
 { "tools": { "native": { "web_search": true } } }
 ```
 
-The Loader passes the switches to the Runtime, which adds the provider option to every request only when the current provider supports the tool; otherwise nothing happens and no error is raised. `web_search` is supported by `anthropic`, `openai` and `azure_openai`. On a provider without native search — `gemini`, `openrouter`, `amazon_bedrock` — the switch does nothing, and the user brings a third-party tool. An embedder building a Runtime directly passes the switches itself as the `native_tools:` keyword.
-
-A switch value can be an object instead of `true`, passed through to the provider as the tool's options, e.g. `{"web_search": {"max_uses": 3}}`.
-
-`/model provider/name` re-derives the options for the new provider along with the rest of the model options: the tool turns on and off as the provider supports it, so a switch never errors and never leaves an option the new provider would reject.
+`anthropic`, `openai` and `azure_openai` support it. On other providers the switch does nothing, and a `/model` switch turns the tool on or off to match the new provider.
 
 ## Replacing a tool
 
@@ -90,11 +113,18 @@ Register a tool with the same identifier from a later extension:
 class SandboxedBash < Riffer::Tool
   identifier 'bash'
   description 'Run a shell command inside the sandbox.'
-  # params and call as for any riffer tool
+
+  params do
+    required :command, String, description: 'The command to run'
+  end
+
+  def call(context:, command:)
+    output, status = Sandbox.run(command)
+    status.success? ? text(output) : error(output, type: :execution_error)
+  end
 end
 
-sandbox = Riffer::Rig.extension('sandbox') { |rig| rig.tool SandboxedBash }
-Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', extensions: [*Riffer::Rig.bundled, sandbox])
+Riffer::Rig.extension('sandbox') { |rig| rig.tool SandboxedBash }
 ```
 
-The later registration wins and takes the earlier tool's place in the list. The Runtime reports each replacement through the host's `notify` at level `:info` — "Extension sandbox replaces tool bash from bash" — which also reaches the stream as a `notify` event. Nothing is deregistered: `Riffer::Rig.bundled(:bash)` still returns the original. Replacement is per identifier, so a replaced `bash` leaves `bash_output` and `bash_kill` registered; they act only on the jobs the bundled `bash` started. Commands and prompt sections follow the same rule; see [Extensions](EXTENSIONS.md).
+The later registration takes the earlier tool's place, and the session shows `Extension sandbox replaces tool bash from bash`. Replacement is per identifier: a replaced `bash` leaves `bash_output` and `bash_kill` registered, acting only on jobs the bundled `bash` started.

@@ -1,42 +1,83 @@
 # ACP
 
-`riffer acp` serves the same Runtimes the REPL drives as an [Agent Client Protocol](https://agentclientprotocol.com) (ACP) agent over stdio, so editors and other ACP clients can run riffer without a terminal. The wire layer is the [`acp-sdk`](https://github.com/bottrall/acp-sdk) gem; the agent is `Riffer::Rig::ACP` (`lib/riffer/rig/acp.rb`) and its host object is `Riffer::Rig::ACP::Host` (`lib/riffer/rig/acp/host.rb`).
+`riffer acp` runs riffer-rig as an [Agent Client Protocol](https://agentclientprotocol.com) agent over stdio, so editors and other ACP clients can use it without a terminal.
 
 ## Registering with an editor
 
-An editor registers the agent as the command `riffer acp`. In [Zed](https://zed.dev), open Agent Settings, go to External Agents, and choose Add Agent, then Add Custom Agent; Zed opens `settings.json` with an `agent_servers` entry to fill in, or you can write it yourself:
+Register the command `riffer acp`. In [Zed](https://zed.dev), open Agent Settings → External Agents → Add Agent → Add Custom Agent, or add it to `settings.json` yourself:
 
 ```json
 {
   "agent_servers": {
-    "Riffer": {
-      "type": "custom",
-      "command": "riffer",
-      "args": ["acp"],
-      "env": {}
-    }
+    "Riffer": { "type": "custom", "command": "riffer", "args": ["acp"], "env": {} }
   }
 }
 ```
 
-Everything loads exactly as the REPL does — settings from both scopes, credentials, `rig.rb` files (once trusted), skills — because each session builds its Runtime through the [Loader](EMBEDDING.md#building-a-runtime-with-the-loader) at the `cwd` the client sends in `session/new`. The model comes from the same [resolution order](PROVIDERS.md#resolution-order) as everywhere else: `RIFFER_MODEL`, then settings. The host cannot ask while a session builds, so a session whose model or credentials are missing is refused: `session/new` or `session/load` fails with the reason, and nothing is built.
+Each session loads exactly as the terminal does — settings, credentials, trusted `rig.rb` files, skills — for the working directory the client sends. The model comes from `RIFFER_MODEL` or the settings ([precedence](CONFIGURATION.md#where-each-value-comes-from)). The agent can't ask while a session starts, so a session whose model or credentials are missing is refused with the reason: set them up in the terminal first.
 
 ## What the agent supports
 
-- `session/new` builds a Runtime and answers with the Runtime's UUID as the `sessionId`. Each session is independent; a `session/cancel` during a turn reaches [`Runtime#cancel`](EMBEDDING.md#cancelling-a-turn) from the transport's reader thread, and the running turn ends with `stopReason: cancelled`.
-- `session/prompt` streams text as `agent_message_chunk` updates and reports each tool call as a `tool_call` update, in progress, once its arguments are complete, then a `tool_call_update` for the same `toolCallId` when the call finishes: `completed`, or `failed` when its result is an error — a call an extension blocked or whose arguments did not parse included. The update carries the status and the result's text as its content; it is the stream's [`after_tool_call`](EMBEDDING.md#tool-call-events), and `before_tool_call` has no update of its own. A delivered [job exit notification](EMBEDDING.md#exit-notifications) arrives as a blank-line `agent_message_chunk`, so the replies either side of it stay apart. Prompt blocks arrive as text and resource links; a resource link is included as its name and URI. A completed turn answers `end_turn`, a step cap `max_turn_requests`, and a turn that stopped for tokens, the context window or a blocked output `max_tokens`. A turn that raises — a provider failure or a network failure — answers with an internal error whose message is the one the terminal and headless print, the provider's own explanation included, and the session takes the next `session/prompt` as usual.
-- `available_commands_update` lists the Runtime's commands — `/reload`, `/trace`, `/auth`, `/model`, `/reasoning`, `/cost` and every skill — right after `session/new`, during `session/load` once the stored messages have replayed, and again before a `session/prompt` answers when a [reload](RELOADING.md) during it changed them.
-- A `session/prompt` whose text starts with `/` followed by a name runs that [command](EMBEDDING.md#commands) instead of prompting the model: the name runs up to the first whitespace and the rest of the text is its arguments. The command's output streams as `agent_message_chunk` updates, a turn it starts streams as any other, and an unknown name is answered with `Unknown command: <name>`. A command that starts no turn answers `end_turn`.
-- Notify lines ([Extensions](EXTENSIONS.md#error-isolation)) reach the client as `agent_message_chunk` updates, each a paragraph of its own so it stays apart from the next notify and from the reply. Load-time ones flush right after the `session/new` reply.
-- A [background job](EMBEDDING.md#background-jobs) that exits while no `session/prompt` is in flight is reported at once, as an `agent_message_chunk` paragraph of its own: `Background job <id> exited with status <status>: <command>`, or `Background job <id> was killed by SIG<signal>: <command>` for a job ended by a signal. ACP has no agent-started turn, so the model is told at the start of the next `session/prompt`, whose stream opens with the blank-line break above. A job that exits while a prompt is in flight sends no update of its own.
-- Tool calls always run: no tool call waits on the client. The agent sends `session/request_permission` only for a [question the host relays](#relaying-questions-to-the-client).
-- `session/list` maps the saved sessions of the store — scoped to the `cwd` the client sends, all of them when it sends none — to ACP session info: the session id, the cwd, the first prompt as the title, and the session file's last update as `updated_at`.
-- `session/load` restores a saved session: a [Loader](EMBEDDING.md#building-a-runtime-with-the-loader) at the request's `cwd` reads the stored entries and rebuilds the Runtime, the stored messages replay as updates in the order they were recorded — user turns as `user_message_chunk`, the assistant's text as `agent_message_chunk`, and each tool result as its completed `tool_call` (the result as its content; the arguments are not replayed), while a [job exit notification](EMBEDDING.md#exit-notifications) replays as a blank-line `agent_message_chunk` rather than as the user's turn, since the user never typed it — then the Runtime's commands go out as `available_commands_update`, and then the request answers. A following `session/prompt` continues the conversation; an unknown id fails with resource not found.
-- MCP servers the client sends on `session/new` or `session/load` in stdio shape are declared to the Runtime through the [`rig.mcp` seam](MCP.md#declaring-servers-from-an-extension) as if an extension had declared them, so a reload rebuild keeps them and a same-name declaration replaces them. See [MCP](MCP.md#servers-over-acp) for the stdio limit.
+| ACP method                    | Support                                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------------------------ |
+| `session/new`                 | starts a session; the `sessionId` is the riffer-rig session id                                   |
+| `session/prompt`              | runs a turn, or a [command](#commands) when the text starts with `/`                             |
+| `session/cancel`              | cancels the running turn; it ends with `cancelled`                                               |
+| `session/load`                | resumes a [saved session](SESSIONS.md), replaying its messages first; an unknown id is "resource not found" |
+| `session/list`                | lists saved sessions for the client's `cwd` (all of them without one), titled by their first prompt |
+| `session/request_permission`  | sent only to [relay a question](#questions); tool calls never wait for permission                |
+| `elicitation/create`          | sent only to [relay a free-text question](#questions)                                           |
+| `session/resume`, `session/close`, `session/delete`, `authenticate` | not offered                                               |
+| `terminal/*`, `fs/*`          | never requested                                                                                   |
+
+Prompts may contain text and resource links; a resource link is passed to the model as its name and URI.
+
+## What the client sees
+
+| In the session                                  | ACP update                                                                                  |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| the reply streaming                             | `agent_message_chunk`                                                                        |
+| a tool call, once its arguments are complete    | `tool_call`, in progress                                                                     |
+| that tool call finishing                        | `tool_call_update`: `completed`, or `failed` for an error (a blocked call included), with the result text |
+| a notice or warning                             | `agent_message_chunk`, as a paragraph of its own                                             |
+| a [background job](TOOLS.md#background-jobs) exiting between prompts | `agent_message_chunk`: `Background job <id> exited with status <status>: <command>`; the model hears at the next prompt |
+| the available commands                          | `available_commands_update`, after `session/new`, after a `session/load` replay, and when a reload changes them |
+
+| How the turn ended                                     | `stopReason`         |
+| ------------------------------------------------------ | -------------------- |
+| completed, or a command that started no turn          | `end_turn`           |
+| hit the step limit                                     | `max_turn_requests`  |
+| output length limit, context window, or blocked output | `max_tokens`         |
+| cancelled                                              | `cancelled`          |
+
+A turn that fails — a provider or network error — answers with an internal error carrying the same message the terminal would print, and the session stays usable.
+
+## Commands
+
+A prompt starting with `/name` runs that command instead of prompting the model, with the rest of the text as its arguments: `/reload`, `/trace`, `/auth`, `/model`, `/reasoning`, `/cost`, every `/skill:<name>`, and commands from extensions. Output arrives as `agent_message_chunk` updates; an unknown name answers `Unknown command: <name>`.
+
+## Questions
+
+When riffer-rig needs an answer — trusting a project `rig.rb`, a missing credential during `/auth`, an extension's own question — it asks the client:
+
+| riffer-rig asks                 | The client gets                                                     | The answer                         |
+| ------------------------------- | ------------------------------------------------------------------- | ---------------------------------- |
+| yes or no                       | `session/request_permission` with `Yes` and `No`                    | yes only if `Yes` was selected     |
+| a choice                        | `session/request_permission` with one option per choice             | the selected option                |
+| free text                       | `elicitation/create`, one required string field named `answer`     | the submitted text; declined if the client doesn't support form elicitation |
+| a secret                        | nothing — ACP forbids asking for secrets in a form                  | declined                           |
+
+Each question appears in the session as a pending tool call titled with the question, closed when it is answered. Anything other than a selected option or a submitted form — cancelling, an error, a disconnect — declines the question.
+
+Questions can't be asked while a session is starting. A project `rig.rb` that isn't trusted yet is therefore skipped at `session/new`, and the client is asked about it the next time the file changes. To avoid that, trust it once in the terminal.
+
+## Limits
+
+MCP servers the client sends with `session/new` or `session/load` aren't used: stdio servers can't be registered, because riffer-rig's [MCP client](MCP.md#limits) speaks only HTTPS, and servers in ACP's `http` or `sse` shape are skipped. Each is reported.
 
 ## Serving connections from your own process
 
-`riffer acp` serves one connection on stdio, closes its sessions' Runtimes — killing their background jobs — and exits. A Ruby process that owns its transports builds the agent itself, one per connection, over that connection's IO pair:
+`riffer acp` serves one connection on stdio, then exits. A Ruby process that manages its own connections builds the agent itself, once per connection:
 
 ```ruby
 live = {}
@@ -49,31 +90,12 @@ Riffer::Rig::ACP.for(input: input, output: output, env: env, home: Dir.home, cwd
 end
 ```
 
-- `input:` and `output:` are the connection's IO pair. `env:` — a `Riffer::Rig::Env`, or what `Riffer::Rig::Env.load` returned — and `home:` are what every session's Loader is built with, and `cwd:` is the working directory the agent falls back to when a `session/list` names none. All five are required.
-- `build:` replaces how `session/new` builds its Runtime. It receives the request's `cwd`, the session's host and the client's MCP declarations, and returns the Runtime; `Riffer::Rig::ACP.build_runtime` is the default.
-- `adopt:` lets a Runtime outlive the connection that built it. `session/load` calls it with the session id before reading the store: a Runtime it returns serves the session as it is — nothing is rebuilt and the request's MCP servers are not declared, so a client that reconnects reaches the Runtime still running its turn, and its `session/cancel` cancels that turn — and `nil` restores the session from the store as usual. The stored messages replay either way. An adopted Runtime's notify lines, job exit updates and [relayed questions](#relaying-questions-to-the-client) move to the adopting connection; a turn an earlier connection started keeps streaming to that one. The hook runs on a request thread, so guard what it reads.
-- `run` blocks until the client disconnects, then yields the `ACP::AgentConnection` to its block, if one is given, and returns `0`. Requests still running when the client disconnects are not waited for. Once the block returns, `run` cancels any turn still running on the Runtimes the agent built itself — through the default `build:`, or restored from the store by `session/load` — and closes them, which kills their background jobs. A Runtime your `build:` returned or `adopt:` handed over stays open: closing it is yours to do.
+| Keyword            | Meaning                                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------- |
+| `input:`, `output:` | the connection's IO pair                                                                                 |
+| `env:`, `home:`    | what each session's [Loader](EMBEDDING.md#building-a-runtime-with-the-loader) is built with: a `Riffer::Rig::Env` (or `Env.load`'s result) and the home directory |
+| `cwd:`             | the directory `session/list` uses when the client sends none                                              |
+| `build:`           | how `session/new` builds a Runtime from the client's `cwd`, host and MCP servers; default `ACP.build_runtime` |
+| `adopt:`           | called by `session/load` with the session id; return a still-running Runtime to hand it to this connection — a client that reconnects mid-turn reaches the same turn — or `nil` to restore from the store. It runs on a request thread |
 
-## What it skips
-
-- The other session-lifecycle methods: `session/resume`, `session/close`, `session/delete` and `authenticate` are not offered. [Sessions](SESSIONS.md) are still recorded to the store for the terminal to resume.
-- MCP servers in `http` or `sse` shape are skipped with a warning; only the stdio shape is read.
-- Terminal delegation (`terminal/*`) and file delegation (`fs/*`) to the client are never requested. Elicitation is requested only for a [question the host relays](#relaying-questions-to-the-client).
-- Prompt blocks of other kinds than text and resource links are not advertised in `promptCapabilities`, so a compliant client does not send them.
-
-A project `rig.rb` loads only once it is trusted: neither `session/new` nor `session/load` can [ask about it](#relaying-questions-to-the-client) while it builds the Runtime, so an untrusted file is skipped and nothing is stored. The session asks the client at its next [automatic reload](RELOADING.md#triggers), which a change to the file sets off.
-
-## Relaying questions to the client
-
-The host's `ask` and `confirm` reach the client, and each question blocks the turn until the client answers:
-
-- `confirm` sends `session/request_permission` with two options, `Yes` (`allow_once`) and `No` (`reject_once`). Only `Yes` confirms.
-- `ask` with `options:` sends `session/request_permission` with one `allow_once` option per choice and answers with the one the client selects.
-- `ask` without options sends `elicitation/create` in form mode, scoped to the session, for one required string field named `answer`, and answers with what the client submits. A client that does not advertise `elicitation.form` is not sent the request, and the ask is declined.
-- `ask` with `secret: true` is always declined: ACP forbids asking for a secret in a form.
-
-A permission request has to name a tool call and a question has none, so each one carries a tool call of its own — a fresh `toolCallId`, `pending`, with the question as its `title`. Before the request is sent, a `tool_call` update announces that tool call on the session. When the request ends, a `tool_call_update` closes that `toolCallId`: `completed` when the client selected an option, `No` included, and `failed` otherwise.
-
-Anything but a selected option or an accepted form — the client cancels, declines, answers with an error, or the connection closes — declines the question: `confirm` is `false` and `ask` is `nil`. A trust question the client declines is stored as a no, like any other ([Extensions](EXTENSIONS.md#the-rigrb-files)).
-
-A question is relayed only once the session is built. While `session/new` or `session/load` is building the Runtime the host reports only `:notify`, so the questions of the build — trusting a project `rig.rb` included — are declined without being sent, and no answer is stored. The client learns the id of a new session only from the `session/new` reply, and a question sent during a `session/load` would hold up the load it belongs to.
+`run` blocks until the client disconnects, yields the connection, and returns `0`. It then cancels and closes the Runtimes it built or restored itself; a Runtime your `build:` returned or `adopt:` handed over is yours to close.

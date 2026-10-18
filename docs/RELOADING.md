@@ -1,35 +1,31 @@
 # Reloading
 
-A reload rebuilds the registrar from the extension files re-executed as they are on disk: `/reload`, the runtime command the Loader installs, scrubs the tracked files from Ruby's `$LOADED_FEATURES`, loads both `rig.rb` files again ([Extensions](EXTENSIONS.md#the-rigrb-files)), re-reads the settings, credentials and trust, and swaps a freshly built registrar in atomically. History, the tally, the `/model` and `/reasoning` overrides and the session id survive the swap; the tools, commands, prompt sections and handlers are whatever the files say now.
+You can edit your extensions and settings without restarting the session. A reload re-runs both `rig.rb` files and re-reads the settings, credentials and trust, then swaps the result in. The conversation, its token tally, any `/model` or `/reasoning` switch and the session id are kept.
 
 ## What reloads
 
-Both `rig.rb` files, every local file they `require` or `require_relative` (anything under `~/.riffer` or the project), `settings.json` in both scopes, `auth.json`, and trust status — a project `rig.rb` that first appears mid-session goes through the same trust confirm as at startup. Settings are re-read whole, so `extensions.disabled` re-applies too; the settings' `model` key is not read, and the model in effect is kept.
+| Reloads                                                                              | Needs a restart                                    |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------- |
+| both `rig.rb` files, and every file under `~/.riffer` or the project they `require` | extensions installed as gems (`riffer-rig-*`)      |
+| `settings.json` in both scopes, including `extensions.disabled`                     | riffer-rig and riffer themselves                   |
+| `auth.json` and `trust.json`                                                         | a method you deleted or a constant you renamed     |
+| the skills directories                                                               |                                                    |
 
-## What does not
+The settings' `model` key is not re-read: the model in effect is kept. AGENTS.md never needs a reload; it is read every turn. A project `rig.rb` that appears mid-session asks to be trusted, as at startup.
 
-Extension gems (`riffer-rig-*`), riffer-rig's own code and riffer stay as loaded. Skills and AGENTS.md need no reload: their sections are evaluated per turn ([Skills](SKILLS.md), [Instructions](INSTRUCTIONS.md)).
+Plain `require` and `require_relative` reload with nothing extra for you to do. Classes are reopened rather than replaced, so edited and added methods take effect, but deleted methods and renamed constants linger until you restart.
 
-## The mechanism
+## When it reloads
 
-On first load the Loader diffs `$LOADED_FEATURES` around loading each `rig.rb`; the new entries under `~/.riffer` or the project are the tracked files, gem paths dropped, and the `rig.rb` files themselves are tracked too. A reload deletes those entries from `$LOADED_FEATURES` and loads each `rig.rb` again, so plain `require` and `require_relative` re-execute with no author-side convention, and a `require` added since the last load is picked up from that reload on.
+| `reload` setting   | Reloads                                                                                  |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| `"auto"` (default) | when a `rig.rb` file, or a file one requires, has changed — checked before each model request; and on `/reload` |
+| `"manual"`         | only on `/reload`                                                                        |
 
-Classes are reopened in place, not removed: edited and added methods take effect. `Riffer::Rig.extension("name")` records into the process registry keyed by name, so re-execution replaces the block rather than duplicating it.
+`/reload` always reloads. A change to `settings.json`, `auth.json` or the skills directories on its own does not trigger an automatic reload: run `/reload` to pick it up. An automatic reload that fires mid-turn applies from the next turn.
 
-## Triggers
+## When it fails
 
-The automatic check runs at every `before_request` boundary — at the start of a turn and again between tool results and the next LLM call — with no watcher thread: the Loader stats the tracked file set, and any mtime change, or a tracked `rig.rb` appearing or disappearing, reloads. A turn that starts with a change waiting is served entirely by the reloaded registrar; a reload that fires mid-turn swaps the registrar at once, and the turn's remaining requests keep the agent the turn started with, so an edit lands on the model's next request from the following turn.
+Nothing changes until the reload has fully succeeded. If a `rig.rb` raises, or a settings, `auth.json` or `trust.json` file no longer parses, the reload is abandoned, the session keeps working as before, and you see one message; it is not retried until the files change again. A single extension that fails is [skipped and reported](EXTENSIONS.md#error-isolation) while the rest reload. Errors are shown to you, never to the model.
 
-`/reload` always reloads and re-discovers the file set. Embedders call `Loader#reload(runtime, force: false)` themselves ([Embedding](EMBEDDING.md#building-a-runtime-with-the-loader)): without `force` it is the same check the automatic trigger runs, a no-op while nothing changed; `force: true` is what `/reload` passes.
-
-The check is dropped when the reload mode is `manual` — the core setting `"reload": "manual"`, in either scope with the project winning ([Configuration](CONFIGURATION.md#reload)), or the Loader keyword `reload: :manual`. A session built automatic honours a later flip to `manual` at its next boundary; a session built manual has no check to flip back, so it picks up `auto` on the next build. Manual keeps `/reload` and `Runtime#rebuild`.
-
-## Failure
-
-The new registrar is built aside; nothing on the Runtime changes until it is complete. If a `rig.rb` itself raises, or `settings.json`, `auth.json` or `trust.json` no longer parses or `settings.json` sets a `model` that is not a string, the reload is abandoned: the live registrar stays, the host gets one `notify`, and the mtime snapshot advances so a failing reload is not retried on every request. A single extension block failing follows the standard rule: skipped and reported, the rest swap in ([Extensions](EXTENSIONS.md#error-isolation)). Errors go to the host only, never into the model's context.
-
-## Known limits
-
-- Reopened classes keep deleted methods and renamed constants until restart.
-- Gem-packaged extensions do not reload.
-- Two Runtimes in one process share the process-level extension registry and providers; a reload in one does not rebuild the other.
+[Embedding](EMBEDDING.md#rebuilding-after-a-code-reload) covers reloading from your own app.
