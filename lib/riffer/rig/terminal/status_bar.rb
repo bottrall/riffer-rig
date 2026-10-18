@@ -15,9 +15,9 @@ module Riffer::Rig::Terminal::StatusBar
 
   TOKEN_WIDTH = 6 #: Integer
 
-  UNIT = 'tok' #: String
-
-  UNIT_WIDTH = UNIT.length #: Integer
+  # The unit rides in the down slot's box, so the constant `tok` never shifts
+  # what follows it.
+  DOWN_WIDTH = 10 #: Integer
 
   COST_WIDTH = 8 #: Integer
 
@@ -25,7 +25,7 @@ module Riffer::Rig::Terminal::StatusBar
 
   SEPARATOR = ' ' #: String
 
-  SLOTS = %i[glyph state clock up down unit cost jobs].freeze #: Array[Symbol]
+  SLOTS = %i[glyph state clock up down cost jobs].freeze #: Array[Symbol]
 
   # A narrow terminal sheds whole slots from the left in this order — the
   # clock first, then the cost, then the tokens, then the state — so the jobs
@@ -34,7 +34,7 @@ module Riffer::Rig::Terminal::StatusBar
     SLOTS,
     SLOTS - %i[clock],
     SLOTS - %i[clock cost],
-    SLOTS - %i[clock cost up down unit],
+    SLOTS - %i[clock cost up down],
     %i[glyph jobs]
   ].freeze #: Array[Array[Symbol]]
 
@@ -82,8 +82,7 @@ module Riffer::Rig::Terminal::StatusBar
       state: field(state, STATE_WIDTH),
       clock: field(clock, CLOCK_WIDTH),
       up: field("↑#{Riffer::Rig::Terminal::Count.call(up_tokens)}", TOKEN_WIDTH),
-      down: field("↓#{Riffer::Rig::Terminal::Count.call(down_tokens)}", TOKEN_WIDTH),
-      unit: field(UNIT, UNIT_WIDTH),
+      down: field("↓#{Riffer::Rig::Terminal::Count.call(down_tokens)} tok", DOWN_WIDTH),
       cost: field(format('~$%.4f', cost), COST_WIDTH),
       jobs: field("#{jobs} #{jobs == 1 ? 'job' : 'jobs'}", JOBS_WIDTH)
     }
@@ -120,7 +119,7 @@ module Riffer::Rig::Terminal::StatusBar
     case key
     when :glyph, :cost then theme.green(text)
     when :jobs then theme.amber(text)
-    when :up, :down, :unit then theme.dim(text)
+    when :up, :down then theme.dim(text)
     else text
     end
   end

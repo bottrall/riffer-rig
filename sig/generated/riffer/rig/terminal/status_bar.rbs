@@ -13,9 +13,9 @@ module Riffer::Rig::Terminal::StatusBar
 
   TOKEN_WIDTH: Integer
 
-  UNIT: String
-
-  UNIT_WIDTH: Integer
+  # The unit rides in the down slot's box, so the constant `tok` never shifts
+  # what follows it.
+  DOWN_WIDTH: Integer
 
   COST_WIDTH: Integer
 

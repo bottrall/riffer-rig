@@ -562,7 +562,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.jobs(2)
 
-      assert_operator io.string, :end_with?, "\r\n  · idle    14:32 ↑132k  ↓218k  tok ~$1.4000 2 jobs\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n  · idle    14:32 ↑132k  ↓218k tok  ~$1.4000 2 jobs\e[1A\e[3G"
     end
 
     it 'leaves the cursor on the input line' do
@@ -600,7 +600,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       assert_operator io.string,
                       :end_with?,
-                      "\r\n  · idle    14:32 ↑132k  ↓218k  tok ~$1.4000 0 jobs\e[1A\e[3G"
+                      "\r\n  · idle    14:32 ↑132k  ↓218k tok  ~$1.4000 0 jobs\e[1A\e[3G"
     end
 
     it 'draws zeros before the session has used tokens' do
@@ -608,7 +608,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       session(io, tally: nil)
 
-      assert_operator io.string, :end_with?, "\r\n  · idle    14:32 ↑0     ↓0     tok ~$0.0000 0 jobs\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n  · idle    14:32 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[1A\e[3G"
     end
 
     it 'reads the clock when it draws, not when the session was set' do
@@ -619,7 +619,7 @@ describe Riffer::Rig::Terminal::Frame do
       time = Time.new(2026, 1, 1, 14, 33)
       frame.status('')
 
-      assert_operator io.string, :end_with?, "\r\n  · idle    14:33 ↑0     ↓0     tok ~$0.0000 0 jobs\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n  · idle    14:33 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[1A\e[3G"
     end
 
     it 'gives way to the hint' do
@@ -647,7 +647,7 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.status('')
 
-      assert_operator io.string, :end_with?, "\r\n  · idle    14:32 ↑0     ↓0     tok ~$0.0000 0 jobs\e[1A\e[3G"
+      assert_operator io.string, :end_with?, "\r\n  · idle    14:32 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[1A\e[3G"
     end
 
     it 'sheds whole slots from the left on a narrow terminal' do

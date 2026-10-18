@@ -59,7 +59,7 @@ The row under the input line is a row of fixed slots — the same columns at the
 - the state, as `idle` between turns and `turn N` — N the model's requests so far — while a turn runs;
 - the clock: the time of day, as `14:32`, between turns, and the time since the turn started, as `mm:ss`, while one runs;
 - the tokens, as `↑in ↓out tok` (`k` and `M` for thousands and millions): the session's total between turns, the request's running count while a turn runs;
-- the cost, as `~$1.4000`: the session's total between turns, the turn's running cost while it runs, when the model is [priced](CONFIGURATION.md#catalog_files);
+- the cost, as `~$1.4000`: the session's total between turns, the turn's running cost while it runs; `~$0.0000` until the model is [priced](CONFIGURATION.md#catalog_files);
 - the background jobs, as `2 jobs`, always shown, even as `0 jobs`.
 
 Every figure sits inside its slot's fixed width, so `18.2k` and `132k` occupy the same box. While a turn runs the row is redrawn about eight times a second, the spinner and the cost in green and the jobs count in amber; the output tokens and the cost count text still streaming, at an estimated four characters per token, until the provider reports the request's usage, which the input tokens show in place of an opening `↑0`. Between turns the whole row is dim, and the clock keeps current while the terminal waits.
