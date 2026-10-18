@@ -232,7 +232,7 @@ describe Riffer::Rig::Headless do
   it 'reads a stdin closed with no data without a warning' do
     run_headless(prompt: 'hello', input: '') { |runtime| runtime.agent.provider.stub_response('Hi') }
 
-    assert_empty @error.string
+    refute_includes @error.string, 'no stdin data'
   end
 
   it 'warns when stdin sends nothing within the timeout' do
@@ -240,8 +240,10 @@ describe Riffer::Rig::Headless do
       runtime.agent.provider.stub_response('Hi')
     end
 
-    assert_equal "no stdin data received in 0s, proceeding without it; redirect stdin from /dev/null to skip this\n",
-                 @error.string
+    assert_match(
+      %r{no stdin data received in 0s, proceeding without it; redirect stdin from /dev/null to skip this},
+      @error.string
+    )
   end
 
   it 'proceeds with the prompt argument alone when stdin sends nothing within the timeout' do
@@ -518,6 +520,12 @@ describe Riffer::Rig::Headless do
     assert_same handler, restored
   end
 
+  it 'prints the session id on stderr when the session starts' do
+    run_headless(prompt: 'hello') { |runtime| runtime.agent.provider.stub_response('Hi') }
+
+    assert_equal "session #{@runtime.id}\n", @error.string
+  end
+
   it 'prints only the streamed reply on stdout' do
     run_headless(prompt: 'hello') { |runtime| runtime.agent.provider.stub_response('Hi from the model') }
 
@@ -585,7 +593,7 @@ describe Riffer::Rig::Headless do
       runtime.agent.provider.stub_response('Done.')
     end
 
-    assert_equal ["Done. \n", ''], [@output.string, @error.string]
+    assert_equal ["Done. \n", "session #{@runtime.id}\n"], [@output.string, @error.string]
   end
 
   it 'returns zero for a completed turn' do
@@ -675,6 +683,20 @@ describe Riffer::Rig::Headless do
       end
 
       assert_empty @error.string
+    end
+
+    it 'keeps the session id off stderr in --json mode' do
+      run_headless(prompt: 'hello', json: true) { |runtime| runtime.agent.provider.stub_response('Hi') }
+
+      assert_empty @error.string
+    end
+
+    it 'carries the session id on the session_start record' do
+      run_headless(prompt: 'hello', json: true) { |runtime| runtime.agent.provider.stub_response('Hi') }
+
+      session_start = records.find { |record| record.fetch('type') == 'session_start' }
+
+      assert_equal @runtime.id, session_start.fetch('id')
     end
 
     it 'prints a single error record without a prompt' do
