@@ -42,8 +42,8 @@ class LoggingFrame
     @log << [:status, status]
   end
 
-  def session(tally:)
-    @log << [:session, tally.call]
+  def session(tally:, reasoning:)
+    @log << [:session, tally.call, reasoning.call]
   end
 
   def queued(count)
@@ -82,9 +82,10 @@ class QueuePrompter
 end
 
 class WatchedRuntime
-  attr_reader :commands
+  attr_reader :commands, :reasoning
 
-  def initialize(*names)
+  def initialize(*names, reasoning: nil)
+    @reasoning = reasoning
     @subscribers = []
     reload(*names)
   end
@@ -226,7 +227,13 @@ describe Riffer::Rig::Terminal::Repl do
     it 'gives the status bar the session of the Runtime' do
       repl.watch(WatchedRuntime.new)
 
-      assert_equal [:session, nil], logged.last
+      assert_equal [:session, nil, nil], logged.last
+    end
+
+    it 'gives the status bar the reasoning of the Runtime' do
+      repl.watch(WatchedRuntime.new(reasoning: 'high'))
+
+      assert_equal [:session, nil, 'high'], logged.last
     end
 
     it 'runs a job exit from the Runtime as a turn' do

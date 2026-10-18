@@ -59,8 +59,9 @@ class Riffer::Rig::Terminal::Ticker
   def tick
     room = @footer.status_room
     jobs = @footer.job_count
+    reasoning = @footer.reasoning
     status = @mutex.synchronize do
-      line(room, jobs).tap { @tick += 1 }
+      line(room, jobs, reasoning).tap { @tick += 1 }
     end
     @footer.status(status)
   end
@@ -76,14 +77,16 @@ class Riffer::Rig::Terminal::Ticker
 
   # @rbs room: Integer
   # @rbs jobs: Integer
+  # @rbs reasoning: String?
   # @rbs return: String
-  def line(room, jobs)
+  def line(room, jobs, reasoning)
     stats = @buffer.stats
     usage = stats.usage
     estimate = @unmetered / CHARS_PER_TOKEN
     Riffer::Rig::Terminal::StatusBar.working(
       glyph: Riffer::Rig::Terminal::Spinner.call(@tick),
       state: stats.steps.zero? ? '' : "step #{stats.steps}",
+      reasoning: reasoning,
       clock: clock(stats.wall_time),
       up_tokens: usage&.input_tokens || 0,
       down_tokens: (usage&.output_tokens || 0) + estimate,

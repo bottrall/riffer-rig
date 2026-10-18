@@ -558,11 +558,13 @@ describe Riffer::Rig::Terminal::Frame do
     it 'draws the count in the idle bar' do
       io = tty(80)
       frame = started(io, now: -> { Time.new(2026, 1, 1, 14, 32) })
-      frame.session(tally: -> { usage })
+      frame.session(tally: -> { usage }, reasoning: -> {})
 
       frame.jobs(2)
 
-      assert_operator io.string, :end_with?, "\r\n\r\n  · idle    14:32 ↑132k  ↓218k tok  ~$1.4000 2 jobs\e[2A\e[3G"
+      assert_operator io.string,
+                      :end_with?,
+                      "\r\n\r\n  · idle    default 14:32 ↑132k  ↓218k tok  ~$1.4000 2 jobs\e[2A\e[3G"
     end
 
     it 'leaves the cursor on the input line' do
@@ -579,16 +581,16 @@ describe Riffer::Rig::Terminal::Frame do
       Riffer::Providers::TokenUsage.new(input_tokens: input, output_tokens: output, cost: cost)
     end
 
-    def session(io, tally: usage, now: -> { Time.new(2026, 1, 1, 14, 32) })
+    def session(io, tally: usage, now: -> { Time.new(2026, 1, 1, 14, 32) }, reasoning: nil)
       frame = started(io, now: now)
-      frame.session(tally: -> { tally })
+      frame.session(tally: -> { tally }, reasoning: -> { reasoning })
       frame
     end
 
     it 'draws nothing when there is no footer' do
       io = StringIO.new
 
-      started(io).session(tally: -> {})
+      started(io).session(tally: -> {}, reasoning: -> {})
 
       assert_equal '', io.string
     end
@@ -600,7 +602,17 @@ describe Riffer::Rig::Terminal::Frame do
 
       assert_operator io.string,
                       :end_with?,
-                      "\r\n\r\n  · idle    14:32 ↑132k  ↓218k tok  ~$1.4000 0 jobs\e[2A\e[3G"
+                      "\r\n\r\n  · idle    default 14:32 ↑132k  ↓218k tok  ~$1.4000 0 jobs\e[2A\e[3G"
+    end
+
+    it 'shows the reasoning the session set' do
+      io = tty(80)
+
+      session(io, reasoning: 'high')
+
+      assert_operator io.string,
+                      :end_with?,
+                      "\r\n\r\n  · idle    high    14:32 ↑132k  ↓218k tok  ~$1.4000 0 jobs\e[2A\e[3G"
     end
 
     it 'draws zeros before the session has used tokens' do
@@ -608,7 +620,9 @@ describe Riffer::Rig::Terminal::Frame do
 
       session(io, tally: nil)
 
-      assert_operator io.string, :end_with?, "\r\n\r\n  · idle    14:32 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[2A\e[3G"
+      assert_operator io.string,
+                      :end_with?,
+                      "\r\n\r\n  · idle    default 14:32 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[2A\e[3G"
     end
 
     it 'reads the clock when it draws, not when the session was set' do
@@ -619,7 +633,9 @@ describe Riffer::Rig::Terminal::Frame do
       time = Time.new(2026, 1, 1, 14, 33)
       frame.status('')
 
-      assert_operator io.string, :end_with?, "\r\n\r\n  · idle    14:33 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[2A\e[3G"
+      assert_operator io.string,
+                      :end_with?,
+                      "\r\n\r\n  · idle    default 14:33 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[2A\e[3G"
     end
 
     it 'gives way to the hint' do
@@ -647,7 +663,9 @@ describe Riffer::Rig::Terminal::Frame do
 
       frame.status('')
 
-      assert_operator io.string, :end_with?, "\r\n\r\n  · idle    14:32 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[2A\e[3G"
+      assert_operator io.string,
+                      :end_with?,
+                      "\r\n\r\n  · idle    default 14:32 ↑0     ↓0 tok     ~$0.0000 0 jobs\e[2A\e[3G"
     end
 
     it 'sheds whole slots from the left on a narrow terminal' do
@@ -657,6 +675,12 @@ describe Riffer::Rig::Terminal::Frame do
 
       assert_operator io.string, :end_with?, "\r\n\r\n  · idle    2 jobs\e[2A\e[3G"
     end
+
+    it 'reads back the reasoning the session set' do
+      frame = session(tty(80), reasoning: 'high')
+
+      assert_equal 'high', frame.reasoning
+    end
   end
 
   describe '#idle_tick' do
@@ -665,7 +689,7 @@ describe Riffer::Rig::Terminal::Frame do
     def session(io, loading: false)
       frame = frame(io, loading: loading)
       frame.loading('warming the amp…') if loading
-      frame.session(tally: -> { usage })
+      frame.session(tally: -> { usage }, reasoning: -> {})
       frame.start
       frame
     end

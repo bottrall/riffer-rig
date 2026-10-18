@@ -71,7 +71,7 @@ class Riffer::Rig::Terminal::Repl
   # @rbs return: void
   def watch(runtime)
     @mutex.synchronize { @runtime = runtime }
-    @frame.session(tally: -> { runtime.tally })
+    @frame.session(tally: -> { runtime.tally }, reasoning: -> { runtime.reasoning })
     runtime.on_job_exit { wake }
   end
 

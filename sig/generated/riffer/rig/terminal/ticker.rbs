@@ -47,8 +47,9 @@ class Riffer::Rig::Terminal::Ticker
 
   # @rbs room: Integer
   # @rbs jobs: Integer
+  # @rbs reasoning: String?
   # @rbs return: String
-  def line: (Integer room, Integer jobs) -> String
+  def line: (Integer room, Integer jobs, String? reasoning) -> String
 
   # @rbs wall_time: Float
   # @rbs return: String

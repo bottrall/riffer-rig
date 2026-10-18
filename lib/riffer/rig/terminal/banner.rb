@@ -21,7 +21,7 @@ module Riffer::Rig::Terminal::Banner
     Riffer::Rig::Terminal::Palette::CYAN
   ].freeze #: Array[Array[Integer]]
 
-  INFO_LABEL_WIDTH = 8 #: Integer
+  INFO_LABEL_WIDTH = 10 #: Integer
 
   INDENT = '  ' #: String
 
@@ -33,26 +33,46 @@ module Riffer::Rig::Terminal::Banner
 
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs model: String
+  # @rbs reasoning: String?
   # @rbs cwd: String
   # @rbs skills: String
   # @rbs version: String
   # @rbs tally: Riffer::Providers::TokenUsage?
   # @rbs width: Integer?
   # @rbs return: String
-  def call(theme, model:, cwd:, skills:, version:, tally: nil, width: nil)
-    lines(theme, model: model, cwd: cwd, skills: skills, version: version, tally: tally, width: width).join("\n")
+  def call(theme, model:, reasoning:, cwd:, skills:, version:, tally: nil, width: nil)
+    lines(
+      theme,
+      model: model,
+      reasoning: reasoning,
+      cwd: cwd,
+      skills: skills,
+      version: version,
+      tally: tally,
+      width: width
+    ).join("\n")
   end
 
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs model: String
+  # @rbs reasoning: String?
   # @rbs cwd: String
   # @rbs skills: String
   # @rbs version: String
   # @rbs tally: Riffer::Providers::TokenUsage?
   # @rbs width: Integer?
   # @rbs return: Array[String]
-  def lines(theme, model:, cwd:, skills:, version:, tally:, width:)
-    rows = info(theme, model: model, cwd: cwd, skills: skills, version: version, tally: tally, width: width)
+  def lines(theme, model:, reasoning:, cwd:, skills:, version:, tally:, width:)
+    rows = info(
+      theme,
+      model: model,
+      reasoning: reasoning,
+      cwd: cwd,
+      skills: skills,
+      version: version,
+      tally: tally,
+      width: width
+    )
     [''] + art(theme, width) + [''] + rows + ['']
   end
 
@@ -68,17 +88,19 @@ module Riffer::Rig::Terminal::Banner
 
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs model: String
+  # @rbs reasoning: String?
   # @rbs cwd: String
   # @rbs skills: String
   # @rbs version: String
   # @rbs tally: Riffer::Providers::TokenUsage?
   # @rbs width: Integer?
   # @rbs return: Array[String]
-  def info(theme, model:, cwd:, skills:, version:, tally:, width:)
+  def info(theme, model:, reasoning:, cwd:, skills:, version:, tally:, width:)
     room = width && (width - VALUE_COLUMN)
     session = tally && Riffer::Rig::Terminal::Tally.call(tally)
     values = {
       model: clip(model, room),
+      reasoning: reasoning || Riffer::Rig::Terminal::Reasoning::DEFAULT,
       cwd: clip(cwd, room),
       skills: skills,
       version: version,

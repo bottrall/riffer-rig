@@ -118,7 +118,7 @@ describe Riffer::Rig::Terminal::JobCounter do
         now: -> { Time.new(2026, 1, 1, 14, 32) }
       )
       @frame.start
-      @frame.session(tally: -> {})
+      @frame.session(tally: -> {}, reasoning: -> {})
       @runtime = JobsRuntime.new(3)
       Riffer::Rig::Terminal::JobCounter.new(footer: @frame).watch(@runtime)
     end

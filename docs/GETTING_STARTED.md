@@ -41,7 +41,7 @@ A pasted key is saved to `~/.riffer/auth.json` (permissions `600`) and reused fr
 
 ## The session
 
-The banner shows the model, the working directory, how many skills were found and the version. On a terminal too narrow for the logo it leaves the logo out, and a model or working directory too long for its row is cut from the left behind `…`. It is drawn again when the session changes — `/new`, `/resume` — and for a session that has already used tokens it adds a `session` row with the total so far, and its cost once the model is priced. Type a prompt and press Enter:
+The banner shows the model, the reasoning level in effect, the working directory, how many skills were found and the version. On a terminal too narrow for the logo it leaves the logo out, and a model or working directory too long for its row is cut from the left behind `…`. It is drawn again when the session changes — `/new`, `/resume` — and for a session that has already used tokens it adds a `session` row with the total so far, and its cost once the model is priced. Type a prompt and press Enter:
 
 - while the turn runs, the status line under the input shows its turn number, time, tokens and cost, and Ctrl-T peeks at what the model is writing; between turns it shows the same slots as `idle` — the time, the tokens and cost used so far, the background jobs — at the same positions, so starting or ending a turn moves nothing;
 - when it ends, the reply is printed in one piece, and under it a stat line: the turn's steps, time and tokens, then the session's running total, each with its cost once the model is priced ([Configuration](CONFIGURATION.md#catalog_files));

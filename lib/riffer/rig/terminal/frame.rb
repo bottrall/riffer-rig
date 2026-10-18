@@ -53,6 +53,7 @@ class Riffer::Rig::Terminal::Frame
   # @rbs @loading: bool
   # @rbs @loading_line: String
   # @rbs @tally: (^() -> Riffer::Providers::TokenUsage?)?
+  # @rbs @reasoning: (^() -> String?)?
   # @rbs @now: ^() -> Time
   # @rbs @mutex: Mutex
   # @rbs @previous_resize: Signal::trap_command
@@ -94,6 +95,7 @@ class Riffer::Rig::Terminal::Frame
     @loading = loading
     @loading_line = LOADING
     @tally = nil
+    @reasoning = nil
     @now = now
     @mutex = Mutex.new
     @previous_resize = nil
@@ -200,10 +202,12 @@ class Riffer::Rig::Terminal::Frame
   end
 
   # @rbs tally: ^() -> Riffer::Providers::TokenUsage?
+  # @rbs reasoning: ^() -> String?
   # @rbs return: void
-  def session(tally:)
+  def session(tally:, reasoning:)
     @mutex.synchronize do
       @tally = tally
+      @reasoning = reasoning
       redraw
     end
   end
@@ -223,6 +227,11 @@ class Riffer::Rig::Terminal::Frame
   # @rbs return: Integer
   def job_count
     @mutex.synchronize { @jobs }
+  end
+
+  # @rbs return: String?
+  def reasoning
+    @mutex.synchronize { @reasoning&.call }
   end
 
   # @rbs content: String
@@ -445,6 +454,7 @@ class Riffer::Rig::Terminal::Frame
 
     usage = tally.call
     Riffer::Rig::Terminal::StatusBar.idle(
+      reasoning: @reasoning&.call,
       clock: @now.call.strftime('%H:%M'),
       up_tokens: usage&.input_tokens || 0,
       down_tokens: usage&.output_tokens || 0,

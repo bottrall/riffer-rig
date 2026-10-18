@@ -9,6 +9,8 @@ module Riffer::Rig::Terminal::StatusBar
 
   STATE_WIDTH: Integer
 
+  REASONING_WIDTH: Integer
+
   CLOCK_WIDTH: Integer
 
   TOKEN_WIDTH: Integer
@@ -26,10 +28,12 @@ module Riffer::Rig::Terminal::StatusBar
   SLOTS: Array[Symbol]
 
   # A narrow terminal sheds whole slots from the left in this order — the
-  # clock first, then the cost, then the tokens, then the state — so the jobs
-  # count at the right edge survives longest.
+  # reasoning level first, since it is static and recoverable via /reasoning,
+  # then the clock, then the cost, then the tokens, then the state — so the
+  # dynamic slots and the jobs count at the right edge survive longest.
   KEEP_SETS: Array[Array[Symbol]]
 
+  # @rbs reasoning: String?
   # @rbs clock: String
   # @rbs up_tokens: Integer
   # @rbs down_tokens: Integer
@@ -38,10 +42,11 @@ module Riffer::Rig::Terminal::StatusBar
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs room: Integer
   # @rbs return: String
-  def idle: (clock: String, up_tokens: Integer, down_tokens: Integer, cost: Float, jobs: Integer, theme: Riffer::Rig::Terminal::Theme, room: Integer) -> String
+  def idle: (reasoning: String?, clock: String, up_tokens: Integer, down_tokens: Integer, cost: Float, jobs: Integer, theme: Riffer::Rig::Terminal::Theme, room: Integer) -> String
 
   # @rbs glyph: String
   # @rbs state: String
+  # @rbs reasoning: String?
   # @rbs clock: String
   # @rbs up_tokens: Integer
   # @rbs down_tokens: Integer
@@ -50,19 +55,20 @@ module Riffer::Rig::Terminal::StatusBar
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs room: Integer
   # @rbs return: String
-  def working: (glyph: String, state: String, clock: String, up_tokens: Integer, down_tokens: Integer, cost: Float, jobs: Integer, theme: Riffer::Rig::Terminal::Theme, room: Integer) -> String
+  def working: (glyph: String, state: String, reasoning: String?, clock: String, up_tokens: Integer, down_tokens: Integer, cost: Float, jobs: Integer, theme: Riffer::Rig::Terminal::Theme, room: Integer) -> String
 
   private
 
   # @rbs glyph: String
   # @rbs state: String
+  # @rbs reasoning: String?
   # @rbs clock: String
   # @rbs up_tokens: Integer
   # @rbs down_tokens: Integer
   # @rbs cost: Float
   # @rbs jobs: Integer
   # @rbs return: Hash[Symbol, String]
-  def segments: (String glyph, String state, String clock, Integer up_tokens, Integer down_tokens, Float cost, Integer jobs) -> Hash[Symbol, String]
+  def segments: (String glyph, String state, String? reasoning, String clock, Integer up_tokens, Integer down_tokens, Float cost, Integer jobs) -> Hash[Symbol, String]
 
   # @rbs slots: Hash[Symbol, String]
   # @rbs room: Integer
