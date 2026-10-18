@@ -188,7 +188,7 @@ describe Riffer::Rig::Terminal::Replay do
   describe '.heading' do
     it 'paints the job exit line of a turn a job exit started grey' do
       recorded = [entry(notification(follow_up_exits: 2), 0), entry(assistant('Passed.'), 7)]
-      painted = "\n\e[38;2;138;139;154m  2 background jobs exited\e[0m\n\n  Passed.\n\n\e[2m  1 step · 00:07\e[0m\n"
+      painted = "\n\e[38;2;138;139;154m  2 background jobs exited\e[0m\n\n  Passed.\n\n  \e[2m1 step · 00:07\e[0m\n"
 
       assert_equal painted, replay(recorded, color: true)
     end

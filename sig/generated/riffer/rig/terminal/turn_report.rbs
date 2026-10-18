@@ -7,6 +7,8 @@ module Riffer::Rig::Terminal::TurnReport
 
   COLUMN_HEAD: Regexp
 
+  VISIBLE: Regexp
+
   # @rbs turn: Riffer::Rig::Terminal::TurnReport::_Turn
   # @rbs session: Riffer::Providers::TokenUsage?
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -39,14 +41,55 @@ module Riffer::Rig::Terminal::TurnReport
 
   # @rbs stats: Riffer::Rig::Terminal::TurnBuffer::Stats
   # @rbs session: Riffer::Providers::TokenUsage?
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
   # @rbs return: String
-  def footer: (Riffer::Rig::Terminal::TurnBuffer::Stats stats, Riffer::Providers::TokenUsage? session) -> String
+  def footer: (Riffer::Rig::Terminal::TurnBuffer::Stats stats, Riffer::Providers::TokenUsage? session, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> String
+
+  # @rbs stats: Riffer::Rig::Terminal::TurnBuffer::Stats
+  # @rbs session: Riffer::Providers::TokenUsage?
+  # @rbs return: Array[[String, Symbol]]
+  def segments: (Riffer::Rig::Terminal::TurnBuffer::Stats stats, Riffer::Providers::TokenUsage? session) -> Array[[ String, Symbol ]]
+
+  # @rbs usage: Riffer::Providers::TokenUsage?
+  # @rbs return: Array[[String, Symbol]]
+  def usage_segments: (Riffer::Providers::TokenUsage? usage) -> Array[[ String, Symbol ]]
+
+  # @rbs session: Riffer::Providers::TokenUsage?
+  # @rbs return: Array[[String, Symbol]]
+  def session_segments: (Riffer::Providers::TokenUsage? session) -> Array[[ String, Symbol ]]
 
   # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs return: Array[String]
-  def tokens: (Riffer::Providers::TokenUsage usage) -> Array[String]
+  # @rbs return: Array[[String, Symbol]]
+  def tokens: (Riffer::Providers::TokenUsage usage) -> Array[[ String, Symbol ]]
 
   # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs return: String?
-  def cost: (Riffer::Providers::TokenUsage usage) -> String?
+  # @rbs return: Array[[String, Symbol]]
+  def cost: (Riffer::Providers::TokenUsage usage) -> Array[[ String, Symbol ]]
+
+  # A separator's dot is dim, so a colour run carries across it into the next
+  # segment.
+  # @rbs parts: Array[[String, Symbol]]
+  # @rbs return: Array[Symbol]
+  def owners: (Array[[ String, Symbol ]] parts) -> Array[Symbol]
+
+  # The Wrapper moves, drops and rewrites whitespace but never a visible
+  # character, so the nth visible character of a wrapped line is the nth one
+  # the segments supplied — which is why the colours are painted after the
+  # wrap, where a span can never be cut in two.
+  # @rbs line: String
+  # @rbs owners: Array[Symbol]
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: String
+  def paint: (String line, Array[Symbol] owners, Riffer::Rig::Terminal::Theme theme) -> String
+
+  # @rbs slots: Array[Symbol?]
+  # @rbs return: Array[Symbol?]
+  def nearest: (Array[Symbol?] slots) -> Array[Symbol?]
+
+  # @rbs text: String
+  # @rbs role: Symbol?
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: String
+  def color: (String text, Symbol? role, Riffer::Rig::Terminal::Theme theme) -> String
 end
