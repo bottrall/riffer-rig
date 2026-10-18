@@ -1,96 +1,126 @@
 # Extensions
 
-An extension is a named registrar block. Requiring a file records it; `Runtime.new` runs it against a fresh registrar of its own.
+An extension is a named block of Ruby that registers things — tools, commands, prompt sections, hooks — with each session. The same extension works in the terminal, headless, over ACP and inside your app.
 
-## The unit: a named registrar block
+## A complete example
+
+Put this in `.riffer/rig.rb` in a project, or `~/.riffer/rig.rb` for every project:
 
 ```ruby
-Riffer::Rig.extension('git', requires: '>= 0.3') do |rig|
+require 'open3'
+
+class GitLog < Riffer::Tool
+  description 'Show the most recent commits in the working directory, newest first.'
+
+  params do
+    optional :count, Integer, default: 10, description: 'How many commits to show'
+  end
+
+  def call(context:, count: 10)
+    output, status = Open3.capture2e('git', 'log', '--oneline', "-n#{count}", chdir: context&.[](:cwd) || Dir.pwd)
+    status.success? ? text(output) : error(output, type: :execution_error)
+  end
+end
+
+Riffer::Rig.extension('git') do |rig|
   rig.tool GitLog
+  rig.command('log', description: 'Recent commits') { |ctx| ctx.say `git log --oneline -n 5` }
+  rig.prompt(:branch) { "Current branch: #{`git branch --show-current`}" }
 end
 ```
 
-`Riffer::Rig.extension(name, requires: nil) { |rig| }` records the block in a process-level registry keyed by name and returns the extension object. Re-executing the same file (a reload) replaces the block rather than appending a duplicate. `requires:` is a `Gem::Requirement` string checked against the riffer-rig version when the block is recorded; a mismatch does not raise but is a load error, reported when a Runtime loads the extension (see [Error isolation](#error-isolation)).
+Start `riffer` and the extension is live:
 
-`Runtime.new(extensions: [...])` runs each block, in order, against a fresh registrar of its own and merges what they register. Two Runtimes never share tools or commands; per-Runtime state lives in the block's locals, per-process state lives outside the block. Same process, no sandbox.
+- the model has a `git_log` tool, described by the `description` and `params` above, which it can call whenever it judges a request needs one;
+- `/log` prints the last five commits, without involving the model;
+- every turn's system message ends with the current branch.
+
+Edit the file and the next turn picks up the change ([Reloading](RELOADING.md)). A tool is an ordinary riffer tool: riffer's [tools guide](https://riffer.ai/guides/tools/) covers parameters, nested params and responses.
 
 ## The `rig.rb` files
 
-The [Loader](EMBEDDING.md#building-a-runtime-with-the-loader) loads two extension files for a working directory, in this order:
+Two files are loaded, in this order:
 
-1. `~/.riffer/rig.rb` — the home file, for every project.
-2. `<cwd>/.riffer/rig.rb` — the project file.
+1. `~/.riffer/rig.rb` — for every project; always trusted.
+2. `<cwd>/.riffer/rig.rb` — for this project; asked about the first time it is seen.
 
-They are plain Ruby, and the Loader runs each with `load`: they `require` gems, `require_relative` local files, or call `Riffer::Rig.extension` inline. Ruby's require order is the load order, and a later registration under the same name replaces an earlier one. There is no directory scanning, no manifest, and no settings list of extensions: what is required is what loads.
+They are plain Ruby: `require` gems, `require_relative` your own files, or call `Riffer::Rig.extension` inline. What they load is what runs; there is no manifest or list of extensions in settings.
 
-The home file is always trusted. The first time a project `.riffer/rig.rb` is seen, the Loader asks the host to confirm the path, stores a yes or no by absolute path in `~/.riffer/trust.json`, and never asks again:
+The project file can run anything, so riffer-rig asks before loading it, and remembers the answer by path in `~/.riffer/trust.json`:
 
-```json
-{ "/home/jake/project/.riffer/rig.rb": true }
-```
+| Answer                                                    | Result                                                            |
+| --------------------------------------------------------- | ----------------------------------------------------------------- |
+| yes                                                       | stored; the file loads now and in every later session             |
+| no                                                        | stored; the file is skipped until you remove its entry from `trust.json` |
+| no answer (Ctrl-C or Ctrl-D)                              | skipped this time; asked again next time                          |
+| nobody to ask (headless, ACP while starting, an app with the null host) | skipped; nothing stored, so the terminal can ask later |
 
-A host whose `capabilities` leave out `:confirm` — the [null host](HOSTS.md), headless, ACP while `session/new` or `session/load` builds — is never asked: the file is skipped and nothing is stored, so a later terminal session can still ask. A question the host leaves unanswered (`confirm` returns `nil`, as Ctrl-C or Ctrl-D does in the terminal) is treated the same way: the file is skipped for this load, nothing is stored, and the next load asks again. A host that answers no stores `false`, skips the file silently, and is not asked again until the entry is removed from `trust.json`.
-
-A `trust.json` that is not valid JSON, or does not hold a JSON object, is never written over: the project file is skipped without asking, and the host gets a `notify` at level `:error` naming `trust.json` and, for a parse error, the line and column where parsing stopped.
-
-Each file is isolated the way an extension block is: a `rig.rb` that raises a `StandardError` is reported to the host through `notify` at level `:error`, and none of the extensions it recorded reach the Runtime, while the other file's extensions still load. A `ScriptError` — a bad `require`, say — propagates out of the build. Errors go to the host only, never into the model's context.
+A `rig.rb` that raises is reported, and none of its extensions load, while the other file's still do. A bad `require` stops startup.
 
 ## Gem extensions
 
-The convention for packaging an extension as a gem: the gem is named `riffer-rig-<name>`, its entry file is `lib/riffer/rig/<name>.rb`, and that file calls `Riffer::Rig.extension('<name>')`. A user adds it to every session with `require 'riffer/rig/<name>'` in a `rig.rb`.
+To share an extension as a gem, name it `riffer-rig-<name>`, put its entry point at `lib/riffer/rig/<name>.rb`, and have that file call `Riffer::Rig.extension('<name>')`. Users load it with `require 'riffer/rig/<name>'` in a `rig.rb`.
 
-Setting `"extensions": { "autoload": true }` in [settings](CONFIGURATION.md#extensions) — off by default — makes the Loader run `riffer/rig/extension` from every gem `Gem.find_files` finds, before the two `rig.rb` files. A gem opts in by shipping `lib/riffer/rig/extension.rb`; the Loader appends the extensions it records after the bundle, in record order.
+A gem can also ship `lib/riffer/rig/extension.rb`, which loads automatically when a user sets `"extensions": {"autoload": true}` ([Configuration](CONFIGURATION.md#extensions)).
 
-Gem-packaged extensions never hot-reload: develop as a local file required from `rig.rb`, and package into a gem when the extension settles.
+Gem extensions don't [reload](RELOADING.md): develop as a local file required from `rig.rb`, and package it once it settles.
 
-## The `rig.tool` seam
+## The seams
+
+The `rig` object passed to the block has one method per kind of thing an extension can register:
+
+| Seam                                  | Registers                                          |
+| ------------------------------------- | -------------------------------------------------- |
+| [`rig.tool`](#the-rigtool-seam)       | a tool the model can call                          |
+| [`rig.prompt`](#the-rigprompt-seam)   | a section of the system message                    |
+| [`rig.command`](#the-rigcommand-seam) | a slash command                                    |
+| [`rig.on`](#the-rigon-seam)           | a hook on an event of the session                  |
+| [`rig.skills`](#the-rigskills-seam)   | a source of Agent Skills                           |
+| [`rig.mcp`](#the-rigmcp-seam)         | an MCP server                                      |
+| [`rig.setting`](#the-rigsetting-seam) | a setting, with its default                        |
+| [`rig.provider`](#the-rigprovider-seam) | a model provider                                 |
+
+`Riffer::Rig.extension(name, requires: nil) { |rig| … }` records the block by name, so loading a file again replaces it rather than adding a duplicate. The block runs once for each Runtime, against that Runtime alone: keep per-session state in the block's local variables.
+
+### The `rig.tool` seam
 
 ```ruby
-rig.tool klass
+rig.tool GitLog
 ```
 
-Adds a `Riffer::Tool` to the Runtime; its identifier is its name everywhere. When the extension block runs, the registrar collects the tool classes and the Runtime passes them to its agent. `tools:` on `Runtime.new` is an allowlist of tool identifiers over what extensions registered — `nil` (the default) means every registered tool. A later registration of the same identifier replaces the earlier tool and keeps its place in the list; that is how a user replaces a [bundled tool](TOOLS.md#replacing-a-tool).
+Adds a `Riffer::Tool` class. Its identifier is its name everywhere, including [`--tools`](TOOLS.md#identifiers). A later tool with the same identifier [replaces](#bundled-extensions-and-replacement) it.
 
-## The `rig.prompt` seam
+### The `rig.prompt` seam
 
 ```ruby
-rig.prompt(:git_status) { |ctx| "Branch: #{`git branch --show-current`}" }
+rig.prompt(:git_status) { |ctx| "Branch: #{`git -C #{ctx.cwd} branch --show-current`}" }
 ```
 
-Adds a named section to the system message. Sections render after the base prompt, in load order, and before the environment block; [Instructions](INSTRUCTIONS.md) shows the whole assembly.
+Adds a named section to the system message, after the base prompt and before the environment ([Instructions](INSTRUCTIONS.md)). The block runs at the start of every turn and returns the section's text as-is, so add your own heading if the model needs one. `nil` or an empty string leaves the section out of that turn. `ctx` is the Runtime: `ctx.cwd`, `ctx.settings`, `ctx.host`.
 
-- The block is evaluated at the start of every turn — each `prompt` or `ask` — so its content is always current without a reload. It receives the Runtime as `ctx` (`ctx.cwd`, `ctx.settings`, `ctx.host`) and returns the section's text.
-- A later registration of the same name replaces the earlier block and keeps the earlier one's place in the order, so a user can swap a section an extension owns without disabling that extension.
-- The text is appended as-is. A section that needs framing — a heading, a sentence saying whose instructions these are — writes that framing itself; the base prompt names no contributor. A section that returns `nil` or an empty string is left out of that turn's message.
-
-## The `rig.command` seam
+### The `rig.command` seam
 
 ```ruby
 rig.command('log', description: 'Recent commits') { |ctx| ctx.say `git log -n #{ctx.args} --oneline` }
 rig.command('review', description: 'Review the diff') { |ctx| ctx.prompt "Review this diff:\n#{`git diff`}" }
 ```
 
-Adds a slash command to the Runtime. Commands are runtime objects, not host features, so a command works the same in every host: the host lists them with `runtime.commands` and runs one with `runtime.run_command(name, args)` (see [Embedding](EMBEDDING.md#commands)). The name is given without the leading slash. A later registration of the same name — from the same extension or a later one — replaces the earlier command and keeps its place in the list.
+Adds a slash command, named without the slash. Commands work the same in every host. The block receives a `ctx`:
 
-The block receives a `ctx`:
+| Member                                       | Does                                                                                   |
+| -------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `args`                                       | the text after the command name (`""` when there is none)                              |
+| `say(text)`                                  | shows `text` as the command's output                                                   |
+| `prompt(text)`                               | sends `text` to the model as your message, starting a turn                             |
+| `ask(question, options: nil, secret: false)` | asks the user; `nil` when the host can't ask                                           |
+| `confirm(question)`                          | asks yes or no; `false` when unanswered or the host can't ask                          |
+| `settings`                                   | this extension's [settings](#the-rigsetting-seam), with defaults filled in              |
+| `emit(event)`                                | sends a custom [event](EVENTS.md#custom-events) to whoever ran the command             |
+| `runtime`, `host`                            | the Runtime, and its host                                                              |
 
-| Member                                  | Does                                                                                                   |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `args`                                  | the text after the command name, as one string (`""` when there is none)                               |
-| `runtime`                               | the Runtime running the command                                                                        |
-| `host`                                  | the Runtime's host (the [mirror](HOSTS.md#the-mirror))                                                 |
-| `settings`                              | this extension's namespace of the Runtime's settings — `settings[:git]` for an extension named `git`, with its [declared defaults](#the-rigsetting-seam) filled in — or `{}` when it has none |
-| `say(text)`                             | emits a `command_output` event carrying the command's name and `text`                                  |
-| `emit(event)`                           | emits a [rig event](EMBEDDING.md#rig-events), such as `Riffer::Rig::Events::SkillActivated`, to the caller of `run_command`; any object with `type` and `to_h` (`Riffer::Rig::Events::_Event`) qualifies, and including `Riffer::Rig::Support::Equatable` gives it equality by class and `to_h` |
-| `prompt(text)`                          | sends `text` to the model as a user turn, so a prompt template is a command; the turn's events stream to the caller of `run_command` |
-| `ask(question, options: nil, secret: false)` | forwards to the host and returns its answer, or `nil` when the host does not support `:ask`       |
-| `confirm(question)`                     | forwards to the host and returns its answer, or `false` when the question is left unanswered or the host does not support `:confirm` |
+A command that raises is reported, and the session carries on. Use `ctx.prompt` to start a turn: calling `ctx.runtime.prompt` from a command raises, because one is already running.
 
-`ask` and `confirm` check `host.capabilities` first, so a host that declines them — the null host, headless — is never asked and the command takes the declined path.
-
-A command runs synchronously, one at a time, under the same rule as `prompt`: `run_command` while a prompt or another command is running raises `Riffer::Rig::Runtime::BusyError`. A command that calls `ctx.runtime.prompt` or `ctx.runtime.ask` hits the same rule; `ctx.prompt` is the way to run a turn from a command. A command that raises is caught and reported through the host's `notify` at level `:error`, and the Runtime stays usable.
-
-## The `rig.on` seam
+### The `rig.on` seam
 
 ```ruby
 rig.on(:before_tool_call) { |e| next :block, 'no force pushes' if e.tool == 'bash' && e.args[:command] =~ /push --force/ }
@@ -98,69 +128,47 @@ rig.on(:before_prompt) { |e| "#{e.text}\n\nAnswer in one paragraph." }
 rig.on(:turn_end) { |e| warn "turn cost $#{e.cost}" if e.cost }
 ```
 
-Adds a hook for one event of the Runtime's lifecycle or loop. The block receives the event object; every event is immutable, so a hook that wants to change something returns the change rather than mutating the event. Hooks for the same event run in load order — extension order, then registration order within an extension. An unknown event name raises `Riffer::ArgumentError` when the extension block runs.
+Adds a hook for an event. Hooks for the same event run in load order. An unknown event name fails the extension.
 
-| Event              | Kind        | The event carries                                  | Fires                                                                 |
-| ------------------ | ----------- | -------------------------------------------------- | --------------------------------------------------------------------- |
-| `session_start`    | lifecycle   | `id`, `reason` (`:new`, `:restore`, `:reload`)     | as the Runtime's first turn starts (`:new`, or `:restore` after a snapshot), and after a `rebuild` swaps this extension in (`:reload`) |
-| `session_end`      | lifecycle   | `reason` (`:reload`, `:close`)                     | before a `rebuild` swaps this extension out (`:reload`), and on `close` (`:close`), if a session started |
-| `before_prompt`    | vetoable    | `text`                                             | as each `prompt` or `ask` starts, before the text reaches the session |
-| `before_request`   | vetoable    | `messages` (the whole request)                     | before every LLM call: at the start of the turn, after each round of tool results, and when the Runtime continues a turn for a [job exit notification](EMBEDDING.md#exit-notifications) |
-| `before_tool_call` | vetoable    | `call_id`, `tool` (the identifier), `args` (symbol keys), `at` | before each tool runs, once the call's arguments have parsed into an object |
-| `after_tool_call`  | observe     | `call_id`, `tool`, `args` (as run), `result` (the call's `Riffer::Tools::Response`), `at`, `duration` | after every tool call, whether or not the tool ran |
-| `after_response`   | observe     | `message` (the `Riffer::Messages::Assistant`)      | after each model response is added to the session                     |
-| `turn_end`         | observe     | `stop_reason`, `usage`, `cost`                     | as each turn ends, `ask` included                                     |
-| `stream`           | passthrough | the riffer `StreamEvent` itself                    | for every riffer stream event of a turn, `ask` included               |
+| Event              | Kind        | Carries                                                    | Fires                                                       |
+| ------------------ | ----------- | ---------------------------------------------------------- | ----------------------------------------------------------- |
+| `session_start`    | lifecycle   | `id`, `reason` (`:new`, `:restore`, `:reload`)             | as the first turn starts, and after a reload swaps this extension in |
+| `session_end`      | lifecycle   | `reason` (`:reload`, `:close`)                             | before a reload swaps this extension out, and when the session closes |
+| `before_prompt`    | can change  | `text`                                                     | as each prompt starts                                       |
+| `before_request`   | can change  | `messages`, the whole request                              | before every model call                                     |
+| `before_tool_call` | can change  | `call_id`, `tool`, `args` (symbol keys), `at`              | before each tool runs                                       |
+| `after_tool_call`  | observe     | `call_id`, `tool`, `args`, `result`, `at`, `duration`      | after every tool call, including ones that never ran        |
+| `after_response`   | observe     | `message`, the assistant's reply                           | after each model response                                   |
+| `turn_end`         | observe     | `stop_reason`, `usage`, `cost`                             | as each turn ends                                           |
+| `stream`           | observe     | the riffer stream event                                    | for every riffer stream event                               |
 
-Lifecycle hooks are where an extension acquires and releases process-wide state; `session_start` carries `:restore` on a Runtime built from a [snapshot](EMBEDDING.md#snapshots).
+Use lifecycle hooks to acquire and release anything process-wide. Observe hooks' return values are ignored. A hook that can change the event may return a replacement, which the next hook receives, or block:
 
-A vetoable hook may return:
+| Event              | Return a replacement…                                              | Return `:block` or `[:block, reason]`…                                        |
+| ------------------ | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `before_prompt`    | a `String`: the text the model gets                                | the prompt never reaches the model; the user sees the reason; the turn ends `:guardrail_blocked` |
+| `before_tool_call` | a `Hash`: the arguments the tool runs with                         | the tool doesn't run; the model gets a `blocked` tool error with the reason, and the turn carries on |
+| `before_request`   | an `Array` of messages: the request, saved back to the session     | at the start of a turn it ends `:guardrail_blocked`; after tool results the turn is interrupted |
 
-- a replacement payload — a `String` for `before_prompt`, an args `Hash` for `before_tool_call`, an `Array` of `Riffer::Messages::Base` for `before_request`. The next hook receives an event built from it, and the last one wins. Any other return value (including `nil`) changes nothing.
-- `:block`, or `[:block, reason]` (`next :block, 'reason'` inside the block). Later hooks do not run. A blocked tool call becomes a tool error carrying the reason (error type `:blocked`) that the model sees, and the turn carries on. A blocked prompt never reaches the model or the session, the host is told the reason through `notify` at level `:warning`, and the turn ends with stop reason `:guardrail_blocked`. A blocked request also notifies the host: at the start of the turn it ends the turn with `:guardrail_blocked`, and after tool results it interrupts the turn (`:interrupted`, the reason in the outcome's `detail`).
+Any other return value, including `nil`, changes nothing. A hook that raises is reported and counts as no change. [Events](EVENTS.md#tool-call-events) covers what `after_tool_call` reports for calls that were blocked or never ran.
 
-A replacement request is written back to the session, so later requests carry it too. A replacement tool payload changes what the tool runs with; the model's own tool call in the history is left as it sent it.
-
-Observe and passthrough hooks change nothing: their return values are ignored, and a `stream` hook sees each riffer event unchanged, the same object the host receives.
-
-`after_tool_call` fires exactly once for every tool call the model makes, so a hook that counts, logs or times calls sees all of them — including the calls whose tool never ran. A call a `before_tool_call` hook blocked arrives with the `:blocked` error as its `result` and the `args` the model sent; a call whose arguments are not a JSON object arrives with the `:validation_error` result and empty `args`, and no `before_tool_call` hook ran for it. A hook that should act only on tools that ran checks `event.result.error_type`, or `event.result.error?` to skip every failure.
-
-Both tool events carry `call_id`, riffer's id for the call (the one on the stream's `ToolCallDone` and on the tool message), and `at`, a monotonic timestamp in seconds. On `before_tool_call` `at` is when the call's hooks began, the same for every hook of the call; on `after_tool_call` it is when the tool returned, and `duration` is the seconds the tool itself ran — time spent in hooks is left out, and a call whose tool never ran has `0.0`. The host receives both as [stream events](EMBEDDING.md#tool-call-events) too: the `after_tool_call` event is the one the hooks saw, handed on once they have run. They are rig events, so the `stream` hook does not see them.
-
-Hooks run on the thread running the turn, one at a time — tools run sequentially so their hooks never overlap.
-
-## The `rig.skills` seam
+### The `rig.skills` seam
 
 ```ruby
 rig.skills { |ctx| Riffer::Skills::FilesystemBackend.new(File.join(ctx.cwd, 'docs/skills')) }
 ```
 
-Adds a source of [Agent Skills](SKILLS.md). The block receives the Runtime as `ctx`, as a prompt section's does, and returns a `Riffer::Skills::Backend`; it runs when the Runtime is built and again on every rebuild. Every source's skills join one catalog, the model's riffer skills catalog; when two sources have a skill of the same name, the earlier source wins. Each skill in the catalog gets a core [`skill:<name>` command](SKILLS.md#skillname). A Runtime with no source has no catalog.
+Adds a source of [Agent Skills](SKILLS.md). The block returns a `Riffer::Skills::Backend` and runs when the session starts and on every reload. When two sources have a skill of the same name, the earlier source wins.
 
-## The `rig.mcp` seam
-
-```ruby
-rig.mcp 'tracker', url: 'https://tracker.example.com/mcp', headers: { 'Authorization' => 'Bearer …' }
-```
-
-Declares an HTTPS MCP server for the Runtime: `rig.mcp(name, url:, headers: {}, auth: {})`. The Runtime registers the server with riffer's MCP client, and the agent gets its tools as `<server>__<tool>`; a later declaration of the same name replaces the earlier one. [MCP](MCP.md) covers naming, why the `tools:` allowlist does not apply, failures, what a rebuild keeps and the same-name limit across Runtimes.
-
-## The `rig.provider` seam
+### The `rig.mcp` seam
 
 ```ruby
-rig.provider(:acme, setup: { url: 'https://acme.example.com/keys',
-                             fields: [{ name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true }] }) { AcmeProvider }
+rig.mcp 'tracker', url: 'https://tracker.example.com/mcp', headers: { 'Authorization' => "Bearer #{ENV.fetch('TRACKER_TOKEN')}" }
 ```
 
-Registers a custom provider under a new prefix — the one **process-wide** seam: `rig.provider` registers the class with riffer's provider repository (`Riffer::Providers::Repository.register`) and the registration never goes away. Re-registering the same prefix is idempotent, so a reload or a second Runtime leaves one entry, and two Runtimes see the same prefix. [Custom providers](CUSTOM_PROVIDERS.md) covers the `setup:` hash, the generic fallback without one, and reading the resolved values through `Riffer::Rig.credentials(:identifier)`.
+Declares an HTTPS [MCP](MCP.md) server: `rig.mcp(name, url:, headers: {}, auth: {})`. `auth:` and `${field}` headers work as in [settings](MCP.md#secret-headers). A later declaration of the same name replaces the earlier one.
 
-## Bundled extensions and replacement
-
-The tools ship as four bundled extensions — `Riffer::Rig.bundled(:read)`, `:write`, `:edit`, `:bash` — and so do the `:agents_md` prompt section, `Riffer::Rig.bundled(:agents_md)`, the skills directories, `Riffer::Rig.bundled(:skills)`, and the MCP client, `Riffer::Rig.bundled(:mcp)`, all built on the same seams as any other extension; `Riffer::Rig.bundled` returns them all in load order. [Tools](TOOLS.md) describes the tools, [Instructions](INSTRUCTIONS.md#agentsmd) the AGENTS.md section, [Skills](SKILLS.md) the skills and [MCP](MCP.md) the MCP client.
-
-A later extension replaces anything an earlier one registered by registering under the same name: a tool with the same identifier, a command with the same name, a prompt section with the same name, an MCP server with the same name. Later wins, and the Runtime reports each replacement across extensions through the host's `notify` at level `:info`, as "Extension LATER replaces KIND NAME from EARLIER". Nothing is deregistered, so the original extension is still there to pass to another Runtime.
-
-## The `rig.setting` seam
+### The `rig.setting` seam
 
 ```ruby
 Riffer::Rig.extension('git') do |rig|
@@ -169,38 +177,30 @@ Riffer::Rig.extension('git') do |rig|
 end
 ```
 
-Declares a key under the extension's namespace of the settings: `"git": { "depth": 10 }` in `settings.json` (see [Configuration](CONFIGURATION.md#extension-namespaces)), read as `ctx.settings[:depth]`.
+Declares a key under the extension's namespace in [settings](CONFIGURATION.md#extension-namespaces) — here `"git": { "depth": 10 }` — with a default for when it is unset. Commands read it as `ctx.settings[:depth]` and prompt sections as `ctx.settings[:git][:depth]`; inside the block, `rig.settings` holds the values so far, so an extension can register according to them. An extension can't be named after a core settings key.
 
-- When the Runtime's `settings:` hash lacks the key, the declared default applies; a provided value overrides it. `runtime.settings` holds the result, so a prompt section reads the same values through `ctx.settings[:git]`.
-- A command's `ctx.settings` is its own extension's namespace only; core keys and other extensions' namespaces are not in it. Keys present in the namespace but never declared are passed through unchanged.
-- `runtime.declared_settings` lists what each extension declared — extension name → key → default, names and keys as Symbols — so a host can render a table of them. Nothing else in core reads it.
-- A later declaration of the same key replaces the earlier default.
-- While the block runs, `rig.settings` is the same namespace — the Runtime's `settings:` values over the defaults declared so far — so an extension can register according to its settings.
+### The `rig.provider` seam
 
-Core settings keys stay top level, so an extension cannot take one as its name: an extension named `model`, `reasoning`, `catalog_files`, `reload`, `extensions`, `sessions`, `providers` or `tools` is rejected with a `Riffer::Rig::Registrar::NameCollisionError` before its block runs, and reported as a load error (see [Error isolation](#error-isolation)).
+Registers a model provider under a new prefix. [Custom providers](CUSTOM_PROVIDERS.md) covers it.
+
+## Bundled extensions and replacement
+
+The built-in tools, AGENTS.md, skills and the MCP client are extensions too — `read`, `write`, `edit`, `bash`, `agents_md`, `skills` and `mcp` — built on the same seams. You can [disable](CONFIGURATION.md#extensions) any of them.
+
+To replace one piece instead, register something with the same name from your own extension: a tool with the same identifier, a command, prompt section or MCP server with the same name. The later registration wins, takes the earlier one's place, and the session shows a notice such as `Extension sandbox replaces tool bash from bash`.
 
 ## Error isolation
 
-The Runtime wraps each registrar block. A block that raises a `StandardError`, an extension whose `requires:` the running riffer-rig does not satisfy, or an extension named after a core settings key is a load error:
-
-- The extension is skipped, including anything its block registered before it raised; the rest load, in order.
-- `runtime.errors` records it as a `Riffer::Rig::Extension::Failure`, whose `extension` is the extension object and `error` the exception (a `Riffer::Rig::Extension::RequirementError` for an unmet `requires:`, a `Riffer::Rig::Registrar::NameCollisionError` for a core key taken as a name). An empty array means every extension loaded.
-- The host gets one `notify` at level `:error`, `"Extension <name> failed to load: <message>"`, which the [mirror](HOSTS.md#the-mirror) also queues as a `notify` event for the next `prompt` or `run_command` to emit.
-
-Errors go to the host only, never into the model's context.
-
-At run time a hook that raises is caught and reported through the host's `notify` at level `:error` (`"before_tool_call hook failed: …"`), and the turn continues: the remaining hooks run, and a raising vetoable hook counts as no veto. Unlike a load error it is not recorded on `runtime.errors`. The `notify` event reaches the stream next to the event being handled.
+An extension whose block raises, whose `requires:` doesn't match the installed riffer-rig, or that is named after a core settings key is skipped, and the session shows `Extension <name> failed to load: <message>`. The other extensions still load. Errors are shown to the user, never to the model.
 
 ## API versioning
 
-The registrar surface — `Riffer::Rig.extension` and the `rig.*` seams — is public API of riffer-rig and follows its release policy (see [Releasing](https://github.com/bottrall/riffer-rig#releasing)); there is no separate API number. While riffer-rig is 0.x, a breaking change to the surface ships in a minor release with a BREAKING CHANGES section in the changelog, after one minor of deprecation where feasible.
-
-Pin the riffer-rig versions an extension is written against with `requires:`:
+`Riffer::Rig.extension` and the `rig.*` seams are riffer-rig's public API. While riffer-rig is 0.x, a breaking change ships in a minor release, with a deprecation release first where possible and a BREAKING CHANGES note in the [changelog](https://github.com/bottrall/riffer-rig/blob/main/CHANGELOG.md). Pin the versions an extension supports with `requires:`:
 
 ```ruby
-Riffer::Rig.extension('git', requires: '~> 0.7') do |rig|
+Riffer::Rig.extension('git', requires: '~> 0.15') do |rig|
   # ...
 end
 ```
 
-A riffer-rig outside the requirement reports the extension as a load error rather than running its block.
+On a riffer-rig outside the requirement, the extension is reported as failing to load rather than run.

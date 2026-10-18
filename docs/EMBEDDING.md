@@ -1,40 +1,36 @@
 # Embedding riffer-rig
 
-Host riffer-rig inside another Ruby process with `Riffer::Rig::Runtime` — a runtime that builds its own `Riffer::Agent` from a per-instance `Riffer::Agent::Config`, runs extension blocks against a per-Runtime registrar, and streams a prompt. It never renders, never prints, and never reads the filesystem; anything a host needs is a Runtime feature so embedders get it too.
+`Riffer::Rig::Runtime` runs the agent inside any Ruby process. It never prints, never reads the filesystem and assumes no terminal: everything the shipped hosts can do goes through the same API described here.
+
+There are two ways to get one:
+
+- **`Loader.runtime`** builds it from riffer-rig's files on disk — settings, credentials, `rig.rb`, skills, saved sessions — exactly as the terminal does.
+- **`Runtime.new`** takes everything as arguments, for an app that keeps its configuration elsewhere.
 
 ## Building a Runtime with the Loader
-
-`Riffer::Rig::Loader` knows riffer-rig's filesystem conventions, so the Runtime does not have to. `Loader.runtime` builds a Runtime for a working directory the way the shipped hosts do:
 
 ```ruby
 runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: MyHost.new)
 ```
 
-In order, it:
+The Loader reads the [settings](CONFIGURATION.md), picks the [model](CONFIGURATION.md#where-each-value-comes-from), ensures its [SDK gem](PROVIDERS.md#sdk-gems), resolves its [credentials](PROVIDERS.md#resolution-order), loads the bundled extensions and the [`rig.rb` files](EXTENSIONS.md#the-rigrb-files), and builds the Runtime. It also adds the `/reload` command, `/trace` when the session is saved, and [automatic reloading](RELOADING.md).
 
-1. reads `~/.riffer/settings.json` then `<cwd>/.riffer/settings.json` and merges them, the project winning key by key ([Configuration](CONFIGURATION.md)), and selects the model: the `model:` [option](#loader-options), then `RIFFER_MODEL`, then the settings, then onboarding;
-2. resolves the model's provider credentials ([Providers](PROVIDERS.md#resolution-order)), assigns them to `Riffer.config` and keeps them for the Runtime's `credentials:`;
-3. takes the [bundled extensions](TOOLS.md), minus those named in `extensions.disabled` and those the options strip;
-4. runs `riffer/rig/extension` from every gem when [`extensions.autoload`](CONFIGURATION.md#extensions) is set, then `~/.riffer/rig.rb` and, once [trusted](EXTENSIONS.md#the-rigrb-files), `<cwd>/.riffer/rig.rb`, and appends the extensions the loads record to the bundle ([Extensions](EXTENSIONS.md#the-rigrb-files));
-5. constructs the Runtime with the model, the credentials, the extensions, the merged settings and the `reasoning` level — the `reasoning:` [option](#loader-options), then a resumed session's recorded `/reasoning` switch, then `RIFFER_REASONING`, then the settings — and the options and keywords below, having handed the `catalog_files` to `Riffer.config`;
+| Keyword             | Meaning                                                                                     | Default |
+| ------------------- | ------------------------------------------------------------------------------------------- | ------- |
+| `cwd:`              | the working directory; its `.riffer/settings.json` is the project scope                     | required |
+| `host:`             | the [host](HOSTS.md): it receives notices, and questions such as a missing credential        | required |
+| `options:`          | a [`Loader::Options`](#loader-options): the choices command-line flags make                 | `Loader::Options.new` |
+| `store:`            | the [session store](STORES.md) that saves the session; `nil` saves nothing                  | `Stores::JSONL.new(home: home)` |
+| `snapshot:`         | a [snapshot](#snapshots) to resume from                                                     | `nil` |
+| `reload:`           | `:manual` turns off automatic reloading for this build                                      | the `reload` setting |
+| `extra_extensions:` | extensions to load after the bundle and the `rig.rb` files, kept across reloads              | `[]` |
+| `env:`              | the environment to read, as `Riffer::Rig::Env.load` returns it ([below](#credentials))      | `Riffer::Rig::Env.load` |
+| `home:`             | the directory whose `.riffer/` holds the home files                                          | `Dir.home` |
+| `riffer_config:`    | the `Riffer::Config` that receives credentials and catalog files                            | `Riffer.config` |
 
-Whatever `store:` records the build: the [header](SESSIONS.md#what-an-entry-holds) lands on the first message, then one entry per message, per `/model` switch, per `/reasoning` switch and per model skill activation; `store: nil`, or `"sessions": {"save": false}` in settings ([Configuration](CONFIGURATION.md)), writes nothing ([Sessions](SESSIONS.md)). A build that records also gets the [`/trace`](SESSIONS.md#tracing-the-last-turn) command, which replays the last turn from the same store.
+`Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)` keeps the Loader around: build with `runtime(options, reload:, extra_extensions:, snapshot:)`, reload with `reload(runtime, force: false)`, and find saved sessions with the [store methods](STORES.md#finding-sessions).
 
-| Keyword       | Meaning                                                                  | Default |
-| ------------- | ------------------------------------------------------------------------ | ------- |
-| `cwd:`        | the working directory; its `.riffer/settings.json` is the project scope  | required |
-| `host:`       | the [host](HOSTS.md) the Runtime gets, and the one onboarding and credential prompts ask | required |
-| `options:`    | a [`Riffer::Rig::Loader::Options`](#loader-options): the model, what to leave out, the tool allowlist and the step limit | `Riffer::Rig::Loader::Options.new` |
-| `reload: :manual` | drops the automatic reload check for this build ([Reloading](RELOADING.md#triggers)) | follows the `reload` setting |
-| `extra_extensions:` | extensions loaded with the bundle and kept through a [reload](#rebuilding-after-a-code-reload), after the bundle and the `rig.rb` files | `[]` |
-| `env:`        | a `Riffer::Rig::Env`, or what `Riffer::Rig::Env.load` returned            | `Riffer::Rig::Env.load` |
-| `home:`       | the directory whose `.riffer/` holds `settings.json`, `auth.json`, `rig.rb`, `trust.json` and the default store's `sessions/` | `Dir.home` |
-| `riffer_config:` | the `Riffer::Config` that receives the credentials and the catalog files | `Riffer.config` |
-| `store:`      | the [session store](SESSIONS.md#the-session-store) that records the build; `nil` opts one run out | `Stores::JSONL.new(home: home)` |
-
-`Riffer::Rig::Loader.new(cwd:, host:, env:, home:, riffer_config:, store:)` takes the same setup and builds with `runtime(options, reload:, extra_extensions:)` for a host that keeps the Loader.
-
-The host is asked only when its `capabilities` include `:ask`. With no model set anywhere, the Loader asks it for a model string, listing the providers, and writes the answer to `~/.riffer/settings.json`; a required credential that does not resolve is asked for the same way and stored ([Providers](PROVIDERS.md#rifferrigcredentials)). Anything the Loader cannot settle raises `Riffer::Rig::Loader::ConfigurationError` with a message fit to show the user: no model and a host that cannot ask (the null host), a model string without a known provider prefix, a bare `RIFFER_MODEL`, a `--reasoning` or `RIFFER_REASONING` that is not a level riffer accepts, a required credential still missing, a `settings.json` or `auth.json` that does not parse, or a `settings.json` whose `model` is not a string ([Configuration](CONFIGURATION.md)). A headless host should map it to exit status 2.
+The host is asked only when its `capabilities` include `:ask`. Anything the Loader can't settle raises `Riffer::Rig::Loader::ConfigurationError`, whose message is written for the user: no model and no way to ask, an unknown provider, an invalid `RIFFER_MODEL` or reasoning level, a missing credential or SDK gem, or a settings or `auth.json` file that doesn't parse.
 
 ```ruby
 begin
@@ -47,64 +43,62 @@ end
 
 ### Loader options
 
-`Riffer::Rig::Loader::Options` holds the per-build choices the `riffer` command-line flags make. It is a frozen value object with a reader for each keyword, and every keyword is optional:
-
 ```ruby
 options = Riffer::Rig::Loader::Options.new(model: 'anthropic/claude-sonnet-4-6', skills: false)
 runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: MyHost.new, options: options)
 ```
 
-| Keyword             | Meaning                                                                                      | Default |
-| ------------------- | -------------------------------------------------------------------------------------------- | ------- |
-| `model:`            | `"provider/name"`, winning over `RIFFER_MODEL`, the settings and a resumed session's `/model` switch | `nil`   |
-| `reasoning:`        | the reasoning effort, winning over `RIFFER_REASONING`, the settings and a resumed session's `/reasoning` switch | `nil`   |
-| `extensions: false` | skips the `rig.rb` files and the gem `riffer/rig/extension` autoload; the bundle still loads | `true`  |
-| `skills: false`     | leaves out the bundled [`skills`](SKILLS.md) extension                                       | `true`  |
-| `agents_md: false`  | leaves out the bundled [`agents_md`](INSTRUCTIONS.md#agentsmd) extension                     | `true`  |
-| `tools:`            | the Runtime's tool allowlist                                                                 | `nil`   |
-| `max_steps:`        | the Runtime's step limit                                                                     | `nil`   |
+Every keyword is optional, and each matches a [command-line flag](CLI.md#flags):
+
+| Keyword             | Meaning                                                              | Default |
+| ------------------- | -------------------------------------------------------------------- | ------- |
+| `model:`            | `"provider/name"`, over every other source                           | `nil`   |
+| `reasoning:`        | the reasoning level, over every other source                         | `nil`   |
+| `extensions: false` | skips the `rig.rb` files and gem autoload; bundled extensions still load | `true` |
+| `skills: false`     | leaves out [skills](SKILLS.md)                                       | `true`  |
+| `agents_md: false`  | leaves out [AGENTS.md](INSTRUCTIONS.md#agentsmd)                     | `true`  |
+| `tools:`            | the [tool allowlist](TOOLS.md#identifiers)                           | `nil`   |
+| `max_steps:`        | the [step limit](#capping-the-loop)                                  | `nil`   |
 
 ## Constructing a Runtime
 
 ```ruby
 runtime = Riffer::Rig::Runtime.new(
   'anthropic/claude-sonnet-4-6',
-  extensions: [Riffer::Rig.extension('my_ext') { |rig| rig.tool MyTool }],
+  extensions: [*Riffer::Rig.bundled, Riffer::Rig.extension('my_ext') { |rig| rig.tool MyTool }],
   host: MyHost.new,
 )
 ```
 
-The constructor takes everything as keywords — `model:` (positional, required), `extensions:`, `tools:`, `settings:`, `host:`, `cwd:`, `name:`, `instructions:`, `max_steps:`, `model_options:`, `native_tools:`, `credentials:`, `env:`, `auth_path:`, `reasoning:`, `riffer_config:`, `mcp_registry:`, `clock:`, `snapshot:`. All except the model are optional. `credentials:` is stored and exposed (`runtime.credentials`); only `/model` and a [restore](#snapshots) read it so far. It takes the shape the [Loader](#building-a-runtime-with-the-loader) passes — each provider's resolved field values. Provider credentials reach riffer through `Riffer.config`, one set per process: `Riffer::Rig::Credentials.install` resolves a provider's values and assigns them (see [Providers](PROVIDERS.md#rifferrigcredentials)), or set them yourself with `Riffer.configure`.
+The model is positional; everything else is an optional keyword. Provider credentials reach riffer through `Riffer.config`, one set per process: resolve them with [`Credentials.install`](#credentials), or set them yourself with `Riffer.configure`.
 
-| Keyword         | Meaning                                                                     | Default                 |
-| --------------- | --------------------------------------------------------------------------- | ----------------------- |
-| `model`         | `"provider/name"`; required, positional                                     | —                       |
-| `extensions:`   | ordered extension objects whose blocks run against this Runtime's registrar; `Riffer::Rig.bundled` gives the [bundled tools](TOOLS.md), [AGENTS.md section](INSTRUCTIONS.md#agentsmd), [skills](SKILLS.md) and [MCP client](MCP.md) | `[]`                    |
-| `tools:`        | allowlist of tool identifiers; `nil` means every registered tool. [MCP tools](MCP.md#tool-names) are not filtered | `nil`                   |
-| `settings:`     | merged settings hash (core keys top level, extension keys under their names); a command reads its extension's namespace as `ctx.settings` | `{}` |
-| `host:`         | an object implementing [`Riffer::Rig::Hosts::_Host`](HOSTS.md)              | `Riffer::Rig::Hosts::Null.new` |
-| `cwd:`          | working directory for the environment block, and the directory tools resolve relative paths against | `Dir.pwd`               |
-| `name:`         | the name interpolated into the [base prompt](INSTRUCTIONS.md)               | `"riffer"`              |
-| `instructions:` | replaces the base prompt; sections and the environment block still apply    | `nil` (use the base)    |
-| `max_steps:`    | agent-loop step limit; `nil` runs the loop without a limit                  | `nil`                   |
-| `model_options:` | riffer `model_options` sent with every model call (`{ cache_control: { type: :ephemeral } }` for an anthropic model); `Riffer::Rig::Settings::ModelOptions.model_options(model)` builds them, and reasoning travels on `reasoning:` instead | `{}` |
-| `native_tools:` | the [provider-native tool](TOOLS.md#provider-native-tools) switches, as the `tools.native` setting holds them (`{ web_search: true }`) | `{}` |
-| `credentials:`  | provider → resolved field values (`{ anthropic: { api_key: "…" } }`), stored as given and exposed; read by `/model` and a restore | `{}` |
-| `env:`          | the `Riffer::Rig::Env` an MCP server's [`auth` fields](MCP.md#secret-headers) resolve from | `Riffer::Rig::Env.new` |
-| `auth_path:`    | the `auth.json` those fields are read from and stored in | `~/.riffer/auth.json` |
-| `reasoning:`     | the reasoning effort (`off` `low` `medium` `high` `xhigh` `max`), validated and translated to the provider's own parameters by riffer ([Configuration](CONFIGURATION.md#reasoning)) | `nil` |
-| `riffer_config:` | the `Riffer::Config` the agent reads its reasoning and catalog from       | `Riffer.config`         |
-| `mcp_registry:` | where declared [MCP servers](MCP.md) are registered and unregistered: an object with riffer's `register(name:, endpoint:, tags:, discovery_headers:)` and `unregister(name)` | `Riffer::Mcp` |
-| `clock:`        | a callable returning seconds as a `Float`, which stamps the [tool call events](#tool-call-events) | the process's monotonic clock |
-| `snapshot:`     | a hash from `to_h` to restore; see [Snapshots](#snapshots)                 | `nil`                   |
+| Keyword          | Meaning                                                                                      | Default |
+| ---------------- | -------------------------------------------------------------------------------------------- | ------- |
+| `extensions:`    | the extensions to run, in order; `Riffer::Rig.bundled` returns the [bundled ones](EXTENSIONS.md#bundled-extensions-and-replacement), and `Riffer::Rig.bundled(:read)` one of them | `[]` |
+| `tools:`         | the [tool allowlist](TOOLS.md#identifiers); `nil` allows every tool                          | `nil`   |
+| `settings:`      | the merged settings, with symbol keys: `{ model: '…', git: { depth: 10 } }`                  | `{}`    |
+| `host:`          | the [host](HOSTS.md)                                                                         | `Riffer::Rig::Hosts::Null.new` |
+| `cwd:`           | the working directory tools and the environment block use                                    | `Dir.pwd` |
+| `name:`          | the agent's name in the [base prompt](INSTRUCTIONS.md#changing-the-base-prompt)              | `"riffer"` |
+| `instructions:`  | replaces the base prompt                                                                     | `nil`   |
+| `max_steps:`     | the [step limit](#capping-the-loop)                                                          | `nil`   |
+| `reasoning:`     | the reasoning level ([Configuration](CONFIGURATION.md#reasoning))                            | `nil`   |
+| `model_options:` | riffer `model_options` sent with every model call; `Riffer::Rig::Settings::ModelOptions.model_options(model)` builds the ones the Loader uses | `{}` |
+| `native_tools:`  | the [provider-native tool](TOOLS.md#provider-native-tools) switches: `{ web_search: true }`  | `{}`    |
+| `credentials:`   | each provider's resolved values, `{ anthropic: { api_key: '…' } }`, used by `/model` and when [restoring](#snapshots) | `{}` |
+| `env:`, `auth_path:` | where [MCP `auth` fields](MCP.md#secret-headers) are read from and stored                | `Env.new`, `~/.riffer/auth.json` |
+| `riffer_config:` | the `Riffer::Config` the agent reads its catalog and reasoning from                          | `Riffer.config` |
+| `mcp_registry:`  | where MCP servers are registered                                                             | `Riffer::Mcp` |
+| `clock:`         | a callable returning seconds, which stamps [tool call events](EVENTS.md#tool-call-events)    | the monotonic clock |
+| `snapshot:`      | a [snapshot](#snapshots) to restore                                                          | `nil`   |
 
-`runtime.settings` is the `settings:` hash with each extension's [declared defaults](EXTENSIONS.md#the-rigsetting-seam) filled into its namespace; core reads it only to hand each [command](#commands) its extension's namespace. `runtime.declared_settings` is the table of what extensions declared — extension name → key → default, names and keys as Symbols — for a host to render.
+`runtime.settings` is the `settings:` hash with each extension's declared defaults filled in, and `runtime.declared_settings` lists what each extension declared, for a host to display. `runtime.errors` lists the extensions that [failed to load](EXTENSIONS.md#error-isolation).
 
-Two Runtimes in one process share nothing but the process-wide extension registry, riffer's provider repository and riffer's config, which holds the process's one set of provider credentials.
+Two Runtimes in one process share only the extension registry, riffer's providers and its config — so they share one set of provider credentials.
 
 ## Prompting
 
-`prompt(text)` runs one turn on the calling thread. With a block it yields every riffer `StreamEvent` as it happens; without one it returns an `Enumerator`:
+`prompt(text)` runs one turn on the calling thread. With a block it yields each [event](EVENTS.md) as it happens; without one it returns an `Enumerator`:
 
 ```ruby
 runtime.prompt('Explain this repository') do |event|
@@ -113,94 +107,42 @@ runtime.prompt('Explain this repository') do |event|
   when Riffer::StreamEvents::ToolCallDone then puts "\n[tool: #{event.name}]"
   end
 end
-
-runtime.prompt('and this one?').each { |event| ... }
 ```
 
-One prompt runs at a time per Runtime; a second `prompt` or `ask` while one is running raises `Riffer::Rig::Runtime::BusyError`. Parallelism means more Runtimes, in more threads. `busy?` is `true` while a prompt given a block, `ask`, [command](#commands) or [rebuild](#rebuilding-after-a-code-reload) holds the Runtime, so a thread outside the turn — an [`on_job_exit`](#background-jobs) subscriber, say — can tell whether a turn is running.
-
-## Asking for a turn
-
-`ask(text)` runs one turn to completion and returns riffer's `Riffer::Agent::Response` — the same loop `prompt` streams, gathered into the single value riffer already builds. The headless host and embedders build on it; the terminal builds on the stream.
+`ask(text)` runs a turn to completion and returns riffer's `Riffer::Agent::Response`:
 
 ```ruby
 response = runtime.ask('Fix the failing test')
 puts response.content
-puts "outcome: #{response.outcome.reason}"
-response.messages.each do |message|
-  next unless message.is_a?(Riffer::Messages::Assistant)
-  message.tool_calls.each { |call| puts "  #{call.name}(#{call.arguments})" }
-end
-if (usage = response.token_usage)
-  puts "usage: #{usage.input_tokens} in / #{usage.output_tokens} out"
-  puts format('cost: $%.4f', usage.cost) if usage.cost
-end
+puts response.outcome.reason      # :completed, :max_steps, :length, :interrupted, …
+puts response.token_usage&.cost   # this turn, in USD, when priced
 ```
 
-How the run ended is riffer's `response.outcome` — `reason` is one of riffer's vocabulary (`completed`, provider finish reasons like `length` and `content_filter`, `max_steps`, `guardrail_blocked`, `interrupted`, …) and `detail` carries the specifics, such as the interrupt reason behind `:interrupted`. A [cancelled](#cancelling-a-turn) run ends the same way — `reason: :interrupted`, `detail: "cancelled"` — because riffer's outcome vocabulary has no `cancelled` entry yet. Hosts map `outcome.reason` to exit codes or UI.
+One turn runs at a time per Runtime: a second `prompt`, `ask`, command or rebuild while one runs raises `Riffer::Rig::Runtime::BusyError`, and `busy?` tells another thread whether one is running. For parallel work, use more Runtimes in more threads.
 
 ## Token tally and cost
 
-riffer prices usage at source: each provider looks its model up in `Riffer.config.catalog` and sets `cost` on the usage it reports. The Loader hands the `catalog_files` setting to that config when it builds a Runtime ([Configuration](CONFIGURATION.md#catalog_files)), and `tally` returns riffer's running total for the Runtime's agent — `agent.context.token_usage`, a `Riffer::Providers::TokenUsage` summed over every model call of every `prompt` and `ask`, or `nil` before the first turn.
+riffer prices each model call from the [catalog](CONFIGURATION.md#catalog_files). `tally` is the Runtime's running total, a riffer `TokenUsage`, or `nil` before the first turn:
 
 ```ruby
 Riffer.config.catalog_files = ['catalog.json']
-runtime = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6')
-response = runtime.ask('Fix the failing test')
-response.token_usage.cost # => this turn, in USD
-runtime.tally.input_tokens # => every turn so far
-runtime.tally.cost         # => every turn so far, in USD
+runtime.ask('Fix the failing test').token_usage.cost # => this turn, in USD
+runtime.tally.cost                                    # => every turn so far
 ```
 
-Each turn's usage is riffer's: on the `ask` response as `response.token_usage`, and on the stream as the closing `turn_end` event's `usage` and `cost` — the same values. Rates are USD per million tokens. riffer counts cache reads and writes inside `input_tokens`, so the cached share is priced at the `cache_read` and `cache_write` rates and only the rest at `input`.
+Cache reads and writes count inside `input_tokens` and are priced at their own rates. A model with no catalog entry has a `cost` of `nil`, never zero. The Loader sets `catalog_files` from the settings; without the Loader, set it before the first request.
 
-Missing pricing means `nil`, never zero: a model the catalog has no rates for reports no `cost`, and neither does the tally. The catalog is process-wide and keyed by model id. The terminal takes its rates from the catalog the Loader built from the merged `catalog_files` of the two settings files ([Configuration](CONFIGURATION.md#catalog_files)); an embedder sets `Riffer.config.catalog_files` itself, before the first request.
+The `cost` command shows the tally, then each turn:
 
-`cost` is a core command, listed in `commands` after [`model`](#switching-the-model). `run_command('cost')` answers with one `command_output`: the tally on the `session` line, then a line for each turn in the order the session's messages hold them:
-
-```
+```text
 session   ↑4100 · ↓132 · cache_write:900 · cache_read:900 · ~$0.0109
 turn 1    ↑2600 · ↓120 · cache_write:900 · cache_read:900 · ~$0.0063
 turn 2    ↑1500 · ↓12 · ~$0.0046
 ```
 
-A line holds the input and output tokens, each cache count above zero, and the cost when every model call it sums was priced. A turn is a prompt and every message up to the next one — a [job exit notification](#exit-notifications) starts no turn of its own — so a [restored](#snapshots) session lists the turns it was saved with; a turn whose model calls reported no usage reads `no usage`. The `session` line is the tally itself, so it still counts a turn that a [`before_request`](EXTENSIONS.md#the-rigon-seam) hook has since taken out of the messages. Before any usage is recorded the command answers `No usage recorded yet`.
-
-## Rig events
-
-The stream a host consumes is riffer's `StreamEvents` unchanged, plus a few rig-level events from `Riffer::Rig::Events`. A rig event is any object with `type` and `to_h` (the RBS interface `Riffer::Rig::Events::_Event`). Rig's own are frozen value objects that include `Riffer::Rig::Support::TypedValue`, which derives `type` and `to_h` from the type and attribute list each class declares and makes them equal when their class and `to_h` match; each has `to_h` — with the type folded in, so a headless host can print every record verbatim as NDJSON — and `type`, the snake_case form of its class name. A class opts in with `extend Riffer::Rig::Support::TypedValue::Schema`, `include Riffer::Rig::Support::TypedValue`, and a `typed_value :type, :attr, ...` declaration; every attribute it names must have a public reader, because `to_h` reads each one by name.
-
-| Rig event         | Carries                          | When                                                              |
-| ----------------- | -------------------------------- | ----------------------------------------------------------------- |
-| `session_start`   | `id`, `reason` (`:new`, `:restore`, `:reload`) | opens the first prompt after construction (or a restore, or a rebuild) |
-| `session_end`     | `reason` (`:reload`, `:close`)   | opens the first prompt after a [rebuild](#rebuilding-after-a-code-reload), ahead of its `session_start`; on `close` (hooks only — see the note below) |
-| `command_output`  | `command`, `text`                | a command called `ctx.say`                                        |
-| `skill_activated` | `name`                           | a skill was activated by command                                  |
-| `notify`          | `message`, `level`               | mirrors every `host.notify`, so a stream consumer sees extension errors too |
-| `before_tool_call` | `call_id`, `tool`, `args`, `at` | as a tool starts, after its `before_tool_call` hooks               |
-| `after_tool_call` | `call_id`, `tool`, `args`, `result`, `at`, `duration` | as every tool call finishes, after its `after_tool_call` hooks |
-| `job_exit`        | `job_id`, `command`, `exit_status`, `signal`, `duration`, `output_path` | as a [background job's exit](#exit-notifications) is delivered to the model, one per job |
-| `turn_end`        | `stop_reason`, `usage`, `cost`   | the last event of every `prompt`; `stop_reason` is riffer's outcome reason, or `:cancelled` after a `cancel`; `usage` is riffer's `TokenUsage` and `cost` its USD figure, `nil` when unpriced |
-
-`session_start` carries `:new`, `:restore` on a Runtime built from a [snapshot](#snapshots), or `:reload` after a [rebuild](#rebuilding-after-a-code-reload); `session_end` carries `:reload` or `:close`. `close` refuses further prompts and asks with `Riffer::Rig::Runtime::ClosedError` and unregisters every [MCP server](MCP.md) the Runtime registered; its `session_end` reaches extension hooks but not the stream, since no prompt follows it.
-
-### Tool call events
-
-`before_tool_call` and `after_tool_call` are the events the [extension hooks](EXTENSIONS.md#the-rigon-seam) of the same names receive, and the stream carries them as well, each yielded at the moment it happens rather than when the batch returns. riffer's `ToolCallDone` announces every call of a response, with its `call_id`, before any of them runs; then, one call at a time, a `before_tool_call` marks the tool starting and an `after_tool_call` the call finishing. They sit in the stream after the response's `ToolCallDone` events and before the first event of the next response, so a consumer can show a batch in flight.
-
-The stream gets one `before_tool_call` per call that runs, yielded once the call's `before_tool_call` hooks have settled and immediately before the tool runs; its `args` are the arguments the tool runs with, after any hook rewrote them. A call that will not run — a hook blocked it, or its arguments are not a JSON object — has none. A call to a tool that does not exist passes its hooks like any other, so it has one.
-
-The stream gets exactly one `after_tool_call` for every call, whatever became of it. `result` is the call's `Riffer::Tools::Response`, and `result.error?` says whether it failed, with `result.error_type` naming the kind: the tool's own error when the tool failed, `:unknown_tool` for a tool that does not exist, `:blocked` for a call a hook blocked, with the `args` the model sent, and `:validation_error` for arguments that are not a JSON object, whose `args` are empty. It is the event the `after_tool_call` hooks observed, yielded once they have run. Tools run one at a time, so a call's `after_tool_call` precedes the next call's `before_tool_call`. The exception is a turn that ends inside the batch — a tool that raises outside `StandardError` — which takes the remaining events with it.
-
-`call_id` is riffer's id for the call — the one on `ToolCallDone` and on the tool message — and `tool` is the tool's name. `at` is a monotonic timestamp in seconds, comparable only with the other `at` values of the same process: on `before_tool_call` the moment the tool started, on `after_tool_call` the moment it returned. `duration` is the seconds between the two, so it measures the tool alone: time spent in `before_tool_call` and `after_tool_call` hooks, a hook that waits on a person included, is left out, and a call that never ran has a `duration` of `0.0`. Summing the `duration`s of a batch gives its serial tool time.
-
-The timestamps come from the Runtime's `clock:`, a callable returning seconds as a `Float`; it defaults to the process's monotonic clock, and a test passes its own.
-
-Every `prompt` ends with `turn_end` — with a block or as an Enumerator — so a stream consumer never needs `ask` to learn how the turn ended and what it cost. The headless host prints this same stream as NDJSON; see [Headless mode](HEADLESS.md) for the wire shape.
-
 ## Cancelling a turn
 
-`cancel` stops the running turn. It is thread-safe and meant to be called from another thread — a signal handler's worker, a UI thread, a request handler — while `prompt` or `ask` blocks the thread that started the turn. It returns `nil` immediately; the turn ends on its own thread.
+`cancel` stops the running turn. Call it from another thread — a UI thread, a request handler — while `prompt` or `ask` blocks; it returns at once, and the turn ends on its own thread.
 
 ```ruby
 turn = Thread.new { runtime.prompt('refactor everything') { |event| render(event) } }
@@ -208,23 +150,13 @@ runtime.cancel
 turn.join
 ```
 
-A reply in flight stops at once, whether the turn is still waiting on the provider or the reply is streaming: the request is abandoned, and the text that had streamed is kept as the assistant message — delivered to [`on_message`](#observing-messages) like any other — while reasoning or a tool call still arriving is dropped. A turn cancelled this way reports no `usage` on its `turn_end`. Tool calls in flight are not cut off: the turn stops when they return. The bundled `bash` tool does not wait that long: it polls the cancel flag, kills its command's process group and returns a tool error ending in `[cancelled]`. A tool of your own can do the same through `context[:cancel_flag].set?`. [Background jobs](#background-jobs) keep running through a cancel, and their exits are still delivered; `close` ends them.
-
-A cancelled turn leaves the conversation usable. Tool calls that never got a result are filled with an "interrupted" tool error, the stream carries riffer's `Riffer::StreamEvents::Interrupt` event with reason `:cancelled`, and it closes with `turn_end` carrying `stop_reason: :cancelled`. From `ask`, the response's outcome is `reason: :interrupted` with `detail: "cancelled"`. The next `prompt` or `ask` carries on from there.
-
-`cancel` with no turn running is a no-op: the flag is cleared when the next turn starts.
+A streaming reply stops at once and keeps the text it had reached. A running tool call finishes first, except the bundled `bash`, which kills its command; your own tool can check `context[:cancel_flag].set?` to do the same. The turn ends with `turn_end` and `stop_reason: :cancelled` (from `ask`, `outcome.reason` is `:interrupted` with `detail: "cancelled"`), and the next prompt carries on from there. [Background jobs](#background-jobs) keep running. With no turn running, `cancel` does nothing.
 
 ## Commands
 
-Slash commands are runtime objects: extensions register them with [`rig.command`](EXTENSIONS.md#the-rigcommand-seam), and every host drives them through the Runtime, so a command works the same in the terminal, headless and over ACP. Commands that end or replace the Runtime itself — `/exit`, `/new`, `/resume` — belong to the host, not here, and so does the terminal's `/help`, which lists them alongside these.
+Slash commands belong to the Runtime, so they work the same in every host. `commands` lists them — the Loader's `reload` and `trace`, the core `auth`, `model`, `reasoning` and `cost`, one `skill:<name>` per skill, and extensions' commands — each with a `name` (no slash) and a `description`.
 
-`commands` lists the registered commands in load order. Each is a `Riffer::Rig::Command` with a `name` (without the leading slash) and a `description`:
-
-```ruby
-runtime.commands.each { |command| puts "/#{command.name}  #{command.description}" }
-```
-
-`run_command(name, args)` runs one on the calling thread and returns `nil`; its output arrives as events. With a block it yields each one as it happens — `command_output` for every `ctx.say`, the whole stream of a turn the command starts with `ctx.prompt` (from `session_start`, if it is the Runtime's first turn, to `turn_end`), and a `notify` for anything the host was told. Without a block the events are discarded, as `ask` discards the stream.
+`run_command(name, args)` runs one on the calling thread and yields its events: `command_output` for each `ctx.say`, a whole turn's events if the command starts one, and `notify` for anything reported. An unknown name, or a command that raises, is reported through the host and never raises from `run_command`.
 
 ```ruby
 runtime.run_command('log', '5') do |event|
@@ -236,33 +168,20 @@ runtime.run_command('log', '5') do |event|
 end
 ```
 
-A command runs under the same rule as `prompt`: one at a time per Runtime, so `run_command` while a prompt or command is running raises `Riffer::Rig::Runtime::BusyError`, and after `close` it raises `Riffer::Rig::Runtime::ClosedError`. A command that raises never escapes `run_command`: it is reported through `host.notify` at level `:error` (and so as a `notify` event), and the Runtime stays usable. An unknown name is reported the same way. `cancel` stops a turn a command started, as it stops any other.
+`/exit`, `/new`, `/resume` and `/help` are the terminal's own: they end, replace or describe the Runtime, so a host implements them itself.
 
-## Switching the model
-
-`model` is the effective `"provider/name"` string. Assigning `model=` switches it for this Runtime only: history, the tally, tools and the host all carry over, and the next model call goes to the new model. A string without a provider prefix, or with a provider riffer's registry does not know, raises `Riffer::ArgumentError` and leaves the model unchanged.
+## Switching the model and reasoning level
 
 ```ruby
-runtime.model # => "anthropic/claude-sonnet-4-6"
 runtime.model = 'openai/gpt-5'
-```
-
-`model` is also a core command, listed in `commands` after [`auth`](PROVIDERS.md#auth) and ahead of the [`skill:<name>`](SKILLS.md#skillname) commands and every extension's: `run_command('model', 'openai/gpt-5')` validates before it assigns. A bare name or an unknown provider gets a `command_output` listing the providers; the provider is set up first, its SDK gem ensured and then any required field missing from the Runtime's `credentials:` resolved through [`Credentials.install`](PROVIDERS.md#rifferrigcredentials), and the switch is refused through `notify` at level `:error` when the gem cannot be loaded or a field is still missing. `--save` also writes the model to `~/.riffer/settings.json`, and on its own saves the current one. With no argument it reports the current model.
-
-## Switching the reasoning level
-
-`reasoning` is the reasoning level in effect — the `reasoning:` the Runtime was built with, else the `reasoning` key of `settings:`, else `nil` for the model's default. Assigning `reasoning=` switches it for this Runtime only, and the next model call carries it: the level rides on the agent config, which a `/model` switch shares, so a switch keeps the level in effect. A level riffer refuses raises from `reasoning=` before anything changes.
-
-```ruby
-runtime.reasoning # => "high"
 runtime.reasoning = 'low'
 ```
 
-`reasoning` is also a core command, listed after [`model`](#switching-the-model): `run_command('reasoning', 'high')` refuses a level riffer does not accept with a `command_output` naming the levels riffer accepts, and leaves the level unchanged. `--save` also writes the level to `~/.riffer/settings.json`, and on its own saves the level in effect. With no argument it reports the current level.
+Both apply from the next model call and keep the conversation, tally and tools. An invalid value raises `Riffer::ArgumentError` and changes nothing. The `model` command does more than the setter: it ensures the provider's SDK gem and credentials first, refusing the switch if either is missing ([Configuration](CONFIGURATION.md#model)).
 
 ## Rebuilding after a code reload
 
-`rebuild(extensions:, settings:)` replaces everything the Runtime's extensions registered — tools, commands, prompt sections, hooks, skills sources, declared settings and MCP servers — with what the given extension list registers, run against a fresh registrar. It is the primitive behind hot reloading: an embedder without the Loader calls it after its own code reload (a Rails `to_prepare` block, say) with the re-created extension objects and the settings it wants now, and a Loader-built Runtime gets it through `/reload` ([Reloading](RELOADING.md)). The Runtime watches no files and has no `/reload` of its own, since it knows no filesystem conventions.
+`rebuild(extensions:, settings:)` replaces everything the extensions registered with what a new extension list registers. The Loader's `/reload` uses it; an app with its own code reloading calls it directly:
 
 ```ruby
 Rails.application.reloader.to_prepare do
@@ -270,95 +189,70 @@ Rails.application.reloader.to_prepare do
 end
 ```
 
-The new registrations are built aside and swapped in only once every extension in the list has loaded. If any fails — its block raises, its `requires` is unmet, or its name collides with a core settings key — `rebuild` raises that error and nothing on the Runtime changes. This is stricter than construction, which skips a failing extension and records it on `errors`: a rebuild either swaps in the whole list or leaves the working one in place. After a successful rebuild `errors` is empty, and replacements across the new list are reported through `notify` as at construction.
-
-Kept across a rebuild: the message history, the [tally](#token-tally-and-cost), the model (including a [`model=`](#switching-the-model) override — a `model` key in the new settings does not clobber it), the reasoning level (including a [`reasoning=`](#switching-the-reasoning-level) override), `id`, `host`, and every constructor keyword other than `extensions:` and `settings:` (`tools:` still filters the new tools, and reports the names they lack). An MCP server whose name, url and headers are unchanged is not registered again; a changed one is re-registered and a dropped one unregistered ([MCP](MCP.md#reload-and-close)). Providers are process-wide: riffer never unregisters one, so a provider registered before the rebuild stays registered, and an extension that registers it again just replaces the entry.
-
-Once the Runtime's session has started, the old hooks get `session_end(reason: :reload)` before the swap and the new ones `session_start(reason: :reload)` after it — where an extension releases and re-acquires process-wide state — and the next prompt's stream opens with those two events. Before the first turn a rebuild fires neither, and the first prompt opens with `session_start(reason: :new)` as usual.
-
-`rebuild` runs between turns only. Like `prompt`, it raises `Riffer::Rig::Runtime::BusyError` while another thread holds the Runtime mid-prompt, command or hook, and `Riffer::Rig::Runtime::ClosedError` after `close`. A nested rebuild from the thread that already holds it — a command such as the Loader's `/reload`, or a hook at a quiet boundary — proceeds, since a rebuild swaps configuration rather than entering the turn. It returns `nil`.
+The new extensions are loaded aside and swapped in only when all of them succeed. If any fails, `rebuild` raises its error and nothing changes — stricter than construction, which skips a failing extension. The conversation, tally, id, host, any model or reasoning switch and every other constructor keyword are kept. Extensions' `session_end` and `session_start` hooks run around the swap with reason `:reload`. `rebuild` runs between turns, or from a command or hook within one.
 
 ## Capping the loop
 
-`max_steps:` caps how many LLM steps one run may take (`nil` — the default — runs the loop without a limit). A run that hits the cap ends with `outcome.reason: :max_steps`; the model's partial output is still on the response.
-
 ```ruby
 runtime = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', max_steps: 8)
-response = runtime.ask('do the thing')
-puts response.outcome.reason # => :max_steps if the cap stopped the loop
+runtime.ask('do the thing').outcome.reason # => :max_steps if the cap stopped it
 ```
 
-The cap applies to each run. A turn the Runtime [continues for a job exit notice](#exit-notifications) starts a new run with its own cap, and no continuation starts once the turn's runs have together used the cap: the notice then arrives at the start of the next turn.
+`max_steps:` caps the model calls in one run. The model's partial output stays on the response. A turn continued for a [background job](#background-jobs) starts a new run with its own cap, but the turn isn't continued once its runs have used the cap between them.
 
 ## Snapshots
 
-A Runtime saves and restores as a plain hash. `to_h` returns the snapshot; `Riffer::Rig::Runtime.new(model, snapshot: hash, ...)` builds a Runtime that carries on from it. The Runtime never touches disk: keeping the hash — as JSON, in a database, anywhere — is the embedder's job. [Sessions](SESSIONS.md) describes what a snapshot holds.
+A Runtime saves to and restores from a plain hash. Storing it is up to you:
 
 ```ruby
-snapshot = runtime.to_h
-File.write('session.json', JSON.generate(snapshot))
+File.write('session.json', JSON.generate(runtime.to_h))
 
 snapshot = JSON.parse(File.read('session.json'), symbolize_names: true)
-runtime = Riffer::Rig::Runtime.new(
-  'anthropic/claude-sonnet-4-6',
-  extensions: Riffer::Rig.bundled,
-  credentials: credentials,
-  snapshot: snapshot,
-)
-runtime.ask('where were we?')
+runtime = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', extensions: Riffer::Rig.bundled, credentials: credentials, snapshot: snapshot)
 ```
 
-The snapshot's keys are symbols; parse JSON with `symbolize_names: true`. A snapshot holds history, not registrations: tools, commands, hooks, prompt sections and declared settings come from the `extensions:` and `settings:` given at restore time, through the same path a fresh Runtime takes. The tally is not stored either — the restored Runtime's `tally` is the sum of its messages' `token_usage`.
+| Key          | Holds                                                                                          |
+| ------------ | ---------------------------------------------------------------------------------------------- |
+| `:id`        | the session id, kept by the restored Runtime                                                   |
+| `:messages`  | the conversation as riffer message hashes, system message first                                |
+| `:model`     | a model switched to with `model=` or `/model`, or `nil`                                         |
+| `:reasoning` | the reasoning level in effect, or `nil`                                                        |
+| `:skills`    | the skills the model activated                                                                 |
 
-History is data, and the present wins, so nothing in a snapshot blocks a restore:
+A snapshot holds history, not configuration: tools, commands, hooks and settings come from the `extensions:` and `settings:` given when restoring. Nothing in a snapshot blocks a restore:
 
-- A tool call for a tool that no longer exists is just history the model reads.
-- Tool calls at the tail with no result — a process killed mid-turn — are filled with an "interrupted" tool error on load, as a [cancel](#cancelling-a-turn) does, and are never run.
-- The saved model (a `model=` or `/model` switch) applies only if its provider has an entry in `credentials:`; otherwise the given model is used and the host gets one `notify` at level `:warning`. A Runtime restored with its saved model keeps it as its own override, so its next `to_h` saves it again.
-- The saved reasoning level (a `reasoning=` or `/reasoning` switch) is restored as the level in effect the same way.
-- Activated skills re-apply by name; a skill that no longer exists is dropped.
+- a call to a tool that no longer exists is just history;
+- tool calls left without a result by a crash get an "interrupted" error and are never run;
+- a saved model is used only if `credentials:` has its provider, otherwise the given model is used and the host is told;
+- skills that no longer exist are dropped;
+- the tally is recomputed from the messages.
 
-The first prompt of a restored Runtime opens with `session_start` carrying the snapshot's `id` and reason `:restore`, and extensions' `session_start` hooks see the same reason.
+The first prompt after a restore opens with `session_start` and reason `:restore`.
 
 ## Observing messages
-
-`on_message { |message| }` registers an observer called with each message the conversation gains, in order: the user's prompt, each assistant message, each tool result and each [job exit notification](#exit-notifications), as riffer's `Riffer::Messages` objects. It is how a store appends to a session as it happens rather than snapshotting at the end:
 
 ```ruby
 runtime.on_message { |message| log.puts(JSON.generate(message.to_h)) }
 ```
 
-Observers run on the prompting thread, inside the turn, once per message; they survive a model switch. The system message is not delivered — it is rebuilt every turn — nor are the "interrupted" results filled in after a cancel or on restore.
+`on_message` calls the block with each message the conversation gains — your prompt, each assistant reply, each tool result, each [background job notice](#background-jobs) — as riffer `Riffer::Messages` objects, on the turn's thread. This is how a store saves a session as it happens. The system message is not delivered, since it is rebuilt every turn.
 
 ## Background jobs
 
-A `bash` call with `run_in_background` starts a job that outlives the tool call and the turn that started it. The Runtime watches every job and reports its exit as it happens, whether or not a turn is running:
+[Tools](TOOLS.md#background-jobs) describes jobs from the model's side. A host has two ways to follow them:
 
 ```ruby
-exits = Queue.new
-runtime.on_job_exit { |completion| exits << completion }
-runtime.running_job_count # => 2
+runtime.on_job_exit { |completion| exits << completion }  # as each job exits
+runtime.running_job_count                                  # => 2
 ```
 
-`on_job_exit { |completion| }` registers a subscriber called once per job, when the job exits: by itself, or on a signal such as `bash_kill`'s. The completion is a frozen `Riffer::Rig::Runtime::JobCompletion`:
+`on_job_exit` runs on a background thread, once per job, the moment it exits. Push the completion onto a queue rather than rendering or prompting from the block. The completion is a frozen `Riffer::Rig::Runtime::JobCompletion` with `job_id`, `command`, `exit_status` (`nil` if a signal ended it), `signal` (such as `"TERM"`), `duration`, `output_path` and `tail` (the last 2,000 bytes).
 
-| Reader        | Value                                                                                                          |
-| ------------- | -------------------------------------------------------------------------------------------------------------- |
-| `job_id`      | The id `bash` returned when it started the job                                                                 |
-| `command`     | The shell command                                                                                              |
-| `exit_status` | The exit status; `nil` for a job ended by a signal                                                             |
-| `signal`      | The signal that ended the job, named without `SIG` (`"TERM"`); `nil` for a job that exited                     |
-| `duration`    | Seconds from start to exit, as a `Float`                                                                       |
-| `output_path` | The file holding the job's output, or the most recent of it once it passes the [cap](TOOLS.md#background-jobs) |
-| `tail`        | The last 2,000 bytes of that output, with invalid characters replaced                                          |
-
-Subscribers run on a background thread, not the thread running the turn, and one at a time. Hand the completion to your own loop — push it onto a queue — rather than rendering, prompting or closing the Runtime from the block.
-
-`running_job_count` is the number of jobs still running. It is thread-safe, and has already dropped by the time a subscriber hears of that job's exit.
+The stream's [`job_exit`](EVENTS.md#rig-events) event marks the later moment the model is told, on the turn's thread.
 
 ### Waiting for jobs
 
-A host whose model stops with jobs still running can wait for them on its own thread and give the model a turn for each exit, with no user text — what [headless](HEADLESS.md#background-jobs) does before it exits:
+A host whose model stops with jobs still running can wait and give the model a turn for each exit, as [headless](HEADLESS.md#background-jobs) does:
 
 ```ruby
 runtime.prompt('run the three test suites in the background') { |event| render(event) }
@@ -370,23 +264,36 @@ end
 runtime.close
 ```
 
-`pending_jobs?` is true while any job is running or has exited without the model being told of it yet, so a job that exits just as a turn ends is never missed. `await_job_exit(timeout:)` blocks until an exit is waiting to be told and returns `true`, or returns `false` once `timeout` seconds pass without one; it returns `true` at once when an exit is already waiting, and without a `timeout` it waits for as long as it takes. It neither delivers nor consumes the exit, it is safe to call from any thread, and `close` from another thread ends the wait at once.
+| Method                      | Does                                                                                      |
+| --------------------------- | ----------------------------------------------------------------------------------------- |
+| `pending_jobs?`             | true while a job runs or has exited without the model being told                         |
+| `pending_job_exit_count`    | the exits the model hasn't been told of yet                                               |
+| `await_job_exit(timeout:)`  | blocks until an exit is waiting (`true`) or the timeout passes (`false`); `close` ends it |
+| `follow_up`                 | runs a turn with no user text that tells the model of every waiting exit, streaming like `prompt` |
+| `close`                     | kills running jobs, deletes their output files, and refuses further prompts              |
 
-`follow_up` runs a turn with no user text: it tells the model of every exit waiting to be told, as one [notification](#exit-notifications), and streams the model's reply exactly as `prompt` does — with a block it yields each event and returns `nil`, without one it returns an `Enumerator`. It is a turn like any other: one prompt or follow-up runs at a time, it ends with a `turn_end`, and it is [continued](#exit-notifications) for exits that land as the model finishes. With no exit waiting it does not call the model, and its `turn_end` has `stop_reason` `:completed`.
+### Job notices in the conversation
 
-`pending_job_exit_count` is the number of exits the model has not been told of yet. It is thread-safe, and counts an exit by the time a subscriber hears of it — the [terminal](TERMINAL.md#background-jobs) reads it to start a `follow_up` the moment a job exits while it waits for input, and to skip one when a turn has told the model already.
+A store sees every notice the model read, through `on_message`. A notice delivered mid-turn is part of a tool result. One delivered as its own message is a `Riffer::Rig::Runtime::JobNotification`, a user-role message whose `to_h` adds `job_notification: true`, so anything reading saved messages can tell it from a prompt someone typed; one delivered by `follow_up` also carries `follow_up_exits`, the number of exits it reports. A snapshot restores these as `JobNotification`s.
 
-`close` ends delivery: the jobs it kills, and any exit that lands after it, reach no subscriber. A host that swaps one Runtime for another closes the old one and subscribes on the new one. `close` also removes the output file of every job, so read what you need from an `output_path` first.
+## Credentials
 
-### Exit notifications
+`Riffer::Rig::Credentials` resolves provider credentials the way the Loader does, for an app that builds its Runtime directly:
 
-The model is told of each exit too, as part of the conversation, so it never polls for one ([Tools](TOOLS.md#background-jobs) has the notice it reads and the three points it can arrive at). The Runtime delivers a notice only on the thread running the turn, at a point where the session can change — never from the background thread a subscriber runs on — so a long reply or a long tool call delays it until the next such point.
+```ruby
+resolution = Riffer::Rig::Credentials.install(:azure_openai, host: host)
+resolution.values  # => { endpoint: "https://…", api_key: "…" }
+resolution.missing # => []
+```
 
-Each delivery puts one `job_exit` event per job on the stream, before the message that carries the notice reaches `on_message`. It is the moment to render an exit in the transcript; `on_job_exit` is the one to keep a live count with, since it fires when the job exits rather than when the model is told.
+| Method                       | Does                                                                                     |
+| ---------------------------- | ---------------------------------------------------------------------------------------- |
+| `install(identifier, host:)` | resolves every field in [order](PROVIDERS.md#resolution-order), asking the host if it can, and applies them once none is missing |
+| `apply(identifier, values)`  | assigns values from elsewhere to `Riffer.config`                                          |
+| `store(identifier, values)`  | saves secrets to `auth.json` and plain values to settings                                |
+| `remove(identifier)`         | deletes what `store` saved                                                               |
+| `status(identifier)`         | `:env`, `:stored`, `:chain` or `:missing`                                                |
 
-`on_message` observers see every notice, because a store has to keep what the model read:
+A file that doesn't parse comes back as a `String` message in place of the result. `install` runs `!command` values every time, so call it once and keep the result.
 
-- A notice delivered during a turn is part of a tool result: the `Riffer::Messages::Tool` an observer receives holds the tool's output, a blank line, and the notice. The `result` on that call's `after_tool_call` event is the tool's output alone.
-- A notice delivered as the model finishes its reply, ahead of the next prompt, or by a [follow-up](#waiting-for-jobs), is a `Riffer::Rig::Runtime::JobNotification` — a `Riffer::Messages::User`, so every provider serializes it as a user turn — whose `to_h` adds `job_notification: true`. The key is how anything reading stored messages tells a notice from a prompt the user typed. A [snapshot](#snapshots) restores a hash carrying it as a `JobNotification`. The notice a follow-up delivers opens a turn of its own rather than joining a prompt's, so its `to_h` also adds `follow_up_exits`, the number of exits it reports; `follow_up_exits` on the object returns it, and `nil` for any other notice.
-
-A turn the Runtime continues for a notice is still one turn: one `turn_end`, whose `usage` and the `Riffer::Agent::Response` of `ask` cover every reply in it.
+riffer-rig reads the process environment only through a `Riffer::Rig::Env`: `Env.new` snapshots it, and `Env.new('ANTHROPIC_API_KEY' => '…')` builds one from a hash for tests.
