@@ -678,6 +678,15 @@ describe Riffer::Rig::Terminal::Repl do
       assert_equal ['/model'], session
     end
 
+    it 'sends a multi-line input on Enter' do
+      type('a')
+      press(:newline)
+      type("b\r")
+      @keys.close
+
+      assert_equal ["a\nb"], session
+    end
+
     it 'recalls a submitted line from the history' do
       type("hi\r")
       press(:up)

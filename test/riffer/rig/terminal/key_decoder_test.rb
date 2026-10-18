@@ -35,8 +35,8 @@ describe Riffer::Rig::Terminal::KeyDecoder do
       assert_equal [[:enter, nil], [:tab, nil], [:backspace, nil]], pairs("\r\t\x7f")
     end
 
-    it 'decodes line feed as Enter and Ctrl-H as Backspace rather than as chords' do
-      assert_equal [[:enter, nil], [:backspace, nil]], pairs("\n\x08")
+    it 'decodes line feed as a newline key and Ctrl-H as Backspace rather than as chords' do
+      assert_equal [[:newline, nil], [:backspace, nil]], pairs("\n\x08")
     end
 
     it 'decodes multibyte characters as one text event' do
@@ -85,6 +85,14 @@ describe Riffer::Rig::Terminal::KeyDecoder do
 
     it 'decodes escape followed by a character as escape then text' do
       assert_equal [[:escape, nil], [:text, 'a']], pairs("\ea")
+    end
+
+    it 'decodes escape followed by a carriage return as Alt-Enter' do
+      assert_equal [[:alt_enter, nil]], pairs("\e\r")
+    end
+
+    it 'decodes escape followed by a line feed as escape then newline' do
+      assert_equal [[:escape, nil], [:newline, nil]], pairs("\e\n")
     end
 
     it 'recovers when a control byte interrupts a sequence' do

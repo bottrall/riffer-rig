@@ -8,6 +8,10 @@ describe Riffer::Rig::Terminal::Wrapper do
     Riffer::Rig::Terminal::Wrapper.new(width: width, indent: indent)
   end
 
+  def verbatim(width: 10, indent: 2)
+    Riffer::Rig::Terminal::Wrapper.new(width: width, indent: indent, verbatim: true)
+  end
+
   it 'emits nothing until a line completes' do
     assert_empty wrapper << 'hello'
   end
@@ -162,5 +166,47 @@ describe Riffer::Rig::Terminal::Wrapper do
     output = Timeout.timeout(1) { wrapper(width: 1) << "日本\n" }
 
     assert_equal "  日\n  本\n", output
+  end
+
+  it 'keeps runs of spaces between words when verbatim' do
+    assert_equal "  a    b\n", verbatim << "a    b\n"
+  end
+
+  it 'keeps the spaces trailing a line when verbatim' do
+    assert_equal "  hello  \n", verbatim(width: 20) << "hello  \n"
+  end
+
+  it 'keeps the space at a wrap boundary when verbatim' do
+    assert_equal "  hello \n  world\n", verbatim << "hello world\n"
+  end
+
+  it 'hard-splits an overfull word when verbatim' do
+    assert_equal "  #{'a' * 8}\n  aaaa\n", verbatim << "#{'a' * 12}\n"
+  end
+
+  it 'hard-splits a run of spaces wider than the width when verbatim' do
+    assert_equal "  a\n          \n      b\n", verbatim << "a#{' ' * 12}b\n"
+  end
+
+  it 'keeps the spaces trailing a wrapped pending line once when verbatim' do
+    subject = verbatim(width: 8)
+    subject << 'abcdef  '
+
+    assert_equal "    \n", subject.flush
+  end
+
+  it 'keeps a whitespace-only line as typed when verbatim' do
+    assert_equal "  a\n    \n  b\n", verbatim << "a\n  \nb\n"
+  end
+
+  it 'flushes a whitespace-only pending line as typed when verbatim' do
+    subject = verbatim
+    subject << '   '
+
+    assert_equal "     \n", subject.flush
+  end
+
+  it 'emits a bare blank line for an empty line when verbatim' do
+    assert_equal "  a\n\n  b\n", verbatim << "a\n\nb\n"
   end
 end

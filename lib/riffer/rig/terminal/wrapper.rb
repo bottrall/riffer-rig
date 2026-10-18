@@ -3,14 +3,17 @@
 class Riffer::Rig::Terminal::Wrapper
   # @rbs @width: Integer?
   # @rbs @indent: Integer
+  # @rbs @verbatim: bool
   # @rbs @line: String
 
   # @rbs width: Integer?
   # @rbs indent: Integer
+  # @rbs verbatim: bool
   # @rbs return: void
-  def initialize(width:, indent:)
+  def initialize(width:, indent:, verbatim: false)
     @width = width
     @indent = indent
+    @verbatim = verbatim
     @line = ''
   end
 
@@ -22,18 +25,26 @@ class Riffer::Rig::Terminal::Wrapper
     *overflow, tail = wrap(pending)
     # A cut leaves the pending line starting on a word, so the whitespace at a
     # wrap boundary is never mistaken for the indentation of a new line.
-    @line = overflow.empty? ? pending : "#{tail}#{pending[/\s*\z/]}"
-    [*terminated.map { |line| line.strip.empty? ? "\n" : indented(wrap(line)) }, indented(overflow)].join
+    # Verbatim wrap is lossless, so tail already carries that whitespace there.
+    remainder = @verbatim ? tail.to_s : "#{tail}#{pending[/\s*\z/]}"
+    @line = overflow.empty? ? pending : remainder
+    [*terminated.map { |line| blank?(line) ? "\n" : indented(wrap(line)) }, indented(overflow)].join
   end
 
   # @rbs return: String
   def flush
     pending = @line
     @line = ''
-    pending.strip.empty? ? '' : indented(wrap(pending))
+    blank?(pending) ? '' : indented(wrap(pending))
   end
 
   private
+
+  # @rbs text: String
+  # @rbs return: bool
+  def blank?(text)
+    @verbatim ? text.empty? : text.strip.empty?
+  end
 
   # @rbs text: String
   # @rbs return: Array[String]
@@ -41,10 +52,11 @@ class Riffer::Rig::Terminal::Wrapper
     limit = usable_width
     return [text] unless limit
 
-    pieces = words(text, limit).flat_map do |word|
-      Riffer::Rig::Terminal::Columns.width(word) > limit ? pack(word.grapheme_clusters, limit, '') : [word]
+    units = @verbatim ? text.split(/(\s+)/) : words(text, limit)
+    pieces = units.flat_map do |unit|
+      Riffer::Rig::Terminal::Columns.width(unit) > limit ? pack(unit.grapheme_clusters, limit, '') : [unit]
     end
-    pack(pieces, limit, ' ')
+    pack(pieces, limit, @verbatim ? '' : ' ')
   end
 
   # @rbs text: String

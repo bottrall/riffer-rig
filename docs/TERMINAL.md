@@ -1,25 +1,26 @@
 # Terminal
 
-`riffer` with no `-p` opens the interactive terminal. It keeps two rows at the bottom of the screen — the input line, and a status line under it — and prints everything else above them, a blank row clear of the input line: the banner, each message as it starts, each turn's answer and stat line, and command output. When there is no terminal to draw on, it reads plain lines instead ([Without a terminal](#without-a-terminal)).
+`riffer` with no `-p` opens the interactive terminal. It keeps the input at the bottom of the screen — as many rows as it wraps to, and a status line under them — and prints everything else above, a blank row clear of the input: the banner, each message as it starts, each turn's answer and stat line, and command output. When there is no terminal to draw on, it reads plain lines instead ([Without a terminal](#without-a-terminal)).
 
 Colour is on when the output is a terminal; set `NO_COLOR` to turn it off.
 
 ## The input line
 
-The input line, marked `›`, is always there, including while a turn runs. Enter sends the line; a line that is empty or only spaces is not sent.
+The input line, marked `›`, is always there, including while a turn runs. It can be more than one row: text wraps at the edge of the screen and each row that follows lines up under the prompt, spaces show as you typed them, and Ctrl-J or Alt-Enter starts a new row at the cursor. An input that wraps past the screen shows a window of at most eight rows, scrolled to keep the cursor's row in view. Enter sends the input; an input that is empty or only spaces is not sent.
 
 | Key                                                      | Does                                                                                                                                                 |
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Enter                                                    | sends the line ([Queueing](#queueing-messages))                                                                                                      |
+| Enter                                                    | sends the input ([Queueing](#queueing-messages))                                                                                                     |
+| Ctrl-J, Alt-Enter (Option-Enter)                         | starts a new row at the cursor instead of sending                                                                                                    |
 | Left, Right                                              | moves one character                                                                                                                                  |
 | Ctrl-Left, Ctrl-Right, Alt-Left, Alt-Right, Alt-B, Alt-F | moves one word, a run of letters and digits                                                                                                          |
-| Home, End                                                | moves to the start or the end of the line                                                                                                            |
+| Home, End                                                | moves to the start or the end of the input                                                                                                           |
 | Backspace, Delete                                        | deletes the character before or under the cursor                                                                                                     |
 | Ctrl-W                                                   | cuts back to the start of the word before the cursor, a run of anything but spaces                                                                   |
 | Ctrl-U                                                   | cuts everything before the cursor                                                                                                                    |
 | Ctrl-K                                                   | cuts everything from the cursor to the end                                                                                                           |
 | Ctrl-Y                                                   | inserts the last cut at the cursor, even one from an earlier line                                                                                    |
-| Up, Down                                                 | steps through the lines sent since `riffer` started; Down past the newest brings back the line you were typing                                       |
+| Up, Down                                                 | steps through the inputs sent since `riffer` started; Down past the newest brings back the input you were typing                                     |
 | Ctrl-T                                                   | opens or closes the [peek](#peek) while a turn runs                                                                                                  |
 | Ctrl-C                                                   | cancels the running turn or an open question; with neither, asks for a second Ctrl-C to exit ([Interrupting and exiting](#interrupting-and-exiting)) |
 | Ctrl-D                                                   | on an empty line, ends the session once the queued messages have run                                                                                 |
@@ -41,7 +42,7 @@ The palette closes once the line has a space in it, so Enter sends a command wit
 
 ### Pasting
 
-A paste arrives as text, not as keystrokes: a line break in it does not send the line, and shows as `␊` (a tab as `␉`). A paste of 1,000 characters or more shows as `[pasted 1.2k chars]`, and Backspace, Delete and the arrows treat it as a single character; the whole text is sent. Once sent, it is printed above with its line breaks and indentation kept, a tab as four spaces. Bytes that are not valid UTF-8 are dropped.
+A paste arrives as text, not as keystrokes: a line break in it does not send the input, and shows as a line break, as if typed (a tab as `␉`). A paste of 1,000 characters or more shows as `[pasted 1.2k chars]`, and Backspace, Delete and the arrows treat it as a single character; the whole text is sent. Once sent, it is printed above with its line breaks and indentation kept, a tab as four spaces. Bytes that are not valid UTF-8 are dropped.
 
 ## Queueing messages
 

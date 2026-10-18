@@ -78,8 +78,10 @@ class Riffer::Rig::Terminal::KeyDecoder
     when ESCAPE
       @state = :escape
       []
-    when "\r", "\n"
+    when "\r"
       [Riffer::Rig::Terminal::Key.new(:enter)]
+    when "\n"
+      [Riffer::Rig::Terminal::Key.new(:newline)]
     when "\t"
       [Riffer::Rig::Terminal::Key.new(:tab)]
     when "\x7f", "\x08"
@@ -152,6 +154,9 @@ class Riffer::Rig::Terminal::KeyDecoder
     when 'O'
       @state = :ss3
       []
+    when "\r"
+      @state = :ground
+      [Riffer::Rig::Terminal::Key.new(:alt_enter)]
     else
       @state = :ground
       name = META_KEYS.fetch(char, nil)
