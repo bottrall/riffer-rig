@@ -1,6 +1,6 @@
 # Terminal
 
-`riffer` with no `-p` opens the interactive terminal. It keeps the input at the bottom of the screen — as many rows as it wraps to, and a status line under them — and prints everything else above, a blank row clear of the input: the banner, each message as it starts, each turn's answer and stat line, and command output. While the session is still starting, the rows are replaced by a single dim line that animates while it waits — a braille spinner rolling through riff-themed quips like `⠹ warming the amp…`; the input line and the banner take their place together, once the banner's content is known. When there is no terminal to draw on, it reads plain lines instead ([Without a terminal](#without-a-terminal)).
+`riffer` with no `-p` opens the interactive terminal. It keeps the input at the bottom of the screen — as many rows as it wraps to, a blank row under them, and the status line under that — and prints everything else above, a blank row clear of the input: the banner, each message as it starts, each turn's answer and stat line, and command output. While the session is still starting, the rows are replaced by a single dim line that animates while it waits — a braille spinner rolling through riff-themed quips like `⠹ warming the amp…`; the input line and the banner take their place together, once the banner's content is known. When there is no terminal to draw on, it reads plain lines instead ([Without a terminal](#without-a-terminal)).
 
 Colour is on when the output is a terminal; set `NO_COLOR` to turn it off.
 
@@ -49,27 +49,28 @@ A paste arrives as text, not as keystrokes: a line break in it does not send the
 
 ## Queueing messages
 
-Enter takes the line even while a turn runs. A message sent then waits its turn, and the input line shows how many are waiting, as `· 2 queued` after what you are typing. Queued messages run one at a time, in the order you sent them, each as a turn of its own once the one before has ended; each is printed above as `› message` when it starts. Slash commands queue the same way, and `/exit` or `/quit` ends the session when it reaches the front, dropping anything queued behind it.
+Enter takes the line even while a turn runs. A message sent then waits its turn, and the input line shows how many are waiting, as `· 2 queued` at the right edge of the line, so a message queued while you type moves nothing you have already written. Queued messages run one at a time, in the order you sent them, each as a turn of its own once the one before has ended; each is printed above as `› message` when it starts. Slash commands queue the same way, and `/exit` or `/quit` ends the session when it reaches the front, dropping anything queued behind it.
 
 ## The status line
 
-While a turn runs, the row under the input line shows its progress, redrawn about eight times a second. From the left:
+The row under the input line is a row of fixed slots — the same columns at the same character positions while a turn runs and between turns, so starting or ending a turn moves nothing on screen. From the left:
 
-- an animated equalizer;
-- the time since the turn started, as `mm:ss`;
-- `step N`, the model calls so far;
-- `N tools`, the tool calls the model has made;
-- the tokens, as `↑in ↓out tok` (`k` and `M` for thousands and millions);
-- the cost so far, as `$0.012`, when the model is [priced](CONFIGURATION.md#catalog_files);
-- a label: `riffing…`, a rotating phrase while the model is reasoning, or `✦ skill: <name>` for a moment after a skill activates.
+- a glyph: a dim `·` between turns, a spinner while a turn runs;
+- the state, as `idle` between turns and `turn N` — N the model's requests so far — while a turn runs;
+- the clock: the time of day, as `14:32`, between turns, and the time since the turn started, as `mm:ss`, while one runs;
+- the tokens, as `↑in ↓out tok` (`k` and `M` for thousands and millions): the session's total between turns, the request's running count while a turn runs;
+- the cost, as `~$1.4000`: the session's total between turns, the turn's running cost while it runs; `~$0.0000` until the model is [priced](CONFIGURATION.md#catalog_files);
+- the background jobs, as `2 jobs`, always shown, even as `0 jobs`.
 
-The output tokens and the cost count text still streaming, at an estimated four characters per token, until the provider reports the request's usage; the input tokens appear once it has. On a narrow terminal the line drops whole figures from the right rather than show one cut short. The line clears when the turn ends.
+Every figure sits inside its slot's fixed width, so `18.2k` and `132k` occupy the same box. While a turn runs the row is redrawn about eight times a second, the spinner and the cost in cyan and the jobs count in magenta; the output tokens and the cost count text still streaming, at an estimated four characters per token, until the provider reports the request's usage, which the input tokens show in place of an opening `↑0`. Between turns the whole row is dim, and the clock keeps current while the terminal waits.
 
-While a question waits for your answer — a credential prompt from `/auth`, say, or [the picker](SESSIONS.md#the-picker) — the status line shows `answer above · Ctrl-C cancels` in place of the turn's figures, which come back once the question closes.
+On a narrow terminal the slots leave whole from the left — the clock first, then the cost, then the tokens, then the state — so the jobs count at the right edge survives longest.
+
+While a question waits for your answer — a credential prompt from `/auth`, say, or [the picker](SESSIONS.md#the-picker) — the status line shows `answer above · Ctrl-C cancels` in place of the row, which comes back untouched once the question closes.
 
 ### Background jobs
 
-While background `bash` jobs are running ([Tools](TOOLS.md#background-jobs)), the status line ends with their count — `1 job running`, `2 jobs running` — between turns as well as during them. When the line is too narrow for both, the turn's figures are cut to keep the count whole.
+The last slot of the status line always counts background `bash` jobs ([Tools](TOOLS.md#background-jobs)) — `2 jobs` between turns as well as during them, `0 jobs` when none runs. On a narrow terminal it is the last slot to leave.
 
 When a job exits while the terminal waits for input, it starts a turn by itself: `1 background job exited` is printed above the input line (`2 background jobs exited` for exits that arrive together, which share one turn), and the model receives the exit and acts on it. The turn runs like one you sent — the status line, Ctrl-C and the turn report work the same — and anything you were typing stays on the input line. Messages you have queued run first, and the first prompt among them carries the exit to the model instead. A job that exits during a turn is reported in that turn instead ([Tools](TOOLS.md#background-jobs)), and one that exits while a question or [the picker](SESSIONS.md#the-picker) is open waits until you answer it. After `/new` or `/resume`, exits from the session you left start nothing.
 

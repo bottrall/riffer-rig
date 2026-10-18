@@ -27,7 +27,7 @@ describe Riffer::Rig::Terminal::FramePrompter do
                                         .ask(question, options: options, secret: secret)
   end
 
-  def footer = ['', '›', '']
+  def footer = ['', '›', '', '']
 
   describe '#ask' do
     it 'shows the question above the footer, below a blank line' do
@@ -100,7 +100,7 @@ describe Riffer::Rig::Terminal::FramePrompter do
     it 'shows the hint on the status line while the line is read' do
       ask([])
 
-      assert_includes @pty.transcript, "› \r\n  answer above · Ctrl-C cancels\e[1A"
+      assert_includes @pty.transcript, "› \r\n\r\n  answer above · Ctrl-C cancels\e[2A"
     end
 
     it 'dims the hint when color is on' do
@@ -132,7 +132,7 @@ describe Riffer::Rig::Terminal::FramePrompter do
     it 'draws the line on the footer as it is typed' do
       ask(typed('abc'))
 
-      assert_includes @pty.transcript, "› abc\r\n  answer above · Ctrl-C cancels\e[1A"
+      assert_includes @pty.transcript, "› abc\r\n\r\n  answer above · Ctrl-C cancels\e[2A"
     end
 
     it 'never draws a secret line' do
@@ -148,13 +148,13 @@ describe Riffer::Rig::Terminal::FramePrompter do
     it 'clears the footer once the line is entered' do
       ask([*typed('abc'), key(:enter)])
 
-      assert_equal footer, @pty.screen.rows.last(3)
+      assert_equal ['›', '', ''], @pty.screen.rows.last(3)
     end
 
     it 'clears the footer when the line is abandoned' do
       ask([*typed('abc'), key(:ctrl_d)])
 
-      assert_equal footer, @pty.screen.rows.last(3)
+      assert_equal ['›', '', ''], @pty.screen.rows.last(3)
     end
 
     it 'clears the footer when Ctrl-C raises' do
@@ -164,7 +164,7 @@ describe Riffer::Rig::Terminal::FramePrompter do
         nil
       end
 
-      assert_equal footer, @pty.screen.rows.last(3)
+      assert_equal ['›', '', ''], @pty.screen.rows.last(3)
     end
   end
 end

@@ -1,0 +1,88 @@
+# Generated from lib/riffer/rig/terminal/status_bar.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::StatusBar
+  IDLE_GLYPH: String
+
+  IDLE_STATE: String
+
+  GLYPH_WIDTH: Integer
+
+  STATE_WIDTH: Integer
+
+  CLOCK_WIDTH: Integer
+
+  TOKEN_WIDTH: Integer
+
+  # The unit rides in the down slot's box, so the constant `tok` never shifts
+  # what follows it.
+  DOWN_WIDTH: Integer
+
+  COST_WIDTH: Integer
+
+  JOBS_WIDTH: Integer
+
+  SEPARATOR: String
+
+  SLOTS: Array[Symbol]
+
+  # A narrow terminal sheds whole slots from the left in this order — the
+  # clock first, then the cost, then the tokens, then the state — so the jobs
+  # count at the right edge survives longest.
+  KEEP_SETS: Array[Array[Symbol]]
+
+  # @rbs clock: String
+  # @rbs up_tokens: Integer
+  # @rbs down_tokens: Integer
+  # @rbs cost: Float
+  # @rbs jobs: Integer
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs room: Integer
+  # @rbs return: String
+  def idle: (clock: String, up_tokens: Integer, down_tokens: Integer, cost: Float, jobs: Integer, theme: Riffer::Rig::Terminal::Theme, room: Integer) -> String
+
+  # @rbs glyph: String
+  # @rbs state: String
+  # @rbs clock: String
+  # @rbs up_tokens: Integer
+  # @rbs down_tokens: Integer
+  # @rbs cost: Float
+  # @rbs jobs: Integer
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs room: Integer
+  # @rbs return: String
+  def working: (glyph: String, state: String, clock: String, up_tokens: Integer, down_tokens: Integer, cost: Float, jobs: Integer, theme: Riffer::Rig::Terminal::Theme, room: Integer) -> String
+
+  private
+
+  # @rbs glyph: String
+  # @rbs state: String
+  # @rbs clock: String
+  # @rbs up_tokens: Integer
+  # @rbs down_tokens: Integer
+  # @rbs cost: Float
+  # @rbs jobs: Integer
+  # @rbs return: Hash[Symbol, String]
+  def segments: (String glyph, String state, String clock, Integer up_tokens, Integer down_tokens, Float cost, Integer jobs) -> Hash[Symbol, String]
+
+  # @rbs slots: Hash[Symbol, String]
+  # @rbs room: Integer
+  # @rbs return: Hash[Symbol, String]
+  def kept: (Hash[Symbol, String] slots, Integer room) -> Hash[Symbol, String]
+
+  # @rbs text: String
+  # @rbs width: Integer
+  # @rbs return: String
+  def field: (String text, Integer width) -> String
+
+  # @rbs set: Array[Symbol]
+  # @rbs slots: Hash[Symbol, String]
+  # @rbs room: Integer
+  # @rbs return: bool
+  def fits?: (Array[Symbol] set, Hash[Symbol, String] slots, Integer room) -> bool
+
+  # @rbs text: String
+  # @rbs key: Symbol
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs return: String
+  def color: (String text, Symbol key, Riffer::Rig::Terminal::Theme theme) -> String
+end

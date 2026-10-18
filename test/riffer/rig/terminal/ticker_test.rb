@@ -5,15 +5,20 @@ require_relative '../../../support/frame_pty'
 
 class TickerFooter
   attr_reader :statuses
-  attr_accessor :status_room
+  attr_accessor :status_room, :jobs
 
   def initialize
     @status_room = 120
+    @jobs = 0
     @statuses = []
   end
 
   def status(status)
     @statuses << status
+  end
+
+  def job_count
+    @jobs
   end
 end
 
@@ -39,8 +44,7 @@ describe Riffer::Rig::Terminal::Ticker do
       footer: @frame || footer,
       theme: Riffer::Rig::Terminal::Theme.new(enabled: color),
       buffer: buffer,
-      rates: rates,
-      random: Random.new(1)
+      rates: rates
     )
   end
 
@@ -77,13 +81,6 @@ describe Riffer::Rig::Terminal::Ticker do
     Riffer::StreamEvents::ToolCallDone.new(item_id: 'call_1', call_id: 'call_1', name: 'read', arguments: '{}')
   end
 
-  def tools_run
-    [
-      Riffer::Rig::Events::BeforeToolCall.new('call_1', 'read', {}, 0.0),
-      Riffer::Rig::Events::AfterToolCall.new('call_1', 'read', {}, Riffer::Tools::Response.text('ok'), 0.0, 0.0)
-    ]
-  end
-
   def usage(input, output, cost: nil)
     Riffer::StreamEvents::TokenUsageDone.new(
       token_usage: Riffer::Providers::TokenUsage.new(input_tokens: input, output_tokens: output, cost: cost)
@@ -102,7 +99,7 @@ describe Riffer::Rig::Terminal::Ticker do
     it 'draws the first frame before the turn sends anything' do
       ticker.start
 
-      assert_equal '▁▅██▆▂▄ 00:00 · ↓0 tok · riffing…', footer.statuses.first
+      assert_equal '⠋         00:00 ↑0     ↓0 tok     ~$0.0000 0 jobs', footer.statuses.first
     end
 
     it 'keeps the clock ticking while the turn sends nothing' do
@@ -138,50 +135,29 @@ describe Riffer::Rig::Terminal::Ticker do
       absorbing.run
       [absorbing, drawing].each(&:join)
 
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · 1 tool · ↓0 tok · riffing…', footer.statuses.last
-    end
-
-    it 'labels the frame with a reasoning phrase while the model reasons' do
-      assert_equal '▁▅██▆▂▄ 00:00 · ↓0 tok · herding thoughts…', drawn(reasoning('hmm'))
-    end
-
-    it 'returns to the neutral label at the next event' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↓1 tok · riffing…', drawn(reasoning('hmm'), text('Hi'))
+      assert_equal '⠋ turn 1  00:00 ↑0     ↓0 tok     ~$0.0000 0 jobs', footer.statuses.last
     end
 
     it 'estimates a token for every four characters of reasoning' do
-      assert_equal '▁▅██▆▂▄ 00:00 · ↓100 tok · herding thoughts…', drawn(reasoning('x' * 400))
+      assert_equal '⠋         00:00 ↑0     ↓100 tok   ~$0.0000 0 jobs', drawn(reasoning('x' * 400))
     end
 
     it 'estimates a token for every four characters of prose' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↓100 tok · riffing…', drawn(text('x' * 400))
+      assert_equal '⠋ turn 1  00:00 ↑0     ↓100 tok   ~$0.0000 0 jobs', drawn(text('x' * 400))
     end
 
     it 'estimates a token for every four characters of tool arguments' do
-      assert_equal '▁▅██▆▂▄ 00:00 · ↓100 tok · riffing…', drawn(tool_arguments('x' * 400))
-    end
-
-    it 'counts each tool the model calls' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · 3 tools · ↓0 tok · riffing…', drawn(tool_call, tool_call, tool_call)
+      assert_equal '⠋         00:00 ↑0     ↓100 tok   ~$0.0000 0 jobs', drawn(tool_arguments('x' * 400))
     end
 
     it 'drops the estimate for the usage the request reports' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↑1.2k ↓80 tok · riffing…', drawn(text('x' * 400), usage(1_200, 80))
+      assert_equal '⠋ turn 1  00:00 ↑1.2k  ↓80 tok    ~$0.0000 0 jobs', drawn(text('x' * 400), usage(1_200, 80))
     end
 
     it 'estimates what streams after a usage report on top of it' do
       status = drawn(text('x' * 400), usage(1_200, 80), text('x' * 40))
 
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↑1.2k ↓90 tok · riffing…', status
-    end
-
-    [
-      Riffer::StreamEvents::SkillActivation.new('review'),
-      Riffer::Rig::Events::SkillActivated.new('review')
-    ].each do |activation|
-      it "labels the frame with the skill of a #{activation.class.name.split('::').last} event" do
-        assert_equal '▁▅██▆▂▄ 00:00 · ↓0 tok · ✦ skill: review', drawn(activation)
-      end
+      assert_equal '⠋ turn 1  00:00 ↑1.2k  ↓90 tok    ~$0.0000 0 jobs', status
     end
   end
 
@@ -191,17 +167,17 @@ describe Riffer::Rig::Terminal::Ticker do
       footer.status_room = 13
       ticker.tick
 
-      assert_equal ['▁▅██▆▂▄ 00:00 · ↓0 tok · riffing…', '▅██▆▂▄▇ 00:00'], footer.statuses
+      assert_equal ['⠋         00:00 ↑0     ↓0 tok     ~$0.0000 0 jobs', '⠙ 0 jobs'], footer.statuses
     end
 
-    it 'draws the equalizer a column further along each frame' do
+    it 'advances the spinner a frame each tick' do
       3.times { ticker.tick }
 
       assert_equal(
         [
-          '▁▅██▆▂▄ 00:00 · ↓0 tok · riffing…',
-          '▅██▆▂▄▇ 00:00 · ↓0 tok · riffing…',
-          '██▆▂▄▇█ 00:00 · ↓0 tok · riffing…'
+          '⠋         00:00 ↑0     ↓0 tok     ~$0.0000 0 jobs',
+          '⠙         00:00 ↑0     ↓0 tok     ~$0.0000 0 jobs',
+          '⠹         00:00 ↑0     ↓0 tok     ~$0.0000 0 jobs'
         ],
         footer.statuses
       )
@@ -233,45 +209,21 @@ describe Riffer::Rig::Terminal::Ticker do
     end
   end
 
-  describe '#roll' do
-    it 'holds a reasoning phrase until its time is up' do
-      drawn(reasoning('hmm'))
-
-      19.times { ticker.tick }
-
-      assert_equal '▇▅▁▅██▆ 00:00 · ↓0 tok · herding thoughts…', footer.statuses.last
-    end
-
-    it 'rolls the next phrase once the time is up' do
-      drawn(reasoning('hmm'))
-
-      20.times { ticker.tick }
-
-      assert_equal '▅▁▅██▆▂ 00:00 · ↓0 tok · warming up…', footer.statuses.last
-    end
-  end
-
   describe '#line' do
-    it 'paints the equalizer and dims the segments when color is on' do
+    it 'paints the spinner and the cost green, the jobs count amber, and dims the tokens' do
       ticker(color: true)
 
       assert_equal(
-        "\e[38;2;45;226;230m▁\e[0m\e[38;2;192;76;253m▅\e[0m\e[38;2;45;226;230m█\e[0m\e[38;2;192;76;253m█\e[0m" \
-        "\e[38;2;45;226;230m▆\e[0m\e[38;2;192;76;253m▂\e[0m\e[38;2;45;226;230m▄\e[0m " \
-        "\e[2m00:00 · step 1 · ↓1 tok · riffing…\e[0m",
+        "\e[38;2;45;226;230m⠋\e[0m turn 1  00:00 \e[2m↑0    \e[0m \e[2m↓1 tok    \e[0m " \
+        "\e[38;2;45;226;230m~$0.0000\e[0m \e[38;2;192;76;253m0 jobs\e[0m",
         drawn(text('Hello'))
       )
     end
 
     {
-      'keeps every segment the room has columns for' =>
-        [70, '▁▅██▆▂▄ 00:00 · step 1 · 1 tool · ↑18.2k ↓3.1k tok · $0.071 · riffing…'],
-      'sheds the label first' => [69, '▁▅██▆▂▄ 00:00 · step 1 · 1 tool · ↑18.2k ↓3.1k tok · $0.071'],
-      'sheds the cost after the label' => [58, '▁▅██▆▂▄ 00:00 · step 1 · 1 tool · ↑18.2k ↓3.1k tok'],
-      'sheds the tokens after the cost' => [49, '▁▅██▆▂▄ 00:00 · step 1 · 1 tool'],
-      'sheds the tool counter after the tokens' => [30, '▁▅██▆▂▄ 00:00 · step 1'],
-      'sheds the step counter after the tool counter' => [21, '▁▅██▆▂▄ 00:00'],
-      'draws the equalizer alone when the room has no columns for the clock' => [12, '▁▅██▆▂▄']
+      'keeps every slot the room has columns for' =>
+        [49, '⠋ turn 1  00:00 ↑18.2k ↓3.1k tok  ~$0.0712 0 jobs'],
+      'keeps the glyph and the jobs count whole when nothing else fits' => [5, '⠋ 0 jobs']
     }.each do |behaviour, (room, status)|
       it behaviour do
         footer.status_room = room
@@ -287,7 +239,7 @@ describe Riffer::Rig::Terminal::Ticker do
 
       @now = 61.9
 
-      assert_equal '▁▅██▆▂▄ 01:01 · ↓0 tok · riffing…', drawn
+      assert_equal '⠋         01:01 ↑0     ↓0 tok     ~$0.0000 0 jobs', drawn
     end
 
     it 'keeps counting minutes past the hour' do
@@ -295,160 +247,24 @@ describe Riffer::Rig::Terminal::Ticker do
 
       @now = 3_725.0
 
-      assert_equal '▁▅██▆▂▄ 62:05 · ↓0 tok · riffing…', drawn
-    end
-  end
-
-  describe '#steps' do
-    it 'is left out until a request begins' do
-      assert_equal '▁▅██▆▂▄ 00:00 · ↓0 tok · riffing…', drawn
-    end
-
-    it 'counts the requests begun' do
-      status = drawn(tool_call, *tools_run, text('Hi'))
-
-      assert_equal '▁▅██▆▂▄ 00:00 · step 2 · 1 tool · ↓0 tok · riffing…', status
-    end
-  end
-
-  describe '#tools' do
-    it 'is left out until a tool is called' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↓0 tok · riffing…', drawn(text('Hi'))
-    end
-
-    it 'counts one tool in the singular' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · 1 tool · ↓0 tok · riffing…', drawn(tool_call)
-    end
-
-    it 'counts several tools in the plural' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · 2 tools · ↓0 tok · riffing…', drawn(tool_call, tool_call)
-    end
-  end
-
-  describe '#tokens' do
-    it 'shows the output alone until a request reports its usage' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↓1.0k tok · riffing…', drawn(text('x' * 4_000))
-    end
-
-    it 'shows the input ahead of the output once usage is reported' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↑18.2k ↓3.1k tok · riffing…', drawn(usage(18_240, 3_100))
+      assert_equal '⠋         62:05 ↑0     ↓0 tok     ~$0.0000 0 jobs', drawn
     end
   end
 
   describe '#cost' do
-    it 'is left out of a turn with no rates and no reported cost' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↑300 ↓150 tok · riffing…', drawn(usage(300, 150))
+    def rates = output_rate(50.0)
+
+    it 'prices the estimate on the model rates' do
+      ticker(rates: rates)
+
+      assert_equal '⠋ turn 1  00:00 ↑0     ↓100 tok   ~$0.0050 0 jobs', drawn(text('x' * 400))
     end
 
-    it 'prices the estimate at the output rate before any usage is reported' do
-      ticker(rates: output_rate(15.0))
+    it 'sums the reported usage and the estimate' do
+      ticker(rates: rates)
 
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↓1.0k tok · $0.015 · riffing…', drawn(text('x' * 4_000))
-    end
-
-    it 'adds the priced estimate to the cost reported so far' do
-      ticker(rates: output_rate(15.0))
-      status = drawn(usage(18_240, 3_100, cost: 0.0712), text('x' * 4_000))
-
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↑18.2k ↓4.1k tok · $0.086 · riffing…', status
-    end
-
-    it 'shows the reported cost alone for a turn with no rates' do
-      status = drawn(usage(18_240, 3_100, cost: 0.0712))
-
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↑18.2k ↓3.1k tok · $0.071 · riffing…', status
-    end
-  end
-
-  describe '#count' do
-    it 'shows a count under a thousand in full' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↑999 ↓0 tok · riffing…', drawn(usage(999, 0))
-    end
-
-    it 'rounds thousands down to a decimal place' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↑18.2k ↓999.9k tok · riffing…', drawn(usage(18_290, 999_999))
-    end
-
-    it 'rounds millions down to a decimal place' do
-      assert_equal '▁▅██▆▂▄ 00:00 · step 1 · ↑2.3M ↓1.0M tok · riffing…', drawn(usage(2_390_000, 1_000_000))
-    end
-  end
-
-  describe '#label' do
-    it 'keeps a skill label for a beat' do
-      drawn(Riffer::Rig::Events::SkillActivated.new('review'))
-
-      15.times { ticker.tick }
-
-      assert_equal '▄▂▆█▇▅▁ 00:00 · ↓0 tok · ✦ skill: review', footer.statuses.last
-    end
-
-    it 'returns to the phrase after the beat' do
-      drawn(Riffer::Rig::Events::SkillActivated.new('review'))
-
-      16.times { ticker.tick }
-
-      assert_equal '▂▆█▇▅▁▅ 00:00 · ↓0 tok · riffing…', footer.statuses.last
-    end
-
-    it 'shows a skill label over a reasoning phrase' do
-      status = drawn(Riffer::Rig::Events::SkillActivated.new('review'), reasoning('hmm'))
-
-      assert_equal '▁▅██▆▂▄ 00:00 · ↓0 tok · ✦ skill: review', status
-    end
-  end
-
-  describe 'in the footer' do
-    it 'keeps content above the footer while frames rewrite the status line' do
-      on_pty
-      ticker
-
-      [
-        Thread.new { 20.times { |n| @frame.append("line #{n}") } },
-        Thread.new do
-          20.times do
-            ticker.absorb(text('word '))
-            ticker.tick
-          end
-        end
-      ].each(&:join)
-
-      assert_equal(
-        [*Array.new(20) { |n| "line #{n}" }, '', '›', '  ▇▅▁▅██▆ 00:00 · step 1 · ↓25 tok · riffing…'],
-        @pty.screen.rows
-      )
-    end
-
-    it 'keeps content above the footer while its thread ticks between prints' do
-      on_pty
-      ticker.start
-
-      5.times do |n|
-        @frame.append("line #{n}")
-        @now = n + 1.0
-        await { @pty.transcript.include?("00:0#{n + 1}") }
-      end
-      ticker.stop
-
-      assert_equal [*Array.new(5) { |n| "line #{n}" }, '', '›', ''], @pty.screen.rows
-    end
-
-    it 'sheds segments to fit a narrow terminal' do
-      on_pty(columns: 30)
-
-      ticker.absorb(text('x' * 400))
-      ticker.tick
-
-      assert_equal ['', '›', '  ▁▅██▆▂▄ 00:00 · step 1'], @pty.screen.rows
-    end
-
-    it 'sheds segments to keep the job counter whole' do
-      on_pty(columns: 40)
-      @frame.jobs(2)
-
-      ticker.tick
-
-      assert_equal ['', '›', '  ▁▅██▆▂▄ 00:00 · 2 jobs running'], @pty.screen.rows
+      assert_equal '⠋ turn 1  00:00 ↑1.2k  ↓180 tok   ~$0.0762 0 jobs',
+                   drawn(text('x' * 400), usage(1_200, 80, cost: 0.0712), text('x' * 400))
     end
   end
 end

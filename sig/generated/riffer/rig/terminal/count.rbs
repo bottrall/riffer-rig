@@ -1,0 +1,7 @@
+# Generated from lib/riffer/rig/terminal/count.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Count
+  # @rbs amount: Integer
+  # @rbs return: String
+  def call: (Integer amount) -> String
+end

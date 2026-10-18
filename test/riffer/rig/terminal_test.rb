@@ -77,6 +77,14 @@ describe Riffer::Rig::Terminal do
     )
   end
 
+  # Sessions whose `asked?` raises: the opening consults it alone, so a raise
+  # there stands in for a Ctrl-C delivered in the banner.
+  def interrupting_sessions
+    sessions = cli_sessions
+    sessions.define_singleton_method(:asked?) { raise Interrupt }
+    sessions
+  end
+
   def run_terminal(
     input,
     env: { 'MOCK_API_KEY' => 'mock-key' },
@@ -99,9 +107,10 @@ describe Riffer::Rig::Terminal do
     columns: 80,
     open_picker: false,
     resume: nil,
+    sessions: nil,
     &prepare
   )
-    sessions = cli_sessions(env: env, resume: resume)
+    sessions ||= cli_sessions(env: env, resume: resume)
     sessions = PreparedSessions.new(sessions, &prepare) if prepare
     TerminalPty.drive(script, columns: columns) do |tty|
       terminal = Riffer::Rig::Terminal.for(
@@ -405,6 +414,18 @@ describe Riffer::Rig::Terminal do
     assert_equal 2, output.scan('Press Ctrl-C again to exit.').length
   end
 
+  it 'arms the exit when a Ctrl-C lands in the opening' do
+    assert_includes run_terminal("\n", sessions: interrupting_sessions), 'Press Ctrl-C again to exit.'
+  end
+
+  it 'arms the exit when a Ctrl-C escapes a turn' do
+    output = run_terminal("hello\n\n") do |driven|
+      driven.define_singleton_method(:prompt) { |*_args| raise Interrupt }
+    end
+
+    assert_includes output, 'Press Ctrl-C again to exit.'
+  end
+
   it 'ends the session at /exit' do
     runtime = nil
     run_terminal("/exit\nhello\n") { |driven| runtime = driven }
@@ -474,6 +495,16 @@ describe Riffer::Rig::Terminal do
       end
     end
 
+    it 'arms the exit when a Ctrl-C lands in the opening' do
+      script = lambda do |pty|
+        pty.await(Riffer::Rig::Terminal::EXIT_HINT)
+        pty.type("\u0003")
+      end
+      run_on_pty(script, sessions: interrupting_sessions)
+
+      assert_equal 0, @status
+    end
+
     it 'opens the picker over the keys before the first session' do
       path = seed_session('fix the login bug')
       script = lambda do |pty|
@@ -525,7 +556,7 @@ describe Riffer::Rig::Terminal do
         runtime.define_singleton_method(:running_job_count) { 2 }
       end
 
-      assert_includes output, '2 jobs running'
+      assert_includes output, '2 jobs'
     end
 
     it 'replays nothing in a fresh session' do
@@ -886,7 +917,7 @@ describe Riffer::Rig::Terminal do
         runtime.define_singleton_method(:running_job_count) { count }
       end
 
-      assert_includes output, '3 jobs running'
+      assert_includes output, '3 jobs'
     end
 
     it 'replays the session /resume picks below its banner' do
@@ -954,13 +985,13 @@ describe Riffer::Rig::Terminal do
       script = lambda do |pty|
         pty.type("hello\r")
         started.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
-        pty.await('riffing…')
+        pty.await('~$0.0000')
         release << true
         pty.type("/exit\r")
       end
       output = run_on_pty(script) { |runtime| hold_turns(runtime, started, release) }
 
-      assert_includes output, 'riffing…'
+      assert_includes output, '~$0.0000'
     end
 
     it 'peeks at the running turn on Ctrl-T' do

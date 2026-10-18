@@ -38,6 +38,7 @@ class Riffer::Rig::Terminal
   # @rbs @picker: Riffer::Rig::Terminal::Picker
   # @rbs @turns: Riffer::Rig::Terminal::_TurnDisplay
   # @rbs @repl: Riffer::Rig::Terminal::Repl?
+  # @rbs @exit_armed: bool
 
   # @rbs input: IO
   # @rbs output: IO
@@ -57,7 +58,12 @@ class Riffer::Rig::Terminal
     end
 
     pipeline = KeyPipeline.new(input: input, output: output)
-    console = Console.new(frame: frame, pipeline: pipeline, loading: Loading.new(frame: frame, random: Random.new))
+    console = Console.new(
+      frame: frame,
+      pipeline: pipeline,
+      loading: Loading.new(frame: frame, random: Random.new),
+      idle: IdleTicker.new(footer: frame)
+    )
     asks = Queue.new #: Thread::Queue[Riffer::Rig::Terminal::Key]
     peek = Peek.new(frame: frame)
     repl = Repl.new(
@@ -79,14 +85,7 @@ class Riffer::Rig::Terminal
       jobs: JobCounter.new(footer: frame),
       repl: repl
     )
-    turns = TickerDisplay.new(
-      frame: frame,
-      theme: theme,
-      peek: peek,
-      catalog: Riffer.config.catalog,
-      random: Random.new,
-      clock: clock
-    )
+    turns = TickerDisplay.new(frame: frame, theme: theme, peek: peek, catalog: Riffer.config.catalog, clock: clock)
     renderer = Renderer.new(io: console, theme: theme, width: -> { frame.measure&.last })
     assemble(input:, renderer:, sessions:, opening:, turns:, repl:)
   end
@@ -124,6 +123,7 @@ class Riffer::Rig::Terminal
     @picker = picker
     @turns = turns
     @repl = repl
+    @exit_armed = false
   end
 
   # @rbs open_picker: bool
@@ -151,20 +151,49 @@ class Riffer::Rig::Terminal
     return 1 unless runtime
 
     begin
-      @opening.call(runtime)
-      notify_missing(session) unless found
+      opening(runtime, session, found)
       each_entry do |entry|
         next deliver_job_exits(runtime) if entry == :job_exit
 
         runtime = dispatch(runtime, entry)
       end
-      @renderer.notice(FAREWELL)
+      farewell
       0
     ensure
-      runtime.close
+      close(runtime)
     end
   ensure
     @repl&.stop
+  end
+
+  # The banner and the notices before the loop. A Ctrl-C delivered here acts
+  # as one at the idle prompt: armed, so the next one ends the session.
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs session: Riffer::Rig::Terminal::Session?
+  # @rbs found: Riffer::Rig::Runtime?
+  # @rbs return: void
+  def opening(runtime, session, found)
+    @opening.call(runtime)
+    notify_missing(session) unless found
+  rescue Interrupt
+    repl = @repl
+    repl ? repl.arm : arm_exit
+  end
+
+  # @rbs return: void
+  def farewell
+    @renderer.notice(FAREWELL)
+  rescue Interrupt
+    nil
+  end
+
+  # A Ctrl-C during the close has nothing left to act on.
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def close(runtime)
+    runtime.close
+  rescue Interrupt
+    nil
   end
 
   # @rbs session: Riffer::Rig::Terminal::Session?
@@ -201,23 +230,33 @@ class Riffer::Rig::Terminal
   # @rbs &block: (String) -> void
   # @rbs return: void
   def repl
-    armed = false
     loop do
       case (line = read_line)
       when nil then break
       when :interrupt
-        break if armed
+        break if @exit_armed
 
-        armed = true
-        @renderer.notice(EXIT_HINT)
+        arm_exit
       else
-        armed = false
+        @exit_armed = false
         text = line.strip
         break if EXIT_COMMANDS.include?(text)
 
-        yield text unless text.empty?
+        begin
+          yield text unless text.empty?
+        rescue Interrupt
+          arm_exit
+        end
       end
     end
+  end
+
+  # Records a Ctrl-C for the idle prompt of the blocking loop: the first one
+  # arms the exit hint, a second one while armed ends the session.
+  # @rbs return: void
+  def arm_exit
+    @exit_armed = true
+    @renderer.notice(EXIT_HINT)
   end
 
   # @rbs return: String | :interrupt | nil

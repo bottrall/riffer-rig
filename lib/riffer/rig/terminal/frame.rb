@@ -15,8 +15,6 @@ class Riffer::Rig::Terminal::Frame
   # text.
   QUEUED_GAP = '   ' #: String
 
-  JOBS_SEPARATOR = ' · ' #: String
-
   INPUT_ROWS = 8 #: Integer
 
   PEEK_ROWS = 8 #: Integer
@@ -54,6 +52,8 @@ class Riffer::Rig::Terminal::Frame
   # @rbs @active: bool
   # @rbs @loading: bool
   # @rbs @loading_line: String
+  # @rbs @tally: (^() -> Riffer::Providers::TokenUsage?)?
+  # @rbs @now: ^() -> Time
   # @rbs @mutex: Mutex
   # @rbs @previous_resize: Signal::trap_command
 
@@ -75,8 +75,9 @@ class Riffer::Rig::Terminal::Frame
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
   # @rbs loading: bool
+  # @rbs now: ^() -> Time
   # @rbs return: void
-  def initialize(io:, theme:, editor: Riffer::Rig::Terminal::LineEditor.new, loading: false)
+  def initialize(io:, theme:, editor: Riffer::Rig::Terminal::LineEditor.new, loading: false, now: -> { Time.now })
     @io = io
     @theme = theme
     @editor = editor
@@ -92,6 +93,8 @@ class Riffer::Rig::Terminal::Frame
     @active = false
     @loading = loading
     @loading_line = LOADING
+    @tally = nil
+    @now = now
     @mutex = Mutex.new
     @previous_resize = nil
   end
@@ -196,9 +199,30 @@ class Riffer::Rig::Terminal::Frame
     end
   end
 
+  # @rbs tally: ^() -> Riffer::Providers::TokenUsage?
+  # @rbs return: void
+  def session(tally:)
+    @mutex.synchronize do
+      @tally = tally
+      redraw
+    end
+  end
+
+  # @rbs return: void
+  def idle_tick
+    @mutex.synchronize do
+      redraw if idle_bar_showing?
+    end
+  end
+
   # @rbs return: Integer
   def status_room
-    @mutex.synchronize { [status_columns(@width - 1), 0].max }
+    @mutex.synchronize { [(@width - 1) - STATUS_INDENT.size, 0].max }
+  end
+
+  # @rbs return: Integer
+  def job_count
+    @mutex.synchronize { @jobs }
   end
 
   # @rbs content: String
@@ -257,9 +281,9 @@ class Riffer::Rig::Terminal::Frame
     shown, row, column = input_rows
     # A row scrolled off the top of the screen could never be erased again.
     # The status sits under the input and the spacer above everything drawn.
-    above = [@height - shown.size - 2, 0].max
+    above = [@height - shown.size - 3, 0].max
     palette = palette_rows([above, PALETTE_ROWS].min)
-    spacer = SPACER if @height >= shown.size + 2
+    spacer = SPACER if @height >= shown.size + 3
     lead = [*spacer, *peek_rows([above - palette.size, PEEK_ROWS].min), *palette]
     write("#{before}#{lead.join}#{footer(shown, row, column)}")
     @rows_above = lead.size + row
@@ -335,7 +359,10 @@ class Riffer::Rig::Terminal::Frame
     row -= first
     shown[row] = ghosted(shown.fetch(row))
     last = shown.last
-    shown[-1] = "#{last}#{chip(typing - Riffer::Rig::Terminal::Columns.width(last))}"
+    chip = chip(typing, Riffer::Rig::Terminal::Columns.width(last))
+    # The chip rides flush right, so a chip appearing pads the row out to it
+    # rather than moving the prompt or the text.
+    shown[-1] = chip.empty? ? last : "#{last}#{' ' * (typing - Riffer::Rig::Terminal::Columns.width(last) - Riffer::Rig::Terminal::Columns.width(chip))}#{chip}"
     prompted = shown.each_with_index.map do |line, offset|
       if (first + offset).zero?
         "#{@theme.pink(PROMPT)} #{line}"
@@ -379,16 +406,19 @@ class Riffer::Rig::Terminal::Frame
   # @rbs column: Integer
   # @rbs return: String
   def footer(rows, row, column)
-    "#{rows.join("\r\n")}\r\n#{status_line(@width - 1)}\e[#{rows.size - row}A\e[#{column + 1}G"
+    "#{rows.join("\r\n")}\r\n\r\n#{status_line(@width - 1)}\e[#{rows.size - row + 1}A\e[#{column + 1}G"
   end
 
-  # @rbs room: Integer
+  # @rbs typing: Integer
+  # @rbs text: Integer
   # @rbs return: String
-  def chip(room)
+  def chip(typing, text)
+    return '' if @queued.zero?
+
     label = "· #{@queued} queued"
     # A count cut short would read as a smaller queue, so the chip is drawn
-    # whole or not at all.
-    return '' if @queued.zero? || QUEUED_GAP.size + label.size > room
+    # whole or not at all — and only where it leaves the text alone.
+    return '' if QUEUED_GAP.size + label.size + text > typing
 
     "#{QUEUED_GAP}#{@theme.dim(label)}"
   end
@@ -398,32 +428,31 @@ class Riffer::Rig::Terminal::Frame
   def status_line(room)
     # A running ticker sets the status on every tick, so a hint outranks it
     # rather than being drawn over.
-    shown = @hint || @status
-    label = counter(room)
-    return Riffer::Rig::Terminal::Columns.head("#{STATUS_INDENT}#{shown}", room) unless label
+    shown = idle_bar_showing? ? idle_bar([room - STATUS_INDENT.size, 0].max) : (@hint || @status)
+    Riffer::Rig::Terminal::Columns.head("#{STATUS_INDENT}#{shown}", room)
+  end
 
-    # The counter is the only sign that a job is still running, so the status
-    # is the one cut to make room.
-    status = Riffer::Rig::Terminal::Columns.head(shown, status_columns(room))
-    # A status cut to nothing still carries its styles.
-    trailer = Riffer::Rig::Terminal::Columns.width(status).zero? ? label : "#{JOBS_SEPARATOR}#{label}"
-    "#{STATUS_INDENT}#{status}#{@theme.dim(trailer)}"
+  # @rbs return: bool
+  def idle_bar_showing?
+    !@loading && @hint.nil? && @status.empty? && !@tally.nil?
   end
 
   # @rbs room: Integer
-  # @rbs return: Integer
-  def status_columns(room)
-    label = counter(room)
-    room - STATUS_INDENT.size - (label ? JOBS_SEPARATOR.size + label.size : 0)
-  end
+  # @rbs return: String
+  def idle_bar(room)
+    tally = @tally
+    return '' unless tally
 
-  # @rbs room: Integer
-  # @rbs return: String?
-  def counter(room)
-    label = "#{@jobs} #{@jobs == 1 ? 'job' : 'jobs'} running"
-    # A count cut short would read as fewer jobs, so the counter is drawn
-    # whole or not at all.
-    label unless @jobs.zero? || STATUS_INDENT.size + label.size > room
+    usage = tally.call
+    Riffer::Rig::Terminal::StatusBar.idle(
+      clock: @now.call.strftime('%H:%M'),
+      up_tokens: usage&.input_tokens || 0,
+      down_tokens: usage&.output_tokens || 0,
+      cost: usage&.cost || 0.0,
+      jobs: @jobs,
+      theme: @theme,
+      room: room
+    )
   end
 
   # @rbs bytes: String

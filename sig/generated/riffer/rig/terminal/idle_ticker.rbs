@@ -1,0 +1,21 @@
+# Generated from lib/riffer/rig/terminal/idle_ticker.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::IdleTicker
+  TICK_SECONDS: Float
+
+  @footer: Riffer::Rig::Terminal::Frame
+
+  @halt: Thread::Queue[true]
+
+  @thread: Thread?
+
+  # @rbs footer: Riffer::Rig::Terminal::Frame
+  # @rbs return: void
+  def initialize: (footer: Riffer::Rig::Terminal::Frame) -> void
+
+  # @rbs return: void
+  def start: () -> void
+
+  # @rbs return: void
+  def stop: () -> void
+end

@@ -1,0 +1,9 @@
+# Generated from lib/riffer/rig/terminal/spinner.rb with RBS::Inline
+
+module Riffer::Rig::Terminal::Spinner
+  FRAMES: Array[String]
+
+  # @rbs tick: Integer
+  # @rbs return: String
+  def call: (Integer tick) -> String
+end

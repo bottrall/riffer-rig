@@ -25,6 +25,8 @@ class Riffer::Rig::Terminal
 
   FAREWELL: ::String
 
+  @exit_armed: bool
+
   @repl: Riffer::Rig::Terminal::Repl?
 
   @turns: Riffer::Rig::Terminal::_TurnDisplay
@@ -79,6 +81,22 @@ class Riffer::Rig::Terminal
   # @rbs return: Integer
   def run_session: (bool open_picker) -> Integer
 
+  # The banner and the notices before the loop. A Ctrl-C delivered here acts
+  # as one at the idle prompt: armed, so the next one ends the session.
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs session: Riffer::Rig::Terminal::Session?
+  # @rbs found: Riffer::Rig::Runtime?
+  # @rbs return: void
+  def opening: (Riffer::Rig::Runtime runtime, Riffer::Rig::Terminal::Session? session, Riffer::Rig::Runtime? found) -> void
+
+  # @rbs return: void
+  def farewell: () -> void
+
+  # A Ctrl-C during the close has nothing left to act on.
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: void
+  def close: (Riffer::Rig::Runtime runtime) -> void
+
   # @rbs session: Riffer::Rig::Terminal::Session?
   # @rbs return: Riffer::Rig::Runtime?
   def find: (Riffer::Rig::Terminal::Session? session) -> Riffer::Rig::Runtime?
@@ -98,6 +116,11 @@ class Riffer::Rig::Terminal
   # @rbs &block: (String) -> void
   # @rbs return: void
   def repl: () { (String) -> void } -> void
+
+  # Records a Ctrl-C for the idle prompt of the blocking loop: the first one
+  # arms the exit hint, a second one while armed ends the session.
+  # @rbs return: void
+  def arm_exit: () -> void
 
   # @rbs return: String | :interrupt | nil
   def read_line: () -> (String | :interrupt | nil)

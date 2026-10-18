@@ -27,7 +27,6 @@ describe Riffer::Rig::Terminal::TickerDisplay do
       theme: theme,
       peek: @peek,
       catalog: @catalog,
-      random: Random.new(1),
       clock: -> { 0.0 }
     )
   end
@@ -89,7 +88,7 @@ describe Riffer::Rig::Terminal::TickerDisplay do
     it 'draws the ticker on the status line' do
       display.start(@runtime)
 
-      assert_equal ['', '›', '  ▁▅██▆▂▄ 00:00 · ↓0 tok · riffing…'], rows
+      assert_equal ['', '›', '', '  ⠋         00:00 ↑0     ↓0 tok     ~$0.0000 0 jobs'], rows
     end
   end
 
@@ -98,9 +97,9 @@ describe Riffer::Rig::Terminal::TickerDisplay do
       display.start(@runtime)
 
       display.absorb(text('Let me look.'))
-      await { status.include?('step') }
+      await { status.include?('turn 1') }
 
-      assert_includes status, 'step 1'
+      assert_includes status, 'turn 1'
     end
 
     it 'keeps an open peek up with the turn' do
@@ -144,7 +143,7 @@ describe Riffer::Rig::Terminal::TickerDisplay do
 
       display.cancel(@runtime)
 
-      assert_equal ['', '›', '  stopping…'], rows
+      assert_equal ['', '›', '', '  stopping…'], rows
     end
 
     it 'dims the stopping status when color is on' do
@@ -162,7 +161,7 @@ describe Riffer::Rig::Terminal::TickerDisplay do
 
       display.cancel(runtime)
 
-      assert_equal ['', '›', '  stopping…'], seen
+      assert_equal ['', '›', '', '  stopping…'], seen
     end
 
     it 'cancels the Runtime' do
@@ -178,7 +177,7 @@ describe Riffer::Rig::Terminal::TickerDisplay do
     it 'clears the ticker from the status line' do
       show
 
-      assert_equal ['', '›', ''], rows
+      assert_equal ['', '›', '', ''], rows
     end
 
     it 'clears the stopping status of a cancelled turn' do
@@ -187,7 +186,7 @@ describe Riffer::Rig::Terminal::TickerDisplay do
 
       display.finish(@runtime)
 
-      assert_equal ['', '›', ''], rows
+      assert_equal ['', '›', '', ''], rows
     end
 
     it 'hides the peek' do
@@ -197,19 +196,19 @@ describe Riffer::Rig::Terminal::TickerDisplay do
 
       display.finish(@runtime)
 
-      assert_equal ['', '›', ''], rows
+      assert_equal ['', '›', '', ''], rows
     end
 
     it 'prints nothing for a turn that has not ended' do
       show(text('Half a sen'))
 
-      assert_equal ['', '›', ''], rows
+      assert_equal ['', '›', '', ''], rows
     end
 
     it 'prints the answer and the stat footer above the footer' do
       show(text('All done.'), turn_end)
 
-      assert_equal ['', '  All done.', '', '  1 step · 00:00', '', '›', ''], rows
+      assert_equal ['', '  All done.', '', '  1 step · 00:00', '', '›', '', ''], rows
     end
 
     it 'reports the session total of the Runtime' do
@@ -217,7 +216,7 @@ describe Riffer::Rig::Terminal::TickerDisplay do
 
       show(turn_end, runtime: DisplayRuntime.new(tally: tally))
 
-      assert_equal ['', '  0 steps · 00:00 · session 15 tok', '', '›', ''], rows
+      assert_equal ['', '  0 steps · 00:00 · session 15 tok', '', '›', '', ''], rows
     end
 
     it 'wraps the report to the width of the terminal' do

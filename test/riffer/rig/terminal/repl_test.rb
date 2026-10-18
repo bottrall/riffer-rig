@@ -42,6 +42,10 @@ class LoggingFrame
     @log << [:status, status]
   end
 
+  def session(tally:)
+    @log << [:session, tally.call]
+  end
+
   def queued(count)
     @counts << count
     @log << [:queued, count]
@@ -92,6 +96,8 @@ class WatchedRuntime
   def on_job_exit(&block) = @subscribers << block
 
   def exit_job = @subscribers.each(&:call)
+
+  def tally = nil
 end
 
 class RecordingPeek
@@ -217,6 +223,12 @@ describe Riffer::Rig::Terminal::Repl do
   end
 
   describe '#watch' do
+    it 'gives the status bar the session of the Runtime' do
+      repl.watch(WatchedRuntime.new)
+
+      assert_equal [:session, nil], logged.last
+    end
+
     it 'runs a job exit from the Runtime as a turn' do
       runtime = WatchedRuntime.new
       repl.watch(runtime)
@@ -464,6 +476,25 @@ describe Riffer::Rig::Terminal::Repl do
       repl.stop
 
       assert_equal ['one'], turns
+    end
+
+    it 'arms the exit when a Ctrl-C interrupts a turn' do
+      type("one\r")
+      @keys.close
+      session { |_line| raise Interrupt }
+
+      assert_equal [hint], @frame.statuses
+    end
+
+    it 'ends the session when a Ctrl-C interrupts a turn while armed' do
+      type("one\r")
+      @keys.close
+      session do |_line|
+        repl.arm
+        raise Interrupt
+      end
+
+      assert_equal 1, @frame.statuses.count(hint)
     end
   end
 

@@ -71,6 +71,7 @@ class Riffer::Rig::Terminal::Repl
   # @rbs return: void
   def watch(runtime)
     @mutex.synchronize { @runtime = runtime }
+    @frame.session(tally: -> { runtime.tally })
     runtime.on_job_exit { wake }
   end
 
@@ -114,6 +115,24 @@ class Riffer::Rig::Terminal::Repl
     while (entry = take)
       yield entry
     end
+  rescue Interrupt
+    # The turn's own trap covers the turn, but a Ctrl-C can still be delivered
+    # in the glue around it (the report, the echo, the dispatch); there it acts
+    # as one at the idle prompt.
+    retry if arm
+  end
+
+  # Records a Ctrl-C for the idle prompt: the first one arms the exit hint, a
+  # second one while armed ends the session.
+  # @rbs return: bool
+  def arm
+    @mutex.synchronize do
+      return false if @armed
+
+      @armed = true
+      @frame.status(Riffer::Rig::Terminal::EXIT_HINT)
+      true
+    end
   end
 
   private
@@ -142,17 +161,6 @@ class Riffer::Rig::Terminal::Repl
     @woken = false
     disarm
     :job_exit
-  end
-
-  # @rbs return: bool
-  def arm
-    @mutex.synchronize do
-      return false if @armed
-
-      @armed = true
-      @frame.status(Riffer::Rig::Terminal::EXIT_HINT)
-      true
-    end
   end
 
   # @rbs return: void

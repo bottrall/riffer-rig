@@ -5,55 +5,30 @@ class Riffer::Rig::Terminal::Ticker
 
   CHARS_PER_TOKEN: Integer
 
-  SKILL_TICKS: Integer
-
-  PHRASE_TICKS: Range[Integer]
-
-  SEPARATOR: String
-
-  NEUTRAL_LABEL: String
-
-  REASONING_PHRASES: Array[String]
-
-  @footer: Riffer::Rig::Terminal::Frame
-
-  @theme: Riffer::Rig::Terminal::Theme
-
-  @buffer: Riffer::Rig::Terminal::TurnBuffer
-
-  @rates: ::Riffer::Catalog::Rates?
-
-  @random: Random
-
-  @mutex: Mutex
-
-  @halt: Thread::Queue[true]
-
-  @thread: Thread?
+  @unmetered: Integer
 
   @tick: Integer
 
-  @tools: Integer
+  @thread: Thread?
 
-  @unmetered: Integer
+  @halt: Thread::Queue[true]
 
-  @reasoning: bool
+  @mutex: Mutex
 
-  @phrase: String
+  @rates: ::Riffer::Catalog::Rates?
 
-  @roll_at: Integer
+  @buffer: Riffer::Rig::Terminal::TurnBuffer
 
-  @skill: String
+  @theme: Riffer::Rig::Terminal::Theme
 
-  @skill_until: Integer
+  @footer: Riffer::Rig::Terminal::Frame
 
   # @rbs footer: Riffer::Rig::Terminal::Frame
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs buffer: Riffer::Rig::Terminal::TurnBuffer
   # @rbs rates: ::Riffer::Catalog::Rates?
-  # @rbs random: Random
   # @rbs return: void
-  def initialize: (footer: Riffer::Rig::Terminal::Frame, theme: Riffer::Rig::Terminal::Theme, buffer: Riffer::Rig::Terminal::TurnBuffer, rates: ::Riffer::Catalog::Rates?, random: Random) -> void
+  def initialize: (footer: Riffer::Rig::Terminal::Frame, theme: Riffer::Rig::Terminal::Theme, buffer: Riffer::Rig::Terminal::TurnBuffer, rates: ::Riffer::Catalog::Rates?) -> void
 
   # @rbs return: void
   def start: () -> void
@@ -70,38 +45,17 @@ class Riffer::Rig::Terminal::Ticker
 
   private
 
-  # @rbs return: void
-  def roll: () -> void
-
   # @rbs room: Integer
+  # @rbs jobs: Integer
   # @rbs return: String
-  def line: (Integer room) -> String
+  def line: (Integer room, Integer jobs) -> String
 
   # @rbs wall_time: Float
   # @rbs return: String
   def clock: (Float wall_time) -> String
 
-  # @rbs begun: Integer
-  # @rbs return: String?
-  def steps: (Integer begun) -> String?
-
-  # @rbs return: String?
-  def tools: () -> String?
-
   # @rbs usage: Riffer::Providers::TokenUsage?
   # @rbs estimate: Integer
-  # @rbs return: String
-  def tokens: (Riffer::Providers::TokenUsage? usage, Integer estimate) -> String
-
-  # @rbs usage: Riffer::Providers::TokenUsage?
-  # @rbs estimate: Integer
-  # @rbs return: String?
-  def cost: (Riffer::Providers::TokenUsage? usage, Integer estimate) -> String?
-
-  # @rbs amount: Integer
-  # @rbs return: String
-  def count: (Integer amount) -> String
-
-  # @rbs return: String
-  def label: () -> String
+  # @rbs return: Float
+  def cost: (Riffer::Providers::TokenUsage? usage, Integer estimate) -> Float
 end
