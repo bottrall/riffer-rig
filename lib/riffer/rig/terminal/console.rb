@@ -4,15 +4,18 @@ class Riffer::Rig::Terminal::Console
   # @rbs @frame: Riffer::Rig::Terminal::Frame
   # @rbs @pipeline: Riffer::Rig::Terminal::KeyPipeline
   # @rbs @loading: Riffer::Rig::Terminal::Loading
+  # @rbs @idle: Riffer::Rig::Terminal::IdleTicker
 
   # @rbs frame: Riffer::Rig::Terminal::Frame
   # @rbs pipeline: Riffer::Rig::Terminal::KeyPipeline
   # @rbs loading: Riffer::Rig::Terminal::Loading
+  # @rbs idle: Riffer::Rig::Terminal::IdleTicker
   # @rbs return: void
-  def initialize(frame:, pipeline:, loading:)
+  def initialize(frame:, pipeline:, loading:, idle:)
     @frame = frame
     @pipeline = pipeline
     @loading = loading
+    @idle = idle
   end
 
   # @rbs return: void
@@ -21,12 +24,14 @@ class Riffer::Rig::Terminal::Console
     # loading row is animated from its first write.
     @loading.start
     @frame.start
+    @idle.start
     @pipeline.start
   end
 
   # @rbs return: void
   def stop
     @pipeline.stop
+    @idle.stop
     @frame.stop
     @loading.stop
   end

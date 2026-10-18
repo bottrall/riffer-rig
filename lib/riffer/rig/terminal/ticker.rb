@@ -160,7 +160,8 @@ class Riffer::Rig::Terminal::Ticker
   # @rbs return: String
   def tokens(usage, estimate)
     output = estimate + (usage ? usage.output_tokens : 0)
-    [*("↑#{count(usage.input_tokens)}" if usage), "↓#{count(output)}", 'tok'].join(' ')
+    [*("↑#{Riffer::Rig::Terminal::Count.call(usage.input_tokens)}" if usage),
+     "↓#{Riffer::Rig::Terminal::Count.call(output)}", 'tok'].join(' ')
   end
 
   # @rbs usage: Riffer::Providers::TokenUsage?
@@ -169,15 +170,6 @@ class Riffer::Rig::Terminal::Ticker
   def cost(usage, estimate)
     costs = [usage&.cost, @rates&.cost_for(input_tokens: 0, output_tokens: estimate)].compact
     format('$%.3f', costs.sum) unless costs.empty?
-  end
-
-  # @rbs amount: Integer
-  # @rbs return: String
-  def count(amount)
-    return amount.to_s if amount < 1_000
-    return "#{amount.fdiv(1_000).floor(1)}k" if amount < 1_000_000
-
-    "#{amount.fdiv(1_000_000).floor(1)}M"
   end
 
   # @rbs return: String

@@ -7,11 +7,14 @@ class Riffer::Rig::Terminal::Console
 
   @loading: Riffer::Rig::Terminal::Loading
 
+  @idle: Riffer::Rig::Terminal::IdleTicker
+
   # @rbs frame: Riffer::Rig::Terminal::Frame
   # @rbs pipeline: Riffer::Rig::Terminal::KeyPipeline
   # @rbs loading: Riffer::Rig::Terminal::Loading
+  # @rbs idle: Riffer::Rig::Terminal::IdleTicker
   # @rbs return: void
-  def initialize: (frame: Riffer::Rig::Terminal::Frame, pipeline: Riffer::Rig::Terminal::KeyPipeline, loading: Riffer::Rig::Terminal::Loading) -> void
+  def initialize: (frame: Riffer::Rig::Terminal::Frame, pipeline: Riffer::Rig::Terminal::KeyPipeline, loading: Riffer::Rig::Terminal::Loading, idle: Riffer::Rig::Terminal::IdleTicker) -> void
 
   # @rbs return: void
   def start: () -> void

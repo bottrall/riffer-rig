@@ -65,11 +65,13 @@ While a turn runs, the row under the input line shows its progress, redrawn abou
 
 The output tokens and the cost count text still streaming, at an estimated four characters per token, until the provider reports the request's usage; the input tokens appear once it has. On a narrow terminal the line drops whole figures from the right rather than show one cut short. The line clears when the turn ends.
 
+Between turns the row shows the session instead, all dim, from the left: the model, the tokens the session has used so far as `↑132k ↓218k tok` (`k` and `M` for thousands and millions), the session's cost so far as `~$1.4000` once the model is [priced](CONFIGURATION.md#models), and the time of day as `14:32`, kept current while the terminal waits. A session that has not used tokens shows the model and the time alone.
+
 While a question waits for your answer — a credential prompt from `/auth`, say, or [the picker](SESSIONS.md#the-picker) — the status line shows `answer above · Ctrl-C cancels` in place of the turn's figures, which come back once the question closes.
 
 ### Background jobs
 
-While background `bash` jobs are running ([Tools](TOOLS.md#background-jobs)), the status line ends with their count — `1 job running`, `2 jobs running` — between turns as well as during them. When the line is too narrow for both, the turn's figures are cut to keep the count whole.
+While background `bash` jobs are running ([Tools](TOOLS.md#background-jobs)), the status line ends with their count — `1 job running`, `2 jobs running` — between turns as well as during them. When the line is too narrow for both, the figures beside them — the turn's or the session's — are cut to keep the count whole.
 
 When a job exits while the terminal waits for input, it starts a turn by itself: `1 background job exited` is printed above the input line (`2 background jobs exited` for exits that arrive together, which share one turn), and the model receives the exit and acts on it. The turn runs like one you sent — the status line, Ctrl-C and the turn report work the same — and anything you were typing stays on the input line. Messages you have queued run first, and the first prompt among them carries the exit to the model instead. A job that exits during a turn is reported in that turn instead ([Tools](TOOLS.md#background-jobs)), and one that exits while a question or [the picker](SESSIONS.md#the-picker) is open waits until you answer it. After `/new` or `/resume`, exits from the session you left start nothing.
 
