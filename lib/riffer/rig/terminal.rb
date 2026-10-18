@@ -84,14 +84,7 @@ class Riffer::Rig::Terminal
       jobs: JobCounter.new(footer: frame),
       repl: repl
     )
-    turns = TickerDisplay.new(
-      frame: frame,
-      theme: theme,
-      peek: peek,
-      catalog: Riffer.config.catalog,
-      random: Random.new,
-      clock: clock
-    )
+    turns = TickerDisplay.new(frame: frame, theme: theme, peek: peek, catalog: Riffer.config.catalog, clock: clock)
     renderer = Renderer.new(io: console, theme: theme, width: -> { frame.measure&.last })
     assemble(input:, renderer:, sessions:, opening:, turns:, repl:)
   end

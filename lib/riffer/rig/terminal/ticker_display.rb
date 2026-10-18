@@ -7,7 +7,6 @@ class Riffer::Rig::Terminal::TickerDisplay
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @peek: Riffer::Rig::Terminal::Peek
   # @rbs @catalog: ::Riffer::Catalog
-  # @rbs @random: Random
   # @rbs @clock: ^() -> Float
   # @rbs @mutex: Mutex
   # @rbs @buffer: Riffer::Rig::Terminal::TurnBuffer?
@@ -17,15 +16,13 @@ class Riffer::Rig::Terminal::TickerDisplay
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs peek: Riffer::Rig::Terminal::Peek
   # @rbs catalog: ::Riffer::Catalog
-  # @rbs random: Random
   # @rbs clock: ^() -> Float
   # @rbs return: void
-  def initialize(frame:, theme:, peek:, catalog:, random:, clock:)
+  def initialize(frame:, theme:, peek:, catalog:, clock:)
     @frame = frame
     @theme = theme
     @peek = peek
     @catalog = catalog
-    @random = random
     @clock = clock
     @mutex = Mutex.new
     @buffer = nil
@@ -40,8 +37,7 @@ class Riffer::Rig::Terminal::TickerDisplay
       footer: @frame,
       theme: @theme,
       buffer: buffer,
-      rates: @catalog.rates_for(runtime.model),
-      random: @random
+      rates: @catalog.rates_for(runtime.model)
     )
     @mutex.synchronize do
       @buffer = buffer

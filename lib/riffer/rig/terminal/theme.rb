@@ -58,6 +58,14 @@ class Riffer::Rig::Terminal::Theme
 
   # @rbs text: String
   # @rbs return: String
+  def green(text) = paint(text, Riffer::Rig::Terminal::Palette::GREEN)
+
+  # @rbs text: String
+  # @rbs return: String
+  def amber(text) = paint(text, Riffer::Rig::Terminal::Palette::AMBER)
+
+  # @rbs text: String
+  # @rbs return: String
   def dim(text)
     return text unless enabled
 

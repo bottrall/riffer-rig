@@ -14,4 +14,8 @@ module Riffer::Rig::Terminal::Palette
   GREY: Array[Integer]
 
   RED: Array[Integer]
+
+  GREEN: Array[Integer]
+
+  AMBER: Array[Integer]
 end

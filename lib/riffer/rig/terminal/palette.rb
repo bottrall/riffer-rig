@@ -14,4 +14,8 @@ module Riffer::Rig::Terminal::Palette
   GREY = [138, 139, 154].freeze #: Array[Integer]
 
   RED = [255, 92, 122].freeze #: Array[Integer]
+
+  GREEN = [126, 201, 160].freeze #: Array[Integer]
+
+  AMBER = [217, 176, 108].freeze #: Array[Integer]
 end

@@ -50,6 +50,14 @@ class Riffer::Rig::Terminal::Theme
 
   # @rbs text: String
   # @rbs return: String
+  def green: (String text) -> String
+
+  # @rbs text: String
+  # @rbs return: String
+  def amber: (String text) -> String
+
+  # @rbs text: String
+  # @rbs return: String
   def dim: (String text) -> String
 
   # @rbs text: String
