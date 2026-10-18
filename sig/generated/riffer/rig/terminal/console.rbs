@@ -5,10 +5,13 @@ class Riffer::Rig::Terminal::Console
 
   @pipeline: Riffer::Rig::Terminal::KeyPipeline
 
+  @loading: Riffer::Rig::Terminal::Loading
+
   # @rbs frame: Riffer::Rig::Terminal::Frame
   # @rbs pipeline: Riffer::Rig::Terminal::KeyPipeline
+  # @rbs loading: Riffer::Rig::Terminal::Loading
   # @rbs return: void
-  def initialize: (frame: Riffer::Rig::Terminal::Frame, pipeline: Riffer::Rig::Terminal::KeyPipeline) -> void
+  def initialize: (frame: Riffer::Rig::Terminal::Frame, pipeline: Riffer::Rig::Terminal::KeyPipeline, loading: Riffer::Rig::Terminal::Loading) -> void
 
   # @rbs return: void
   def start: () -> void

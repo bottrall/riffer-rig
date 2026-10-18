@@ -1,6 +1,6 @@
 # Terminal
 
-`riffer` with no `-p` opens the interactive terminal. It keeps two rows at the bottom of the screen — the input line, and a status line under it — and prints everything else above them, a blank row clear of the input line: the banner, each message as it starts, each turn's answer and stat line, and command output. When there is no terminal to draw on, it reads plain lines instead ([Without a terminal](#without-a-terminal)).
+`riffer` with no `-p` opens the interactive terminal. It keeps two rows at the bottom of the screen — the input line, and a status line under it — and prints everything else above them, a blank row clear of the input line: the banner, each message as it starts, each turn's answer and stat line, and command output. While the session is still starting, the two rows are replaced by a single dim line that animates while it waits — a braille spinner rolling through riff-themed quips like `⠹ warming the amp…`; the input line and the banner take their place together, once the banner's content is known. When there is no terminal to draw on, it reads plain lines instead ([Without a terminal](#without-a-terminal)).
 
 Colour is on when the output is a terminal; set `NO_COLOR` to turn it off.
 
@@ -56,7 +56,7 @@ While a turn runs, the row under the input line shows its progress, redrawn abou
 - `step N`, the model calls so far;
 - `N tools`, the tool calls the model has made;
 - the tokens, as `↑in ↓out tok` (`k` and `M` for thousands and millions);
-- the cost so far, as `$0.012`, when the model is [priced](CONFIGURATION.md#models);
+- the cost so far, as `$0.012`, when the model is [priced](CONFIGURATION.md#catalog_files);
 - a label: `riffing…`, a rotating phrase while the model is reasoning, or `✦ skill: <name>` for a moment after a skill activates.
 
 The output tokens and the cost count text still streaming, at an estimated four characters per token, until the provider reports the request's usage; the input tokens appear once it has. On a narrow terminal the line drops whole figures from the right rather than show one cut short. The line clears when the turn ends.
@@ -81,7 +81,7 @@ When a turn ends, its answer is printed above the input line, rendered from Mark
 3 steps · 00:12 · ↑5200 · ↓340 · cache_read:4096 · ~$0.0215 · session 18400 tok · ~$0.0731
 ```
 
-That is the turn's model calls, its time, its input and output tokens, each cache count above zero, and its cost, then the session's total tokens and cost; the costs appear once the model is [priced](CONFIGURATION.md#models). A cancelled turn prints the answer it had reached and `interrupted` in place of the stat line. Command output, such as `/cost`'s, is printed as it arrives.
+That is the turn's model calls, its time, its input and output tokens, each cache count above zero, and its cost, then the session's total tokens and cost; the costs appear once the model is [priced](CONFIGURATION.md#catalog_files). A cancelled turn prints the answer it had reached and `interrupted` in place of the stat line. Command output, such as `/cost`'s, is printed as it arrives.
 
 ## Interrupting and exiting
 

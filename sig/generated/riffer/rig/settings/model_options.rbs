@@ -1,8 +1,6 @@
 # Generated from lib/riffer/rig/settings/model_options.rb with RBS::Inline
 
 module Riffer::Rig::Settings::ModelOptions
-  REASONING_LEVELS_BY_PROVIDER: Hash[String, Array[String]]
-
   MODEL_STRING: Regexp
 
   # @rbs model: String
@@ -23,18 +21,6 @@ module Riffer::Rig::Settings::ModelOptions
   def levels_for: (String model) -> Array[String]
 
   # @rbs model: String
-  # @rbs reasoning: String?
   # @rbs return: Hash[Symbol, untyped]
-  def model_options: (String model, String? reasoning) -> Hash[Symbol, untyped]
-
-  private
-
-  # @rbs provider: String?
-  # @rbs return: Hash[Symbol, untyped]
-  def base_options: (String? provider) -> Hash[Symbol, untyped]
-
-  # @rbs level: String?
-  # @rbs provider: String?
-  # @rbs return: Hash[Symbol, untyped]
-  def reasoning_options: (String? level, String? provider) -> Hash[Symbol, untyped]
+  def model_options: (String model) -> Hash[Symbol, untyped]
 end

@@ -26,6 +26,8 @@ class Riffer::Rig::Terminal::Frame
   # Sent from the top row the frame drew, so this wipes all of it.
   ERASE: String
 
+  LOADING: String
+
   SPACER: String
 
   @io: IO
@@ -54,6 +56,10 @@ class Riffer::Rig::Terminal::Frame
 
   @active: bool
 
+  @loading: bool
+
+  @loading_line: String
+
   @mutex: Mutex
 
   @previous_resize: Signal::trap_command
@@ -68,8 +74,9 @@ class Riffer::Rig::Terminal::Frame
   # @rbs io: IO
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs editor: Riffer::Rig::Terminal::LineEditor
+  # @rbs loading: bool
   # @rbs return: void
-  def initialize: (io: IO, theme: Riffer::Rig::Terminal::Theme, ?editor: Riffer::Rig::Terminal::LineEditor) -> void
+  def initialize: (io: IO, theme: Riffer::Rig::Terminal::Theme, ?editor: Riffer::Rig::Terminal::LineEditor, ?loading: bool) -> void
 
   # @rbs return: void
   def start: () -> void
@@ -89,6 +96,13 @@ class Riffer::Rig::Terminal::Frame
   # @rbs status: String
   # @rbs return: void
   def status: (String status) -> void
+
+  # @rbs line: String
+  # @rbs return: void
+  def loading: (String line) -> void
+
+  # @rbs return: bool
+  def loading?: () -> bool
 
   # @rbs hint: String?
   # @rbs return: void
@@ -129,6 +143,12 @@ class Riffer::Rig::Terminal::Frame
   # @rbs before: String
   # @rbs return: void
   def draw: (?String before) -> void
+
+  # The cursor stays on the row the loading line was written to, so the erase
+  # that replaces it wipes it like the footer's own row.
+  # @rbs before: String
+  # @rbs return: void
+  def draw_loading: (String before) -> void
 
   # @rbs limit: Integer
   # @rbs return: Array[String]

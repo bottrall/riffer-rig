@@ -21,7 +21,7 @@ class Riffer::Rig::Terminal::Ticker
 
   @buffer: Riffer::Rig::Terminal::TurnBuffer
 
-  @rates: Riffer::Config::Pricing::Rates?
+  @rates: ::Riffer::Catalog::Rates?
 
   @random: Random
 
@@ -50,10 +50,10 @@ class Riffer::Rig::Terminal::Ticker
   # @rbs footer: Riffer::Rig::Terminal::Frame
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs buffer: Riffer::Rig::Terminal::TurnBuffer
-  # @rbs rates: Riffer::Config::Pricing::Rates?
+  # @rbs rates: ::Riffer::Catalog::Rates?
   # @rbs random: Random
   # @rbs return: void
-  def initialize: (footer: Riffer::Rig::Terminal::Frame, theme: Riffer::Rig::Terminal::Theme, buffer: Riffer::Rig::Terminal::TurnBuffer, rates: Riffer::Config::Pricing::Rates?, random: Random) -> void
+  def initialize: (footer: Riffer::Rig::Terminal::Frame, theme: Riffer::Rig::Terminal::Theme, buffer: Riffer::Rig::Terminal::TurnBuffer, rates: ::Riffer::Catalog::Rates?, random: Random) -> void
 
   # @rbs return: void
   def start: () -> void

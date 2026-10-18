@@ -24,7 +24,7 @@ class Riffer::Rig::Terminal::Ticker
   # @rbs @footer: Riffer::Rig::Terminal::Frame
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @buffer: Riffer::Rig::Terminal::TurnBuffer
-  # @rbs @rates: Riffer::Config::Pricing::Rates?
+  # @rbs @rates: ::Riffer::Catalog::Rates?
   # @rbs @random: Random
   # @rbs @mutex: Mutex
   # @rbs @halt: Thread::Queue[true]
@@ -41,7 +41,7 @@ class Riffer::Rig::Terminal::Ticker
   # @rbs footer: Riffer::Rig::Terminal::Frame
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs buffer: Riffer::Rig::Terminal::TurnBuffer
-  # @rbs rates: Riffer::Config::Pricing::Rates?
+  # @rbs rates: ::Riffer::Catalog::Rates?
   # @rbs random: Random
   # @rbs return: void
   def initialize(footer:, theme:, buffer:, rates:, random:)

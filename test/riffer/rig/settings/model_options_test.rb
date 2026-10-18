@@ -84,52 +84,16 @@ describe Riffer::Rig::Settings::ModelOptions do
   end
 
   describe '.model_options' do
-    def model_options(model, reasoning)
-      Riffer::Rig::Settings::ModelOptions.model_options(model, reasoning)
-    end
-
-    it 'ignores reasoning for a model without a provider' do
-      assert_empty model_options('sonnet', 'high')
-    end
-
-    it 'ignores reasoning for a provider without support' do
-      assert_empty model_options('gemini/gemini-2.5-flash', 'high')
-    end
-
-    it 'ignores an unrecognised reasoning value' do
-      refute model_options('openai/o3', 'turbo').key?(:reasoning)
-    end
-
-    it 'ignores max reasoning for openai' do
-      refute model_options('openai/o3', 'max').key?(:reasoning)
-    end
-
     it 'includes cache control for an anthropic model' do
-      assert_equal({ type: :ephemeral }, model_options('anthropic/claude-sonnet-4-6', nil)[:cache_control])
+      assert_equal({ cache_control: { type: :ephemeral } }, Riffer::Rig::Settings::ModelOptions.model_options('anthropic/claude-sonnet-4-6'))
     end
 
-    it 'is empty for an openai model without reasoning' do
-      assert_empty model_options('openai/o3', nil)
+    it 'is empty for an openai model' do
+      assert_empty Riffer::Rig::Settings::ModelOptions.model_options('openai/o3')
     end
 
-    it 'sets anthropic effort for low reasoning' do
-      assert_equal 'low', model_options('anthropic/claude-sonnet-4-6', 'low')[:output_config][:effort]
-    end
-
-    it 'sets anthropic effort for max reasoning' do
-      assert_equal 'max', model_options('anthropic/claude-sonnet-4-6', 'max')[:output_config][:effort]
-    end
-
-    it 'keeps cache control when anthropic reasoning is set' do
-      assert_equal({ type: :ephemeral }, model_options('anthropic/claude-sonnet-4-6', 'low')[:cache_control])
-    end
-
-    it 'sets reasoning effort for openai' do
-      assert_equal 'high', model_options('openai/o3', 'high')[:reasoning]
-    end
-
-    it 'sets reasoning effort for openrouter' do
-      assert_equal 'xhigh', model_options('openrouter/anthropic/claude-sonnet-4.6', 'xhigh')[:reasoning]
+    it 'is empty for a model without a provider' do
+      assert_empty Riffer::Rig::Settings::ModelOptions.model_options('sonnet')
     end
   end
 end

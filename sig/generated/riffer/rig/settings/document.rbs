@@ -1,12 +1,12 @@
 # Generated from lib/riffer/rig/settings/document.rb with RBS::Inline
 
 class Riffer::Rig::Settings::Document
-  # @dynamic model, reasoning, models, providers, disabled, autoload, native_tools, save, reload
+  # @dynamic model, reasoning, catalog_files, providers, disabled, autoload, native_tools, save, reload
   attr_reader model: String?
 
   attr_reader reasoning: String?
 
-  attr_reader models: Hash[String, Riffer::Rig::Settings::Pricing]
+  attr_reader catalog_files: Array[String]
 
   attr_reader providers: Hash[String, Hash[String, String]]
 

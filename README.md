@@ -71,7 +71,7 @@ The exit code says how the turn ended: `0` finished, `1` runtime error, `2` usag
 
 ### In the session
 
-Type a prompt and press Enter. While the turn runs, the status line under the input shows its time, steps, tool calls, tokens and cost, and Ctrl-T peeks at what the model is writing; the reply is printed when the turn ends, followed by a stat line (`N steps · mm:ss · ↑in · ↓out · session N tok`, plus the turn's cost and the session's when the model is [priced](docs/CONFIGURATION.md#models)). The input line stays open throughout: a message sent during a turn is queued and runs when the turn ends. [Terminal](docs/TERMINAL.md) has every key.
+Type a prompt and press Enter. While the turn runs, the status line under the input shows its time, steps, tool calls, tokens and cost, and Ctrl-T peeks at what the model is writing; the reply is printed when the turn ends, followed by a stat line (`N steps · mm:ss · ↑in · ↓out · session N tok`, plus the turn's cost and the session's when the model is [priced](docs/CONFIGURATION.md#catalog_files)). The input line stays open throughout: a message sent during a turn is queued and runs when the turn ends. [Terminal](docs/TERMINAL.md) has every key.
 
 - Ctrl-C during a turn cancels it. Ctrl-C with no turn running asks for a second one, which exits.
 - `/exit` or `/quit` ends the session, as does Ctrl-D on an empty line.
@@ -120,16 +120,16 @@ Inside a session, `/auth` lists every provider with where its secret comes from 
 
 Settings live in two scopes, both optional: `~/.riffer/settings.json` for every project, and `<cwd>/.riffer/settings.json` for one project, merged key by key with the project winning ([Configuration](docs/CONFIGURATION.md)). Every core key is optional:
 
-| Key          | What it sets                                                                     |
-| ------------ | -------------------------------------------------------------------------------- |
-| `model`      | the model new sessions start with, as `provider/name`                            |
-| `reasoning`  | the reasoning effort, translated to the provider's own parameter                 |
-| `models`     | prices each model in USD per million tokens                                      |
-| `providers`  | non-secret provider fields such as an endpoint or region (home file only)        |
-| `extensions` | `disabled` — bundled extensions to leave out; `autoload` — gem extension autoload |
-| `reload`     | `"auto"` (default) or `"manual"` — the hot-reload trigger                        |
-| `sessions`   | `save: false` stops saving sessions to the store                                 |
-| `tools`      | the provider-native tool switches (`native`), off by default                     |
+| Key            | What it sets                                                                     |
+| -------------- | -------------------------------------------------------------------------------- |
+| `model`        | the model new sessions start with, as `provider/name`                            |
+| `reasoning`    | the reasoning effort, which riffer translates to the provider's own parameter    |
+| `catalog_files`| the model catalog JSON files holding pricing and reasoning maps                  |
+| `providers`    | non-secret provider fields such as an endpoint or region (home file only)        |
+| `extensions`   | `disabled` — bundled extensions to leave out; `autoload` — gem extension autoload |
+| `reload`       | `"auto"` (default) or `"manual"` — the hot-reload trigger                        |
+| `sessions`     | `save: false` stops saving sessions to the store                                 |
+| `tools`        | the provider-native tool switches (`native`), off by default                     |
 
 - `RIFFER_MODEL` — the model for this run as `provider/name`, winning over the `model` setting. A bare name such as `sonnet` is rejected with the list of providers.
 - `RIFFER_REASONING` — the reasoning effort for this run, winning over the `reasoning` setting; a level the model's provider does not accept is rejected with the levels it does.

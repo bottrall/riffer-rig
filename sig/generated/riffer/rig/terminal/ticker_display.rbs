@@ -9,7 +9,7 @@ class Riffer::Rig::Terminal::TickerDisplay
 
   @peek: Riffer::Rig::Terminal::Peek
 
-  @pricing: ::Riffer::Config::Pricing
+  @catalog: ::Riffer::Catalog
 
   @random: Random
 
@@ -24,11 +24,11 @@ class Riffer::Rig::Terminal::TickerDisplay
   # @rbs frame: Riffer::Rig::Terminal::Frame
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs peek: Riffer::Rig::Terminal::Peek
-  # @rbs pricing: ::Riffer::Config::Pricing
+  # @rbs catalog: ::Riffer::Catalog
   # @rbs random: Random
   # @rbs clock: ^() -> Float
   # @rbs return: void
-  def initialize: (frame: Riffer::Rig::Terminal::Frame, theme: Riffer::Rig::Terminal::Theme, peek: Riffer::Rig::Terminal::Peek, pricing: ::Riffer::Config::Pricing, random: Random, clock: ^() -> Float) -> void
+  def initialize: (frame: Riffer::Rig::Terminal::Frame, theme: Riffer::Rig::Terminal::Theme, peek: Riffer::Rig::Terminal::Peek, catalog: ::Riffer::Catalog, random: Random, clock: ^() -> Float) -> void
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void

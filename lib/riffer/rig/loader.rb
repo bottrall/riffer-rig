@@ -91,6 +91,7 @@ class Riffer::Rig::Loader
     credentials = install_credentials(provider)
     raise ConfigurationError, credentials if credentials.is_a?(String)
 
+    @riffer_config.catalog_files = document.catalog_files
     @extensions_enabled = options.extensions
     @extra_extensions = extra_extensions
     @reload_mode = reload
@@ -117,10 +118,9 @@ class Riffer::Rig::Loader
       credentials: { provider.to_sym => credentials },
       env: @env,
       auth_path: home_auth_path,
-      pricing: document.models,
+      reasoning: reasoning || document.reasoning,
       riffer_config: @riffer_config,
-      model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected, reasoning || document.reasoning),
-      reasoning: reasoning,
+      model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected),
       native_tools: document.native_tools,
       snapshot: snapshot
     )

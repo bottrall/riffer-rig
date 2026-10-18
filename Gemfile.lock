@@ -7,7 +7,7 @@ PATH
       event_stream_parser (~> 1.0)
       faraday (~> 2.14)
       mcp (~> 1.6)
-      riffer (~> 0.52.0)
+      riffer (~> 0.53.0)
       zeitwerk (~> 2.8)
 
 GEM
@@ -124,7 +124,7 @@ GEM
     reline (0.7.0)
       io-console (~> 0.5)
     rexml (3.4.4)
-    riffer (0.52.1)
+    riffer (0.53.0)
       base64
       zeitwerk (~> 2.6, >= 2.6.0)
     rouge (5.1.0)

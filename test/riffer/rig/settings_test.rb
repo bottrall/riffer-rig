@@ -67,5 +67,26 @@ describe Riffer::Rig::Settings do
 
       assert_equal %w[mcp], merged.dig(:extensions, :disabled)
     end
+
+    it 'puts the home catalog files before the project ones' do
+      merged = Riffer::Rig::Settings.merge(
+        { catalog_files: ['~/.riffer/models.json'] },
+        { catalog_files: ['.riffer/models.json'] }
+      )
+
+      assert_equal ['~/.riffer/models.json', '.riffer/models.json'], merged[:catalog_files]
+    end
+
+    it 'keeps the home catalog files when the project sets none' do
+      merged = Riffer::Rig::Settings.merge({ catalog_files: ['~/.riffer/models.json'] }, {})
+
+      assert_equal ['~/.riffer/models.json'], merged[:catalog_files]
+    end
+
+    it 'replaces a catalog files value that is not an array with the project one' do
+      merged = Riffer::Rig::Settings.merge({ catalog_files: 'models.json' }, { catalog_files: ['.riffer/models.json'] })
+
+      assert_equal ['.riffer/models.json'], merged[:catalog_files]
+    end
   end
 end
