@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.14.0](https://github.com/bottrall/riffer-rig/compare/v0.13.0...v0.14.0) (2026-10-18)
+
+
+### Features
+
+* **headless:** print the session id on stderr ([#556](https://github.com/bottrall/riffer-rig/issues/556)) ([2816938](https://github.com/bottrall/riffer-rig/commit/2816938f66d32ccf557d83a33e40300e68a68032))
+* make reasoning effort configurable like the model ([#553](https://github.com/bottrall/riffer-rig/issues/553)) ([330f190](https://github.com/bottrall/riffer-rig/commit/330f190244353ed5e967b0f29d574c2741d92dba))
+* **terminal:** keep the status bar filled between turns ([#555](https://github.com/bottrall/riffer-rig/issues/555)) ([e0918ec](https://github.com/bottrall/riffer-rig/commit/e0918ecd050519cf06d0593221b3b50e0e1a6778))
+* **terminal:** type a multiline prompt ([#557](https://github.com/bottrall/riffer-rig/issues/557)) ([a55091c](https://github.com/bottrall/riffer-rig/commit/a55091c091e4df4ad6c63a71d7dd16d1de98e835))
+* upgrade riffer to 0.53.0 and adopt the model catalog ([#552](https://github.com/bottrall/riffer-rig/issues/552)) ([70b129b](https://github.com/bottrall/riffer-rig/commit/70b129b27a4d03188ef7831937874d7bb73cea08))
+
+
+### Bug Fixes
+
+* stop models from polling background bash jobs ([#559](https://github.com/bottrall/riffer-rig/issues/559)) ([57ad0ba](https://github.com/bottrall/riffer-rig/commit/57ad0ba259d0ebd71f4cc4178172364f39a62782))
+* **terminal:** draw the banner and the input row together ([#549](https://github.com/bottrall/riffer-rig/issues/549)) ([e847277](https://github.com/bottrall/riffer-rig/commit/e847277af41ebd824dd115105d7d40e9af236da4))
+
 ## [0.13.0](https://github.com/bottrall/riffer-rig/compare/v0.12.0...v0.13.0) (2026-10-17)
 
 
