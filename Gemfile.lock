@@ -15,9 +15,10 @@ GEM
   specs:
     acp-sdk (0.13.0)
       zeitwerk (~> 2.8)
-    anthropic (1.78.0)
+    anthropic (1.80.0)
       base64 (~> 0.1)
       connection_pool (>= 2, < 4)
+      opentelemetry-api (>= 1.2.4, < 2)
       standardwebhooks (~> 1.0)
     ast (2.4.3)
     base64 (0.3.0)
@@ -92,6 +93,8 @@ GEM
       shellany (~> 0.0)
     openai (0.103.0)
       connection_pool (>= 2.2.3)
+      logger
+    opentelemetry-api (1.11.1)
       logger
     parallel (2.3.0)
     parser (3.3.12.0)
@@ -193,7 +196,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  anthropic (~> 1.78)
+  anthropic (~> 1.80)
   guard
   guard-shell
   kramdown

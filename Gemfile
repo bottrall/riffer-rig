@@ -8,7 +8,7 @@ group :development, :test do
   gem 'minitest', '~> 6.0'
   gem 'rake', '~> 13.0'
 
-  gem 'anthropic', '~> 1.78'
+  gem 'anthropic', '~> 1.80'
   gem 'openai', '~> 0.103'
 
   gem 'rubocop', '~> 1.92', require: false
