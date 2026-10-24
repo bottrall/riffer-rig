@@ -87,7 +87,7 @@ Settings are lenient so that one level can stay in the file while you switch bet
 { "catalog_files": ["~/.riffer/models.json", ".riffer/models.json"] }
 ```
 
-The [model catalog](https://riffer.ai/guides/catalog/) files riffer reads for per-model pricing and reasoning mappings. Without a catalog entry a model has no cost: it is shown as missing, never as zero. The file format is riffer's.
+The [model catalog](https://riffer.ai/guides/catalog/) files riffer reads for per-model pricing and reasoning mappings. A model without a catalog entry is unpriced, so riffer counts no cost for it ([how the terminal shows that](TERMINAL.md#the-status-line)). The file format is riffer's.
 
 ## `mcp`
 
