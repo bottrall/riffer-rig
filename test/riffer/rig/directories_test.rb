@@ -49,4 +49,10 @@ describe Riffer::Rig::Directories do
       assert_equal File.join(@repo, 'packages'), Dir.chdir(@cwd) { Riffer::Rig::Directories.up_to_repo_root('..').first }
     end
   end
+
+  describe '.riffer' do
+    it 'joins the names under the root .riffer directory' do
+      assert_equal '/home/me/.riffer/sessions/a', Riffer::Rig::Directories.riffer('/home/me', 'sessions', 'a')
+    end
+  end
 end

@@ -63,24 +63,16 @@ describe Riffer::Rig::Mcp::Auth do
     JSON.parse(File.read(auth_path)).fetch(server).except('type')
   end
 
-  def refusal
-    yield
-    nil
-  rescue Riffer::Rig::Mcp::Auth::Error => e
-    e.message
-  end
-
   describe '.resolve' do
-    it 'raises naming a malformed auth.json' do
+    it 'reports a malformed auth.json' do
       in_tmp_home do |auth_path|
         FileUtils.mkdir_p(File.dirname(auth_path))
         File.write(auth_path, '{"docs":{"a":1},}')
 
-        refused = refusal do
+        assert_equal(
+          "#{auth_path} is not valid JSON at line 1 column 17",
           Riffer::Rig::Mcp::Auth.resolve('docs', { api_key: ['DOCS_API_KEY'] }, host: null_host, env: env, auth_path:)
-        end
-
-        assert_equal "#{auth_path} is not valid JSON at line 1 column 17", refused
+        )
       end
     end
 
@@ -132,30 +124,25 @@ describe Riffer::Rig::Mcp::Auth do
       end
     end
 
-    it 'raises with the env var names when the field cannot be resolved' do
+    it 'names the server and the env vars when the field cannot be resolved' do
       in_tmp_home do |auth_path|
-        error = assert_raises(Riffer::Rig::Mcp::Auth::Error) do
-          Riffer::Rig::Mcp::Auth.resolve(
-            'docs', { api_key: %w[DOCS_API_KEY DOCS_TOKEN] }, host: null_host, env: env, auth_path:
-          )
-        end
-
         assert_equal(
           'MCP server docs has no api_key (DOCS_API_KEY or DOCS_TOKEN); ' \
           'set it in the environment or run riffer interactively to paste it',
-          error.message
+          Riffer::Rig::Mcp::Auth.resolve(
+            'docs', { api_key: %w[DOCS_API_KEY DOCS_TOKEN] }, host: null_host, env: env, auth_path:
+          )
         )
       end
     end
   end
 
   describe '.expand' do
-    it 'raises when a placeholder is not an auth field' do
-      error = assert_raises(Riffer::Rig::Mcp::Auth::Error) do
+    it 'reports a placeholder that is not an auth field' do
+      assert_equal(
+        'header references ${token}, which the auth block does not declare',
         Riffer::Rig::Mcp::Auth.expand({ 'Authorization' => 'Bearer ${token}' }, { api_key: 'secret' })
-      end
-
-      assert_equal 'header references ${token}, which the auth block does not declare', error.message
+      )
     end
 
     it 'substitutes every declared field into the headers' do

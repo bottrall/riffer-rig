@@ -4,6 +4,10 @@ require 'test_helper'
 require 'stringio'
 
 describe Riffer::Rig::Terminal::Theme do
+  it 'is frozen' do
+    assert_predicate Riffer::Rig::Terminal::Theme.new(enabled: false), :frozen?
+  end
+
   it 'for disables colour for a non tty' do
     refute Riffer::Rig::Terminal::Theme.for(StringIO.new).enabled
   end

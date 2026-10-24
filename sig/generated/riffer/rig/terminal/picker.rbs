@@ -15,6 +15,8 @@ class Riffer::Rig::Terminal::Picker
 
   EOT: String
 
+  @now: ^() -> Time
+
   @sessions: Riffer::Rig::Terminal::_Sessions
 
   @host: Riffer::Rig::Hosts::_Host
@@ -27,8 +29,9 @@ class Riffer::Rig::Terminal::Picker
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs now: ^() -> Time
   # @rbs return: void
-  def initialize: (prompter: Riffer::Rig::Terminal::_Prompter, renderer: Riffer::Rig::Terminal::Renderer, host: Riffer::Rig::Hosts::_Host, sessions: Riffer::Rig::Terminal::_Sessions) -> void
+  def initialize: (prompter: Riffer::Rig::Terminal::_Prompter, renderer: Riffer::Rig::Terminal::Renderer, host: Riffer::Rig::Hosts::_Host, sessions: Riffer::Rig::Terminal::_Sessions, ?now: ^() -> Time) -> void
 
   # @rbs all: bool
   # @rbs return: Riffer::Rig::Terminal::Session?

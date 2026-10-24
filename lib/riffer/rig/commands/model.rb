@@ -4,20 +4,27 @@ module Riffer::Rig::Commands::Model
   extend self
 
   SAVE = '--save' #: String
-  SAVED_TO = '~/.riffer/settings.json' #: String
 
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: Riffer::Rig::Command
-  def command
+  def command(env:, auth_path:, settings_path:, sdk: Riffer::Rig::SDK)
     Riffer::Rig::Command.new(
       'model',
       description: 'Switch the model for this session: /model provider/name, /model --save',
       extension: :core
-    ) { |ctx| run(ctx) }
+    ) { |ctx| run(ctx, env:, auth_path:, settings_path:, sdk:) }
   end
 
   # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: void
-  def run(ctx)
+  def run(ctx, env:, auth_path:, settings_path:, sdk:)
     words = ctx.args.split
     save = words.delete(SAVE)
     model = words.join(' ')
@@ -25,21 +32,21 @@ module Riffer::Rig::Commands::Model
     if model.empty?
       return ctx.say("Model: #{ctx.runtime.model}") unless save
 
-      refusal = Riffer::Rig::Settings::File.store_model(ctx.runtime.model)
+      refusal = Riffer::Rig::Settings::File.store_model(ctx.runtime.model, path: settings_path)
       return ctx.host.notify(refusal, level: :error) if refusal
 
-      return ctx.say("Saved #{ctx.runtime.model} to #{SAVED_TO}")
+      return ctx.say("Saved #{ctx.runtime.model} to #{settings_path}")
     end
 
     provider = Riffer::Rig::Settings::ModelOptions.provider_for(model)
     return ctx.say(hint) unless provider && Riffer::Providers::Repository.find(provider)
-    return unless ready?(ctx, model, provider)
+    return unless ready?(ctx, model, provider, env:, auth_path:, settings_path:, sdk:)
 
     ctx.runtime.model = model
-    refusal = Riffer::Rig::Settings::File.store_model(model) if save
+    refusal = Riffer::Rig::Settings::File.store_model(model, path: settings_path) if save
     ctx.host.notify(refusal, level: :error) if refusal
     saved = save && !refusal
-    ctx.say(saved ? "Model switched to #{model} and saved to #{SAVED_TO}" : "Model switched to #{model}")
+    ctx.say(saved ? "Model switched to #{model} and saved to #{settings_path}" : "Model switched to #{model}")
   end
 
   private
@@ -54,29 +61,36 @@ module Riffer::Rig::Commands::Model
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs model: String
   # @rbs provider: String
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: bool
-  def ready?(ctx, model, provider)
+  def ready?(ctx, model, provider, env:, auth_path:, settings_path:, sdk:)
     setup = Riffer::Rig::ProviderSetup.registered_setup(provider)
     return true unless setup
 
-    sdk = setup.sdk
-    if sdk
-      message = Riffer::Rig::SDK.ensure(sdk[0], sdk[1], host: ctx.host)
+    gem = setup.sdk
+    if gem
+      message = sdk.ensure(gem[0], gem[1], host: ctx.host)
       if message
         ctx.host.notify(message, level: :error)
         return false
       end
     end
 
-    credentials_ready?(ctx, model, provider, setup)
+    credentials_ready?(ctx, model, provider, setup, env:, auth_path:, settings_path:)
   end
 
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs model: String
   # @rbs provider: String
   # @rbs setup: Riffer::Rig::ProviderSetup
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
   # @rbs return: bool
-  def credentials_ready?(ctx, model, provider, setup)
+  def credentials_ready?(ctx, model, provider, setup, env:, auth_path:, settings_path:)
     missing = setup.fields.select(&:required)
                    .map(&:name)
                    .reject { |name| ctx.runtime.credentials.dig(provider.to_sym, name) }
@@ -84,26 +98,15 @@ module Riffer::Rig::Commands::Model
 
     empty = {} #: Hash[Symbol, String]
     stored = ctx.runtime.credentials.fetch(provider.to_sym, empty)
-    resolution = Riffer::Rig::Credentials.install(provider, host: ctx.host, known: stored)
-    if resolution.is_a?(String)
-      ctx.host.notify(resolution, level: :error)
-      false
-    elsif resolution.missing.any?
-      refuse(ctx, model, provider, missing & resolution.missing)
-      false
-    else
-      ctx.runtime.merge_credentials(provider.to_sym, stored.merge(resolution.values))
-      true
+    values = Riffer::Rig::Credentials.install_values(
+      provider, host: ctx.host, env:, auth_path:, settings_path:, setup:, known: stored
+    )
+    if values.is_a?(String)
+      ctx.host.notify("Not switching to #{model}: #{values}", level: :error)
+      return false
     end
-  end
 
-  # @rbs ctx: Riffer::Rig::Command::Context
-  # @rbs model: String
-  # @rbs provider: String
-  # @rbs missing: Array[Symbol]
-  # @rbs return: void
-  def refuse(ctx, model, provider, missing)
-    wanted = Riffer::Rig::ProviderSetup.for(provider).missing_fields(missing)
-    ctx.host.notify("Not switching to #{model}: #{provider} has no #{wanted}", level: :error)
+    ctx.runtime.merge_credentials(provider.to_sym, stored.merge(values))
+    true
   end
 end

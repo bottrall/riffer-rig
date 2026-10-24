@@ -8,4 +8,9 @@ module Riffer::Rig::Directories
   # @rbs cwd: String
   # @rbs return: Array[String]
   def up_to_repo_root: (String cwd) -> Array[String]
+
+  # @rbs root: String
+  # @rbs *names: String
+  # @rbs return: String
+  def riffer: (String root, *String names) -> String
 end

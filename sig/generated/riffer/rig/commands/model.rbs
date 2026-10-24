@@ -3,14 +3,20 @@
 module Riffer::Rig::Commands::Model
   SAVE: String
 
-  SAVED_TO: String
-
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: Riffer::Rig::Command
-  def command: () -> Riffer::Rig::Command
+  def command: (env: Riffer::Rig::Env, auth_path: String, settings_path: String, ?sdk: singleton(Riffer::Rig::SDK)) -> Riffer::Rig::Command
 
   # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: void
-  def run: (Riffer::Rig::Command::Context ctx) -> void
+  def run: (Riffer::Rig::Command::Context ctx, env: Riffer::Rig::Env, auth_path: String, settings_path: String, sdk: singleton(Riffer::Rig::SDK)) -> void
 
   private
 
@@ -22,20 +28,20 @@ module Riffer::Rig::Commands::Model
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs model: String
   # @rbs provider: String
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: bool
-  def ready?: (Riffer::Rig::Command::Context ctx, String model, String provider) -> bool
+  def ready?: (Riffer::Rig::Command::Context ctx, String model, String provider, env: Riffer::Rig::Env, auth_path: String, settings_path: String, sdk: singleton(Riffer::Rig::SDK)) -> bool
 
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs model: String
   # @rbs provider: String
   # @rbs setup: Riffer::Rig::ProviderSetup
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
   # @rbs return: bool
-  def credentials_ready?: (Riffer::Rig::Command::Context ctx, String model, String provider, Riffer::Rig::ProviderSetup setup) -> bool
-
-  # @rbs ctx: Riffer::Rig::Command::Context
-  # @rbs model: String
-  # @rbs provider: String
-  # @rbs missing: Array[Symbol]
-  # @rbs return: void
-  def refuse: (Riffer::Rig::Command::Context ctx, String model, String provider, Array[Symbol] missing) -> void
+  def credentials_ready?: (Riffer::Rig::Command::Context ctx, String model, String provider, Riffer::Rig::ProviderSetup setup, env: Riffer::Rig::Env, auth_path: String, settings_path: String) -> bool
 end

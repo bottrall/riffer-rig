@@ -80,12 +80,12 @@ class Riffer::Rig::Loader::ExtensionSource
 
   # @rbs return: String
   def home_rig_path
-    File.expand_path(File.join(@home, '.riffer', 'rig.rb'))
+    File.expand_path(Riffer::Rig::Directories.riffer(@home, 'rig.rb'))
   end
 
   # @rbs return: String
   def project_rig_path
-    File.expand_path(File.join(@cwd, '.riffer', 'rig.rb'))
+    File.expand_path(Riffer::Rig::Directories.riffer(@cwd, 'rig.rb'))
   end
 
   # @rbs autoload: bool
@@ -135,7 +135,7 @@ class Riffer::Rig::Loader::ExtensionSource
 
   # @rbs return: String
   def trust_path
-    File.join(@home, '.riffer', 'trust.json')
+    Riffer::Rig::Directories.riffer(@home, 'trust.json')
   end
 
   # @rbs path: String
@@ -171,7 +171,7 @@ class Riffer::Rig::Loader::ExtensionSource
   # @rbs feature: String
   # @rbs return: bool
   def local?(feature)
-    roots = [File.expand_path(File.join(@home, '.riffer')), File.expand_path(@cwd)] #: Array[String]
+    roots = [File.expand_path(Riffer::Rig::Directories.riffer(@home)), File.expand_path(@cwd)] #: Array[String]
     roots.any? { |root| feature.start_with?("#{root}#{File::SEPARATOR}") }
   end
 end

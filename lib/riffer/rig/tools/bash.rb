@@ -4,7 +4,6 @@ require 'open3'
 
 class Riffer::Rig::Tools::Bash < Riffer::Tool
   include Riffer::Rig::Tools::Bash::KillGroup
-  include Riffer::Rig::Tools::Bash::MonotonicClock
   include Riffer::Rig::Tools::Bash::Truncation
 
   identifier 'bash'
@@ -59,7 +58,7 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
   # @rbs command: String
   # @rbs return: Riffer::Tools::Response
   def spawn_job(context, command)
-    jobs = context&.[](:jobs) #: Riffer::Rig::Tools::Bash::Jobs?
+    jobs = context&.[](:jobs) #: Riffer::Rig::Runtime::Jobs?
     return error('no background job registry in the context', type: :command_failed) unless jobs
 
     cwd = context&.[](:cwd) #: String
@@ -85,7 +84,7 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
     stdin.close
 
     capture = Riffer::Rig::Tools::Bash::Capture.new(stdout_and_stderr, MAX_OUTPUT_BYTES)
-    ending = await(wait_thread, capture, monotonic_now + timeout_seconds, cancel_flag)
+    ending = await(wait_thread, capture, Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout_seconds, cancel_flag)
     kill_group(wait_thread.pid) unless ending == :exited
     capture.drain
     stdout_and_stderr.close
@@ -110,7 +109,7 @@ class Riffer::Rig::Tools::Bash < Riffer::Tool
     # running tool directly; until then the flag is polled from the context.
     while wait_thread.alive?
       return :cancelled if cancel_flag&.set?
-      return :timed_out if monotonic_now >= deadline
+      return :timed_out if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
 
       capture.ended? ? wait_thread.join(POLL_SECONDS) : capture.read(POLL_SECONDS)
     end

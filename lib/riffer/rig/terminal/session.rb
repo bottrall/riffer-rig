@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Terminal::Session
-  # One row of the /resume picker, composed by the sessions collaborator: what
-  # the session is and when it last moved.
   # @rbs @id: String
   # @rbs @title: String
   # @rbs @updated: Time?

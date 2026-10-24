@@ -3,14 +3,12 @@
 module Riffer::Rig::Commands::Reasoning
   SAVE: String
 
-  SAVED_TO: String
-
-  DEFAULT: String
-
+  # @rbs settings_path: String
   # @rbs return: Riffer::Rig::Command
-  def command: () -> Riffer::Rig::Command
+  def command: (settings_path: String) -> Riffer::Rig::Command
 
   # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs settings_path: String
   # @rbs return: void
-  def run: (Riffer::Rig::Command::Context ctx) -> void
+  def run: (Riffer::Rig::Command::Context ctx, settings_path: String) -> void
 end

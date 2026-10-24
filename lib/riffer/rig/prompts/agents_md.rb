@@ -10,7 +10,7 @@ module Riffer::Rig::Prompts::AgentsMd
   # @rbs cwd: String
   # @rbs return: Array[String]
   def paths(cwd)
-    global  = File.join(Dir.home, '.riffer', 'AGENTS.md')
+    global  = Riffer::Rig::Directories.riffer(Dir.home, 'AGENTS.md')
     project = Riffer::Rig::Directories.ancestors(File.expand_path(cwd)).reverse.map { |dir| File.join(dir, 'AGENTS.md') }
     [global, *project].uniq.select { |path| File.file?(path) }
   end

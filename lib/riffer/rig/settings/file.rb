@@ -3,7 +3,7 @@
 module Riffer::Rig::Settings::File
   extend self
 
-  PATH = ::File.expand_path('~/.riffer/settings.json') #: String
+  PATH = Riffer::Rig::Directories.riffer(Dir.home, 'settings.json') #: String
 
   # @rbs path: String
   # @rbs return: (Hash[Symbol, untyped] | String)
@@ -21,14 +21,14 @@ module Riffer::Rig::Settings::File
   # @rbs model: String
   # @rbs path: String
   # @rbs return: String?
-  def store_model(model, path: PATH)
+  def store_model(model, path:)
     update(path) { |document| document.merge(model: model) }
   end
 
   # @rbs level: String
   # @rbs path: String
   # @rbs return: String?
-  def store_reasoning(level, path: PATH)
+  def store_reasoning(level, path:)
     update(path) { |document| document.merge(reasoning: level) }
   end
 end

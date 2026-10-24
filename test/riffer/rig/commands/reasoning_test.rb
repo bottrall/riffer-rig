@@ -6,11 +6,16 @@ require 'json'
 
 describe Riffer::Rig::Commands::Reasoning do
   before do
-    FileUtils.rm_f(Riffer::Rig::Settings::File::PATH)
+    @home = Dir.mktmpdir
+    @settings_path = File.join(@home, 'settings.json')
   end
 
   after do
-    FileUtils.rm_f(Riffer::Rig::Settings::File::PATH)
+    FileUtils.remove_entry(@home)
+  end
+
+  def new_runtime(**)
+    Riffer::Rig::Runtime.new('mock/test', settings_path: @settings_path, **)
   end
 
   def command_events(runtime, args)
@@ -24,14 +29,14 @@ describe Riffer::Rig::Commands::Reasoning do
   end
 
   def write_home_settings(data)
-    FileUtils.mkdir_p(File.dirname(Riffer::Rig::Settings::File::PATH))
-    File.write(Riffer::Rig::Settings::File::PATH, JSON.generate(data))
+    FileUtils.mkdir_p(File.dirname(@settings_path))
+    File.write(@settings_path, JSON.generate(data))
   end
 
   def saved_settings
-    return {} unless File.file?(Riffer::Rig::Settings::File::PATH)
+    return {} unless File.file?(@settings_path)
 
-    JSON.parse(File.read(Riffer::Rig::Settings::File::PATH))
+    JSON.parse(File.read(@settings_path))
   end
 
   def malform(path)
@@ -44,18 +49,18 @@ describe Riffer::Rig::Commands::Reasoning do
   end
 
   it 'reports the level in effect without arguments' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'high' })
+    runtime = new_runtime(settings: { reasoning: 'high' })
 
     assert_equal [output('Reasoning: high')], command_events(runtime, '')
   end
 
   it 'reports default without a level in effect' do
-    assert_equal [output('Reasoning: default')], command_events(Riffer::Rig::Runtime.new('mock/test'), '')
+    assert_equal [output('Reasoning: default')], command_events(new_runtime, '')
   end
 
   describe 'a level switch' do
     def switch(args)
-      runtime = Riffer::Rig::Runtime.new('mock/test')
+      runtime = new_runtime
 
       [runtime, command_events(runtime, args)]
     end
@@ -87,7 +92,7 @@ describe Riffer::Rig::Commands::Reasoning do
     it 'reports the switch and the save' do
       _, events = switch('high --save')
 
-      assert_equal [output('Reasoning switched to high and saved to ~/.riffer/settings.json')], events
+      assert_equal [output("Reasoning switched to high and saved to #{@settings_path}")], events
     end
 
     it 'keeps the other settings keys when it saves' do
@@ -118,21 +123,21 @@ describe Riffer::Rig::Commands::Reasoning do
 
   describe 'the off level' do
     it 'switches reasoning off for the session' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
+      runtime = new_runtime
       command_events(runtime, 'off')
 
       assert_equal :off, runtime.agent.config.reasoning
     end
 
     it 'reports off as the level in effect' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
+      runtime = new_runtime
       command_events(runtime, 'off')
 
       assert_equal [output('Reasoning: off')], command_events(runtime, '')
     end
 
     it 'saves off with --save' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
+      runtime = new_runtime
       command_events(runtime, 'off --save')
 
       assert_equal 'off', saved_settings['reasoning']
@@ -141,51 +146,48 @@ describe Riffer::Rig::Commands::Reasoning do
 
   describe 'save without a level' do
     it 'saves the level in effect' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'high' })
+      runtime = new_runtime(settings: { reasoning: 'high' })
       command_events(runtime, '--save')
 
       assert_equal 'high', saved_settings['reasoning']
     end
 
     it 'reports the save of the level in effect' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'high' })
+      runtime = new_runtime(settings: { reasoning: 'high' })
 
-      assert_equal([output('Saved high to ~/.riffer/settings.json')], command_events(runtime, '--save'))
+      assert_equal([output("Saved high to #{@settings_path}")], command_events(runtime, '--save'))
     end
 
     it 'reports that nothing is in effect to save' do
-      assert_equal(
-        [output('No reasoning level is in effect to save')],
-        command_events(Riffer::Rig::Runtime.new('mock/test'), '--save')
-      )
+      assert_equal([output('No reasoning level is in effect to save')], command_events(new_runtime, '--save'))
     end
 
     it 'writes nothing when nothing is in effect to save' do
-      command_events(Riffer::Rig::Runtime.new('mock/test'), '--save')
+      command_events(new_runtime, '--save')
 
-      refute_path_exists Riffer::Rig::Settings::File::PATH
+      refute_path_exists @settings_path
     end
   end
 
   describe 'a malformed home settings file' do
     it 'reports the file instead of the save' do
-      malform(Riffer::Rig::Settings::File::PATH)
-      runtime = Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'high' })
+      malform(@settings_path)
+      runtime = new_runtime(settings: { reasoning: 'high' })
 
-      assert_equal([malformed(Riffer::Rig::Settings::File::PATH)], command_events(runtime, '--save'))
+      assert_equal([malformed(@settings_path)], command_events(runtime, '--save'))
     end
 
     it 'reports the switch and then the file for the save of a switch' do
-      malform(Riffer::Rig::Settings::File::PATH)
-      runtime = Riffer::Rig::Runtime.new('mock/test')
+      malform(@settings_path)
+      runtime = new_runtime
       events = command_events(runtime, 'high --save')
 
-      assert_equal([output('Reasoning switched to high'), malformed(Riffer::Rig::Settings::File::PATH)], events)
+      assert_equal([output('Reasoning switched to high'), malformed(@settings_path)], events)
     end
 
     it 'keeps the switched level when the save is refused' do
-      malform(Riffer::Rig::Settings::File::PATH)
-      runtime = Riffer::Rig::Runtime.new('mock/test')
+      malform(@settings_path)
+      runtime = new_runtime
       command_events(runtime, 'high --save')
 
       assert_equal 'high', runtime.reasoning

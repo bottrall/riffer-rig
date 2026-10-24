@@ -17,4 +17,11 @@ module Riffer::Rig::Directories
     root = dirs.index { |dir| File.exist?(File.join(dir, '.git')) } || 0
     dirs.take(root + 1)
   end
+
+  # @rbs root: String
+  # @rbs *names: String
+  # @rbs return: String
+  def riffer(root, *names)
+    File.join(root, '.riffer', *names)
+  end
 end

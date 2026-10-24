@@ -13,7 +13,7 @@ There are two ways to get one:
 runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: MyHost.new)
 ```
 
-The Loader reads the [settings](CONFIGURATION.md), picks the [model](CONFIGURATION.md#where-each-value-comes-from), ensures its [SDK gem](PROVIDERS.md#sdk-gems), resolves its [credentials](PROVIDERS.md#resolution-order), loads the bundled extensions and the [`rig.rb` files](EXTENSIONS.md#the-rigrb-files), and builds the Runtime. It also adds the `/reload` command, `/trace` when the session is saved, and [automatic reloading](RELOADING.md).
+The Loader reads the [settings](CONFIGURATION.md), picks the [model](CONFIGURATION.md#where-each-value-comes-from), ensures its [SDK gem](PROVIDERS.md#sdk-gems), resolves its [credentials](CONFIGURATION.md#where-each-value-comes-from), loads the bundled extensions and the [`rig.rb` files](EXTENSIONS.md#the-rigrb-files), and builds the Runtime. It also adds the `/reload` command, `/trace` when the session is saved, and [automatic reloading](RELOADING.md).
 
 | Keyword             | Meaning                                                                                     | Default |
 | ------------------- | ------------------------------------------------------------------------------------------- | ------- |
@@ -83,13 +83,13 @@ The model is positional; everything else is an optional keyword. Provider creden
 | `instructions:`  | replaces the base prompt                                                                     | `nil`   |
 | `max_steps:`     | the [step limit](#capping-the-loop)                                                          | `nil`   |
 | `reasoning:`     | the reasoning level ([Configuration](CONFIGURATION.md#reasoning))                            | `nil`   |
-| `model_options:` | riffer `model_options` sent with every model call; `Riffer::Rig::Settings::ModelOptions.model_options(model)` builds the ones the Loader uses | `{}` |
+| `model_options:` | riffer `model_options` sent with every model call; for an `anthropic` model the Loader passes `{ cache_control: { type: :ephemeral } }` ([prompt caching](PROVIDERS.md#anthropic)) | `{}` |
 | `native_tools:`  | the [provider-native tool](TOOLS.md#provider-native-tools) switches: `{ web_search: true }`  | `{}`    |
 | `credentials:`   | each provider's resolved values, `{ anthropic: { api_key: '…' } }`, used by `/model` and when [restoring](#snapshots) | `{}` |
-| `env:`, `auth_path:` | where [MCP `auth` fields](MCP.md#secret-headers) are read from and stored                | `Env.new`, `~/.riffer/auth.json` |
+| `env:`, `auth_path:`, `settings_path:` | where `/auth`, `/model` and [MCP `auth` fields](MCP.md#secret-headers) read and store credentials, and where `--save` writes | `Env.new`, `~/.riffer/auth.json`, `~/.riffer/settings.json` |
 | `riffer_config:` | the `Riffer::Config` the agent reads its catalog and reasoning from                          | `Riffer.config` |
 | `mcp_registry:`  | where MCP servers are registered                                                             | `Riffer::Mcp` |
-| `clock:`         | a callable returning seconds, which stamps [tool call events](EVENTS.md#tool-call-events)    | the monotonic clock |
+| `clock:`         | a callable returning seconds, which stamps [tool call events](EVENTS.md#tool-call-events) and times [background jobs](#background-jobs) | the monotonic clock |
 | `snapshot:`      | a [snapshot](#snapshots) to restore                                                          | `nil`   |
 
 `runtime.settings` is the `settings:` hash with each extension's declared defaults filled in, and `runtime.declared_settings` lists what each extension declared, for a host to display. `runtime.errors` lists the extensions that [failed to load](EXTENSIONS.md#error-isolation).
@@ -150,7 +150,13 @@ runtime.cancel
 turn.join
 ```
 
-A streaming reply stops at once and keeps the text it had reached. A running tool call finishes first, except the bundled `bash`, which kills its command; your own tool can check `context[:cancel_flag].set?` to do the same. The turn ends with `turn_end` and `stop_reason: :cancelled` (from `ask`, `outcome.reason` is `:interrupted` with `detail: "cancelled"`), and the next prompt carries on from there. [Background jobs](#background-jobs) keep running. With no turn running, `cancel` does nothing.
+| When `cancel` is called… | What happens                                                                                                   |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| while a reply streams    | it stops at once and keeps the text it had reached                                                             |
+| while a tool call runs   | the call finishes first, except the bundled `bash`, which kills its command; your own tool can check `context[:cancel_flag].set?` to do the same |
+| with no turn running     | nothing                                                                                                        |
+
+The turn's [`turn_end`](EVENTS.md#rig-events) reports it cancelled — from `ask`, `outcome.reason` is `:interrupted` with `detail: "cancelled"` — and the next prompt carries on from there. [Background jobs](#background-jobs) keep running.
 
 ## Commands
 
@@ -168,7 +174,7 @@ runtime.run_command('log', '5') do |event|
 end
 ```
 
-`/exit`, `/new`, `/resume` and `/help` are the terminal's own: they end, replace or describe the Runtime, so a host implements them itself.
+[Hosts](HOSTS.md#the-loop) covers the commands a host implements itself.
 
 ## Switching the model and reasoning level
 
@@ -189,7 +195,7 @@ Rails.application.reloader.to_prepare do
 end
 ```
 
-The new extensions are loaded aside and swapped in only when all of them succeed. If any fails, `rebuild` raises its error and nothing changes — stricter than construction, which skips a failing extension. The conversation, tally, id, host, any model or reasoning switch and every other constructor keyword are kept. Extensions' `session_end` and `session_start` hooks run around the swap with reason `:reload`. `rebuild` runs between turns, or from a command or hook within one.
+The new extensions are loaded aside and swapped in only when all of them succeed. If any fails, `rebuild` raises its error and nothing changes — stricter than construction, which skips a failing extension. The conversation, tally, id, host, any model or reasoning switch and every other constructor keyword are kept. Extensions' [lifecycle hooks](EXTENSIONS.md#the-rigon-seam) run around the swap. `rebuild` runs between turns, or from a command or hook within one.
 
 ## Capping the loop
 
@@ -226,8 +232,6 @@ A snapshot holds history, not configuration: tools, commands, hooks and settings
 - a saved model is used only if `credentials:` has its provider, otherwise the given model is used and the host is told;
 - skills that no longer exist are dropped;
 - the tally is recomputed from the messages.
-
-The first prompt after a restore opens with `session_start` and reason `:restore`.
 
 ## Observing messages
 
@@ -272,6 +276,22 @@ runtime.close
 | `follow_up`                 | runs a turn with no user text that tells the model of every waiting exit, streaming like `prompt` |
 | `close`                     | kills running jobs, deletes their output files, and refuses further prompts              |
 
+### Starting jobs from your own tool
+
+A tool finds the Runtime's job registry at `context[:jobs]`. A job registered there is one like any `bash` job: the model is told of its exit, `bash_output` and `bash_kill` act on it, and `close` stops it.
+
+```ruby
+def call(context:, command:)
+  reader, writer = IO.pipe
+  pid = Process.spawn(command, pgroup: true, in: File::NULL, out: writer, err: %i[child out])
+  writer.close
+  job = context[:jobs].register(pid, command, reader)
+  text("Job #{job.id} started; output in #{job.output_path}")
+end
+```
+
+`register(pid, command, output)` takes the pid of a process started in its own process group (`pgroup: true`), the command to show in its notice, and an IO it reads to the end into the job's output file. It returns the job, whose `id` and `output_path` the model needs. Don't wait on or detach the process yourself: the registry reaps it.
+
 ### Job notices in the conversation
 
 A store sees every notice the model read, through `on_message`. A notice delivered mid-turn is part of a tool result. One delivered as its own message is a `Riffer::Rig::Runtime::JobNotification`, a user-role message whose `to_h` adds `job_notification: true`, so anything reading saved messages can tell it from a prompt someone typed; one delivered by `follow_up` also carries `follow_up_exits`, the number of exits it reports. A snapshot restores these as `JobNotification`s.
@@ -288,7 +308,7 @@ resolution.missing # => []
 
 | Method                       | Does                                                                                     |
 | ---------------------------- | ---------------------------------------------------------------------------------------- |
-| `install(identifier, host:)` | resolves every field in [order](PROVIDERS.md#resolution-order), asking the host if it can, and applies them once none is missing |
+| `install(identifier, host:)` | resolves every field in [order](CONFIGURATION.md#where-each-value-comes-from), asking the host if it can, and applies them once none is missing |
 | `apply(identifier, values)`  | assigns values from elsewhere to `Riffer.config`                                          |
 | `store(identifier, values)`  | saves secrets to `auth.json` and plain values to settings                                |
 | `remove(identifier)`         | deletes what `store` saved                                                               |

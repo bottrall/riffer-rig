@@ -17,7 +17,7 @@ class Riffer::Rig::Stores::SkillEntry
     skill = hash[:skill]
     return nil unless skill.is_a?(String)
 
-    new(skill: skill, recorded_at: Riffer::Rig::Stores::Timestamp.dump(Riffer::Rig::Stores::Timestamp.load(hash[:recorded_at])))
+    new(skill: skill, recorded_at: Riffer::Rig::Stores::Timestamp.normalize(hash[:recorded_at]))
   end
 
   # @rbs skill: String

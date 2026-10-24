@@ -35,14 +35,17 @@ describe Riffer::Rig::Commands::Auth do
   before do
     @saved_env = secret_env_vars.to_h { |name| [name, ENV.fetch(name, nil)] }
     secret_env_vars.each { |name| ENV[name] = nil }
-    FileUtils.rm_f(Riffer::Rig::Credentials::PATH)
-    FileUtils.rm_f(Riffer::Rig::Settings::File::PATH)
+    @home = Dir.mktmpdir
+    @paths = { auth_path: File.join(@home, 'auth.json'), settings_path: File.join(@home, 'settings.json') }
   end
 
   after do
     @saved_env.each { |name, value| ENV[name] = value }
-    FileUtils.rm_f(Riffer::Rig::Credentials::PATH)
-    FileUtils.rm_f(Riffer::Rig::Settings::File::PATH)
+    FileUtils.remove_entry(@home)
+  end
+
+  def new_runtime(**)
+    Riffer::Rig::Runtime.new('mock/test', **@paths, **)
   end
 
   def command_events(runtime, args)
@@ -56,24 +59,24 @@ describe Riffer::Rig::Commands::Auth do
   end
 
   def malform_auth
-    FileUtils.mkdir_p(File.dirname(Riffer::Rig::Credentials::PATH))
-    File.write(Riffer::Rig::Credentials::PATH, '{"openai":{"a":1},}')
+    FileUtils.mkdir_p(File.dirname(@paths[:auth_path]))
+    File.write(@paths[:auth_path], '{"openai":{"a":1},}')
   end
 
   def malformed_auth
-    Riffer::Rig::Events::Notify.new("#{Riffer::Rig::Credentials::PATH} is not valid JSON at line 1 column 19", :error)
+    Riffer::Rig::Events::Notify.new("#{@paths[:auth_path]} is not valid JSON at line 1 column 19", :error)
   end
 
   describe 'listing' do
     it 'reports a malformed auth.json once instead of the statuses' do
       malform_auth
 
-      assert_equal [malformed_auth], command_events(Riffer::Rig::Runtime.new('mock/test'), '')
+      assert_equal [malformed_auth], command_events(new_runtime, '')
     end
 
     it 'reports each provider with its status' do
       ENV['ANTHROPIC_API_KEY'] = 'sk-env'
-      Riffer::Rig::Credentials.store(:openai, { api_key: 'sk-stored' })
+      Riffer::Rig::Credentials.store(:openai, { api_key: 'sk-stored' }, **@paths)
 
       assert_equal(
         [output(<<~TABLE.chomp)],
@@ -84,7 +87,7 @@ describe Riffer::Rig::Commands::Auth do
           openai          stored
           openrouter      missing
         TABLE
-        command_events(Riffer::Rig::Runtime.new('mock/test'), '')
+        command_events(new_runtime, '')
       )
     end
   end
@@ -99,7 +102,7 @@ describe Riffer::Rig::Commands::Auth do
     end
 
     it 'rejects an unknown provider with the providers in the hint' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
+      runtime = new_runtime
 
       assert_equal(
         [output(
@@ -113,34 +116,38 @@ describe Riffer::Rig::Commands::Auth do
     it 'reports a malformed auth.json' do
       malform_auth
 
-      assert_equal [malformed_auth], command_events(Riffer::Rig::Runtime.new('mock/test'), 'anthropic')
+      assert_equal [malformed_auth], command_events(new_runtime, 'anthropic')
     end
 
     it 'refuses through notify when the host declines' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
+      runtime = new_runtime
 
       assert_equal(
-        [Riffer::Rig::Events::Notify.new('anthropic still has no api_key (ANTHROPIC_API_KEY)', :error)],
+        [Riffer::Rig::Events::Notify.new(
+          'anthropic has no api_key (ANTHROPIC_API_KEY); set it in the environment or run riffer interactively ' \
+          'to paste it (create one at https://console.anthropic.com/settings/keys)',
+          :error
+        )],
         command_events(runtime, 'anthropic')
       )
     end
 
     it 'does not merge credentials into the Runtime when the host declines' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
+      runtime = new_runtime
       command_events(runtime, 'anthropic')
 
       assert_empty runtime.credentials
     end
 
     it 'updates the Runtime credentials' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', host: AnsweringAuthHost.new('sk-new'))
+      runtime = new_runtime(host: AnsweringAuthHost.new('sk-new'))
       command_events(runtime, 'anthropic')
 
       assert_equal({ api_key: 'sk-new' }, runtime.credentials[:anthropic])
     end
 
     it 'reports the update' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', host: AnsweringAuthHost.new('sk-new'))
+      runtime = new_runtime(host: AnsweringAuthHost.new('sk-new'))
 
       assert_equal [output('Updated anthropic credentials')], command_events(runtime, 'anthropic')
     end
@@ -148,7 +155,7 @@ describe Riffer::Rig::Commands::Auth do
 
   describe 'removing a provider' do
     it 'rejects an unknown provider with the providers in the hint' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
+      runtime = new_runtime
 
       assert_equal(
         [output(
@@ -162,18 +169,18 @@ describe Riffer::Rig::Commands::Auth do
     it 'reports a malformed auth.json instead of the removal' do
       malform_auth
 
-      assert_equal [malformed_auth], command_events(Riffer::Rig::Runtime.new('mock/test'), 'remove openai')
+      assert_equal [malformed_auth], command_events(new_runtime, 'remove openai')
     end
 
     it 'removes the stored credentials' do
-      Riffer::Rig::Credentials.store(:openai, { api_key: 'sk-openai' })
-      command_events(Riffer::Rig::Runtime.new('mock/test'), 'remove openai')
+      Riffer::Rig::Credentials.store(:openai, { api_key: 'sk-openai' }, **@paths)
+      command_events(new_runtime, 'remove openai')
 
-      assert_equal :missing, Riffer::Rig::Credentials.status(:openai)
+      assert_equal :missing, Riffer::Rig::Credentials.status(:openai, auth_path: @paths[:auth_path])
     end
 
     it 'reports the removal' do
-      runtime = Riffer::Rig::Runtime.new('mock/test')
+      runtime = new_runtime
 
       assert_equal [output('Removed stored openai credentials')], command_events(runtime, 'remove openai')
     end
@@ -182,7 +189,7 @@ describe Riffer::Rig::Commands::Auth do
   describe 'malformed arguments' do
     it 'prints the usage' do
       assert_equal [output('Use /auth, /auth <provider> or /auth remove <provider>')],
-                   command_events(Riffer::Rig::Runtime.new('mock/test'), 'anthropic extra')
+                   command_events(new_runtime, 'anthropic extra')
     end
 
     it 'prints the hint for a bare remove' do
@@ -191,7 +198,7 @@ describe Riffer::Rig::Commands::Auth do
           'Use /auth <provider> or /auth remove <provider>, with a provider from: ' \
           'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter'
         )],
-        command_events(Riffer::Rig::Runtime.new('mock/test'), 'remove')
+        command_events(new_runtime, 'remove')
       )
     end
   end
@@ -209,13 +216,13 @@ describe Riffer::Rig::Commands::Auth do
     end
 
     it 'lists the registered provider with its status' do
-      text = command_events(Riffer::Rig::Runtime.new('mock/test'), '').first.text
+      text = command_events(new_runtime, '').first.text
 
       assert_match(/^acme\s+missing$/, text)
     end
 
     it 'names the registered provider in the hint' do
-      text = command_events(Riffer::Rig::Runtime.new('mock/test'), 'remove bogus').first.text
+      text = command_events(new_runtime, 'remove bogus').first.text
 
       assert_match(/with a provider from: .*acme/, text)
     end
