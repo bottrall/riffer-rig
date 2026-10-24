@@ -64,7 +64,13 @@ The slots stay at the same positions whether a turn is running or not, so nothin
 
 ## Background jobs
 
-When a [background job](TOOLS.md#background-jobs) exits while the terminal is waiting for you, it starts a turn by itself: `1 background job exited` is printed and the model is told. That turn behaves like one you sent, and anything you were typing stays on the input line. Queued messages run first and carry the news instead. A job that exits while a question or the picker is open waits until you answer it.
+When a [background job](TOOLS.md#background-jobs) exits between turns:
+
+| While the terminal…                  | It                                                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| waits for your input                 | prints `1 background job exited` and starts a turn that tells the model, like one you sent; anything you were typing stays on the input line |
+| has messages queued                  | runs them first, and they carry the news                                                             |
+| has a question or the picker open    | waits until you answer it                                                                            |
 
 ## Peek
 

@@ -76,6 +76,7 @@ class Riffer::Rig::Headless
     @json = json
     @job_idle_timeout = job_idle_timeout
     @stdin_timeout = stdin_timeout
+    @streamed_text = false
     @wrote_text = false
     @break_before_text = false
   end

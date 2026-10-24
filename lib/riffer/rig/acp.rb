@@ -36,10 +36,6 @@ class Riffer::Rig::ACP
     new(input: input, output: output, env: env, home: home, cwd: cwd, build: build, adopt: adopt)
   end
 
-  # Builds the Runtime a session runs on: the client's MCP servers flow
-  # through the rig.mcp seam as a synthetic extension, so a reload rebuild
-  # re-declares them and a same-name declaration from an extension replaces
-  # them with the usual notify.
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs servers: Hash[String, Riffer::Rig::Mcp::Declaration]
@@ -57,6 +53,8 @@ class Riffer::Rig::ACP
   def self.session_extensions(servers)
     return [] if servers.empty?
 
+    # A synthetic extension, so a reload rebuild re-declares the servers and an
+    # extension's same-name declaration replaces them with the usual notify.
     extension = Riffer::Rig::Extension.new(SESSION_EXTENSION) do |rig|
       servers.each { |name, server| rig.mcp(name, command: server.command, args: server.args, env: server.env) }
     end
@@ -88,8 +86,6 @@ class Riffer::Rig::ACP
     @lock = Mutex.new
   end
 
-  # Serves the connection until the client closes stdin; then the reader
-  # thread ends and run returns.
   # @rbs &block: ? (::ACP::AgentConnection) -> void
   # @rbs return: Integer
   def run
@@ -129,7 +125,7 @@ class Riffer::Rig::ACP
     end
     ::ACP::Types::NewSessionResponse.new(session_id: runtime.id)
   rescue StandardError => e
-    ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: e.message)
+    internal_error(e)
   end
 
   # @rbs request: ::ACP::Types::PromptRequest
@@ -143,19 +139,10 @@ class Riffer::Rig::ACP
     stop_reason = :completed
     dispatch(runtime, Riffer::Rig::ACP::Mapper.prompt_text(request.prompt)) do |event|
       case event
-      when Riffer::StreamEvents::TextDelta
-        client.update(request.session_id, Riffer::Rig::ACP::Mapper.message_chunk(event.content))
-      when Riffer::Rig::Events::CommandOutput
-        client.update(request.session_id, Riffer::Rig::ACP::Mapper.message_chunk(event.text))
-      when Riffer::StreamEvents::ToolCallDone
-        client.update(request.session_id, Riffer::Rig::ACP::Mapper.tool_call(event))
-      when Riffer::Rig::Events::AfterToolCall
-        client.update(request.session_id, Riffer::Rig::ACP::Mapper.tool_call_done(event))
-      when Riffer::Rig::Events::JobExit
-        client.update(request.session_id, Riffer::Rig::ACP::Mapper.job_exit)
-      when Riffer::Rig::Events::TurnEnd
-        stop_reason = event.stop_reason
+      when Riffer::Rig::Events::TurnEnd then stop_reason = event.stop_reason
       end
+      update = Riffer::Rig::ACP::Mapper.update_for(event)
+      client.update(request.session_id, update) if update
     end
     # A reload in the dispatch, by /reload or the automatic check, can change
     # the commands; its rebuild also reorders them, which is no change.
@@ -168,9 +155,7 @@ class Riffer::Rig::ACP
       message: 'a prompt is already running on this session; wait for it to finish or cancel it'
     )
   rescue StandardError => e
-    ::ACP::RequestError.new(
-      code: ::ACP::RequestError::INTERNAL_ERROR, message: Riffer::Rig::Runtime::ErrorMessage.of(e)
-    )
+    internal_error(e)
   end
 
   # @rbs request: ::ACP::Types::LoadSessionRequest
@@ -192,7 +177,7 @@ class Riffer::Rig::ACP
     client.available_commands(request.session_id, available_commands(runtime))
     ::ACP::Types::LoadSessionResponse.new
   rescue StandardError => e
-    ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: e.message)
+    internal_error(e)
   end
 
   # @rbs request: ::ACP::Types::ListSessionsRequest
@@ -215,7 +200,7 @@ class Riffer::Rig::ACP
     end
     ::ACP::Types::ListSessionsResponse.new(sessions: sessions)
   rescue StandardError => e
-    ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: e.message)
+    internal_error(e)
   end
 
   # Runs on the transport's reader thread, so it asks the turn to stop and
@@ -253,6 +238,12 @@ class Riffer::Rig::ACP
   # @rbs return: Riffer::Rig::Runtime?
   def session(id)
     @lock.synchronize { @sessions[id] }
+  end
+
+  # @rbs error: StandardError
+  # @rbs return: ::ACP::RequestError
+  def internal_error(error)
+    ::ACP::RequestError.new(code: ::ACP::RequestError::INTERNAL_ERROR, message: Riffer::Rig::Runtime::ErrorMessage.of(error))
   end
 
   # @rbs runtime: Riffer::Rig::Runtime
@@ -312,38 +303,8 @@ class Riffer::Rig::ACP
   # @rbs host: Riffer::Rig::ACP::Host
   # @rbs return: Hash[String, Riffer::Rig::Mcp::Declaration]
   def declarations(servers, host)
-    servers.filter_map { |server| declaration_of(server, host) }.to_h
-  end
-
-  # @rbs server: ::ACP::Types::McpServer::t
-  # @rbs host: Riffer::Rig::ACP::Host
-  # @rbs return: [String, Riffer::Rig::Mcp::Declaration]?
-  def declaration_of(server, host)
-    unless server.is_a?(::ACP::Types::McpServerStdio)
-      host.notify("Skipped MCP server #{server_name(server)}: only stdio servers are supported", level: :warning)
-      return nil
-    end
-
-    [
-      server.name,
-      Riffer::Rig::Mcp::Declaration.new(command: server.command, args: server.args, env: stdio_env(server))
-    ]
-  end
-
-  # @rbs server: ::ACP::Types::McpServer::t
-  # @rbs return: String
-  def server_name(server)
-    case server
-    when ::ACP::Types::McpServer::Http, ::ACP::Types::McpServer::Sse then server.name
-    when Hash then server['name'].to_s
-    else 'unnamed'
-    end
-  end
-
-  # @rbs server: ::ACP::Types::McpServerStdio
-  # @rbs return: Hash[String, String]
-  def stdio_env(server)
-    server.env.to_h { |variable| [variable.name, variable.value] }
+    Riffer::Rig::ACP::Servers.warnings(servers).each { |warning| host.notify(warning, level: :warning) }
+    Riffer::Rig::ACP::Servers.declarations(servers)
   end
 
   # @rbs runtime: Riffer::Rig::Runtime

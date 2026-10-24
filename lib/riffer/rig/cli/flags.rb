@@ -9,6 +9,8 @@ class Riffer::Rig::CLI::Flags
            riffer acp           serve Runtimes as an ACP agent over stdio
   TEXT
 
+  HEADLESS_ONLY = %i[verbose json job-idle-timeout].freeze #: Array[Symbol]
+
   # @dynamic model, reasoning, extensions, skills, agents_md, tools, max_steps, help, version
   # @dynamic save, verbose, json, job_idle_timeout, headless, prompt, continue, resume
   attr_reader :model #: String?
@@ -33,6 +35,9 @@ class Riffer::Rig::CLI::Flags
     return 'missing argument: -r' if flags.headless && flags.resume == ''
     return "invalid argument: --max-steps #{flags.max_steps}" if flags.max_steps&.<(1)
     return "invalid argument: --job-idle-timeout #{flags.job_idle_timeout}" if flags.job_idle_timeout&.negative?
+
+    stray = HEADLESS_ONLY.find { |key| values.key?(key) } unless flags.headless || flags.help || flags.version
+    return "--#{stray} is only available with -p" if stray
 
     flags
   rescue OptionParser::ParseError => e

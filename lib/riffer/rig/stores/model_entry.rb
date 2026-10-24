@@ -17,7 +17,7 @@ class Riffer::Rig::Stores::ModelEntry
     model = hash[:model]
     return nil unless model.is_a?(String)
 
-    new(model: model, recorded_at: Riffer::Rig::Stores::Timestamp.dump(Riffer::Rig::Stores::Timestamp.load(hash[:recorded_at])))
+    new(model: model, recorded_at: Riffer::Rig::Stores::Timestamp.normalize(hash[:recorded_at]))
   end
 
   # @rbs model: String

@@ -19,17 +19,20 @@ class Riffer::Rig::Terminal::Picker
   # @rbs @renderer: Riffer::Rig::Terminal::Renderer
   # @rbs @host: Riffer::Rig::Hosts::_Host
   # @rbs @sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs @now: ^() -> Time
 
   # @rbs prompter: Riffer::Rig::Terminal::_Prompter
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs now: ^() -> Time
   # @rbs return: void
-  def initialize(prompter:, renderer:, host:, sessions:)
+  def initialize(prompter:, renderer:, host:, sessions:, now: -> { Time.now })
     @prompter = prompter
     @renderer = renderer
     @host = host
     @sessions = sessions
+    @now = now
   end
 
   # @rbs all: bool
@@ -150,7 +153,7 @@ class Riffer::Rig::Terminal::Picker
   def relative(updated)
     return 'unknown' unless updated
 
-    span = Time.now - updated
+    span = @now.call - updated
     case span
     when 0...60 then 'just now'
     when 60...3_600 then "#{count(span.div(60), 'minute')} ago"

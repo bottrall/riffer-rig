@@ -54,7 +54,7 @@ A turn that fails — a provider or network error — answers with an internal e
 
 ## Commands
 
-A prompt starting with `/name` runs that command instead of prompting the model, with the rest of the text as its arguments: `/reload`, `/trace`, `/auth`, `/model`, `/reasoning`, `/cost`, every `/skill:<name>`, and commands from extensions. Output arrives as `agent_message_chunk` updates; an unknown name answers `Unknown command: <name>`.
+A prompt starting with `/name` runs that command instead of prompting the model, with the rest of the text as its arguments: `/reload`, `/trace`, `/auth`, `/model`, `/reasoning`, `/cost`, every `/skill:<name>`, and commands from extensions. Output arrives as `agent_message_chunk` updates; an unknown name is [reported](TROUBLESHOOTING.md) the same way.
 
 ## Questions
 
