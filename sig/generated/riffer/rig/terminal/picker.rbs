@@ -15,6 +15,8 @@ class Riffer::Rig::Terminal::Picker
 
   EOT: String
 
+  @now: ^() -> Time
+
   @sessions: Riffer::Rig::Terminal::_Sessions
 
   @host: Riffer::Rig::Hosts::_Host
@@ -27,8 +29,9 @@ class Riffer::Rig::Terminal::Picker
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
+  # @rbs now: ^() -> Time
   # @rbs return: void
-  def initialize: (prompter: Riffer::Rig::Terminal::_Prompter, renderer: Riffer::Rig::Terminal::Renderer, host: Riffer::Rig::Hosts::_Host, sessions: Riffer::Rig::Terminal::_Sessions) -> void
+  def initialize: (prompter: Riffer::Rig::Terminal::_Prompter, renderer: Riffer::Rig::Terminal::Renderer, host: Riffer::Rig::Hosts::_Host, sessions: Riffer::Rig::Terminal::_Sessions, ?now: ^() -> Time) -> void
 
   # @rbs all: bool
   # @rbs return: Riffer::Rig::Terminal::Session?
@@ -36,29 +39,38 @@ class Riffer::Rig::Terminal::Picker
 
   private
 
+  # @rbs listing: Riffer::Rig::Terminal::Picker::Listing
+  # @rbs all: bool
+  # @rbs return: Riffer::Rig::Terminal::Picker::Listing | Riffer::Rig::Terminal::Session | nil
+  def handle: (Riffer::Rig::Terminal::Picker::Listing listing, bool all) -> (Riffer::Rig::Terminal::Picker::Listing | Riffer::Rig::Terminal::Session | nil)
+
+  # @rbs listing: Riffer::Rig::Terminal::Picker::Listing
+  # @rbs filter: String
+  # @rbs return: Riffer::Rig::Terminal::Picker::Listing
+  def narrow: (Riffer::Rig::Terminal::Picker::Listing listing, String filter) -> Riffer::Rig::Terminal::Picker::Listing
+
+  # @rbs listing: Riffer::Rig::Terminal::Picker::Listing
+  # @rbs shown: Array[Riffer::Rig::Terminal::Session]
+  # @rbs all: bool
+  # @rbs return: Riffer::Rig::Terminal::Picker::Listing?
+  def delete_mode: (Riffer::Rig::Terminal::Picker::Listing listing, Array[Riffer::Rig::Terminal::Session] shown, bool all) -> Riffer::Rig::Terminal::Picker::Listing?
+
+  # @rbs choice: Riffer::Rig::Terminal::Session?
+  # @rbs all: bool
+  # @rbs return: Array[Riffer::Rig::Terminal::Session]?
+  def delete: (Riffer::Rig::Terminal::Session? choice, bool all) -> Array[Riffer::Rig::Terminal::Session]?
+
+  # @rbs message: String
+  # @rbs return: nil
+  def empty: (String message) -> nil
+
   # @rbs return: nil
   def closed: () -> nil
-
-  # @rbs row: Riffer::Rig::Terminal::Session
-  # @rbs filter: String
-  # @rbs return: bool
-  def matches?: (Riffer::Rig::Terminal::Session row, String filter) -> bool
-
-  # @rbs rows: Array[Riffer::Rig::Terminal::Session]
-  # @rbs filter: String
-  # @rbs return: bool
-  def any_match?: (Array[Riffer::Rig::Terminal::Session] rows, String filter) -> bool
 
   # @rbs line: String
   # @rbs shown: Array[Riffer::Rig::Terminal::Session]
   # @rbs return: Riffer::Rig::Terminal::Session?
   def number: (String line, Array[Riffer::Rig::Terminal::Session] shown) -> Riffer::Rig::Terminal::Session?
-
-  # @rbs rows: Array[Riffer::Rig::Terminal::Session]
-  # @rbs shown: Array[Riffer::Rig::Terminal::Session]
-  # @rbs all: bool
-  # @rbs return: Array[Riffer::Rig::Terminal::Session] | :cancel
-  def delete_mode: (Array[Riffer::Rig::Terminal::Session] rows, Array[Riffer::Rig::Terminal::Session] shown, bool all) -> (Array[Riffer::Rig::Terminal::Session] | :cancel)
 
   # @rbs header: String
   # @rbs shown: Array[Riffer::Rig::Terminal::Session]
