@@ -30,6 +30,18 @@ describe Riffer::Rig::Runtime::Snapshot do
     Riffer::Messages::Assistant.new('', tool_calls: [call])
   end
 
+  describe '.of' do
+    it 'returns a snapshot as it is' do
+      saved = snapshot
+
+      assert_same saved, Riffer::Rig::Runtime::Snapshot.of(saved)
+    end
+
+    it 'reads a hash' do
+      assert_equal snapshot, Riffer::Rig::Runtime::Snapshot.of(snapshot.to_h)
+    end
+  end
+
   describe '.from_h' do
     it 'raises on a hash that is not a snapshot' do
       assert_raises(KeyError) { Riffer::Rig::Runtime::Snapshot.from_h({ id: 'session-1' }) }
@@ -89,6 +101,34 @@ describe Riffer::Rig::Runtime::Snapshot do
       }
 
       assert_equal expected, snapshot(messages: messages, model: 'mock/other', reasoning: 'high', skills: %w[a]).to_h
+    end
+  end
+
+  it 'equals a snapshot of the same values' do
+    assert_equal snapshot(model: 'mock/other'), snapshot(model: 'mock/other')
+  end
+
+  describe '#without_model' do
+    it 'drops the model' do
+      assert_nil snapshot(model: 'mock/other').without_model.model
+    end
+
+    it 'keeps everything else' do
+      saved = snapshot(model: 'mock/other', reasoning: 'high', skills: %w[a])
+
+      assert_equal saved.to_h.merge(model: nil), saved.without_model.to_h
+    end
+  end
+
+  describe '#without_reasoning' do
+    it 'drops the reasoning level' do
+      assert_nil snapshot(reasoning: 'high').without_reasoning.reasoning
+    end
+
+    it 'keeps everything else' do
+      saved = snapshot(model: 'mock/other', reasoning: 'high', skills: %w[a])
+
+      assert_equal saved.to_h.merge(reasoning: nil), saved.without_reasoning.to_h
     end
   end
 

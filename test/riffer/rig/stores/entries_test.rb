@@ -59,39 +59,36 @@ describe Riffer::Rig::Stores::Entries do
   end
 
   describe '.snapshot' do
-    it 'holds the id, messages, model, reasoning and skills' do
-      assert_equal %i[id messages model reasoning skills], Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa').keys
-    end
-
     it 'carries the id it is given' do
-      assert_equal 'aaa', Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa')[:id]
+      assert_equal 'aaa', Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa').id
     end
 
     it 'carries the messages in recorded order' do
-      assert_equal(
-        [{ role: 'user', content: 'first' }, { role: 'user', content: 'second' }],
-        Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa')[:messages]
-      )
+      assert_equal %w[first second], Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa').messages.map(&:content)
+    end
+
+    it 'rebuilds each message' do
+      assert_instance_of Riffer::Messages::User, Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa').messages.first
     end
 
     it 'lets the last model entry win' do
-      assert_equal 'mock/two', Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa')[:model]
+      assert_equal 'mock/two', Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa').model
     end
 
     it 'has no model without a model entry' do
-      assert_nil Riffer::Rig::Stores::Entries.snapshot([header, message_entry('first')], 'aaa')[:model]
+      assert_nil Riffer::Rig::Stores::Entries.snapshot([header, message_entry('first')], 'aaa').model
     end
 
     it 'lets the last reasoning entry win' do
-      assert_equal 'low', Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa')[:reasoning]
+      assert_equal 'low', Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa').reasoning
     end
 
     it 'has no reasoning without a reasoning entry' do
-      assert_nil Riffer::Rig::Stores::Entries.snapshot([header, message_entry('first')], 'aaa')[:reasoning]
+      assert_nil Riffer::Rig::Stores::Entries.snapshot([header, message_entry('first')], 'aaa').reasoning
     end
 
     it 'carries every skill entry in recorded order' do
-      assert_equal %w[a b], Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa')[:skills]
+      assert_equal %w[a b], Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa').skills
     end
   end
 end

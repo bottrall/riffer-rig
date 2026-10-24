@@ -39,9 +39,9 @@ class Riffer::Rig::Loader
   # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)
   # @rbs extra_extensions: Array[Riffer::Rig::Extension]
-  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?
   # @rbs return: Riffer::Rig::Runtime
-  def self.runtime: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?store: Riffer::Rig::Stores::_Store | nil, ?options: Riffer::Rig::Loader::Options, ?reload: :auto | :manual | nil, ?extra_extensions: Array[Riffer::Rig::Extension], ?snapshot: Hash[Symbol, untyped]?) -> Riffer::Rig::Runtime
+  def self.runtime: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?store: Riffer::Rig::Stores::_Store | nil, ?options: Riffer::Rig::Loader::Options, ?reload: :auto | :manual | nil, ?extra_extensions: Array[Riffer::Rig::Extension], ?snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?) -> Riffer::Rig::Runtime
 
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -55,9 +55,9 @@ class Riffer::Rig::Loader
   # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)
   # @rbs extra_extensions: Array[Riffer::Rig::Extension]
-  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?
   # @rbs return: Riffer::Rig::Runtime
-  def runtime: (?Riffer::Rig::Loader::Options options, ?reload: :auto | :manual | nil, ?extra_extensions: Array[Riffer::Rig::Extension], ?snapshot: Hash[Symbol, untyped]?) -> Riffer::Rig::Runtime
+  def runtime: (?Riffer::Rig::Loader::Options options, ?reload: :auto | :manual | nil, ?extra_extensions: Array[Riffer::Rig::Extension], ?snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?) -> Riffer::Rig::Runtime
 
   # @rbs options: Riffer::Rig::Loader::Options
   # @rbs return: Riffer::Rig::Runtime?
@@ -179,10 +179,10 @@ class Riffer::Rig::Loader
 
   # A model or reasoning level chosen for the run wins for that run only: it is
   # not recorded, so a later resume restores the session's own switches.
-  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs snapshot: Riffer::Rig::Runtime::Snapshot?
   # @rbs options: Riffer::Rig::Loader::Options
-  # @rbs return: Hash[Symbol, untyped]?
-  def snapshot_without_forced: (Hash[Symbol, untyped]? snapshot, Riffer::Rig::Loader::Options options) -> Hash[Symbol, untyped]?
+  # @rbs return: Riffer::Rig::Runtime::Snapshot?
+  def snapshot_without_forced: (Riffer::Rig::Runtime::Snapshot? snapshot, Riffer::Rig::Loader::Options options) -> Riffer::Rig::Runtime::Snapshot?
 
   # The store records unless it was declined with store: nil or globally with
   # "sessions": {"save": false}.
