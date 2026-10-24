@@ -22,7 +22,7 @@ A resumed session keeps its id and carries on in the same file. What comes back:
 | a `/reasoning` switch                             |                                                        |
 | the skills the model activated, if they still exist |                                                      |
 
-`--model` or `--reasoning` wins over a restored switch for that run only, so resuming again without the flag restores the switch. If a crash cut off a turn mid-tool-call, the unfinished calls are marked as interrupted rather than run again.
+Whether a flag or a restored switch wins is in [Configuration](CONFIGURATION.md#where-each-value-comes-from). If a crash cut off a turn mid-tool-call, the unfinished calls are marked as interrupted rather than run again.
 
 ## The picker
 
