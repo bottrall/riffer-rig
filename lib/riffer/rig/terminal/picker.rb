@@ -39,14 +39,43 @@ class Riffer::Rig::Terminal::Picker
   # @rbs return: Riffer::Rig::Terminal::Session?
   def open(all:)
     rows = @sessions.list(@host, all: all)
-    return empty(@sessions.off || EMPTY) if rows.empty?
+    if rows.empty?
+      @renderer.notice(@sessions.off || EMPTY)
+      return nil
+    end
 
-    listing = Listing.new(rows: rows)
+    filter = ''
     loop do
-      step = handle(listing, all)
-      return step unless step.is_a?(Listing)
+      shown = rows.filter { |row| matches?(row, filter) }
+      case (line = read(HEADER, shown, all))
+      when nil, EOT
+        outcome = delete_mode(rows, shown, all)
+        case outcome
+        when :cancel then return closed
+        else
+          rows = outcome
+          if rows.empty?
+            @renderer.notice(EMPTY)
+            return nil
+          end
+          filter = '' unless any_match?(rows, filter)
+        end
+      when :interrupt
+        return closed
+      when ''
+        return shown.first if shown.one?
 
-      listing = step
+        return closed
+      else
+        choice = number(line, shown)
+        return choice if choice
+
+        if any_match?(rows, line)
+          filter = line
+        else
+          @renderer.notice(format(NO_MATCH, line))
+        end
+      end
     end
   rescue Interrupt
     closed
@@ -54,65 +83,24 @@ class Riffer::Rig::Terminal::Picker
 
   private
 
-  # @rbs listing: Riffer::Rig::Terminal::Picker::Listing
-  # @rbs all: bool
-  # @rbs return: Riffer::Rig::Terminal::Picker::Listing | Riffer::Rig::Terminal::Session | nil
-  def handle(listing, all)
-    shown = listing.shown
-    case (line = read(HEADER, shown, all))
-    when nil, EOT then delete_mode(listing, shown, all)
-    when :interrupt then closed
-    when '' then shown.one? ? shown.first : closed
-    else number(line, shown) || narrow(listing, line)
-    end
-  end
-
-  # @rbs listing: Riffer::Rig::Terminal::Picker::Listing
-  # @rbs filter: String
-  # @rbs return: Riffer::Rig::Terminal::Picker::Listing
-  def narrow(listing, filter)
-    return listing.narrow(filter) if listing.any_match?(filter)
-
-    @renderer.notice(format(NO_MATCH, filter))
-    listing
-  end
-
-  # @rbs listing: Riffer::Rig::Terminal::Picker::Listing
-  # @rbs shown: Array[Riffer::Rig::Terminal::Session]
-  # @rbs all: bool
-  # @rbs return: Riffer::Rig::Terminal::Picker::Listing?
-  def delete_mode(listing, shown, all)
-    line = read(DELETE_HEADER, shown, all)
-    return closed unless line.is_a?(String)
-
-    rows = delete(number(line, shown), all) || listing.rows
-    return empty(EMPTY) if rows.empty?
-
-    listing.relist(rows)
-  end
-
-  # @rbs choice: Riffer::Rig::Terminal::Session?
-  # @rbs all: bool
-  # @rbs return: Array[Riffer::Rig::Terminal::Session]?
-  def delete(choice, all)
-    return nil unless choice && @host.confirm("Delete \"#{choice.title}\"?")
-
-    @sessions.delete(@host, choice.id)
-    @renderer.notice(DELETED)
-    @sessions.list(@host, all: all)
-  end
-
-  # @rbs message: String
-  # @rbs return: nil
-  def empty(message)
-    @renderer.notice(message)
-    nil
-  end
-
   # @rbs return: nil
   def closed
     @renderer.notice(CLOSED)
     nil
+  end
+
+  # @rbs row: Riffer::Rig::Terminal::Session
+  # @rbs filter: String
+  # @rbs return: bool
+  def matches?(row, filter)
+    filter.empty? || row.title.downcase.include?(filter.downcase)
+  end
+
+  # @rbs rows: Array[Riffer::Rig::Terminal::Session]
+  # @rbs filter: String
+  # @rbs return: bool
+  def any_match?(rows, filter)
+    rows.any? { |row| matches?(row, filter) }
   end
 
   # @rbs line: String
@@ -123,6 +111,23 @@ class Riffer::Rig::Terminal::Picker
 
     index = line.to_i
     shown[index - 1] if index.positive?
+  end
+
+  # @rbs rows: Array[Riffer::Rig::Terminal::Session]
+  # @rbs shown: Array[Riffer::Rig::Terminal::Session]
+  # @rbs all: bool
+  # @rbs return: Array[Riffer::Rig::Terminal::Session] | :cancel
+  def delete_mode(rows, shown, all)
+    line = read(DELETE_HEADER, shown, all)
+    return :cancel unless line.is_a?(String)
+
+    choice = number(line, shown)
+    return rows unless choice
+    return rows unless @host.confirm("Delete \"#{choice.title}\"?")
+
+    @sessions.delete(@host, choice.id)
+    @renderer.notice(DELETED)
+    @sessions.list(@host, all: all)
   end
 
   # @rbs header: String

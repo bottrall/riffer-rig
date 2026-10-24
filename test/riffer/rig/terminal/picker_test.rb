@@ -131,10 +131,10 @@ describe Riffer::Rig::Terminal::Picker do
       )
     end
 
-    it 'narrows the list to the titles matching the filter' do
-      output = rendered([session('alpha'), session('beta')], ['bet', ''])
+    it 'narrows the list to the titles matching the filter, ignoring case' do
+      output = rendered([session('alpha'), session('Beta')], ['BET', ''])
 
-      assert_includes output, '1. beta'
+      assert_includes output, '1. Beta'
     end
 
     it 'narrows the list to a filter typed at the footer' do
@@ -204,6 +204,12 @@ describe Riffer::Rig::Terminal::Picker do
       output = rendered([session('alpha')], [ctrl_d, '1'], host: ConfirmingHost.new([true]))
 
       refute_includes output, Riffer::Rig::Terminal::Picker::CLOSED
+    end
+
+    it 'clears a filter that matches nothing after a delete' do
+      alpha = session('alpha')
+
+      assert_same alpha, pick([alpha, session('beta')], ['bet', ctrl_d, '1', ''], host: ConfirmingHost.new([true]))
     end
 
     it 'returns nothing when interrupted at the prompt' do
@@ -404,9 +410,7 @@ describe Riffer::Rig::Terminal::Picker do
     end
 
     it 'shows the date beyond thirty days' do
-      updated = now - (40 * 86_400)
-
-      assert_includes rendered([session('alpha', updated: updated)]), "alpha — #{updated.strftime('%b %-d, %Y')}"
+      assert_includes rendered([session('alpha', updated: now - (40 * 86_400))]), 'alpha — Sep 14, 2026'
     end
   end
 end
