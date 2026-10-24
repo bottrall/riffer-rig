@@ -246,8 +246,8 @@ class Riffer::Rig::Headless
     return 0 if stop_reason == :completed
 
     @error.puts("turn ended: #{stop_reason}") if stop_reason
-    return 130 if stop_reason == Riffer::Rig::Runtime::INTERRUPT_CANCELLED
-    return 3 if stop_reason && Riffer::Rig::Runtime::STOPPED_WITHOUT_COMPLETING.include?(stop_reason)
+    return 130 if stop_reason == Riffer::Rig::Runtime::StopReason::INTERRUPT_CANCELLED
+    return 3 if stop_reason && Riffer::Rig::Runtime::StopReason::STOPPED_WITHOUT_COMPLETING.include?(stop_reason)
 
     1
   end

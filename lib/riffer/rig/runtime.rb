@@ -22,29 +22,14 @@ class Riffer::Rig::Runtime
 
   DEFAULT_NAME = 'riffer'
 
+  DEFAULT_REASONING_LABEL = 'default' #: String
+
   # Unlimited: riffer's own default (16) is too small for a general-purpose
   # harness.
   DEFAULT_MAX_STEPS = nil #: Integer?
 
-  INTERRUPT_CANCELLED = :cancelled #: Symbol
-
   # Per turn, so a job that starts jobs cannot keep a turn alive forever.
   MAX_JOB_CONTINUATIONS = 5 #: Integer
-
-  # Riffer's remaining stop reasons (:error, :other, :guardrail_blocked) are
-  # failures, not early stops.
-  STOPPED_WITHOUT_COMPLETING = %i[
-    max_steps context_window length content_filter malformed_output
-  ].freeze #: Array[Symbol]
-
-  # Upstream candidate: riffer's Anthropic, OpenAI and Azure OpenAI classes read
-  # the web_search option and OpenRouter passes unknown options through to its
-  # API, but the provider seam cannot yet answer which provider takes which
-  # option, so rig keeps the mapping until it can. Mock consumes web_search, so
-  # tests and embedders can exercise the switches.
-  NATIVE_TOOLS_BY_PROVIDER = {
-    web_search: { anthropic: true, openai: true, azure_openai: true, mock: true }.freeze
-  }.freeze #: Hash[Symbol, Hash[Symbol, bool]]
 
   # @rbs @agent: Riffer::Agent
   # @rbs @cancel_flag: Riffer::Rig::Runtime::CancelFlag
@@ -154,7 +139,7 @@ class Riffer::Rig::Runtime
     @errors = []
     @tool_allowlist = tools
     @native_tools = native_tools
-    @model_options = model_options.merge(native_options(model))
+    @model_options = model_options.merge(Riffer::Rig::Settings::ModelOptions.native_options(model, native_tools))
     @system_prompt = Riffer::Rig::Runtime::SystemPrompt.new(
       instructions || format(BASE_PROMPT_TEMPLATE, name: name), @cwd
     )
@@ -202,19 +187,15 @@ class Riffer::Rig::Runtime
     @commands.values
   end
 
-  # Installs a host-of-the-runtime command (the Loader's /reload) so it
-  # survives every rebuild; an extension command of the same name replaces it.
   # @rbs command: Riffer::Rig::Command
   # @rbs return: nil
   def install_command(command)
+    # Kept apart from the extensions' commands, which a rebuild replaces.
     @core_commands << command
     @commands[command.name] = command
     nil
   end
 
-  # Installs a host-of-the-runtime check (the Loader's automatic reload) so it
-  # survives every rebuild. The Runtime calls it at both before_request
-  # boundaries, before any handler runs, and ignores the result.
   # @rbs check: ^(::Riffer::Rig::Runtime) -> void
   # @rbs return: nil
   def install_reload_check(check)
@@ -425,22 +406,9 @@ class Riffer::Rig::Runtime
   # @rbs model: String
   # @rbs return: void
   def rederive_options(model)
-    @model_options = Riffer::Rig::Settings::ModelOptions.model_options(model).merge(native_options(model))
+    options = Riffer::Rig::Settings::ModelOptions
+    @model_options = options.model_options(model).merge(options.native_options(model, @native_tools))
     @agent.config.model_options = @model_options
-  end
-
-  # The switches are on/off settings, so what the agent can do stays a function
-  # of the current provider: a switch whose provider cannot take the option
-  # contributes nothing, and a switch to such a provider drops it, both silently.
-  # @rbs model: String
-  # @rbs return: Hash[Symbol, untyped]
-  def native_options(model)
-    provider = Riffer::Rig::Settings::ModelOptions.provider_for(model)&.to_sym
-    @native_tools.filter_map do |tool, switch|
-      next unless provider && NATIVE_TOOLS_BY_PROVIDER[tool]&.key?(provider)
-
-      [tool, switch]
-    end.to_h
   end
 
   # @rbs settings: Hash[Symbol, untyped]
@@ -625,7 +593,8 @@ class Riffer::Rig::Runtime
         continued(yielder, relay(yielder, stream), MAX_JOB_CONTINUATIONS)
       end
       response ||= aborted(yielder)
-      turn_end = Riffer::Rig::Events::TurnEnd.new(stop_reason(response.outcome), response.token_usage)
+      stop_reason = Riffer::Rig::Runtime::StopReason.of(response.outcome)
+      turn_end = Riffer::Rig::Events::TurnEnd.new(stop_reason, response.token_usage)
       @hooks.observe(:turn_end, turn_end)
       @host.drain.each { |queued| yielder << queued }
       yielder << turn_end
@@ -700,10 +669,10 @@ class Riffer::Rig::Runtime
     # Silent, then delivered by hand: the on_message observer interrupts a
     # cancelled turn with a throw, and riffer's catch is gone by now.
     deliver(@agent.session.add(Riffer::Messages::Assistant.new(text), silent: true)) if text.match?(/\S/)
-    pass_through(yielder, Riffer::StreamEvents::Interrupt.new(reason: INTERRUPT_CANCELLED))
+    pass_through(yielder, Riffer::StreamEvents::Interrupt.new(reason: Riffer::Rig::Runtime::StopReason::INTERRUPT_CANCELLED))
     Riffer::Agent::Response.new(
       text,
-      outcome: Riffer::Agent::Outcome.new(reason: :interrupted, detail: INTERRUPT_CANCELLED.to_s),
+      outcome: Riffer::Agent::Outcome.new(reason: :interrupted, detail: Riffer::Rig::Runtime::StopReason::INTERRUPT_CANCELLED.to_s),
       messages: @agent.session.messages.dup.freeze
     )
   end
@@ -815,16 +784,7 @@ class Riffer::Rig::Runtime
     @agent.session.discard_pending_tool_calls
     # The abort is held off while a tool runs, so a cancel that lands there is
     # honoured at the message boundary.
-    @agent.interrupt!(INTERRUPT_CANCELLED)
-  end
-
-  # @rbs outcome: Riffer::Agent::Outcome
-  # @rbs return: Symbol
-  def stop_reason(outcome)
-    # Upstream candidate: riffer's outcome vocabulary is closed, so a cancel
-    # reaches us as :interrupted with the reason in detail.
-    cancelled = outcome.reason == :interrupted && outcome.detail == INTERRUPT_CANCELLED.to_s
-    cancelled ? INTERRUPT_CANCELLED : outcome.reason
+    @agent.interrupt!(Riffer::Rig::Runtime::StopReason::INTERRUPT_CANCELLED)
   end
 
   # @rbs snapshot: Riffer::Rig::Runtime::Snapshot
@@ -911,6 +871,7 @@ class Riffer::Rig::Runtime
     settings.merge(namespaces)
   end
 
+  # @rbs registrars: Array[Riffer::Rig::Registrar]
   # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
   def merge_hooks(registrars)
     Riffer::Rig::Registrar::EVENTS.to_h do |event|

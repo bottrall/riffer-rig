@@ -237,7 +237,7 @@ describe Riffer::Rig::ACP::Mapper do
     end
 
     it 'ends a cancelled turn with cancelled' do
-      assert_equal 'cancelled', Riffer::Rig::ACP::Mapper.stop_reason_of(Riffer::Rig::Runtime::INTERRUPT_CANCELLED)
+      assert_equal 'cancelled', Riffer::Rig::ACP::Mapper.stop_reason_of(Riffer::Rig::Runtime::StopReason::INTERRUPT_CANCELLED)
     end
 
     it 'ends a turn that hit the step cap with max_turn_requests' do

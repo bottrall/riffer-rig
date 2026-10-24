@@ -108,10 +108,10 @@ module Riffer::Rig::ACP::Mapper
   def stop_reason_of(stop_reason)
     case stop_reason
     when :completed then ::ACP::Types::StopReason::END_TURN
-    when Riffer::Rig::Runtime::INTERRUPT_CANCELLED then ::ACP::Types::StopReason::CANCELLED
+    when Riffer::Rig::Runtime::StopReason::INTERRUPT_CANCELLED then ::ACP::Types::StopReason::CANCELLED
     when :max_steps then ::ACP::Types::StopReason::MAX_TURN_REQUESTS
     else
-      stopped = Riffer::Rig::Runtime::STOPPED_WITHOUT_COMPLETING.include?(stop_reason)
+      stopped = Riffer::Rig::Runtime::StopReason::STOPPED_WITHOUT_COMPLETING.include?(stop_reason)
       stopped ? ::ACP::Types::StopReason::MAX_TOKENS : ::ACP::Types::StopReason::REFUSAL
     end
   end

@@ -149,12 +149,6 @@ describe Riffer::Rig::Runtime do
     assert_equal({ web_search: true }, runtime.agent.config.model_options)
   end
 
-  it 'passes a switch object through as the option value' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', native_tools: { web_search: { max_uses: 3 } })
-
-    assert_equal({ web_search: { max_uses: 3 } }, runtime.agent.config.model_options)
-  end
-
   it 'carries the provider option on the request' do
     runtime = Riffer::Rig::Runtime.new('mock/test', native_tools: { web_search: true })
     runtime.agent.provider.stub_response('All done.')
@@ -162,24 +156,6 @@ describe Riffer::Rig::Runtime do
     runtime.prompt('search') { |event| events << event }
 
     assert(events.any?(Riffer::StreamEvents::WebSearchDone))
-  end
-
-  it 'drops the switch of a native tool the provider does not support' do
-    runtime = Riffer::Rig::Runtime.new('gemini/gem-2.5-pro', native_tools: { web_search: true })
-
-    assert_equal({}, runtime.agent.config.model_options)
-  end
-
-  it 'drops the switch of a native tool it does not know' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', native_tools: { code_interpreter: true })
-
-    assert_equal({}, runtime.agent.config.model_options)
-  end
-
-  it 'adds no provider options without a switch' do
-    runtime = Riffer::Rig::Runtime.new('mock/test')
-
-    assert_equal({}, runtime.agent.config.model_options)
   end
 
   it 'names the agent in the base prompt' do
@@ -713,17 +689,6 @@ describe Riffer::Rig::Runtime do
     runtime.prompt('hello') { |event| last = event }
 
     assert_equal(Riffer::Rig::Events::TurnEnd.new(:completed, usage), last)
-  end
-
-  it 'reports a max_steps run in turn_end' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], tools: %w[read], max_steps: 1)
-    runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
-    runtime.agent.provider.stub_response('second response')
-
-    last = nil
-    runtime.prompt('go') { |event| last = event }
-
-    assert_equal :max_steps, last.stop_reason
   end
 
   describe 'hooks' do

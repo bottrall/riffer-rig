@@ -22,6 +22,7 @@ class Riffer::Rig::Extension
     @requires = requires && Gem::Requirement.new(requires)
     @mismatch = check(@requires)
     @block = block
+    freeze
   end
 
   # @rbs registrar: Riffer::Rig::Registrar
