@@ -48,7 +48,7 @@ Put a server with a literal secret header in your home settings rather than a pr
 
 Each server's tools are listed when the session starts and named `<server>__<tool>`, with any character outside `a-z`, `A-Z`, `0-9`, `_` and `-` replaced by `_`: the `search` tool of the `docs` server is `docs__search`.
 
-MCP tools are not filtered by `--tools`; to keep a server's tools from the model, don't declare the server.
+To keep a server's tools from the model, don't declare the server: the [`--tools` allowlist](TOOLS.md#identifiers) doesn't apply to them.
 
 ## When a server fails
 

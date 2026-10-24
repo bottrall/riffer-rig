@@ -9,11 +9,11 @@ Every rig event has `type`, its snake_case name, and `to_h`, its fields with the
 | Event              | Carries                                                                  | When                                                                                  |
 | ------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
 | `session_start`    | `id`, `reason` (`:new`, `:restore`, `:reload`)                           | opens the first prompt of a new or [restored](EMBEDDING.md#snapshots) session, and the first after a [rebuild](EMBEDDING.md#rebuilding-after-a-code-reload) |
-| `session_end`      | `reason` (`:reload`)                                                     | opens the first prompt after a rebuild, just before its `session_start`              |
+| `session_end`      | `reason` (`:reload`, `:close`)                                           | opens the first prompt after a rebuild, just before its `session_start`; `:close` reaches only [hooks](EXTENSIONS.md#the-rigon-seam), as nothing streams after `close` |
 | `command_output`   | `command`, `text`                                                        | a command called `ctx.say`                                                            |
 | `skill_activated`  | `name`                                                                   | a skill was run with `/skill:<name>`                                                  |
 | `notify`           | `message`, `level`                                                       | every notice the host was given, such as an extension failing to load                 |
-| `before_tool_call` | `call_id`, `tool`, `args`, `at`                                          | a tool is about to run ([below](#tool-call-events))                                   |
+| `before_tool_call` | `call_id`, `tool`, `args` (symbol keys), `at`                            | a tool is about to run ([below](#tool-call-events))                                   |
 | `after_tool_call`  | `call_id`, `tool`, `args`, `result`, `at`, `duration`                    | a tool call has finished ([below](#tool-call-events))                                 |
 | `job_exit`         | `job_id`, `command`, `exit_status`, `signal`, `duration`, `output_path`  | the model is told a [background job](EMBEDDING.md#background-jobs) exited, one per job |
 | `turn_end`         | `stop_reason`, `usage`, `cost`                                           | always the last event of a prompt                                                     |
