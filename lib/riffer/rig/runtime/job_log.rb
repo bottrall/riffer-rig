@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Tools::Bash::JobLog
+class Riffer::Rig::Runtime::JobLog
   MAX_BYTES = 10_000_000 #: Integer
 
   KEEP_BYTES = MAX_BYTES / 2 #: Integer

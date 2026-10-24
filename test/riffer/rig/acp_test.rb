@@ -88,7 +88,7 @@ describe Riffer::Rig::ACP do
   end
 
   def start_job(runtime, command)
-    jobs = runtime.agent.context[:jobs] #: Riffer::Rig::Tools::Bash::Jobs
+    jobs = runtime.agent.context[:jobs] #: Riffer::Rig::Runtime::Jobs
     jobs.register(Process.spawn(command, pgroup: true), command, File.open(File::NULL))
   end
 
