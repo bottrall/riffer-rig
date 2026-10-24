@@ -1,4 +1,5 @@
 require:
+  - ./rubocop/cop/rig/no_data_define
   - ./rubocop/cop/rig/no_inheritance
   - ./rubocop/cop/rig/no_inline_rbs_declarations
   - ./rubocop/cop/rig/no_mocking
@@ -67,6 +68,11 @@ Naming/PredicateMethod:
     # Hosts::_Host#confirm is a blocking prompt named by the host contract,
     # not a predicate.
     - confirm
+
+Rig/NoDataDefine:
+  Enabled: true
+  Include:
+    - "lib/**/*.rb"
 
 Rig/NoInheritance:
   Enabled: true
