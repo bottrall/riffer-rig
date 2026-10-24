@@ -3,14 +3,18 @@
 module Riffer::Rig::Commands::Model
   SAVE: String
 
-  SAVED_TO: String
-
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
   # @rbs return: Riffer::Rig::Command
-  def command: () -> Riffer::Rig::Command
+  def command: (env: Riffer::Rig::Env, auth_path: String, settings_path: String) -> Riffer::Rig::Command
 
   # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
   # @rbs return: void
-  def run: (Riffer::Rig::Command::Context ctx) -> void
+  def run: (Riffer::Rig::Command::Context ctx, env: Riffer::Rig::Env, auth_path: String, settings_path: String) -> void
 
   private
 
@@ -22,15 +26,21 @@ module Riffer::Rig::Commands::Model
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs model: String
   # @rbs provider: String
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
   # @rbs return: bool
-  def ready?: (Riffer::Rig::Command::Context ctx, String model, String provider) -> bool
+  def ready?: (Riffer::Rig::Command::Context ctx, String model, String provider, env: Riffer::Rig::Env, auth_path: String, settings_path: String) -> bool
 
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs model: String
   # @rbs provider: String
   # @rbs setup: Riffer::Rig::ProviderSetup
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
   # @rbs return: bool
-  def credentials_ready?: (Riffer::Rig::Command::Context ctx, String model, String provider, Riffer::Rig::ProviderSetup setup) -> bool
+  def credentials_ready?: (Riffer::Rig::Command::Context ctx, String model, String provider, Riffer::Rig::ProviderSetup setup, env: Riffer::Rig::Env, auth_path: String, settings_path: String) -> bool
 
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs model: String

@@ -56,10 +56,6 @@ class Riffer::Rig::Runtime::Assembly
   def commands(core, skills)
     [
       *core,
-      Riffer::Rig::Commands::Auth.command,
-      Riffer::Rig::Commands::Model.command,
-      Riffer::Rig::Commands::Reasoning.command,
-      Riffer::Rig::Commands::Cost.command,
       *skills.map { |skill| Riffer::Rig::Commands::Skill.command(skill) },
       *@extension_commands
     ].to_h { |command| [command.name, command] }

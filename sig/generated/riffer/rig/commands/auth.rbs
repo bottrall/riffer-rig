@@ -3,12 +3,18 @@
 module Riffer::Rig::Commands::Auth
   USAGE: String
 
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
   # @rbs return: Riffer::Rig::Command
-  def command: () -> Riffer::Rig::Command
+  def command: (env: Riffer::Rig::Env, auth_path: String, settings_path: String) -> Riffer::Rig::Command
 
   # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
   # @rbs return: void
-  def run: (Riffer::Rig::Command::Context ctx) -> void
+  def run: (Riffer::Rig::Command::Context ctx, env: Riffer::Rig::Env, auth_path: String, settings_path: String) -> void
 
   private
 
@@ -16,16 +22,23 @@ module Riffer::Rig::Commands::Auth
   def hint: () -> String
 
   # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
   # @rbs return: void
-  def list: (Riffer::Rig::Command::Context ctx) -> void
+  def list: (Riffer::Rig::Command::Context ctx, env: Riffer::Rig::Env, auth_path: String) -> void
 
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs identifier: String
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
   # @rbs return: void
-  def rerun: (Riffer::Rig::Command::Context ctx, String identifier) -> void
+  def rerun: (Riffer::Rig::Command::Context ctx, String identifier, env: Riffer::Rig::Env, auth_path: String, settings_path: String) -> void
 
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs identifier: String
+  # @rbs auth_path: String
+  # @rbs settings_path: String
   # @rbs return: void
-  def remove: (Riffer::Rig::Command::Context ctx, String identifier) -> void
+  def remove: (Riffer::Rig::Command::Context ctx, String identifier, auth_path: String, settings_path: String) -> void
 end

@@ -58,6 +58,9 @@ class Riffer::Rig::Runtime
   # @rbs @reload_check: (^(::Riffer::Rig::Runtime) -> void)?
   # @rbs @clock: ^() -> Float
   # @rbs @turn: Riffer::Rig::Runtime::Turn?
+  # @rbs @env: Riffer::Rig::Env
+  # @rbs @auth_path: String
+  # @rbs @settings_path: String
 
   # @dynamic agent, credentials, cwd, host, id
   attr_reader :agent #: Riffer::Agent
@@ -77,6 +80,7 @@ class Riffer::Rig::Runtime
   # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
+  # @rbs settings_path: String
   # @rbs reasoning: String?
   # @rbs riffer_config: Riffer::Config
   # @rbs mcp_registry: Riffer::Rig::Mcp::_Registry
@@ -98,6 +102,7 @@ class Riffer::Rig::Runtime
     credentials: {},
     env: Riffer::Rig::Env.new,
     auth_path: Riffer::Rig::Credentials::PATH,
+    settings_path: Riffer::Rig::Settings::File::PATH,
     reasoning: nil,
     riffer_config: Riffer.config,
     mcp_registry: Riffer::Mcp,
@@ -113,6 +118,9 @@ class Riffer::Rig::Runtime
     @host = Riffer::Rig::Hosts::Mirror.new(host)
     @cwd = cwd || Dir.pwd
     @credentials = credentials
+    @env = env
+    @auth_path = auth_path
+    @settings_path = settings_path
 
     @concurrency = Riffer::Rig::Runtime::Concurrency.new
     @core_commands = []
@@ -454,9 +462,19 @@ class Riffer::Rig::Runtime
     assembly.unknown_tools.each { |message| @host.notify(message, level: :warning) }
     @assembly = assembly
     @system_prompt = @system_prompt.with_sections(assembly.prompt_sections)
-    @commands = assembly.commands(@core_commands, agent.context.skills&.skills&.values || [])
+    @commands = assembly.commands([*@core_commands, *built_in_commands], agent.context.skills&.skills&.values || [])
     @hooks = hooks
     @agent = agent
+  end
+
+  # @rbs return: Array[Riffer::Rig::Command]
+  def built_in_commands
+    [
+      Riffer::Rig::Commands::Auth.command(env: @env, auth_path: @auth_path, settings_path: @settings_path),
+      Riffer::Rig::Commands::Model.command(env: @env, auth_path: @auth_path, settings_path: @settings_path),
+      Riffer::Rig::Commands::Reasoning.command(settings_path: @settings_path),
+      Riffer::Rig::Commands::Cost.command
+    ]
   end
 
   # A session that has not started yet opens with session_start(:new) on its

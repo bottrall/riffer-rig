@@ -5,7 +5,7 @@ require 'open3'
 module Riffer::Rig::Credentials
   extend self
 
-  PATH = File.expand_path('~/.riffer/auth.json') #: String
+  PATH = Riffer::Rig::Directories.riffer(Dir.home, 'auth.json') #: String
 
   ENTRY_TYPE = 'api_key'
 

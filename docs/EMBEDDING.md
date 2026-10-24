@@ -86,7 +86,7 @@ The model is positional; everything else is an optional keyword. Provider creden
 | `model_options:` | riffer `model_options` sent with every model call; for an `anthropic` model the Loader passes `{ cache_control: { type: :ephemeral } }` ([prompt caching](PROVIDERS.md#anthropic)) | `{}` |
 | `native_tools:`  | the [provider-native tool](TOOLS.md#provider-native-tools) switches: `{ web_search: true }`  | `{}`    |
 | `credentials:`   | each provider's resolved values, `{ anthropic: { api_key: '…' } }`, used by `/model` and when [restoring](#snapshots) | `{}` |
-| `env:`, `auth_path:` | where [MCP `auth` fields](MCP.md#secret-headers) are read from and stored                | `Env.new`, `~/.riffer/auth.json` |
+| `env:`, `auth_path:`, `settings_path:` | where `/auth`, `/model` and [MCP `auth` fields](MCP.md#secret-headers) read and store credentials, and where `--save` writes | `Env.new`, `~/.riffer/auth.json`, `~/.riffer/settings.json` |
 | `riffer_config:` | the `Riffer::Config` the agent reads its catalog and reasoning from                          | `Riffer.config` |
 | `mcp_registry:`  | where MCP servers are registered                                                             | `Riffer::Mcp` |
 | `clock:`         | a callable returning seconds, which stamps [tool call events](EVENTS.md#tool-call-events) and times [background jobs](#background-jobs) | the monotonic clock |

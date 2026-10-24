@@ -976,6 +976,47 @@ describe Riffer::Rig::Runtime do
       )
     end
 
+    describe 'the core commands' do
+      before do
+        @home = Dir.mktmpdir
+        @paths = { auth_path: File.join(@home, 'auth.json'), settings_path: File.join(@home, 'settings.json') }
+      end
+
+      after do
+        FileUtils.remove_entry(@home)
+      end
+
+      it 'saves /model to its settings_path' do
+        command_events(Riffer::Rig::Runtime.new('mock/test', **@paths), 'model', '--save')
+
+        assert_equal 'mock/test', JSON.parse(File.read(@paths[:settings_path]))['model']
+      end
+
+      it 'saves /reasoning to its settings_path' do
+        command_events(Riffer::Rig::Runtime.new('mock/test', **@paths), 'reasoning', 'high --save')
+
+        assert_equal 'high', JSON.parse(File.read(@paths[:settings_path]))['reasoning']
+      end
+
+      it 'removes /auth credentials from its auth_path' do
+        Riffer::Rig::Credentials.store(:openai, { api_key: 'sk-stored' }, **@paths)
+        command_events(Riffer::Rig::Runtime.new('mock/test', **@paths), 'auth', 'remove openai')
+
+        assert_equal :missing,
+                     Riffer::Rig::Credentials.status(
+                       :openai,
+                       env: Riffer::Rig::Env.new({}),
+                       auth_path: @paths[:auth_path]
+                     )
+      end
+
+      it 'reads /auth statuses from its env' do
+        runtime = Riffer::Rig::Runtime.new('mock/test', env: Riffer::Rig::Env.new('GEMINI_API_KEY' => 'k'), **@paths)
+
+        assert_match(/^gemini\s+env$/, command_events(runtime, 'auth').first.text)
+      end
+    end
+
     describe '#install_command' do
       it 'keeps an installed command through a rebuild' do
         runtime = Riffer::Rig::Runtime.new('mock/test')

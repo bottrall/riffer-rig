@@ -191,10 +191,10 @@ describe Riffer::Rig::Runtime::Assembly do
       Riffer::Rig::Command.new(name, description: name, extension: :core) { |_ctx| nil }
     end
 
-    it 'lists the given core commands, the built-in ones, then the extensions\'' do
+    it 'lists the given core commands, then the extensions\'' do
       logging = extension('logging') { |rig| rig.command('log', description: 'Log') { |_ctx| nil } }
 
-      assert_equal %w[reload auth model reasoning cost log], assembly([logging]).commands([command('reload')], []).keys
+      assert_equal %w[reload log], assembly([logging]).commands([command('reload')], []).keys
     end
 
     it 'adds a command for each skill' do

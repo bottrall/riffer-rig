@@ -105,6 +105,7 @@ class Riffer::Rig::Loader
       credentials: { provider.to_sym => credentials },
       env: @env,
       auth_path: home_auth_path,
+      settings_path: home_settings_path,
       reasoning: Riffer::Rig::Loader::Reasoning.forced(options.reasoning, @env.reasoning),
       riffer_config: @riffer_config,
       model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected),
@@ -201,7 +202,7 @@ class Riffer::Rig::Loader
     home = read_settings(home_settings_path)
     return home if home.is_a?(String)
 
-    project = read_settings(File.join(@cwd, '.riffer', 'settings.json'))
+    project = read_settings(Riffer::Rig::Directories.riffer(@cwd, 'settings.json'))
     return project if project.is_a?(String)
 
     Riffer::Rig::Settings.merge(home, project)
@@ -283,12 +284,12 @@ class Riffer::Rig::Loader
 
   # @rbs return: String
   def home_settings_path
-    File.join(@home, '.riffer', 'settings.json')
+    Riffer::Rig::Directories.riffer(@home, 'settings.json')
   end
 
   # @rbs return: String
   def home_auth_path
-    File.join(@home, '.riffer', 'auth.json')
+    Riffer::Rig::Directories.riffer(@home, 'auth.json')
   end
 
   # @rbs snapshot: Riffer::Rig::Runtime::Snapshot?
