@@ -178,11 +178,16 @@ describe Riffer::Rig::Terminal::Banner do
       )
     end
 
-    it 'shows the tally in a session row' do
-      tally = Riffer::Providers::TokenUsage.new(input_tokens: 300, output_tokens: 150, cost: 0.25)
-      session = Regexp.escape(Riffer::Rig::Terminal::Tally.call(tally))
+    it 'shows the token total alone when the tally is unpriced' do
+      tally = Riffer::Providers::TokenUsage.new(input_tokens: 300, output_tokens: 150)
 
-      assert_match(/session\s+#{session}$/, banner(tally))
+      assert_match(/session\s+450 tok$/, banner(tally))
+    end
+
+    it 'appends the cost when the tally is priced' do
+      tally = Riffer::Providers::TokenUsage.new(input_tokens: 300, output_tokens: 150, cost: 0.25)
+
+      assert_match(/session\s+450 tok · ~\$0\.2500$/, banner(tally))
     end
 
     it 'omits the row before the first turn' do

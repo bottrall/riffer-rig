@@ -1,7 +1,0 @@
-# Generated from lib/riffer/rig/terminal/tally.rb with RBS::Inline
-
-module Riffer::Rig::Terminal::Tally
-  # @rbs usage: Riffer::Providers::TokenUsage
-  # @rbs return: String
-  def call: (Riffer::Providers::TokenUsage usage) -> String
-end
