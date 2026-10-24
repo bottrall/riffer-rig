@@ -1,13 +1,9 @@
 # frozen_string_literal: true
 
-require 'open3'
-
 module Riffer::Rig::Credentials
   extend self
 
   PATH = Riffer::Rig::Directories.riffer(Dir.home, 'auth.json') #: String
-
-  ENTRY_TYPE = 'api_key'
 
   # @rbs @applied: Hash[Symbol, Hash[Symbol, String]]
   @applied = {} #: Hash[Symbol, Hash[Symbol, String]]
@@ -108,7 +104,7 @@ module Riffer::Rig::Credentials
     plain = fields.except(*secret_names)
 
     refusal = (unreadable_settings(settings_path) unless plain.empty?) ||
-              store_secrets(identifier.to_s, secrets, auth_path)
+              AuthFile.store(identifier.to_s, secrets, path: auth_path)
     return refusal if refusal
 
     ProviderFields.store(identifier.to_s, plain, path: settings_path) unless plain.empty?
@@ -120,7 +116,7 @@ module Riffer::Rig::Credentials
   # @rbs return: String?
   def remove(identifier, auth_path: PATH, settings_path: Riffer::Rig::Settings::File::PATH)
     unreadable_settings(settings_path) ||
-      update_auth(auth_path) { |document| document.except(identifier.to_s) } ||
+      AuthFile.remove(identifier.to_s, path: auth_path) ||
       ProviderFields.remove(identifier.to_s, path: settings_path)
   end
 
@@ -133,7 +129,7 @@ module Riffer::Rig::Credentials
     secret_fields = setup.fields.select(&:secret)
     return :env if secret_fields.any? { |field| env.value_for(field) }
 
-    stored = stored_secrets(identifier, auth_path)
+    stored = AuthFile.read(identifier.to_s, path: auth_path)
     return stored if stored.is_a?(String)
     return :stored if secret_fields.any? { |field| stored.key?(field.name.to_s) }
 
@@ -150,7 +146,7 @@ module Riffer::Rig::Credentials
   # @rbs settings_path: String
   # @rbs return: (Resolution | String)
   def resolve(identifier, host:, setup:, env:, auth_path:, settings_path:)
-    secrets = stored_secrets(identifier, auth_path)
+    secrets = AuthFile.read(identifier.to_s, path: auth_path)
     return secrets if secrets.is_a?(String)
 
     plain = ProviderFields.read(identifier.to_s, path: settings_path)
@@ -186,25 +182,7 @@ module Riffer::Rig::Credentials
   # @rbs env: Riffer::Rig::Env
   # @rbs return: String?
   def stored_value(field, secrets, plain, env)
-    field.secret ? expand(secrets[field.name.to_s], env) : plain[field.name.to_s]
-  end
-
-  # @rbs value: String?
-  # @rbs env: Riffer::Rig::Env
-  # @rbs return: String?
-  def expand(value, env)
-    return nil if value.nil?
-    return env[value.delete_prefix('$')] if value.start_with?('$')
-    return presence(run(value.delete_prefix('!'))) if value.start_with?('!')
-
-    value
-  end
-
-  # @rbs command: String
-  # @rbs return: String?
-  def run(command)
-    stdout, status = Open3.capture2(command)
-    stdout if status.success?
+    field.secret ? AuthFile.expand(secrets[field.name.to_s], env) : plain[field.name.to_s]
   end
 
   # @rbs value: String?
@@ -214,48 +192,10 @@ module Riffer::Rig::Credentials
     stripped unless stripped.empty?
   end
 
-  # @rbs identifier: String | Symbol
-  # @rbs path: String
-  # @rbs return: (Hash[String, String] | String)
-  def stored_secrets(identifier, path)
-    document = Riffer::Rig::Support::JsonFile.read(path)
-    return document if document.is_a?(String)
-
-    entry = document[identifier.to_s]
-    api_key_entry?(entry) ? entry.except('type').select { |_name, value| value.is_a?(String) } : {}
-  end
-
-  # @rbs identifier: String
-  # @rbs secrets: Hash[String, String]
-  # @rbs path: String
-  # @rbs return: String?
-  def store_secrets(identifier, secrets, path)
-    return nil if secrets.empty?
-
-    update_auth(path) do |document|
-      stored = document[identifier]
-      entry = (api_key_entry?(stored) ? stored : { 'type' => ENTRY_TYPE }).merge(secrets)
-      document.merge(identifier => entry)
-    end
-  end
-
   # @rbs path: String
   # @rbs return: String?
   def unreadable_settings(path)
     source = Riffer::Rig::Settings::File.read(path)
     source if source.is_a?(String)
-  end
-
-  # @rbs entry: untyped
-  # @rbs return: bool
-  def api_key_entry?(entry)
-    entry.is_a?(Hash) && entry['type'] == ENTRY_TYPE
-  end
-
-  # @rbs path: String
-  # @rbs &: (Hash[untyped, untyped]) -> Hash[untyped, untyped]
-  # @rbs return: String?
-  def update_auth(path, &)
-    Riffer::Rig::Support::JsonFile.update(path, mode: 0o600, &)
   end
 end
