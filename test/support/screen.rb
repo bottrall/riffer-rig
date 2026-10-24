@@ -21,9 +21,9 @@ class Screen
     @rows.map(&:rstrip)
   end
 
-  # A pty read can end partway through an escape sequence or a multibyte
-  # character; the rest arrives with the next write.
   def write(bytes)
+    # A pty read can end partway through an escape sequence or a multibyte
+    # character; the rest arrives with the next write.
     text = @pending + bytes.b
     complete = whole(text.delete_suffix(text[PARTIAL_SEQUENCE].to_s))
     @pending = text.byteslice(complete.bytesize..)
