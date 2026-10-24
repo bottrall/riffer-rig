@@ -105,7 +105,6 @@ class Riffer::Rig::Loader
     loaded += @recorder_extensions
 
     snapshot = snapshot_without_forced(snapshot, options)
-    reasoning = forced_reasoning(options, snapshot)
 
     built = Riffer::Rig::Runtime.new(
       selected,
@@ -118,7 +117,7 @@ class Riffer::Rig::Loader
       credentials: { provider.to_sym => credentials },
       env: @env,
       auth_path: home_auth_path,
-      reasoning: reasoning || settings_reasoning(document),
+      reasoning: options.reasoning || @env.reasoning,
       riffer_config: @riffer_config,
       model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected),
       native_tools: document.native_tools,
@@ -388,29 +387,6 @@ class Riffer::Rig::Loader
     return unless rejection
 
     raise ConfigurationError, options.reasoning ? rejection : "RIFFER_REASONING: #{rejection}"
-  end
-
-  # The reasoning in effect for the build, over the settings document: the flag,
-  # then the session's recorded switch, then RIFFER_REASONING.
-  # @rbs options: Riffer::Rig::Loader::Options
-  # @rbs snapshot: Hash[Symbol, untyped]?
-  # @rbs return: String?
-  def forced_reasoning(options, snapshot)
-    options.reasoning || recorded_reasoning(snapshot) || @env.reasoning
-  end
-
-  # @rbs snapshot: Hash[Symbol, untyped]?
-  # @rbs return: String?
-  def recorded_reasoning(snapshot)
-    saved = snapshot && snapshot[:reasoning]
-    Riffer::Rig::Settings::ModelOptions.reasoning_level(saved) if saved.is_a?(String)
-  end
-
-  # A settings level riffer does not accept silently keeps the model's default.
-  # @rbs document: Riffer::Rig::Settings::Document
-  # @rbs return: String?
-  def settings_reasoning(document)
-    Riffer::Rig::Settings::ModelOptions.reasoning_level(document.reasoning)
   end
 
   # A model or reasoning level chosen for the run wins for that run only: it is
