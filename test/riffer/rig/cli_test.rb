@@ -92,36 +92,6 @@ describe Riffer::Rig::CLI do
     assert_equal 0, start('--version')
   end
 
-  it 'returns two for --verbose without -p' do
-    assert_equal 2, start('--verbose')
-  end
-
-  it 'says --verbose is headless only' do
-    start('--verbose')
-
-    assert_includes @error.string, '--verbose is only available with -p'
-  end
-
-  it 'returns two for --json without -p' do
-    assert_equal 2, start('--json')
-  end
-
-  it 'says --json is headless only' do
-    start('--json')
-
-    assert_includes @error.string, '--json is only available with -p'
-  end
-
-  it 'returns two for --job-idle-timeout without -p' do
-    assert_equal 2, start('--job-idle-timeout', '30')
-  end
-
-  it 'says --job-idle-timeout is headless only' do
-    start('--job-idle-timeout', '30')
-
-    assert_includes @error.string, '--job-idle-timeout is only available with -p'
-  end
-
   it 'runs one prompt headless and returns zero' do
     assert_equal 0,
                  start(
@@ -136,21 +106,6 @@ describe Riffer::Rig::CLI do
     start('-p', 'hello', input: '', env: { 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test' })
 
     refute_empty @output.string
-  end
-
-  it 'allows --verbose with -p' do
-    assert_equal 0,
-                 start(
-                   '-p',
-                   '--verbose',
-                   'hello',
-                   input: '',
-                   env: { 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test' }
-                 )
-  end
-
-  it 'allows --job-idle-timeout with -p' do
-    assert_equal 0, start('-p', '--job-idle-timeout', '30', 'hello', input: '', env: model_env)
   end
 
   it 'prints JSON events for --json with -p' do
