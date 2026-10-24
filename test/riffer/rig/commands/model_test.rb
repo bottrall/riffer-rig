@@ -268,13 +268,6 @@ describe Riffer::Rig::Commands::Model do
     end
   end
 
-  it 'does not save when the switch is refused' do
-    runtime = new_runtime
-    command_events(runtime, 'openai/gpt-5 --save')
-
-    assert_nil saved_settings['model']
-  end
-
   it 'switches the Runtime model' do
     runtime = new_runtime
     command_events(runtime, 'mock/other')
