@@ -345,8 +345,6 @@ class Riffer::Rig::Terminal::Frame
     "#{Riffer::Rig::Terminal::Columns.head("#{label}#{DESCRIPTION_GAP}#{@theme.dim(about)}", @width - 1)}\r\n"
   end
 
-  # The input rows as drawn, the row the cursor sits on among them, and its
-  # column on that row.
   # @rbs return: [Array[String], Integer, Integer]
   def input_rows
     return viewport if typing < 1

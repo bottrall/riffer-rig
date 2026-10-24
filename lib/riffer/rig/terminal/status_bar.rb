@@ -91,7 +91,7 @@ module Riffer::Rig::Terminal::StatusBar
       clock: field(clock, CLOCK_WIDTH),
       up: field("↑#{Riffer::Rig::Terminal::Count.call(up_tokens)}", TOKEN_WIDTH),
       down: field("↓#{Riffer::Rig::Terminal::Count.call(down_tokens)} tok", DOWN_WIDTH),
-      cost: field(format('~$%.4f', cost), COST_WIDTH),
+      cost: field(Riffer::Rig::Terminal::Count.cost(cost), COST_WIDTH),
       jobs: field("#{jobs} #{jobs == 1 ? 'job' : 'jobs'}", JOBS_WIDTH)
     }
   end
