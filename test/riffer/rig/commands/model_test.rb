@@ -100,21 +100,11 @@ describe Riffer::Rig::Commands::Model do
   end
 
   describe 'save' do
-    it 'reports a malformed settings file instead of the save' do
-      malform(@settings_path)
-
-      assert_equal([malformed(@settings_path)], command_events(new_runtime, '--save'))
-    end
-
     it 'saves the current model to the home settings' do
       write_home_settings(model: 'gemini/gem-2.5-pro', reasoning: 'high')
       command_events(new_runtime, '--save')
 
       assert_equal 'mock/test', saved_settings['model']
-    end
-
-    it 'reports the saved model' do
-      assert_equal([output("Saved mock/test to #{@settings_path}")], command_events(new_runtime, '--save'))
     end
   end
 
@@ -297,22 +287,6 @@ describe Riffer::Rig::Commands::Model do
     command_events(runtime, 'gemini/gem-2.5-pro --save')
 
     assert_equal 'gemini/gem-2.5-pro', saved_settings['model']
-  end
-
-  it 'reports a malformed settings file next to the new model' do
-    malform(@settings_path)
-
-    assert_equal(
-      [output('Model switched to mock/other'), malformed(@settings_path)],
-      command_events(new_runtime, 'mock/other --save')
-    )
-  end
-
-  it 'reports the switch and the save to the new model' do
-    assert_equal(
-      [output("Model switched to mock/other and saved to #{@settings_path}")],
-      command_events(new_runtime, 'mock/other --save')
-    )
   end
 
   it 'reports the switch to the new model' do

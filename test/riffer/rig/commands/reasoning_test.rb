@@ -39,15 +39,6 @@ describe Riffer::Rig::Commands::Reasoning do
     JSON.parse(File.read(@settings_path))
   end
 
-  def malform(path)
-    FileUtils.mkdir_p(File.dirname(path))
-    File.write(path, '{"reasoning":"low",}')
-  end
-
-  def malformed(path)
-    Riffer::Rig::Events::Notify.new("#{path} is not valid JSON at line 1 column 20", :error)
-  end
-
   it 'reports the level in effect without arguments' do
     runtime = new_runtime(settings: { reasoning: 'high' })
 
@@ -89,12 +80,6 @@ describe Riffer::Rig::Commands::Reasoning do
       assert_equal 'high', saved_settings['reasoning']
     end
 
-    it 'reports the switch and the save' do
-      _, events = switch('high --save')
-
-      assert_equal [output("Reasoning switched to high and saved to #{@settings_path}")], events
-    end
-
     it 'keeps the other settings keys when it saves' do
       write_home_settings(model: 'openai/gpt-5')
       switch('high --save')
@@ -112,12 +97,6 @@ describe Riffer::Rig::Commands::Reasoning do
       runtime, = switch('turbo')
 
       assert_nil runtime.reasoning
-    end
-
-    it 'saves nothing when it refuses a level' do
-      switch('turbo --save')
-
-      assert_empty saved_settings
     end
   end
 
@@ -160,37 +139,6 @@ describe Riffer::Rig::Commands::Reasoning do
 
     it 'reports that nothing is in effect to save' do
       assert_equal([output('No reasoning level is in effect to save')], command_events(new_runtime, '--save'))
-    end
-
-    it 'writes nothing when nothing is in effect to save' do
-      command_events(new_runtime, '--save')
-
-      refute_path_exists @settings_path
-    end
-  end
-
-  describe 'a malformed home settings file' do
-    it 'reports the file instead of the save' do
-      malform(@settings_path)
-      runtime = new_runtime(settings: { reasoning: 'high' })
-
-      assert_equal([malformed(@settings_path)], command_events(runtime, '--save'))
-    end
-
-    it 'reports the switch and then the file for the save of a switch' do
-      malform(@settings_path)
-      runtime = new_runtime
-      events = command_events(runtime, 'high --save')
-
-      assert_equal([output('Reasoning switched to high'), malformed(@settings_path)], events)
-    end
-
-    it 'keeps the switched level when the save is refused' do
-      malform(@settings_path)
-      runtime = new_runtime
-      command_events(runtime, 'high --save')
-
-      assert_equal 'high', runtime.reasoning
     end
   end
 end

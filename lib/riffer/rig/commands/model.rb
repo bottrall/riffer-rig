@@ -3,8 +3,6 @@
 module Riffer::Rig::Commands::Model
   extend self
 
-  SAVE = '--save' #: String
-
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
@@ -23,39 +21,43 @@ module Riffer::Rig::Commands::Model
   # @rbs settings_path: String
   # @rbs return: void
   def run(ctx, env:, auth_path:, settings_path:)
-    words = ctx.args.split
-    save = words.delete(SAVE)
-    model = words.join(' ')
-
-    if model.empty?
-      return ctx.say("Model: #{ctx.runtime.model}") unless save
-
-      refusal = Riffer::Rig::Settings::File.store_model(ctx.runtime.model, path: settings_path)
-      return ctx.host.notify(refusal, level: :error) if refusal
-
-      return ctx.say("Saved #{ctx.runtime.model} to #{settings_path}")
-    end
-
-    provider = Riffer::Rig::Settings::ModelOptions.provider_for(model)
-    return ctx.say(hint) unless provider && Riffer::Providers::Repository.find(provider)
-    return unless ready?(ctx, model, provider, env:, auth_path:, settings_path:)
-
-    ctx.runtime.model = model
-    refusal = Riffer::Rig::Settings::File.store_model(model, path: settings_path) if save
-    ctx.host.notify(refusal, level: :error) if refusal
-    saved = save && !refusal
-    ctx.say(saved ? "Model switched to #{model} and saved to #{settings_path}" : "Model switched to #{model}")
+    current = ctx.runtime.model
+    Riffer::Rig::Commands::Switch.run(
+      ctx,
+      label: 'Model',
+      shown: current,
+      current: current,
+      unset: 'No model is in effect to save',
+      saved_to: settings_path,
+      store: ->(model) { Riffer::Rig::Settings::File.store_model(model, path: settings_path) }
+    ) { |model| switched?(ctx, model, env:, auth_path:, settings_path:) }
   end
 
   private
+
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs model: String
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs settings_path: String
+  # @rbs return: bool
+  def switched?(ctx, model, env:, auth_path:, settings_path:)
+    provider = Riffer::Rig::Settings::ModelOptions.provider_for(model)
+    unless provider && Riffer::Providers::Repository.find(provider)
+      ctx.say(hint)
+      return false
+    end
+    return false unless ready?(ctx, model, provider, env:, auth_path:, settings_path:)
+
+    ctx.runtime.model = model
+    true
+  end
 
   # @rbs return: String
   def hint
     "Use /model provider/name, with a provider from: #{Riffer::Rig::Providers.list}"
   end
 
-  # The same setup flows the Loader runs when it builds a Runtime: the
-  # provider's SDK gem, then its credentials, asked for when the host can ask.
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs model: String
   # @rbs provider: String
