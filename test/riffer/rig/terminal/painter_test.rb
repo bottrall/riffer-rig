@@ -32,6 +32,10 @@ describe Riffer::Rig::Terminal::Painter do
       assert_equal '<a>x</a><> </><b>y</b>', paint('x y', %i[a b])
     end
 
+    it 'joins neighbouring unowned characters into one run' do
+      assert_equal '<a>x</a><>  </><b>y</b>', paint('x  y', %i[a b])
+    end
+
     it 'leaves leading whitespace unowned' do
       assert_equal '<> </><a>x</a>', paint(' x', %i[a])
     end
