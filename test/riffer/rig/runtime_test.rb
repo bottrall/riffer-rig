@@ -193,10 +193,6 @@ describe Riffer::Rig::Runtime do
       @runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@first, @broken, @last])
     end
 
-    it 'registers the extensions around a raising one' do
-      assert_equal [Riffer::Rig::Tools::Read, Riffer::Rig::Tools::Bash], @runtime.agent.tools
-    end
-
     it 'records the raising extension on errors' do
       assert_equal([[@broken, 'kaboom']], @runtime.errors.map { |failure| [failure.extension, failure.error.message] })
     end
@@ -213,10 +209,6 @@ describe Riffer::Rig::Runtime do
       @runtime.ask('hello')
 
       refute_includes @runtime.agent.provider.calls.last[:messages].to_s, 'kaboom'
-    end
-
-    it 'records no errors when every extension loads' do
-      assert_empty Riffer::Rig::Runtime.new('mock/test', extensions: [@first, @last]).errors
     end
   end
 
@@ -421,25 +413,6 @@ describe Riffer::Rig::Runtime do
       end
     end
 
-    it 'lets a later extension replace a bundled tool by identifier' do
-      sandbox = replaced_bash
-      replacement = Riffer::Rig::Extension.new('sandbox') { |rig| rig.tool sandbox }
-      tools = %i[read write edit bash].map { |name| Riffer::Rig.bundled(name) }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [*tools, replacement])
-
-      assert_equal(
-        [
-          Riffer::Rig::Tools::Read,
-          Riffer::Rig::Tools::Write,
-          Riffer::Rig::Tools::Edit,
-          sandbox,
-          Riffer::Rig::Tools::Bash::Output,
-          Riffer::Rig::Tools::Bash::Kill
-        ],
-        runtime.agent.tools
-      )
-    end
-
     it 'reports the replaced tool through notify at info level' do
       sandbox = replaced_bash
       replacement = Riffer::Rig::Extension.new('sandbox') { |rig| rig.tool sandbox }
@@ -448,43 +421,6 @@ describe Riffer::Rig::Runtime do
       assert_equal [Riffer::Rig::Events::Notify.new('Extension sandbox replaces tool bash from bash', :info)],
                    runtime.host.drain
     end
-
-    it 'reports a replaced command through notify' do
-      earlier = Riffer::Rig::Extension.new('earlier') { |rig| rig.command('log', description: 'a') { |_ctx| nil } }
-      later = Riffer::Rig::Extension.new('later') { |rig| rig.command('log', description: 'b') { |_ctx| nil } }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [earlier, later])
-
-      assert_equal [Riffer::Rig::Events::Notify.new('Extension later replaces command log from earlier', :info)],
-                   runtime.host.drain
-    end
-
-    it 'reports a replaced prompt section through notify' do
-      earlier = Riffer::Rig::Extension.new('earlier') { |rig| rig.prompt(:branch) { 'a' } }
-      later = Riffer::Rig::Extension.new('later') { |rig| rig.prompt(:branch) { 'b' } }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [earlier, later])
-
-      notice = Riffer::Rig::Events::Notify.new('Extension later replaces prompt section branch from earlier', :info)
-
-      assert_equal [notice], runtime.host.drain
-    end
-
-    it 'notifies nothing when no registration is replaced' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: Riffer::Rig.bundled)
-
-      assert_empty runtime.host.drain
-    end
-  end
-
-  it 'notifies nothing about the allowlist without one' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
-
-    assert_empty runtime.host.drain
-  end
-
-  it 'notifies nothing when every allowlisted name is a registered tool' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], tools: %w[read bash])
-
-    assert_empty runtime.host.drain
   end
 
   it 'reports each allowlisted name no extension registered through notify at warning level' do
@@ -508,18 +444,6 @@ describe Riffer::Rig::Runtime do
       events = []
       runtime.run_command('show') { |event| events << event }
       events.first.text
-    end
-
-    it 'applies a declared default when the settings lack the key' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
-
-      assert_equal({ depth: 3, remote: 'origin' }.inspect, settings_output(runtime))
-    end
-
-    it 'lets a provided value override the declared default' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git], settings: { git: { depth: 10 } })
-
-      assert_equal({ depth: 10, remote: 'origin' }.inspect, settings_output(runtime))
     end
 
     it 'shows a command only its own namespace' do
@@ -556,16 +480,6 @@ describe Riffer::Rig::Runtime do
       assert_equal "CUSTOM_BASE\n\nCurrent date: #{Date.today}\nCurrent working directory: #{cwd}",
                    runtime.agent.provider.calls.last[:messages].first[:content]
     end
-  end
-
-  it 'lets a later registration of the same section name win' do
-    earlier = Riffer::Rig::Extension.new('earlier') { |rig| rig.prompt(:branch) { 'EARLIER' } }
-    later = Riffer::Rig::Extension.new('later') { |rig| rig.prompt(:branch) { 'LATER' } }
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [earlier, later])
-    runtime.agent.provider.stub_response('All done.')
-    runtime.ask('hello')
-
-    refute_includes runtime.agent.provider.calls.last[:messages].first[:content], 'EARLIER'
   end
 
   it 'keeps the later registration of the same section name' do

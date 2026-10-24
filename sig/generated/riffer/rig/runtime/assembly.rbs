@@ -1,0 +1,74 @@
+# Generated from lib/riffer/rig/runtime/assembly.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::Assembly
+  @skill_sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
+
+  @extension_commands: Array[Riffer::Rig::Command]
+
+  # @dynamic failures, tools, hooks, mcp_declarations, prompt_sections, declared_settings, settings
+  attr_reader failures: Array[Riffer::Rig::Extension::Failure]
+
+  attr_reader tools: Array[singleton(Riffer::Tool)]
+
+  attr_reader hooks: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
+
+  attr_reader mcp_declarations: Hash[String, Riffer::Rig::Mcp::Declaration]
+
+  attr_reader prompt_sections: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+
+  attr_reader declared_settings: Hash[Symbol, Hash[Symbol, untyped]]
+
+  attr_reader settings: Hash[Symbol, untyped]
+
+  # @dynamic overrides, unknown_tools
+  attr_reader overrides: Array[String]
+
+  attr_reader unknown_tools: Array[String]
+
+  # @rbs extensions: Array[Riffer::Rig::Extension]
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs allowlist: Array[String]?
+  # @rbs strict: bool
+  # @rbs return: void
+  def initialize: (Array[Riffer::Rig::Extension] extensions, Hash[Symbol, untyped] settings, Array[String]? allowlist, ?strict: bool) -> void
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: Riffer::Skills::Config?
+  def skills_config: (Riffer::Rig::Runtime runtime) -> Riffer::Skills::Config?
+
+  # @rbs core: Array[Riffer::Rig::Command]
+  # @rbs skills: Array[Riffer::Skills::Frontmatter]
+  # @rbs return: Hash[String, Riffer::Rig::Command]
+  def commands: (Array[Riffer::Rig::Command] core, Array[Riffer::Skills::Frontmatter] skills) -> Hash[String, Riffer::Rig::Command]
+
+  private
+
+  # @rbs extension: Riffer::Rig::Extension
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs strict: bool
+  # @rbs return: (Riffer::Rig::Registrar | Riffer::Rig::Extension::Failure)
+  def trial: (Riffer::Rig::Extension extension, Hash[Symbol, untyped] settings, bool strict) -> (Riffer::Rig::Registrar | Riffer::Rig::Extension::Failure)
+
+  # @rbs registered: Array[singleton(Riffer::Tool)]
+  # @rbs allowlist: Array[String]?
+  # @rbs return: Array[singleton(Riffer::Tool)]
+  def select_tools: (Array[singleton(Riffer::Tool)] registered, Array[String]? allowlist) -> Array[singleton(Riffer::Tool)]
+
+  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
+  def merge_hooks: (Array[Riffer::Rig::Registrar] registrars) -> Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
+
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs declared: Hash[Symbol, Hash[Symbol, untyped]]
+  # @rbs return: Hash[Symbol, untyped]
+  def with_declared_defaults: (Hash[Symbol, untyped] settings, Hash[Symbol, Hash[Symbol, untyped]] declared) -> Hash[Symbol, untyped]
+
+  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs return: Array[String]
+  def overrides_of: (Array[Riffer::Rig::Registrar] registrars) -> Array[String]
+
+  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs allowlist: Array[String]?
+  # @rbs return: Array[String]
+  def unknown_tools_of: (Array[Riffer::Rig::Registrar] registrars, Array[String]? allowlist) -> Array[String]
+end

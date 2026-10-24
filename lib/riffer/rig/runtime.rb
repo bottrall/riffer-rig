@@ -41,7 +41,6 @@ class Riffer::Rig::Runtime
   # @rbs @cwd: String
   # @rbs @host: Riffer::Rig::Hosts::Mirror
   # @rbs @id: String
-  # @rbs @settings: Hash[Symbol, untyped]
   # @rbs @concurrency: Riffer::Rig::Runtime::Concurrency
   # @rbs @session_start_pending: bool
   # @rbs @session_start_reason: Symbol
@@ -53,8 +52,7 @@ class Riffer::Rig::Runtime
   # @rbs @system_prompt: Riffer::Rig::Runtime::SystemPrompt
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
   # @rbs @core_commands: Array[Riffer::Rig::Command]
-  # @rbs @declared_settings: Hash[Symbol, Hash[Symbol, untyped]]
-  # @rbs @errors: Array[Riffer::Rig::Extension::Failure]
+  # @rbs @assembly: Riffer::Rig::Runtime::Assembly
   # @rbs @hooks: Riffer::Rig::Runtime::Hooks
   # @rbs @tool_allowlist: Array[String]?
   # @rbs @mcp: Riffer::Rig::Runtime::McpRegistrar
@@ -64,14 +62,12 @@ class Riffer::Rig::Runtime
   # @rbs @clock: ^() -> Float
   # @rbs @yielder: Enumerator::Yielder?
 
-  # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
+  # @dynamic agent, credentials, cwd, host, id
   attr_reader :agent #: Riffer::Agent
   attr_reader :credentials #: Hash[Symbol, Hash[Symbol, String]]
   attr_reader :cwd #: String
   attr_reader :host #: Riffer::Rig::Hosts::Mirror
   attr_reader :id #: String
-  attr_reader :settings #: Hash[Symbol, untyped]
-  attr_reader :declared_settings #: Hash[Symbol, Hash[Symbol, untyped]]
 
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]
@@ -136,7 +132,6 @@ class Riffer::Rig::Runtime
     @model_observers = []
     @reasoning_observers = []
     @reasoning = (saved && Riffer::Rig::Settings::ModelOptions.reasoning_level(saved.reasoning)) || reasoning
-    @errors = []
     @tool_allowlist = tools
     @native_tools = native_tools
     @model_options = model_options.merge(Riffer::Rig::Settings::ModelOptions.native_options(model, native_tools))
@@ -146,12 +141,15 @@ class Riffer::Rig::Runtime
     @mcp = Riffer::Rig::Runtime::McpRegistrar.new(
       @id, registry: mcp_registry, host: @host, env: env, auth_path: auth_path
     )
-    registrars = build_registrars(extensions, settings) { |extension, error| record_error(extension, error) }
-    mcp_servers = @mcp.register(mcp_declarations(registrars))
-    hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
-    config = agent_config(registrars, settings, hooks, max_steps)
+    assembly = Riffer::Rig::Runtime::Assembly.new(extensions, settings, tools)
+    assembly.failures.each do |failure|
+      @host.notify("Extension #{failure.extension.name} failed to load: #{failure.error.message}", level: :error)
+    end
+    mcp_servers = @mcp.register(assembly.mcp_declarations)
+    hooks = Riffer::Rig::Runtime::Hooks.new(assembly.hooks, @host)
+    config = agent_config(assembly, hooks, max_steps)
     agent = saved ? restore(saved, model, config) : build_agent(model, config)
-    install(registrars, settings, hooks, agent)
+    install(assembly, hooks, agent)
     @mcp.retain(mcp_servers)
     @agent.session.on_message do |message|
       Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { observe_message(message) }
@@ -221,7 +219,17 @@ class Riffer::Rig::Runtime
 
   # @rbs return: Array[Riffer::Rig::Extension::Failure]
   def errors
-    @errors.dup
+    @assembly.failures.dup
+  end
+
+  # @rbs return: Hash[Symbol, untyped]
+  def settings
+    @assembly.settings
+  end
+
+  # @rbs return: Hash[Symbol, Hash[Symbol, untyped]]
+  def declared_settings
+    @assembly.declared_settings
   end
 
   # @rbs return: String
@@ -243,7 +251,7 @@ class Riffer::Rig::Runtime
 
   # @rbs return: String?
   def reasoning
-    reasoning_over(@settings)
+    reasoning_over(settings)
   end
 
   # @rbs level: String
@@ -269,13 +277,12 @@ class Riffer::Rig::Runtime
   def rebuild(extensions:, settings:)
     @concurrency.claim_rebuild
     begin
-      registrars = build_registrars(extensions, settings) { |_extension, error| raise error }
-      mcp_servers = @mcp.register(mcp_declarations(registrars))
-      hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
-      agent = successor(model, agent_config(registrars, settings, hooks, @agent.config.max_steps))
+      assembly = Riffer::Rig::Runtime::Assembly.new(extensions, settings, @tool_allowlist, strict: true)
+      mcp_servers = @mcp.register(assembly.mcp_declarations)
+      hooks = Riffer::Rig::Runtime::Hooks.new(assembly.hooks, @host)
+      agent = successor(model, agent_config(assembly, hooks, @agent.config.max_steps))
       lifecycle(:session_end, Riffer::Rig::Events::SessionEnd.new(:reload))
-      @errors = []
-      install(registrars, settings, hooks, agent)
+      install(assembly, hooks, agent)
       @mcp.retain(mcp_servers)
       lifecycle(:session_start, Riffer::Rig::Events::SessionStart.new(@id, :reload))
     ensure
@@ -417,21 +424,20 @@ class Riffer::Rig::Runtime
     @reasoning || Riffer::Rig::Settings::ModelOptions.reasoning_level(Riffer::Rig::Settings::Document.new(settings).reasoning)
   end
 
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs assembly: Riffer::Rig::Runtime::Assembly
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs max_steps: Numeric?
   # @rbs return: Riffer::Agent::Config
-  def agent_config(registrars, settings, hooks, max_steps)
+  def agent_config(assembly, hooks, max_steps)
     config = Riffer::Agent::Config.new(
       model: ->(context) { context[:model] },
       model_options: @model_options,
       instructions: @system_prompt.bare,
-      reasoning: reasoning_over(settings),
-      tools_config: select_tools(registrars.flat_map { |registrar| registrar.tools.to_a }.to_h.values, @tool_allowlist),
+      reasoning: reasoning_over(assembly.settings),
+      tools_config: assembly.tools,
       max_steps: max_steps,
       tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(hooks, emit: ->(event) { emit(event) }, clock: @clock),
-      skills_config: skills_config(registrars.flat_map(&:skill_sources))
+      skills_config: assembly.skills_config(self)
     )
     config.add_guardrail(:before, klass: Riffer::Rig::Runtime::RequestGuardrail, options: { hooks: hooks })
     # Upstream candidate: riffer resolves MCP tools inside the agent, after
@@ -440,39 +446,16 @@ class Riffer::Rig::Runtime
     config
   end
 
-  # @rbs sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
-  # @rbs return: Riffer::Skills::Config?
-  def skills_config(sources)
-    return if sources.empty?
-
-    config = Riffer::Skills::Config.new
-    config.backend(Riffer::Rig::Skills::Sources.new(sources.map { |source| source.call(self) }))
-    config
-  end
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs assembly: Riffer::Rig::Runtime::Assembly
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs agent: Riffer::Agent
   # @rbs return: void
-  def install(registrars, settings, hooks, agent)
-    overrides(registrars).each { |message| @host.notify(message, level: :info) }
-    unknown_tools(registrars, @tool_allowlist).each { |message| @host.notify(message, level: :warning) }
-    @declared_settings = registrars.to_h { |registrar| [registrar.extension.to_sym, registrar.declared_settings] }
-                                   .reject { |_extension, declared| declared.empty? }
-    @settings = with_declared_defaults(settings)
-    @system_prompt = @system_prompt.with_sections(registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h)
-    skills = agent.context.skills&.skills&.values || []
-    commands = [
-      *@core_commands,
-      Riffer::Rig::Commands::Auth.command,
-      Riffer::Rig::Commands::Model.command,
-      Riffer::Rig::Commands::Reasoning.command,
-      Riffer::Rig::Commands::Cost.command,
-      *skills.map { |skill| Riffer::Rig::Commands::Skill.command(skill) },
-      *registrars.flat_map { |registrar| registrar.commands.values }
-    ]
-    @commands = commands.to_h { |command| [command.name, command] }
+  def install(assembly, hooks, agent)
+    assembly.overrides.each { |message| @host.notify(message, level: :info) }
+    assembly.unknown_tools.each { |message| @host.notify(message, level: :warning) }
+    @assembly = assembly
+    @system_prompt = @system_prompt.with_sections(assembly.prompt_sections)
+    @commands = assembly.commands(@core_commands, agent.context.skills&.skills&.values || [])
     @hooks = hooks
     @agent = agent
   end
@@ -564,7 +547,7 @@ class Riffer::Rig::Runtime
   # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: Riffer::Rig::Command::Context
   def command_context(command, args, emit)
-    settings = @settings[command.extension] || {} #: Hash[Symbol, untyped]
+    settings = self.settings[command.extension] || {} #: Hash[Symbol, untyped]
     Riffer::Rig::Command::Context.new(
       command.name,
       args,
@@ -814,83 +797,5 @@ class Riffer::Rig::Runtime
     # the catalog is filtered through activated? instead.
     skills = @agent.context.skills
     skills ? skills.skills.keys.select { |name| skills.activated?(name) } : []
-  end
-
-  # @rbs extensions: Array[Riffer::Rig::Extension]
-  # @rbs settings: Hash[Symbol, untyped]
-  # @rbs &: (Riffer::Rig::Extension, StandardError) -> void
-  # @rbs return: Array[Riffer::Rig::Registrar]
-  def build_registrars(extensions, settings)
-    extensions.filter_map do |extension|
-      outcome = extension.trial(settings)
-      next outcome if outcome.is_a?(Riffer::Rig::Registrar)
-
-      yield(extension, outcome)
-      nil
-    end
-  end
-
-  # @rbs extension: Riffer::Rig::Extension
-  # @rbs error: StandardError
-  # @rbs return: void
-  def record_error(extension, error)
-    @errors << Riffer::Rig::Extension::Failure.new(extension: extension, error: error)
-    @host.notify("Extension #{extension.name} failed to load: #{error.message}", level: :error)
-  end
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Array[String]
-  def overrides(registrars)
-    registrars
-      .flat_map { |registrar| registrar.registrations.map { |registration| [registration, registrar.extension] } }
-      .group_by(&:first)
-      .flat_map do |registration, claims|
-        claims.map(&:last).each_cons(2).map do |earlier, later|
-          "Extension #{later} replaces #{registration} from #{earlier}"
-        end
-      end
-  end
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs allowlist: Array[String]?
-  # @rbs return: Array[String]
-  def unknown_tools(registrars, allowlist)
-    return [] if allowlist.nil?
-
-    registered = registrars.flat_map { |registrar| registrar.tools.keys }
-    (allowlist - registered).map { |name| "Unknown tool in allowlist: #{name}" }
-  end
-
-  # @rbs settings: Hash[Symbol, untyped]
-  # @rbs return: Hash[Symbol, untyped]
-  def with_declared_defaults(settings)
-    namespaces = @declared_settings.to_h do |extension, defaults|
-      given = settings[extension] || {} #: Hash[Symbol, untyped]
-      [extension, defaults.merge(given)]
-    end
-    settings.merge(namespaces)
-  end
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
-  def merge_hooks(registrars)
-    Riffer::Rig::Registrar::EVENTS.to_h do |event|
-      [event, registrars.flat_map { |registrar| registrar.hooks.fetch(event) }]
-    end
-  end
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Hash[String, Riffer::Rig::Mcp::Declaration]
-  def mcp_declarations(registrars)
-    registrars.flat_map { |registrar| registrar.mcp_servers.to_a }.to_h
-  end
-
-  # @rbs registered: Array[singleton(Riffer::Tool)]
-  # @rbs allowlist: Array[String]?
-  # @rbs return: Array[singleton(Riffer::Tool)]
-  def select_tools(registered, allowlist)
-    return registered if allowlist.nil?
-
-    registered.select { |klass| allowlist.include?(klass.name) }
   end
 end

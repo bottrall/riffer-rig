@@ -32,8 +32,6 @@ class Riffer::Rig::Runtime
 
   @concurrency: Riffer::Rig::Runtime::Concurrency
 
-  @settings: Hash[Symbol, untyped]
-
   @id: String
 
   @host: Riffer::Rig::Hosts::Mirror
@@ -66,9 +64,7 @@ class Riffer::Rig::Runtime
 
   @core_commands: Array[Riffer::Rig::Command]
 
-  @declared_settings: Hash[Symbol, Hash[Symbol, untyped]]
-
-  @errors: Array[Riffer::Rig::Extension::Failure]
+  @assembly: Riffer::Rig::Runtime::Assembly
 
   @hooks: Riffer::Rig::Runtime::Hooks
 
@@ -86,7 +82,7 @@ class Riffer::Rig::Runtime
 
   @yielder: Enumerator::Yielder?
 
-  # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
+  # @dynamic agent, credentials, cwd, host, id
   attr_reader agent: Riffer::Agent
 
   attr_reader credentials: Hash[Symbol, Hash[Symbol, String]]
@@ -96,10 +92,6 @@ class Riffer::Rig::Runtime
   attr_reader host: Riffer::Rig::Hosts::Mirror
 
   attr_reader id: String
-
-  attr_reader settings: Hash[Symbol, untyped]
-
-  attr_reader declared_settings: Hash[Symbol, Hash[Symbol, untyped]]
 
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]
@@ -155,6 +147,12 @@ class Riffer::Rig::Runtime
 
   # @rbs return: Array[Riffer::Rig::Extension::Failure]
   def errors: () -> Array[Riffer::Rig::Extension::Failure]
+
+  # @rbs return: Hash[Symbol, untyped]
+  def settings: () -> Hash[Symbol, untyped]
+
+  # @rbs return: Hash[Symbol, Hash[Symbol, untyped]]
+  def declared_settings: () -> Hash[Symbol, Hash[Symbol, untyped]]
 
   # @rbs return: String
   def model: () -> String
@@ -251,23 +249,17 @@ class Riffer::Rig::Runtime
   # @rbs return: String?
   def reasoning_over: (Hash[Symbol, untyped] settings) -> String?
 
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs assembly: Riffer::Rig::Runtime::Assembly
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs max_steps: Numeric?
   # @rbs return: Riffer::Agent::Config
-  def agent_config: (Array[Riffer::Rig::Registrar] registrars, Hash[Symbol, untyped] settings, Riffer::Rig::Runtime::Hooks hooks, Numeric? max_steps) -> Riffer::Agent::Config
+  def agent_config: (Riffer::Rig::Runtime::Assembly assembly, Riffer::Rig::Runtime::Hooks hooks, Numeric? max_steps) -> Riffer::Agent::Config
 
-  # @rbs sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
-  # @rbs return: Riffer::Skills::Config?
-  def skills_config: (Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend] sources) -> Riffer::Skills::Config?
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs assembly: Riffer::Rig::Runtime::Assembly
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs agent: Riffer::Agent
   # @rbs return: void
-  def install: (Array[Riffer::Rig::Registrar] registrars, Hash[Symbol, untyped] settings, Riffer::Rig::Runtime::Hooks hooks, Riffer::Agent agent) -> void
+  def install: (Riffer::Rig::Runtime::Assembly assembly, Riffer::Rig::Runtime::Hooks hooks, Riffer::Agent agent) -> void
 
   # A session that has not started yet opens with session_start(:new) on its
   # first turn instead.
@@ -392,41 +384,4 @@ class Riffer::Rig::Runtime
 
   # @rbs return: Array[String]
   def activated_skills: () -> Array[String]
-
-  # @rbs extensions: Array[Riffer::Rig::Extension]
-  # @rbs settings: Hash[Symbol, untyped]
-  # @rbs &: (Riffer::Rig::Extension, StandardError) -> void
-  # @rbs return: Array[Riffer::Rig::Registrar]
-  def build_registrars: (Array[Riffer::Rig::Extension] extensions, Hash[Symbol, untyped] settings) { (Riffer::Rig::Extension, StandardError) -> void } -> Array[Riffer::Rig::Registrar]
-
-  # @rbs extension: Riffer::Rig::Extension
-  # @rbs error: StandardError
-  # @rbs return: void
-  def record_error: (Riffer::Rig::Extension extension, StandardError error) -> void
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Array[String]
-  def overrides: (Array[Riffer::Rig::Registrar] registrars) -> Array[String]
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs allowlist: Array[String]?
-  # @rbs return: Array[String]
-  def unknown_tools: (Array[Riffer::Rig::Registrar] registrars, Array[String]? allowlist) -> Array[String]
-
-  # @rbs settings: Hash[Symbol, untyped]
-  # @rbs return: Hash[Symbol, untyped]
-  def with_declared_defaults: (Hash[Symbol, untyped] settings) -> Hash[Symbol, untyped]
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
-  def merge_hooks: (Array[Riffer::Rig::Registrar] registrars) -> Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Hash[String, Riffer::Rig::Mcp::Declaration]
-  def mcp_declarations: (Array[Riffer::Rig::Registrar] registrars) -> Hash[String, Riffer::Rig::Mcp::Declaration]
-
-  # @rbs registered: Array[singleton(Riffer::Tool)]
-  # @rbs allowlist: Array[String]?
-  # @rbs return: Array[singleton(Riffer::Tool)]
-  def select_tools: (Array[singleton(Riffer::Tool)] registered, Array[String]? allowlist) -> Array[singleton(Riffer::Tool)]
 end
