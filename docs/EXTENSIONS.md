@@ -191,7 +191,7 @@ To replace one piece instead, register something with the same name from your ow
 
 ## Error isolation
 
-An extension whose block raises, whose `requires:` doesn't match the installed riffer-rig, or that is named after a core settings key is skipped, and the session shows `Extension <name> failed to load: <message>`. The other extensions still load. Errors are shown to the user, never to the model.
+An extension whose block raises, whose `requires:` doesn't match the installed riffer-rig, or that is named after a core settings key is skipped and [reported](TROUBLESHOOTING.md). The other extensions still load. Errors are shown to the user, never to the model.
 
 ## API versioning
 

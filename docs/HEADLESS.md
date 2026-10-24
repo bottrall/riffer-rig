@@ -20,7 +20,7 @@ while read -r p; do riffer -p --no-save "$p" </dev/null; done < prompts.txt
 
 ## Output
 
-Only the assistant's reply goes to stdout, streamed as it arrives. Everything else goes to stderr: errors, warnings, notices from extensions, and `session <id>` when the session starts — the id `riffer -p -r <id> "follow-up"` resumes. `--verbose` adds a one-line trace of each tool call to stderr. Reasoning is not printed.
+Only the assistant's reply goes to stdout, streamed as it arrives. Everything else goes to stderr: errors, warnings, notices from extensions, and `session <id>` when the session starts — the id `riffer -p -r <id> "follow-up"` resumes — and any [`--verbose`](CLI.md#flags) traces. Reasoning is not printed.
 
 ## Flags
 
@@ -32,11 +32,13 @@ Headless never asks anything. A missing model, credential or [SDK gem](PROVIDERS
 
 ## Background jobs
 
-When the model finishes with [background jobs](TOOLS.md#background-jobs) still running, headless prints `waiting for background jobs` on stderr and waits. Each exit gives the model a further turn to react, printed like the first; the run exits once no job is left.
+When a turn ends with [background jobs](TOOLS.md#background-jobs) still running:
 
-When no job has exited for `--job-idle-timeout` seconds (600 by default), headless kills the rest and exits 3 — so a dev server or file watcher can't hold a run open forever. `--job-idle-timeout 0` waits without limit.
-
-Only a turn that finished is followed this way. A turn that fails, is cancelled or doesn't complete kills its jobs and exits at once.
+| When                                                           | Headless                                                                                      |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| the turn finished                                              | prints `waiting for background jobs` on stderr and waits; each exit gives the model a further turn to react, printed like the first, and the run exits once no job is left |
+| a wait passes the [`--job-idle-timeout`](CLI.md#flags) with no job exiting | kills the rest and exits 3, so a dev server or file watcher can't hold a run open forever     |
+| the turn failed, was cancelled or didn't complete              | kills its jobs and exits at once                                                              |
 
 ## Exit codes
 
