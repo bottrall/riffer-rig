@@ -51,15 +51,14 @@ module Riffer::Rig::Settings::ModelOptions
     {}
   end
 
-  # The switches are on/off settings, so what the agent can do stays a function
-  # of the current provider: a switch whose provider cannot take the option
-  # contributes nothing, and a switch to such a provider drops it, both silently.
   # @rbs model: String
   # @rbs switches: Hash[Symbol, untyped]
   # @rbs return: Hash[Symbol, untyped]
   def native_options(model, switches)
     provider = provider_for(model)&.to_sym
     switches.filter_map do |tool, switch|
+      # Dropped silently: a switch is an on/off setting, so what the agent can
+      # do follows the current provider.
       next unless provider && NATIVE_TOOLS_BY_PROVIDER[tool]&.key?(provider)
 
       [tool, switch]

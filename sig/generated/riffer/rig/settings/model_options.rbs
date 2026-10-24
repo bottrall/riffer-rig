@@ -30,9 +30,6 @@ module Riffer::Rig::Settings::ModelOptions
   # @rbs return: Hash[Symbol, untyped]
   def model_options: (String model) -> Hash[Symbol, untyped]
 
-  # The switches are on/off settings, so what the agent can do stays a function
-  # of the current provider: a switch whose provider cannot take the option
-  # contributes nothing, and a switch to such a provider drops it, both silently.
   # @rbs model: String
   # @rbs switches: Hash[Symbol, untyped]
   # @rbs return: Hash[Symbol, untyped]
