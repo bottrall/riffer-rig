@@ -4,6 +4,8 @@ class Riffer::Rig::Loader
   class ConfigurationError < StandardError
   end
 
+  @sdk: Riffer::Rig::SDK::_Ensurer
+
   @reload_mode: :auto | :manual | nil
 
   @file_state: Hash[String, Time?]?
@@ -49,8 +51,9 @@ class Riffer::Rig::Loader
   # @rbs home: String
   # @rbs riffer_config: Riffer::Config
   # @rbs store: Riffer::Rig::Stores::_Store | nil
+  # @rbs sdk: Riffer::Rig::SDK::_Ensurer
   # @rbs return: void
-  def initialize: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?store: Riffer::Rig::Stores::_Store | nil) -> void
+  def initialize: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?store: Riffer::Rig::Stores::_Store | nil, ?sdk: Riffer::Rig::SDK::_Ensurer) -> void
 
   # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)

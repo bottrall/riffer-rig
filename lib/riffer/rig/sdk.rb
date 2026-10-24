@@ -26,10 +26,12 @@ module Riffer::Rig::SDK
   # @rbs requirement: String
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs installer: singleton(Gem)
+  # @rbs specs: singleton(Gem::Specification)
+  # @rbs bundled: bool
   # @rbs return: String?
-  def ensure(gem, requirement, host:, installer: Gem)
-    return nil if installed?(gem, requirement) && require_gem(gem)
-    return format(BUNDLER_MESSAGE, gem, gem, requirement) if bundler?
+  def ensure(gem, requirement, host:, installer: Gem, specs: Gem::Specification, bundled: !defined?(Bundler).nil?)
+    return nil if installed?(gem, requirement, specs) && require_gem(gem)
+    return format(BUNDLER_MESSAGE, gem, gem, requirement) if bundled
 
     confirmed = host.capabilities.include?(:confirm) && host.confirm(format(CONFIRM_QUESTION, gem))
     return format(DECLINED_MESSAGE, gem, gem, requirement) unless confirmed
@@ -60,9 +62,10 @@ module Riffer::Rig::SDK
 
   # @rbs gem: String
   # @rbs requirement: String
+  # @rbs specs: singleton(Gem::Specification)
   # @rbs return: bool
-  def installed?(gem, requirement)
-    Gem::Specification.find_by_name(gem, requirement)
+  def installed?(gem, requirement, specs)
+    specs.find_by_name(gem, requirement)
     true
   rescue Gem::LoadError
     false
@@ -75,10 +78,5 @@ module Riffer::Rig::SDK
     true
   rescue ::LoadError
     false
-  end
-
-  # @rbs return: bool
-  def bundler?
-    !defined?(Bundler).nil?
   end
 end
