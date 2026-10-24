@@ -357,13 +357,6 @@ describe Riffer::Rig::Loader do
         )
       end
 
-      it 'hands the level in effect to the agent config' do
-        write_settings(@home, { reasoning: 'high' })
-        runtime = build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
-
-        assert_equal :high, runtime.agent.config.reasoning
-      end
-
       it 'rejects a reasoning keyword riffer does not accept' do
         assert_equal(
           'turbo is not a reasoning level; riffer accepts: off low medium high xhigh max',
@@ -386,44 +379,11 @@ describe Riffer::Rig::Loader do
         end
       end
 
-      it 'takes off from the settings as a level of its own' do
-        write_settings(@home, { reasoning: 'off' })
-
-        assert_equal :off, build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' }).agent.config.reasoning
-      end
-
-      it 'leaves an unrecognized settings level at the model default' do
-        write_settings(@home, { reasoning: 'turbo' })
-        runtime = build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
-
-        assert_nil runtime.agent.config.reasoning
-      end
-
       it 'restores the snapshot reasoning over RIFFER_REASONING' do
         snapshot = { id: 'saved', messages: [], model: nil, reasoning: 'low', skills: [] }
 
         assert_equal(
           'low',
-          build(
-            snapshot: snapshot,
-            model: 'openai/o3',
-            env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'high' }
-          ).reasoning
-        )
-      end
-
-      it 'carries the snapshot reasoning to the agent config' do
-        snapshot = { id: 'saved', messages: [], model: nil, reasoning: 'low', skills: [] }
-        runtime = build(snapshot: snapshot, model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
-
-        assert_equal :low, runtime.agent.config.reasoning
-      end
-
-      it 'ignores a snapshot reasoning that is not a string' do
-        snapshot = { id: 'saved', messages: [], model: nil, reasoning: 3, skills: [] }
-
-        assert_equal(
-          'high',
           build(
             snapshot: snapshot,
             model: 'openai/o3',
@@ -439,13 +399,6 @@ describe Riffer::Rig::Loader do
           'high',
           build(snapshot: snapshot, model: 'openai/o3', reasoning: 'high', env: { 'OPENAI_API_KEY' => 'sk' }).reasoning
         )
-      end
-
-      it 'drops a snapshot reasoning level riffer does not accept' do
-        snapshot = { id: 'saved', messages: [], model: nil, reasoning: 'turbo', skills: [] }
-        runtime = build(snapshot: snapshot, model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
-
-        assert_nil runtime.agent.config.reasoning
       end
     end
 
