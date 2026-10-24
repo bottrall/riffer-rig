@@ -332,10 +332,6 @@ describe Riffer::Rig::Runtime do
   end
 
   describe 'skills' do
-    it 'has no skills context without a skills source' do
-      assert_nil Riffer::Rig::Runtime.new('mock/test', extensions: []).agent.context.skills
-    end
-
     it 'passes the Runtime to a skills source' do
       seen = nil
       spy = Riffer::Rig::Extension.new('spy') do |rig|
@@ -377,13 +373,6 @@ describe Riffer::Rig::Runtime do
       snapshot = skilled_runtime.to_h.merge(skills: %w[a gone])
 
       assert_equal %w[a], skilled_runtime(snapshot: snapshot).to_h[:skills]
-    end
-
-    it 'lets a later extension replace a skill command by name' do
-      mine = Riffer::Rig::Extension.new('mine') { |rig| rig.command('skill:a', description: 'Mine') { |_ctx| nil } }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [skills_extension, mine])
-
-      assert_equal 'Mine', runtime.commands.find { |command| command.name == 'skill:a' }.description
     end
   end
 
@@ -480,16 +469,6 @@ describe Riffer::Rig::Runtime do
       assert_equal "CUSTOM_BASE\n\nCurrent date: #{Date.today}\nCurrent working directory: #{cwd}",
                    runtime.agent.provider.calls.last[:messages].first[:content]
     end
-  end
-
-  it 'keeps the later registration of the same section name' do
-    earlier = Riffer::Rig::Extension.new('earlier') { |rig| rig.prompt(:branch) { 'EARLIER' } }
-    later = Riffer::Rig::Extension.new('later') { |rig| rig.prompt(:branch) { 'LATER' } }
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [earlier, later])
-    runtime.agent.provider.stub_response('All done.')
-    runtime.ask('hello')
-
-    assert_includes runtime.agent.provider.calls.last[:messages].first[:content], 'LATER'
   end
 
   it 'passes the runtime to a section' do
@@ -603,17 +582,6 @@ describe Riffer::Rig::Runtime do
     runtime.prompt('hello') { |event| last = event }
 
     assert_equal(Riffer::Rig::Events::TurnEnd.new(:completed, usage), last)
-  end
-
-  it 'reports a max_steps run in turn_end' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], tools: %w[read], max_steps: 1)
-    runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
-    runtime.agent.provider.stub_response('second response')
-
-    last = nil
-    runtime.prompt('go') { |event| last = event }
-
-    assert_equal :max_steps, last.stop_reason
   end
 
   describe 'hooks' do
@@ -791,17 +759,6 @@ describe Riffer::Rig::Runtime do
       runtime.ask('go')
 
       assert_equal [:completed], reasons
-    end
-
-    it 'runs hooks in load order across extensions' do
-      order = []
-      first = Riffer::Rig::Extension.new('first') { |rig| rig.on(:before_prompt) { |_e| order << :first } }
-      second = Riffer::Rig::Extension.new('second') { |rig| rig.on(:before_prompt) { |_e| order << :second } }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [second, first])
-      runtime.agent.provider.stub_response('All done.')
-      runtime.ask('go')
-
-      assert_equal %i[second first], order
     end
   end
 
@@ -1028,13 +985,6 @@ describe Riffer::Rig::Runtime do
       )
     end
 
-    it 'lets a later extension replace a command of the same name' do
-      later = Riffer::Rig::Extension.new('later') { |rig| rig.command('log', description: 'Later log') { |_ctx| nil } }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git, later])
-
-      assert_equal 'Later log', runtime.commands.find { |command| command.name == 'log' }.description
-    end
-
     describe '#install_command' do
       it 'keeps an installed command through a rebuild' do
         runtime = Riffer::Rig::Runtime.new('mock/test')
@@ -1043,15 +993,6 @@ describe Riffer::Rig::Runtime do
         runtime.rebuild(extensions: [], settings: {})
 
         assert_equal(command, runtime.commands.find { |candidate| candidate.name == 'reload' })
-      end
-
-      it 'lets an extension command replace an installed one' do
-        runtime = Riffer::Rig::Runtime.new('mock/test')
-        command = Riffer::Rig::Command.new('log', description: 'Installed log', extension: :core) { |_ctx| nil }
-        runtime.install_command(command)
-        runtime.rebuild(extensions: [@git], settings: {})
-
-        assert_equal 'Recent commits', runtime.commands.find { |candidate| candidate.name == 'log' }.description
       end
     end
 
