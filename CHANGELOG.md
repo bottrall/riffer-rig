@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.17.0](https://github.com/bottrall/riffer-rig/compare/v0.16.0...v0.17.0) (2026-10-24)
+
+
+### Features
+
+* authenticate to Anthropic through the SDK's credential chain ([#606](https://github.com/bottrall/riffer-rig/issues/606)) ([617fdb7](https://github.com/bottrall/riffer-rig/commit/617fdb76f5a54290d2d001b906fce3d530e2cef4))
+* give tools the background job registry as a documented context key ([#579](https://github.com/bottrall/riffer-rig/issues/579)) ([a8e98ac](https://github.com/bottrall/riffer-rig/commit/a8e98acef71b354a2c7601d46366ed0f95b6da37))
+
+
+### Bug Fixes
+
+* --save and /auth honour the injected home ([#596](https://github.com/bottrall/riffer-rig/issues/596)) ([032f26f](https://github.com/bottrall/riffer-rig/commit/032f26f317216f501a9dc71c3d1157ce12bc3893))
+* /auth and /model refusals say how to supply a missing credential ([#597](https://github.com/bottrall/riffer-rig/issues/597)) ([ffe18fe](https://github.com/bottrall/riffer-rig/commit/ffe18fe653db97f4bbb737359f454637bc347778))
+* reasoning in settings reaches the agent ([#577](https://github.com/bottrall/riffer-rig/issues/577)) ([9216429](https://github.com/bottrall/riffer-rig/commit/9216429421be51bb7511e4c8b6eec3bd177e8ba3))
+* reload each Loader-built runtime with its own build's choices ([#598](https://github.com/bottrall/riffer-rig/issues/598)) ([d6b95a6](https://github.com/bottrall/riffer-rig/commit/d6b95a6f1205ecb8ae0221c88bb1012c2ce15e79))
+* **terminal:** keep a capped input inside a short terminal ([#575](https://github.com/bottrall/riffer-rig/issues/575)) ([8b67c2b](https://github.com/bottrall/riffer-rig/commit/8b67c2b9d1ba404ffb12bb42f120e034aae8183b))
+
 ## [0.16.0](https://github.com/bottrall/riffer-rig/compare/v0.15.0...v0.16.0) (2026-10-18)
 
 
