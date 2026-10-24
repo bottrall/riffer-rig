@@ -96,14 +96,7 @@ Plain fields live in the home `settings.json`, keyed by provider and then by fie
 
 Prefix `anthropic/`, for example `anthropic/claude-sonnet-4-6`. Create a key at <https://console.anthropic.com/settings/keys>. Anthropic models always get prompt caching.
 
-Instead of an API key, the Anthropic SDK can authenticate through its own credential chain, which stores nothing in riffer-rig. The first source it finds wins:
-
-| Source                       | Configured by                                                                                                                      |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| bearer token                 | `ANTHROPIC_AUTH_TOKEN`                                                                                                             |
-| selected profile             | `ANTHROPIC_PROFILE`                                                                                                                |
-| workload identity federation | `ANTHROPIC_FEDERATION_RULE_ID` and `ANTHROPIC_ORGANIZATION_ID`, plus `ANTHROPIC_IDENTITY_TOKEN` or `ANTHROPIC_IDENTITY_TOKEN_FILE` |
-| active profile on disk       | `ant auth login`, under `~/.config/anthropic` or `ANTHROPIC_CONFIG_DIR`                                                            |
+Instead of an API key, the Anthropic SDK can authenticate through its own credential chain — workload identity federation, `ANTHROPIC_AUTH_TOKEN`, or an `ant auth login` profile — set up as the [Anthropic Ruby SDK](https://github.com/anthropics/anthropic-sdk-ruby) documents; riffer-rig stores nothing for it.
 
 How the chain and an API key combine is part of the [resolution order](CONFIGURATION.md#where-each-value-comes-from). A selected profile that fails to load counts as configured, so the SDK's own error surfaces on the first request.
 
