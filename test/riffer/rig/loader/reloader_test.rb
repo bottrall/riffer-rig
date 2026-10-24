@@ -49,19 +49,12 @@ describe Riffer::Rig::Loader::Reloader do
       assert_empty tool_names(@runtime)
     end
 
-    it 'rebuilds the runtime once a file changed' do
-      subject = reloader
+    it 'never sees a change without rediscovery' do
+      subject = reloader(rediscovers: false)
       change_files
       subject.reload(@runtime)
 
-      assert_equal %w[read], tool_names(@runtime)
-    end
-
-    it 'returns the runtime it rebuilt' do
-      subject = reloader
-      change_files
-
-      assert_same @runtime, subject.reload(@runtime)
+      assert_empty tool_names(@runtime)
     end
 
     it 'rebuilds unchanged files when forced' do
@@ -78,15 +71,6 @@ describe Riffer::Rig::Loader::Reloader do
       assert_empty tool_names(@runtime)
     end
 
-    it 'leaves the runtime alone when the setting says manual' do
-      subject = reloader
-      @settings = { reload: 'manual' }
-      change_files
-      subject.reload(@runtime)
-
-      assert_empty tool_names(@runtime)
-    end
-
     it 'lets an auto mode override a manual setting' do
       subject = reloader(mode: :auto)
       @settings = { reload: 'manual' }
@@ -96,25 +80,21 @@ describe Riffer::Rig::Loader::Reloader do
       assert_equal %w[read], tool_names(@runtime)
     end
 
-    it 'never sees a change without rediscovery' do
-      subject = reloader(rediscovers: false)
+    it 'leaves the runtime alone when the setting says manual' do
+      subject = reloader
+      @settings = { reload: 'manual' }
       change_files
       subject.reload(@runtime)
 
       assert_empty tool_names(@runtime)
     end
 
-    it 'adds the rediscovered extensions' do
-      @rediscovered = [Riffer::Rig::Extension.new('found') { |rig| rig.tool Riffer::Rig::Tools::Write }]
-      reloader.reload(@runtime, force: true)
+    it 'attempts the reload when the settings do not read' do
+      subject = reloader
+      @settings = 'settings.json is not valid JSON'
+      change_files
 
-      assert_equal %w[read write], tool_names(@runtime)
-    end
-
-    it 'merges the provider credentials into the runtime' do
-      reloader.reload(@runtime, force: true)
-
-      assert_equal @credentials, @runtime.credentials[:mock]
+      assert_equal 'settings.json is not valid JSON', subject.reload(@runtime)
     end
 
     it 'reports settings that do not read' do
@@ -129,10 +109,45 @@ describe Riffer::Rig::Loader::Reloader do
       assert_equal 'rig.rb is not trusted', reloader.reload(@runtime, force: true)
     end
 
+    it 'adds no extensions without rediscovery' do
+      @rediscovered = [Riffer::Rig::Extension.new('found') { |rig| rig.tool Riffer::Rig::Tools::Write }]
+      reloader(rediscovers: false).reload(@runtime, force: true)
+
+      assert_equal %w[read], tool_names(@runtime)
+    end
+
+    it 'adds the rediscovered extensions' do
+      @rediscovered = [Riffer::Rig::Extension.new('found') { |rig| rig.tool Riffer::Rig::Tools::Write }]
+      reloader.reload(@runtime, force: true)
+
+      assert_equal %w[read write], tool_names(@runtime)
+    end
+
     it 'reports credentials that did not resolve' do
       @credentials = 'No mock key'
 
       assert_equal 'No mock key', reloader.reload(@runtime, force: true)
+    end
+
+    it 'merges the provider credentials into the runtime' do
+      reloader.reload(@runtime, force: true)
+
+      assert_equal @credentials, @runtime.credentials[:mock]
+    end
+
+    it 'rebuilds the runtime once a file changed' do
+      subject = reloader
+      change_files
+      subject.reload(@runtime)
+
+      assert_equal %w[read], tool_names(@runtime)
+    end
+
+    it 'returns the runtime it rebuilt' do
+      subject = reloader
+      change_files
+
+      assert_same @runtime, subject.reload(@runtime)
     end
 
     it 'reports a raise as its message' do

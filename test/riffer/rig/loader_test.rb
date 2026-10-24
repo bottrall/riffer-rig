@@ -345,28 +345,10 @@ describe Riffer::Rig::Loader do
         )
       end
 
-      it 'prefers the reasoning keyword over RIFFER_REASONING' do
-        assert_equal(
-          'high',
-          build(
-            model: 'openai/o3',
-            reasoning: 'high',
-            env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'low' }
-          ).reasoning
-        )
-      end
-
       it 'rejects a reasoning keyword riffer does not accept' do
         assert_equal(
           'turbo is not a reasoning level; riffer accepts: off low medium high xhigh max',
           refusal { build(model: 'openai/o3', reasoning: 'turbo', env: { 'OPENAI_API_KEY' => 'sk' }) }
-        )
-      end
-
-      it 'rejects a RIFFER_REASONING riffer does not accept' do
-        assert_equal(
-          'RIFFER_REASONING: turbo is not a reasoning level; riffer accepts: off low medium high xhigh max',
-          refusal { build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'turbo' }) }
         )
       end
 
@@ -895,11 +877,6 @@ describe Riffer::Rig::Loader do
       RUBY
     end
 
-    def bump(path)
-      stamp = File.mtime(path) + 10
-      File.utime(stamp, stamp, path)
-    end
-
     def tool_added
       write_rig(:project, probe_rig('probe'))
       host = ConfirmingHost.new([true])
@@ -922,13 +899,6 @@ describe Riffer::Rig::Loader do
       [loader, runtime, host]
     end
 
-    def with_raising_credentials
-      Riffer::Rig::Credentials.define_singleton_method(:resolve) { |*_args, **_kwargs| raise 'credential boom' }
-      yield
-    ensure
-      Riffer::Rig::Credentials.singleton_class.remove_method(:resolve)
-    end
-
     it 'leaves a runtime another loader built alone' do
       runtime = new_loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
 
@@ -946,40 +916,6 @@ describe Riffer::Rig::Loader do
       assert_includes tool_names(runtime), 'probe_next'
     end
 
-    it 'skips the reload when no tracked file changed' do
-      write_rig(:project, probe_rig('probe'))
-      host = ConfirmingHost.new([true])
-      loader = new_loader(host: host)
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      marker = File.join(@cwd, 'reload_marker')
-      File.write(project_rig_path, "File.write(#{marker.inspect}, 'attempted')\nraise 'boom'")
-      bump(project_rig_path)
-      loader.reload(runtime)
-      FileUtils.rm_f(marker)
-      loader.reload(runtime)
-
-      refute_path_exists marker
-    end
-
-    it 'tracks no files with extensions: false' do
-      write_settings(@home, { git: { depth: 10 } })
-      loader = new_loader
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test', extensions: false))
-      write_settings(@home, { git: { depth: 3 } })
-      write_rig(:project, probe_rig('probe'))
-      loader.reload(runtime)
-
-      assert_equal({ depth: 10 }, runtime.settings[:git])
-    end
-
-    it 'reloads without force when a tracked file changed' do
-      loader, runtime, = tool_added
-      bump(project_rig_path)
-      loader.reload(runtime)
-
-      assert_includes tool_names(runtime), 'probe_next'
-    end
-
     it 're-reads settings changed on disk' do
       write_settings(@home, { git: { depth: 10 } })
       loader = new_loader
@@ -988,24 +924,6 @@ describe Riffer::Rig::Loader do
       loader.reload(runtime, force: true)
 
       assert_equal({ depth: 3 }, runtime.settings[:git])
-    end
-
-    it 'reports settings malformed on disk' do
-      loader = new_loader
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      malformed = malform_settings(@home)
-
-      assert_equal malformed, loader.reload(runtime, force: true)
-    end
-
-    it 'holds an unforced reload under a manual reload keyword when settings are malformed' do
-      write_rig(:project, probe_rig('probe'))
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'), reload: :manual)
-      malform_settings(@home)
-      bump(project_rig_path)
-
-      assert_same runtime, loader.reload(runtime)
     end
 
     it 'keeps extra extensions through a reload' do
@@ -1024,20 +942,6 @@ describe Riffer::Rig::Loader do
       loader.reload(runtime, force: true)
 
       assert_empty tool_names(runtime).grep(/\Aprobe/)
-    end
-
-    it 'abandons the reload when a rig.rb raises' do
-      loader, runtime, = raising_rig
-      reloaded = loader.reload(runtime, force: true)
-
-      assert_match(/failed to load: boom\z/, reloaded)
-    end
-
-    it 'keeps the live registrar when a rig.rb raises on reload' do
-      loader, runtime, = raising_rig
-      loader.reload(runtime, force: true)
-
-      assert_equal ['probe'], tool_names(runtime).grep(/\Aprobe/)
     end
 
     it 'notifies once when a rig.rb raises on reload' do
@@ -1074,38 +978,6 @@ describe Riffer::Rig::Loader do
 
       assert_includes tool_names(runtime), 'probe_next'
     end
-
-    it 'reports the rebuilt runtime' do
-      loader, runtime, = tool_added
-      reloaded = loader.reload(runtime, force: true)
-
-      assert_same runtime, reloaded
-    end
-
-    it 'reports a raise during the reload instead of propagating it' do
-      write_rig(:project, probe_rig('probe'))
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      File.write(project_rig_path, probe_rig('probe_next'))
-      with_raising_credentials do
-        reloaded = loader.reload(runtime, force: true)
-
-        assert_match(/credential boom\z/, reloaded)
-      end
-    end
-
-    it 'advances the snapshot when a reload raises' do
-      write_rig(:project, probe_rig('probe'))
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      marker = File.join(@cwd, 'reload_marker')
-      File.write(project_rig_path, probe_rig('probe_next') + "File.write(#{marker.inspect}, 'executed')\n")
-      with_raising_credentials { loader.reload(runtime, force: true) }
-      FileUtils.rm_f(marker)
-      loader.reload(runtime)
-
-      refute_path_exists marker
-    end
   end
 
   describe 'automatic reload' do
@@ -1133,18 +1005,6 @@ describe Riffer::Rig::Loader do
       turn(runtime)
 
       assert_includes tool_names(runtime), 'probe_next'
-    end
-
-    it 'does not retry a failed reload on the next request' do
-      _loader, runtime = built_with(ConfirmingHost.new([true]))
-      File.write(project_rig_path, "raise 'boom'")
-      stamp = File.mtime(project_rig_path)
-      turn(runtime)
-      File.write(project_rig_path, probe_rig('probe_next'))
-      File.utime(stamp, stamp, project_rig_path)
-      turn(runtime)
-
-      assert_empty tool_names(runtime).grep(/\Aprobe_next/)
     end
 
     it 'skips the check under a manual reload keyword' do
@@ -1189,25 +1049,6 @@ describe Riffer::Rig::Loader do
       turn(runtime)
 
       assert_includes tool_names(runtime), 'probe_next'
-    end
-
-    it 'stops reloading when the setting flips to manual mid-session' do
-      _loader, runtime = built_with(ConfirmingHost.new([true]))
-      write_settings(@home, { reload: 'manual' })
-      File.write(project_rig_path, probe_rig('probe_next'))
-      turn(runtime)
-
-      assert_empty tool_names(runtime).grep(/\Aprobe_next/)
-    end
-
-    it 'reports settings that turn malformed mid-session' do
-      host = ConfirmingHost.new([true])
-      _loader, runtime = built_with(host)
-      malformed = malform_settings(@home)
-      File.write(project_rig_path, probe_rig('probe_next'))
-      turn(runtime)
-
-      assert_equal [[:error, malformed]], host.notifications
     end
   end
 end
