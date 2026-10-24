@@ -226,11 +226,6 @@ describe Riffer::Rig::ACP do
     File.write(File.join(@cwd, '.riffer', 'rig.rb'), '')
   end
 
-  def skipped_server_warning(name)
-    wait_for { message_texts.any? { |text| text.include?("Skipped MCP server #{name}") } }
-    message_texts.find { |text| text.include?("Skipped MCP server #{name}") }
-  end
-
   def texts_of(updates)
     updates.filter_map do |update|
       update.content.text if update.is_a?(ACP::Types::SessionUpdate::AgentMessageChunk)
@@ -341,34 +336,10 @@ describe Riffer::Rig::ACP do
       assert(message_texts.any? { |text| text.include?('only stdio servers are supported') })
     end
 
-    it 'names a skipped sse mcpServer in the warning' do
-      new_session(
-        mcp_servers: [{ 'name' => 'ssedocs', 'type' => 'sse', 'url' => 'https://docs.example/sse', 'headers' => [] }]
-      )
+    it 'declares the client stdio mcpServers to the Runtime it builds' do
+      new_session(mcp_servers: [{ 'name' => 'stub', 'command' => '/bin/stub', 'args' => [], 'env' => [] }])
 
-      assert_includes skipped_server_warning('ssedocs'), 'only stdio servers are supported'
-    end
-
-    it 'names a skipped mcpServer of an unknown type in the warning' do
-      new_session(mcp_servers: [{ 'name' => 'odd', 'type' => 'websocket' }])
-
-      assert_includes skipped_server_warning('odd'), 'only stdio servers are supported'
-    end
-
-    it 'turns client-supplied stdio mcpServers into rig.mcp declarations' do
-      script = File.join(@cwd, 'mcp_stub.rb')
-      File.write(script, '#!/usr/bin/env ruby')
-      new_session(
-        mcp_servers: [{
-          'name' => 'stub', 'command' => script, 'args' => ['--flag'],
-          'env' => [{ 'name' => 'TOKEN', 'value' => 't' }]
-        }]
-      )
-
-      assert_equal(
-        { 'stub' => Riffer::Rig::Mcp::Declaration.new(command: script, args: ['--flag'], env: { 'TOKEN' => 't' }) },
-        @servers
-      )
+      assert_equal ['stub'], @servers&.keys
     end
 
     it 'sends the exit of a job that ends between prompts as an agent message chunk' do
