@@ -37,7 +37,7 @@ A provider registration is process-wide and is never removed: a reload or a seco
 | `fields` | the values the provider needs (below)                                                      | required |
 | `url`    | where to create a key, shown when one is missing                                           | none    |
 | `sdk`    | a `[gem, requirement]` pair, offered for install like a [built-in's](PROVIDERS.md#sdk-gems) | none    |
-| `chain`  | `true` when the SDK's own credential chain is a valid way to authenticate                  | `false` |
+| `chain`  | `true` when the SDK's own credential chain is always a valid way to authenticate, or a `Proc` returning whether it is configured right now; a configured chain [stands in for a required secret](CONFIGURATION.md#where-each-value-comes-from) | `false` |
 
 Each field:
 

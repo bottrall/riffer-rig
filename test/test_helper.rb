@@ -9,6 +9,9 @@ require 'tmpdir'
 
 TEST_HOME = Dir.mktmpdir('riffer-test-home') #: String
 ENV['HOME'] = TEST_HOME
+# The Anthropic SDK's credential chain reads these, so a developer's own would
+# decide whether the suite is asked for an Anthropic key.
+ENV.delete_if { |name, _value| name.start_with?('ANTHROPIC_') }
 at_exit { FileUtils.remove_entry(TEST_HOME) }
 
 require 'minitest/autorun'

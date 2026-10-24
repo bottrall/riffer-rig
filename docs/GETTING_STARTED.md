@@ -28,7 +28,7 @@ Which model should riffer use? Enter provider/name, with a provider from: amazon
 
 The answer is saved to `~/.riffer/settings.json`, so later runs skip the question. [Configuration](CONFIGURATION.md#where-each-value-comes-from) lists the other places a model can come from.
 
-If the provider's SDK gem is missing, it offers to install it ([SDK gems](PROVIDERS.md#sdk-gems)). Then it looks for the provider's API key in the environment and in `~/.riffer/auth.json`, and asks for it if it finds none:
+If the provider's SDK gem is missing, it offers to install it ([SDK gems](PROVIDERS.md#sdk-gems)). Then it looks for the provider's API key in the environment and in `~/.riffer/auth.json`, and asks for it if it finds none and the provider's SDK has no [credential chain](CONFIGURATION.md#where-each-value-comes-from) configured:
 
 ```text
 anthropic api_key

@@ -45,6 +45,18 @@ describe Riffer::Rig::Credentials do
     Riffer::Rig::ProviderSetup.new(fields: [region])
   end
 
+  let(:required_key) do
+    Riffer::Rig::ProviderSetup::Field.new(name: :api_key, env: ['ACME_API_KEY'], secret: true, required: true)
+  end
+
+  let(:chained_setup) do
+    Riffer::Rig::ProviderSetup.new(fields: [required_key], chain: -> { true })
+  end
+
+  let(:unchained_setup) do
+    Riffer::Rig::ProviderSetup.new(fields: [required_key], chain: -> { false })
+  end
+
   let(:two_secret_setup) do
     fields = %i[api_key api_token].map do |name|
       Riffer::Rig::ProviderSetup::Field.new(name: name, env: [], secret: true, required: false)
@@ -236,6 +248,51 @@ describe Riffer::Rig::Credentials do
       end
     end
 
+    it 'does not consult the credential chain when every required secret resolves' do
+      in_tmp_home do |paths|
+        consulted = []
+        setup = Riffer::Rig::ProviderSetup.new(fields: [required_key], chain: -> { consulted << true })
+
+        Riffer::Rig::Credentials.install(
+          :acme, host: null_host, setup:, env: env('ACME_API_KEY' => 'sk-env'), config: nil, **paths
+        )
+
+        assert_empty consulted
+      end
+    end
+
+    it 'asks for a required secret while the credential chain is unconfigured' do
+      in_tmp_home do |paths|
+        host = AnsweringHost.new('sk-asked')
+
+        Riffer::Rig::Credentials.install(:acme, host: host, setup: unchained_setup, env:, config: nil, **paths)
+
+        assert_equal(['acme api_key'], host.asked.map { |ask| ask[:question] })
+      end
+    end
+
+    it 'does not ask for a required secret the credential chain covers' do
+      in_tmp_home do |paths|
+        host = AnsweringHost.new('sk-asked')
+
+        Riffer::Rig::Credentials.install(:acme, host: host, setup: chained_setup, env:, config: nil, **paths)
+
+        assert_empty host.asked
+      end
+    end
+
+    it 'still asks for a required plain field the credential chain does not cover' do
+      in_tmp_home do |paths|
+        region = Riffer::Rig::ProviderSetup::Field.new(name: :region, env: [], secret: false, required: true)
+        setup = Riffer::Rig::ProviderSetup.new(fields: [region, required_key], chain: -> { true })
+        host = AnsweringHost.new('us-west-2')
+
+        Riffer::Rig::Credentials.install(:acme, host: host, setup:, env:, config: nil, **paths)
+
+        assert_equal(['acme region'], host.asked.map { |ask| ask[:question] })
+      end
+    end
+
     it 'does not ask a host that cannot ask' do
       in_tmp_home do |paths|
         host = AnsweringHost.new('sk-asked')
@@ -367,6 +424,16 @@ describe Riffer::Rig::Credentials do
         resolution = Riffer::Rig::Credentials.install(:openai, host: null_host, env:, config: nil, **paths)
 
         assert_equal [:api_key], resolution.missing
+      end
+    end
+
+    it 'leaves a required secret the credential chain covers out of the missing list' do
+      in_tmp_home do |paths|
+        resolution = Riffer::Rig::Credentials.install(
+          :acme, host: null_host, setup: chained_setup, env:, config: nil, **paths
+        )
+
+        assert_empty resolution.missing
       end
     end
 

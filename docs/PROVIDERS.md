@@ -2,17 +2,17 @@
 
 riffer-rig talks to the provider named by the model's prefix: `anthropic/claude-sonnet-4-6` means Anthropic. Each provider needs its credentials and, for most, an SDK gem.
 
-| Provider                            | Field       | Kind             | Environment variables              | Stored in                                               |
-| ----------------------------------- | ----------- | ---------------- | ---------------------------------- | ------------------------------------------------------- |
-| [`anthropic`](#anthropic)           | `api_key`   | required, secret | `ANTHROPIC_API_KEY`                | `~/.riffer/auth.json`                                   |
-| [`openai`](#openai)                 | `api_key`   | required, secret | `OPENAI_API_KEY`                   | `~/.riffer/auth.json`                                   |
-|                                     | `base_url`  | optional         | `OPENAI_BASE_URL`                  | `providers.openai` in `~/.riffer/settings.json`         |
-| [`gemini`](#gemini)                 | `api_key`   | required, secret | `GEMINI_API_KEY`                   | `~/.riffer/auth.json`                                   |
-| [`openrouter`](#openrouter)         | `api_key`   | required, secret | `OPENROUTER_API_KEY`               | `~/.riffer/auth.json`                                   |
-| [`azure_openai`](#azure-openai)     | `endpoint`  | required         | `AZURE_OPENAI_ENDPOINT`            | `providers.azure_openai` in `~/.riffer/settings.json`   |
-|                                     | `api_key`   | required, secret | `AZURE_OPENAI_API_KEY`             | `~/.riffer/auth.json`                                   |
-| [`amazon_bedrock`](#amazon-bedrock) | `region`    | required         | `AWS_REGION`, `AWS_DEFAULT_REGION` | `providers.amazon_bedrock` in `~/.riffer/settings.json` |
-|                                     | `api_token` | optional, secret | `AWS_BEARER_TOKEN_BEDROCK`         | `~/.riffer/auth.json`                                   |
+| Provider                            | Field       | Kind                                         | Environment variables              | Stored in                                               |
+| ----------------------------------- | ----------- | -------------------------------------------- | ---------------------------------- | ------------------------------------------------------- |
+| [`anthropic`](#anthropic)           | `api_key`   | required, secret, or [SDK chain](#anthropic) | `ANTHROPIC_API_KEY`                | `~/.riffer/auth.json`                                   |
+| [`openai`](#openai)                 | `api_key`   | required, secret                             | `OPENAI_API_KEY`                   | `~/.riffer/auth.json`                                   |
+|                                     | `base_url`  | optional                                     | `OPENAI_BASE_URL`                  | `providers.openai` in `~/.riffer/settings.json`         |
+| [`gemini`](#gemini)                 | `api_key`   | required, secret                             | `GEMINI_API_KEY`                   | `~/.riffer/auth.json`                                   |
+| [`openrouter`](#openrouter)         | `api_key`   | required, secret                             | `OPENROUTER_API_KEY`               | `~/.riffer/auth.json`                                   |
+| [`azure_openai`](#azure-openai)     | `endpoint`  | required                                     | `AZURE_OPENAI_ENDPOINT`            | `providers.azure_openai` in `~/.riffer/settings.json`   |
+|                                     | `api_key`   | required, secret                             | `AZURE_OPENAI_API_KEY`             | `~/.riffer/auth.json`                                   |
+| [`amazon_bedrock`](#amazon-bedrock) | `region`    | required                                     | `AWS_REGION`, `AWS_DEFAULT_REGION` | `providers.amazon_bedrock` in `~/.riffer/settings.json` |
+|                                     | `api_token` | optional, secret                             | `AWS_BEARER_TOKEN_BEDROCK`         | `~/.riffer/auth.json`                                   |
 
 Each field resolves in the [order every value follows](CONFIGURATION.md#where-each-value-comes-from). Nothing validates a value: a bad key surfaces on the first request, with the provider's own error.
 
@@ -86,7 +86,7 @@ Plain fields live in the home `settings.json`, keyed by provider and then by fie
 
 | Command                    | Does                                                                                                                             |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `/auth`                    | lists every provider with where its secret comes from: `env`, `stored`, `chain` (the SDK's own credential chain, Bedrock only) or `missing` |
+| `/auth`                    | lists every provider with where its secret comes from: `env`, `stored`, `chain` (no secret resolves, and the SDK's own credential chain is configured) or `missing` |
 | `/auth <provider>`         | asks again for each required field that does not resolve and stores the answers — how you rotate a key; the session uses them from the next request |
 | `/auth remove <provider>`  | deletes the provider's `auth.json` entry and its `providers` block; the running session keeps the credentials it already loaded |
 
@@ -95,6 +95,17 @@ Plain fields live in the home `settings.json`, keyed by provider and then by fie
 ### Anthropic
 
 Prefix `anthropic/`, for example `anthropic/claude-sonnet-4-6`. Create a key at <https://console.anthropic.com/settings/keys>. Anthropic models always get prompt caching.
+
+Instead of an API key, the Anthropic SDK can authenticate through its own credential chain, which stores nothing in riffer-rig. The first source it finds wins:
+
+| Source                       | Configured by                                                                                                                      |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| bearer token                 | `ANTHROPIC_AUTH_TOKEN`                                                                                                             |
+| selected profile             | `ANTHROPIC_PROFILE`                                                                                                                |
+| workload identity federation | `ANTHROPIC_FEDERATION_RULE_ID` and `ANTHROPIC_ORGANIZATION_ID`, plus `ANTHROPIC_IDENTITY_TOKEN` or `ANTHROPIC_IDENTITY_TOKEN_FILE` |
+| active profile on disk       | `ant auth login`, under `~/.config/anthropic` or `ANTHROPIC_CONFIG_DIR`                                                            |
+
+How the chain and an API key combine is part of the [resolution order](CONFIGURATION.md#where-each-value-comes-from). A selected profile that fails to load counts as configured, so the SDK's own error surfaces on the first request.
 
 ### OpenAI
 

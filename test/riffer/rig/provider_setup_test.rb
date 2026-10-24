@@ -20,10 +20,6 @@ describe Riffer::Rig::ProviderSetup do
   end
 
   describe '#initialize' do
-    it 'offers no credential chain by default' do
-      refute Riffer::Rig::ProviderSetup.new(fields: []).chain
-    end
-
     it 'has no SDK by default' do
       assert_nil Riffer::Rig::ProviderSetup.new(fields: []).sdk
     end
@@ -41,9 +37,61 @@ describe Riffer::Rig::ProviderSetup do
     end
   end
 
+  describe '#chain?' do
+    it 'offers no credential chain by default' do
+      refute_predicate Riffer::Rig::ProviderSetup.new(fields: []), :chain?
+    end
+
+    it 'offers the credential chain when it is always available' do
+      assert_predicate Riffer::Rig::ProviderSetup.new(fields: [], chain: true), :chain?
+    end
+
+    it 'offers the credential chain when its Proc reports it configured' do
+      assert_predicate Riffer::Rig::ProviderSetup.new(fields: [], chain: -> { true }), :chain?
+    end
+
+    it 'offers no credential chain when its Proc reports it unconfigured' do
+      refute_predicate Riffer::Rig::ProviderSetup.new(fields: [], chain: -> { false }), :chain?
+    end
+  end
+
   describe 'AWS_SHARED_CONFIG_REGION' do
     it 'has no region when the AWS SDK is not installed' do
       assert_nil Riffer::Rig::ProviderSetup::AWS_SHARED_CONFIG_REGION.call
+    end
+  end
+
+  describe 'ANTHROPIC_CREDENTIAL_CHAIN' do
+    before do
+      @saved_env = ENV.to_h.select { |name, _value| name.start_with?('ANTHROPIC_') }
+      @config_dir = Dir.mktmpdir
+      ENV['ANTHROPIC_CONFIG_DIR'] = @config_dir
+    end
+
+    after do
+      ENV.delete_if { |name, _value| name.start_with?('ANTHROPIC_') }
+      ENV.update(@saved_env)
+      FileUtils.remove_entry(@config_dir)
+    end
+
+    it 'is unconfigured when nothing names a credential' do
+      refute Riffer::Rig::ProviderSetup::ANTHROPIC_CREDENTIAL_CHAIN.call
+    end
+
+    it 'is configured by workload identity federation' do
+      ENV.update(
+        'ANTHROPIC_FEDERATION_RULE_ID' => 'fdrl_test',
+        'ANTHROPIC_ORGANIZATION_ID' => 'org_test',
+        'ANTHROPIC_IDENTITY_TOKEN' => 'identity-token'
+      )
+
+      assert Riffer::Rig::ProviderSetup::ANTHROPIC_CREDENTIAL_CHAIN.call
+    end
+
+    it 'is configured by a selected profile that does not load' do
+      ENV['ANTHROPIC_PROFILE'] = 'absent'
+
+      assert Riffer::Rig::ProviderSetup::ANTHROPIC_CREDENTIAL_CHAIN.call
     end
   end
 
@@ -123,7 +171,13 @@ describe Riffer::Rig::ProviderSetup do
     it 'defaults the chain flag' do
       setup = from(fields: [])
 
-      refute setup.chain
+      refute_predicate setup, :chain?
+    end
+
+    it 'reads a chain Proc' do
+      setup = from(chain: -> { true }, fields: [])
+
+      assert_predicate setup, :chain?
     end
 
     it 'reads the sdk pair' do

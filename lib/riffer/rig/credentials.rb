@@ -137,7 +137,7 @@ module Riffer::Rig::Credentials
     return stored if stored.is_a?(String)
     return :stored if secret_fields.any? { |field| stored.key?(field.name.to_s) }
 
-    setup.chain ? :chain : :missing
+    setup.chain? ? :chain : :missing
   end
 
   private
@@ -159,13 +159,22 @@ module Riffer::Rig::Credentials
     found = setup.fields.to_h do |field|
       [field.name, env.value_for(field) || stored_value(field, secrets, plain, env) || field.fallback&.call]
     end.compact
-    required = setup.fields.select(&:required)
-    answers = ask_for(required.reject { |field| found.key?(field.name) }, identifier, host)
+    unresolved = setup.fields.select(&:required).reject { |field| found.key?(field.name) }
+    pending = outside_chain(unresolved, setup)
+    answers = ask_for(pending, identifier, host)
     refusal = store(identifier, answers, setup:, auth_path:, settings_path:)
     return refusal if refusal
 
-    values = found.merge(answers)
-    Resolution.new(values:, missing: required.map(&:name) - values.keys)
+    Resolution.new(values: found.merge(answers), missing: pending.map(&:name) - answers.keys)
+  end
+
+  # @rbs fields: Array[Riffer::Rig::ProviderSetup::Field]
+  # @rbs setup: Riffer::Rig::ProviderSetup
+  # @rbs return: Array[Riffer::Rig::ProviderSetup::Field]
+  def outside_chain(fields, setup)
+    return fields unless fields.any?(&:secret) && setup.chain?
+
+    fields.reject(&:secret)
   end
 
   # @rbs fields: Array[Riffer::Rig::ProviderSetup::Field]
