@@ -3,21 +3,21 @@
 module Riffer::Rig::Commands::Reload
   extend self
 
-  # @rbs loader: Riffer::Rig::Loader
+  # @rbs reloader: Riffer::Rig::Loader::Reloader
   # @rbs return: Riffer::Rig::Command
-  def command(loader)
+  def command(reloader)
     Riffer::Rig::Command.new(
       'reload',
       description: 'Reload the rig.rb files, settings, credentials and trust',
       extension: :core
-    ) { |ctx| run(loader, ctx) }
+    ) { |ctx| run(reloader, ctx) }
   end
 
-  # @rbs loader: Riffer::Rig::Loader
+  # @rbs reloader: Riffer::Rig::Loader::Reloader
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs return: void
-  def run(loader, ctx)
-    reloaded = loader.reload(ctx.runtime, force: true)
+  def run(reloader, ctx)
+    reloaded = reloader.reload(ctx.runtime, force: true)
     ctx.say('Reloaded') if reloaded.is_a?(Riffer::Rig::Runtime)
   end
 end

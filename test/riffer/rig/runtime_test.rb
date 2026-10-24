@@ -2336,7 +2336,6 @@ describe Riffer::Rig::Runtime do
         end
       end
 
-      # A step that leaves the request to the provider's stubbed response.
       def stubbed
         nil
       end
