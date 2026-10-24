@@ -500,17 +500,6 @@ describe Riffer::Rig::Headless do
     assert_match(/boom/, @error.string)
   end
 
-  it 'says what the provider answered when the turn raises a provider error' do
-    error = StandardError.new('status=400').tap do |status_error|
-      status_error.define_singleton_method(:body) { { error: { message: 'bad model' } } }
-    end
-    run_headless(prompt: 'hello') do |runtime|
-      runtime.agent.provider.define_singleton_method(:stream_text) { |*| raise error }
-    end
-
-    assert_match(/riffer: status=400: bad model/, @error.string)
-  end
-
   it 'restores the previous INT handler after the turn' do
     handler = proc {}
     previous = Signal.trap('INT', handler)

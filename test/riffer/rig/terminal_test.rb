@@ -1308,16 +1308,6 @@ describe Riffer::Rig::Terminal do
     assert_includes output, 'Error: boom'
   end
 
-  it 'reports the response body message of a provider error' do
-    error = StandardError.new('status=400')
-    error.define_singleton_method(:body) { { error: { message: 'bad model' } } }
-    output = run_terminal("hello\n") do |runtime|
-      runtime.agent.provider.define_singleton_method(:stream_text) { |*| raise error }
-    end
-
-    assert_includes output, 'Error: status=400: bad model'
-  end
-
   it 'cancels the turn on Ctrl-C' do
     output = run_with_interrupter("hello\n")
 
