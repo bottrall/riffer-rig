@@ -3,9 +3,6 @@
 class Riffer::Rig::CLI::Sessions
   OFF = 'Sessions are off for this run (--no-save).' #: String
 
-  # The terminal's sessions collaborator: translates the parsed flags into
-  # Loader builds and store lookups, so the host never sees the flags.
-  #
   # @rbs @flags: Riffer::Rig::CLI::Flags
   # @rbs @env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid
   # @rbs @cwd: String

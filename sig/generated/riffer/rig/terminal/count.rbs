@@ -4,4 +4,8 @@ module Riffer::Rig::Terminal::Count
   # @rbs amount: Integer
   # @rbs return: String
   def call: (Integer amount) -> String
+
+  # @rbs amount: Float
+  # @rbs return: String
+  def cost: (Float amount) -> String
 end

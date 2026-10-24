@@ -58,6 +58,8 @@ describe Riffer::Rig::Terminal::Picker do
 
   def ctrl_d = Riffer::Rig::Terminal::Picker::EOT
 
+  def now = Time.new(2026, 10, 24, 12, 0, 0)
+
   def pick(rows, lines, all: false, host: ConfirmingHost.new, off: nil)
     @output = StringIO.new
     @host = host
@@ -67,7 +69,8 @@ describe Riffer::Rig::Terminal::Picker do
       prompter: Riffer::Rig::Terminal::BlockingPrompter.new(input: PickerInput.new(lines), renderer: renderer),
       renderer: renderer,
       host: @host,
-      sessions: @sessions
+      sessions: @sessions,
+      now: -> { now }
     ).open(all: all)
   end
 
@@ -387,29 +390,27 @@ describe Riffer::Rig::Terminal::Picker do
     end
 
     it 'shows just now within the first minute' do
-      assert_includes rendered([session('alpha', updated: Time.now - 5)]), 'alpha — just now'
+      assert_includes rendered([session('alpha', updated: now - 5)]), 'alpha — just now'
     end
 
     it 'counts a single minute' do
-      assert_includes rendered([session('alpha', updated: Time.now - 90)]), 'alpha — 1 minute ago'
+      assert_includes rendered([session('alpha', updated: now - 90)]), 'alpha — 1 minute ago'
     end
 
     it 'counts minutes within the first hour' do
-      assert_includes rendered([session('alpha', updated: Time.now - 150)]), 'alpha — 2 minutes ago'
+      assert_includes rendered([session('alpha', updated: now - 150)]), 'alpha — 2 minutes ago'
     end
 
     it 'counts hours within the first day' do
-      assert_includes rendered([session('alpha', updated: Time.now - (3.5 * 3_600))]), 'alpha — 3 hours ago'
+      assert_includes rendered([session('alpha', updated: now - (3.5 * 3_600))]), 'alpha — 3 hours ago'
     end
 
     it 'counts days within the first thirty' do
-      assert_includes rendered([session('alpha', updated: Time.now - (3.5 * 86_400))]), 'alpha — 3 days ago'
+      assert_includes rendered([session('alpha', updated: now - (3.5 * 86_400))]), 'alpha — 3 days ago'
     end
 
     it 'shows the date beyond thirty days' do
-      updated = Time.now - (40 * 86_400)
-
-      assert_includes rendered([session('alpha', updated: updated)]), "alpha — #{updated.strftime('%b %-d, %Y')}"
+      assert_includes rendered([session('alpha', updated: now - (40 * 86_400))]), 'alpha — Sep 14, 2026'
     end
   end
 end

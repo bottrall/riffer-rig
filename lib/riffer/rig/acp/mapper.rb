@@ -27,6 +27,18 @@ module Riffer::Rig::ACP::Mapper
     blocks.filter_map { |block| prompt_text_of(block) }.join("\n\n")
   end
 
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: ::ACP::Types::SessionUpdate::t?
+  def update_for(event)
+    case event
+    when Riffer::StreamEvents::TextDelta then message_chunk(event.content)
+    when Riffer::Rig::Events::CommandOutput then message_chunk(event.text)
+    when Riffer::StreamEvents::ToolCallDone then tool_call(event)
+    when Riffer::Rig::Events::AfterToolCall then tool_call_done(event)
+    when Riffer::Rig::Events::JobExit then job_exit
+    end
+  end
+
   # @rbs content: String
   # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
   def message_chunk(content)

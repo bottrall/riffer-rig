@@ -2,16 +2,16 @@
 
 class Riffer::Rig::Terminal::MessageQueue
   # @dynamic messages
-  attr_reader messages: Array[Riffer::Rig::Terminal::MessageQueue::Message]
+  attr_reader messages: Array[String]
 
-  # @rbs messages: Array[Riffer::Rig::Terminal::MessageQueue::Message]
+  # @rbs messages: Array[String]
   # @rbs return: void
-  def initialize: (?messages: Array[Riffer::Rig::Terminal::MessageQueue::Message]) -> void
+  def initialize: (?messages: Array[String]) -> void
 
   # @rbs line: String
   # @rbs return: Riffer::Rig::Terminal::MessageQueue
   def enqueue: (String line) -> Riffer::Rig::Terminal::MessageQueue
 
-  # @rbs return: [Riffer::Rig::Terminal::MessageQueue::Message?, Riffer::Rig::Terminal::MessageQueue]
-  def dequeue: () -> [ Riffer::Rig::Terminal::MessageQueue::Message?, Riffer::Rig::Terminal::MessageQueue ]
+  # @rbs return: [String?, Riffer::Rig::Terminal::MessageQueue]
+  def dequeue: () -> [ String?, Riffer::Rig::Terminal::MessageQueue ]
 end

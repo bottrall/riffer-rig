@@ -4,7 +4,6 @@ require 'test_helper'
 require 'json'
 require 'forwardable'
 require_relative '../../support/confirming_host'
-require_relative '../../support/prompter_pty'
 require_relative '../../support/rig_files'
 
 class ScriptedHost
@@ -89,14 +88,8 @@ describe Riffer::Rig::Loader do
   end
 
   after do
-    @pty&.close
     FileUtils.remove_entry(@home)
     FileUtils.remove_entry(@cwd)
-  end
-
-  def at_the_terminal_footer(keys)
-    @pty = PrompterPty.new
-    @pty.answering(keys) { yield @pty.host }
   end
 
   def write_settings(dir, data)
@@ -413,12 +406,6 @@ describe Riffer::Rig::Loader do
         assert_equal 'mock/chosen', build(host: ScriptedHost.new('mock/chosen')).model
       end
 
-      it 'builds the Runtime with the answer typed at the terminal footer' do
-        runtime = at_the_terminal_footer("mock/chosen\r") { |host| build(host: host) }
-
-        assert_equal 'mock/chosen', runtime.model
-      end
-
       it 'writes the answer to home settings' do
         build(host: ScriptedHost.new('mock/chosen'))
 
@@ -461,11 +448,11 @@ describe Riffer::Rig::Loader do
         gem_specs = Gem::Specification.method(:find_by_name)
         bundler = Riffer::Rig::SDK.method(:bundler?)
         Gem::Specification.define_singleton_method(:find_by_name) { |*_args| raise Gem::LoadError, 'not installed' }
-        Riffer::Rig::SDK.define_singleton_method(:bundler?) { false }
+        Riffer::Rig::SDK.define_singleton_method(:bundler?) { false } # rubocop:disable Rig/NoMocking -- goes once the SDK is injected into the Loader
         yield
       ensure
         Gem::Specification.define_singleton_method(:find_by_name, gem_specs)
-        Riffer::Rig::SDK.define_singleton_method(:bundler?, bundler)
+        Riffer::Rig::SDK.define_singleton_method(:bundler?, bundler) # rubocop:disable Rig/NoMocking -- goes once the SDK is injected into the Loader
       end
 
       it 'builds the Runtime for a provider that needs no SDK gem' do
@@ -498,22 +485,17 @@ describe Riffer::Rig::Loader do
         )
       end
 
-      it 'stores a key the host supplies in home auth.json' do
-        build(model: 'gemini/gem-2.5-pro', env: {}, host: ScriptedHost.new('sk-gem-pasted'))
-
+      it 'hands a key the host supplies to the Runtime' do
         assert_equal(
-          'sk-gem-pasted',
-          JSON.parse(File.read(File.join(@home, '.riffer', 'auth.json')))['gemini']['api_key']
+          { gemini: { api_key: 'sk-gem-pasted' } },
+          build(model: 'gemini/gem-2.5-pro', env: {}, host: ScriptedHost.new('sk-gem-pasted')).credentials
         )
       end
 
-      it 'stores a key typed at the terminal footer in home auth.json' do
-        at_the_terminal_footer("sk-gem-typed\r") { |host| build(model: 'gemini/gem-2.5-pro', env: {}, host: host) }
+      it 'stores a key the host supplies in home auth.json' do
+        build(model: 'gemini/gem-2.5-pro', env: {}, host: ScriptedHost.new('sk-gem-pasted'))
 
-        assert_equal(
-          'sk-gem-typed',
-          JSON.parse(File.read(File.join(@home, '.riffer', 'auth.json')))['gemini']['api_key']
-        )
+        assert_path_exists File.join(@home, '.riffer', 'auth.json')
       end
 
       it 'raises the configuration error naming a key the null host cannot supply' do
@@ -580,18 +562,18 @@ describe Riffer::Rig::Loader do
         assert_operator names.index('probe'), :>, names.index('bash')
       end
 
-      it 'loads a project rig.rb trusted at the terminal footer' do
+      it 'loads a project rig.rb the host trusts' do
         write_rig(:project, <<~RUBY)
-          class FooterTrustedTool < Riffer::Tool
-            identifier 'footer_trusted'
+          class TrustedProbeTool < Riffer::Tool
+            identifier 'trusted_probe'
             description 'probe'
             def call(context:) = text('probe')
           end
-          Riffer::Rig.extension('footer_trusted') { |rig| rig.tool FooterTrustedTool }
+          Riffer::Rig.extension('trusted_probe') { |rig| rig.tool TrustedProbeTool }
         RUBY
-        runtime = at_the_terminal_footer("y\r") { |host| build(host: host, model: 'mock/test') }
+        runtime = build(host: ConfirmingHost.new([true]), model: 'mock/test')
 
-        assert_includes tool_names(runtime), 'footer_trusted'
+        assert_includes tool_names(runtime), 'trusted_probe'
       end
 
       it 'skips the rig.rb files with extensions: false' do

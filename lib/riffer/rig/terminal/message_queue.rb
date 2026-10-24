@@ -2,9 +2,9 @@
 
 class Riffer::Rig::Terminal::MessageQueue
   # @dynamic messages
-  attr_reader :messages #: Array[Riffer::Rig::Terminal::MessageQueue::Message]
+  attr_reader :messages #: Array[String]
 
-  # @rbs messages: Array[Riffer::Rig::Terminal::MessageQueue::Message]
+  # @rbs messages: Array[String]
   # @rbs return: void
   def initialize(messages: [])
     @messages = messages.freeze
@@ -17,10 +17,10 @@ class Riffer::Rig::Terminal::MessageQueue
     text = line.strip
     return self if text.empty?
 
-    self.class.new(messages: [*messages, Message.new(text: text)])
+    self.class.new(messages: [*messages, text])
   end
 
-  # @rbs return: [Riffer::Rig::Terminal::MessageQueue::Message?, Riffer::Rig::Terminal::MessageQueue]
+  # @rbs return: [String?, Riffer::Rig::Terminal::MessageQueue]
   def dequeue
     [messages.first, self.class.new(messages: messages.drop(1))]
   end
