@@ -19,9 +19,6 @@ class Riffer::Rig::Runtime
   # harness.
   DEFAULT_MAX_STEPS: Integer?
 
-  # Per turn, so a job that starts jobs cannot keep a turn alive forever.
-  MAX_JOB_CONTINUATIONS: Integer
-
   @reasoning: String?
 
   @model_override: String?
@@ -40,11 +37,11 @@ class Riffer::Rig::Runtime
 
   @credentials: Hash[Symbol, Hash[Symbol, String]]
 
+  @job_notices: Riffer::Rig::Runtime::JobNotices
+
   @jobs: Riffer::Rig::Runtime::Jobs
 
   @job_inbox: Riffer::Rig::Runtime::JobInbox
-
-  @draft: Array[String]
 
   @abort: Riffer::Rig::Runtime::Abort
 
@@ -80,7 +77,7 @@ class Riffer::Rig::Runtime
 
   @clock: ^() -> Float
 
-  @yielder: Enumerator::Yielder?
+  @turn: Riffer::Rig::Runtime::Turn?
 
   # @dynamic agent, credentials, cwd, host, id
   attr_reader agent: Riffer::Agent
@@ -303,48 +300,15 @@ class Riffer::Rig::Runtime
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
   def turn: () { () -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response] } -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
 
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
-  # @rbs return: Riffer::Agent::Response
-  def relay: (Enumerator::Yielder yielder, Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response] stream) -> Riffer::Agent::Response
-
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs response: Riffer::Agent::Response
-  # @rbs remaining: Integer
-  # @rbs return: Riffer::Agent::Response
-  def continued: (Enumerator::Yielder yielder, Riffer::Agent::Response response, Integer remaining) -> Riffer::Agent::Response
+  # @rbs return: Riffer::Rig::Events::SessionStart?
+  def session_start: () -> Riffer::Rig::Events::SessionStart?
 
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]
   def continuation: () -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]
 
-  # @rbs response: Riffer::Agent::Response
-  # @rbs return: bool
-  def steps_left?: (Riffer::Agent::Response response) -> bool
-
-  # @rbs earlier: Riffer::Agent::Response
-  # @rbs later: Riffer::Agent::Response
-  # @rbs return: Riffer::Agent::Response
-  def combined: (Riffer::Agent::Response earlier, Riffer::Agent::Response later) -> Riffer::Agent::Response
-
-  # The abort unwinds riffer's run loop from outside, so what riffer does for
-  # an interrupt it raises itself is done here.
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs return: Riffer::Agent::Response
-  def aborted: (Enumerator::Yielder yielder) -> Riffer::Agent::Response
-
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs event: ::Riffer::StreamEvents::Base
-  # @rbs return: void
-  def pass_through: (Enumerator::Yielder yielder, ::Riffer::StreamEvents::Base event) -> void
-
   # @rbs event: Riffer::Rig::Events::_Event
   # @rbs return: void
   def emit: (Riffer::Rig::Events::_Event event) -> void
-
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
-  # @rbs return: void
-  def forward: (Enumerator::Yielder yielder, ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
 
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
@@ -353,17 +317,6 @@ class Riffer::Rig::Runtime
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
   def deliver: (Riffer::Messages::Base message) -> void
-
-  # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
-  def job_exits: () -> Array[Riffer::Rig::Runtime::JobCompletion]
-
-  # @rbs message: Riffer::Messages::Tool
-  # @rbs return: Riffer::Messages::Tool
-  def with_job_notice: (Riffer::Messages::Tool message) -> Riffer::Messages::Tool
-
-  # @rbs follow_up: bool
-  # @rbs return: Riffer::Messages::Base?
-  def notify_job_exits: (?follow_up: bool) -> Riffer::Messages::Base?
 
   # @rbs return: void
   def before_next_request: () -> void
