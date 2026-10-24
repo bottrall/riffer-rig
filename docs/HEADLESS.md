@@ -32,13 +32,13 @@ Headless never asks anything. A missing model, credential or [SDK gem](PROVIDERS
 
 ## Background jobs
 
-When the model finishes with [background jobs](TOOLS.md#background-jobs) still running, headless prints `waiting for background jobs` on stderr and waits; the run exits once no job is left.
+When a turn ends with [background jobs](TOOLS.md#background-jobs) still running:
 
-| While it waits                                              | Headless                                                                                     |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| a job exits                                                 | gives the model a further turn to react, printed like the first                              |
-| no job has exited for the [`--job-idle-timeout`](CLI.md#flags) | kills the rest and exits 3, so a dev server or file watcher can't hold a run open forever |
-| a turn fails, is cancelled or doesn't complete              | kills its jobs and exits at once                                                             |
+| When                                                           | Headless                                                                                      |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| the turn finished                                              | prints `waiting for background jobs` on stderr and waits; each exit gives the model a further turn to react, printed like the first, and the run exits once no job is left |
+| a wait passes the [`--job-idle-timeout`](CLI.md#flags) with no job exiting | kills the rest and exits 3, so a dev server or file watcher can't hold a run open forever     |
+| the turn failed, was cancelled or didn't complete              | kills its jobs and exits at once                                                              |
 
 ## Exit codes
 

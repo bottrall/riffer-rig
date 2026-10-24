@@ -15,7 +15,7 @@ The highest source that is set wins.
 | ---------------- | ------------- | --------------------------------------- | ------------------ | ------------------------------------- | ---------------------------------- |
 | Model            | `--model`     | a resumed session's `/model` switch[^1] | `RIFFER_MODEL`     | `model` in project, then home settings | asked on first run, saved to home[^2] |
 | Reasoning level  | `--reasoning` | a resumed session's `/reasoning` switch | `RIFFER_REASONING` | `reasoning` in project, then home settings | the model's own default        |
-| Provider credential[^3] | the provider's environment variables | `auth.json` (secrets) or the `providers` block (plain values) | a provider fallback, such as the AWS shared config for the Bedrock region | asked for, then stored (required fields only) | — |
+| Provider credential[^3] | the provider's environment variables | `auth.json` (secrets) or the `providers` block (plain values) | a provider fallback, such as [Bedrock's region](PROVIDERS.md#amazon-bedrock) | asked for, then stored (required fields only) | — |
 
 [^1]: Restored only when its provider still has credentials.
 [^2]: Headless and ACP never ask: a missing model is a configuration error.
