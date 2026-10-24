@@ -65,4 +65,4 @@ With follow-up turns, the code is the last turn's.
 
 The records are the [events](EVENTS.md) the run streams — riffer's stream events and riffer-rig's own — so a consumer that only reads the last `turn_end` still knows how the turn ended and what it cost. Headless adds one record of its own: a fatal error ends the stream with `{"type": "error", "message": "…"}`.
 
-Notices that text mode prints on stderr arrive as `notify` records instead. The stdin warning, `waiting for background jobs`, the exit-3 reason and `--verbose` traces stay on stderr.
+Notices that text mode prints on stderr arrive as `notify` records instead. The stdin warning, `waiting for background jobs`, a turn's `turn ended: …` reason and `--verbose` traces stay on stderr.

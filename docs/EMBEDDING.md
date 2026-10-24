@@ -83,7 +83,7 @@ The model is positional; everything else is an optional keyword. Provider creden
 | `instructions:`  | replaces the base prompt                                                                     | `nil`   |
 | `max_steps:`     | the [step limit](#capping-the-loop)                                                          | `nil`   |
 | `reasoning:`     | the reasoning level ([Configuration](CONFIGURATION.md#reasoning))                            | `nil`   |
-| `model_options:` | riffer `model_options` sent with every model call; for an `anthropic` model the Loader passes `{ cache_control: { type: :ephemeral } }`, which turns on prompt caching | `{}` |
+| `model_options:` | riffer `model_options` sent with every model call; for an `anthropic` model the Loader passes `{ cache_control: { type: :ephemeral } }` ([prompt caching](PROVIDERS.md#anthropic)) | `{}` |
 | `native_tools:`  | the [provider-native tool](TOOLS.md#provider-native-tools) switches: `{ web_search: true }`  | `{}`    |
 | `credentials:`   | each provider's resolved values, `{ anthropic: { api_key: '…' } }`, used by `/model` and when [restoring](#snapshots) | `{}` |
 | `env:`, `auth_path:` | where [MCP `auth` fields](MCP.md#secret-headers) are read from and stored                | `Env.new`, `~/.riffer/auth.json` |
