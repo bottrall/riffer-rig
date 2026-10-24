@@ -51,7 +51,7 @@ class Riffer::Rig::Runtime
   # @rbs @abort: Riffer::Rig::Runtime::Abort
   # @rbs @draft: Array[String]
   # @rbs @job_inbox: Riffer::Rig::Runtime::JobInbox
-  # @rbs @jobs: Riffer::Rig::Tools::Bash::Jobs
+  # @rbs @jobs: Riffer::Rig::Runtime::Jobs
   # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs @cwd: String
   # @rbs @host: Riffer::Rig::Hosts::Mirror
@@ -144,7 +144,7 @@ class Riffer::Rig::Runtime
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
     @abort = Riffer::Rig::Runtime::Abort.new
     @job_inbox = Riffer::Rig::Runtime::JobInbox.new(clock: clock)
-    @jobs = Riffer::Rig::Tools::Bash::Jobs.new(@job_inbox)
+    @jobs = Riffer::Rig::Runtime::Jobs.new(@job_inbox, clock: clock)
     @session_start_pending = true
     @session_start_reason = saved ? :restore : :new
     @message_observers = []

@@ -89,7 +89,7 @@ The model is positional; everything else is an optional keyword. Provider creden
 | `env:`, `auth_path:` | where [MCP `auth` fields](MCP.md#secret-headers) are read from and stored                | `Env.new`, `~/.riffer/auth.json` |
 | `riffer_config:` | the `Riffer::Config` the agent reads its catalog and reasoning from                          | `Riffer.config` |
 | `mcp_registry:`  | where MCP servers are registered                                                             | `Riffer::Mcp` |
-| `clock:`         | a callable returning seconds, which stamps [tool call events](EVENTS.md#tool-call-events)    | the monotonic clock |
+| `clock:`         | a callable returning seconds, which stamps [tool call events](EVENTS.md#tool-call-events) and times [background jobs](#background-jobs) | the monotonic clock |
 | `snapshot:`      | a [snapshot](#snapshots) to restore                                                          | `nil`   |
 
 `runtime.settings` is the `settings:` hash with each extension's declared defaults filled in, and `runtime.declared_settings` lists what each extension declared, for a host to display. `runtime.errors` lists the extensions that [failed to load](EXTENSIONS.md#error-isolation).
@@ -271,6 +271,22 @@ runtime.close
 | `await_job_exit(timeout:)`  | blocks until an exit is waiting (`true`) or the timeout passes (`false`); `close` ends it |
 | `follow_up`                 | runs a turn with no user text that tells the model of every waiting exit, streaming like `prompt` |
 | `close`                     | kills running jobs, deletes their output files, and refuses further prompts              |
+
+### Starting jobs from your own tool
+
+A tool finds the Runtime's job registry at `context[:jobs]`. A job registered there is one like any `bash` job: the model is told of its exit, `bash_output` and `bash_kill` act on it, and `close` stops it.
+
+```ruby
+def call(context:, command:)
+  reader, writer = IO.pipe
+  pid = Process.spawn(command, pgroup: true, in: File::NULL, out: writer, err: %i[child out])
+  writer.close
+  job = context[:jobs].register(pid, command, reader)
+  text("Job #{job.id} started; output in #{job.output_path}")
+end
+```
+
+`register(pid, command, output)` takes the pid of a process started in its own process group (`pgroup: true`), the command to show in its notice, and an IO it reads to the end into the job's output file. It returns the job, whose `id` and `output_path` the model needs. Don't wait on or detach the process yourself: the registry reaps it.
 
 ### Job notices in the conversation
 

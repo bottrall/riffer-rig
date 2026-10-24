@@ -3,7 +3,7 @@
 require 'shellwords'
 require 'test_helper'
 
-describe Riffer::Rig::Tools::Bash::Jobs do
+describe Riffer::Rig::Runtime::Jobs do
   def setup
     @inbox = Class.new do
       def initialize
@@ -22,7 +22,7 @@ describe Riffer::Rig::Tools::Bash::Jobs do
         @completions.pop(timeout: 5)
       end
     end.new
-    @jobs = Riffer::Rig::Tools::Bash::Jobs.new(@inbox)
+    @jobs = Riffer::Rig::Runtime::Jobs.new(@inbox)
     @strays = []
   end
 
@@ -106,6 +106,15 @@ describe Riffer::Rig::Tools::Bash::Jobs do
       assert_path_exists start('sleep 5').output_path
     end
 
+    it 'starts the job at the time the clock reads' do
+      jobs = Riffer::Rig::Runtime::Jobs.new(@inbox, clock: -> { 42.0 })
+      pid = Process.spawn('sleep 5', pgroup: true)
+
+      assert_in_delta 42.0, jobs.register(pid, 'sleep 5', File.open(File::NULL)).started_at
+    ensure
+      jobs&.shutdown(0.0)
+    end
+
     it 'registers a job as active' do
       assert_predicate start('sleep 5'), :active?
     end
@@ -132,54 +141,53 @@ describe Riffer::Rig::Tools::Bash::Jobs do
 
   describe '#read' do
     it 'reads an unknown job as nil' do
-      assert_nil @jobs.read('missing1')
+      assert_nil @jobs.read('missing1', 1_000)
     end
 
     it 'reads the output a job has written' do
       job = start('echo hello')
       @inbox.await
 
-      assert_equal "hello\n", @jobs.read(job.id)&.last
+      assert_equal "hello\n", @jobs.read(job.id, 1_000)&.last
     end
 
     it 'reads only the output written since the last read' do
       job = start('sleep 5', output: 'first')
-      @jobs.read(job.id)
+      @jobs.read(job.id, 1_000)
       File.write(job.output_path, 'second', mode: 'a')
 
-      assert_equal 'second', @jobs.read(job.id)&.last
+      assert_equal 'second', @jobs.read(job.id, 1_000)&.last
     end
 
-    it 'reads no more than the read limit at once' do
-      limit = Riffer::Rig::Tools::Bash::Jobs::READ_LIMIT_BYTES
-      job = start('sleep 5', output: "#{'a' * limit}skipped")
+    it 'reads no more than the limit at once' do
+      job = start('sleep 5', output: "#{'a' * 16}skipped")
 
-      assert_equal 'a' * limit, @jobs.read(job.id)&.last
+      assert_equal 'a' * 16, @jobs.read(job.id, 16)&.last
     end
 
-    it 'skips the output beyond the read limit on the next read' do
-      job = start('sleep 5', output: 'a' * (Riffer::Rig::Tools::Bash::Jobs::READ_LIMIT_BYTES + 7))
-      @jobs.read(job.id)
+    it 'skips the output beyond the limit on the next read' do
+      job = start('sleep 5', output: 'a' * 23)
+      @jobs.read(job.id, 16)
       File.write(job.output_path, 'tail', mode: 'a')
 
-      assert_equal 'tail', @jobs.read(job.id)&.last
+      assert_equal 'tail', @jobs.read(job.id, 1_000)&.last
     end
 
     it 'reads nothing new as an empty string' do
       job = start('sleep 5')
 
-      assert_equal '', @jobs.read(job.id)&.last
+      assert_equal '', @jobs.read(job.id, 1_000)&.last
     end
 
     it 'returns the job advanced past what it read' do
       job = start('sleep 5', output: 'hello')
 
-      assert_equal 5, @jobs.read(job.id)&.first&.offset
+      assert_equal 5, @jobs.read(job.id, 1_000)&.first&.offset
     end
 
     it 'keeps the offset of a job that finishes after a read' do
       job = start('sleep 0.2', output: 'hello')
-      @jobs.read(job.id)
+      @jobs.read(job.id, 1_000)
       @inbox.await
 
       assert_equal 5, listed(job).offset
@@ -425,7 +433,7 @@ describe Riffer::Rig::Tools::Bash::Jobs do
     it 'leaves the wait for held-open output out of the duration' do
       start('sleep 30 & echo started')
 
-      assert_operator @inbox.await&.duration, :<, Riffer::Rig::Tools::Bash::Jobs::DRAIN_SECONDS
+      assert_operator @inbox.await&.duration, :<, Riffer::Rig::Runtime::Jobs::DRAIN_SECONDS
     end
 
     it 'completes a job with its output path' do
@@ -435,7 +443,7 @@ describe Riffer::Rig::Tools::Bash::Jobs do
     end
 
     it 'completes a job with the tail of its output' do
-      tail = 'b' * Riffer::Rig::Tools::Bash::Jobs::TAIL_BYTES
+      tail = 'b' * Riffer::Rig::Runtime::Jobs::TAIL_BYTES
       start('true', output: "aaa#{tail}")
 
       assert_equal tail, @inbox.await&.tail
@@ -465,7 +473,7 @@ describe Riffer::Rig::Tools::Bash::Jobs do
     end
 
     it 'scrubs a multibyte character split by the tail cut' do
-      start('true', output: "é#{'b' * (Riffer::Rig::Tools::Bash::Jobs::TAIL_BYTES - 1)}")
+      start('true', output: "é#{'b' * (Riffer::Rig::Runtime::Jobs::TAIL_BYTES - 1)}")
 
       assert_predicate @inbox.await&.tail, :valid_encoding?
     end

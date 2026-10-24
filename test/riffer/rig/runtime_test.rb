@@ -62,7 +62,7 @@ describe Riffer::Rig::Runtime do
   end
 
   def spawn_group_job(runtime, command = 'sleep 30')
-    jobs = runtime.agent.context[:jobs] #: Riffer::Rig::Tools::Bash::Jobs
+    jobs = runtime.agent.context[:jobs] #: Riffer::Rig::Runtime::Jobs
     jobs.register(Process.spawn(command, pgroup: true), command, File.open(File::NULL))
   end
 

@@ -1,6 +1,0 @@
-# Generated from lib/riffer/rig/tools/bash/monotonic_clock.rb with RBS::Inline
-
-module Riffer::Rig::Tools::Bash::MonotonicClock
-  # @rbs return: Float
-  def monotonic_now: () -> Float
-end

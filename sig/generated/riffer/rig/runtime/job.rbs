@@ -1,6 +1,6 @@
-# Generated from lib/riffer/rig/tools/bash/job.rb with RBS::Inline
+# Generated from lib/riffer/rig/runtime/job.rb with RBS::Inline
 
-class Riffer::Rig::Tools::Bash::Job
+class Riffer::Rig::Runtime::Job
   @offset: Integer
 
   @ended_at: Float?
@@ -49,17 +49,17 @@ class Riffer::Rig::Tools::Bash::Job
   def elapsed: (Float now) -> Float
 
   # @rbs ended_at: Float
-  # @rbs return: Riffer::Rig::Tools::Bash::Job
-  def finish: (Float ended_at) -> Riffer::Rig::Tools::Bash::Job
+  # @rbs return: Riffer::Rig::Runtime::Job
+  def finish: (Float ended_at) -> Riffer::Rig::Runtime::Job
 
   # @rbs bytes: Integer
-  # @rbs return: Riffer::Rig::Tools::Bash::Job
-  def advance: (Integer bytes) -> Riffer::Rig::Tools::Bash::Job
+  # @rbs return: Riffer::Rig::Runtime::Job
+  def advance: (Integer bytes) -> Riffer::Rig::Runtime::Job
 
   private
 
   # @rbs ended_at: Float?
   # @rbs offset: Integer
-  # @rbs return: Riffer::Rig::Tools::Bash::Job
-  def copy: (?ended_at: Float?, ?offset: Integer) -> Riffer::Rig::Tools::Bash::Job
+  # @rbs return: Riffer::Rig::Runtime::Job
+  def copy: (?ended_at: Float?, ?offset: Integer) -> Riffer::Rig::Runtime::Job
 end
