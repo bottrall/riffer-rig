@@ -123,6 +123,18 @@ describe Riffer::Rig::Runtime do
     assert_equal :off, runtime.agent.config.reasoning
   end
 
+  it 'hands the settings reasoning level to the agent' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'high' })
+
+    assert_equal :high, runtime.agent.config.reasoning
+  end
+
+  it 'hands the reasoning level over the settings to the agent' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'low' }, reasoning: 'high')
+
+    assert_equal :high, runtime.agent.config.reasoning
+  end
+
   it 'sends its model options with each request' do
     runtime = Riffer::Rig::Runtime.new('mock/test', model_options: { reasoning: 'high' })
     runtime.agent.provider.stub_response('All done.')
@@ -1634,6 +1646,17 @@ describe Riffer::Rig::Runtime do
       assert_equal :high, rebuilt(runtime).agent.config.reasoning
     end
 
+    it 'hands the new settings reasoning level to the agent' do
+      assert_equal :high, rebuilt(settings: { reasoning: 'high' }).agent.config.reasoning
+    end
+
+    it 'keeps the reasoning level over the new settings' do
+      runtime = started(@runtime)
+      runtime.reasoning = 'high'
+
+      assert_equal :high, rebuilt(runtime, settings: { reasoning: 'low' }).agent.config.reasoning
+    end
+
     it 'keeps the id' do
       id = @runtime.id
 
@@ -1797,11 +1820,32 @@ describe Riffer::Rig::Runtime do
       assert_equal 'high', restored(runtime.to_h).reasoning
     end
 
+    it 'hands the restored reasoning switch to the agent' do
+      runtime = saved_runtime
+      runtime.reasoning = 'high'
+
+      assert_equal :high, restored(runtime.to_h).agent.config.reasoning
+    end
+
+    it 'restores the reasoning switch over the reasoning keyword' do
+      runtime = saved_runtime
+      runtime.reasoning = 'high'
+
+      assert_equal :high, restored(runtime.to_h, reasoning: 'low').agent.config.reasoning
+    end
+
     it 'leaves an unrecognized snapshot level unrestored' do
       saved = saved_runtime.to_h
       saved[:reasoning] = 'turbo'
 
       assert_nil restored(saved).reasoning
+    end
+
+    it 'keeps the reasoning keyword over an unrecognized snapshot level' do
+      saved = saved_runtime.to_h
+      saved[:reasoning] = 'turbo'
+
+      assert_equal 'low', restored(saved, reasoning: 'low').reasoning
     end
 
     it 'holds no skills while none are activated' do
