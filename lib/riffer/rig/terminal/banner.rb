@@ -100,7 +100,7 @@ module Riffer::Rig::Terminal::Banner
     session = tally && Riffer::Rig::Terminal::Tally.call(tally)
     values = {
       model: clip(model, room),
-      reasoning: reasoning || Riffer::Rig::Terminal::Reasoning::DEFAULT,
+      reasoning: reasoning || Riffer::Rig::Runtime::DEFAULT_REASONING_LABEL,
       cwd: clip(cwd, room),
       skills: skills,
       version: version,

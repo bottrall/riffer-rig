@@ -5,7 +5,6 @@ module Riffer::Rig::Commands::Reasoning
 
   SAVE = '--save' #: String
   SAVED_TO = '~/.riffer/settings.json' #: String
-  DEFAULT = 'default' #: String
 
   # @rbs return: Riffer::Rig::Command
   def command
@@ -25,7 +24,7 @@ module Riffer::Rig::Commands::Reasoning
 
     if level.empty?
       current = ctx.runtime.reasoning
-      return ctx.say("Reasoning: #{current || DEFAULT}") unless save
+      return ctx.say("Reasoning: #{current || Riffer::Rig::Runtime::DEFAULT_REASONING_LABEL}") unless save
       return ctx.say('No reasoning level is in effect to save') unless current
 
       refusal = Riffer::Rig::Settings::File.store_reasoning(current)
