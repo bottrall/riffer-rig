@@ -788,6 +788,12 @@ describe Riffer::Rig::Loader do
       assert_equal({ web_search: true }, build(model: 'mock/test').agent.config.model_options)
     end
 
+    it 'hands the home settings path to the Runtime' do
+      build(model: 'mock/test').run_command('model', '--save')
+
+      assert_equal 'mock/test', home_settings['model']
+    end
+
     it 'installs the reload command' do
       assert_includes build(model: 'mock/test').commands.map(&:name), 'reload'
     end

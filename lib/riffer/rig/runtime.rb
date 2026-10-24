@@ -78,6 +78,9 @@ class Riffer::Rig::Runtime
   # @rbs @reload_check: (^(::Riffer::Rig::Runtime) -> void)?
   # @rbs @clock: ^() -> Float
   # @rbs @yielder: Enumerator::Yielder?
+  # @rbs @env: Riffer::Rig::Env
+  # @rbs @auth_path: String
+  # @rbs @settings_path: String
 
   # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
   attr_reader :agent #: Riffer::Agent
@@ -99,6 +102,7 @@ class Riffer::Rig::Runtime
   # @rbs credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
+  # @rbs settings_path: String
   # @rbs reasoning: String?
   # @rbs riffer_config: Riffer::Config
   # @rbs mcp_registry: Riffer::Rig::Mcp::_Registry
@@ -120,6 +124,7 @@ class Riffer::Rig::Runtime
     credentials: {},
     env: Riffer::Rig::Env.new,
     auth_path: Riffer::Rig::Credentials::PATH,
+    settings_path: Riffer::Rig::Settings::File::PATH,
     reasoning: nil,
     riffer_config: Riffer.config,
     mcp_registry: Riffer::Mcp,
@@ -135,6 +140,9 @@ class Riffer::Rig::Runtime
     @host = Riffer::Rig::Hosts::Mirror.new(host)
     @cwd = cwd || Dir.pwd
     @credentials = credentials
+    @env = env
+    @auth_path = auth_path
+    @settings_path = settings_path
 
     @concurrency = Riffer::Rig::Runtime::Concurrency.new
     @core_commands = []
@@ -490,9 +498,9 @@ class Riffer::Rig::Runtime
     skills = agent.context.skills&.skills&.values || []
     commands = [
       *@core_commands,
-      Riffer::Rig::Commands::Auth.command,
-      Riffer::Rig::Commands::Model.command,
-      Riffer::Rig::Commands::Reasoning.command,
+      Riffer::Rig::Commands::Auth.command(env: @env, auth_path: @auth_path, settings_path: @settings_path),
+      Riffer::Rig::Commands::Model.command(env: @env, auth_path: @auth_path, settings_path: @settings_path),
+      Riffer::Rig::Commands::Reasoning.command(settings_path: @settings_path),
       Riffer::Rig::Commands::Cost.command,
       *skills.map { |skill| Riffer::Rig::Commands::Skill.command(skill) },
       *registrars.flat_map { |registrar| registrar.commands.values }
