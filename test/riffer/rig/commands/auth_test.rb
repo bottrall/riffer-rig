@@ -123,7 +123,11 @@ describe Riffer::Rig::Commands::Auth do
       runtime = new_runtime
 
       assert_equal(
-        [Riffer::Rig::Events::Notify.new('anthropic still has no api_key (ANTHROPIC_API_KEY)', :error)],
+        [Riffer::Rig::Events::Notify.new(
+          'anthropic has no api_key (ANTHROPIC_API_KEY); set it in the environment or run riffer interactively ' \
+          'to paste it (create one at https://console.anthropic.com/settings/keys)',
+          :error
+        )],
         command_events(runtime, 'anthropic')
       )
     end

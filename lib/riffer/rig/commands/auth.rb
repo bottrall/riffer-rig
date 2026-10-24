@@ -64,16 +64,11 @@ module Riffer::Rig::Commands::Auth
     return ctx.say(hint) unless Riffer::Providers::Repository.find(identifier)
 
     provider = identifier.to_sym
-    resolution = Riffer::Rig::Credentials.install(provider, host: ctx.host, env:, auth_path:, settings_path:)
-    return ctx.host.notify(resolution, level: :error) if resolution.is_a?(String)
+    values = Riffer::Rig::Credentials.install_values(provider, host: ctx.host, env:, auth_path:, settings_path:)
+    return ctx.host.notify(values, level: :error) if values.is_a?(String)
 
-    if resolution.missing.any?
-      missing_fields = Riffer::Rig::ProviderSetup.for(provider).missing_fields(resolution.missing)
-      ctx.host.notify("#{provider} still has no #{missing_fields}", level: :error)
-    else
-      ctx.runtime.merge_credentials(provider, resolution.values)
-      ctx.say("Updated #{provider} credentials")
-    end
+    ctx.runtime.merge_credentials(provider, values)
+    ctx.say("Updated #{provider} credentials")
   end
 
   # @rbs ctx: Riffer::Rig::Command::Context

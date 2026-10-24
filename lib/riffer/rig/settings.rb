@@ -13,7 +13,8 @@ module Riffer::Rig::Settings
     home_mcp = home[:mcp]
     project_mcp = project[:mcp]
     if home_mcp.is_a?(Hash) && project_mcp.is_a?(Hash)
-      merged = merged.merge(mcp: Riffer::Rig::Mcp.merge(home_mcp, project_mcp))
+      servers = home_mcp[:servers].to_h.merge(project_mcp[:servers].to_h)
+      merged = merged.merge(mcp: home_mcp.merge(project_mcp, servers: servers))
     end
     documents = [home, project].map { |scope| Document.new(scope) }
     disabled = documents.flat_map(&:disabled).uniq

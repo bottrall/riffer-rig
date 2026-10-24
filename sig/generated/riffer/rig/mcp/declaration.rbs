@@ -16,9 +16,6 @@ class Riffer::Rig::Mcp::Declaration
 
   attr_reader env: Hash[String, String]
 
-  # A declaration is one server over one transport: HTTPS by url, or stdio by
-  # command. Raising is a programmer error: the registrar seam refuses an
-  # empty declaration before the Runtime ever sees it.
   # @rbs url: String?
   # @rbs headers: Hash[String, String]
   # @rbs auth: Hash[Symbol, Array[String]]

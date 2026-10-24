@@ -39,6 +39,36 @@ module Riffer::Rig::Credentials
     Resolution.new(values: resolution.values, missing: missing)
   end
 
+  # @rbs identifier: String | Symbol
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs env: Riffer::Rig::Env
+  # @rbs auth_path: String
+  # @rbs label: String
+  # @rbs setup: Riffer::Rig::ProviderSetup
+  # @rbs config: Riffer::Config?
+  # @rbs settings_path: String
+  # @rbs known: Hash[Symbol, String]
+  # @rbs return: (Hash[Symbol, String] | String)
+  def install_values(
+    identifier,
+    host:,
+    env:,
+    auth_path:,
+    label: identifier.to_s,
+    setup: Riffer::Rig::ProviderSetup.for(identifier),
+    config: Riffer.config,
+    settings_path: Riffer::Rig::Settings::File::PATH,
+    known: {}
+  )
+    resolution = install(identifier, host:, setup:, env:, config:, auth_path:, settings_path:, known:)
+    return resolution if resolution.is_a?(String)
+    return resolution.values if resolution.missing.empty?
+
+    "#{label} has no #{setup.missing_fields(resolution.missing)}; " \
+      'set it in the environment or run riffer interactively to paste it' \
+      "#{" (create one at #{setup.url})" if setup.url}"
+  end
+
   # A registered extension provider has no Riffer::Config member, so the
   # assignment stays built-ins-only.
   # @rbs identifier: String | Symbol
@@ -119,14 +149,7 @@ module Riffer::Rig::Credentials
   # @rbs auth_path: String
   # @rbs settings_path: String
   # @rbs return: (Resolution | String)
-  def resolve(
-    identifier,
-    host:,
-    setup: Riffer::Rig::ProviderSetup.for(identifier),
-    env: Riffer::Rig::Env.new,
-    auth_path: PATH,
-    settings_path: Riffer::Rig::Settings::File::PATH
-  )
+  def resolve(identifier, host:, setup:, env:, auth_path:, settings_path:)
     secrets = stored_secrets(identifier, auth_path)
     return secrets if secrets.is_a?(String)
 
