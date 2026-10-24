@@ -2,6 +2,7 @@
 
 require 'test_helper'
 require 'acp/sdk'
+require_relative '../../support/confirming_host'
 require_relative '../../support/rig_files'
 
 describe Riffer::Rig::ACP do
@@ -195,6 +196,21 @@ describe Riffer::Rig::ACP do
     error
   end
 
+  def cancelled_prompt(session_id)
+    reply('Slow hello.')
+    started, gate = hold_provider
+    response = Thread.new do
+      @connection.prompt_session(prompt_request(session_id, 'hello')) { |update| @updates << update }
+    end
+    started.pop
+    @connection.cancel_session(ACP::Types::CancelNotification.new(session_id: session_id))
+    # The agent handles notifications in arrival order on its reader thread,
+    # so this reply proves the cancel landed before the provider resumes.
+    @connection.prompt_session(prompt_request('missing', 'flush'))
+    gate << true
+    response.value
+  end
+
   def fail_provider_once
     error = StandardError.new('status=401').tap do |status_error|
       status_error.define_singleton_method(:body) { { error: { message: 'Missing Authentication header' } } }
@@ -251,15 +267,13 @@ describe Riffer::Rig::ACP do
 
   describe '.build_runtime' do
     it 'declares the client servers to the Runtime it builds' do
-      notified = [] #: Array[String]
-      host = Riffer::Rig::Hosts::Null.new
-      host.define_singleton_method(:notify) { |message = nil, **| notified << message.to_s }
+      host = ConfirmingHost.new
       declaration = Riffer::Rig::Mcp::Declaration.new(command: File.join(@cwd, 'mcp_stub.rb'))
       Riffer::Rig::ACP.build_runtime(@cwd, host, { 'acp-build-stub' => declaration }, env: @env, home: @home).close
 
       # riffer cannot register a stdio server yet, so the Runtime's refusal is
       # the only trace that the declaration reached it.
-      assert(notified.any? { |message| message.include?('acp-build-stub') })
+      assert(host.notifications.any? { |_level, message| message.include?('acp-build-stub') })
     end
   end
 
@@ -637,15 +651,9 @@ describe Riffer::Rig::ACP do
 
     it 'reaches the adopted runtime with a cancel from a later connection' do
       session = adopt_session
-      cancelled = Queue.new
-      @built_runtimes.last.define_singleton_method(:cancel) do
-        cancelled << true
-        super()
-      end
       load(session.session_id)
-      @connection.cancel_session(ACP::Types::CancelNotification.new(session_id: session.session_id))
 
-      assert cancelled.pop(timeout: 5)
+      assert_equal 'cancelled', cancelled_prompt(session.session_id).stop_reason
     end
 
     it 'sends the notifies of an adopted runtime to the later connection' do
@@ -834,20 +842,7 @@ describe Riffer::Rig::ACP do
     end
 
     it 'ends a turn the client cancelled with cancelled' do
-      session = new_session
-      reply('Slow hello.')
-      started, gate = hold_provider
-      response = Thread.new do
-        @connection.prompt_session(prompt_request(session.session_id, 'hello')) { |update| @updates << update }
-      end
-      started.pop
-      @connection.cancel_session(ACP::Types::CancelNotification.new(session_id: session.session_id))
-      # The agent handles notifications in arrival order on its reader thread,
-      # so this reply proves the cancel landed before the provider resumes.
-      @connection.prompt_session(prompt_request('missing', 'flush'))
-      gate << true
-
-      assert_equal 'cancelled', response.value.stop_reason
+      assert_equal 'cancelled', cancelled_prompt(new_session.session_id).stop_reason
     end
   end
 
