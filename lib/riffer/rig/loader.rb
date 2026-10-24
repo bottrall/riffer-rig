@@ -11,6 +11,7 @@ class Riffer::Rig::Loader
   # @rbs @store: Riffer::Rig::Stores::_Store | nil
   # @rbs @source: Riffer::Rig::Loader::ExtensionSource
   # @rbs @reloaders: ObjectSpace::WeakKeyMap[Riffer::Rig::Runtime, Riffer::Rig::Loader::Reloader]
+  # @rbs @sdk: singleton(Riffer::Rig::SDK)
 
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -44,6 +45,7 @@ class Riffer::Rig::Loader
   # @rbs home: String
   # @rbs riffer_config: Riffer::Config
   # @rbs store: Riffer::Rig::Stores::_Store | nil
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: void
   def initialize(
     cwd:,
@@ -51,7 +53,8 @@ class Riffer::Rig::Loader
     env: Riffer::Rig::Env.load,
     home: Dir.home,
     riffer_config: Riffer.config,
-    store: Riffer::Rig::Stores::JSONL.new(home: home)
+    store: Riffer::Rig::Stores::JSONL.new(home: home),
+    sdk: Riffer::Rig::SDK
   )
     raise ConfigurationError, env.message if env.is_a?(Riffer::Rig::Env::Invalid)
 
@@ -61,6 +64,7 @@ class Riffer::Rig::Loader
     @home = home
     @riffer_config = riffer_config
     @store = store
+    @sdk = sdk
     @source = Riffer::Rig::Loader::ExtensionSource.new(cwd: cwd, home: home, host: host)
     @reloaders = ObjectSpace::WeakKeyMap.new
   end
@@ -265,7 +269,7 @@ class Riffer::Rig::Loader
     return unless sdk
 
     gem, requirement = sdk
-    message = Riffer::Rig::SDK.ensure(gem, requirement, host: @host)
+    message = @sdk.ensure(gem, requirement, host: @host)
     raise ConfigurationError, message if message
   end
 

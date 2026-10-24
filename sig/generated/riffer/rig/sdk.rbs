@@ -17,8 +17,10 @@ module Riffer::Rig::SDK
   # @rbs requirement: String
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs installer: singleton(Gem)
+  # @rbs specs: singleton(Gem::Specification)
+  # @rbs bundled: bool
   # @rbs return: String?
-  def ensure: (String gem, String requirement, host: Riffer::Rig::Hosts::_Host, ?installer: singleton(Gem)) -> String?
+  def ensure: (String gem, String requirement, host: Riffer::Rig::Hosts::_Host, ?installer: singleton(Gem), ?specs: singleton(Gem::Specification), ?bundled: bool) -> String?
 
   private
 
@@ -31,13 +33,11 @@ module Riffer::Rig::SDK
 
   # @rbs gem: String
   # @rbs requirement: String
+  # @rbs specs: singleton(Gem::Specification)
   # @rbs return: bool
-  def installed?: (String gem, String requirement) -> bool
+  def installed?: (String gem, String requirement, singleton(Gem::Specification) specs) -> bool
 
   # @rbs gem: String
   # @rbs return: bool
   def require_gem: (String gem) -> bool
-
-  # @rbs return: bool
-  def bundler?: () -> bool
 end

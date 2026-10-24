@@ -5,6 +5,7 @@ require 'json'
 require 'forwardable'
 require_relative '../../support/confirming_host'
 require_relative '../../support/rig_files'
+require_relative '../../support/sdk_fake'
 
 class ScriptedHost
   extend Forwardable
@@ -444,36 +445,40 @@ describe Riffer::Rig::Loader do
     end
 
     describe 'sdk' do
-      def with_sdk_absent_and_installable
-        gem_specs = Gem::Specification.method(:find_by_name)
-        bundler = Riffer::Rig::SDK.method(:bundler?)
-        Gem::Specification.define_singleton_method(:find_by_name) { |*_args| raise Gem::LoadError, 'not installed' }
-        Riffer::Rig::SDK.define_singleton_method(:bundler?) { false } # rubocop:disable Rig/NoMocking -- goes once the SDK is injected into the Loader
-        yield
-      ensure
-        Gem::Specification.define_singleton_method(:find_by_name, gem_specs)
-        Riffer::Rig::SDK.define_singleton_method(:bundler?, bundler) # rubocop:disable Rig/NoMocking -- goes once the SDK is injected into the Loader
+      def build_with(sdk, model, env)
+        Riffer::Rig::Loader.new(
+          cwd: @cwd,
+          host: Riffer::Rig::Hosts::Null.new,
+          env: Riffer::Rig::Env.new(env),
+          home: @home,
+          riffer_config: @config,
+          sdk: sdk
+        ).runtime(Riffer::Rig::Loader::Options.new(model: model))
       end
 
-      it 'builds the Runtime for a provider that needs no SDK gem' do
-        with_sdk_absent_and_installable do
-          runtime = build(model: 'gemini/gem-2.5-pro', env: { 'GEMINI_API_KEY' => 'k' })
+      it 'ensures no SDK gem for a provider that needs none' do
+        sdk = SdkFake.new
+        build_with(sdk, 'gemini/gem-2.5-pro', { 'GEMINI_API_KEY' => 'k' })
 
-          assert_equal 'gemini/gem-2.5-pro', runtime.model
-        end
+        assert_empty sdk.ensured
+      end
+
+      it "ensures the provider's SDK gem" do
+        sdk = SdkFake.new
+        build_with(sdk, 'openai/o3', { 'OPENAI_API_KEY' => 'sk' })
+
+        assert_equal [['openai', '~> 0.80']], sdk.ensured
+      end
+
+      it 'raises the SDK refusal instead of building the Runtime' do
+        assert_equal(
+          'openai is not installed',
+          refusal { build_with(SdkFake.new('openai is not installed'), 'openai/o3', { 'OPENAI_API_KEY' => 'sk' }) }
+        )
       end
 
       it 'builds the Runtime once the SDK gem is present' do
         assert_equal 'openai/o3', build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' }).model
-      end
-
-      it 'reports a declined install instead of building the Runtime' do
-        with_sdk_absent_and_installable do
-          assert_match(
-            /\Aopenai is not installed; install it with gem install openai/,
-            refusal { build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' }) }
-          )
-        end
       end
     end
 

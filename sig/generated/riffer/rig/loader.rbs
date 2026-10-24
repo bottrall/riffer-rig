@@ -4,6 +4,8 @@ class Riffer::Rig::Loader
   class ConfigurationError < StandardError
   end
 
+  @sdk: singleton(Riffer::Rig::SDK)
+
   @reloaders: ObjectSpace::WeakKeyMap[Riffer::Rig::Runtime, Riffer::Rig::Loader::Reloader]
 
   @source: Riffer::Rig::Loader::ExtensionSource
@@ -39,8 +41,9 @@ class Riffer::Rig::Loader
   # @rbs home: String
   # @rbs riffer_config: Riffer::Config
   # @rbs store: Riffer::Rig::Stores::_Store | nil
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: void
-  def initialize: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?store: Riffer::Rig::Stores::_Store | nil) -> void
+  def initialize: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?store: Riffer::Rig::Stores::_Store | nil, ?sdk: singleton(Riffer::Rig::SDK)) -> void
 
   # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)
