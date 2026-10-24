@@ -3,8 +3,11 @@
 module Riffer::Rig::Terminal::Markdown::Flow
   extend self
 
-  UNSTYLED = Riffer::Rig::Terminal::Markdown::Span.new(text: ' ') #: Riffer::Rig::Terminal::Markdown::Span
-  VISIBLE = /\S/ #: Regexp
+  PAINTER = Riffer::Rig::Terminal::Painter.new(
+    same: lambda do |left, right|
+      left.same_style?(right)
+    end #: ^(Riffer::Rig::Terminal::Markdown::Span, Riffer::Rig::Terminal::Markdown::Span) -> bool
+  ) #: Riffer::Rig::Terminal::Painter[Riffer::Rig::Terminal::Markdown::Span]
 
   # @rbs spans: Array[Riffer::Rig::Terminal::Markdown::Span]
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -16,47 +19,25 @@ module Riffer::Rig::Terminal::Markdown::Flow
     # The Wrapper moves, drops and rewrites whitespace but never a visible
     # character, so the nth visible character of its output is the nth one the
     # spans supplied.
-    owners = spans.flat_map { |span| [span] * span.text.scan(VISIBLE).size }
-    sizes = wrapped.map { |line| line.scan(VISIBLE).size }
+    owners = spans.flat_map { |span| [span] * span.text.scan(Riffer::Rig::Terminal::Painter::VISIBLE).size }
+    sizes = wrapped.map { |line| line.scan(Riffer::Rig::Terminal::Painter::VISIBLE).size }
     starts = sizes.each_with_object([0]) { |size, sums| sums << (sums.fetch(-1) + size) }
     wrapped.each_with_index.map do |line, index|
-      paint(line, owners.slice(starts.fetch(index), sizes.fetch(index)) || [], theme)
+      PAINTER.paint(line, owners.slice(starts.fetch(index), sizes.fetch(index)) || []) do |text, span|
+        style(text, span, theme)
+      end
     end
   end
 
   private
 
-  # @rbs line: String
-  # @rbs owners: Array[Riffer::Rig::Terminal::Markdown::Span]
-  # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs return: String
-  def paint(line, owners, theme)
-    chars = line.chars
-    owner_at = chars.each_index.select { |index| chars.fetch(index).match?(VISIBLE) }.zip(owners).to_h
-    slots = chars.each_index.map { |index| owner_at[index] }
-    cells = nearest(slots).zip(nearest(slots.reverse).reverse).map { |left, right| between(left, right) }
-    runs = cells.zip(chars).chunk_while { |(left, _), (right, _)| left.same_style?(right) }
-    runs.map { |run| style(run.map(&:last).join, run.fetch(0).first, theme) }.join
-  end
-
-  # @rbs slots: Array[Riffer::Rig::Terminal::Markdown::Span?]
-  # @rbs return: Array[Riffer::Rig::Terminal::Markdown::Span?]
-  def nearest(slots)
-    slots.each_with_object([]) { |slot, filled| filled << (slot || filled.last) }
-  end
-
-  # @rbs left: Riffer::Rig::Terminal::Markdown::Span?
-  # @rbs right: Riffer::Rig::Terminal::Markdown::Span?
-  # @rbs return: Riffer::Rig::Terminal::Markdown::Span
-  def between(left, right)
-    left && right && left.same_style?(right) ? left : UNSTYLED
-  end
-
   # @rbs text: String
-  # @rbs span: Riffer::Rig::Terminal::Markdown::Span
+  # @rbs span: Riffer::Rig::Terminal::Markdown::Span?
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs return: String
   def style(text, span, theme)
+    return text unless span
+
     styled = span.styles.reduce(text) { |painted, name| apply(painted, name, theme) }
     url = span.url
     url ? theme.link(styled, url) : styled

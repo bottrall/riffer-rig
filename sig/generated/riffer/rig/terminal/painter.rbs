@@ -1,0 +1,34 @@
+# Generated from lib/riffer/rig/terminal/painter.rb with RBS::Inline
+
+# @rbs generic Owner < Object
+class Riffer::Rig::Terminal::Painter[Owner < Object]
+  VISIBLE: Regexp
+
+  @same: ^(Owner, Owner) -> bool
+
+  # @rbs same: ^(Owner, Owner) -> bool
+  # @rbs return: void
+  def initialize: (same: ^(Owner, Owner) -> bool) -> void
+
+  # @rbs line: String
+  # @rbs owners: Array[Owner]
+  # @rbs &style: (String, Owner?) -> String
+  # @rbs return: String
+  def paint: (String line, Array[Owner] owners) { (String, Owner?) -> String } -> String
+
+  private
+
+  # @rbs slots: Array[Owner?]
+  # @rbs return: Array[Owner?]
+  def nearest: (Array[Owner?] slots) -> Array[Owner?]
+
+  # @rbs left: Owner?
+  # @rbs right: Owner?
+  # @rbs return: Owner?
+  def between: (Owner? left, Owner? right) -> Owner?
+
+  # @rbs left: Owner?
+  # @rbs right: Owner?
+  # @rbs return: bool
+  def alike?: (Owner? left, Owner? right) -> bool
+end
