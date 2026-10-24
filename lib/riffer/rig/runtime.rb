@@ -150,7 +150,7 @@ class Riffer::Rig::Runtime
     @message_observers = []
     @model_observers = []
     @reasoning_observers = []
-    @reasoning = reasoning
+    @reasoning = (saved && Riffer::Rig::Settings::ModelOptions.reasoning_level(saved.reasoning)) || reasoning
     @errors = []
     @tool_allowlist = tools
     @native_tools = native_tools
@@ -164,7 +164,7 @@ class Riffer::Rig::Runtime
     registrars = build_registrars(extensions, settings) { |extension, error| record_error(extension, error) }
     mcp_servers = @mcp.register(mcp_declarations(registrars))
     hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
-    config = agent_config(registrars, hooks, max_steps)
+    config = agent_config(registrars, settings, hooks, max_steps)
     agent = saved ? restore(saved, model, config) : build_agent(model, config)
     install(registrars, settings, hooks, agent)
     @mcp.retain(mcp_servers)
@@ -262,7 +262,7 @@ class Riffer::Rig::Runtime
 
   # @rbs return: String?
   def reasoning
-    @reasoning || Riffer::Rig::Settings::ModelOptions.reasoning_level(Riffer::Rig::Settings::Document.new(@settings).reasoning)
+    reasoning_over(@settings)
   end
 
   # @rbs level: String
@@ -291,7 +291,7 @@ class Riffer::Rig::Runtime
       registrars = build_registrars(extensions, settings) { |_extension, error| raise error }
       mcp_servers = @mcp.register(mcp_declarations(registrars))
       hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
-      agent = successor(model, agent_config(registrars, hooks, @agent.config.max_steps))
+      agent = successor(model, agent_config(registrars, settings, hooks, @agent.config.max_steps))
       lifecycle(:session_end, Riffer::Rig::Events::SessionEnd.new(:reload))
       @errors = []
       install(registrars, settings, hooks, agent)
@@ -443,16 +443,23 @@ class Riffer::Rig::Runtime
     end.to_h
   end
 
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: String?
+  def reasoning_over(settings)
+    @reasoning || Riffer::Rig::Settings::ModelOptions.reasoning_level(Riffer::Rig::Settings::Document.new(settings).reasoning)
+  end
+
   # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs settings: Hash[Symbol, untyped]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs max_steps: Numeric?
   # @rbs return: Riffer::Agent::Config
-  def agent_config(registrars, hooks, max_steps)
+  def agent_config(registrars, settings, hooks, max_steps)
     config = Riffer::Agent::Config.new(
       model: ->(context) { context[:model] },
       model_options: @model_options,
       instructions: @system_prompt.bare,
-      reasoning: @reasoning,
+      reasoning: reasoning_over(settings),
       tools_config: select_tools(registrars.flat_map { |registrar| registrar.tools.to_a }.to_h.values, @tool_allowlist),
       max_steps: max_steps,
       tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(hooks, emit: ->(event) { emit(event) }, clock: @clock),
@@ -826,7 +833,6 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Agent
   def restore(snapshot, model, config)
     @model_override = snapshot.restorable_model(@credentials, @host, model)
-    @reasoning = Riffer::Rig::Settings::ModelOptions.reasoning_level(snapshot.reasoning) if snapshot.reasoning
     agent = build_agent(@model_override || model, config, session: snapshot.session)
     agent.context.token_usage = snapshot.usage
     reactivate(agent.context.skills, snapshot.skills)
