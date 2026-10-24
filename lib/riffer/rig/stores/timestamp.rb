@@ -20,4 +20,10 @@ module Riffer::Rig::Stores::Timestamp
   rescue ArgumentError
     nil
   end
+
+  # @rbs value: untyped
+  # @rbs return: String?
+  def normalize(value)
+    dump(load(value))
+  end
 end
