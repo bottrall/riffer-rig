@@ -6,6 +6,7 @@ require 'forwardable'
 require_relative '../../support/confirming_host'
 require_relative '../../support/prompter_pty'
 require_relative '../../support/rig_files'
+require_relative '../../support/sdk_fake'
 
 class ScriptedHost
   extend Forwardable
@@ -523,36 +524,40 @@ describe Riffer::Rig::Loader do
     end
 
     describe 'sdk' do
-      def with_sdk_absent_and_installable
-        gem_specs = Gem::Specification.method(:find_by_name)
-        bundler = Riffer::Rig::SDK.method(:bundler?)
-        Gem::Specification.define_singleton_method(:find_by_name) { |*_args| raise Gem::LoadError, 'not installed' }
-        Riffer::Rig::SDK.define_singleton_method(:bundler?) { false }
-        yield
-      ensure
-        Gem::Specification.define_singleton_method(:find_by_name, gem_specs)
-        Riffer::Rig::SDK.define_singleton_method(:bundler?, bundler)
+      def build_with(sdk, model, env)
+        Riffer::Rig::Loader.new(
+          cwd: @cwd,
+          host: Riffer::Rig::Hosts::Null.new,
+          env: Riffer::Rig::Env.new(env),
+          home: @home,
+          riffer_config: @config,
+          sdk: sdk
+        ).runtime(Riffer::Rig::Loader::Options.new(model: model))
       end
 
-      it 'builds the Runtime for a provider that needs no SDK gem' do
-        with_sdk_absent_and_installable do
-          runtime = build(model: 'gemini/gem-2.5-pro', env: { 'GEMINI_API_KEY' => 'k' })
+      it 'ensures no SDK gem for a provider that needs none' do
+        sdk = SdkFake.new
+        build_with(sdk, 'gemini/gem-2.5-pro', { 'GEMINI_API_KEY' => 'k' })
 
-          assert_equal 'gemini/gem-2.5-pro', runtime.model
-        end
+        assert_empty sdk.ensured
+      end
+
+      it "ensures the provider's SDK gem" do
+        sdk = SdkFake.new
+        build_with(sdk, 'openai/o3', { 'OPENAI_API_KEY' => 'sk' })
+
+        assert_equal [['openai', '~> 0.80']], sdk.ensured
+      end
+
+      it 'raises the SDK refusal instead of building the Runtime' do
+        assert_equal(
+          'openai is not installed',
+          refusal { build_with(SdkFake.new('openai is not installed'), 'openai/o3', { 'OPENAI_API_KEY' => 'sk' }) }
+        )
       end
 
       it 'builds the Runtime once the SDK gem is present' do
         assert_equal 'openai/o3', build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' }).model
-      end
-
-      it 'reports a declined install instead of building the Runtime' do
-        with_sdk_absent_and_installable do
-          assert_match(
-            /\Aopenai is not installed; install it with gem install openai/,
-            refusal { build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' }) }
-          )
-        end
       end
     end
 
@@ -976,11 +981,16 @@ describe Riffer::Rig::Loader do
       [loader, runtime, host]
     end
 
-    def with_raising_credentials
-      Riffer::Rig::Credentials.define_singleton_method(:resolve) { |*_args, **_kwargs| raise 'credential boom' }
-      yield
-    ensure
-      Riffer::Rig::Credentials.singleton_class.remove_method(:resolve)
+    # The trial run passes and the rebuild's run raises, so the raise escapes
+    # the extension isolation that a failing trial gets.
+    def rebuild_raising_rig
+      <<~RUBY
+        runs = 0
+        Riffer::Rig.extension('flaky') do |_rig|
+          runs += 1
+          raise 'rebuild boom' if runs > 1
+        end
+      RUBY
     end
 
     it 'skips the reload when no tracked file changed' do
@@ -1123,12 +1133,9 @@ describe Riffer::Rig::Loader do
       write_rig(:project, probe_rig('probe'))
       loader = new_loader(host: ConfirmingHost.new([true]))
       runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      File.write(project_rig_path, probe_rig('probe_next'))
-      with_raising_credentials do
-        reloaded = loader.reload(runtime, force: true)
+      File.write(project_rig_path, rebuild_raising_rig)
 
-        assert_match(/credential boom\z/, reloaded)
-      end
+      assert_match(/rebuild boom\z/, loader.reload(runtime, force: true))
     end
 
     it 'advances the snapshot when a reload raises' do
@@ -1136,8 +1143,8 @@ describe Riffer::Rig::Loader do
       loader = new_loader(host: ConfirmingHost.new([true]))
       runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       marker = File.join(@cwd, 'reload_marker')
-      File.write(project_rig_path, probe_rig('probe_next') + "File.write(#{marker.inspect}, 'executed')\n")
-      with_raising_credentials { loader.reload(runtime, force: true) }
+      File.write(project_rig_path, rebuild_raising_rig + "File.write(#{marker.inspect}, 'executed')\n")
+      loader.reload(runtime, force: true)
       FileUtils.rm_f(marker)
       loader.reload(runtime)
 

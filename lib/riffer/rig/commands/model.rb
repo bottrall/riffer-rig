@@ -8,21 +8,23 @@ module Riffer::Rig::Commands::Model
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: Riffer::Rig::Command
-  def command(env:, auth_path:, settings_path:)
+  def command(env:, auth_path:, settings_path:, sdk: Riffer::Rig::SDK)
     Riffer::Rig::Command.new(
       'model',
       description: 'Switch the model for this session: /model provider/name, /model --save',
       extension: :core
-    ) { |ctx| run(ctx, env:, auth_path:, settings_path:) }
+    ) { |ctx| run(ctx, env:, auth_path:, settings_path:, sdk:) }
   end
 
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: void
-  def run(ctx, env:, auth_path:, settings_path:)
+  def run(ctx, env:, auth_path:, settings_path:, sdk:)
     words = ctx.args.split
     save = words.delete(SAVE)
     model = words.join(' ')
@@ -38,7 +40,7 @@ module Riffer::Rig::Commands::Model
 
     provider = Riffer::Rig::Settings::ModelOptions.provider_for(model)
     return ctx.say(hint) unless provider && Riffer::Providers::Repository.find(provider)
-    return unless ready?(ctx, model, provider, env:, auth_path:, settings_path:)
+    return unless ready?(ctx, model, provider, env:, auth_path:, settings_path:, sdk:)
 
     ctx.runtime.model = model
     refusal = Riffer::Rig::Settings::File.store_model(model, path: settings_path) if save
@@ -62,14 +64,15 @@ module Riffer::Rig::Commands::Model
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: bool
-  def ready?(ctx, model, provider, env:, auth_path:, settings_path:)
+  def ready?(ctx, model, provider, env:, auth_path:, settings_path:, sdk:)
     setup = Riffer::Rig::ProviderSetup.registered_setup(provider)
     return true unless setup
 
-    sdk = setup.sdk
-    if sdk
-      message = Riffer::Rig::SDK.ensure(sdk[0], sdk[1], host: ctx.host)
+    gem = setup.sdk
+    if gem
+      message = sdk.ensure(gem[0], gem[1], host: ctx.host)
       if message
         ctx.host.notify(message, level: :error)
         return false

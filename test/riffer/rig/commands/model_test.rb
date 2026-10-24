@@ -4,6 +4,7 @@ require 'test_helper'
 require 'forwardable'
 require 'fileutils'
 require 'json'
+require_relative '../../../support/sdk_fake'
 class AcmeModelProvider < Riffer::Providers::Mock; end # rubocop:disable Rig/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
 
 class AnsweringModelHost
@@ -69,6 +70,23 @@ describe Riffer::Rig::Commands::Model do
     events = []
     runtime.run_command('model', args) { |event| events << event }
     events
+  end
+
+  def model_events(runtime, args, sdk: SdkFake.new)
+    events = []
+    ctx = Riffer::Rig::Command::Context.new(
+      'model',
+      args,
+      runtime: runtime,
+      host: runtime.host,
+      settings: {},
+      emit: ->(event) { events << event },
+      turn: ->(_text) {}
+    )
+    Riffer::Rig::Commands::Model.command(
+      env: Riffer::Rig::Env.new, auth_path: @auth_path, settings_path: @settings_path, sdk: sdk
+    ).call(ctx)
+    events + runtime.host.drain
   end
 
   def output(text)
@@ -145,51 +163,32 @@ describe Riffer::Rig::Commands::Model do
     )
   end
 
-  describe 'missing sdk' do
-    def with_sdk_absent_and_unbundled
-      specs = Gem::Specification.method(:find_by_name)
-      bundler = Riffer::Rig::SDK.method(:bundler?)
-      Gem::Specification.define_singleton_method(:find_by_name) { |*_args| raise Gem::LoadError, 'not installed' }
-      Riffer::Rig::SDK.define_singleton_method(:bundler?) { false }
-      yield
-    ensure
-      Gem::Specification.define_singleton_method(:find_by_name, specs)
-      Riffer::Rig::SDK.define_singleton_method(:bundler?, bundler)
+  describe 'sdk' do
+    it "ensures the provider's SDK gem" do
+      sdk = SdkFake.new
+      model_events(new_runtime(credentials: { openai: { api_key: 'stored' } }), 'openai/gpt-5', sdk: sdk)
+
+      assert_equal [['openai', '~> 0.80']], sdk.ensured
     end
 
     it 'refuses a provider whose SDK gem is missing' do
       runtime = new_runtime(credentials: { openai: { api_key: 'stored' } })
-      events = nil
-      with_sdk_absent_and_unbundled { events = command_events(runtime, 'openai/gpt-5') }
 
       assert_equal(
-        [Riffer::Rig::Events::Notify.new(
-          "openai is not installed; install it with gem install openai -v '~> 0.80' or add it to a Gemfile", :error
-        )],
-        events
+        [Riffer::Rig::Events::Notify.new('openai is not installed', :error)],
+        model_events(runtime, 'openai/gpt-5', sdk: SdkFake.new('openai is not installed'))
       )
     end
 
     it 'keeps the model after the SDK refusal' do
       runtime = new_runtime(credentials: { openai: { api_key: 'stored' } })
-      with_sdk_absent_and_unbundled { command_events(runtime, 'openai/gpt-5') }
+      model_events(runtime, 'openai/gpt-5', sdk: SdkFake.new('openai is not installed'))
 
       assert_equal 'mock/test', runtime.model
     end
   end
 
   describe 'switching to a provider without credentials' do
-    def with_openai_sdk_present
-      specs = Gem::Specification.method(:find_by_name)
-      requirable = Riffer::Rig::SDK.method(:require_gem)
-      Gem::Specification.define_singleton_method(:find_by_name) { |*_args| Object.new }
-      Riffer::Rig::SDK.define_singleton_method(:require_gem) { |_gem| true }
-      yield
-    ensure
-      Gem::Specification.define_singleton_method(:find_by_name, specs)
-      Riffer::Rig::SDK.define_singleton_method(:require_gem, requirable)
-    end
-
     it 'does not ask when the Runtime already has the credentials' do
       host = AnsweringModelHost.new('sk-new')
       runtime = new_runtime(host: host, credentials: { gemini: { api_key: 'stored' } })
@@ -240,8 +239,7 @@ describe Riffer::Rig::Commands::Model do
 
     it 'refuses a provider missing one of its required fields' do
       runtime = new_runtime(credentials: { azure_openai: { api_key: 'key' } })
-      events = nil
-      with_openai_sdk_present { events = command_events(runtime, 'azure_openai/gpt-5') }
+      events = model_events(runtime, 'azure_openai/gpt-5')
 
       assert_equal 'Not switching to azure_openai/gpt-5: azure_openai has no endpoint (AZURE_OPENAI_ENDPOINT)',
                    events.first.message
@@ -257,7 +255,7 @@ describe Riffer::Rig::Commands::Model do
     it 'merges the resolved fields into the Runtime credentials it already holds' do
       ENV['AZURE_OPENAI_ENDPOINT'] = 'https://azure.test'
       runtime = new_runtime(credentials: { azure_openai: { api_key: 'key' } })
-      with_openai_sdk_present { command_events(runtime, 'azure_openai/gpt-5') }
+      model_events(runtime, 'azure_openai/gpt-5')
 
       assert_equal({ api_key: 'key', endpoint: 'https://azure.test' }, runtime.credentials[:azure_openai])
     end
@@ -272,7 +270,7 @@ describe Riffer::Rig::Commands::Model do
     it 'succeeds when the Runtime already holds part of the required credentials' do
       ENV['AZURE_OPENAI_ENDPOINT'] = 'https://azure.test'
       runtime = new_runtime(credentials: { azure_openai: { api_key: 'key' } })
-      with_openai_sdk_present { command_events(runtime, 'azure_openai/gpt-5') }
+      model_events(runtime, 'azure_openai/gpt-5')
 
       assert_equal 'azure_openai/gpt-5', runtime.model
     end
