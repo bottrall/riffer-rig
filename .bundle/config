@@ -1,2 +1,4 @@
 ---
 BUNDLE_LOCKFILE_CHECKSUMS: "false"
+BUNDLE_PATH: "/home/runner/work/riffer-rig/riffer-rig/vendor/bundle"
+BUNDLE_DEPLOYMENT: "true"
