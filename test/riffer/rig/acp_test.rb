@@ -2,9 +2,11 @@
 
 require 'test_helper'
 require 'acp/sdk'
+require_relative '../../support/host_namespace'
 require_relative '../../support/rig_files'
 
 describe Riffer::Rig::ACP do
+  include HostNamespace
   include RigFiles
 
   before do
@@ -874,11 +876,30 @@ describe Riffer::Rig::ACP do
 
   describe 'namespace' do
     it 'references no Riffer::Rig constant outside the public host API' do
-      sources = [File.expand_path('../../../lib/riffer/rig/acp.rb', __dir__),
-                 *Dir[File.expand_path('../../../lib/riffer/rig/acp/**/*.rb', __dir__)]]
-      referenced = sources.flat_map { |path| File.read(path).scan(/Riffer::Rig::(\w+)/).flatten }.uniq
-
-      assert_empty referenced - %w[ACP Runtime Hosts Loader Events Extension Mcp Env Command VERSION]
+      assert_empty rig_constants_outside('ACP') - %w[
+        Command::INVOCATION
+        Env
+        Env::Invalid
+        Events::_Event
+        Events::AfterToolCall
+        Events::CommandOutput
+        Events::JobExit
+        Events::TurnEnd
+        Extension
+        Hosts::_Host
+        Hosts::NonInteractive
+        Hosts::Null
+        Loader
+        Mcp::Declaration
+        Runtime
+        Runtime::BusyError
+        Runtime::ErrorMessage
+        Runtime::INTERRUPT_CANCELLED
+        Runtime::JobCompletion
+        Runtime::JobNotification::MARKER
+        Runtime::STOPPED_WITHOUT_COMPLETING
+        VERSION
+      ]
     end
   end
 end

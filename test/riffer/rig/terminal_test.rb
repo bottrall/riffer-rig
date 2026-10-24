@@ -3,6 +3,7 @@
 require 'test_helper'
 require 'json'
 require 'stringio'
+require_relative '../../support/host_namespace'
 require_relative '../../support/terminal_pty'
 
 # Delegates to the real sessions collaborator and hands each built Runtime to
@@ -58,6 +59,8 @@ class PreparedSessions
 end
 
 describe Riffer::Rig::Terminal do
+  include HostNamespace
+
   before do
     @home = Dir.mktmpdir
     @cwd = Dir.mktmpdir
@@ -257,11 +260,23 @@ describe Riffer::Rig::Terminal do
   end
 
   it 'references no Riffer::Rig constant outside the public host API' do
-    sources = [File.expand_path('../../../lib/riffer/rig/terminal.rb', __dir__),
-               *Dir[File.expand_path('../../../lib/riffer/rig/terminal/**/*.rb', __dir__)]]
-    referenced = sources.flat_map { |path| File.read(path).scan(/Riffer::Rig::(\w+)/).flatten }.uniq
-
-    assert_empty referenced - %w[Terminal Runtime Hosts Loader Events Command Turn]
+    assert_empty rig_constants_outside('Terminal') - %w[
+      Command::INVOCATION
+      Events::_Event
+      Events::AfterToolCall
+      Events::BeforeToolCall
+      Events::CommandOutput
+      Events::JobExit
+      Events::TurnEnd
+      Hosts::_Host
+      Loader::ConfigurationError
+      Runtime
+      Runtime::ErrorMessage
+      Runtime::JobNotification
+      Runtime::JobNotification::MARKER
+      Runtime::Snapshot
+      Runtime::Usage
+    ]
   end
 
   describe 'choosing the loop' do
