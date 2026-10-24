@@ -40,6 +40,26 @@ describe Riffer::Rig::CLI::Flags do
       assert_equal 'invalid argument: --job-idle-timeout -1', parse('-p', '--job-idle-timeout', '-1')
     end
 
+    it 'refuses --verbose without -p' do
+      assert_equal '--verbose is only available with -p', parse('--verbose')
+    end
+
+    it 'refuses --json without -p' do
+      assert_equal '--json is only available with -p', parse('--json')
+    end
+
+    it 'refuses --job-idle-timeout without -p' do
+      assert_equal '--job-idle-timeout is only available with -p', parse('--job-idle-timeout', '30')
+    end
+
+    it 'leaves a headless-only flag to --help without -p' do
+      assert parse('--verbose', '--help').help
+    end
+
+    it 'leaves a headless-only flag to --version without -p' do
+      assert parse('--json', '--version').version
+    end
+
     it 'refuses any other flag missing its argument' do
       assert_equal 'missing argument: --model', parse('--model')
     end
@@ -103,7 +123,7 @@ describe Riffer::Rig::CLI::Flags do
     end
 
     it 'reads --verbose' do
-      assert parse('--verbose').verbose
+      assert parse('-p', '--verbose').verbose
     end
 
     it 'keeps --verbose off by default' do
