@@ -2,8 +2,7 @@
 
 require 'forwardable'
 
-# A real Runtime with its background-job answers scripted over it, for the
-# moments a test can't time real jobs to reach.
+# Real jobs can't be timed to land at the moments these tests need.
 class OverlaidRuntime
   extend Forwardable
 
