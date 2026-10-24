@@ -78,6 +78,13 @@ describe Riffer::Rig::Runtime::JobNotices do
   end
 
   describe '#with_notice' do
+    it 'emits a job_exit for each exit' do
+      @exited.push(completion('a'), completion('b'))
+      notices.with_notice(tool_result, @session)
+
+      assert_equal %w[a b], @emitted.map(&:job_id)
+    end
+
     it 'returns the result unchanged without an exit' do
       message = tool_result
 
@@ -91,6 +98,16 @@ describe Riffer::Rig::Runtime::JobNotices do
                    notices.with_notice(tool_result, @session).content
     end
 
+    it 'keeps the error of the result' do
+      @exited << completion
+      failed = Riffer::Messages::Tool.new(
+        'boom', tool_call_id: 'call-1', name: 'bash', error: 'boom', error_type: :execution_error
+      )
+      noticed = notices.with_notice(failed, @session)
+
+      assert_equal ['boom', :execution_error], [noticed.error, noticed.error_type]
+    end
+
     it 'replaces the result in the session' do
       message = tool_result
       @session.add(message)
@@ -100,17 +117,40 @@ describe Riffer::Rig::Runtime::JobNotices do
       assert_same noticed, @session.messages.last
     end
 
-    it 'emits a job_exit for each exit' do
-      @exited.push(completion('a'), completion('b'))
-      notices.with_notice(tool_result, @session)
+    it 'leaves an earlier result with the same call id as it was' do
+      earlier = tool_result('earlier')
+      @session.add(earlier)
+      later = tool_result
+      @session.add(later)
+      @exited << completion
+      notices.with_notice(later, @session)
 
-      assert_equal %w[a b], @emitted.map(&:job_id)
+      assert_same earlier, @session.messages[-2]
     end
   end
 
   describe '#notify' do
     it 'adds nothing without an exit' do
       assert_nil notices.notify(@session)
+    end
+
+    it 'tells of every exit in one notification' do
+      @exited.push(completion('a'), completion('b'))
+
+      assert_equal Riffer::Rig::Runtime::JobEnvelope.render([completion('a'), completion('b')]),
+                   notices.notify(@session)&.content
+    end
+
+    it 'counts the exits a follow-up reports' do
+      @exited.push(completion('a'), completion('b'))
+
+      assert_equal 2, notices.notify(@session, follow_up: true)&.follow_up_exits
+    end
+
+    it 'leaves the count off outside a follow-up' do
+      @exited << completion
+
+      assert_nil notices.notify(@session)&.follow_up_exits
     end
 
     it 'adds a job notification to the session' do
@@ -125,18 +165,6 @@ describe Riffer::Rig::Runtime::JobNotices do
       notification = notices.notify(@session)
 
       assert_equal [notification], @delivered
-    end
-
-    it 'counts the exits a follow-up reports' do
-      @exited.push(completion('a'), completion('b'))
-
-      assert_equal 2, notices.notify(@session, follow_up: true)&.follow_up_exits
-    end
-
-    it 'leaves the count off outside a follow-up' do
-      @exited << completion
-
-      assert_nil notices.notify(@session)&.follow_up_exits
     end
   end
 end

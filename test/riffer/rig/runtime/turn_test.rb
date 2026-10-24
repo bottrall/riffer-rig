@@ -88,25 +88,46 @@ describe Riffer::Rig::Runtime::Turn do
       assert_equal Riffer::Rig::Events::Notify.new('queued', :info), events.first
     end
 
-    it 'passes each stream event to the stream hooks' do
-      turn_events { stream('hi') }
+    it 'shows the stream hooks each stream event unchanged' do
+      events, = turn_events { stream('a', 'b') }
 
-      assert_includes @observed.map(&:class), Riffer::StreamEvents::TextDelta
-    end
-
-    it 'closes with a turn_end carrying the stop reason' do
-      events, = turn_events { stream('hi') }
-
-      assert_equal :completed, events.last.stop_reason
-    end
-
-    it 'returns the response' do
-      _, result = turn_events { stream('hi', ending: response('All done.')) }
-
-      assert_equal 'All done.', result.content
+      assert_equal events.grep(Riffer::StreamEvents::Base).map(&:object_id),
+                   @observed.grep(Riffer::StreamEvents::Base).map(&:object_id)
     end
 
     describe 'continuations' do
+      it 'continues no more than the cap' do
+        cap = Riffer::Rig::Runtime::Turn::MAX_JOB_CONTINUATIONS
+        @continuations.concat(Array.new(cap + 1) { stream })
+        turn_events { stream }
+
+        assert_equal 1, @continuations.length
+      end
+
+      it 'does not continue a run that did not complete' do
+        cut = Riffer::Agent::Response.new('Cut sh', outcome: Riffer::Agent::Outcome.new(reason: :length))
+        @continuations << stream(ending: response('Continued.'))
+        _, result = turn_events { stream(ending: cut) }
+
+        assert_equal 'Cut sh', result.content
+      end
+
+      it 'does not continue a run that used the step limit' do
+        @agent = Riffer::Agent.new(config: Riffer::Agent::Config.new(model: 'mock/test', max_steps: 2))
+        @continuations << stream(ending: response('Continued.'))
+        _, result = turn_events { stream(ending: response('First.', steps: 2)) }
+
+        assert_equal 'First.', result.content
+      end
+
+      it 'continues a run with steps left under the limit' do
+        @agent = Riffer::Agent.new(config: Riffer::Agent::Config.new(model: 'mock/test', max_steps: 2))
+        @continuations << stream(ending: response('Continued.'))
+        _, result = turn_events { stream(ending: response('First.', steps: 1)) }
+
+        assert_equal 'Continued.', result.content
+      end
+
       it 'continues the turn with the stream a continuation hands it' do
         @continuations << stream('more', ending: response('Continued.'))
         _, result = turn_events { stream('hi') }
@@ -129,24 +150,23 @@ describe Riffer::Rig::Runtime::Turn do
         assert_equal 30, result.token_usage&.total_tokens
       end
 
-      it 'continues no more than the cap' do
-        cap = Riffer::Rig::Runtime::Turn::MAX_JOB_CONTINUATIONS
-        @continuations.concat(Array.new(cap + 1) { stream })
-        turn_events { stream }
+      it 'ends the turn once' do
+        @continuations << stream('more')
+        events, = turn_events { stream('hi') }
 
-        assert_equal 1, @continuations.length
-      end
-
-      it 'does not continue a run that used the step limit' do
-        @agent = Riffer::Agent.new(config: Riffer::Agent::Config.new(model: 'mock/test', max_steps: 2))
-        @continuations << stream(ending: response('Continued.'))
-        _, result = turn_events { stream(ending: response('First.', steps: 2)) }
-
-        assert_equal 'First.', result.content
+        assert_equal [events.last], events.grep(Riffer::Rig::Events::TurnEnd)
       end
     end
 
     describe 'when aborted' do
+      it 'heals the tool calls left without a result' do
+        call = Riffer::Messages::Assistant::ToolCall.new(call_id: 'orphan', name: 'read', arguments: '{}')
+        @agent.session.add(Riffer::Messages::Assistant.new('', tool_calls: [call]))
+        turn_events { stalled }
+
+        assert_equal :interrupted, @agent.session.messages.grep(Riffer::Messages::Tool).first&.error_type
+      end
+
       it 'keeps the text streamed so far as an assistant message' do
         turn_events { stalled('partial ', 'reply') }
 
@@ -171,11 +191,35 @@ describe Riffer::Rig::Runtime::Turn do
         assert_includes events.map(&:class), Riffer::StreamEvents::Interrupt
       end
 
+      it 'answers with the text streamed so far' do
+        _, result = turn_events { stalled('partial') }
+
+        assert_equal 'partial', result.content
+      end
+
+      it 'answers as interrupted with the cancelled detail' do
+        _, result = turn_events { stalled('partial') }
+
+        assert_equal [:interrupted, 'cancelled'], [result.outcome.reason, result.outcome.detail]
+      end
+
       it 'ends the turn as cancelled' do
         events, = turn_events { stalled('partial') }
 
         assert_equal :cancelled, events.last.stop_reason
       end
+    end
+
+    it 'closes with a turn_end carrying the stop reason' do
+      events, = turn_events { stream('hi') }
+
+      assert_equal :completed, events.last.stop_reason
+    end
+
+    it 'returns the response' do
+      _, result = turn_events { stream('hi', ending: response('All done.')) }
+
+      assert_equal 'All done.', result.content
     end
   end
 

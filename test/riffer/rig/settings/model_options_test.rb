@@ -90,6 +90,22 @@ describe Riffer::Rig::Settings::ModelOptions do
   end
 
   describe '.native_options' do
+    it 'is empty without a switch' do
+      assert_empty Riffer::Rig::Settings::ModelOptions.native_options('mock/test', {})
+    end
+
+    it 'drops every switch for a model without a provider' do
+      assert_empty Riffer::Rig::Settings::ModelOptions.native_options('sonnet', { web_search: true })
+    end
+
+    it 'drops the switch of a native tool it does not know' do
+      assert_empty Riffer::Rig::Settings::ModelOptions.native_options('mock/test', { code_interpreter: true })
+    end
+
+    it 'drops the switch of a native tool the provider does not support' do
+      assert_empty Riffer::Rig::Settings::ModelOptions.native_options('gemini/gem-2.5-pro', { web_search: true })
+    end
+
     it 'keeps the switch of a native tool the provider supports' do
       switches = { web_search: true }
 
@@ -100,22 +116,6 @@ describe Riffer::Rig::Settings::ModelOptions do
       switches = { web_search: { max_uses: 3 } }
 
       assert_equal switches, Riffer::Rig::Settings::ModelOptions.native_options('mock/test', switches)
-    end
-
-    it 'drops the switch of a native tool the provider does not support' do
-      assert_empty Riffer::Rig::Settings::ModelOptions.native_options('gemini/gem-2.5-pro', { web_search: true })
-    end
-
-    it 'drops the switch of a native tool it does not know' do
-      assert_empty Riffer::Rig::Settings::ModelOptions.native_options('mock/test', { code_interpreter: true })
-    end
-
-    it 'drops every switch for a model without a provider' do
-      assert_empty Riffer::Rig::Settings::ModelOptions.native_options('sonnet', { web_search: true })
-    end
-
-    it 'is empty without a switch' do
-      assert_empty Riffer::Rig::Settings::ModelOptions.native_options('mock/test', {})
     end
   end
 end
