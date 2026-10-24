@@ -1,0 +1,13 @@
+# Generated from lib/riffer/rig/loader/reasoning.rb with RBS::Inline
+
+module Riffer::Rig::Loader::Reasoning
+  # @rbs flag: String?
+  # @rbs env: String?
+  # @rbs return: String?
+  def forced: (String? flag, String? env) -> String?
+
+  # @rbs flag: String?
+  # @rbs env: String?
+  # @rbs return: String?
+  def rejection: (String? flag, String? env) -> String?
+end

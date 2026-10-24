@@ -54,8 +54,7 @@ class RecordingStore
   end
 end
 
-# A store whose listing order is the reverse of the wrapped store's, proving
-# the Loader picks by the header's `updated` and not by position.
+# Proves the Loader picks by the header's `updated`, not by position.
 class ReversedStore
   def initialize(store)
     @store = store
@@ -975,6 +974,23 @@ describe Riffer::Rig::Loader do
       yield
     ensure
       Riffer::Rig::Credentials.singleton_class.remove_method(:resolve)
+    end
+
+    it 'leaves a runtime another loader built alone' do
+      runtime = new_loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
+
+      assert_same runtime, new_loader.reload(runtime, force: true)
+    end
+
+    it 'reloads each runtime with what its own build chose' do
+      write_rig(:project, probe_rig('probe'))
+      loader = new_loader(host: ConfirmingHost.new([true, true]))
+      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
+      loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test', extensions: false))
+      File.write(project_rig_path, probe_rig('probe_next'))
+      loader.reload(runtime, force: true)
+
+      assert_includes tool_names(runtime), 'probe_next'
     end
 
     it 'skips the reload when no tracked file changed' do
