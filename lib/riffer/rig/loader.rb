@@ -26,7 +26,7 @@ class Riffer::Rig::Loader
   # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)
   # @rbs extra_extensions: Array[Riffer::Rig::Extension]
-  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?
   # @rbs return: Riffer::Rig::Runtime
   def self.runtime(
     cwd:,
@@ -77,7 +77,7 @@ class Riffer::Rig::Loader
   # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)
   # @rbs extra_extensions: Array[Riffer::Rig::Extension]
-  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?
   # @rbs return: Riffer::Rig::Runtime
   def runtime(options = Options.new, reload: nil, extra_extensions: [], snapshot: nil)
     settings = merged_settings
@@ -100,11 +100,12 @@ class Riffer::Rig::Loader
     loaded += @source.discover(autoload: document.autoload) if options.extensions
     loaded += @extra_extensions
 
-    recorder = recorder_for(document, resumed: !snapshot.nil?)
+    saved = snapshot && Riffer::Rig::Runtime::Snapshot.of(snapshot)
+    recorder = recorder_for(document, resumed: !saved.nil?)
     @recorder_extensions = recorder ? [Riffer::Rig::Stores::Recorder.extension(recorder)] : []
     loaded += @recorder_extensions
 
-    snapshot = snapshot_without_forced(snapshot, options)
+    saved = snapshot_without_forced(saved, options)
 
     built = Riffer::Rig::Runtime.new(
       selected,
@@ -121,7 +122,7 @@ class Riffer::Rig::Loader
       riffer_config: @riffer_config,
       model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected),
       native_tools: document.native_tools,
-      snapshot: snapshot
+      snapshot: saved
     )
     built.install_command(Riffer::Rig::Commands::Reload.command(self))
     store = @store
@@ -391,12 +392,12 @@ class Riffer::Rig::Loader
 
   # A model or reasoning level chosen for the run wins for that run only: it is
   # not recorded, so a later resume restores the session's own switches.
-  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs snapshot: Riffer::Rig::Runtime::Snapshot?
   # @rbs options: Riffer::Rig::Loader::Options
-  # @rbs return: Hash[Symbol, untyped]?
+  # @rbs return: Riffer::Rig::Runtime::Snapshot?
   def snapshot_without_forced(snapshot, options)
-    snapshot = snapshot&.merge(model: nil) if options.model
-    snapshot = snapshot&.merge(reasoning: nil) if options.reasoning
+    snapshot = snapshot&.without_model if options.model
+    snapshot = snapshot&.without_reasoning if options.reasoning
     snapshot
   end
 

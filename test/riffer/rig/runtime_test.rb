@@ -1681,6 +1681,12 @@ describe Riffer::Rig::Runtime do
       assert_equal %w[a], runtime.to_h[:skills]
     end
 
+    it 'restores from a Snapshot as from its hash' do
+      snapshot = saved_runtime.to_h
+
+      assert_equal snapshot[:id], restored(Riffer::Rig::Runtime::Snapshot.from_h(snapshot)).id
+    end
+
     it 'restores the id' do
       snapshot = saved_runtime.to_h
 

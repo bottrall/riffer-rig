@@ -1,6 +1,8 @@
 # Generated from lib/riffer/rig/runtime/snapshot.rb with RBS::Inline
 
 class Riffer::Rig::Runtime::Snapshot
+  include Riffer::Rig::Support::Equatable
+
   # @dynamic id, messages, model, reasoning, skills
   attr_reader id: String
 
@@ -11,6 +13,10 @@ class Riffer::Rig::Runtime::Snapshot
   attr_reader reasoning: String?
 
   attr_reader skills: Array[String]
+
+  # @rbs snapshot: Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped]
+  # @rbs return: Riffer::Rig::Runtime::Snapshot
+  def self.of: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped] snapshot) -> Riffer::Rig::Runtime::Snapshot
 
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: Riffer::Rig::Runtime::Snapshot
@@ -30,6 +36,12 @@ class Riffer::Rig::Runtime::Snapshot
 
   # @rbs return: Hash[Symbol, untyped]
   def to_h: () -> Hash[Symbol, untyped]
+
+  # @rbs return: Riffer::Rig::Runtime::Snapshot
+  def without_model: () -> Riffer::Rig::Runtime::Snapshot
+
+  # @rbs return: Riffer::Rig::Runtime::Snapshot
+  def without_reasoning: () -> Riffer::Rig::Runtime::Snapshot
 
   # @rbs return: Riffer::Agent::Session
   def session: () -> Riffer::Agent::Session

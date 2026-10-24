@@ -108,9 +108,9 @@ class Riffer::Rig::Runtime
   # @rbs model_options: Hash[Symbol, untyped]
   # @rbs native_tools: Hash[Symbol, untyped]
   # @rbs clock: ^() -> Float
-  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?
   # @rbs return: void
-  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?env: Riffer::Rig::Env, ?auth_path: String, ?reasoning: String?, ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?native_tools: Hash[Symbol, untyped], ?clock: ^() -> Float, ?snapshot: Hash[Symbol, untyped]?) -> void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?env: Riffer::Rig::Env, ?auth_path: String, ?reasoning: String?, ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?native_tools: Hash[Symbol, untyped], ?clock: ^() -> Float, ?snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?) -> void
 
   # @rbs text: String
   # @rbs &: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
