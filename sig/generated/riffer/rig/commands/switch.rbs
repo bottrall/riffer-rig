@@ -1,0 +1,16 @@
+# Generated from lib/riffer/rig/commands/switch.rb with RBS::Inline
+
+module Riffer::Rig::Commands::Switch
+  SAVE: String
+
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs label: String
+  # @rbs shown: String
+  # @rbs current: String?
+  # @rbs unset: String
+  # @rbs saved_to: String
+  # @rbs store: ^(String) -> String?
+  # @rbs &switch: (String) -> bool
+  # @rbs return: void
+  def run: (Riffer::Rig::Command::Context ctx, label: String, shown: String, current: String?, unset: String, saved_to: String, store: ^(String) -> String?) { (String) -> bool } -> void
+end

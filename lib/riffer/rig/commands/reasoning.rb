@@ -3,7 +3,6 @@
 module Riffer::Rig::Commands::Reasoning
   extend self
 
-  SAVE = '--save' #: String
   DEFAULT = 'default' #: String
 
   # @rbs settings_path: String
@@ -20,28 +19,31 @@ module Riffer::Rig::Commands::Reasoning
   # @rbs settings_path: String
   # @rbs return: void
   def run(ctx, settings_path:)
-    words = ctx.args.split
-    save = words.delete(SAVE)
-    level = words.join(' ')
+    current = ctx.runtime.reasoning
+    Riffer::Rig::Commands::Switch.run(
+      ctx,
+      label: 'Reasoning',
+      shown: current || DEFAULT,
+      current: current,
+      unset: 'No reasoning level is in effect to save',
+      saved_to: settings_path,
+      store: ->(level) { Riffer::Rig::Settings::File.store_reasoning(level, path: settings_path) }
+    ) { |level| switched?(ctx, level) }
+  end
 
-    if level.empty?
-      current = ctx.runtime.reasoning
-      return ctx.say("Reasoning: #{current || DEFAULT}") unless save
-      return ctx.say('No reasoning level is in effect to save') unless current
+  private
 
-      refusal = Riffer::Rig::Settings::File.store_reasoning(current, path: settings_path)
-      return ctx.host.notify(refusal, level: :error) if refusal
-
-      return ctx.say("Saved #{current} to #{settings_path}")
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs level: String
+  # @rbs return: bool
+  def switched?(ctx, level)
+    rejection = Riffer::Rig::Settings::ModelOptions.reasoning_rejection(level)
+    if rejection
+      ctx.say(rejection)
+      return false
     end
 
-    rejection = Riffer::Rig::Settings::ModelOptions.reasoning_rejection(level)
-    return ctx.say(rejection) if rejection
-
     ctx.runtime.reasoning = level
-    refusal = Riffer::Rig::Settings::File.store_reasoning(level, path: settings_path) if save
-    ctx.host.notify(refusal, level: :error) if refusal
-    saved = save && !refusal
-    ctx.say(saved ? "Reasoning switched to #{level} and saved to #{settings_path}" : "Reasoning switched to #{level}")
+    true
   end
 end

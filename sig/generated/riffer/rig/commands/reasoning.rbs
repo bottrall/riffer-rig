@@ -1,8 +1,6 @@
 # Generated from lib/riffer/rig/commands/reasoning.rb with RBS::Inline
 
 module Riffer::Rig::Commands::Reasoning
-  SAVE: String
-
   DEFAULT: String
 
   # @rbs settings_path: String
@@ -13,4 +11,11 @@ module Riffer::Rig::Commands::Reasoning
   # @rbs settings_path: String
   # @rbs return: void
   def run: (Riffer::Rig::Command::Context ctx, settings_path: String) -> void
+
+  private
+
+  # @rbs ctx: Riffer::Rig::Command::Context
+  # @rbs level: String
+  # @rbs return: bool
+  def switched?: (Riffer::Rig::Command::Context ctx, String level) -> bool
 end
