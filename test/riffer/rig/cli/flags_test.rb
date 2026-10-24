@@ -52,6 +52,10 @@ describe Riffer::Rig::CLI::Flags do
       assert_equal '--job-idle-timeout is only available with -p', parse('--job-idle-timeout', '30')
     end
 
+    it 'accepts the headless-only flags with -p' do
+      assert_kind_of Riffer::Rig::CLI::Flags, parse('-p', '--verbose', '--json', '--job-idle-timeout', '30')
+    end
+
     it 'leaves a headless-only flag to --help without -p' do
       assert parse('--verbose', '--help').help
     end

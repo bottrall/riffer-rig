@@ -108,21 +108,6 @@ describe Riffer::Rig::CLI do
     refute_empty @output.string
   end
 
-  it 'allows --verbose with -p' do
-    assert_equal 0,
-                 start(
-                   '-p',
-                   '--verbose',
-                   'hello',
-                   input: '',
-                   env: { 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test' }
-                 )
-  end
-
-  it 'allows --job-idle-timeout with -p' do
-    assert_equal 0, start('-p', '--job-idle-timeout', '30', 'hello', input: '', env: model_env)
-  end
-
   it 'prints JSON events for --json with -p' do
     start('-p', '--json', 'hello', input: '', env: { 'MOCK_API_KEY' => 'mock-key', 'RIFFER_MODEL' => 'mock/test' })
 
