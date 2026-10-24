@@ -93,7 +93,7 @@ Cancelling a turn does not stop its jobs. `bash_kill` stops one; ending the sess
 
 A tool's name everywhere — `--tools`, the `tools:` allowlist when [embedding](EMBEDDING.md), a replacement — is its riffer identifier: `read`, `write`, `edit`, `bash`, `bash_output`, `bash_kill`, or the identifier an extension tool declares.
 
-The allowlist names tools, not extensions: `--tools bash` gives the model `bash` without `bash_output` and `bash_kill`, so it can start background jobs but not follow or stop them. A name that matches no tool is reported as `Unknown tool in allowlist: NAME`, so a typo doesn't silently drop a tool. The allowlist does not apply to [MCP](MCP.md#tool-names) tools.
+The allowlist names tools, not extensions: `--tools bash` gives the model `bash` without `bash_output` and `bash_kill`, so it can start background jobs but not follow or stop them. A name that matches no tool is [reported](TROUBLESHOOTING.md), so a typo doesn't silently drop a tool. The allowlist does not apply to [MCP](MCP.md#tool-names) tools.
 
 ## Provider-native tools
 

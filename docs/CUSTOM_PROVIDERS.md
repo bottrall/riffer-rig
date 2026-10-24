@@ -1,6 +1,6 @@
 # Custom providers
 
-An extension can register a provider class under a new model prefix. riffer-rig then treats it like a built-in: first-run onboarding, `/model` and `/auth` list it, its credentials resolve the [same way](PROVIDERS.md#resolution-order), and its SDK gem is offered like a built-in's.
+An extension can register a provider class under a new model prefix. riffer-rig then treats it like a built-in: first-run onboarding, `/model` and `/auth` list it, its credentials resolve the [same way](CONFIGURATION.md#where-each-value-comes-from), and its SDK gem is offered like a built-in's.
 
 ## Registering a provider
 

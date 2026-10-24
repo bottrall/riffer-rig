@@ -13,7 +13,7 @@ There are two ways to get one:
 runtime = Riffer::Rig::Loader.runtime(cwd: Dir.pwd, host: MyHost.new)
 ```
 
-The Loader reads the [settings](CONFIGURATION.md), picks the [model](CONFIGURATION.md#where-each-value-comes-from), ensures its [SDK gem](PROVIDERS.md#sdk-gems), resolves its [credentials](PROVIDERS.md#resolution-order), loads the bundled extensions and the [`rig.rb` files](EXTENSIONS.md#the-rigrb-files), and builds the Runtime. It also adds the `/reload` command, `/trace` when the session is saved, and [automatic reloading](RELOADING.md).
+The Loader reads the [settings](CONFIGURATION.md), picks the [model](CONFIGURATION.md#where-each-value-comes-from), ensures its [SDK gem](PROVIDERS.md#sdk-gems), resolves its [credentials](CONFIGURATION.md#where-each-value-comes-from), loads the bundled extensions and the [`rig.rb` files](EXTENSIONS.md#the-rigrb-files), and builds the Runtime. It also adds the `/reload` command, `/trace` when the session is saved, and [automatic reloading](RELOADING.md).
 
 | Keyword             | Meaning                                                                                     | Default |
 | ------------------- | ------------------------------------------------------------------------------------------- | ------- |
@@ -288,7 +288,7 @@ resolution.missing # => []
 
 | Method                       | Does                                                                                     |
 | ---------------------------- | ---------------------------------------------------------------------------------------- |
-| `install(identifier, host:)` | resolves every field in [order](PROVIDERS.md#resolution-order), asking the host if it can, and applies them once none is missing |
+| `install(identifier, host:)` | resolves every field in [order](CONFIGURATION.md#where-each-value-comes-from), asking the host if it can, and applies them once none is missing |
 | `apply(identifier, values)`  | assigns values from elsewhere to `Riffer.config`                                          |
 | `store(identifier, values)`  | saves secrets to `auth.json` and plain values to settings                                |
 | `remove(identifier)`         | deletes what `store` saved                                                               |
