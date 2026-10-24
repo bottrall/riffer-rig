@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.16.0</span>
+            <span class="version">v0.17.0</span>
           </div>
         </nav>
       </div>
@@ -278,7 +278,7 @@
   <tbody>
     <tr>
       <td>allow only some tools for one run</td>
-      <td><code>--tools read,edit</code> (<a href="#identifiers">Identifiers</a>); MCP tools are not filtered</td>
+      <td><code>--tools read,edit</code> (<a href="#identifiers">Identifiers</a>)</td>
     </tr>
     <tr>
       <td>never load some tools</td>
@@ -377,16 +377,11 @@ done
 
 <p>A tool’s name everywhere — <code>--tools</code>, the <code>tools:</code> allowlist when <a href="/guides/embedding/">embedding</a>, a replacement — is its riffer identifier: <code>read</code>, <code>write</code>, <code>edit</code>, <code>bash</code>, <code>bash_output</code>, <code>bash_kill</code>, or the identifier an extension tool declares.</p>
 
-<p>The allowlist names tools, not extensions: <code>--tools bash</code> gives the model <code>bash</code> without <code>bash_output</code> and <code>bash_kill</code>, so it can start background jobs but not follow or stop them. A name that matches no tool is reported as <code>Unknown tool in allowlist: NAME</code>, so a typo doesn’t silently drop a tool. The allowlist does not apply to <a href="/guides/mcp/#tool-names">MCP</a> tools.</p>
+<p>The allowlist names tools, not extensions: <code>--tools bash</code> gives the model <code>bash</code> without <code>bash_output</code> and <code>bash_kill</code>, so it can start background jobs but not follow or stop them. A name that matches no tool is <a href="/guides/troubleshooting/">reported</a>, so a typo doesn’t silently drop a tool. The allowlist does not apply to <a href="/guides/mcp/#tool-names">MCP</a> tools.</p>
 
 <h2 id="provider-native-tools">Provider-native tools</h2>
 
-<p>Web search runs inside the provider’s own request, so it is part of the core rather than an extension. It is off by default; switch it on in <a href="/guides/configuration/#toolsnative">settings</a>:</p>
-
-<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"tools"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"native"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">"web_search"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">
-</span></code></pre></div></div>
-
-<p><code>anthropic</code>, <code>openai</code> and <code>azure_openai</code> support it. On other providers the switch does nothing, and a <code>/model</code> switch turns the tool on or off to match the new provider.</p>
+<p>Web search runs inside the provider’s own request, so it is part of the core rather than an extension. <a href="/guides/configuration/#toolsnative"><code>tools.native</code></a> switches it on. <code>anthropic</code>, <code>openai</code> and <code>azure_openai</code> support it, and a <code>/model</code> switch turns the tool on or off to match the new provider.</p>
 
 <h2 id="replacing-a-tool">Replacing a tool</h2>
 
@@ -409,7 +404,7 @@ done
 <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="p">.</span><span class="nf">extension</span><span class="p">(</span><span class="s1">'sandbox'</span><span class="p">)</span> <span class="p">{</span> <span class="o">|</span><span class="n">rig</span><span class="o">|</span> <span class="n">rig</span><span class="p">.</span><span class="nf">tool</span> <span class="no">SandboxedBash</span> <span class="p">}</span>
 </code></pre></div></div>
 
-<p>The later registration takes the earlier tool’s place, and the session shows <code>Extension sandbox replaces tool bash from bash</code>. Replacement is per identifier: a replaced <code>bash</code> leaves <code>bash_output</code> and <code>bash_kill</code> registered, acting only on jobs the bundled <code>bash</code> started.</p>
+<p>The later registration <a href="/guides/extensions/#bundled-extensions-and-replacement">takes the earlier tool’s place</a>. Replacement is per identifier: a replaced <code>bash</code> leaves <code>bash_output</code> and <code>bash_kill</code> registered, acting on the jobs in the session’s job registry, where a replacement can <a href="/guides/embedding/#starting-jobs-from-your-own-tool">register its own</a>.</p>
 
         </article>
 

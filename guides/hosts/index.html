@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.16.0</span>
+            <span class="version">v0.17.0</span>
           </div>
         </nav>
       </div>
@@ -292,6 +292,27 @@
     <tr>
       <td>end the session</td>
       <td><code>runtime.close</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Two helpers do what the shipped hosts do:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Helper</th>
+      <th>Gives</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Riffer::Rig::Runtime::ErrorMessage.of(error)</code></td>
+      <td>the message to show for an error a turn raised, with what the provider’s API answered when the error carries it</td>
+    </tr>
+    <tr>
+      <td><code>Riffer::Rig::Command::INVOCATION</code></td>
+      <td>a <code>Regexp</code> matching a slash-command line, capturing the name and the arguments</td>
     </tr>
   </tbody>
 </table>

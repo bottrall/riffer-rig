@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.16.0</span>
+            <span class="version">v0.17.0</span>
           </div>
         </nav>
       </div>
@@ -195,7 +195,7 @@ riffer
 
 <p>The answer is saved to <code>~/.riffer/settings.json</code>, so later runs skip the question. <a href="/guides/configuration/#where-each-value-comes-from">Configuration</a> lists the other places a model can come from.</p>
 
-<p>If the provider’s SDK gem is missing, it offers to install it (<a href="/guides/providers/overview/#sdk-gems">SDK gems</a>). Then it looks for the provider’s API key in the environment and in <code>~/.riffer/auth.json</code>, and asks for it if it finds none:</p>
+<p>If the provider’s SDK gem is missing, it offers to install it (<a href="/guides/providers/overview/#sdk-gems">SDK gems</a>). Then it looks for the provider’s API key in the environment and in <code>~/.riffer/auth.json</code>, and asks for it if it finds none and the provider’s SDK has no <a href="/guides/configuration/#where-each-value-comes-from">credential chain</a> configured:</p>
 
 <pre><code class="language-text">anthropic api_key
 › (hidden)

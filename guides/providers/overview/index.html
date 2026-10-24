@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.16.0</span>
+            <span class="version">v0.17.0</span>
           </div>
         </nav>
       </div>
@@ -163,7 +163,6 @@
             <span class="toc-label">On this page</span>
             <ul>
               <li><a href="#sdk-gems">SDK gems</a></li>
-              <li><a href="#resolution-order">Resolution order</a></li>
               <li><a href="#authjson">auth.json</a></li>
               <li><a href="#the-providers-block-in-settings">The providers block in settings</a></li>
               <li><a href="#auth">/auth</a></li>
@@ -187,7 +186,7 @@
     <tr>
       <td><a href="#anthropic"><code>anthropic</code></a></td>
       <td><code>api_key</code></td>
-      <td>required, secret</td>
+      <td>required, secret, or <a href="#anthropic">SDK chain</a></td>
       <td><code>ANTHROPIC_API_KEY</code></td>
       <td><code>~/.riffer/auth.json</code></td>
     </tr>
@@ -249,6 +248,8 @@
     </tr>
   </tbody>
 </table>
+
+<p>Each field resolves in the <a href="/guides/configuration/#where-each-value-comes-from">order every value follows</a>. Nothing validates a value: a bad key surfaces on the first request, with the provider’s own error.</p>
 
 <p>An extension can add a provider of its own (<a href="/guides/providers/custom/">Custom providers</a>). A custom provider registered without a setup reads one secret, <code>&lt;IDENTIFIER&gt;_API_KEY</code>.</p>
 
@@ -315,19 +316,6 @@
 
 <p>To skip the question, install the gem yourself or add it to your Gemfile ahead of time. <code>/model</code> runs the same check when you switch to a provider whose gem is missing.</p>
 
-<h2 id="resolution-order">Resolution order</h2>
-
-<p>Each field resolves on its own, and the first hit wins:</p>
-
-<ol>
-  <li><strong>Environment variable.</strong> The field’s variables, in the order the table lists them. A blank value counts as unset.</li>
-  <li><strong>Stored value.</strong> A secret from <code>~/.riffer/auth.json</code>; a plain value from the <code>providers</code> block of <code>~/.riffer/settings.json</code>.</li>
-  <li><strong>Fallback.</strong> The Bedrock region falls back to the active profile in <code>~/.aws/config</code>.</li>
-  <li><strong>Ask.</strong> A required field still unresolved is asked for — a secret without echo — and the answer is stored. Optional fields are never asked for, and headless never asks.</li>
-</ol>
-
-<p>Nothing validates a value: a bad key surfaces on the first request, with the provider’s own error.</p>
-
 <h2 id="authjson">auth.json</h2>
 
 <p><code>~/.riffer/auth.json</code> holds secret fields only, one typed entry per provider. It is written with permissions <code>600</code>, in a directory with <code>700</code>.</p>
@@ -382,7 +370,7 @@
   <tbody>
     <tr>
       <td><code>/auth</code></td>
-      <td>lists every provider with where its secret comes from: <code>env</code>, <code>stored</code>, <code>chain</code> (the SDK’s own credential chain, Bedrock only) or <code>missing</code></td>
+      <td>lists every provider with where its secret comes from: <code>env</code>, <code>stored</code>, <code>chain</code> (no secret resolves, and the SDK’s own credential chain is configured) or <code>missing</code></td>
     </tr>
     <tr>
       <td><code>/auth &lt;provider&gt;</code></td>
@@ -400,6 +388,10 @@
 <h3 id="anthropic">Anthropic</h3>
 
 <p>Prefix <code>anthropic/</code>, for example <code>anthropic/claude-sonnet-4-6</code>. Create a key at <a href="https://console.anthropic.com/settings/keys">https://console.anthropic.com/settings/keys</a>. Anthropic models always get prompt caching.</p>
+
+<p>Instead of an API key, the Anthropic SDK can authenticate through its own credential chain — workload identity federation, <code>ANTHROPIC_AUTH_TOKEN</code>, or an <code>ant auth login</code> profile — set up as the <a href="https://github.com/anthropics/anthropic-sdk-ruby">Anthropic Ruby SDK</a> documents; riffer-rig stores nothing for it.</p>
+
+<p>How the chain and an API key combine is part of the <a href="/guides/configuration/#where-each-value-comes-from">resolution order</a>. A selected profile that fails to load counts as configured, so the SDK’s own error surfaces on the first request.</p>
 
 <h3 id="openai">OpenAI</h3>
 
@@ -419,7 +411,7 @@
 
 <h3 id="amazon-bedrock">Amazon Bedrock</h3>
 
-<p>Prefix <code>amazon_bedrock/</code>. Bedrock authenticates either through the AWS SDK’s own credential chain (environment, shared credentials file, SSO, instance role), which stores nothing in riffer-rig, or with a Bedrock bearer token. The token is never asked for: set <code>AWS_BEARER_TOKEN_BEDROCK</code> or store it in <code>auth.json</code> as <code>api_token</code>. Without one, the credential chain is used and <code>/auth</code> reports <code>chain</code>.</p>
+<p>Prefix <code>amazon_bedrock/</code>. Bedrock authenticates either through the AWS SDK’s own credential chain (environment, shared credentials file, SSO, instance role), which stores nothing in riffer-rig, or with a Bedrock bearer token. The token is never asked for: set <code>AWS_BEARER_TOKEN_BEDROCK</code> or store it in <code>auth.json</code> as <code>api_token</code>. Without one, the credential chain is used and <code>/auth</code> reports <code>chain</code>. A region set nowhere else falls back to the active profile’s region in <code>~/.aws/config</code>.</p>
 
         </article>
 

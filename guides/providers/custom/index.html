@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.16.0</span>
+            <span class="version">v0.17.0</span>
           </div>
         </nav>
       </div>
@@ -168,7 +168,7 @@
             </ul>
           </nav>
           
-<p>An extension can register a provider class under a new model prefix. riffer-rig then treats it like a built-in: first-run onboarding, <code>/model</code> and <code>/auth</code> list it, its credentials resolve the <a href="/guides/providers/overview/#resolution-order">same way</a>, and its SDK gem is offered like a built-in’s.</p>
+<p>An extension can register a provider class under a new model prefix. riffer-rig then treats it like a built-in: first-run onboarding, <code>/model</code> and <code>/auth</code> list it, its credentials resolve the <a href="/guides/configuration/#where-each-value-comes-from">same way</a>, and its SDK gem is offered like a built-in’s.</p>
 
 <h2 id="registering-a-provider">Registering a provider</h2>
 
@@ -225,7 +225,7 @@
     </tr>
     <tr>
       <td><code>chain</code></td>
-      <td><code>true</code> when the SDK’s own credential chain is a valid way to authenticate</td>
+      <td><code>true</code> when the SDK’s own credential chain is always a valid way to authenticate, or a <code>Proc</code> returning whether it is configured right now; a configured chain <a href="/guides/configuration/#where-each-value-comes-from">stands in for a required secret</a></td>
       <td><code>false</code></td>
     </tr>
   </tbody>

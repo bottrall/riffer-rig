@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.16.0</span>
+            <span class="version">v0.17.0</span>
           </div>
         </nav>
       </div>
@@ -353,7 +353,30 @@
 
 <h2 id="background-jobs">Background jobs</h2>
 
-<p>When a <a href="/guides/tools/#background-jobs">background job</a> exits while the terminal is waiting for you, it starts a turn by itself: <code>1 background job exited</code> is printed and the model is told. That turn behaves like one you sent, and anything you were typing stays on the input line. Queued messages run first and carry the news instead. A job that exits while a question or the picker is open waits until you answer it.</p>
+<p>When a <a href="/guides/tools/#background-jobs">background job</a> exits between turns:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>While the terminal…</th>
+      <th>It</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>waits for your input</td>
+      <td>prints <code>1 background job exited</code> and starts a turn that tells the model, like one you sent; anything you were typing stays on the input line</td>
+    </tr>
+    <tr>
+      <td>has messages queued</td>
+      <td>runs them first, and they carry the news</td>
+    </tr>
+    <tr>
+      <td>has a question or the picker open</td>
+      <td>waits until you answer it</td>
+    </tr>
+  </tbody>
+</table>
 
 <h2 id="peek">Peek</h2>
 

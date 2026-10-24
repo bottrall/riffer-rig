@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.16.0</span>
+            <span class="version">v0.17.0</span>
           </div>
         </nav>
       </div>
@@ -189,23 +189,42 @@ git diff | riffer <span class="nt">-p</span> <span class="s2">"review this diff"
 
 <h2 id="output">Output</h2>
 
-<p>Only the assistant’s reply goes to stdout, streamed as it arrives. Everything else goes to stderr: errors, warnings, notices from extensions, and <code>session &lt;id&gt;</code> when the session starts — the id <code>riffer -p -r &lt;id&gt; "follow-up"</code> resumes. <code>--verbose</code> adds a one-line trace of each tool call to stderr. Reasoning is not printed.</p>
+<p>Only the assistant’s reply goes to stdout, streamed as it arrives. Everything else goes to stderr: errors, warnings, notices from extensions, and <code>session &lt;id&gt;</code> when the session starts — the id <code>riffer -p -r &lt;id&gt; "follow-up"</code> resumes — and any <a href="/guides/cli/#flags"><code>--verbose</code></a> traces. Reasoning is not printed.</p>
 
 <h2 id="flags">Flags</h2>
 
 <p>Every terminal flag works here, plus <code>--json</code>, <code>--verbose</code> and <code>--job-idle-timeout</code> (<a href="/guides/cli/#flags">Command line</a>).</p>
 
-<p><code>-c</code> and <code>-r &lt;id&gt;</code> continue a session across runs: <code>riffer -p -c "now run the tests"</code> carries on the most recent session in this directory. If there is no such session, headless exits 2 rather than starting a fresh one.</p>
+<p><code>-c</code> and <code>-r &lt;id&gt;</code> continue a session across runs: <code>riffer -p -c "now run the tests"</code> carries on the most recent session in this directory (<a href="/guides/sessions/#resuming">Resuming</a>).</p>
 
 <p>Headless never asks anything. A missing model, credential or <a href="/guides/providers/overview/#sdk-gems">SDK gem</a> prints what to set or install on stderr and exits 2, as does a settings or <code>auth.json</code> file that doesn’t parse. A project <code>rig.rb</code> you haven’t trusted in the terminal is skipped.</p>
 
 <h2 id="background-jobs">Background jobs</h2>
 
-<p>When the model finishes with <a href="/guides/tools/#background-jobs">background jobs</a> still running, headless prints <code>waiting for background jobs</code> on stderr and waits. Each exit gives the model a further turn to react, printed like the first; the run exits once no job is left.</p>
+<p>When a turn ends with <a href="/guides/tools/#background-jobs">background jobs</a> still running:</p>
 
-<p>When no job has exited for <code>--job-idle-timeout</code> seconds (600 by default), headless kills the rest and exits 3 — so a dev server or file watcher can’t hold a run open forever. <code>--job-idle-timeout 0</code> waits without limit.</p>
-
-<p>Only a turn that finished is followed this way. A turn that fails, is cancelled or doesn’t complete kills its jobs and exits at once.</p>
+<table>
+  <thead>
+    <tr>
+      <th>When</th>
+      <th>Headless</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>the turn finished</td>
+      <td>prints <code>waiting for background jobs</code> on stderr and waits; each exit gives the model a further turn to react, printed like the first, and the run exits once no job is left</td>
+    </tr>
+    <tr>
+      <td>a wait passes the <a href="/guides/cli/#flags"><code>--job-idle-timeout</code></a> with no job exiting</td>
+      <td>kills the rest and exits 3, so a dev server or file watcher can’t hold a run open forever</td>
+    </tr>
+    <tr>
+      <td>the turn failed, was cancelled or didn’t complete</td>
+      <td>kills its jobs and exits at once</td>
+    </tr>
+  </tbody>
+</table>
 
 <h2 id="exit-codes">Exit codes</h2>
 
@@ -254,60 +273,9 @@ git diff | riffer <span class="nt">-p</span> <span class="s2">"review this diff"
 </span><span class="p">{</span><span class="nl">"stop_reason"</span><span class="p">:</span><span class="s2">"completed"</span><span class="p">,</span><span class="nl">"usage"</span><span class="p">:{</span><span class="nl">"input_tokens"</span><span class="p">:</span><span class="mi">1423</span><span class="p">,</span><span class="nl">"output_tokens"</span><span class="p">:</span><span class="mi">89</span><span class="p">},</span><span class="nl">"type"</span><span class="p">:</span><span class="s2">"turn_end"</span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<table>
-  <thead>
-    <tr>
-      <th><code>type</code></th>
-      <th>When</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>session_start</code></td>
-      <td>first, once per run; carries the session <code>id</code></td>
-    </tr>
-    <tr>
-      <td><code>text_delta</code>, <code>text_done</code></td>
-      <td>the reply as it streams, then complete</td>
-    </tr>
-    <tr>
-      <td><code>reasoning_delta</code>, <code>reasoning_done</code></td>
-      <td>the model’s reasoning, when the provider sends it</td>
-    </tr>
-    <tr>
-      <td><code>tool_call_delta</code>, <code>tool_call_done</code></td>
-      <td>a tool call the model makes</td>
-    </tr>
-    <tr>
-      <td><code>before_tool_call</code>, <code>after_tool_call</code></td>
-      <td>a tool starting and finishing (<a href="/guides/events/#tool-call-events">fields</a>)</td>
-    </tr>
-    <tr>
-      <td><code>token_usage_done</code></td>
-      <td>each model call’s token usage</td>
-    </tr>
-    <tr>
-      <td><code>job_exit</code></td>
-      <td>a background job’s exit, as the model is told of it</td>
-    </tr>
-    <tr>
-      <td><code>notify</code></td>
-      <td>a warning or notice that text mode prints on stderr</td>
-    </tr>
-    <tr>
-      <td><code>turn_end</code></td>
-      <td>last record of every turn: <code>stop_reason</code>, and <code>usage</code> with <code>cost</code> when the model is priced</td>
-    </tr>
-    <tr>
-      <td><code>error</code></td>
-      <td>a fatal error, as the final record: <code>{"type": "error", "message": "…"}</code></td>
-    </tr>
-  </tbody>
-</table>
+<p>The records are the <a href="/guides/events/">events</a> the run streams — riffer’s stream events and riffer-rig’s own — so a consumer that only reads the last <code>turn_end</code> still knows how the turn ended and what it cost. Headless adds one record of its own: a fatal error ends the stream with <code>{"type": "error", "message": "…"}</code>.</p>
 
-<p>Other riffer stream events — web search, guardrails, interrupts — appear the same way when they happen (<a href="/guides/events/">Events</a>). A consumer that only reads the last <code>turn_end</code> still knows how the turn ended and what it cost.</p>
-
-<p>The stdin warning, <code>waiting for background jobs</code>, the exit-3 reason and <code>--verbose</code> traces stay on stderr.</p>
+<p>Notices that text mode prints on stderr arrive as <code>notify</code> records instead. The stdin warning, <code>waiting for background jobs</code>, a turn’s <code>turn ended: …</code> reason and <code>--verbose</code> traces stay on stderr.</p>
 
         </article>
 

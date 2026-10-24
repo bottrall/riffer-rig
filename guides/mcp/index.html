@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.16.0</span>
+            <span class="version">v0.17.0</span>
           </div>
         </nav>
       </div>
@@ -190,7 +190,7 @@
 </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p><code>url</code> is required and must be <code>https://</code>; <code>headers</code> are sent with every request. A server declared in both files takes the project’s entry whole — its headers are not merged with the home entry’s. An entry without a <code>url</code> stops the whole <code>mcp</code> extension from loading, and the session reports it.</p>
+<p><code>url</code> is required and must be <code>https://</code>; <code>headers</code> are sent with every request. <a href="/guides/configuration/#scopes-and-merging">Scopes and merging</a> covers a server declared in both files. An entry without a <code>url</code> stops the whole <code>mcp</code> extension from loading, and the session reports it.</p>
 
 <h2 id="secret-headers">Secret headers</h2>
 
@@ -209,7 +209,7 @@
 </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p>Each field resolves like a <a href="/guides/providers/overview/#resolution-order">provider credential</a>: the environment first (a field may list several variables, tried in order), then <code>~/.riffer/auth.json</code> under the server’s name, then a prompt without echo, stored for next time. A <code>${field}</code> that names no declared field is an error.</p>
+<p>Each field resolves like a <a href="/guides/configuration/#where-each-value-comes-from">provider credential</a>, and is stored in <code>~/.riffer/auth.json</code> under the server’s name. A field may list several variables, tried in order. A <code>${field}</code> that names no declared field is an error.</p>
 
 <p>Put a server with a literal secret header in your home settings rather than a project file, which is usually committed.</p>
 
@@ -217,34 +217,11 @@
 
 <p>Each server’s tools are listed when the session starts and named <code>&lt;server&gt;__&lt;tool&gt;</code>, with any character outside <code>a-z</code>, <code>A-Z</code>, <code>0-9</code>, <code>_</code> and <code>-</code> replaced by <code>_</code>: the <code>search</code> tool of the <code>docs</code> server is <code>docs__search</code>.</p>
 
-<p>MCP tools are not filtered by <code>--tools</code>; to keep a server’s tools from the model, don’t declare the server.</p>
+<p>To keep a server’s tools from the model, don’t declare the server: the <a href="/guides/tools/#identifiers"><code>--tools</code> allowlist</a> doesn’t apply to them.</p>
 
 <h2 id="when-a-server-fails">When a server fails</h2>
 
-<p>A server that cannot be used is reported, and the session runs without its tools:</p>
-
-<table>
-  <thead>
-    <tr>
-      <th>Problem</th>
-      <th>Reported as</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>the URL is not <code>https://</code>, or listing tools fails</td>
-      <td><code>MCP server NAME failed to register: …</code></td>
-    </tr>
-    <tr>
-      <td>a credential can’t be resolved and riffer can’t ask (headless)</td>
-      <td><code>MCP server NAME failed to register: MCP server NAME has no FIELD (ENV_VAR); set it in the environment or run riffer interactively to paste it</code></td>
-    </tr>
-    <tr>
-      <td>a tool call fails on the server</td>
-      <td>a tool error the model sees</td>
-    </tr>
-  </tbody>
-</table>
+<p>A server whose URL isn’t <code>https://</code>, whose tools can’t be listed, or whose credential can’t be resolved when riffer can’t ask (headless) is <a href="/guides/troubleshooting/">reported</a>, and the session runs without its tools. A tool call that fails on the server comes back to the model as a tool error.</p>
 
 <h2 id="reloading">Reloading</h2>
 

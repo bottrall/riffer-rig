@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.16.0</span>
+            <span class="version">v0.17.0</span>
           </div>
         </nav>
       </div>
@@ -398,13 +398,13 @@
     <tr>
       <td><code>session_start</code></td>
       <td>lifecycle</td>
-      <td><code>id</code>, <code>reason</code> (<code>:new</code>, <code>:restore</code>, <code>:reload</code>)</td>
+      <td>the <a href="/guides/events/#rig-events">rig event</a></td>
       <td>as the first turn starts, and after a reload swaps this extension in</td>
     </tr>
     <tr>
       <td><code>session_end</code></td>
       <td>lifecycle</td>
-      <td><code>reason</code> (<code>:reload</code>, <code>:close</code>)</td>
+      <td>the <a href="/guides/events/#rig-events">rig event</a></td>
       <td>before a reload swaps this extension out, and when the session closes</td>
     </tr>
     <tr>
@@ -422,14 +422,14 @@
     <tr>
       <td><code>before_tool_call</code></td>
       <td>can change</td>
-      <td><code>call_id</code>, <code>tool</code>, <code>args</code> (symbol keys), <code>at</code></td>
+      <td>the <a href="/guides/events/#tool-call-events">rig event</a></td>
       <td>before each tool runs</td>
     </tr>
     <tr>
       <td><code>after_tool_call</code></td>
       <td>observe</td>
-      <td><code>call_id</code>, <code>tool</code>, <code>args</code>, <code>result</code>, <code>at</code>, <code>duration</code></td>
-      <td>after every tool call, including ones that never ran</td>
+      <td>the <a href="/guides/events/#tool-call-events">rig event</a></td>
+      <td>after each tool call</td>
     </tr>
     <tr>
       <td><code>after_response</code></td>
@@ -440,7 +440,7 @@
     <tr>
       <td><code>turn_end</code></td>
       <td>observe</td>
-      <td><code>stop_reason</code>, <code>usage</code>, <code>cost</code></td>
+      <td>the <a href="/guides/events/#rig-events">rig event</a></td>
       <td>as each turn ends</td>
     </tr>
     <tr>
@@ -519,7 +519,7 @@
 
 <h2 id="error-isolation">Error isolation</h2>
 
-<p>An extension whose block raises, whose <code>requires:</code> doesn’t match the installed riffer-rig, or that is named after a core settings key is skipped, and the session shows <code>Extension &lt;name&gt; failed to load: &lt;message&gt;</code>. The other extensions still load. Errors are shown to the user, never to the model.</p>
+<p>An extension whose block raises, whose <code>requires:</code> doesn’t match the installed riffer-rig, or that is named after a core settings key is skipped and <a href="/guides/troubleshooting/">reported</a>. The other extensions still load. Errors are shown to the user, never to the model.</p>
 
 <h2 id="api-versioning">API versioning</h2>
 

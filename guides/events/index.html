@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.16.0</span>
+            <span class="version">v0.17.0</span>
           </div>
         </nav>
       </div>
@@ -190,8 +190,8 @@
     </tr>
     <tr>
       <td><code>session_end</code></td>
-      <td><code>reason</code> (<code>:reload</code>)</td>
-      <td>opens the first prompt after a rebuild, just before its <code>session_start</code></td>
+      <td><code>reason</code> (<code>:reload</code>, <code>:close</code>)</td>
+      <td>opens the first prompt after a rebuild, just before its <code>session_start</code>; <code>:close</code> reaches only <a href="/guides/extensions/#the-rigon-seam">hooks</a>, as nothing streams after <code>close</code></td>
     </tr>
     <tr>
       <td><code>command_output</code></td>
@@ -231,7 +231,7 @@
   </tbody>
 </table>
 
-<p><code>turn_end</code>’s <code>stop_reason</code> is riffer’s outcome (<code>:completed</code>, <code>:length</code>, <code>:max_steps</code>, <code>:guardrail_blocked</code>, …) or <code>:cancelled</code> after a <a href="/guides/embedding/#cancelling-a-turn">cancel</a>. <code>usage</code> is the turn’s riffer <code>TokenUsage</code>, and <code>cost</code> its price in USD, or <code>nil</code> when the model is not <a href="/guides/configuration/#catalog_files">priced</a>. A consumer never needs <code>ask</code> to learn how a streamed turn ended.</p>
+<p><code>turn_end</code>’s <code>stop_reason</code> is riffer’s outcome (<code>:completed</code>, <code>:length</code>, <code>:max_steps</code>, <code>:guardrail_blocked</code>, …) or <code>:cancelled</code> after a <a href="/guides/embedding/#cancelling-a-turn">cancel</a>. <code>usage</code> is the turn’s riffer <code>TokenUsage</code>, and <code>cost</code> its price in USD, or <code>nil</code> when the model is not <a href="/guides/configuration/#catalog_files">priced</a>. In <code>to_h</code>, and so in a JSON record, the cost is <code>usage</code>’s <code>cost</code> key, left out when <code>nil</code>. A consumer never needs <code>ask</code> to learn how a streamed turn ended.</p>
 
 <h2 id="tool-call-events">Tool call events</h2>
 
@@ -283,7 +283,7 @@ next model response
   </tbody>
 </table>
 
-<p><code>result</code> is a <code>Riffer::Tools::Response</code>: <code>result.error?</code> says whether the call failed. <code>call_id</code> matches the call’s <code>ToolCallDone</code>. <code>at</code> is a monotonic timestamp in seconds, comparable only within one process, and <code>duration</code> is how long the tool itself ran, leaving out time spent in hooks; a call that never ran has <code>0.0</code>. The timestamps come from the Runtime’s <code>clock:</code>, which a test can replace.</p>
+<p><code>args</code> is a hash with symbol keys. <code>result</code> is a <code>Riffer::Tools::Response</code>: <code>result.error?</code> says whether the call failed. <code>call_id</code> matches the call’s <code>ToolCallDone</code>. <code>at</code> is a monotonic timestamp in seconds, comparable only within one process, and <code>duration</code> is how long the tool itself ran, leaving out time spent in hooks; a call that never ran has <code>0.0</code>. The timestamps come from the Runtime’s <code>clock:</code>, which a test can replace.</p>
 
 <p>These are the same event objects the <code>before_tool_call</code> and <code>after_tool_call</code> hooks receive.</p>
 

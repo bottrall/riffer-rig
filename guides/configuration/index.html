@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.16.0</span>
+            <span class="version">v0.17.0</span>
           </div>
         </nav>
       </div>
@@ -218,17 +218,17 @@
       <td>the model’s own default</td>
     </tr>
     <tr>
-      <td>Provider credential</td>
+      <td>Provider credential<sup id="fnref:3"><a href="#fn:3" class="footnote" rel="footnote" role="doc-noteref">3</a></sup></td>
       <td>the provider’s environment variables</td>
       <td><code>auth.json</code> (secrets) or the <code>providers</code> block (plain values)</td>
-      <td>a provider fallback, such as the AWS shared config for the Bedrock region</td>
+      <td>a provider fallback, such as <a href="/guides/providers/overview/#amazon-bedrock">Bedrock’s region</a></td>
       <td>asked for, then stored (required fields only)</td>
       <td>—</td>
     </tr>
   </tbody>
 </table>
 
-<p>Inside a session, <code>/model</code> and <code>/reasoning</code> override all of these until the session ends (<a href="#model">below</a>). <a href="/guides/providers/overview/#resolution-order">Providers</a> has the credential details.</p>
+<p>Inside a session, <code>/model</code> and <code>/reasoning</code> override all of these until the session ends (<a href="#model">below</a>). A flag beats a resumed session’s switch for that run only: resuming again without it restores the switch. <a href="/guides/providers/overview/">Providers</a> lists each provider’s fields and variables.</p>
 
 <h2 id="scopes-and-merging">Scopes and merging</h2>
 
@@ -371,7 +371,7 @@
 <div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"catalog_files"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"~/.riffer/models.json"</span><span class="p">,</span><span class="w"> </span><span class="s2">".riffer/models.json"</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p>The <a href="https://riffer.ai/guides/catalog/">model catalog</a> files riffer reads for per-model pricing and reasoning mappings. Without a catalog entry a model has no cost: it is shown as missing, never as zero. The file format is riffer’s.</p>
+<p>The <a href="https://riffer.ai/guides/catalog/">model catalog</a> files riffer reads for per-model pricing and reasoning mappings. A model without a catalog entry is unpriced, so riffer counts no cost for it (<a href="/guides/terminal/#the-status-line">how the terminal shows that</a>). The file format is riffer’s.</p>
 
 <h2 id="mcp"><code>mcp</code></h2>
 
@@ -387,7 +387,7 @@
   <li><code>autoload</code> (default <code>false</code>) loads every installed gem that ships <code>riffer/rig/extension</code> (<a href="/guides/extensions/#gem-extensions">Gem extensions</a>).</li>
 </ul>
 
-<p><code>--no-extensions</code> skips autoload and the <code>rig.rb</code> files for one run; the bundled extensions still load.</p>
+<p><a href="/guides/cli/#flags"><code>--no-extensions</code></a> overrides <code>autoload</code> for one run.</p>
 
 <h2 id="toolsnative"><code>tools.native</code></h2>
 
@@ -401,7 +401,7 @@
 <div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"reload"</span><span class="p">:</span><span class="w"> </span><span class="s2">"manual"</span><span class="w"> </span><span class="p">}</span><span class="w">
 </span></code></pre></div></div>
 
-<p><code>"auto"</code> (the default) reloads automatically when a <code>rig.rb</code> file or a file it requires changes; <code>"manual"</code> reloads only on <code>/reload</code>. Either way, <code>/reload</code> picks up settings changes. <a href="/guides/reloading/">Reloading</a> has the details.</p>
+<p><code>"auto"</code> (the default) or <code>"manual"</code>; <a href="/guides/reloading/#when-it-reloads">Reloading</a> has when each one reloads.</p>
 
 <h2 id="extension-namespaces">Extension namespaces</h2>
 
@@ -421,6 +421,9 @@
     </li>
     <li id="fn:2">
       <p>Headless and ACP never ask: a missing model is a configuration error. <a href="#fnref:2" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:3">
+      <p>Each field resolves on its own. A field with several variables tries them in the order <a href="/guides/providers/overview/">Providers</a> lists them, and a blank value counts as unset. A secret is asked for without echo. A required secret that resolves nowhere is neither asked for nor reported missing while the provider’s SDK credential chain is configured, such as <a href="/guides/providers/overview/#anthropic">Anthropic’s</a>: the SDK authenticates instead. A secret that does resolve wins over the chain. <a href="#fnref:3" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
   </ol>
 </div>

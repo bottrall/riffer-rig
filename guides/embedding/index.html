@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.16.0</span>
+            <span class="version">v0.17.0</span>
           </div>
         </nav>
       </div>
@@ -192,7 +192,7 @@
 <div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">runtime</span> <span class="o">=</span> <span class="no">Riffer</span><span class="o">::</span><span class="no">Rig</span><span class="o">::</span><span class="no">Loader</span><span class="p">.</span><span class="nf">runtime</span><span class="p">(</span><span class="ss">cwd: </span><span class="no">Dir</span><span class="p">.</span><span class="nf">pwd</span><span class="p">,</span> <span class="ss">host: </span><span class="no">MyHost</span><span class="p">.</span><span class="nf">new</span><span class="p">)</span>
 </code></pre></div></div>
 
-<p>The Loader reads the <a href="/guides/configuration/">settings</a>, picks the <a href="/guides/configuration/#where-each-value-comes-from">model</a>, ensures its <a href="/guides/providers/overview/#sdk-gems">SDK gem</a>, resolves its <a href="/guides/providers/overview/#resolution-order">credentials</a>, loads the bundled extensions and the <a href="/guides/extensions/#the-rigrb-files"><code>rig.rb</code> files</a>, and builds the Runtime. It also adds the <code>/reload</code> command, <code>/trace</code> when the session is saved, and <a href="/guides/reloading/">automatic reloading</a>.</p>
+<p>The Loader reads the <a href="/guides/configuration/">settings</a>, picks the <a href="/guides/configuration/#where-each-value-comes-from">model</a>, ensures its <a href="/guides/providers/overview/#sdk-gems">SDK gem</a>, resolves its <a href="/guides/configuration/#where-each-value-comes-from">credentials</a>, loads the bundled extensions and the <a href="/guides/extensions/#the-rigrb-files"><code>rig.rb</code> files</a>, and builds the Runtime. It also adds the <code>/reload</code> command, <code>/trace</code> when the session is saved, and <a href="/guides/reloading/">automatic reloading</a>.</p>
 
 <table>
   <thead>
@@ -390,7 +390,7 @@
     </tr>
     <tr>
       <td><code>model_options:</code></td>
-      <td>riffer <code>model_options</code> sent with every model call; <code>Riffer::Rig::Settings::ModelOptions.model_options(model)</code> builds the ones the Loader uses</td>
+      <td>riffer <code>model_options</code> sent with every model call; for an <code>anthropic</code> model the Loader passes <code>{ cache_control: { type: :ephemeral } }</code> (<a href="/guides/providers/overview/#anthropic">prompt caching</a>)</td>
       <td><code>{}</code></td>
     </tr>
     <tr>
@@ -404,9 +404,9 @@
       <td><code>{}</code></td>
     </tr>
     <tr>
-      <td><code>env:</code>, <code>auth_path:</code></td>
-      <td>where <a href="/guides/mcp/#secret-headers">MCP <code>auth</code> fields</a> are read from and stored</td>
-      <td><code>Env.new</code>, <code>~/.riffer/auth.json</code></td>
+      <td><code>env:</code>, <code>auth_path:</code>, <code>settings_path:</code></td>
+      <td>where <code>/auth</code>, <code>/model</code> and <a href="/guides/mcp/#secret-headers">MCP <code>auth</code> fields</a> read and store credentials, and where <code>--save</code> writes</td>
+      <td><code>Env.new</code>, <code>~/.riffer/auth.json</code>, <code>~/.riffer/settings.json</code></td>
     </tr>
     <tr>
       <td><code>riffer_config:</code></td>
@@ -420,7 +420,7 @@
     </tr>
     <tr>
       <td><code>clock:</code></td>
-      <td>a callable returning seconds, which stamps <a href="/guides/events/#tool-call-events">tool call events</a></td>
+      <td>a callable returning seconds, which stamps <a href="/guides/events/#tool-call-events">tool call events</a> and times <a href="#background-jobs">background jobs</a></td>
       <td>the monotonic clock</td>
     </tr>
     <tr>
@@ -484,7 +484,30 @@ turn 2    ↑1500 · ↓12 · ~$0.0046
 <span class="n">turn</span><span class="p">.</span><span class="nf">join</span>
 </code></pre></div></div>
 
-<p>A streaming reply stops at once and keeps the text it had reached. A running tool call finishes first, except the bundled <code>bash</code>, which kills its command; your own tool can check <code>context[:cancel_flag].set?</code> to do the same. The turn ends with <code>turn_end</code> and <code>stop_reason: :cancelled</code> (from <code>ask</code>, <code>outcome.reason</code> is <code>:interrupted</code> with <code>detail: "cancelled"</code>), and the next prompt carries on from there. <a href="#background-jobs">Background jobs</a> keep running. With no turn running, <code>cancel</code> does nothing.</p>
+<table>
+  <thead>
+    <tr>
+      <th>When <code>cancel</code> is called…</th>
+      <th>What happens</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>while a reply streams</td>
+      <td>it stops at once and keeps the text it had reached</td>
+    </tr>
+    <tr>
+      <td>while a tool call runs</td>
+      <td>the call finishes first, except the bundled <code>bash</code>, which kills its command; your own tool can check <code>context[:cancel_flag].set?</code> to do the same</td>
+    </tr>
+    <tr>
+      <td>with no turn running</td>
+      <td>nothing</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The turn’s <a href="/guides/events/#rig-events"><code>turn_end</code></a> reports it cancelled — from <code>ask</code>, <code>outcome.reason</code> is <code>:interrupted</code> with <code>detail: "cancelled"</code> — and the next prompt carries on from there. <a href="#background-jobs">Background jobs</a> keep running.</p>
 
 <h2 id="commands">Commands</h2>
 
@@ -501,7 +524,7 @@ turn 2    ↑1500 · ↓12 · ~$0.0046
 <span class="k">end</span>
 </code></pre></div></div>
 
-<p><code>/exit</code>, <code>/new</code>, <code>/resume</code> and <code>/help</code> are the terminal’s own: they end, replace or describe the Runtime, so a host implements them itself.</p>
+<p><a href="/guides/hosts/#the-loop">Hosts</a> covers the commands a host implements itself.</p>
 
 <h2 id="switching-the-model-and-reasoning-level">Switching the model and reasoning level</h2>
 
@@ -520,7 +543,7 @@ turn 2    ↑1500 · ↓12 · ~$0.0046
 <span class="k">end</span>
 </code></pre></div></div>
 
-<p>The new extensions are loaded aside and swapped in only when all of them succeed. If any fails, <code>rebuild</code> raises its error and nothing changes — stricter than construction, which skips a failing extension. The conversation, tally, id, host, any model or reasoning switch and every other constructor keyword are kept. Extensions’ <code>session_end</code> and <code>session_start</code> hooks run around the swap with reason <code>:reload</code>. <code>rebuild</code> runs between turns, or from a command or hook within one.</p>
+<p>The new extensions are loaded aside and swapped in only when all of them succeed. If any fails, <code>rebuild</code> raises its error and nothing changes — stricter than construction, which skips a failing extension. The conversation, tally, id, host, any model or reasoning switch and every other constructor keyword are kept. Extensions’ <a href="/guides/extensions/#the-rigon-seam">lifecycle hooks</a> run around the swap. <code>rebuild</code> runs between turns, or from a command or hook within one.</p>
 
 <h2 id="capping-the-loop">Capping the loop</h2>
 
@@ -580,8 +603,6 @@ turn 2    ↑1500 · ↓12 · ~$0.0046
   <li>skills that no longer exist are dropped;</li>
   <li>the tally is recomputed from the messages.</li>
 </ul>
-
-<p>The first prompt after a restore opens with <code>session_start</code> and reason <code>:restore</code>.</p>
 
 <h2 id="observing-messages">Observing messages</h2>
 
@@ -646,6 +667,21 @@ turn 2    ↑1500 · ↓12 · ~$0.0046
   </tbody>
 </table>
 
+<h3 id="starting-jobs-from-your-own-tool">Starting jobs from your own tool</h3>
+
+<p>A tool finds the Runtime’s job registry at <code>context[:jobs]</code>. A job registered there is one like any <code>bash</code> job: the model is told of its exit, <code>bash_output</code> and <code>bash_kill</code> act on it, and <code>close</code> stops it.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="n">context</span><span class="p">:,</span> <span class="n">command</span><span class="p">:)</span>
+  <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span> <span class="o">=</span> <span class="no">IO</span><span class="p">.</span><span class="nf">pipe</span>
+  <span class="n">pid</span> <span class="o">=</span> <span class="no">Process</span><span class="p">.</span><span class="nf">spawn</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="ss">pgroup: </span><span class="kp">true</span><span class="p">,</span> <span class="ss">in: </span><span class="no">File</span><span class="o">::</span><span class="no">NULL</span><span class="p">,</span> <span class="ss">out: </span><span class="n">writer</span><span class="p">,</span> <span class="ss">err: </span><span class="sx">%i[child out]</span><span class="p">)</span>
+  <span class="n">writer</span><span class="p">.</span><span class="nf">close</span>
+  <span class="n">job</span> <span class="o">=</span> <span class="n">context</span><span class="p">[</span><span class="ss">:jobs</span><span class="p">].</span><span class="nf">register</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">reader</span><span class="p">)</span>
+  <span class="n">text</span><span class="p">(</span><span class="s2">"Job </span><span class="si">#{</span><span class="n">job</span><span class="p">.</span><span class="nf">id</span><span class="si">}</span><span class="s2"> started; output in </span><span class="si">#{</span><span class="n">job</span><span class="p">.</span><span class="nf">output_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p><code>register(pid, command, output)</code> takes the pid of a process started in its own process group (<code>pgroup: true</code>), the command to show in its notice, and an IO it reads to the end into the job’s output file. It returns the job, whose <code>id</code> and <code>output_path</code> the model needs. Don’t wait on or detach the process yourself: the registry reaps it.</p>
+
 <h3 id="job-notices-in-the-conversation">Job notices in the conversation</h3>
 
 <p>A store sees every notice the model read, through <code>on_message</code>. A notice delivered mid-turn is part of a tool result. One delivered as its own message is a <code>Riffer::Rig::Runtime::JobNotification</code>, a user-role message whose <code>to_h</code> adds <code>job_notification: true</code>, so anything reading saved messages can tell it from a prompt someone typed; one delivered by <code>follow_up</code> also carries <code>follow_up_exits</code>, the number of exits it reports. A snapshot restores these as <code>JobNotification</code>s.</p>
@@ -669,7 +705,7 @@ turn 2    ↑1500 · ↓12 · ~$0.0046
   <tbody>
     <tr>
       <td><code>install(identifier, host:)</code></td>
-      <td>resolves every field in <a href="/guides/providers/overview/#resolution-order">order</a>, asking the host if it can, and applies them once none is missing</td>
+      <td>resolves every field in <a href="/guides/configuration/#where-each-value-comes-from">order</a>, asking the host if it can, and applies them once none is missing</td>
     </tr>
     <tr>
       <td><code>apply(identifier, values)</code></td>
@@ -692,7 +728,7 @@ turn 2    ↑1500 · ↓12 · ~$0.0046
 
 <p>A file that doesn’t parse comes back as a <code>String</code> message in place of the result. <code>install</code> runs <code>!command</code> values every time, so call it once and keep the result.</p>
 
-<p>riffer-rig reads the process environment only through a <code>Riffer::Rig::Env</code>: <code>Env.new</code> snapshots it, and <code>Env.new('ANTHROPIC_API_KEY' =&gt; '…')</code> builds one from a hash for tests.</p>
+<p>riffer-rig reads the process environment only through a <code>Riffer::Rig::Env</code>: <code>Env.new</code> snapshots it, and <code>Env.new('ANTHROPIC_API_KEY' =&gt; '…')</code> builds one from a hash for tests. A provider SDK’s own credential chain, such as <a href="/guides/providers/overview/#anthropic">Anthropic’s</a>, reads the process environment itself.</p>
 
         </article>
 

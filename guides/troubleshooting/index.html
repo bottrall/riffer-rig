@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.16.0</span>
+            <span class="version">v0.17.0</span>
           </div>
         </nav>
       </div>
@@ -186,8 +186,8 @@
     </tr>
     <tr>
       <td><code>anthropic has no api_key (ANTHROPIC_API_KEY); set it in the environment or run riffer interactively to paste it …</code></td>
-      <td>headless or ACP found no credential, and can’t ask</td>
-      <td>set the variable, or run <code>riffer</code> once in a terminal to store the key (<a href="/guides/providers/overview/">Providers</a>)</td>
+      <td>no credential was found, and riffer-rig can’t ask (headless, ACP) or the answer was left empty</td>
+      <td>set the variable, paste the key when an interactive <code>riffer</code> asks for it (<a href="/guides/providers/overview/">Providers</a>), or for Anthropic configure the SDK’s <a href="/guides/providers/overview/#anthropic">credential chain</a></td>
     </tr>
     <tr>
       <td><code>anthropic is not installed; install it with gem install anthropic …</code></td>
@@ -201,7 +201,7 @@
     </tr>
     <tr>
       <td><code>Extension NAME failed to load: …</code></td>
-      <td>an extension raised while loading, or its <code>requires:</code> doesn’t match</td>
+      <td>an extension raised while loading, its <code>requires:</code> doesn’t match, or it is named after a core settings key</td>
       <td>fix the extension; the others still loaded (<a href="/guides/extensions/#error-isolation">Error isolation</a>)</td>
     </tr>
     <tr>
@@ -212,7 +212,12 @@
     <tr>
       <td><code>MCP server NAME failed to register: …</code></td>
       <td>the server isn’t <code>https://</code>, didn’t answer, or is missing a credential</td>
-      <td>see <a href="/guides/mcp/#when-a-server-fails">MCP</a></td>
+      <td>use an <code>https://</code> URL, check the server is up, or set the credential (<a href="/guides/mcp/#secret-headers">Secret headers</a>)</td>
+    </tr>
+    <tr>
+      <td><code>Unknown command: NAME</code></td>
+      <td>no command has that name: a typo, or its extension didn’t load or is disabled</td>
+      <td>check the spelling, then whether the extension that adds it <a href="/guides/extensions/#error-isolation">failed to load</a> or is <a href="/guides/configuration/#extensions">disabled</a></td>
     </tr>
     <tr>
       <td><code>No saved session in this directory.</code> (headless exits 2)</td>
