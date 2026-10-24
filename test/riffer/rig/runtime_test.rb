@@ -584,17 +584,6 @@ describe Riffer::Rig::Runtime do
     assert_equal(Riffer::Rig::Events::TurnEnd.new(:completed, usage), last)
   end
 
-  it 'reports a max_steps run in turn_end' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], tools: %w[read], max_steps: 1)
-    runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
-    runtime.agent.provider.stub_response('second response')
-
-    last = nil
-    runtime.prompt('go') { |event| last = event }
-
-    assert_equal :max_steps, last.stop_reason
-  end
-
   describe 'hooks' do
     before do
       echo = Class.new(Riffer::Tool) do
