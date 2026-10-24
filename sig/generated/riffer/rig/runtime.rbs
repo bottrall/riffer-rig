@@ -251,10 +251,6 @@ class Riffer::Rig::Runtime
   # @rbs return: String?
   def reasoning_over: (Hash[Symbol, untyped] settings) -> String?
 
-  # @rbs settings: Hash[Symbol, untyped]
-  # @rbs return: String?
-  def reasoning_over: (Hash[Symbol, untyped] settings) -> String?
-
   # @rbs registrars: Array[Riffer::Rig::Registrar]
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks

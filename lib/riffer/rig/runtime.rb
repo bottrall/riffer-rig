@@ -417,12 +417,6 @@ class Riffer::Rig::Runtime
     @reasoning || Riffer::Rig::Settings::ModelOptions.reasoning_level(Riffer::Rig::Settings::Document.new(settings).reasoning)
   end
 
-  # @rbs settings: Hash[Symbol, untyped]
-  # @rbs return: String?
-  def reasoning_over(settings)
-    @reasoning || Riffer::Rig::Settings::ModelOptions.reasoning_level(Riffer::Rig::Settings::Document.new(settings).reasoning)
-  end
-
   # @rbs registrars: Array[Riffer::Rig::Registrar]
   # @rbs settings: Hash[Symbol, untyped]
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
