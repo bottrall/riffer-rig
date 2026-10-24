@@ -5,8 +5,6 @@ module Riffer::Rig::Commands::Reasoning
 
   SAVED_TO: String
 
-  DEFAULT: String
-
   # @rbs return: Riffer::Rig::Command
   def command: () -> Riffer::Rig::Command
 
