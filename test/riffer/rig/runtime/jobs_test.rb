@@ -199,6 +199,13 @@ describe Riffer::Rig::Runtime::Jobs do
       assert_nil @jobs.kill('missing1')
     end
 
+    it 'returns a completed job' do
+      job = start('true')
+      @inbox.await
+
+      assert_predicate @jobs.kill(job.id), :completed?
+    end
+
     it 'kills the job' do
       job = start('sleep 30')
       @jobs.kill(job.id)
@@ -206,17 +213,19 @@ describe Riffer::Rig::Runtime::Jobs do
       assert_equal job.id, @inbox.await&.job_id
     end
 
+    it 'kills a stopped job' do
+      job = start('sleep 30')
+      Process.kill('STOP', -job.pid)
+      sleep 0.01 until `ps -o stat= -p #{job.pid}`.start_with?('T')
+      @jobs.kill(job.id)
+
+      assert_equal 'TERM', @inbox.await&.signal
+    end
+
     it 'returns the job it killed' do
       job = start('sleep 30')
 
       assert_equal job.id, @jobs.kill(job.id)&.id
-    end
-
-    it 'returns a completed job' do
-      job = start('true')
-      @inbox.await
-
-      assert_predicate @jobs.kill(job.id), :completed?
     end
   end
 
