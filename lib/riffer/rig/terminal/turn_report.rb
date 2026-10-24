@@ -9,7 +9,7 @@ module Riffer::Rig::Terminal::TurnReport
 
   COLUMN_HEAD = /\A.*\S {2,}(?=\S)/ #: Regexp
 
-  VISIBLE = /\S/ #: Regexp
+  PAINTER = Riffer::Rig::Terminal::Painter.new(same: ->(left, right) { left == right }) #: Riffer::Rig::Terminal::Painter[Symbol]
 
   # @rbs turn: Riffer::Rig::Terminal::TurnReport::_Turn
   # @rbs session: Riffer::Providers::TokenUsage?
@@ -80,7 +80,10 @@ module Riffer::Rig::Terminal::TurnReport
   # @rbs return: String
   def footer(stats, session, theme:, width:)
     parts = segments(stats, session)
-    paint(wrap(parts.map(&:first).join(' · '), width), owners(parts), theme)
+    # The Wrapper moves, drops and rewrites whitespace but never a visible
+    # character, so the colours are painted after the wrap, where a span can
+    # never be cut in two.
+    PAINTER.paint(wrap(parts.map(&:first).join(' · '), width), owners(parts)) { |text, role| color(text, role, theme) }
   end
 
   # @rbs stats: Riffer::Rig::Terminal::TurnBuffer::Stats
@@ -139,33 +142,10 @@ module Riffer::Rig::Terminal::TurnReport
   # @rbs return: Array[Symbol]
   def owners(parts)
     parts.flat_map.with_index do |(text, role), index|
-      owned = [role] * text.scan(VISIBLE).size
+      owned = [role] * text.scan(Riffer::Rig::Terminal::Painter::VISIBLE).size
       owned << :dim unless index == parts.length - 1
       owned
     end
-  end
-
-  # The Wrapper moves, drops and rewrites whitespace but never a visible
-  # character, so the nth visible character of a wrapped line is the nth one
-  # the segments supplied — which is why the colours are painted after the
-  # wrap, where a span can never be cut in two.
-  # @rbs line: String
-  # @rbs owners: Array[Symbol]
-  # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs return: String
-  def paint(line, owners, theme)
-    chars = line.chars
-    owner_at = chars.each_index.select { |index| chars.fetch(index).match?(VISIBLE) }.zip(owners).to_h
-    slots = chars.each_index.map { |index| owner_at[index] }
-    cells = nearest(slots).zip(nearest(slots.reverse).reverse).map { |left, right| left == right ? left : nil }
-    runs = cells.zip(chars).chunk_while { |(left, _), (right, _)| left == right }
-    runs.map { |run| color(run.map(&:last).join, run.fetch(0).first, theme) }.join
-  end
-
-  # @rbs slots: Array[Symbol?]
-  # @rbs return: Array[Symbol?]
-  def nearest(slots)
-    slots.each_with_object([]) { |slot, filled| filled << (slot || filled.last) }
   end
 
   # @rbs text: String

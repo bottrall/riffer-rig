@@ -1,9 +1,7 @@
 # Generated from lib/riffer/rig/terminal/markdown/flow.rb with RBS::Inline
 
 module Riffer::Rig::Terminal::Markdown::Flow
-  UNSTYLED: Riffer::Rig::Terminal::Markdown::Span
-
-  VISIBLE: Regexp
+  PAINTER: Riffer::Rig::Terminal::Painter[Riffer::Rig::Terminal::Markdown::Span]
 
   # @rbs spans: Array[Riffer::Rig::Terminal::Markdown::Span]
   # @rbs theme: Riffer::Rig::Terminal::Theme
@@ -13,26 +11,11 @@ module Riffer::Rig::Terminal::Markdown::Flow
 
   private
 
-  # @rbs line: String
-  # @rbs owners: Array[Riffer::Rig::Terminal::Markdown::Span]
-  # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs return: String
-  def paint: (String line, Array[Riffer::Rig::Terminal::Markdown::Span] owners, Riffer::Rig::Terminal::Theme theme) -> String
-
-  # @rbs slots: Array[Riffer::Rig::Terminal::Markdown::Span?]
-  # @rbs return: Array[Riffer::Rig::Terminal::Markdown::Span?]
-  def nearest: (Array[Riffer::Rig::Terminal::Markdown::Span?] slots) -> Array[Riffer::Rig::Terminal::Markdown::Span?]
-
-  # @rbs left: Riffer::Rig::Terminal::Markdown::Span?
-  # @rbs right: Riffer::Rig::Terminal::Markdown::Span?
-  # @rbs return: Riffer::Rig::Terminal::Markdown::Span
-  def between: (Riffer::Rig::Terminal::Markdown::Span? left, Riffer::Rig::Terminal::Markdown::Span? right) -> Riffer::Rig::Terminal::Markdown::Span
-
   # @rbs text: String
-  # @rbs span: Riffer::Rig::Terminal::Markdown::Span
+  # @rbs span: Riffer::Rig::Terminal::Markdown::Span?
   # @rbs theme: Riffer::Rig::Terminal::Theme
   # @rbs return: String
-  def style: (String text, Riffer::Rig::Terminal::Markdown::Span span, Riffer::Rig::Terminal::Theme theme) -> String
+  def style: (String text, Riffer::Rig::Terminal::Markdown::Span? span, Riffer::Rig::Terminal::Theme theme) -> String
 
   # @rbs text: String
   # @rbs name: Symbol

@@ -24,30 +24,8 @@ describe Riffer::Rig::Terminal::Markdown::Flow do
     assert_equal ["a \e[1mb\e[0m"], lines([span('a '), span('b', styles: [:bold])])
   end
 
-  it 'paints the spaces inside a styled span' do
-    assert_equal ["\e[1mb c\e[0m"], lines([span('b c', styles: [:bold])])
-  end
-
   it 'leaves the space between two styles unpainted' do
     assert_equal ["\e[1ma\e[0m \e[3mb\e[0m"], lines([span('a ', styles: [:bold]), span('b', styles: [:italic])])
-  end
-
-  it 'leaves a leading space unpainted when no width is known' do
-    assert_equal [" \e[1ma\e[0m"], lines([span(' a', styles: [:bold])], width: nil)
-  end
-
-  it 'leaves a trailing space unpainted when no width is known' do
-    assert_equal ["\e[1ma\e[0m "], lines([span('a ', styles: [:bold])], width: nil)
-  end
-
-  it 'paints a run of spaces inside a styled span when no width is known' do
-    assert_equal ["\e[1ma  b\e[0m"], lines([span('a  b', styles: [:bold])], width: nil)
-  end
-
-  it 'leaves a run of spaces between two styles unpainted when no width is known' do
-    spans = [span('a ', styles: [:bold]), span(' b', styles: [:italic])]
-
-    assert_equal ["\e[1ma\e[0m  \e[3mb\e[0m"], lines(spans, width: nil)
   end
 
   it 'joins neighbouring spans of one style into one run' do

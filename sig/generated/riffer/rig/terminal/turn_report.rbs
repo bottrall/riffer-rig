@@ -7,7 +7,7 @@ module Riffer::Rig::Terminal::TurnReport
 
   COLUMN_HEAD: Regexp
 
-  VISIBLE: Regexp
+  PAINTER: Riffer::Rig::Terminal::Painter[Symbol]
 
   # @rbs turn: Riffer::Rig::Terminal::TurnReport::_Turn
   # @rbs session: Riffer::Providers::TokenUsage?
@@ -72,20 +72,6 @@ module Riffer::Rig::Terminal::TurnReport
   # @rbs parts: Array[[String, Symbol]]
   # @rbs return: Array[Symbol]
   def owners: (Array[[ String, Symbol ]] parts) -> Array[Symbol]
-
-  # The Wrapper moves, drops and rewrites whitespace but never a visible
-  # character, so the nth visible character of a wrapped line is the nth one
-  # the segments supplied — which is why the colours are painted after the
-  # wrap, where a span can never be cut in two.
-  # @rbs line: String
-  # @rbs owners: Array[Symbol]
-  # @rbs theme: Riffer::Rig::Terminal::Theme
-  # @rbs return: String
-  def paint: (String line, Array[Symbol] owners, Riffer::Rig::Terminal::Theme theme) -> String
-
-  # @rbs slots: Array[Symbol?]
-  # @rbs return: Array[Symbol?]
-  def nearest: (Array[Symbol?] slots) -> Array[Symbol?]
 
   # @rbs text: String
   # @rbs role: Symbol?
