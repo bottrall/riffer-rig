@@ -3,4 +3,8 @@
 
 module Riffer::Rig::SDK
   extend ::Riffer::Rig::SDK
+
+  interface _Ensurer
+    def ensure: (String gem, String requirement, host: Riffer::Rig::Hosts::_Host) -> String?
+  end
 end

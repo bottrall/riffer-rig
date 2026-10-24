@@ -57,31 +57,30 @@ class InstallRecorder
   end
 end
 
+class SpecsFake
+  # @rbs installed: bool
+  # @rbs return: void
+  def initialize(installed)
+    @installed = installed
+  end
+
+  # @rbs name: String
+  # @rbs requirement: String
+  # @rbs return: SpecsFake
+  def find_by_name(name, requirement)
+    raise Gem::LoadError, "#{name} #{requirement} is not installed" unless @installed
+
+    self
+  end
+end
+
 describe Riffer::Rig::SDK do
   let(:null) { Riffer::Rig::Hosts::Null.new }
 
-  def with_sdk_absent
-    original = Gem::Specification.method(:find_by_name)
-    Gem::Specification.define_singleton_method(:find_by_name) { |*_args| raise Gem::LoadError, 'not installed' }
-    yield
-  ensure
-    Gem::Specification.define_singleton_method(:find_by_name, original)
-  end
-
-  def with_sdk_present
-    original = Gem::Specification.method(:find_by_name)
-    Gem::Specification.define_singleton_method(:find_by_name) { |*_args| true }
-    yield
-  ensure
-    Gem::Specification.define_singleton_method(:find_by_name, original)
-  end
-
-  def with_bundler(managed)
-    original = Riffer::Rig::SDK.method(:bundler?)
-    Riffer::Rig::SDK.define_singleton_method(:bundler?) { managed }
-    yield
-  ensure
-    Riffer::Rig::SDK.define_singleton_method(:bundler?, original)
+  def ensure_gem(gem, requirement, installed:, bundled:, host: null, installer: InstallRecorder.new)
+    Riffer::Rig::SDK.ensure(
+      gem, requirement, host: host, installer: installer, specs: SpecsFake.new(installed), bundled: bundled
+    )
   end
 
   describe '.ensure' do
@@ -90,133 +89,89 @@ describe Riffer::Rig::SDK do
     end
 
     it 'falls through when an installed gem cannot be loaded' do
-      with_sdk_present do
-        with_bundler(true) do
-          result = Riffer::Rig::SDK.ensure('acme-sdk', '~> 1.0', host: null)
+      result = ensure_gem('acme-sdk', '~> 1.0', installed: true, bundled: true)
 
-          assert_equal(
-            'acme-sdk is not installed and Bundler manages the load path; ' \
-            "add gem 'acme-sdk', '~> 1.0' to the Gemfile",
-            result
-          )
-        end
-      end
+      assert_equal(
+        'acme-sdk is not installed and Bundler manages the load path; ' \
+        "add gem 'acme-sdk', '~> 1.0' to the Gemfile",
+        result
+      )
     end
 
     it 'reports the Gemfile line for an absent gem under Bundler' do
-      with_sdk_absent do
-        with_bundler(true) do
-          result = Riffer::Rig::SDK.ensure('acme-sdk', '~> 1.0', host: null)
+      result = ensure_gem('acme-sdk', '~> 1.0', installed: false, bundled: true)
 
-          assert_equal(
-            'acme-sdk is not installed and Bundler manages the load path; ' \
-            "add gem 'acme-sdk', '~> 1.0' to the Gemfile",
-            result
-          )
-        end
-      end
+      assert_equal(
+        'acme-sdk is not installed and Bundler manages the load path; ' \
+        "add gem 'acme-sdk', '~> 1.0' to the Gemfile",
+        result
+      )
     end
 
     it 'reports how to install when the host declines' do
-      with_sdk_absent do
-        with_bundler(false) do
-          result = Riffer::Rig::SDK.ensure('acme-sdk', '~> 1.0', host: null)
+      result = ensure_gem('acme-sdk', '~> 1.0', installed: false, bundled: false)
 
-          assert_equal(
-            "acme-sdk is not installed; install it with gem install acme-sdk -v '~> 1.0' or add it to a Gemfile",
-            result
-          )
-        end
-      end
+      assert_equal(
+        "acme-sdk is not installed; install it with gem install acme-sdk -v '~> 1.0' or add it to a Gemfile",
+        result
+      )
     end
 
     it 'does not ask a host that cannot confirm' do
       host = AskRecorder.new(Set[:ask])
-      with_sdk_absent do
-        with_bundler(false) do
-          Riffer::Rig::SDK.ensure('acme-sdk', '~> 1.0', host: host)
-        end
-      end
+      ensure_gem('acme-sdk', '~> 1.0', installed: false, bundled: false, host: host)
 
       assert_empty host.confirmations
     end
 
     it 'reports how to install when the user declines the confirm' do
       host = AskRecorder.new(answer: false)
-      with_sdk_absent do
-        with_bundler(false) do
-          result = Riffer::Rig::SDK.ensure('acme-sdk', '~> 1.0', host: host)
+      result = ensure_gem('acme-sdk', '~> 1.0', installed: false, bundled: false, host: host)
 
-          assert_equal(
-            "acme-sdk is not installed; install it with gem install acme-sdk -v '~> 1.0' or add it to a Gemfile",
-            result
-          )
-        end
-      end
+      assert_equal(
+        "acme-sdk is not installed; install it with gem install acme-sdk -v '~> 1.0' or add it to a Gemfile",
+        result
+      )
     end
 
     it 'asks the host to install an absent gem outside Bundler' do
       host = AskRecorder.new
-      with_sdk_absent do
-        with_bundler(false) do
-          Riffer::Rig::SDK.ensure('json', '>= 0', host: host, installer: InstallRecorder.new)
-        end
-      end
+      ensure_gem('json', '>= 0', installed: false, bundled: false, host: host)
 
       assert_equal ['Install the json gem now?'], host.confirmations
     end
 
     it 'installs the gem and requirement after a confirm' do
       installer = InstallRecorder.new
-      with_sdk_absent do
-        with_bundler(false) do
-          Riffer::Rig::SDK.ensure('json', '>= 0', host: AskRecorder.new, installer: installer)
-        end
-      end
+      ensure_gem('json', '>= 0', installed: false, bundled: false, host: AskRecorder.new, installer: installer)
 
       assert_equal [['json', Gem::Requirement.new('>= 0')]], installer.installs
     end
 
     it 'reports an install that fails' do
       installer = InstallRecorder.new(Gem::InstallError.new('no write permissions'))
-      with_sdk_absent do
-        with_bundler(false) do
-          result = Riffer::Rig::SDK.ensure('json', '>= 0', host: AskRecorder.new, installer: installer)
+      result = ensure_gem('json', '>= 0', installed: false, bundled: false, host: AskRecorder.new, installer: installer)
 
-          assert_equal 'json could not be installed: no write permissions', result
-        end
-      end
+      assert_equal 'json could not be installed: no write permissions', result
     end
 
     it 'clears the gem paths after installing' do
       installer = InstallRecorder.new
-      with_sdk_absent do
-        with_bundler(false) do
-          Riffer::Rig::SDK.ensure('json', '>= 0', host: AskRecorder.new, installer: installer)
-        end
-      end
+      ensure_gem('json', '>= 0', installed: false, bundled: false, host: AskRecorder.new, installer: installer)
 
       assert_equal 1, installer.clears
     end
 
     it 'requires the gem after installing it' do
-      with_sdk_absent do
-        with_bundler(false) do
-          result = Riffer::Rig::SDK.ensure('json', '>= 0', host: AskRecorder.new, installer: InstallRecorder.new)
+      result = ensure_gem('json', '>= 0', installed: false, bundled: false, host: AskRecorder.new)
 
-          assert_nil result
-        end
-      end
+      assert_nil result
     end
 
     it 'reports a gem that still cannot be loaded after installing' do
-      with_sdk_absent do
-        with_bundler(false) do
-          result = Riffer::Rig::SDK.ensure('acme-sdk', '~> 1.0', host: AskRecorder.new, installer: InstallRecorder.new)
+      result = ensure_gem('acme-sdk', '~> 1.0', installed: false, bundled: false, host: AskRecorder.new)
 
-          assert_equal 'acme-sdk was installed but could not be loaded', result
-        end
-      end
+      assert_equal 'acme-sdk was installed but could not be loaded', result
     end
   end
 end

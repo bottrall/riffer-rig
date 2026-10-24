@@ -6,21 +6,23 @@ module Riffer::Rig::Commands::Model
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
+  # @rbs sdk: Riffer::Rig::SDK::_Ensurer
   # @rbs return: Riffer::Rig::Command
-  def command(env:, auth_path:, settings_path:)
+  def command(env:, auth_path:, settings_path:, sdk: Riffer::Rig::SDK)
     Riffer::Rig::Command.new(
       'model',
       description: 'Switch the model for this session: /model provider/name, /model --save',
       extension: :core
-    ) { |ctx| run(ctx, env:, auth_path:, settings_path:) }
+    ) { |ctx| run(ctx, env:, auth_path:, settings_path:, sdk:) }
   end
 
   # @rbs ctx: Riffer::Rig::Command::Context
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
+  # @rbs sdk: Riffer::Rig::SDK::_Ensurer
   # @rbs return: void
-  def run(ctx, env:, auth_path:, settings_path:)
+  def run(ctx, env:, auth_path:, settings_path:, sdk:)
     current = ctx.runtime.model
     Riffer::Rig::Commands::Switch.run(
       ctx,
@@ -30,7 +32,7 @@ module Riffer::Rig::Commands::Model
       unset: 'No model is in effect to save',
       saved_to: settings_path,
       store: ->(model) { Riffer::Rig::Settings::File.store_model(model, path: settings_path) }
-    ) { |model| switched?(ctx, model, env:, auth_path:, settings_path:) }
+    ) { |model| switched?(ctx, model, env:, auth_path:, settings_path:, sdk:) }
   end
 
   private
@@ -40,14 +42,15 @@ module Riffer::Rig::Commands::Model
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
+  # @rbs sdk: Riffer::Rig::SDK::_Ensurer
   # @rbs return: bool
-  def switched?(ctx, model, env:, auth_path:, settings_path:)
+  def switched?(ctx, model, env:, auth_path:, settings_path:, sdk:)
     provider = Riffer::Rig::Settings::ModelOptions.provider_for(model)
     unless provider && Riffer::Providers::Repository.find(provider)
       ctx.say(hint)
       return false
     end
-    return false unless ready?(ctx, model, provider, env:, auth_path:, settings_path:)
+    return false unless ready?(ctx, model, provider, env:, auth_path:, settings_path:, sdk:)
 
     ctx.runtime.model = model
     true
@@ -64,14 +67,15 @@ module Riffer::Rig::Commands::Model
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
+  # @rbs sdk: Riffer::Rig::SDK::_Ensurer
   # @rbs return: bool
-  def ready?(ctx, model, provider, env:, auth_path:, settings_path:)
+  def ready?(ctx, model, provider, env:, auth_path:, settings_path:, sdk:)
     setup = Riffer::Rig::ProviderSetup.registered_setup(provider)
     return true unless setup
 
-    sdk = setup.sdk
-    if sdk
-      message = Riffer::Rig::SDK.ensure(sdk[0], sdk[1], host: ctx.host)
+    gem = setup.sdk
+    if gem
+      message = sdk.ensure(gem[0], gem[1], host: ctx.host)
       if message
         ctx.host.notify(message, level: :error)
         return false
