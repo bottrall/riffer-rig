@@ -66,7 +66,7 @@ class Riffer::Rig::Stores::JSONL
 
   # @rbs return: String
   def root
-    File.join(@home, '.riffer', 'sessions')
+    Riffer::Rig::Directories.riffer(@home, 'sessions')
   end
 
   # @rbs id: String

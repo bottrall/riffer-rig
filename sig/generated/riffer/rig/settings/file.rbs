@@ -15,10 +15,10 @@ module Riffer::Rig::Settings::File
   # @rbs model: String
   # @rbs path: String
   # @rbs return: String?
-  def store_model: (String model, ?path: String) -> String?
+  def store_model: (String model, path: String) -> String?
 
   # @rbs level: String
   # @rbs path: String
   # @rbs return: String?
-  def store_reasoning: (String level, ?path: String) -> String?
+  def store_reasoning: (String level, path: String) -> String?
 end
