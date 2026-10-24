@@ -118,7 +118,7 @@ Switches on [provider-native tools](TOOLS.md#provider-native-tools), per tool. T
 { "reload": "manual" }
 ```
 
-`"auto"` (the default) reloads automatically when a `rig.rb` file or a file it requires changes; `"manual"` reloads only on `/reload`. Either way, `/reload` picks up settings changes. [Reloading](RELOADING.md) has the details.
+`"auto"` (the default) or `"manual"`; [Reloading](RELOADING.md#when-it-reloads) has when each one reloads.
 
 ## Extension namespaces
 

@@ -26,7 +26,7 @@ Only the assistant's reply goes to stdout, streamed as it arrives. Everything el
 
 Every terminal flag works here, plus `--json`, `--verbose` and `--job-idle-timeout` ([Command line](CLI.md#flags)).
 
-`-c` and `-r <id>` continue a session across runs: `riffer -p -c "now run the tests"` carries on the most recent session in this directory. If there is no such session, headless exits 2 rather than starting a fresh one.
+`-c` and `-r <id>` continue a session across runs: `riffer -p -c "now run the tests"` carries on the most recent session in this directory ([Resuming](SESSIONS.md#resuming)).
 
 Headless never asks anything. A missing model, credential or [SDK gem](PROVIDERS.md#sdk-gems) prints what to set or install on stderr and exits 2, as does a settings or `auth.json` file that doesn't parse. A project `rig.rb` you haven't trusted in the terminal is skipped.
 
@@ -63,19 +63,6 @@ With follow-up turns, the code is the last turn's.
 {"stop_reason":"completed","usage":{"input_tokens":1423,"output_tokens":89},"type":"turn_end"}
 ```
 
-| `type`                                  | When                                                                                  |
-| --------------------------------------- | ------------------------------------------------------------------------------------- |
-| `session_start`                         | first, once per run; carries the session `id`                                         |
-| `text_delta`, `text_done`               | the reply as it streams, then complete                                                |
-| `reasoning_delta`, `reasoning_done`     | the model's reasoning, when the provider sends it                                     |
-| `tool_call_delta`, `tool_call_done`     | a tool call the model makes                                                           |
-| `before_tool_call`, `after_tool_call`   | a tool starting and finishing ([fields](EVENTS.md#tool-call-events))                  |
-| `token_usage_done`                      | each model call's token usage                                                         |
-| `job_exit`                              | a background job's exit, as the model is told of it                                   |
-| `notify`                                | a warning or notice that text mode prints on stderr                                   |
-| `turn_end`                              | last record of every turn: `stop_reason`, and `usage` with `cost` when the model is priced |
-| `error`                                 | a fatal error, as the final record: `{"type": "error", "message": "…"}`               |
+The records are the [events](EVENTS.md) the run streams — riffer's stream events and riffer-rig's own — so a consumer that only reads the last `turn_end` still knows how the turn ended and what it cost. Headless adds one record of its own: a fatal error ends the stream with `{"type": "error", "message": "…"}`.
 
-Other riffer stream events — web search, guardrails, interrupts — appear the same way when they happen ([Events](EVENTS.md)). A consumer that only reads the last `turn_end` still knows how the turn ended and what it cost.
-
-The stdin warning, `waiting for background jobs`, the exit-3 reason and `--verbose` traces stay on stderr.
+Notices that text mode prints on stderr arrive as `notify` records instead. The stdin warning, `waiting for background jobs`, a turn's `turn ended: …` reason and `--verbose` traces stay on stderr.

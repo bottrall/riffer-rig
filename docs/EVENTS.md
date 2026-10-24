@@ -9,7 +9,7 @@ Every rig event has `type`, its snake_case name, and `to_h`, its fields with the
 | Event              | Carries                                                                  | When                                                                                  |
 | ------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
 | `session_start`    | `id`, `reason` (`:new`, `:restore`, `:reload`)                           | opens the first prompt of a new or [restored](EMBEDDING.md#snapshots) session, and the first after a [rebuild](EMBEDDING.md#rebuilding-after-a-code-reload) |
-| `session_end`      | `reason` (`:reload`)                                                     | opens the first prompt after a rebuild, just before its `session_start`              |
+| `session_end`      | `reason` (`:reload`, `:close`)                                           | opens the first prompt after a rebuild, just before its `session_start`; `:close` reaches only [hooks](EXTENSIONS.md#the-rigon-seam), as nothing streams after `close` |
 | `command_output`   | `command`, `text`                                                        | a command called `ctx.say`                                                            |
 | `skill_activated`  | `name`                                                                   | a skill was run with `/skill:<name>`                                                  |
 | `notify`           | `message`, `level`                                                       | every notice the host was given, such as an extension failing to load                 |
@@ -18,7 +18,7 @@ Every rig event has `type`, its snake_case name, and `to_h`, its fields with the
 | `job_exit`         | `job_id`, `command`, `exit_status`, `signal`, `duration`, `output_path`  | the model is told a [background job](EMBEDDING.md#background-jobs) exited, one per job |
 | `turn_end`         | `stop_reason`, `usage`, `cost`                                           | always the last event of a prompt                                                     |
 
-`turn_end`'s `stop_reason` is riffer's outcome (`:completed`, `:length`, `:max_steps`, `:guardrail_blocked`, …) or `:cancelled` after a [cancel](EMBEDDING.md#cancelling-a-turn). `usage` is the turn's riffer `TokenUsage`, and `cost` its price in USD, or `nil` when the model is not [priced](CONFIGURATION.md#catalog_files). A consumer never needs `ask` to learn how a streamed turn ended.
+`turn_end`'s `stop_reason` is riffer's outcome (`:completed`, `:length`, `:max_steps`, `:guardrail_blocked`, …) or `:cancelled` after a [cancel](EMBEDDING.md#cancelling-a-turn). `usage` is the turn's riffer `TokenUsage`, and `cost` its price in USD, or `nil` when the model is not [priced](CONFIGURATION.md#catalog_files). In `to_h`, and so in a JSON record, the cost is `usage`'s `cost` key, left out when `nil`. A consumer never needs `ask` to learn how a streamed turn ended.
 
 ## Tool call events
 
@@ -46,7 +46,7 @@ Every call gets exactly one `after_tool_call`, whatever happened to it:
 | was blocked by a [hook](EXTENSIONS.md#the-rigon-seam) | no                                   | a `:blocked` error, with the arguments the model sent |
 | had arguments that aren't a JSON object   | no                                               | a `:validation_error`, with empty `args`          |
 
-`result` is a `Riffer::Tools::Response`: `result.error?` says whether the call failed. `call_id` matches the call's `ToolCallDone`. `at` is a monotonic timestamp in seconds, comparable only within one process, and `duration` is how long the tool itself ran, leaving out time spent in hooks; a call that never ran has `0.0`. The timestamps come from the Runtime's `clock:`, which a test can replace.
+`args` is a hash with symbol keys. `result` is a `Riffer::Tools::Response`: `result.error?` says whether the call failed. `call_id` matches the call's `ToolCallDone`. `at` is a monotonic timestamp in seconds, comparable only within one process, and `duration` is how long the tool itself ran, leaving out time spent in hooks; a call that never ran has `0.0`. The timestamps come from the Runtime's `clock:`, which a test can replace.
 
 These are the same event objects the `before_tool_call` and `after_tool_call` hooks receive.
 
