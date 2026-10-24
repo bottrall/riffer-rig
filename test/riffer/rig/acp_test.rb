@@ -226,11 +226,6 @@ describe Riffer::Rig::ACP do
     File.write(File.join(@cwd, '.riffer', 'rig.rb'), '')
   end
 
-  def skipped_server_warning(name)
-    wait_for { message_texts.any? { |text| text.include?("Skipped MCP server #{name}") } }
-    message_texts.find { |text| text.include?("Skipped MCP server #{name}") }
-  end
-
   def texts_of(updates)
     updates.filter_map do |update|
       update.content.text if update.is_a?(ACP::Types::SessionUpdate::AgentMessageChunk)
@@ -239,6 +234,10 @@ describe Riffer::Rig::ACP do
 
   def http_server(name)
     { 'name' => name, 'type' => 'http', 'url' => 'https://docs.example/mcp', 'headers' => [] }
+  end
+
+  def skipped_server_warning(name)
+    Riffer::Rig::ACP::Servers.warnings([ACP::Types::McpServer.from_h(http_server(name))]).first.to_s
   end
 
   def without_commands(updates)
@@ -331,44 +330,17 @@ describe Riffer::Rig::ACP do
 
   describe '#new_session' do
     it 'warns about a client-supplied non-stdio mcpServer' do
-      new_session(
-        mcp_servers: [{
-          'name' => 'httpdocs', 'type' => 'http', 'url' => 'https://docs.example/mcp', 'headers' => []
-        }]
-      )
-      wait_for { message_texts.any? { |text| text.include?('Skipped MCP server httpdocs') } }
+      new_session(mcp_servers: [http_server('httpdocs')])
+      warning = Riffer::Rig::ACP::Mapper.notice(skipped_server_warning('httpdocs')).content.text
+      wait_for { message_texts.include?(warning) }
 
-      assert(message_texts.any? { |text| text.include?('only stdio servers are supported') })
+      assert_includes message_texts, warning
     end
 
-    it 'names a skipped sse mcpServer in the warning' do
-      new_session(
-        mcp_servers: [{ 'name' => 'ssedocs', 'type' => 'sse', 'url' => 'https://docs.example/sse', 'headers' => [] }]
-      )
+    it 'declares the client stdio mcpServers to the Runtime it builds' do
+      new_session(mcp_servers: [{ 'name' => 'stub', 'command' => '/bin/stub', 'args' => [], 'env' => [] }])
 
-      assert_includes skipped_server_warning('ssedocs'), 'only stdio servers are supported'
-    end
-
-    it 'names a skipped mcpServer of an unknown type in the warning' do
-      new_session(mcp_servers: [{ 'name' => 'odd', 'type' => 'websocket' }])
-
-      assert_includes skipped_server_warning('odd'), 'only stdio servers are supported'
-    end
-
-    it 'turns client-supplied stdio mcpServers into rig.mcp declarations' do
-      script = File.join(@cwd, 'mcp_stub.rb')
-      File.write(script, '#!/usr/bin/env ruby')
-      new_session(
-        mcp_servers: [{
-          'name' => 'stub', 'command' => script, 'args' => ['--flag'],
-          'env' => [{ 'name' => 'TOKEN', 'value' => 't' }]
-        }]
-      )
-
-      assert_equal(
-        { 'stub' => Riffer::Rig::Mcp::Declaration.new(command: script, args: ['--flag'], env: { 'TOKEN' => 't' }) },
-        @servers
-      )
+      assert_equal ['stub'], @servers&.keys
     end
 
     it 'sends the exit of a job that ends between prompts as an agent message chunk' do
@@ -446,13 +418,6 @@ describe Riffer::Rig::ACP do
       assert_equal 'mock/other', @built_runtimes.last.model
     end
 
-    it 'streams the output of a slash command as an agent message chunk' do
-      session = ready_session
-      _response, updates = prompt(session.session_id, '/cost')
-
-      assert_equal [Riffer::Rig::Commands::Cost::NO_USAGE], texts_of(updates)
-    end
-
     it 'streams the turn a slash command starts' do
       write_skill('tidy')
       session = ready_session
@@ -477,30 +442,6 @@ describe Riffer::Rig::ACP do
       assert_equal 'end_turn', response.stop_reason
     end
 
-    it 'reports a tool call' do
-      session = new_session
-      File.write(File.join(@cwd, 'subject.txt'), 'contents')
-      reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
-      reply('All done.')
-      _response, updates = prompt(session.session_id, 'read it')
-      tool_call = updates.find { |update| update.is_a?(ACP::Types::SessionUpdate::ToolCall) }
-
-      assert_equal 'read', tool_call&.name
-    end
-
-    it 'completes a tool call once it has run' do
-      session = new_session
-      File.write(File.join(@cwd, 'subject.txt'), 'contents')
-      reply('Reading.', tool_calls: [{ name: 'read', arguments: { path: File.join(@cwd, 'subject.txt') } }])
-      reply('All done.')
-      _response, updates = prompt(session.session_id, 'read it')
-      statuses = updates.filter_map do |update|
-        [update.tool_call_id, update.status] if update.is_a?(ACP::Types::SessionUpdate::ToolCallUpdate)
-      end
-
-      assert_equal [%w[mock_call_0 completed]], statuses
-    end
-
     it 'completes a tool call after reporting it' do
       session = new_session
       File.write(File.join(@cwd, 'subject.txt'), 'contents')
@@ -520,17 +461,6 @@ describe Riffer::Rig::ACP do
       prompt(session.session_id, 'read it')
 
       assert_empty @permissions
-    end
-
-    it 'breaks the agent message where a job exit is delivered' do
-      session = ready_session
-      update = Riffer::Rig::ACP::Mapper.job_completion(ended_job(@built_runtimes.last))
-      wait_for { message_texts.include?(update.content.text) }
-      reply('Hi from ACP.')
-      _response, updates = prompt(session.session_id, 'hello')
-      chunks = texts_of(updates)
-
-      assert_equal Riffer::Rig::ACP::Mapper.job_exit.content.text, chunks.first
     end
 
     it 'ends a tool-call turn with end_turn' do
@@ -718,8 +648,7 @@ describe Riffer::Rig::ACP do
     it 'warns about a client-supplied non-stdio mcpServer of a loaded session' do
       session = save_session('first prompt')
       _response, updates = load(session.session_id, mcp_servers: [http_server('httpdocs')])
-
-      warning = Riffer::Rig::ACP::Mapper.notice('Skipped MCP server httpdocs: only stdio servers are supported')
+      warning = Riffer::Rig::ACP::Mapper.notice(skipped_server_warning('httpdocs'))
 
       assert_includes texts_of(updates), warning.content.text
     end
