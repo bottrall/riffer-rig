@@ -184,6 +184,12 @@ describe Riffer::Rig::Terminal::Ticker do
       )
     end
 
+    it 'wraps the spinner back to its first frame' do
+      (Riffer::Rig::Terminal::Ticker::SPINNER.length + 1).times { ticker.tick }
+
+      assert_equal '⠋         default 00:00 ↑0     ↓0 tok     ~$0.0000 0 jobs', footer.statuses.last
+    end
+
     it 'carries the reasoning the footer has' do
       footer.reasoning = 'high'
 
