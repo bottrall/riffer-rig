@@ -28,6 +28,19 @@ describe Riffer::Rig::Settings do
       assert_equal({ depth: 3 }, merged[:git])
     end
 
+    it 'keeps a home MCP server the project does not name' do
+      home = { mcp: { servers: { docs: { url: 'https://docs.test' } } } }
+      project = { mcp: { servers: { web: { url: 'https://web.test' } } } }
+
+      assert_equal %i[docs web], Riffer::Rig::Settings.merge(home, project).dig(:mcp, :servers).keys
+    end
+
+    it 'keeps the home MCP servers when the project mcp table names none' do
+      home = { mcp: { servers: { docs: { url: 'https://docs.test' } } } }
+
+      assert_equal home[:mcp], Riffer::Rig::Settings.merge(home, { mcp: {} })[:mcp]
+    end
+
     it 'replaces a home MCP server of the same name whole' do
       home = { mcp: { servers: { docs: { url: 'https://home.test', headers: { Authorization: 'secret' } } } } }
       project = { mcp: { servers: { docs: { url: 'https://project.test' } } } }

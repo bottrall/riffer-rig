@@ -17,7 +17,7 @@ class Riffer::Rig::Stores::MessageEntry
     message = hash[:message]
     return nil unless message.is_a?(Hash)
 
-    new(message: message, recorded_at: Riffer::Rig::Stores::Timestamp.dump(Riffer::Rig::Stores::Timestamp.load(hash[:recorded_at])))
+    new(message: message, recorded_at: Riffer::Rig::Stores::Timestamp.normalize(hash[:recorded_at]))
   end
 
   # @rbs message: Hash[Symbol, untyped]

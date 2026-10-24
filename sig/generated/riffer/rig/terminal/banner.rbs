@@ -60,4 +60,8 @@ module Riffer::Rig::Terminal::Banner
   # @rbs room: Integer?
   # @rbs return: String
   def clip: (String value, Integer? room) -> String
+
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs return: String
+  def summary: (Riffer::Providers::TokenUsage usage) -> String
 end

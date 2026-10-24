@@ -15,12 +15,13 @@ The highest source that is set wins.
 | ---------------- | ------------- | --------------------------------------- | ------------------ | ------------------------------------- | ---------------------------------- |
 | Model            | `--model`     | a resumed session's `/model` switch[^1] | `RIFFER_MODEL`     | `model` in project, then home settings | asked on first run, saved to home[^2] |
 | Reasoning level  | `--reasoning` | a resumed session's `/reasoning` switch | `RIFFER_REASONING` | `reasoning` in project, then home settings | the model's own default        |
-| Provider credential | the provider's environment variables | `auth.json` (secrets) or the `providers` block (plain values) | a provider fallback, such as the AWS shared config for the Bedrock region | asked for, then stored (required fields only) | — |
+| Provider credential[^3] | the provider's environment variables | `auth.json` (secrets) or the `providers` block (plain values) | a provider fallback, such as [Bedrock's region](PROVIDERS.md#amazon-bedrock) | asked for, then stored (required fields only) | — |
 
 [^1]: Restored only when its provider still has credentials.
 [^2]: Headless and ACP never ask: a missing model is a configuration error.
+[^3]: Each field resolves on its own. A field with several variables tries them in the order [Providers](PROVIDERS.md) lists them, and a blank value counts as unset. A secret is asked for without echo.
 
-Inside a session, `/model` and `/reasoning` override all of these until the session ends ([below](#model)). [Providers](PROVIDERS.md#resolution-order) has the credential details.
+Inside a session, `/model` and `/reasoning` override all of these until the session ends ([below](#model)). A flag beats a resumed session's switch for that run only: resuming again without it restores the switch. [Providers](PROVIDERS.md) lists each provider's fields and variables.
 
 ## Scopes and merging
 
@@ -87,7 +88,7 @@ Settings are lenient so that one level can stay in the file while you switch bet
 { "catalog_files": ["~/.riffer/models.json", ".riffer/models.json"] }
 ```
 
-The [model catalog](https://riffer.ai/guides/catalog/) files riffer reads for per-model pricing and reasoning mappings. Without a catalog entry a model has no cost: it is shown as missing, never as zero. The file format is riffer's.
+The [model catalog](https://riffer.ai/guides/catalog/) files riffer reads for per-model pricing and reasoning mappings. A model without a catalog entry is unpriced, so riffer counts no cost for it ([how the terminal shows that](TERMINAL.md#the-status-line)). The file format is riffer's.
 
 ## `mcp`
 
@@ -102,7 +103,7 @@ The bundled `mcp` extension's namespace, declaring the MCP servers whose tools t
 - `disabled` leaves out bundled extensions: any of `read`, `write`, `edit`, `bash`, `agents_md`, `skills` and `mcp`. Nothing a disabled extension would register exists.
 - `autoload` (default `false`) loads every installed gem that ships `riffer/rig/extension` ([Gem extensions](EXTENSIONS.md#gem-extensions)).
 
-`--no-extensions` skips autoload and the `rig.rb` files for one run; the bundled extensions still load.
+[`--no-extensions`](CLI.md#flags) overrides `autoload` for one run.
 
 ## `tools.native`
 
@@ -118,7 +119,7 @@ Switches on [provider-native tools](TOOLS.md#provider-native-tools), per tool. T
 { "reload": "manual" }
 ```
 
-`"auto"` (the default) reloads automatically when a `rig.rb` file or a file it requires changes; `"manual"` reloads only on `/reload`. Either way, `/reload` picks up settings changes. [Reloading](RELOADING.md) has the details.
+`"auto"` (the default) or `"manual"`; [Reloading](RELOADING.md#when-it-reloads) has when each one reloads.
 
 ## Extension namespaces
 

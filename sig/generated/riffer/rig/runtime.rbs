@@ -13,43 +13,27 @@ class Riffer::Rig::Runtime
 
   DEFAULT_NAME: ::String
 
+  DEFAULT_REASONING_LABEL: String
+
   # Unlimited: riffer's own default (16) is too small for a general-purpose
   # harness.
   DEFAULT_MAX_STEPS: Integer?
 
-  INTERRUPT_CANCELLED: Symbol
-
-  # Per turn, so a job that starts jobs cannot keep a turn alive forever.
-  MAX_JOB_CONTINUATIONS: Integer
-
-  # Riffer's remaining stop reasons (:error, :other, :guardrail_blocked) are
-  # failures, not early stops.
-  STOPPED_WITHOUT_COMPLETING: Array[Symbol]
-
-  # Upstream candidate: riffer's Anthropic, OpenAI and Azure OpenAI classes read
-  # the web_search option and OpenRouter passes unknown options through to its
-  # API, but the provider seam cannot yet answer which provider takes which
-  # option, so rig keeps the mapping until it can. Mock consumes web_search, so
-  # tests and embedders can exercise the switches.
-  NATIVE_TOOLS_BY_PROVIDER: Hash[Symbol, Hash[Symbol, bool]]
-
-  @id: String
-
-  @settings: Hash[Symbol, untyped]
-
-  @concurrency: Riffer::Rig::Runtime::Concurrency
-
-  @session_start_pending: bool
-
-  @session_start_reason: Symbol
-
-  @model_override: String?
-
-  @reasoning: String?
+  @settings_path: String
 
   @message_observers: Array[^(Riffer::Messages::Base) -> void]
 
-  @settings_path: String
+  @reasoning: String?
+
+  @model_override: String?
+
+  @session_start_reason: Symbol
+
+  @session_start_pending: bool
+
+  @concurrency: Riffer::Rig::Runtime::Concurrency
+
+  @id: String
 
   @host: Riffer::Rig::Hosts::Mirror
 
@@ -57,11 +41,11 @@ class Riffer::Rig::Runtime
 
   @credentials: Hash[Symbol, Hash[Symbol, String]]
 
-  @jobs: Riffer::Rig::Tools::Bash::Jobs
+  @job_notices: Riffer::Rig::Runtime::JobNotices
+
+  @jobs: Riffer::Rig::Runtime::Jobs
 
   @job_inbox: Riffer::Rig::Runtime::JobInbox
-
-  @draft: Array[String]
 
   @abort: Riffer::Rig::Runtime::Abort
 
@@ -73,7 +57,7 @@ class Riffer::Rig::Runtime
 
   @env: Riffer::Rig::Env
 
-  @yielder: Enumerator::Yielder?
+  @turn: Riffer::Rig::Runtime::Turn?
 
   @clock: ^() -> Float
 
@@ -89,9 +73,7 @@ class Riffer::Rig::Runtime
 
   @hooks: Riffer::Rig::Runtime::Hooks
 
-  @errors: Array[Riffer::Rig::Extension::Failure]
-
-  @declared_settings: Hash[Symbol, Hash[Symbol, untyped]]
+  @assembly: Riffer::Rig::Runtime::Assembly
 
   @core_commands: Array[Riffer::Rig::Command]
 
@@ -103,7 +85,7 @@ class Riffer::Rig::Runtime
 
   @model_observers: Array[^(String) -> void]
 
-  # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
+  # @dynamic agent, credentials, cwd, host, id
   attr_reader agent: Riffer::Agent
 
   attr_reader credentials: Hash[Symbol, Hash[Symbol, String]]
@@ -113,10 +95,6 @@ class Riffer::Rig::Runtime
   attr_reader host: Riffer::Rig::Hosts::Mirror
 
   attr_reader id: String
-
-  attr_reader settings: Hash[Symbol, untyped]
-
-  attr_reader declared_settings: Hash[Symbol, Hash[Symbol, untyped]]
 
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]
@@ -137,9 +115,9 @@ class Riffer::Rig::Runtime
   # @rbs model_options: Hash[Symbol, untyped]
   # @rbs native_tools: Hash[Symbol, untyped]
   # @rbs clock: ^() -> Float
-  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?
   # @rbs return: void
-  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?env: Riffer::Rig::Env, ?auth_path: String, ?settings_path: String, ?reasoning: String?, ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?native_tools: Hash[Symbol, untyped], ?clock: ^() -> Float, ?snapshot: Hash[Symbol, untyped]?) -> void
+  def initialize: (String model, ?extensions: Array[Riffer::Rig::Extension], ?tools: Array[String]?, ?settings: Hash[Symbol, untyped], ?host: Riffer::Rig::Hosts::_Host, ?cwd: String?, ?name: String, ?instructions: String?, ?credentials: Hash[Symbol, Hash[Symbol, String]], ?env: Riffer::Rig::Env, ?auth_path: String, ?settings_path: String, ?reasoning: String?, ?riffer_config: Riffer::Config, ?mcp_registry: Riffer::Rig::Mcp::_Registry, ?max_steps: Integer?, ?model_options: Hash[Symbol, untyped], ?native_tools: Hash[Symbol, untyped], ?clock: ^() -> Float, ?snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?) -> void
 
   # @rbs text: String
   # @rbs &: ?(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
@@ -157,15 +135,10 @@ class Riffer::Rig::Runtime
   # @rbs return: Array[Riffer::Rig::Command]
   def commands: () -> Array[Riffer::Rig::Command]
 
-  # Installs a host-of-the-runtime command (the Loader's /reload) so it
-  # survives every rebuild; an extension command of the same name replaces it.
   # @rbs command: Riffer::Rig::Command
   # @rbs return: nil
   def install_command: (Riffer::Rig::Command command) -> nil
 
-  # Installs a host-of-the-runtime check (the Loader's automatic reload) so it
-  # survives every rebuild. The Runtime calls it at both before_request
-  # boundaries, before any handler runs, and ignores the result.
   # @rbs check: ^(::Riffer::Rig::Runtime) -> void
   # @rbs return: nil
   def install_reload_check: (^(::Riffer::Rig::Runtime) -> void check) -> nil
@@ -178,6 +151,12 @@ class Riffer::Rig::Runtime
 
   # @rbs return: Array[Riffer::Rig::Extension::Failure]
   def errors: () -> Array[Riffer::Rig::Extension::Failure]
+
+  # @rbs return: Hash[Symbol, untyped]
+  def settings: () -> Hash[Symbol, untyped]
+
+  # @rbs return: Hash[Symbol, Hash[Symbol, untyped]]
+  def declared_settings: () -> Hash[Symbol, Hash[Symbol, untyped]]
 
   # @rbs return: String
   def model: () -> String
@@ -270,29 +249,24 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def rederive_options: (String model) -> void
 
-  # The switches are on/off settings, so what the agent can do stays a function
-  # of the current provider: a switch whose provider cannot take the option
-  # contributes nothing, and a switch to such a provider drops it, both silently.
-  # @rbs model: String
-  # @rbs return: Hash[Symbol, untyped]
-  def native_options: (String model) -> Hash[Symbol, untyped]
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: String?
+  def reasoning_over: (Hash[Symbol, untyped] settings) -> String?
 
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs assembly: Riffer::Rig::Runtime::Assembly
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs max_steps: Numeric?
   # @rbs return: Riffer::Agent::Config
-  def agent_config: (Array[Riffer::Rig::Registrar] registrars, Riffer::Rig::Runtime::Hooks hooks, Numeric? max_steps) -> Riffer::Agent::Config
+  def agent_config: (Riffer::Rig::Runtime::Assembly assembly, Riffer::Rig::Runtime::Hooks hooks, Numeric? max_steps) -> Riffer::Agent::Config
 
-  # @rbs sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
-  # @rbs return: Riffer::Skills::Config?
-  def skills_config: (Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend] sources) -> Riffer::Skills::Config?
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs assembly: Riffer::Rig::Runtime::Assembly
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs agent: Riffer::Agent
   # @rbs return: void
-  def install: (Array[Riffer::Rig::Registrar] registrars, Hash[Symbol, untyped] settings, Riffer::Rig::Runtime::Hooks hooks, Riffer::Agent agent) -> void
+  def install: (Riffer::Rig::Runtime::Assembly assembly, Riffer::Rig::Runtime::Hooks hooks, Riffer::Agent agent) -> void
+
+  # @rbs return: Array[Riffer::Rig::Command]
+  def built_in_commands: () -> Array[Riffer::Rig::Command]
 
   # A session that has not started yet opens with session_start(:new) on its
   # first turn instead.
@@ -336,48 +310,15 @@ class Riffer::Rig::Runtime
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
   def turn: () { () -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response] } -> Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
 
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
-  # @rbs return: Riffer::Agent::Response
-  def relay: (Enumerator::Yielder yielder, Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response] stream) -> Riffer::Agent::Response
-
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs response: Riffer::Agent::Response
-  # @rbs remaining: Integer
-  # @rbs return: Riffer::Agent::Response
-  def continued: (Enumerator::Yielder yielder, Riffer::Agent::Response response, Integer remaining) -> Riffer::Agent::Response
+  # @rbs return: Riffer::Rig::Events::SessionStart?
+  def session_start: () -> Riffer::Rig::Events::SessionStart?
 
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]
   def continuation: () -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]
 
-  # @rbs response: Riffer::Agent::Response
-  # @rbs return: bool
-  def steps_left?: (Riffer::Agent::Response response) -> bool
-
-  # @rbs earlier: Riffer::Agent::Response
-  # @rbs later: Riffer::Agent::Response
-  # @rbs return: Riffer::Agent::Response
-  def combined: (Riffer::Agent::Response earlier, Riffer::Agent::Response later) -> Riffer::Agent::Response
-
-  # The abort unwinds riffer's run loop from outside, so what riffer does for
-  # an interrupt it raises itself is done here.
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs return: Riffer::Agent::Response
-  def aborted: (Enumerator::Yielder yielder) -> Riffer::Agent::Response
-
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs event: ::Riffer::StreamEvents::Base
-  # @rbs return: void
-  def pass_through: (Enumerator::Yielder yielder, ::Riffer::StreamEvents::Base event) -> void
-
   # @rbs event: Riffer::Rig::Events::_Event
   # @rbs return: void
   def emit: (Riffer::Rig::Events::_Event event) -> void
-
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
-  # @rbs return: void
-  def forward: (Enumerator::Yielder yielder, ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
 
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
@@ -387,26 +328,11 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def deliver: (Riffer::Messages::Base message) -> void
 
-  # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
-  def job_exits: () -> Array[Riffer::Rig::Runtime::JobCompletion]
-
-  # @rbs message: Riffer::Messages::Tool
-  # @rbs return: Riffer::Messages::Tool
-  def with_job_notice: (Riffer::Messages::Tool message) -> Riffer::Messages::Tool
-
-  # @rbs follow_up: bool
-  # @rbs return: Riffer::Messages::Base?
-  def notify_job_exits: (?follow_up: bool) -> Riffer::Messages::Base?
-
   # @rbs return: void
   def before_next_request: () -> void
 
   # @rbs return: void
   def interrupt_if_cancelled: () -> void
-
-  # @rbs outcome: Riffer::Agent::Outcome
-  # @rbs return: Symbol
-  def stop_reason: (Riffer::Agent::Outcome outcome) -> Symbol
 
   # @rbs snapshot: Riffer::Rig::Runtime::Snapshot
   # @rbs model: String
@@ -421,40 +347,4 @@ class Riffer::Rig::Runtime
 
   # @rbs return: Array[String]
   def activated_skills: () -> Array[String]
-
-  # @rbs extensions: Array[Riffer::Rig::Extension]
-  # @rbs settings: Hash[Symbol, untyped]
-  # @rbs &: (Riffer::Rig::Extension, StandardError) -> void
-  # @rbs return: Array[Riffer::Rig::Registrar]
-  def build_registrars: (Array[Riffer::Rig::Extension] extensions, Hash[Symbol, untyped] settings) { (Riffer::Rig::Extension, StandardError) -> void } -> Array[Riffer::Rig::Registrar]
-
-  # @rbs extension: Riffer::Rig::Extension
-  # @rbs error: StandardError
-  # @rbs return: void
-  def record_error: (Riffer::Rig::Extension extension, StandardError error) -> void
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Array[String]
-  def overrides: (Array[Riffer::Rig::Registrar] registrars) -> Array[String]
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs allowlist: Array[String]?
-  # @rbs return: Array[String]
-  def unknown_tools: (Array[Riffer::Rig::Registrar] registrars, Array[String]? allowlist) -> Array[String]
-
-  # @rbs settings: Hash[Symbol, untyped]
-  # @rbs return: Hash[Symbol, untyped]
-  def with_declared_defaults: (Hash[Symbol, untyped] settings) -> Hash[Symbol, untyped]
-
-  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
-  def merge_hooks: (untyped registrars) -> Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Hash[String, Riffer::Rig::Mcp::Declaration]
-  def mcp_declarations: (Array[Riffer::Rig::Registrar] registrars) -> Hash[String, Riffer::Rig::Mcp::Declaration]
-
-  # @rbs registered: Array[singleton(Riffer::Tool)]
-  # @rbs allowlist: Array[String]?
-  # @rbs return: Array[singleton(Riffer::Tool)]
-  def select_tools: (Array[singleton(Riffer::Tool)] registered, Array[String]? allowlist) -> Array[singleton(Riffer::Tool)]
 end

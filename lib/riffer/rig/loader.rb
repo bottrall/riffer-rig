@@ -10,12 +10,7 @@ class Riffer::Rig::Loader
   # @rbs @riffer_config: Riffer::Config
   # @rbs @store: Riffer::Rig::Stores::_Store | nil
   # @rbs @source: Riffer::Rig::Loader::ExtensionSource
-  # @rbs @stripped: Array[Symbol]
-  # @rbs @extensions_enabled: bool
-  # @rbs @extra_extensions: Array[Riffer::Rig::Extension]
-  # @rbs @recorder_extensions: Array[Riffer::Rig::Extension]
-  # @rbs @file_state: Hash[String, Time?]?
-  # @rbs @reload_mode: (:auto | :manual | nil)
+  # @rbs @reloaders: ObjectSpace::WeakKeyMap[Riffer::Rig::Runtime, Riffer::Rig::Loader::Reloader]
   # @rbs @sdk: singleton(Riffer::Rig::SDK)
 
   # @rbs cwd: String
@@ -27,7 +22,7 @@ class Riffer::Rig::Loader
   # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)
   # @rbs extra_extensions: Array[Riffer::Rig::Extension]
-  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?
   # @rbs return: Riffer::Rig::Runtime
   def self.runtime(
     cwd:,
@@ -71,17 +66,13 @@ class Riffer::Rig::Loader
     @store = store
     @sdk = sdk
     @source = Riffer::Rig::Loader::ExtensionSource.new(cwd: cwd, home: home, host: host)
-    @stripped = []
-    @extensions_enabled = true
-    @recorder_extensions = []
-    @file_state = nil
-    @reload_mode = nil
+    @reloaders = ObjectSpace::WeakKeyMap.new
   end
 
   # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)
   # @rbs extra_extensions: Array[Riffer::Rig::Extension]
-  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?
   # @rbs return: Riffer::Rig::Runtime
   def runtime(options = Options.new, reload: nil, extra_extensions: [], snapshot: nil)
     settings = merged_settings
@@ -89,31 +80,27 @@ class Riffer::Rig::Loader
 
     document = Riffer::Rig::Settings::Document.new(settings)
     selected = select_model(options.model || @env.model || document.model)
-    check_reasoning(options)
+    rejection = Riffer::Rig::Loader::Reasoning.rejection(options.reasoning, @env.reasoning)
+    raise ConfigurationError, rejection if rejection
+
     provider = Riffer::Rig::Settings::ModelOptions.provider_for(selected).to_s
     ensure_sdk(provider)
     credentials = install_credentials(provider)
     raise ConfigurationError, credentials if credentials.is_a?(String)
 
     @riffer_config.catalog_files = document.catalog_files
-    @extensions_enabled = options.extensions
-    @extra_extensions = extra_extensions
-    @reload_mode = reload
-    @stripped = { skills: options.skills, agents_md: options.agents_md }.reject { |_name, kept| kept }.keys
-    loaded = bundled(document)
-    loaded += @source.discover(autoload: document.autoload) if options.extensions
-    loaded += @extra_extensions
+    stripped = { skills: options.skills, agents_md: options.agents_md }.reject { |_name, kept| kept }.keys
+    discovered = options.extensions ? @source.discover(autoload: document.autoload) : [] #: Array[Riffer::Rig::Extension]
 
-    recorder = recorder_for(document, resumed: !snapshot.nil?)
-    @recorder_extensions = recorder ? [Riffer::Rig::Stores::Recorder.extension(recorder)] : []
-    loaded += @recorder_extensions
+    saved = snapshot && Riffer::Rig::Runtime::Snapshot.of(snapshot)
+    recorder = recorder_for(document, resumed: !saved.nil?)
+    recording = recorder ? [Riffer::Rig::Stores::Recorder.extension(recorder)] : [] #: Array[Riffer::Rig::Extension]
 
-    snapshot = snapshot_without_forced(snapshot, options)
-    reasoning = forced_reasoning(options, snapshot)
+    saved = snapshot_without_forced(saved, options)
 
     built = Riffer::Rig::Runtime.new(
       selected,
-      extensions: loaded,
+      extensions: bundled(document, stripped) + discovered + extra_extensions + recording,
       tools: options.tools,
       settings: settings,
       host: @host,
@@ -123,17 +110,28 @@ class Riffer::Rig::Loader
       env: @env,
       auth_path: home_auth_path,
       settings_path: home_settings_path,
-      reasoning: reasoning || settings_reasoning(document),
+      reasoning: Riffer::Rig::Loader::Reasoning.forced(options.reasoning, @env.reasoning),
       riffer_config: @riffer_config,
       model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected),
       native_tools: document.native_tools,
-      snapshot: snapshot
+      snapshot: saved
     )
-    built.install_command(Riffer::Rig::Commands::Reload.command(self))
+    reloader = Riffer::Rig::Loader::Reloader.new(
+      source: @source,
+      host: @host,
+      settings: -> { merged_settings },
+      credentials: ->(name) { install_credentials(name) },
+      extensions: ->(current, found) { bundled(current, stripped) + extra_extensions + found + recording },
+      rediscovers: options.extensions,
+      mode: reload
+    )
+    @reloaders[built] = reloader
+    built.install_command(Riffer::Rig::Commands::Reload.command(reloader))
     store = @store
     built.install_command(Riffer::Rig::Commands::Trace.command(store)) if store && recorder
-    built.install_reload_check(->(runtime) { automatic_reload(runtime) }) unless reload_mode(document) == :manual
-    @file_state = file_state
+    unless (reload || document.reload) == :manual
+      built.install_reload_check(->(runtime) { _ = reloader.reload(runtime) })
+    end
     recorder&.attach(built)
     built
   end
@@ -150,8 +148,6 @@ class Riffer::Rig::Loader
     resume(latest.id, options)
   end
 
-  # A resume carries the history over and nothing else: the settings,
-  # credentials, extensions and tools are today's.
   # @rbs id: String
   # @rbs options: Riffer::Rig::Loader::Options
   # @rbs extra_extensions: Array[Riffer::Rig::Extension]
@@ -195,49 +191,15 @@ class Riffer::Rig::Loader
     store.delete(id)
   end
 
-  # Without force, a no-op while the tracked file set and the two rig.rb paths
-  # look as the last discovery left them and the reload mode is not manual —
-  # the entry point the automatic trigger (#133) calls. The snapshot advances
-  # on every attempt, failed ones included, so a failure does not retry every
-  # request. Failures are notified once and reported as the message, the way
-  # Settings::ModelOptions.rejection reports a rejection; the Runtime is the success value.
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs force: bool
   # @rbs return: (Riffer::Rig::Runtime | String)
   def reload(runtime, force: false)
-    return runtime if !force && file_state == @file_state
-    return runtime if !force && manual_reload?
-
-    outcome = perform_reload(runtime)
-    @file_state = file_state
-    outcome
+    reloader = @reloaders[runtime]
+    reloader ? reloader.reload(runtime, force: force) : runtime
   end
 
   private
-
-  # The reload mode a build runs under: the keyword wins over the setting,
-  # the setting over the default.
-  # @rbs document: Riffer::Rig::Settings::Document
-  # @rbs return: (:auto | :manual)
-  def reload_mode(document)
-    @reload_mode || document.reload
-  end
-
-  # @rbs return: bool
-  def manual_reload?
-    return true if @reload_mode == :manual
-
-    settings = merged_settings
-    settings.is_a?(Hash) && reload_mode(Riffer::Rig::Settings::Document.new(settings)) == :manual
-  end
-
-  # The automatic trigger: runs at every before_request boundary, so the
-  # change check decides and a no-op costs the stat alone.
-  # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: void
-  def automatic_reload(runtime)
-    _ = reload(runtime)
-  end
 
   # @rbs return: (Hash[Symbol, untyped] | String)
   def merged_settings
@@ -259,57 +221,11 @@ class Riffer::Rig::Loader
     "#{path} sets \"model\" to a value that is not a string"
   end
 
-  # Notifies every failure once and reports its message, unexpected raises
-  # included — the automatic check runs mid-turn with no other isolation, and a
-  # raised attempt must still advance the snapshot in reload. A rebuilt Runtime
-  # is the success value.
-  # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: (Riffer::Rig::Runtime | String)
-  def perform_reload(runtime)
-    settings = merged_settings
-    return notify_failure(settings) if settings.is_a?(String)
-
-    candidates = reload_candidates(Riffer::Rig::Settings::Document.new(settings))
-    return notify_failure(candidates) if candidates.is_a?(String)
-
-    extensions = @source.validated(candidates + @recorder_extensions, settings)
-    provider = runtime.model.partition('/').first
-    credentials = install_credentials(provider)
-    return notify_failure(credentials) if credentials.is_a?(String)
-
-    runtime.merge_credentials(provider.to_sym, credentials)
-    runtime.rebuild(extensions: extensions, settings: settings)
-    runtime
-  rescue StandardError => e
-    notify_failure(e.message)
-  end
-
-  # @rbs message: String
-  # @rbs return: String
-  def notify_failure(message)
-    @host.notify(message, level: :error)
-    message
-  end
-
   # @rbs document: Riffer::Rig::Settings::Document
-  # @rbs return: (Array[Riffer::Rig::Extension] | String)
-  def reload_candidates(document)
-    candidates = bundled(document) + @extra_extensions
-    return candidates unless @extensions_enabled
-
-    rediscovered = @source.rediscover
-    rediscovered.is_a?(String) ? rediscovered : candidates + rediscovered
-  end
-
-  # @rbs document: Riffer::Rig::Settings::Document
+  # @rbs stripped: Array[Symbol]
   # @rbs return: Array[Riffer::Rig::Extension]
-  def bundled(document)
-    Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *@stripped).values
-  end
-
-  # @rbs return: Hash[String, Time?]
-  def file_state
-    @extensions_enabled ? @source.file_state : {}
+  def bundled(document, stripped)
+    Riffer::Rig::Bundled::BY_NAME.except(*document.disabled.map(&:to_sym), *stripped).values
   end
 
   # @rbs configured: String?
@@ -360,7 +276,7 @@ class Riffer::Rig::Loader
   # @rbs provider: String
   # @rbs return: (Hash[Symbol, String] | String)
   def install_credentials(provider)
-    Riffer::Rig::Loader::Credentials.install(
+    Riffer::Rig::Credentials.install_values(
       provider,
       host: @host,
       env: @env,
@@ -380,57 +296,17 @@ class Riffer::Rig::Loader
     Riffer::Rig::Directories.riffer(@home, 'auth.json')
   end
 
-  # A reasoning level from the flag or the environment is refused, the way a
-  # bad model string is; one from the settings document or a session's recorded
-  # switch falls back to the model's default instead.
+  # @rbs snapshot: Riffer::Rig::Runtime::Snapshot?
   # @rbs options: Riffer::Rig::Loader::Options
-  # @rbs return: void
-  def check_reasoning(options)
-    forced = options.reasoning || @env.reasoning
-    return unless forced
-
-    rejection = Riffer::Rig::Settings::ModelOptions.reasoning_rejection(forced)
-    return unless rejection
-
-    raise ConfigurationError, options.reasoning ? rejection : "RIFFER_REASONING: #{rejection}"
-  end
-
-  # The reasoning in effect for the build, over the settings document: the flag,
-  # then the session's recorded switch, then RIFFER_REASONING.
-  # @rbs options: Riffer::Rig::Loader::Options
-  # @rbs snapshot: Hash[Symbol, untyped]?
-  # @rbs return: String?
-  def forced_reasoning(options, snapshot)
-    options.reasoning || recorded_reasoning(snapshot) || @env.reasoning
-  end
-
-  # @rbs snapshot: Hash[Symbol, untyped]?
-  # @rbs return: String?
-  def recorded_reasoning(snapshot)
-    saved = snapshot && snapshot[:reasoning]
-    Riffer::Rig::Settings::ModelOptions.reasoning_level(saved) if saved.is_a?(String)
-  end
-
-  # A settings level riffer does not accept silently keeps the model's default.
-  # @rbs document: Riffer::Rig::Settings::Document
-  # @rbs return: String?
-  def settings_reasoning(document)
-    Riffer::Rig::Settings::ModelOptions.reasoning_level(document.reasoning)
-  end
-
-  # A model or reasoning level chosen for the run wins for that run only: it is
-  # not recorded, so a later resume restores the session's own switches.
-  # @rbs snapshot: Hash[Symbol, untyped]?
-  # @rbs options: Riffer::Rig::Loader::Options
-  # @rbs return: Hash[Symbol, untyped]?
+  # @rbs return: Riffer::Rig::Runtime::Snapshot?
   def snapshot_without_forced(snapshot, options)
-    snapshot = snapshot&.merge(model: nil) if options.model
-    snapshot = snapshot&.merge(reasoning: nil) if options.reasoning
+    # The flags beat the session's recorded switches, which the Runtime would
+    # otherwise restore over them.
+    snapshot = snapshot&.without_model if options.model
+    snapshot = snapshot&.without_reasoning if options.reasoning
     snapshot
   end
 
-  # The store records unless it was declined with store: nil or globally with
-  # "sessions": {"save": false}.
   # @rbs document: Riffer::Rig::Settings::Document
   # @rbs resumed: bool
   # @rbs return: Riffer::Rig::Stores::Recorder?

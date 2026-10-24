@@ -44,11 +44,4 @@ module Riffer::Rig::Commands::Model
   # @rbs settings_path: String
   # @rbs return: bool
   def credentials_ready?: (Riffer::Rig::Command::Context ctx, String model, String provider, Riffer::Rig::ProviderSetup setup, env: Riffer::Rig::Env, auth_path: String, settings_path: String) -> bool
-
-  # @rbs ctx: Riffer::Rig::Command::Context
-  # @rbs model: String
-  # @rbs provider: String
-  # @rbs missing: Array[Symbol]
-  # @rbs return: void
-  def refuse: (Riffer::Rig::Command::Context ctx, String model, String provider, Array[Symbol] missing) -> void
 end

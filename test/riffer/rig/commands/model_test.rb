@@ -208,7 +208,13 @@ describe Riffer::Rig::Commands::Model do
     it 'reports a malformed auth.json' do
       malform(@auth_path)
 
-      assert_equal([malformed(@auth_path)], command_events(new_runtime, 'gemini/gem-2.5-pro'))
+      assert_equal(
+        [Riffer::Rig::Events::Notify.new(
+          "Not switching to gemini/gem-2.5-pro: #{malformed(@auth_path).message}",
+          :error
+        )],
+        command_events(new_runtime, 'gemini/gem-2.5-pro')
+      )
     end
 
     it 'keeps the model when auth.json is malformed' do
@@ -224,7 +230,9 @@ describe Riffer::Rig::Commands::Model do
 
       assert_equal(
         [Riffer::Rig::Events::Notify.new(
-          'Not switching to gemini/gem-2.5-pro: gemini has no api_key (GEMINI_API_KEY)', :error
+          'Not switching to gemini/gem-2.5-pro: gemini has no api_key (GEMINI_API_KEY); set it in the environment ' \
+          'or run riffer interactively to paste it (create one at https://aistudio.google.com/app/apikey)',
+          :error
         )],
         events
       )
@@ -241,7 +249,9 @@ describe Riffer::Rig::Commands::Model do
       runtime = new_runtime(credentials: { azure_openai: { api_key: 'key' } })
       events = model_events(runtime, 'azure_openai/gpt-5')
 
-      assert_equal 'Not switching to azure_openai/gpt-5: azure_openai has no endpoint (AZURE_OPENAI_ENDPOINT)',
+      assert_equal 'Not switching to azure_openai/gpt-5: azure_openai has no endpoint (AZURE_OPENAI_ENDPOINT); ' \
+                   'set it in the environment or run riffer interactively to paste it ' \
+                   '(create one at https://portal.azure.com)',
                    events.first.message
     end
 

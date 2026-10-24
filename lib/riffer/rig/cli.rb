@@ -31,9 +31,6 @@ module Riffer::Rig::CLI
     return refuse(flags, error) if flags.is_a?(String)
     return help(output) if flags.help
     return version(output) if flags.version
-    return refuse('--verbose is only available with -p', error) if flags.verbose && !flags.headless
-    return refuse('--json is only available with -p', error) if flags.json && !flags.headless
-    return refuse('--job-idle-timeout is only available with -p', error) if flags.job_idle_timeout && !flags.headless
 
     return headless(flags, input:, output:, error:, env:, cwd:, home:) if flags.headless
 

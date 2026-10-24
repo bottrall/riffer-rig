@@ -10,6 +10,7 @@ class Riffer::Rig::Terminal::Theme
   # @rbs return: void
   def initialize(enabled:)
     @enabled = enabled
+    freeze
   end
 
   # @rbs io: Riffer::Rig::Terminal::_Output

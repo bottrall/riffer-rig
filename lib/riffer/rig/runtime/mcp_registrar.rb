@@ -62,9 +62,10 @@ class Riffer::Rig::Runtime::McpRegistrar
     return declaration if declaration.auth.empty?
 
     values = Riffer::Rig::Mcp::Auth.resolve(name, declaration.auth, host: @host, env: @env, auth_path: @auth_path)
-    declaration.with_headers(Riffer::Rig::Mcp::Auth.expand(declaration.headers, values))
-  rescue Riffer::Rig::Mcp::Auth::Error => e
-    @host.notify("MCP server #{name} failed to register: #{e.message}", level: :error)
+    headers = values.is_a?(String) ? values : Riffer::Rig::Mcp::Auth.expand(declaration.headers, values)
+    return declaration.with_headers(headers) unless headers.is_a?(String)
+
+    @host.notify("MCP server #{name} failed to register: #{headers}", level: :error)
     nil
   end
 

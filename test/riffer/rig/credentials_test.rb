@@ -40,6 +40,11 @@ describe Riffer::Rig::Credentials do
     Riffer::Rig::ProviderSetup.new(fields: [region])
   end
 
+  let(:region_setup) do
+    region = Riffer::Rig::ProviderSetup::Field.new(name: :region, env: ['ACME_REGION'], secret: false, required: true)
+    Riffer::Rig::ProviderSetup.new(fields: [region])
+  end
+
   let(:two_secret_setup) do
     fields = %i[api_key api_token].map do |name|
       Riffer::Rig::ProviderSetup::Field.new(name: name, env: [], secret: true, required: false)
@@ -439,6 +444,51 @@ describe Riffer::Rig::Credentials do
         Riffer::Rig::Credentials.install(:anthropic, host: null_host, env:, config: Riffer::Config.new, **paths)
 
         assert_equal({ api_key: 'sk-old' }, Riffer::Rig::Credentials.read(:anthropic))
+      end
+    end
+  end
+
+  describe '.install_values' do
+    it 'reports a malformed auth.json' do
+      in_tmp_home do |paths|
+        malform(paths[:auth_path])
+
+        assert_equal(
+          malformed(paths[:auth_path]),
+          Riffer::Rig::Credentials.install_values(:gemini, host: null_host, env:, config: Riffer::Config.new, **paths)
+        )
+      end
+    end
+
+    it 'returns the values when nothing is missing' do
+      in_tmp_home do |paths|
+        values = Riffer::Rig::Credentials.install_values(
+          :gemini, host: null_host, env: env('GEMINI_API_KEY' => 'sk-env'), config: Riffer::Config.new, **paths
+        )
+
+        assert_equal({ api_key: 'sk-env' }, values)
+      end
+    end
+
+    it 'names the missing fields and where to create them' do
+      in_tmp_home do |paths|
+        assert_equal(
+          'gemini has no api_key (GEMINI_API_KEY); set it in the environment or run riffer interactively ' \
+          'to paste it (create one at https://aistudio.google.com/app/apikey)',
+          Riffer::Rig::Credentials.install_values(:gemini, host: null_host, env:, config: Riffer::Config.new, **paths)
+        )
+      end
+    end
+
+    it 'names the missing fields under the label it is given, without a link when the setup has none' do
+      in_tmp_home do |paths|
+        assert_equal(
+          'MCP server docs has no region (ACME_REGION); set it in the environment or run riffer interactively ' \
+          'to paste it',
+          Riffer::Rig::Credentials.install_values(
+            'docs', host: null_host, env:, label: 'MCP server docs', setup: region_setup, config: nil, **paths
+          )
+        )
       end
     end
   end

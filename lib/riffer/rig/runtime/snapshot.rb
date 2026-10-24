@@ -1,12 +1,20 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Runtime::Snapshot
+  include Riffer::Rig::Support::Equatable
+
   # @dynamic id, messages, model, reasoning, skills
   attr_reader :id #: String
   attr_reader :messages #: Array[Riffer::Messages::Base]
   attr_reader :model #: String?
   attr_reader :reasoning #: String?
   attr_reader :skills #: Array[String]
+
+  # @rbs snapshot: Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped]
+  # @rbs return: Riffer::Rig::Runtime::Snapshot
+  def self.of(snapshot)
+    snapshot.is_a?(Riffer::Rig::Runtime::Snapshot) ? snapshot : from_h(snapshot)
+  end
 
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: Riffer::Rig::Runtime::Snapshot
@@ -51,6 +59,16 @@ class Riffer::Rig::Runtime::Snapshot
   # @rbs return: Hash[Symbol, untyped]
   def to_h
     { id: @id, messages: @messages.map(&:to_h), model: @model, reasoning: @reasoning, skills: @skills }
+  end
+
+  # @rbs return: Riffer::Rig::Runtime::Snapshot
+  def without_model
+    self.class.new(id: @id, messages: @messages, model: nil, reasoning: @reasoning, skills: @skills)
+  end
+
+  # @rbs return: Riffer::Rig::Runtime::Snapshot
+  def without_reasoning
+    self.class.new(id: @id, messages: @messages, model: @model, reasoning: nil, skills: @skills)
   end
 
   # @rbs return: Riffer::Agent::Session

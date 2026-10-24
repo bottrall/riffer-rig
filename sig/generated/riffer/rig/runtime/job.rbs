@@ -1,0 +1,65 @@
+# Generated from lib/riffer/rig/runtime/job.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::Job
+  @offset: Integer
+
+  @ended_at: Float?
+
+  @started_at: Float
+
+  @output_path: String
+
+  @command: String
+
+  @pid: Integer
+
+  @id: String
+
+  # @dynamic id, pid, command, output_path, started_at, offset
+  attr_reader id: String
+
+  attr_reader pid: Integer
+
+  attr_reader command: String
+
+  attr_reader output_path: String
+
+  attr_reader started_at: Float
+
+  attr_reader offset: Integer
+
+  # @rbs id: String
+  # @rbs pid: Integer
+  # @rbs command: String
+  # @rbs output_path: String
+  # @rbs started_at: Float
+  # @rbs ended_at: Float?
+  # @rbs offset: Integer
+  # @rbs return: void
+  def initialize: (id: String, pid: Integer, command: String, output_path: String, started_at: Float, ?ended_at: Float?, ?offset: Integer) -> void
+
+  # @rbs return: bool
+  def active?: () -> bool
+
+  # @rbs return: bool
+  def completed?: () -> bool
+
+  # @rbs now: Float
+  # @rbs return: Float
+  def elapsed: (Float now) -> Float
+
+  # @rbs ended_at: Float
+  # @rbs return: Riffer::Rig::Runtime::Job
+  def finish: (Float ended_at) -> Riffer::Rig::Runtime::Job
+
+  # @rbs bytes: Integer
+  # @rbs return: Riffer::Rig::Runtime::Job
+  def advance: (Integer bytes) -> Riffer::Rig::Runtime::Job
+
+  private
+
+  # @rbs ended_at: Float?
+  # @rbs offset: Integer
+  # @rbs return: Riffer::Rig::Runtime::Job
+  def copy: (?ended_at: Float?, ?offset: Integer) -> Riffer::Rig::Runtime::Job
+end

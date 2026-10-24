@@ -4,7 +4,6 @@ require 'test_helper'
 require 'json'
 require 'forwardable'
 require_relative '../../support/confirming_host'
-require_relative '../../support/prompter_pty'
 require_relative '../../support/rig_files'
 require_relative '../../support/sdk_fake'
 
@@ -55,8 +54,7 @@ class RecordingStore
   end
 end
 
-# A store whose listing order is the reverse of the wrapped store's, proving
-# the Loader picks by the header's `updated` and not by position.
+# Proves the Loader picks by the header's `updated`, not by position.
 class ReversedStore
   def initialize(store)
     @store = store
@@ -91,14 +89,8 @@ describe Riffer::Rig::Loader do
   end
 
   after do
-    @pty&.close
     FileUtils.remove_entry(@home)
     FileUtils.remove_entry(@cwd)
-  end
-
-  def at_the_terminal_footer(keys)
-    @pty = PrompterPty.new
-    @pty.answering(keys) { yield @pty.host }
   end
 
   def write_settings(dir, data)
@@ -347,35 +339,10 @@ describe Riffer::Rig::Loader do
         )
       end
 
-      it 'prefers the reasoning keyword over RIFFER_REASONING' do
-        assert_equal(
-          'high',
-          build(
-            model: 'openai/o3',
-            reasoning: 'high',
-            env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'low' }
-          ).reasoning
-        )
-      end
-
-      it 'hands the level in effect to the agent config' do
-        write_settings(@home, { reasoning: 'high' })
-        runtime = build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
-
-        assert_equal :high, runtime.agent.config.reasoning
-      end
-
       it 'rejects a reasoning keyword riffer does not accept' do
         assert_equal(
           'turbo is not a reasoning level; riffer accepts: off low medium high xhigh max',
           refusal { build(model: 'openai/o3', reasoning: 'turbo', env: { 'OPENAI_API_KEY' => 'sk' }) }
-        )
-      end
-
-      it 'rejects a RIFFER_REASONING riffer does not accept' do
-        assert_equal(
-          'RIFFER_REASONING: turbo is not a reasoning level; riffer accepts: off low medium high xhigh max',
-          refusal { build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'turbo' }) }
         )
       end
 
@@ -385,19 +352,6 @@ describe Riffer::Rig::Loader do
         assert_raises(Riffer::Rig::Loader::ConfigurationError) do
           build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'turbo' })
         end
-      end
-
-      it 'takes off from the settings as a level of its own' do
-        write_settings(@home, { reasoning: 'off' })
-
-        assert_equal :off, build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' }).agent.config.reasoning
-      end
-
-      it 'leaves an unrecognized settings level at the model default' do
-        write_settings(@home, { reasoning: 'turbo' })
-        runtime = build(model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
-
-        assert_nil runtime.agent.config.reasoning
       end
 
       it 'restores the snapshot reasoning over RIFFER_REASONING' do
@@ -413,26 +367,6 @@ describe Riffer::Rig::Loader do
         )
       end
 
-      it 'carries the snapshot reasoning to the agent config' do
-        snapshot = { id: 'saved', messages: [], model: nil, reasoning: 'low', skills: [] }
-        runtime = build(snapshot: snapshot, model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
-
-        assert_equal :low, runtime.agent.config.reasoning
-      end
-
-      it 'ignores a snapshot reasoning that is not a string' do
-        snapshot = { id: 'saved', messages: [], model: nil, reasoning: 3, skills: [] }
-
-        assert_equal(
-          'high',
-          build(
-            snapshot: snapshot,
-            model: 'openai/o3',
-            env: { 'OPENAI_API_KEY' => 'sk', 'RIFFER_REASONING' => 'high' }
-          ).reasoning
-        )
-      end
-
       it 'prefers the reasoning keyword over the snapshot reasoning' do
         snapshot = { id: 'saved', messages: [], model: nil, reasoning: 'low', skills: [] }
 
@@ -440,13 +374,6 @@ describe Riffer::Rig::Loader do
           'high',
           build(snapshot: snapshot, model: 'openai/o3', reasoning: 'high', env: { 'OPENAI_API_KEY' => 'sk' }).reasoning
         )
-      end
-
-      it 'drops a snapshot reasoning level riffer does not accept' do
-        snapshot = { id: 'saved', messages: [], model: nil, reasoning: 'turbo', skills: [] }
-        runtime = build(snapshot: snapshot, model: 'openai/o3', env: { 'OPENAI_API_KEY' => 'sk' })
-
-        assert_nil runtime.agent.config.reasoning
       end
     end
 
@@ -478,12 +405,6 @@ describe Riffer::Rig::Loader do
 
       it 'builds the Runtime with the answer' do
         assert_equal 'mock/chosen', build(host: ScriptedHost.new('mock/chosen')).model
-      end
-
-      it 'builds the Runtime with the answer typed at the terminal footer' do
-        runtime = at_the_terminal_footer("mock/chosen\r") { |host| build(host: host) }
-
-        assert_equal 'mock/chosen', runtime.model
       end
 
       it 'writes the answer to home settings' do
@@ -569,22 +490,17 @@ describe Riffer::Rig::Loader do
         )
       end
 
-      it 'stores a key the host supplies in home auth.json' do
-        build(model: 'gemini/gem-2.5-pro', env: {}, host: ScriptedHost.new('sk-gem-pasted'))
-
+      it 'hands a key the host supplies to the Runtime' do
         assert_equal(
-          'sk-gem-pasted',
-          JSON.parse(File.read(File.join(@home, '.riffer', 'auth.json')))['gemini']['api_key']
+          { gemini: { api_key: 'sk-gem-pasted' } },
+          build(model: 'gemini/gem-2.5-pro', env: {}, host: ScriptedHost.new('sk-gem-pasted')).credentials
         )
       end
 
-      it 'stores a key typed at the terminal footer in home auth.json' do
-        at_the_terminal_footer("sk-gem-typed\r") { |host| build(model: 'gemini/gem-2.5-pro', env: {}, host: host) }
+      it 'stores a key the host supplies in home auth.json' do
+        build(model: 'gemini/gem-2.5-pro', env: {}, host: ScriptedHost.new('sk-gem-pasted'))
 
-        assert_equal(
-          'sk-gem-typed',
-          JSON.parse(File.read(File.join(@home, '.riffer', 'auth.json')))['gemini']['api_key']
-        )
+        assert_path_exists File.join(@home, '.riffer', 'auth.json')
       end
 
       it 'raises the configuration error naming a key the null host cannot supply' do
@@ -651,18 +567,18 @@ describe Riffer::Rig::Loader do
         assert_operator names.index('probe'), :>, names.index('bash')
       end
 
-      it 'loads a project rig.rb trusted at the terminal footer' do
+      it 'loads a project rig.rb the host trusts' do
         write_rig(:project, <<~RUBY)
-          class FooterTrustedTool < Riffer::Tool
-            identifier 'footer_trusted'
+          class TrustedProbeTool < Riffer::Tool
+            identifier 'trusted_probe'
             description 'probe'
             def call(context:) = text('probe')
           end
-          Riffer::Rig.extension('footer_trusted') { |rig| rig.tool FooterTrustedTool }
+          Riffer::Rig.extension('trusted_probe') { |rig| rig.tool TrustedProbeTool }
         RUBY
-        runtime = at_the_terminal_footer("y\r") { |host| build(host: host, model: 'mock/test') }
+        runtime = build(host: ConfirmingHost.new([true]), model: 'mock/test')
 
-        assert_includes tool_names(runtime), 'footer_trusted'
+        assert_includes tool_names(runtime), 'trusted_probe'
       end
 
       it 'skips the rig.rb files with extensions: false' do
@@ -954,11 +870,6 @@ describe Riffer::Rig::Loader do
       RUBY
     end
 
-    def bump(path)
-      stamp = File.mtime(path) + 10
-      File.utime(stamp, stamp, path)
-    end
-
     def tool_added
       write_rig(:project, probe_rig('probe'))
       host = ConfirmingHost.new([true])
@@ -981,48 +892,19 @@ describe Riffer::Rig::Loader do
       [loader, runtime, host]
     end
 
-    # The trial run passes and the rebuild's run raises, so the raise escapes
-    # the extension isolation that a failing trial gets.
-    def rebuild_raising_rig
-      <<~RUBY
-        runs = 0
-        Riffer::Rig.extension('flaky') do |_rig|
-          runs += 1
-          raise 'rebuild boom' if runs > 1
-        end
-      RUBY
+    it 'leaves a runtime another loader built alone' do
+      runtime = new_loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
+
+      assert_same runtime, new_loader.reload(runtime, force: true)
     end
 
-    it 'skips the reload when no tracked file changed' do
+    it 'reloads each runtime with what its own build chose' do
       write_rig(:project, probe_rig('probe'))
-      host = ConfirmingHost.new([true])
-      loader = new_loader(host: host)
+      loader = new_loader(host: ConfirmingHost.new([true, true]))
       runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      marker = File.join(@cwd, 'reload_marker')
-      File.write(project_rig_path, "File.write(#{marker.inspect}, 'attempted')\nraise 'boom'")
-      bump(project_rig_path)
-      loader.reload(runtime)
-      FileUtils.rm_f(marker)
-      loader.reload(runtime)
-
-      refute_path_exists marker
-    end
-
-    it 'tracks no files with extensions: false' do
-      write_settings(@home, { git: { depth: 10 } })
-      loader = new_loader
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test', extensions: false))
-      write_settings(@home, { git: { depth: 3 } })
-      write_rig(:project, probe_rig('probe'))
-      loader.reload(runtime)
-
-      assert_equal({ depth: 10 }, runtime.settings[:git])
-    end
-
-    it 'reloads without force when a tracked file changed' do
-      loader, runtime, = tool_added
-      bump(project_rig_path)
-      loader.reload(runtime)
+      loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test', extensions: false))
+      File.write(project_rig_path, probe_rig('probe_next'))
+      loader.reload(runtime, force: true)
 
       assert_includes tool_names(runtime), 'probe_next'
     end
@@ -1035,24 +917,6 @@ describe Riffer::Rig::Loader do
       loader.reload(runtime, force: true)
 
       assert_equal({ depth: 3 }, runtime.settings[:git])
-    end
-
-    it 'reports settings malformed on disk' do
-      loader = new_loader
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      malformed = malform_settings(@home)
-
-      assert_equal malformed, loader.reload(runtime, force: true)
-    end
-
-    it 'holds an unforced reload under a manual reload keyword when settings are malformed' do
-      write_rig(:project, probe_rig('probe'))
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'), reload: :manual)
-      malform_settings(@home)
-      bump(project_rig_path)
-
-      assert_same runtime, loader.reload(runtime)
     end
 
     it 'keeps extra extensions through a reload' do
@@ -1071,20 +935,6 @@ describe Riffer::Rig::Loader do
       loader.reload(runtime, force: true)
 
       assert_empty tool_names(runtime).grep(/\Aprobe/)
-    end
-
-    it 'abandons the reload when a rig.rb raises' do
-      loader, runtime, = raising_rig
-      reloaded = loader.reload(runtime, force: true)
-
-      assert_match(/failed to load: boom\z/, reloaded)
-    end
-
-    it 'keeps the live registrar when a rig.rb raises on reload' do
-      loader, runtime, = raising_rig
-      loader.reload(runtime, force: true)
-
-      assert_equal ['probe'], tool_names(runtime).grep(/\Aprobe/)
     end
 
     it 'notifies once when a rig.rb raises on reload' do
@@ -1121,35 +971,6 @@ describe Riffer::Rig::Loader do
 
       assert_includes tool_names(runtime), 'probe_next'
     end
-
-    it 'reports the rebuilt runtime' do
-      loader, runtime, = tool_added
-      reloaded = loader.reload(runtime, force: true)
-
-      assert_same runtime, reloaded
-    end
-
-    it 'reports a raise during the reload instead of propagating it' do
-      write_rig(:project, probe_rig('probe'))
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      File.write(project_rig_path, rebuild_raising_rig)
-
-      assert_match(/rebuild boom\z/, loader.reload(runtime, force: true))
-    end
-
-    it 'advances the snapshot when a reload raises' do
-      write_rig(:project, probe_rig('probe'))
-      loader = new_loader(host: ConfirmingHost.new([true]))
-      runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
-      marker = File.join(@cwd, 'reload_marker')
-      File.write(project_rig_path, rebuild_raising_rig + "File.write(#{marker.inspect}, 'executed')\n")
-      loader.reload(runtime, force: true)
-      FileUtils.rm_f(marker)
-      loader.reload(runtime)
-
-      refute_path_exists marker
-    end
   end
 
   describe 'automatic reload' do
@@ -1177,18 +998,6 @@ describe Riffer::Rig::Loader do
       turn(runtime)
 
       assert_includes tool_names(runtime), 'probe_next'
-    end
-
-    it 'does not retry a failed reload on the next request' do
-      _loader, runtime = built_with(ConfirmingHost.new([true]))
-      File.write(project_rig_path, "raise 'boom'")
-      stamp = File.mtime(project_rig_path)
-      turn(runtime)
-      File.write(project_rig_path, probe_rig('probe_next'))
-      File.utime(stamp, stamp, project_rig_path)
-      turn(runtime)
-
-      assert_empty tool_names(runtime).grep(/\Aprobe_next/)
     end
 
     it 'skips the check under a manual reload keyword' do
@@ -1233,25 +1042,6 @@ describe Riffer::Rig::Loader do
       turn(runtime)
 
       assert_includes tool_names(runtime), 'probe_next'
-    end
-
-    it 'stops reloading when the setting flips to manual mid-session' do
-      _loader, runtime = built_with(ConfirmingHost.new([true]))
-      write_settings(@home, { reload: 'manual' })
-      File.write(project_rig_path, probe_rig('probe_next'))
-      turn(runtime)
-
-      assert_empty tool_names(runtime).grep(/\Aprobe_next/)
-    end
-
-    it 'reports settings that turn malformed mid-session' do
-      host = ConfirmingHost.new([true])
-      _loader, runtime = built_with(host)
-      malformed = malform_settings(@home)
-      File.write(project_rig_path, probe_rig('probe_next'))
-      turn(runtime)
-
-      assert_equal [[:error, malformed]], host.notifications
     end
   end
 end

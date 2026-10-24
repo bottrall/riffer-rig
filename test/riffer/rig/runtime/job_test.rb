@@ -1,0 +1,67 @@
+# frozen_string_literal: true
+
+require 'test_helper'
+
+describe Riffer::Rig::Runtime::Job do
+  def job(ended_at: nil)
+    Riffer::Rig::Runtime::Job.new(
+      id: 'abc123',
+      pid: 4242,
+      command: 'sleep 5',
+      output_path: '/tmp/riffer-rig-job-test',
+      started_at: 10.0,
+      ended_at: ended_at
+    )
+  end
+
+  it 'freezes itself' do
+    assert_predicate job, :frozen?
+  end
+
+  it 'starts with nothing read' do
+    assert_equal 0, job.offset
+  end
+
+  it 'is active without an end time' do
+    assert_predicate job, :active?
+  end
+
+  it 'is completed with an end time' do
+    assert_predicate job(ended_at: 13.0), :completed?
+  end
+
+  it 'measures elapsed to the end time once completed' do
+    assert_in_delta(3.0, job(ended_at: 13.0).elapsed(99.0))
+  end
+
+  it 'measures elapsed from the given time while active' do
+    assert_in_delta(2.5, job.elapsed(12.5))
+  end
+
+  it 'returns a completed copy from finish' do
+    assert_predicate job.finish(13.0), :completed?
+  end
+
+  it 'returns a completed copy that keeps the identity fields from finish' do
+    finished = job.finish(13.0)
+
+    assert_equal [job.id, job.pid, job.command, job.output_path, job.started_at],
+                 [finished.id, finished.pid, finished.command, finished.output_path, finished.started_at]
+  end
+
+  it 'returns a completed copy that measures elapsed to the end time from finish' do
+    assert_in_delta(3.0, job.finish(13.0).elapsed(99.0))
+  end
+
+  it 'returns a completed copy that keeps the offset from finish' do
+    assert_equal 5, job.advance(5).finish(13.0).offset
+  end
+
+  it 'returns a copy advanced by the bytes read' do
+    assert_equal 12, job.advance(5).advance(7).offset
+  end
+
+  it 'returns an advanced copy that stays completed' do
+    assert_predicate job(ended_at: 13.0).advance(5), :completed?
+  end
+end

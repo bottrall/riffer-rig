@@ -1,0 +1,13 @@
+# Generated from lib/riffer/rig/runtime/stop_reason.rb with RBS::Inline
+
+module Riffer::Rig::Runtime::StopReason
+  INTERRUPT_CANCELLED: Symbol
+
+  # Riffer's remaining stop reasons (:error, :other, :guardrail_blocked) are
+  # failures, not early stops.
+  STOPPED_WITHOUT_COMPLETING: Array[Symbol]
+
+  # @rbs outcome: Riffer::Agent::Outcome
+  # @rbs return: Symbol
+  def of: (Riffer::Agent::Outcome outcome) -> Symbol
+end

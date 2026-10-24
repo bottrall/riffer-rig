@@ -11,9 +11,6 @@ class Riffer::Rig::Mcp::Declaration
   attr_reader :args #: Array[String]
   attr_reader :env #: Hash[String, String]
 
-  # A declaration is one server over one transport: HTTPS by url, or stdio by
-  # command. Raising is a programmer error: the registrar seam refuses an
-  # empty declaration before the Runtime ever sees it.
   # @rbs url: String?
   # @rbs headers: Hash[String, String]
   # @rbs auth: Hash[Symbol, Array[String]]
@@ -22,6 +19,9 @@ class Riffer::Rig::Mcp::Declaration
   # @rbs env: Hash[String, String]
   # @rbs return: void
   def initialize(url: nil, headers: {}, auth: {}, command: nil, args: [], env: {})
+    # Raised inside the extension's rig.mcp call, so a declaration without
+    # exactly one transport fails that extension alone and never reaches the
+    # Runtime.
     raise ArgumentError, 'a declaration takes a url or a command, not both' if url && command
     raise ArgumentError, 'a declaration takes a url or a command' unless url || command
 

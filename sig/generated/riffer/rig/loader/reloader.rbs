@@ -1,0 +1,50 @@
+# Generated from lib/riffer/rig/loader/reloader.rb with RBS::Inline
+
+class Riffer::Rig::Loader::Reloader
+  @source: Riffer::Rig::Loader::ExtensionSource
+
+  @host: Riffer::Rig::Hosts::_Host
+
+  @settings: ^() -> (Hash[Symbol, untyped] | String)
+
+  @credentials: ^(String) -> (Hash[Symbol, String] | String)
+
+  @extensions: ^(Riffer::Rig::Settings::Document, Array[Riffer::Rig::Extension]) -> Array[Riffer::Rig::Extension]
+
+  @rediscovers: bool
+
+  @mode: :auto | :manual | nil
+
+  @file_state: Hash[String, Time?]
+
+  # @rbs source: Riffer::Rig::Loader::ExtensionSource
+  # @rbs host: Riffer::Rig::Hosts::_Host
+  # @rbs settings: ^() -> (Hash[Symbol, untyped] | String)
+  # @rbs credentials: ^(String) -> (Hash[Symbol, String] | String)
+  # @rbs extensions: ^(Riffer::Rig::Settings::Document, Array[Riffer::Rig::Extension]) -> Array[Riffer::Rig::Extension]
+  # @rbs rediscovers: bool
+  # @rbs mode: (:auto | :manual | nil)
+  # @rbs return: void
+  def initialize: (source: Riffer::Rig::Loader::ExtensionSource, host: Riffer::Rig::Hosts::_Host, settings: ^() -> (Hash[Symbol, untyped] | String), credentials: ^(String) -> (Hash[Symbol, String] | String), extensions: ^(Riffer::Rig::Settings::Document, Array[Riffer::Rig::Extension]) -> Array[Riffer::Rig::Extension], rediscovers: bool, mode: :auto | :manual | nil) -> void
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs force: bool
+  # @rbs return: (Riffer::Rig::Runtime | String)
+  def reload: (Riffer::Rig::Runtime runtime, ?force: bool) -> (Riffer::Rig::Runtime | String)
+
+  private
+
+  # @rbs return: bool
+  def manual?: () -> bool
+
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: (Riffer::Rig::Runtime | String)
+  def perform: (Riffer::Rig::Runtime runtime) -> (Riffer::Rig::Runtime | String)
+
+  # @rbs message: String
+  # @rbs return: String
+  def notify_failure: (String message) -> String
+
+  # @rbs return: Hash[String, Time?]
+  def file_state: () -> Hash[String, Time?]
+end

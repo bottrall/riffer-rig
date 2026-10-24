@@ -1,0 +1,60 @@
+# Generated from lib/riffer/rig/runtime/job_log.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::JobLog
+  MAX_BYTES: Integer
+
+  KEEP_BYTES: Integer
+
+  CHUNK_BYTES: Integer
+
+  DROPPED: String
+
+  @copier: Thread
+
+  @dropped: Integer
+
+  @mutex: Mutex
+
+  @path: String
+
+  @output: IO
+
+  # @rbs output: IO
+  # @rbs path: String
+  # @rbs return: void
+  def initialize: (IO output, String path) -> void
+
+  # @rbs offset: Integer
+  # @rbs limit: Integer
+  # @rbs return: [String, Integer]
+  def read: (Integer offset, Integer limit) -> [ String, Integer ]
+
+  # @rbs limit: Integer
+  # @rbs return: String
+  def tail: (Integer limit) -> String
+
+  # @rbs timeout: Float
+  # @rbs return: void
+  def drain: (Float timeout) -> void
+
+  # @rbs return: void
+  def close: () -> void
+
+  private
+
+  # @rbs file: File
+  # @rbs return: void
+  def copy: (File file) -> void
+
+  # @rbs file: File
+  # @rbs return: void
+  def compact: (File file) -> void
+
+  # @rbs return: Integer
+  def marker_bytes: () -> Integer
+
+  # @rbs limit: Integer
+  # @rbs position: Integer
+  # @rbs return: String
+  def slice: (Integer limit, Integer position) -> String
+end

@@ -87,11 +87,11 @@ module Riffer::Rig::Terminal::StatusBar
     {
       glyph: field(glyph, GLYPH_WIDTH),
       state: field(state, STATE_WIDTH),
-      reasoning: field(reasoning || Riffer::Rig::Terminal::Reasoning::DEFAULT, REASONING_WIDTH),
+      reasoning: field(reasoning || Riffer::Rig::Runtime::DEFAULT_REASONING_LABEL, REASONING_WIDTH),
       clock: field(clock, CLOCK_WIDTH),
       up: field("↑#{Riffer::Rig::Terminal::Count.call(up_tokens)}", TOKEN_WIDTH),
       down: field("↓#{Riffer::Rig::Terminal::Count.call(down_tokens)} tok", DOWN_WIDTH),
-      cost: field(format('~$%.4f', cost), COST_WIDTH),
+      cost: field(Riffer::Rig::Terminal::Count.cost(cost), COST_WIDTH),
       jobs: field("#{jobs} #{jobs == 1 ? 'job' : 'jobs'}", JOBS_WIDTH)
     }
   end
