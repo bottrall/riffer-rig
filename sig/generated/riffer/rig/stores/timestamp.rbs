@@ -10,4 +10,8 @@ module Riffer::Rig::Stores::Timestamp
   # @rbs value: untyped
   # @rbs return: Time?
   def load: (untyped value) -> Time?
+
+  # @rbs value: untyped
+  # @rbs return: String?
+  def normalize: (untyped value) -> String?
 end

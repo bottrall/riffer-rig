@@ -13,12 +13,6 @@ class Riffer::Rig::Stores::Recorder
   # @rbs @pending: Array[Riffer::Rig::Stores::entry]
   # @rbs @last_recorded_at: Time?
 
-  # Records one Loader-built session into the store: the header on the first
-  # message (its title needs the first prompt), one entry per message, one per
-  # model switch, one per reasoning switch and one per skill activation. Entries
-  # that land before the first message (a /model before the first prompt) wait
-  # for the header. A resumed session appends to the file its first run wrote,
-  # so it rewrites no header.
   # @rbs store: Riffer::Rig::Stores::_Store
   # @rbs resumed: bool
   # @rbs clock: singleton(Time)
@@ -46,7 +40,7 @@ class Riffer::Rig::Stores::Recorder
   # @rbs event: Riffer::StreamEvents::SkillActivation
   # @rbs return: void
   def skill(event)
-    record(Riffer::Rig::Stores::SkillEntry.new(skill: event.name, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
+    record(Riffer::Rig::Stores::SkillEntry.new(skill: event.name, recorded_at: stamp))
   end
 
   # @rbs message: Riffer::Messages::Base
@@ -55,19 +49,19 @@ class Riffer::Rig::Stores::Recorder
     # A job notification is no prompt to title the session from, so it waits
     # for the header like any other entry that lands before one.
     write_header(message) unless @header_written || message.is_a?(Riffer::Rig::Runtime::JobNotification)
-    record(Riffer::Rig::Stores::MessageEntry.new(message: message.to_h, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
+    record(Riffer::Rig::Stores::MessageEntry.new(message: message.to_h, recorded_at: stamp))
   end
 
   # @rbs model: String
   # @rbs return: void
   def switched(model)
-    record(Riffer::Rig::Stores::ModelEntry.new(model: model, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
+    record(Riffer::Rig::Stores::ModelEntry.new(model: model, recorded_at: stamp))
   end
 
   # @rbs level: String
   # @rbs return: void
   def switched_reasoning(level)
-    record(Riffer::Rig::Stores::ReasoningEntry.new(reasoning: level, recorded_at: Riffer::Rig::Stores::Timestamp.dump(stamp)))
+    record(Riffer::Rig::Stores::ReasoningEntry.new(reasoning: level, recorded_at: stamp))
   end
 
   # The extension rides the build as its last extension, so its :stream hook
@@ -102,6 +96,7 @@ class Riffer::Rig::Stores::Recorder
   # @rbs return: void
   def write_header(message)
     @header_written = true
+    # A resumed session appends to the file its first run wrote, header and all.
     @store.append(runtime.id, header_entry(message)) unless @resumed
     @pending.each { |entry| @store.append(runtime.id, entry) }
     @pending.clear
@@ -122,12 +117,13 @@ class Riffer::Rig::Stores::Recorder
     )
   end
 
-  # @rbs return: Time
+  # @rbs return: String?
   def stamp
     now = @clock.now
     last = @last_recorded_at
     # A wall clock can step backwards; the entries of one session never do.
     @last_recorded_at = last && last > now ? last : now
+    Riffer::Rig::Stores::Timestamp.dump(@last_recorded_at)
   end
 
   # @rbs id: String
