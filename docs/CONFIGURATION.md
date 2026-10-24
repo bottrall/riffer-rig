@@ -19,7 +19,7 @@ The highest source that is set wins.
 
 [^1]: Restored only when its provider still has credentials.
 [^2]: Headless and ACP never ask: a missing model is a configuration error.
-[^3]: Each field resolves on its own. A field with several variables tries them in the order [Providers](PROVIDERS.md) lists them, and a blank value counts as unset. A secret is asked for without echo.
+[^3]: Each field resolves on its own. A field with several variables tries them in the order [Providers](PROVIDERS.md) lists them, and a blank value counts as unset. A secret is asked for without echo. A required secret that resolves nowhere is neither asked for nor reported missing while the provider's SDK credential chain is configured, such as [Anthropic's](PROVIDERS.md#anthropic): the SDK authenticates instead. A secret that does resolve wins over the chain.
 
 Inside a session, `/model` and `/reasoning` override all of these until the session ends ([below](#model)). A flag beats a resumed session's switch for that run only: resuming again without it restores the switch. [Providers](PROVIDERS.md) lists each provider's fields and variables.
 

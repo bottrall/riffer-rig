@@ -316,4 +316,4 @@ resolution.missing # => []
 
 A file that doesn't parse comes back as a `String` message in place of the result. `install` runs `!command` values every time, so call it once and keep the result.
 
-riffer-rig reads the process environment only through a `Riffer::Rig::Env`: `Env.new` snapshots it, and `Env.new('ANTHROPIC_API_KEY' => '…')` builds one from a hash for tests.
+riffer-rig reads the process environment only through a `Riffer::Rig::Env`: `Env.new` snapshots it, and `Env.new('ANTHROPIC_API_KEY' => '…')` builds one from a hash for tests. A provider SDK's own credential chain, such as [Anthropic's](PROVIDERS.md#anthropic), reads the process environment itself.

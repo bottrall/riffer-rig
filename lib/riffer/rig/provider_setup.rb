@@ -1,15 +1,16 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::ProviderSetup
-  # @dynamic url, chain, sdk, fields
+  # @dynamic url, sdk, fields
   attr_reader :url #: String?
-  attr_reader :chain #: bool
   attr_reader :sdk #: [String, String]?
   attr_reader :fields #: Array[Riffer::Rig::ProviderSetup::Field]
 
+  # @rbs @chain: bool | ^() -> bool
+
   # @rbs fields: Array[Riffer::Rig::ProviderSetup::Field]
   # @rbs url: String?
-  # @rbs chain: bool
+  # @rbs chain: bool | ^() -> bool
   # @rbs sdk: [String, String]?
   # @rbs return: void
   def initialize(fields:, url: nil, chain: false, sdk: nil)
@@ -20,6 +21,12 @@ class Riffer::Rig::ProviderSetup
     freeze
   end
 
+  # @rbs return: bool
+  def chain?
+    chain = @chain
+    chain.is_a?(Proc) ? chain.call : chain
+  end
+
   AWS_SHARED_CONFIG_REGION = lambda do
     require 'aws-sdk-core'
     Object.const_get(:Aws).shared_config.region
@@ -27,11 +34,23 @@ class Riffer::Rig::ProviderSetup
     nil
   end #: ^() -> String?
 
+  ANTHROPIC_CREDENTIAL_CHAIN = lambda do
+    require 'anthropic'
+    !::Anthropic::Credentials.default_credentials.nil?
+  rescue LoadError
+    false
+  rescue ::Anthropic::Errors::Error
+    # A broken profile the user selected is still the chain they chose: the SDK
+    # names the fault on the first request, where asking for a key would hide it.
+    true
+  end #: ^() -> bool
+
   # Upstream candidate: riffer's providers could declare their own SDK gem and
   # credential fields, and this table would go.
   TABLE = {
     anthropic: new(
       url: 'https://console.anthropic.com/settings/keys',
+      chain: ANTHROPIC_CREDENTIAL_CHAIN,
       sdk: ['anthropic', '~> 1.69'],
       fields: [Field.new(name: :api_key, env: ['ANTHROPIC_API_KEY'], secret: true, required: true)]
     ),

@@ -1,23 +1,28 @@
 # Generated from lib/riffer/rig/provider_setup.rb with RBS::Inline
 
 class Riffer::Rig::ProviderSetup
-  # @dynamic url, chain, sdk, fields
+  # @dynamic url, sdk, fields
   attr_reader url: String?
-
-  attr_reader chain: bool
 
   attr_reader sdk: [ String, String ]?
 
   attr_reader fields: Array[Riffer::Rig::ProviderSetup::Field]
 
+  @chain: bool | ^() -> bool
+
   # @rbs fields: Array[Riffer::Rig::ProviderSetup::Field]
   # @rbs url: String?
-  # @rbs chain: bool
+  # @rbs chain: bool | ^() -> bool
   # @rbs sdk: [String, String]?
   # @rbs return: void
-  def initialize: (fields: Array[Riffer::Rig::ProviderSetup::Field], ?url: String?, ?chain: bool, ?sdk: [ String, String ]?) -> void
+  def initialize: (fields: Array[Riffer::Rig::ProviderSetup::Field], ?url: String?, ?chain: bool | ^() -> bool, ?sdk: [ String, String ]?) -> void
+
+  # @rbs return: bool
+  def chain?: () -> bool
 
   AWS_SHARED_CONFIG_REGION: ^() -> String?
+
+  ANTHROPIC_CREDENTIAL_CHAIN: ^() -> bool
 
   # Upstream candidate: riffer's providers could declare their own SDK gem and
   # credential fields, and this table would go.
