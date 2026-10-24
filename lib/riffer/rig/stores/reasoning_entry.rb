@@ -17,7 +17,7 @@ class Riffer::Rig::Stores::ReasoningEntry
     reasoning = hash[:reasoning]
     return nil unless reasoning.is_a?(String)
 
-    new(reasoning: reasoning, recorded_at: Riffer::Rig::Stores::Timestamp.dump(Riffer::Rig::Stores::Timestamp.load(hash[:recorded_at])))
+    new(reasoning: reasoning, recorded_at: Riffer::Rig::Stores::Timestamp.normalize(hash[:recorded_at]))
   end
 
   # @rbs reasoning: String

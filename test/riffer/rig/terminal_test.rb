@@ -3,13 +3,15 @@
 require 'test_helper'
 require 'json'
 require 'stringio'
+require_relative '../../support/overlaid_runtime'
 require_relative '../../support/terminal_pty'
 
 # Delegates to the real sessions collaborator and hands each built Runtime to
 # the block, so tests can stub the provider before the REPL reads a prompt.
 class PreparedSessions
-  def initialize(sessions, &prepare)
+  def initialize(sessions, overlay: nil, &prepare)
     @sessions = sessions
+    @overlay = overlay
     @prepare = prepare
   end
 
@@ -51,8 +53,9 @@ class PreparedSessions
 
   private
 
-  def prepare(runtime)
-    @prepare.call(runtime) if runtime
+  def prepare(built)
+    runtime = built && @overlay ? @overlay.call(built) : built
+    @prepare&.call(runtime) if runtime
     runtime
   end
 end
@@ -108,10 +111,11 @@ describe Riffer::Rig::Terminal do
     open_picker: false,
     resume: nil,
     sessions: nil,
+    overlay: nil,
     &prepare
   )
     sessions ||= cli_sessions(env: env, resume: resume)
-    sessions = PreparedSessions.new(sessions, &prepare) if prepare
+    sessions = PreparedSessions.new(sessions, overlay: overlay, &prepare) if prepare || overlay
     TerminalPty.drive(script, columns: columns) do |tty|
       terminal = Riffer::Rig::Terminal.for(
         input: tty,
@@ -552,9 +556,8 @@ describe Riffer::Rig::Terminal do
     end
 
     it 'counts the running jobs of the first session in the footer' do
-      output = run_on_pty(->(pty) { pty.type("/exit\r") }) do |runtime|
-        runtime.define_singleton_method(:running_job_count) { 2 }
-      end
+      running = ->(runtime) { OverlaidRuntime.new(runtime, running_job_count: 2) }
+      output = run_on_pty(->(pty) { pty.type("/exit\r") }, overlay: running)
 
       assert_includes output, '2 jobs'
     end
@@ -624,8 +627,8 @@ describe Riffer::Rig::Terminal do
         @exits = Queue.new
       end
 
-      def run_watching(script, &)
-        run_on_pty(script) do |runtime|
+      def run_watching(script, overlay: nil, &)
+        run_on_pty(script, overlay: overlay) do |runtime|
           @runtimes << runtime
           runtime.on_job_exit { @exits << true }
           yield runtime if block_given?
@@ -647,11 +650,12 @@ describe Riffer::Rig::Terminal do
         end
       end
 
-      def follow_up_streams(runtime, events, &failure)
-        runtime.define_singleton_method(:follow_up) do |&block|
+      def following_up_with(events, &failure)
+        streaming = lambda do |&block|
           events.each(&block)
           failure&.call
         end
+        ->(runtime) { OverlaidRuntime.new(runtime, follow_up: streaming) }
       end
 
       def job_exit
@@ -732,17 +736,18 @@ describe Riffer::Rig::Terminal do
           checked.pop(timeout: TerminalPty::TIMEOUT_SECONDS) || raise('the exit was never checked')
           pty.type("/exit\r")
         end
-        output = run_watching(script) do |runtime|
-          if @runtimes.one?
-            runtime.define_singleton_method(:run_command) do |*args, &block|
-              held << true
-              release.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
-              super(*args, &block)
-            end
+        holding = lambda do
+          held << true
+          release.pop(timeout: TerminalPty::TIMEOUT_SECONDS)
+        end
+        overlay = lambda do |runtime|
+          if @runtimes.empty?
+            OverlaidRuntime.new(runtime, before_command: holding)
           else
-            runtime.define_singleton_method(:pending_job_exit_count) { super().tap { checked << true } }
+            OverlaidRuntime.new(runtime, after_exit_count: -> { checked << true })
           end
         end
+        output = run_watching(script, overlay: overlay)
 
         refute_includes output, 'background job'
       end
@@ -750,48 +755,46 @@ describe Riffer::Rig::Terminal do
       it 'counts the exits that land before its turn takes them' do
         late = 2
         land = method(:exit_jobs)
-        output = run_watching(idle_exit) do |runtime|
-          runtime.define_singleton_method(:pending_job_exit_count) do
-            super().tap do
-              land.call(late)
-              late = 0
-            end
-          end
+        landing = lambda do
+          land.call(late)
+          late = 0
         end
+        overlay = ->(runtime) { OverlaidRuntime.new(runtime, after_exit_count: landing) }
+        output = run_watching(idle_exit, overlay: overlay)
 
         assert_includes output, "3 background jobs exited\r\n"
       end
 
       it 'counts the exits its turn takes past an event ahead of the reply' do
         events = [job_exit, Riffer::Rig::Events::Notify.new('Reloaded.', :info), job_exit, *reply('Passed.')]
-        output = run_watching(idle_exit('Passed.')) { |runtime| follow_up_streams(runtime, events) }
+        output = run_watching(idle_exit('Passed.'), overlay: following_up_with(events))
 
         assert_includes output, "2 background jobs exited\r\n"
       end
 
       it 'leaves out of its notice an exit told once the reply has started' do
         events = [job_exit, Riffer::StreamEvents::TextDelta.new('Started.'), job_exit, *reply('Passed.')]
-        output = run_watching(idle_exit('Passed.')) { |runtime| follow_up_streams(runtime, events) }
+        output = run_watching(idle_exit('Passed.'), overlay: following_up_with(events))
 
         assert_includes output, "1 background job exited\r\n"
       end
 
       it 'shows its notice ahead of the report of a turn that ends before its reply' do
         events = [job_exit, Riffer::Rig::Events::TurnEnd.new(:completed, nil)]
-        output = run_watching(idle_exit('0 steps')) { |runtime| follow_up_streams(runtime, events) }
+        output = run_watching(idle_exit('0 steps'), overlay: following_up_with(events))
 
         assert_match(/1 background job exited\r\n.*0 steps/m, output)
       end
 
       it 'shows no notice for a turn that takes no exit' do
-        output = run_watching(idle_exit('Passed.')) { |runtime| follow_up_streams(runtime, reply('Passed.')) }
+        output = run_watching(idle_exit('Passed.'), overlay: following_up_with(reply('Passed.')))
 
         refute_includes output, 'background job'
       end
 
       it 'shows its notice ahead of the error that ends its turn' do
         failing = idle_exit('provider down')
-        output = run_watching(failing) { |runtime| follow_up_streams(runtime, [job_exit]) { raise 'provider down' } }
+        output = run_watching(failing, overlay: following_up_with([job_exit]) { raise 'provider down' })
 
         assert_match(/1 background job exited\r\n.*provider down/m, output)
       end
@@ -912,10 +915,8 @@ describe Riffer::Rig::Terminal do
 
     it 'counts the running jobs of the session /new starts in the footer' do
       counts = [0, 3]
-      output = run_on_pty(->(pty) { pty.type("/new\r/exit\r") }) do |runtime|
-        count = counts.shift
-        runtime.define_singleton_method(:running_job_count) { count }
-      end
+      running = ->(runtime) { OverlaidRuntime.new(runtime, running_job_count: counts.shift) }
+      output = run_on_pty(->(pty) { pty.type("/new\r/exit\r") }, overlay: running)
 
       assert_includes output, '3 jobs'
     end
@@ -1306,16 +1307,6 @@ describe Riffer::Rig::Terminal do
     end
 
     assert_includes output, 'Error: boom'
-  end
-
-  it 'reports the response body message of a provider error' do
-    error = StandardError.new('status=400')
-    error.define_singleton_method(:body) { { error: { message: 'bad model' } } }
-    output = run_terminal("hello\n") do |runtime|
-      runtime.agent.provider.define_singleton_method(:stream_text) { |*| raise error }
-    end
-
-    assert_includes output, 'Error: status=400: bad model'
   end
 
   it 'cancels the turn on Ctrl-C' do

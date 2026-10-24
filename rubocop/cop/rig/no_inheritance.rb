@@ -18,8 +18,8 @@ module RuboCop::Cop::Rig
 
     def on_class(node)
       parent = node.parent_class
-      return unless parent&.const_type?
-      return if allowed?(parent.const_name.delete_prefix('::'))
+      return unless parent
+      return if parent.const_type? && allowed?(parent.const_name.delete_prefix('::'))
 
       add_offense(parent)
     end
@@ -27,7 +27,16 @@ module RuboCop::Cop::Rig
     private
 
     def allowed?(name)
-      ALLOWED_PARENTS.include?(name) || name.end_with?('Error')
+      ALLOWED_PARENTS.include?(name) || core_standard_error?(name)
+    end
+
+    # Only core classes, defined in C, resolve the same in every process: a
+    # gem's or the project's own error classes aren't loaded when the cop runs.
+    def core_standard_error?(name)
+      return false unless Object.const_defined?(name) && Object.const_source_location(name) == []
+
+      parent = Object.const_get(name)
+      parent.is_a?(Class) && parent <= StandardError
     end
   end
 end

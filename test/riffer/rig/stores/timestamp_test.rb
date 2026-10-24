@@ -32,4 +32,18 @@ describe Riffer::Rig::Stores::Timestamp do
       assert_nil Riffer::Rig::Stores::Timestamp.load('yesterday')
     end
   end
+
+  describe '.normalize' do
+    it 'passes a missing timestamp through' do
+      assert_nil Riffer::Rig::Stores::Timestamp.normalize(nil)
+    end
+
+    it 'drops a malformed timestamp' do
+      assert_nil Riffer::Rig::Stores::Timestamp.normalize('yesterday')
+    end
+
+    it 'rewrites a timestamp in the form dump writes' do
+      assert_equal '2026-10-11T02:00:00.123Z', Riffer::Rig::Stores::Timestamp.normalize('2026-10-11T12:00:00.123456+10:00')
+    end
+  end
 end

@@ -30,4 +30,8 @@ describe Riffer::Rig::Terminal::Count do
   it 'drops the decimal of a whole million' do
     assert_equal '1M', Riffer::Rig::Terminal::Count.call(1_000_000)
   end
+
+  it 'shows a cost as an estimate to four decimal places' do
+    assert_equal '~$0.2500', Riffer::Rig::Terminal::Count.cost(0.25)
+  end
 end

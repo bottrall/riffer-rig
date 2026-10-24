@@ -11,4 +11,10 @@ module Riffer::Rig::Terminal::Count
 
     "#{format('%g', amount.fdiv(1_000_000).floor(amount < 100_000_000 ? 1 : 0))}M"
   end
+
+  # @rbs amount: Float
+  # @rbs return: String
+  def cost(amount)
+    format('~$%.4f', amount)
+  end
 end

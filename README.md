@@ -25,14 +25,6 @@ The first run asks for a model as `provider/name` — for example `anthropic/cla
 
 Type a prompt and press Enter. `/help` lists the commands, and [Getting started](docs/GETTING_STARTED.md) walks through a first session.
 
-To run one prompt from a script or CI job:
-
-```bash
-git diff | riffer -p "review this diff"
-```
-
-[Headless](docs/HEADLESS.md) covers exit codes and the NDJSON stream; editors connect over [ACP](docs/ACP.md) with `riffer acp`.
-
 ## Extend it
 
 An extension is a Ruby block in `~/.riffer/rig.rb` (every project) or `.riffer/rig.rb` (one project):
@@ -62,20 +54,13 @@ The guides are at **<https://riffer.bottrall.dev>**, and their sources are in [`
 - [Overview](docs/OVERVIEW.md) — what riffer-rig is and how it fits together
 - [Configuration](docs/CONFIGURATION.md) — settings and where each value comes from
 - [Command line](docs/CLI.md) — every flag
+- [Headless mode](docs/HEADLESS.md) — one prompt from a script or CI job, with exit codes and an NDJSON stream
+- [ACP](docs/ACP.md) — riffer-rig in your editor, with `riffer acp`
 - [Extensions](docs/EXTENSIONS.md) — your own tools, commands and hooks
-
-## Development
-
-```bash
-bin/setup   # install gems and RBS signatures
-bin/ci      # lint, test, type-check and build the docs, as CI does
-```
-
-`AGENTS.md` lists every script and the project's conventions. PR titles follow [Conventional Commits](https://www.conventionalcommits.org/); [release-please](https://github.com/googleapis/release-please) turns them into releases.
 
 ## Contributing
 
-Fork the repository, make your change on a branch, run `bin/ci`, and open a pull request with a clear description. Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+[`AGENTS.md`](AGENTS.md) has the scripts and the project's conventions. Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
