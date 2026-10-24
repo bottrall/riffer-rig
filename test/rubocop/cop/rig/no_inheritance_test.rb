@@ -15,10 +15,6 @@ describe RuboCop::Cop::Rig::NoInheritance do
     assert_empty offenses("class Plain; end\n")
   end
 
-  it 'allows a parent that is not a constant' do
-    assert_empty offenses("class Plain < Struct.new(:a); end\n")
-  end
-
   it 'allows a framework-mandated riffer parent' do
     assert_empty offenses("class Read < Riffer::Tool; end\n")
   end
@@ -31,8 +27,24 @@ describe RuboCop::Cop::Rig::NoInheritance do
     assert_empty offenses("class Signal < Exception; end\n")
   end
 
-  it 'allows an error subclass' do
+  it 'allows a StandardError subclass' do
     assert_empty offenses("class BusyError < StandardError; end\n")
+  end
+
+  it 'allows a subclass of a core StandardError descendant' do
+    assert_empty offenses("class Invalid < ArgumentError; end\n")
+  end
+
+  it 'flags a subclass of a core error outside StandardError' do
+    assert_equal [1], offenses("class Pending < NotImplementedError; end\n").map(&:line)
+  end
+
+  it 'flags a subclass of an error class the cop cannot resolve' do
+    assert_equal [1], offenses("class Expired < Mcp::Auth::Error; end\n").map(&:line)
+  end
+
+  it 'flags a parent that is not a constant' do
+    assert_equal [1], offenses("class Point < Struct.new(:x); end\n").map(&:line)
   end
 
   it 'flags a class inheriting from a rig class' do
