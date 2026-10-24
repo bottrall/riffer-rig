@@ -1,0 +1,21 @@
+# Generated from lib/riffer/rig/acp/servers.rb with RBS::Inline
+
+module Riffer::Rig::ACP::Servers
+  # @rbs servers: Array[::ACP::Types::McpServer::t]
+  # @rbs return: Hash[String, Riffer::Rig::Mcp::Declaration]
+  def declarations: (Array[::ACP::Types::McpServer::t] servers) -> Hash[String, Riffer::Rig::Mcp::Declaration]
+
+  # @rbs servers: Array[::ACP::Types::McpServer::t]
+  # @rbs return: Array[String]
+  def warnings: (Array[::ACP::Types::McpServer::t] servers) -> Array[String]
+
+  private
+
+  # @rbs server: ::ACP::Types::McpServer::t
+  # @rbs return: [String, Riffer::Rig::Mcp::Declaration]?
+  def declaration_of: (::ACP::Types::McpServer::t server) -> [ String, Riffer::Rig::Mcp::Declaration ]?
+
+  # @rbs server: ::ACP::Types::McpServer::t
+  # @rbs return: String
+  def name_of: (::ACP::Types::McpServer::t server) -> String
+end

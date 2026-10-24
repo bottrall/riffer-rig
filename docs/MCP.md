@@ -20,7 +20,7 @@ The bundled `mcp` extension reads servers from `mcp.servers` in either [settings
 }
 ```
 
-`url` is required and must be `https://`; `headers` are sent with every request. A server declared in both files takes the project's entry whole — its headers are not merged with the home entry's. An entry without a `url` stops the whole `mcp` extension from loading, and the session reports it.
+`url` is required and must be `https://`; `headers` are sent with every request. [Scopes and merging](CONFIGURATION.md#scopes-and-merging) covers a server declared in both files. An entry without a `url` stops the whole `mcp` extension from loading, and the session reports it.
 
 ## Secret headers
 
@@ -40,7 +40,7 @@ Keep tokens out of `settings.json`: declare an `auth` block naming the environme
 }
 ```
 
-Each field resolves like a [provider credential](PROVIDERS.md#resolution-order): the environment first (a field may list several variables, tried in order), then `~/.riffer/auth.json` under the server's name, then a prompt without echo, stored for next time. A `${field}` that names no declared field is an error.
+Each field resolves like a [provider credential](CONFIGURATION.md#where-each-value-comes-from), and is stored in `~/.riffer/auth.json` under the server's name. A field may list several variables, tried in order. A `${field}` that names no declared field is an error.
 
 Put a server with a literal secret header in your home settings rather than a project file, which is usually committed.
 
@@ -48,17 +48,11 @@ Put a server with a literal secret header in your home settings rather than a pr
 
 Each server's tools are listed when the session starts and named `<server>__<tool>`, with any character outside `a-z`, `A-Z`, `0-9`, `_` and `-` replaced by `_`: the `search` tool of the `docs` server is `docs__search`.
 
-MCP tools are not filtered by `--tools`; to keep a server's tools from the model, don't declare the server.
+To keep a server's tools from the model, don't declare the server: the [`--tools` allowlist](TOOLS.md#identifiers) doesn't apply to them.
 
 ## When a server fails
 
-A server that cannot be used is reported, and the session runs without its tools:
-
-| Problem                                         | Reported as                                                                                     |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| the URL is not `https://`, or listing tools fails | `MCP server NAME failed to register: …`                                                       |
-| a credential can't be resolved and riffer can't ask (headless) | `MCP server NAME failed to register: MCP server NAME has no FIELD (ENV_VAR); set it in the environment or run riffer interactively to paste it` |
-| a tool call fails on the server                  | a tool error the model sees                                                                    |
+A server whose URL isn't `https://`, whose tools can't be listed, or whose credential can't be resolved when riffer can't ask (headless) is [reported](TROUBLESHOOTING.md), and the session runs without its tools. A tool call that fails on the server comes back to the model as a tool error.
 
 ## Reloading
 

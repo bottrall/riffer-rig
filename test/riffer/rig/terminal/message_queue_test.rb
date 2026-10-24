@@ -9,13 +9,9 @@ describe Riffer::Rig::Terminal::MessageQueue do
     lines.reduce(Riffer::Rig::Terminal::MessageQueue.new, :enqueue)
   end
 
-  def texts(queue)
-    queue.messages.map(&:text)
-  end
-
   def drained(queue)
     message, rest = queue.dequeue
-    message ? [message.text, *drained(rest)] : []
+    message ? [message, *drained(rest)] : []
   end
 
   it 'starts empty' do
@@ -28,22 +24,22 @@ describe Riffer::Rig::Terminal::MessageQueue do
 
   describe '#enqueue' do
     it 'ignores a blank line' do
-      assert_equal %w[one], texts(queue('one', "  \n"))
+      assert_equal %w[one], queue('one', "  \n").messages
     end
 
     it 'adds the line to the back' do
-      assert_equal %w[one two], texts(queue('one', 'two'))
+      assert_equal %w[one two], queue('one', 'two').messages
     end
 
     it 'trims the whitespace around the line' do
-      assert_equal ['/model  opus'], texts(queue("  /model  opus \n"))
+      assert_equal ['/model  opus'], queue("  /model  opus \n").messages
     end
 
     it 'returns a new queue instead of changing the one it was called on' do
       original = queue('one')
       original.enqueue('two')
 
-      assert_equal %w[one], texts(original)
+      assert_equal %w[one], original.messages
     end
   end
 
@@ -53,11 +49,11 @@ describe Riffer::Rig::Terminal::MessageQueue do
     end
 
     it 'yields the oldest message' do
-      assert_equal 'one', queue('one', 'two', 'three').dequeue.first.text
+      assert_equal 'one', queue('one', 'two', 'three').dequeue.first
     end
 
     it 'leaves the later messages in the order they were enqueued' do
-      assert_equal %w[two three], texts(queue('one', 'two', 'three').dequeue.last)
+      assert_equal %w[two three], queue('one', 'two', 'three').dequeue.last.messages
     end
 
     it 'drains in the order the lines were enqueued' do
@@ -68,7 +64,7 @@ describe Riffer::Rig::Terminal::MessageQueue do
       original = queue('one', 'two')
       original.dequeue
 
-      assert_equal %w[one two], texts(original)
+      assert_equal %w[one two], original.messages
     end
   end
 

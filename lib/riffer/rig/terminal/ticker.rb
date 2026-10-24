@@ -5,6 +5,8 @@ class Riffer::Rig::Terminal::Ticker
 
   CHARS_PER_TOKEN = 4 #: Integer
 
+  SPINNER = %w[⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏].freeze #: Array[String]
+
   # @rbs @footer: Riffer::Rig::Terminal::Frame
   # @rbs @theme: Riffer::Rig::Terminal::Theme
   # @rbs @buffer: Riffer::Rig::Terminal::TurnBuffer
@@ -84,7 +86,7 @@ class Riffer::Rig::Terminal::Ticker
     usage = stats.usage
     estimate = @unmetered / CHARS_PER_TOKEN
     Riffer::Rig::Terminal::StatusBar.working(
-      glyph: Riffer::Rig::Terminal::Spinner.call(@tick),
+      glyph: SPINNER[@tick % SPINNER.length],
       state: stats.steps.zero? ? '' : "step #{stats.steps}",
       reasoning: reasoning,
       clock: clock(stats.wall_time),

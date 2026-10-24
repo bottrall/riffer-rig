@@ -41,7 +41,7 @@ To narrow what the model can do:
 
 | To…                                  | Use                                                                                              |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| allow only some tools for one run    | `--tools read,edit` ([Identifiers](#identifiers)); MCP tools are not filtered                    |
+| allow only some tools for one run    | `--tools read,edit` ([Identifiers](#identifiers))                                                |
 | never load some tools                | `"extensions": {"disabled": ["bash", "write"]}` in [settings](CONFIGURATION.md#extensions)       |
 | refuse certain calls                 | a [`before_tool_call` hook](EXTENSIONS.md#the-rigon-seam) that returns `:block`                  |
 | run commands somewhere safer         | [replace `bash`](#replacing-a-tool) with your own                                                |
@@ -93,17 +93,11 @@ Cancelling a turn does not stop its jobs. `bash_kill` stops one; ending the sess
 
 A tool's name everywhere — `--tools`, the `tools:` allowlist when [embedding](EMBEDDING.md), a replacement — is its riffer identifier: `read`, `write`, `edit`, `bash`, `bash_output`, `bash_kill`, or the identifier an extension tool declares.
 
-The allowlist names tools, not extensions: `--tools bash` gives the model `bash` without `bash_output` and `bash_kill`, so it can start background jobs but not follow or stop them. A name that matches no tool is reported as `Unknown tool in allowlist: NAME`, so a typo doesn't silently drop a tool. The allowlist does not apply to [MCP](MCP.md#tool-names) tools.
+The allowlist names tools, not extensions: `--tools bash` gives the model `bash` without `bash_output` and `bash_kill`, so it can start background jobs but not follow or stop them. A name that matches no tool is [reported](TROUBLESHOOTING.md), so a typo doesn't silently drop a tool. The allowlist does not apply to [MCP](MCP.md#tool-names) tools.
 
 ## Provider-native tools
 
-Web search runs inside the provider's own request, so it is part of the core rather than an extension. It is off by default; switch it on in [settings](CONFIGURATION.md#toolsnative):
-
-```json
-{ "tools": { "native": { "web_search": true } } }
-```
-
-`anthropic`, `openai` and `azure_openai` support it. On other providers the switch does nothing, and a `/model` switch turns the tool on or off to match the new provider.
+Web search runs inside the provider's own request, so it is part of the core rather than an extension. [`tools.native`](CONFIGURATION.md#toolsnative) switches it on. `anthropic`, `openai` and `azure_openai` support it, and a `/model` switch turns the tool on or off to match the new provider.
 
 ## Replacing a tool
 
@@ -127,4 +121,4 @@ end
 Riffer::Rig.extension('sandbox') { |rig| rig.tool SandboxedBash }
 ```
 
-The later registration takes the earlier tool's place, and the session shows `Extension sandbox replaces tool bash from bash`. Replacement is per identifier: a replaced `bash` leaves `bash_output` and `bash_kill` registered, acting on the jobs in the session's job registry, where a replacement can [register its own](EMBEDDING.md#starting-jobs-from-your-own-tool).
+The later registration [takes the earlier tool's place](EXTENSIONS.md#bundled-extensions-and-replacement). Replacement is per identifier: a replaced `bash` leaves `bash_output` and `bash_kill` registered, acting on the jobs in the session's job registry, where a replacement can [register its own](EMBEDDING.md#starting-jobs-from-your-own-tool).

@@ -3,6 +3,8 @@
 class Riffer::Rig::CLI::Flags
   BANNER: String
 
+  HEADLESS_ONLY: Array[Symbol]
+
   # @dynamic model, reasoning, extensions, skills, agents_md, tools, max_steps, help, version
   # @dynamic save, verbose, json, job_idle_timeout, headless, prompt, continue, resume
   attr_reader model: String?

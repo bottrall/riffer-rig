@@ -20,23 +20,25 @@ while read -r p; do riffer -p --no-save "$p" </dev/null; done < prompts.txt
 
 ## Output
 
-Only the assistant's reply goes to stdout, streamed as it arrives. Everything else goes to stderr: errors, warnings, notices from extensions, and `session <id>` when the session starts — the id `riffer -p -r <id> "follow-up"` resumes. `--verbose` adds a one-line trace of each tool call to stderr. Reasoning is not printed.
+Only the assistant's reply goes to stdout, streamed as it arrives. Everything else goes to stderr: errors, warnings, notices from extensions, and `session <id>` when the session starts — the id `riffer -p -r <id> "follow-up"` resumes — and any [`--verbose`](CLI.md#flags) traces. Reasoning is not printed.
 
 ## Flags
 
 Every terminal flag works here, plus `--json`, `--verbose` and `--job-idle-timeout` ([Command line](CLI.md#flags)).
 
-`-c` and `-r <id>` continue a session across runs: `riffer -p -c "now run the tests"` carries on the most recent session in this directory. If there is no such session, headless exits 2 rather than starting a fresh one.
+`-c` and `-r <id>` continue a session across runs: `riffer -p -c "now run the tests"` carries on the most recent session in this directory ([Resuming](SESSIONS.md#resuming)).
 
 Headless never asks anything. A missing model, credential or [SDK gem](PROVIDERS.md#sdk-gems) prints what to set or install on stderr and exits 2, as does a settings or `auth.json` file that doesn't parse. A project `rig.rb` you haven't trusted in the terminal is skipped.
 
 ## Background jobs
 
-When the model finishes with [background jobs](TOOLS.md#background-jobs) still running, headless prints `waiting for background jobs` on stderr and waits. Each exit gives the model a further turn to react, printed like the first; the run exits once no job is left.
+When a turn ends with [background jobs](TOOLS.md#background-jobs) still running:
 
-When no job has exited for `--job-idle-timeout` seconds (600 by default), headless kills the rest and exits 3 — so a dev server or file watcher can't hold a run open forever. `--job-idle-timeout 0` waits without limit.
-
-Only a turn that finished is followed this way. A turn that fails, is cancelled or doesn't complete kills its jobs and exits at once.
+| When                                                           | Headless                                                                                      |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| the turn finished                                              | prints `waiting for background jobs` on stderr and waits; each exit gives the model a further turn to react, printed like the first, and the run exits once no job is left |
+| a wait passes the [`--job-idle-timeout`](CLI.md#flags) with no job exiting | kills the rest and exits 3, so a dev server or file watcher can't hold a run open forever     |
+| the turn failed, was cancelled or didn't complete              | kills its jobs and exits at once                                                              |
 
 ## Exit codes
 
@@ -63,19 +65,6 @@ With follow-up turns, the code is the last turn's.
 {"stop_reason":"completed","usage":{"input_tokens":1423,"output_tokens":89},"type":"turn_end"}
 ```
 
-| `type`                                  | When                                                                                  |
-| --------------------------------------- | ------------------------------------------------------------------------------------- |
-| `session_start`                         | first, once per run; carries the session `id`                                         |
-| `text_delta`, `text_done`               | the reply as it streams, then complete                                                |
-| `reasoning_delta`, `reasoning_done`     | the model's reasoning, when the provider sends it                                     |
-| `tool_call_delta`, `tool_call_done`     | a tool call the model makes                                                           |
-| `before_tool_call`, `after_tool_call`   | a tool starting and finishing ([fields](EVENTS.md#tool-call-events))                  |
-| `token_usage_done`                      | each model call's token usage                                                         |
-| `job_exit`                              | a background job's exit, as the model is told of it                                   |
-| `notify`                                | a warning or notice that text mode prints on stderr                                   |
-| `turn_end`                              | last record of every turn: `stop_reason`, and `usage` with `cost` when the model is priced |
-| `error`                                 | a fatal error, as the final record: `{"type": "error", "message": "…"}`               |
+The records are the [events](EVENTS.md) the run streams — riffer's stream events and riffer-rig's own — so a consumer that only reads the last `turn_end` still knows how the turn ended and what it cost. Headless adds one record of its own: a fatal error ends the stream with `{"type": "error", "message": "…"}`.
 
-Other riffer stream events — web search, guardrails, interrupts — appear the same way when they happen ([Events](EVENTS.md)). A consumer that only reads the last `turn_end` still knows how the turn ended and what it cost.
-
-The stdin warning, `waiting for background jobs`, the exit-3 reason and `--verbose` traces stay on stderr.
+Notices that text mode prints on stderr arrive as `notify` records instead. The stdin warning, `waiting for background jobs`, a turn's `turn ended: …` reason and `--verbose` traces stay on stderr.
