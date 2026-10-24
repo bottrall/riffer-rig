@@ -132,14 +132,14 @@ Adds a hook for an event. Hooks for the same event run in load order. An unknown
 
 | Event              | Kind        | Carries                                                    | Fires                                                       |
 | ------------------ | ----------- | ---------------------------------------------------------- | ----------------------------------------------------------- |
-| `session_start`    | lifecycle   | `id`, `reason` (`:new`, `:restore`, `:reload`)             | as the first turn starts, and after a reload swaps this extension in |
-| `session_end`      | lifecycle   | `reason` (`:reload`, `:close`)                             | before a reload swaps this extension out, and when the session closes |
+| `session_start`    | lifecycle   | the [rig event](EVENTS.md#rig-events)                      | as the first turn starts, and after a reload swaps this extension in |
+| `session_end`      | lifecycle   | the [rig event](EVENTS.md#rig-events)                      | before a reload swaps this extension out, and when the session closes |
 | `before_prompt`    | can change  | `text`                                                     | as each prompt starts                                       |
 | `before_request`   | can change  | `messages`, the whole request                              | before every model call                                     |
-| `before_tool_call` | can change  | `call_id`, `tool`, `args` (symbol keys), `at`              | before each tool runs                                       |
-| `after_tool_call`  | observe     | `call_id`, `tool`, `args`, `result`, `at`, `duration`      | after every tool call, including ones that never ran        |
+| `before_tool_call` | can change  | the [rig event](EVENTS.md#tool-call-events)                | before each tool runs                                       |
+| `after_tool_call`  | observe     | the [rig event](EVENTS.md#tool-call-events)                | after each tool call                                        |
 | `after_response`   | observe     | `message`, the assistant's reply                           | after each model response                                   |
-| `turn_end`         | observe     | `stop_reason`, `usage`, `cost`                             | as each turn ends                                           |
+| `turn_end`         | observe     | the [rig event](EVENTS.md#rig-events)                      | as each turn ends                                           |
 | `stream`           | observe     | the riffer stream event                                    | for every riffer stream event                               |
 
 Use lifecycle hooks to acquire and release anything process-wide. Observe hooks' return values are ignored. A hook that can change the event may return a replacement, which the next hook receives, or block:

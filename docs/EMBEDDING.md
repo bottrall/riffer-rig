@@ -83,7 +83,7 @@ The model is positional; everything else is an optional keyword. Provider creden
 | `instructions:`  | replaces the base prompt                                                                     | `nil`   |
 | `max_steps:`     | the [step limit](#capping-the-loop)                                                          | `nil`   |
 | `reasoning:`     | the reasoning level ([Configuration](CONFIGURATION.md#reasoning))                            | `nil`   |
-| `model_options:` | riffer `model_options` sent with every model call; `Riffer::Rig::Settings::ModelOptions.model_options(model)` builds the ones the Loader uses | `{}` |
+| `model_options:` | riffer `model_options` sent with every model call; for an `anthropic` model the Loader passes `{ cache_control: { type: :ephemeral } }` ([prompt caching](PROVIDERS.md#anthropic)) | `{}` |
 | `native_tools:`  | the [provider-native tool](TOOLS.md#provider-native-tools) switches: `{ web_search: true }`  | `{}`    |
 | `credentials:`   | each provider's resolved values, `{ anthropic: { api_key: '…' } }`, used by `/model` and when [restoring](#snapshots) | `{}` |
 | `env:`, `auth_path:` | where [MCP `auth` fields](MCP.md#secret-headers) are read from and stored                | `Env.new`, `~/.riffer/auth.json` |
@@ -150,7 +150,13 @@ runtime.cancel
 turn.join
 ```
 
-A streaming reply stops at once and keeps the text it had reached. A running tool call finishes first, except the bundled `bash`, which kills its command; your own tool can check `context[:cancel_flag].set?` to do the same. The turn ends with `turn_end` and `stop_reason: :cancelled` (from `ask`, `outcome.reason` is `:interrupted` with `detail: "cancelled"`), and the next prompt carries on from there. [Background jobs](#background-jobs) keep running. With no turn running, `cancel` does nothing.
+| When `cancel` is called… | What happens                                                                                                   |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| while a reply streams    | it stops at once and keeps the text it had reached                                                             |
+| while a tool call runs   | the call finishes first, except the bundled `bash`, which kills its command; your own tool can check `context[:cancel_flag].set?` to do the same |
+| with no turn running     | nothing                                                                                                        |
+
+The turn's [`turn_end`](EVENTS.md#rig-events) reports it cancelled — from `ask`, `outcome.reason` is `:interrupted` with `detail: "cancelled"` — and the next prompt carries on from there. [Background jobs](#background-jobs) keep running.
 
 ## Commands
 
@@ -168,7 +174,7 @@ runtime.run_command('log', '5') do |event|
 end
 ```
 
-`/exit`, `/new`, `/resume` and `/help` are the terminal's own: they end, replace or describe the Runtime, so a host implements them itself.
+[Hosts](HOSTS.md#the-loop) covers the commands a host implements itself.
 
 ## Switching the model and reasoning level
 
@@ -189,7 +195,7 @@ Rails.application.reloader.to_prepare do
 end
 ```
 
-The new extensions are loaded aside and swapped in only when all of them succeed. If any fails, `rebuild` raises its error and nothing changes — stricter than construction, which skips a failing extension. The conversation, tally, id, host, any model or reasoning switch and every other constructor keyword are kept. Extensions' `session_end` and `session_start` hooks run around the swap with reason `:reload`. `rebuild` runs between turns, or from a command or hook within one.
+The new extensions are loaded aside and swapped in only when all of them succeed. If any fails, `rebuild` raises its error and nothing changes — stricter than construction, which skips a failing extension. The conversation, tally, id, host, any model or reasoning switch and every other constructor keyword are kept. Extensions' [lifecycle hooks](EXTENSIONS.md#the-rigon-seam) run around the swap. `rebuild` runs between turns, or from a command or hook within one.
 
 ## Capping the loop
 
@@ -226,8 +232,6 @@ A snapshot holds history, not configuration: tools, commands, hooks and settings
 - a saved model is used only if `credentials:` has its provider, otherwise the given model is used and the host is told;
 - skills that no longer exist are dropped;
 - the tally is recomputed from the messages.
-
-The first prompt after a restore opens with `session_start` and reason `:restore`.
 
 ## Observing messages
 
