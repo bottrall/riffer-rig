@@ -14,6 +14,8 @@ riffer-rig talks to the provider named by the model's prefix: `anthropic/claude-
 | [`amazon_bedrock`](#amazon-bedrock) | `region`    | required         | `AWS_REGION`, `AWS_DEFAULT_REGION` | `providers.amazon_bedrock` in `~/.riffer/settings.json` |
 |                                     | `api_token` | optional, secret | `AWS_BEARER_TOKEN_BEDROCK`         | `~/.riffer/auth.json`                                   |
 
+Each field resolves in the [order every value follows](CONFIGURATION.md#where-each-value-comes-from). Nothing validates a value: a bad key surfaces on the first request, with the provider's own error.
+
 An extension can add a provider of its own ([Custom providers](CUSTOM_PROVIDERS.md)). A custom provider registered without a setup reads one secret, `<IDENTIFIER>_API_KEY`.
 
 ## SDK gems
@@ -36,17 +38,6 @@ When the gem is missing:
 | headless, or you answer no     | it stops with the `gem install anthropic -v '~> 1.69'` line to run (headless exits 2)          |
 
 To skip the question, install the gem yourself or add it to your Gemfile ahead of time. `/model` runs the same check when you switch to a provider whose gem is missing.
-
-## Resolution order
-
-Each field resolves on its own, and the first hit wins:
-
-1. **Environment variable.** The field's variables, in the order the table lists them. A blank value counts as unset.
-2. **Stored value.** A secret from `~/.riffer/auth.json`; a plain value from the `providers` block of `~/.riffer/settings.json`.
-3. **Fallback.** The Bedrock region falls back to the active profile in `~/.aws/config`.
-4. **Ask.** A required field still unresolved is asked for — a secret without echo — and the answer is stored. Optional fields are never asked for, and headless never asks.
-
-Nothing validates a value: a bad key surfaces on the first request, with the provider's own error.
 
 ## auth.json
 
@@ -123,4 +114,4 @@ Prefix `azure_openai/`. The endpoint and key are on the resource's Keys and Endp
 
 ### Amazon Bedrock
 
-Prefix `amazon_bedrock/`. Bedrock authenticates either through the AWS SDK's own credential chain (environment, shared credentials file, SSO, instance role), which stores nothing in riffer-rig, or with a Bedrock bearer token. The token is never asked for: set `AWS_BEARER_TOKEN_BEDROCK` or store it in `auth.json` as `api_token`. Without one, the credential chain is used and `/auth` reports `chain`.
+Prefix `amazon_bedrock/`. Bedrock authenticates either through the AWS SDK's own credential chain (environment, shared credentials file, SSO, instance role), which stores nothing in riffer-rig, or with a Bedrock bearer token. The token is never asked for: set `AWS_BEARER_TOKEN_BEDROCK` or store it in `auth.json` as `api_token`. Without one, the credential chain is used and `/auth` reports `chain`. A region set nowhere else falls back to the active profile's region in `~/.aws/config`.

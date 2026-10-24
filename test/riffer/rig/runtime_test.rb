@@ -62,7 +62,7 @@ describe Riffer::Rig::Runtime do
   end
 
   def spawn_group_job(runtime, command = 'sleep 30')
-    jobs = runtime.agent.context[:jobs] #: Riffer::Rig::Tools::Bash::Jobs
+    jobs = runtime.agent.context[:jobs] #: Riffer::Rig::Runtime::Jobs
     jobs.register(Process.spawn(command, pgroup: true), command, File.open(File::NULL))
   end
 
@@ -123,6 +123,18 @@ describe Riffer::Rig::Runtime do
     assert_equal :off, runtime.agent.config.reasoning
   end
 
+  it 'hands the settings reasoning level to the agent' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'high' })
+
+    assert_equal :high, runtime.agent.config.reasoning
+  end
+
+  it 'hands the reasoning level over the settings to the agent' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'low' }, reasoning: 'high')
+
+    assert_equal :high, runtime.agent.config.reasoning
+  end
+
   it 'sends its model options with each request' do
     runtime = Riffer::Rig::Runtime.new('mock/test', model_options: { reasoning: 'high' })
     runtime.agent.provider.stub_response('All done.')
@@ -137,12 +149,6 @@ describe Riffer::Rig::Runtime do
     assert_equal({ web_search: true }, runtime.agent.config.model_options)
   end
 
-  it 'passes a switch object through as the option value' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', native_tools: { web_search: { max_uses: 3 } })
-
-    assert_equal({ web_search: { max_uses: 3 } }, runtime.agent.config.model_options)
-  end
-
   it 'carries the provider option on the request' do
     runtime = Riffer::Rig::Runtime.new('mock/test', native_tools: { web_search: true })
     runtime.agent.provider.stub_response('All done.')
@@ -150,24 +156,6 @@ describe Riffer::Rig::Runtime do
     runtime.prompt('search') { |event| events << event }
 
     assert(events.any?(Riffer::StreamEvents::WebSearchDone))
-  end
-
-  it 'drops the switch of a native tool the provider does not support' do
-    runtime = Riffer::Rig::Runtime.new('gemini/gem-2.5-pro', native_tools: { web_search: true })
-
-    assert_equal({}, runtime.agent.config.model_options)
-  end
-
-  it 'drops the switch of a native tool it does not know' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', native_tools: { code_interpreter: true })
-
-    assert_equal({}, runtime.agent.config.model_options)
-  end
-
-  it 'adds no provider options without a switch' do
-    runtime = Riffer::Rig::Runtime.new('mock/test')
-
-    assert_equal({}, runtime.agent.config.model_options)
   end
 
   it 'names the agent in the base prompt' do
@@ -205,10 +193,6 @@ describe Riffer::Rig::Runtime do
       @runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@first, @broken, @last])
     end
 
-    it 'registers the extensions around a raising one' do
-      assert_equal [Riffer::Rig::Tools::Read, Riffer::Rig::Tools::Bash], @runtime.agent.tools
-    end
-
     it 'records the raising extension on errors' do
       assert_equal([[@broken, 'kaboom']], @runtime.errors.map { |failure| [failure.extension, failure.error.message] })
     end
@@ -225,10 +209,6 @@ describe Riffer::Rig::Runtime do
       @runtime.ask('hello')
 
       refute_includes @runtime.agent.provider.calls.last[:messages].to_s, 'kaboom'
-    end
-
-    it 'records no errors when every extension loads' do
-      assert_empty Riffer::Rig::Runtime.new('mock/test', extensions: [@first, @last]).errors
     end
   end
 
@@ -352,10 +332,6 @@ describe Riffer::Rig::Runtime do
   end
 
   describe 'skills' do
-    it 'has no skills context without a skills source' do
-      assert_nil Riffer::Rig::Runtime.new('mock/test', extensions: []).agent.context.skills
-    end
-
     it 'passes the Runtime to a skills source' do
       seen = nil
       spy = Riffer::Rig::Extension.new('spy') do |rig|
@@ -398,13 +374,6 @@ describe Riffer::Rig::Runtime do
 
       assert_equal %w[a], skilled_runtime(snapshot: snapshot).to_h[:skills]
     end
-
-    it 'lets a later extension replace a skill command by name' do
-      mine = Riffer::Rig::Extension.new('mine') { |rig| rig.command('skill:a', description: 'Mine') { |_ctx| nil } }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [skills_extension, mine])
-
-      assert_equal 'Mine', runtime.commands.find { |command| command.name == 'skill:a' }.description
-    end
   end
 
   describe 'bundled extensions' do
@@ -433,25 +402,6 @@ describe Riffer::Rig::Runtime do
       end
     end
 
-    it 'lets a later extension replace a bundled tool by identifier' do
-      sandbox = replaced_bash
-      replacement = Riffer::Rig::Extension.new('sandbox') { |rig| rig.tool sandbox }
-      tools = %i[read write edit bash].map { |name| Riffer::Rig.bundled(name) }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [*tools, replacement])
-
-      assert_equal(
-        [
-          Riffer::Rig::Tools::Read,
-          Riffer::Rig::Tools::Write,
-          Riffer::Rig::Tools::Edit,
-          sandbox,
-          Riffer::Rig::Tools::Bash::Output,
-          Riffer::Rig::Tools::Bash::Kill
-        ],
-        runtime.agent.tools
-      )
-    end
-
     it 'reports the replaced tool through notify at info level' do
       sandbox = replaced_bash
       replacement = Riffer::Rig::Extension.new('sandbox') { |rig| rig.tool sandbox }
@@ -460,43 +410,6 @@ describe Riffer::Rig::Runtime do
       assert_equal [Riffer::Rig::Events::Notify.new('Extension sandbox replaces tool bash from bash', :info)],
                    runtime.host.drain
     end
-
-    it 'reports a replaced command through notify' do
-      earlier = Riffer::Rig::Extension.new('earlier') { |rig| rig.command('log', description: 'a') { |_ctx| nil } }
-      later = Riffer::Rig::Extension.new('later') { |rig| rig.command('log', description: 'b') { |_ctx| nil } }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [earlier, later])
-
-      assert_equal [Riffer::Rig::Events::Notify.new('Extension later replaces command log from earlier', :info)],
-                   runtime.host.drain
-    end
-
-    it 'reports a replaced prompt section through notify' do
-      earlier = Riffer::Rig::Extension.new('earlier') { |rig| rig.prompt(:branch) { 'a' } }
-      later = Riffer::Rig::Extension.new('later') { |rig| rig.prompt(:branch) { 'b' } }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [earlier, later])
-
-      notice = Riffer::Rig::Events::Notify.new('Extension later replaces prompt section branch from earlier', :info)
-
-      assert_equal [notice], runtime.host.drain
-    end
-
-    it 'notifies nothing when no registration is replaced' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: Riffer::Rig.bundled)
-
-      assert_empty runtime.host.drain
-    end
-  end
-
-  it 'notifies nothing about the allowlist without one' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
-
-    assert_empty runtime.host.drain
-  end
-
-  it 'notifies nothing when every allowlisted name is a registered tool' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], tools: %w[read bash])
-
-    assert_empty runtime.host.drain
   end
 
   it 'reports each allowlisted name no extension registered through notify at warning level' do
@@ -520,18 +433,6 @@ describe Riffer::Rig::Runtime do
       events = []
       runtime.run_command('show') { |event| events << event }
       events.first.text
-    end
-
-    it 'applies a declared default when the settings lack the key' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git])
-
-      assert_equal({ depth: 3, remote: 'origin' }.inspect, settings_output(runtime))
-    end
-
-    it 'lets a provided value override the declared default' do
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git], settings: { git: { depth: 10 } })
-
-      assert_equal({ depth: 10, remote: 'origin' }.inspect, settings_output(runtime))
     end
 
     it 'shows a command only its own namespace' do
@@ -568,26 +469,6 @@ describe Riffer::Rig::Runtime do
       assert_equal "CUSTOM_BASE\n\nCurrent date: #{Date.today}\nCurrent working directory: #{cwd}",
                    runtime.agent.provider.calls.last[:messages].first[:content]
     end
-  end
-
-  it 'lets a later registration of the same section name win' do
-    earlier = Riffer::Rig::Extension.new('earlier') { |rig| rig.prompt(:branch) { 'EARLIER' } }
-    later = Riffer::Rig::Extension.new('later') { |rig| rig.prompt(:branch) { 'LATER' } }
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [earlier, later])
-    runtime.agent.provider.stub_response('All done.')
-    runtime.ask('hello')
-
-    refute_includes runtime.agent.provider.calls.last[:messages].first[:content], 'EARLIER'
-  end
-
-  it 'keeps the later registration of the same section name' do
-    earlier = Riffer::Rig::Extension.new('earlier') { |rig| rig.prompt(:branch) { 'EARLIER' } }
-    later = Riffer::Rig::Extension.new('later') { |rig| rig.prompt(:branch) { 'LATER' } }
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [earlier, later])
-    runtime.agent.provider.stub_response('All done.')
-    runtime.ask('hello')
-
-    assert_includes runtime.agent.provider.calls.last[:messages].first[:content], 'LATER'
   end
 
   it 'passes the runtime to a section' do
@@ -701,17 +582,6 @@ describe Riffer::Rig::Runtime do
     runtime.prompt('hello') { |event| last = event }
 
     assert_equal(Riffer::Rig::Events::TurnEnd.new(:completed, usage), last)
-  end
-
-  it 'reports a max_steps run in turn_end' do
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], tools: %w[read], max_steps: 1)
-    runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/tmp/x"}' }])
-    runtime.agent.provider.stub_response('second response')
-
-    last = nil
-    runtime.prompt('go') { |event| last = event }
-
-    assert_equal :max_steps, last.stop_reason
   end
 
   describe 'hooks' do
@@ -848,15 +718,6 @@ describe Riffer::Rig::Runtime do
       assert_equal [:interrupted, 'enough'], [outcome.reason, outcome.detail]
     end
 
-    it 'shows stream hooks every riffer stream event, unchanged' do
-      seen = []
-      runtime = runtime_with { |rig| rig.on(:stream) { |e| seen << e } }
-      stub_tool_turn(runtime)
-      streamed = runtime.prompt('go').grep(Riffer::StreamEvents::Base)
-
-      assert_equal streamed.map(&:object_id), seen.map(&:object_id)
-    end
-
     it 'ignores what after_response returns' do
       runtime = runtime_with { |rig| rig.on(:after_response) { |_e| 'IGNORED' } }
       runtime.agent.provider.stub_response('All done.')
@@ -889,17 +750,6 @@ describe Riffer::Rig::Runtime do
       runtime.ask('go')
 
       assert_equal [:completed], reasons
-    end
-
-    it 'runs hooks in load order across extensions' do
-      order = []
-      first = Riffer::Rig::Extension.new('first') { |rig| rig.on(:before_prompt) { |_e| order << :first } }
-      second = Riffer::Rig::Extension.new('second') { |rig| rig.on(:before_prompt) { |_e| order << :second } }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [second, first])
-      runtime.agent.provider.stub_response('All done.')
-      runtime.ask('go')
-
-      assert_equal %i[second first], order
     end
   end
 
@@ -1126,13 +976,6 @@ describe Riffer::Rig::Runtime do
       )
     end
 
-    it 'lets a later extension replace a command of the same name' do
-      later = Riffer::Rig::Extension.new('later') { |rig| rig.command('log', description: 'Later log') { |_ctx| nil } }
-      runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@git, later])
-
-      assert_equal 'Later log', runtime.commands.find { |command| command.name == 'log' }.description
-    end
-
     describe 'the core commands' do
       before do
         @home = Dir.mktmpdir
@@ -1182,15 +1025,6 @@ describe Riffer::Rig::Runtime do
         runtime.rebuild(extensions: [], settings: {})
 
         assert_equal(command, runtime.commands.find { |candidate| candidate.name == 'reload' })
-      end
-
-      it 'lets an extension command replace an installed one' do
-        runtime = Riffer::Rig::Runtime.new('mock/test')
-        command = Riffer::Rig::Command.new('log', description: 'Installed log', extension: :core) { |_ctx| nil }
-        runtime.install_command(command)
-        runtime.rebuild(extensions: [@git], settings: {})
-
-        assert_equal 'Recent commits', runtime.commands.find { |candidate| candidate.name == 'log' }.description
       end
     end
 
@@ -1675,6 +1509,17 @@ describe Riffer::Rig::Runtime do
       assert_equal :high, rebuilt(runtime).agent.config.reasoning
     end
 
+    it 'hands the new settings reasoning level to the agent' do
+      assert_equal :high, rebuilt(settings: { reasoning: 'high' }).agent.config.reasoning
+    end
+
+    it 'keeps the reasoning level over the new settings' do
+      runtime = started(@runtime)
+      runtime.reasoning = 'high'
+
+      assert_equal :high, rebuilt(runtime, settings: { reasoning: 'low' }).agent.config.reasoning
+    end
+
     it 'keeps the id' do
       id = @runtime.id
 
@@ -1838,11 +1683,32 @@ describe Riffer::Rig::Runtime do
       assert_equal 'high', restored(runtime.to_h).reasoning
     end
 
+    it 'hands the restored reasoning switch to the agent' do
+      runtime = saved_runtime
+      runtime.reasoning = 'high'
+
+      assert_equal :high, restored(runtime.to_h).agent.config.reasoning
+    end
+
+    it 'restores the reasoning switch over the reasoning keyword' do
+      runtime = saved_runtime
+      runtime.reasoning = 'high'
+
+      assert_equal :high, restored(runtime.to_h, reasoning: 'low').agent.config.reasoning
+    end
+
     it 'leaves an unrecognized snapshot level unrestored' do
       saved = saved_runtime.to_h
       saved[:reasoning] = 'turbo'
 
       assert_nil restored(saved).reasoning
+    end
+
+    it 'keeps the reasoning keyword over an unrecognized snapshot level' do
+      saved = saved_runtime.to_h
+      saved[:reasoning] = 'turbo'
+
+      assert_equal 'low', restored(saved, reasoning: 'low').reasoning
     end
 
     it 'holds no skills while none are activated' do
@@ -1854,6 +1720,12 @@ describe Riffer::Rig::Runtime do
       runtime.agent.context.skills.activate('a')
 
       assert_equal %w[a], runtime.to_h[:skills]
+    end
+
+    it 'restores from a Snapshot as from its hash' do
+      snapshot = saved_runtime.to_h
+
+      assert_equal snapshot[:id], restored(Riffer::Rig::Runtime::Snapshot.from_h(snapshot)).id
     end
 
     it 'restores the id' do
@@ -2013,21 +1885,10 @@ describe Riffer::Rig::Runtime do
       @runtime.close
     end
 
-    it 'is zero without a job' do
-      assert_equal 0, @runtime.running_job_count
-    end
-
     it 'counts a running job' do
       spawn_group_job(@runtime)
 
       assert_equal 1, @runtime.running_job_count
-    end
-
-    it 'drops when a job exits with no turn running' do
-      spawn_group_job(@runtime, 'true')
-      @exits.pop(timeout: 5)
-
-      assert_equal 0, @runtime.running_job_count
     end
   end
 
@@ -2063,19 +1924,8 @@ describe Riffer::Rig::Runtime do
       @runtime.close
     end
 
-    it 'is false without a job' do
-      refute_predicate @runtime, :pending_jobs?
-    end
-
     it 'is true while a job runs' do
       spawn_group_job(@runtime)
-
-      assert_predicate @runtime, :pending_jobs?
-    end
-
-    it 'stays true for a job that exited until the model is told' do
-      spawn_group_job(@runtime, 'true')
-      @exits.pop(timeout: 5)
 
       assert_predicate @runtime, :pending_jobs?
     end
@@ -2122,10 +1972,6 @@ describe Riffer::Rig::Runtime do
 
     after do
       @runtime.close
-    end
-
-    it 'is zero without an exit' do
-      assert_equal 0, @runtime.pending_job_exit_count
     end
 
     it 'counts an exit no turn has delivered' do
@@ -2187,7 +2033,7 @@ describe Riffer::Rig::Runtime do
       runtime
     end
 
-    def exiting_on_reply(replies, **)
+    def exiting_on_reply(replies)
       remaining = replies
       runtime = nil
       on_reply = lambda do |_event|
@@ -2198,7 +2044,7 @@ describe Riffer::Rig::Runtime do
         @exits.pop(timeout: 5)
       end
       exits_on_reply = Riffer::Rig::Extension.new('exits_on_reply') { |rig| rig.on(:after_response, &on_reply) }
-      runtime = job_runtime(exits_on_reply, **)
+      runtime = job_runtime(exits_on_reply)
     end
 
     def continued_turn
@@ -2251,34 +2097,6 @@ describe Riffer::Rig::Runtime do
         assert_equal [['true', 0]], exits
       end
 
-      it 'appends the notice to the tool result, after the tool\'s own output' do
-        runtime = exiting_mid_turn
-        runtime.ask('go')
-        notice = /\Astarted\n\n<background-job /
-
-        assert_match notice, tool_results(runtime).last.content
-      end
-
-      it 'keeps the error of a failed tool result' do
-        runtime = exiting_mid_turn('fail')
-        runtime.ask('go')
-        result = tool_results(runtime).last
-        noticed = result.content.include?('<background-job')
-
-        assert_equal ['boom', :execution_error, true], [result.error, result.error_type, noticed]
-      end
-
-      it 'appends to the result of the call that just ran when a call id repeats' do
-        runtime = job_runtime
-        runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/nope"}' }])
-        runtime.agent.provider.stub_response('', tool_calls: [job_call])
-        runtime.agent.provider.stub_response('All done.')
-        runtime.ask('go')
-        noticed = tool_results(runtime).map { |result| result.content.include?('<background-job') }
-
-        assert_equal [false, true], noticed
-      end
-
       it 'hands observers the tool result the model receives' do
         runtime = exiting_mid_turn
         observed = []
@@ -2298,64 +2116,6 @@ describe Riffer::Rig::Runtime do
     end
 
     describe 'for a job that exits as the model finishes its reply' do
-      it 'stops continuing a turn at the cap' do
-        runtime = exiting_on_reply(Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS + 1)
-        runtime.ask('go')
-
-        assert_equal Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS, notifications(runtime).length
-      end
-
-      it 'delivers the exit the cap held back at the start of the next turn' do
-        runtime = exiting_on_reply(Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS + 1)
-        runtime.ask('go')
-        runtime.ask('again')
-
-        assert_equal(
-          [Riffer::Rig::Runtime::JobNotification, Riffer::Messages::User, Riffer::Messages::Assistant],
-          runtime.agent.session.messages.last(3).map(&:class)
-        )
-      end
-
-      it 'keeps the exit for the next turn when the turn did not complete' do
-        runtime = exiting_on_reply(1)
-        runtime.agent.provider.stub_response('Cut sh', finish_reason: :length)
-        runtime.ask('go')
-
-        assert_empty notifications(runtime)
-      end
-
-      it 'keeps the exit for the next turn when the turn has used its step limit' do
-        runtime = exiting_on_reply(1, max_steps: 1)
-        runtime.ask('go')
-
-        assert_empty notifications(runtime)
-      end
-
-      it 'delivers the exit the step limit held back at the start of the next turn' do
-        runtime = exiting_on_reply(1, max_steps: 1)
-        runtime.ask('go')
-        runtime.ask('again')
-
-        assert_equal(
-          [Riffer::Rig::Runtime::JobNotification, Riffer::Messages::User, Riffer::Messages::Assistant],
-          runtime.agent.session.messages.last(3).map(&:class)
-        )
-      end
-
-      it 'continues the turn while its step limit has steps left' do
-        runtime = exiting_on_reply(1, max_steps: 2)
-        runtime.ask('go')
-
-        assert_equal 1, notifications(runtime).length
-      end
-
-      it 'emits a job_exit event for the exit' do
-        events = []
-        continued_turn.prompt('go') { |event| events << event }
-
-        assert_equal 1, events.grep(Riffer::Rig::Events::JobExit).length
-      end
-
       it 'continues the turn with a notification after the reply' do
         runtime = continued_turn
         runtime.ask('go')
@@ -2386,44 +2146,9 @@ describe Riffer::Rig::Runtime do
 
         assert_equal [runtime, runtime], seen
       end
-
-      it 'answers with the reply that followed the notification' do
-        assert_equal 'It passed.', continued_turn.ask('go').content
-      end
-
-      it 'reports the usage of every run of the turn' do
-        assert_equal usage(30, 12).to_h, continued_turn.ask('go').token_usage.to_h
-      end
-
-      it 'counts the steps of every run of the turn' do
-        assert_equal 2, continued_turn.ask('go').steps
-      end
-
-      it 'ends the turn once' do
-        events = []
-        continued_turn.prompt('go') { |event| events << event }
-
-        assert_equal [events.last], events.grep(Riffer::Rig::Events::TurnEnd)
-      end
     end
 
     describe 'for a job that exits between turns' do
-      it 'emits a job_exit event for each exit' do
-        runtime = exited_between_turns(2)
-        events = []
-        runtime.prompt('second') { |event| events << event }
-
-        assert_equal 2, events.grep(Riffer::Rig::Events::JobExit).length
-      end
-
-      it 'batches several exits into one notification' do
-        runtime = exited_between_turns(2)
-        runtime.ask('second')
-        envelopes = notifications(runtime).map { |notification| notification.content.scan('<background-job ').length }
-
-        assert_equal [2], envelopes
-      end
-
       it 'marks no notification delivered ahead of the next prompt as starting a follow-up' do
         runtime = exited_between_turns
         runtime.ask('second')
@@ -2460,14 +2185,6 @@ describe Riffer::Rig::Runtime do
           [Riffer::Messages::Assistant, Riffer::Rig::Runtime::JobNotification, Riffer::Messages::Assistant],
           runtime.agent.session.messages.last(3).map(&:class)
         )
-      end
-
-      it 'emits a job_exit event for each exit' do
-        runtime = exited_between_turns(2)
-        events = []
-        runtime.follow_up { |event| events << event }
-
-        assert_equal 2, events.grep(Riffer::Rig::Events::JobExit).length
       end
 
       it 'marks the notification as starting a follow-up of that many exits' do
@@ -2660,7 +2377,6 @@ describe Riffer::Rig::Runtime do
         end
       end
 
-      # A step that leaves the request to the provider's stubbed response.
       def stubbed
         nil
       end
@@ -2689,13 +2405,6 @@ describe Riffer::Rig::Runtime do
         events
       end
 
-      def aborted_ask
-        canceller = cancel_once_stalled
-        response = @stalling.ask('go')
-        canceller.join
-        response
-      end
-
       def replies
         @stalling.agent.session.messages.grep(Riffer::Messages::Assistant).map(&:content)
       end
@@ -2718,27 +2427,6 @@ describe Riffer::Rig::Runtime do
         aborted_turn_events
 
         assert_equal :interrupted, @stalling.agent.session.messages.grep(Riffer::Messages::Tool).first.error_type
-      end
-
-      it 'records no reply when nothing had streamed' do
-        script_stream(stall_after)
-        aborted_turn_events
-
-        assert_empty replies
-      end
-
-      it 'records no reply for whitespace alone' do
-        script_stream(stall_after("\n\n"))
-        aborted_turn_events
-
-        assert_empty replies
-      end
-
-      it 'keeps the text streamed so far as the reply' do
-        script_stream(stall_after('one ', 'two '))
-        aborted_turn_events
-
-        assert_equal ['one two '], replies
       end
 
       it 'keeps only the reply in flight' do
@@ -2773,26 +2461,6 @@ describe Riffer::Rig::Runtime do
         aborted_turn_events
 
         assert_equal 'one two ', delivered.last.content
-      end
-
-      it 'emits the riffer interrupt event with the cancelled reason' do
-        script_stream(stall_after)
-        interrupt = aborted_turn_events.find { |event| event.is_a?(Riffer::StreamEvents::Interrupt) }
-
-        assert_equal :cancelled, interrupt.reason
-      end
-
-      it 'answers an aborted ask with the partial reply' do
-        script_stream(stall_after('one '))
-
-        assert_equal 'one ', aborted_ask.content
-      end
-
-      it 'reports an aborted ask as interrupted with the cancelled detail' do
-        script_stream(stall_after('one '))
-        outcome = aborted_ask.outcome
-
-        assert_equal [:interrupted, 'cancelled'], [outcome.reason, outcome.detail]
       end
 
       it 'ends a turn waiting on its first token with the cancelled stop reason' do

@@ -130,7 +130,7 @@ module Riffer::Rig::Terminal::TurnReport
   # @rbs return: Array[[String, Symbol]]
   def cost(usage)
     amount = usage.cost
-    amount ? [[format('~$%.4f', amount), :cyan]] : []
+    amount ? [[Riffer::Rig::Terminal::Count.cost(amount), :cyan]] : []
   end
 
   # A separator's dot is dim, so a colour run carries across it into the next

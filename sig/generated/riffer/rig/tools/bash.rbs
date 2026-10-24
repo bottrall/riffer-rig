@@ -3,8 +3,6 @@
 class Riffer::Rig::Tools::Bash < Riffer::Tool
   include Riffer::Rig::Tools::Bash::KillGroup
 
-  include Riffer::Rig::Tools::Bash::MonotonicClock
-
   include Riffer::Rig::Tools::Bash::Truncation
 
   DEFAULT_TIMEOUT_MS: Integer

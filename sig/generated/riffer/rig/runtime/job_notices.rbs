@@ -1,0 +1,46 @@
+# Generated from lib/riffer/rig/runtime/job_notices.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::JobNotices
+  @jobs: Riffer::Rig::Runtime::Jobs
+
+  @inbox: Riffer::Rig::Runtime::JobInbox
+
+  @emit: ^(Riffer::Rig::Events::_Event) -> void
+
+  @deliver: ^(Riffer::Messages::Base) -> void
+
+  # @rbs jobs: Riffer::Rig::Runtime::Jobs
+  # @rbs inbox: Riffer::Rig::Runtime::JobInbox
+  # @rbs emit: ^(Riffer::Rig::Events::_Event) -> void
+  # @rbs deliver: ^(Riffer::Messages::Base) -> void
+  # @rbs return: void
+  def initialize: (Riffer::Rig::Runtime::Jobs jobs, Riffer::Rig::Runtime::JobInbox inbox, emit: ^(Riffer::Rig::Events::_Event) -> void, deliver: ^(Riffer::Messages::Base) -> void) -> void
+
+  # @rbs return: Integer
+  def running_count: () -> Integer
+
+  # @rbs return: bool
+  def pending?: () -> bool
+
+  # @rbs timeout: Numeric?
+  # @rbs return: bool
+  def await: (Numeric? timeout) -> bool
+
+  # @rbs return: Integer
+  def pending_exit_count: () -> Integer
+
+  # @rbs message: Riffer::Messages::Tool
+  # @rbs session: Riffer::Agent::Session
+  # @rbs return: Riffer::Messages::Tool
+  def with_notice: (Riffer::Messages::Tool message, Riffer::Agent::Session session) -> Riffer::Messages::Tool
+
+  # @rbs session: Riffer::Agent::Session
+  # @rbs follow_up: bool
+  # @rbs return: Riffer::Messages::Base?
+  def notify: (Riffer::Agent::Session session, ?follow_up: bool) -> Riffer::Messages::Base?
+
+  private
+
+  # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
+  def exits: () -> Array[Riffer::Rig::Runtime::JobCompletion]
+end

@@ -5,7 +5,7 @@ require 'test_helper'
 describe Riffer::Rig::Tools::Bash::Output do
   def setup
     @tool = Riffer::Rig::Tools::Bash::Output.new
-    @jobs = Riffer::Rig::Tools::Bash::Jobs.new(Riffer::Rig::Runtime::JobInbox.new)
+    @jobs = Riffer::Rig::Runtime::Jobs.new(Riffer::Rig::Runtime::JobInbox.new)
     @context = Riffer::Agent::Context.new(cwd: Dir.pwd, jobs: @jobs)
     @max = Riffer::Rig::Tools::Bash::MAX_OUTPUT_BYTES
   end
@@ -69,6 +69,14 @@ describe Riffer::Rig::Tools::Bash::Output do
     job = start("#{'a' * @max}#{'b' * @max}")
 
     assert_equal "#{'a' * @max}\n[output truncated to #{@max} bytes]", read(job)
+  end
+
+  it 'skips the output past twice the limit' do
+    job = start("#{'a' * (2 * @max)}skipped")
+    read(job)
+    File.write(job.output_path, 'tail', mode: 'a')
+
+    assert_equal 'tail', read(job)
   end
 
   it 'marks truncated output whose cut falls in trailing whitespace' do

@@ -3,7 +3,7 @@
 require 'test_helper'
 require 'fileutils'
 
-class ReloadOutcomeLoader
+class ReloadOutcome
   attr_reader :calls
 
   def initialize(outcome)
@@ -46,7 +46,7 @@ describe Riffer::Rig::Commands::Reload do
     events
   end
 
-  def run_with(loader, runtime)
+  def run_with(reloader, runtime)
     events = []
     ctx = Riffer::Rig::Command::Context.new(
       'reload',
@@ -57,16 +57,16 @@ describe Riffer::Rig::Commands::Reload do
       emit: ->(event) { events << event },
       turn: ->(_text) {}
     )
-    Riffer::Rig::Commands::Reload.run(loader, ctx)
+    Riffer::Rig::Commands::Reload.run(reloader, ctx)
     events
   end
 
   it 'forces the reload' do
     runtime = build_runtime
-    loader = ReloadOutcomeLoader.new(runtime)
-    run_with(loader, runtime)
+    reloader = ReloadOutcome.new(runtime)
+    run_with(reloader, runtime)
 
-    assert_equal [{ force: true }], loader.calls
+    assert_equal [{ force: true }], reloader.calls
   end
 
   it 'reports Reloaded' do
@@ -76,7 +76,7 @@ describe Riffer::Rig::Commands::Reload do
   end
 
   it 'reports nothing when the reload fails' do
-    events = run_with(ReloadOutcomeLoader.new('boom'), build_runtime)
+    events = run_with(ReloadOutcome.new('boom'), build_runtime)
 
     assert_empty events
   end

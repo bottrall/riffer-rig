@@ -22,41 +22,22 @@ class Riffer::Rig::Runtime
 
   DEFAULT_NAME = 'riffer'
 
+  DEFAULT_REASONING_LABEL = 'default' #: String
+
   # Unlimited: riffer's own default (16) is too small for a general-purpose
   # harness.
   DEFAULT_MAX_STEPS = nil #: Integer?
 
-  INTERRUPT_CANCELLED = :cancelled #: Symbol
-
-  # Per turn, so a job that starts jobs cannot keep a turn alive forever.
-  MAX_JOB_CONTINUATIONS = 5 #: Integer
-
-  # Riffer's remaining stop reasons (:error, :other, :guardrail_blocked) are
-  # failures, not early stops.
-  STOPPED_WITHOUT_COMPLETING = %i[
-    max_steps context_window length content_filter malformed_output
-  ].freeze #: Array[Symbol]
-
-  # Upstream candidate: riffer's Anthropic, OpenAI and Azure OpenAI classes read
-  # the web_search option and OpenRouter passes unknown options through to its
-  # API, but the provider seam cannot yet answer which provider takes which
-  # option, so rig keeps the mapping until it can. Mock consumes web_search, so
-  # tests and embedders can exercise the switches.
-  NATIVE_TOOLS_BY_PROVIDER = {
-    web_search: { anthropic: true, openai: true, azure_openai: true, mock: true }.freeze
-  }.freeze #: Hash[Symbol, Hash[Symbol, bool]]
-
   # @rbs @agent: Riffer::Agent
   # @rbs @cancel_flag: Riffer::Rig::Runtime::CancelFlag
   # @rbs @abort: Riffer::Rig::Runtime::Abort
-  # @rbs @draft: Array[String]
   # @rbs @job_inbox: Riffer::Rig::Runtime::JobInbox
-  # @rbs @jobs: Riffer::Rig::Tools::Bash::Jobs
+  # @rbs @jobs: Riffer::Rig::Runtime::Jobs
+  # @rbs @job_notices: Riffer::Rig::Runtime::JobNotices
   # @rbs @credentials: Hash[Symbol, Hash[Symbol, String]]
   # @rbs @cwd: String
   # @rbs @host: Riffer::Rig::Hosts::Mirror
   # @rbs @id: String
-  # @rbs @settings: Hash[Symbol, untyped]
   # @rbs @concurrency: Riffer::Rig::Runtime::Concurrency
   # @rbs @session_start_pending: bool
   # @rbs @session_start_reason: Symbol
@@ -68,8 +49,7 @@ class Riffer::Rig::Runtime
   # @rbs @system_prompt: Riffer::Rig::Runtime::SystemPrompt
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
   # @rbs @core_commands: Array[Riffer::Rig::Command]
-  # @rbs @declared_settings: Hash[Symbol, Hash[Symbol, untyped]]
-  # @rbs @errors: Array[Riffer::Rig::Extension::Failure]
+  # @rbs @assembly: Riffer::Rig::Runtime::Assembly
   # @rbs @hooks: Riffer::Rig::Runtime::Hooks
   # @rbs @tool_allowlist: Array[String]?
   # @rbs @mcp: Riffer::Rig::Runtime::McpRegistrar
@@ -77,19 +57,17 @@ class Riffer::Rig::Runtime
   # @rbs @native_tools: Hash[Symbol, untyped]
   # @rbs @reload_check: (^(::Riffer::Rig::Runtime) -> void)?
   # @rbs @clock: ^() -> Float
-  # @rbs @yielder: Enumerator::Yielder?
+  # @rbs @turn: Riffer::Rig::Runtime::Turn?
   # @rbs @env: Riffer::Rig::Env
   # @rbs @auth_path: String
   # @rbs @settings_path: String
 
-  # @dynamic agent, credentials, cwd, host, id, settings, declared_settings
+  # @dynamic agent, credentials, cwd, host, id
   attr_reader :agent #: Riffer::Agent
   attr_reader :credentials #: Hash[Symbol, Hash[Symbol, String]]
   attr_reader :cwd #: String
   attr_reader :host #: Riffer::Rig::Hosts::Mirror
   attr_reader :id #: String
-  attr_reader :settings #: Hash[Symbol, untyped]
-  attr_reader :declared_settings #: Hash[Symbol, Hash[Symbol, untyped]]
 
   # @rbs model: String
   # @rbs extensions: Array[Riffer::Rig::Extension]
@@ -110,7 +88,7 @@ class Riffer::Rig::Runtime
   # @rbs model_options: Hash[Symbol, untyped]
   # @rbs native_tools: Hash[Symbol, untyped]
   # @rbs clock: ^() -> Float
-  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?
   # @rbs return: void
   def initialize(
     model,
@@ -134,7 +112,7 @@ class Riffer::Rig::Runtime
     clock: -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) },
     snapshot: nil
   )
-    saved = snapshot && Riffer::Rig::Runtime::Snapshot.from_h(snapshot)
+    saved = snapshot && Riffer::Rig::Runtime::Snapshot.of(snapshot)
     # Doubles as the snapshot id and ACP sessionId.
     @id = saved ? saved.id : ::SecureRandom.uuid_v7
     @host = Riffer::Rig::Hosts::Mirror.new(host)
@@ -148,33 +126,38 @@ class Riffer::Rig::Runtime
     @core_commands = []
     @reload_check = nil
     @clock = clock
-    @yielder = nil
+    @turn = nil
     @cancel_flag = Riffer::Rig::Runtime::CancelFlag.new
     @abort = Riffer::Rig::Runtime::Abort.new
     @job_inbox = Riffer::Rig::Runtime::JobInbox.new(clock: clock)
-    @jobs = Riffer::Rig::Tools::Bash::Jobs.new(@job_inbox)
+    @jobs = Riffer::Rig::Runtime::Jobs.new(@job_inbox, clock: clock)
+    @job_notices = Riffer::Rig::Runtime::JobNotices.new(
+      @jobs, @job_inbox, emit: ->(event) { emit(event) }, deliver: ->(message) { deliver(message) }
+    )
     @session_start_pending = true
     @session_start_reason = saved ? :restore : :new
     @message_observers = []
     @model_observers = []
     @reasoning_observers = []
-    @reasoning = reasoning
-    @errors = []
+    @reasoning = (saved && Riffer::Rig::Settings::ModelOptions.reasoning_level(saved.reasoning)) || reasoning
     @tool_allowlist = tools
     @native_tools = native_tools
-    @model_options = model_options.merge(native_options(model))
+    @model_options = model_options.merge(Riffer::Rig::Settings::ModelOptions.native_options(model, native_tools))
     @system_prompt = Riffer::Rig::Runtime::SystemPrompt.new(
       instructions || format(BASE_PROMPT_TEMPLATE, name: name), @cwd
     )
     @mcp = Riffer::Rig::Runtime::McpRegistrar.new(
       @id, registry: mcp_registry, host: @host, env: env, auth_path: auth_path
     )
-    registrars = build_registrars(extensions, settings) { |extension, error| record_error(extension, error) }
-    mcp_servers = @mcp.register(mcp_declarations(registrars))
-    hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
-    config = agent_config(registrars, hooks, max_steps)
+    assembly = Riffer::Rig::Runtime::Assembly.new(extensions, settings, tools)
+    assembly.failures.each do |failure|
+      @host.notify("Extension #{failure.extension.name} failed to load: #{failure.error.message}", level: :error)
+    end
+    mcp_servers = @mcp.register(assembly.mcp_declarations)
+    hooks = Riffer::Rig::Runtime::Hooks.new(assembly.hooks, @host)
+    config = agent_config(assembly, hooks, max_steps)
     agent = saved ? restore(saved, model, config) : build_agent(model, config)
-    install(registrars, settings, hooks, agent)
+    install(assembly, hooks, agent)
     @mcp.retain(mcp_servers)
     @agent.session.on_message do |message|
       Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { observe_message(message) }
@@ -210,19 +193,15 @@ class Riffer::Rig::Runtime
     @commands.values
   end
 
-  # Installs a host-of-the-runtime command (the Loader's /reload) so it
-  # survives every rebuild; an extension command of the same name replaces it.
   # @rbs command: Riffer::Rig::Command
   # @rbs return: nil
   def install_command(command)
+    # Kept apart from the extensions' commands, which a rebuild replaces.
     @core_commands << command
     @commands[command.name] = command
     nil
   end
 
-  # Installs a host-of-the-runtime check (the Loader's automatic reload) so it
-  # survives every rebuild. The Runtime calls it at both before_request
-  # boundaries, before any handler runs, and ignores the result.
   # @rbs check: ^(::Riffer::Rig::Runtime) -> void
   # @rbs return: nil
   def install_reload_check(check)
@@ -248,7 +227,17 @@ class Riffer::Rig::Runtime
 
   # @rbs return: Array[Riffer::Rig::Extension::Failure]
   def errors
-    @errors.dup
+    @assembly.failures.dup
+  end
+
+  # @rbs return: Hash[Symbol, untyped]
+  def settings
+    @assembly.settings
+  end
+
+  # @rbs return: Hash[Symbol, Hash[Symbol, untyped]]
+  def declared_settings
+    @assembly.declared_settings
   end
 
   # @rbs return: String
@@ -270,7 +259,7 @@ class Riffer::Rig::Runtime
 
   # @rbs return: String?
   def reasoning
-    @reasoning || Riffer::Rig::Settings::ModelOptions.reasoning_level(Riffer::Rig::Settings::Document.new(@settings).reasoning)
+    reasoning_over(settings)
   end
 
   # @rbs level: String
@@ -296,13 +285,12 @@ class Riffer::Rig::Runtime
   def rebuild(extensions:, settings:)
     @concurrency.claim_rebuild
     begin
-      registrars = build_registrars(extensions, settings) { |_extension, error| raise error }
-      mcp_servers = @mcp.register(mcp_declarations(registrars))
-      hooks = Riffer::Rig::Runtime::Hooks.new(merge_hooks(registrars), @host)
-      agent = successor(model, agent_config(registrars, hooks, @agent.config.max_steps))
+      assembly = Riffer::Rig::Runtime::Assembly.new(extensions, settings, @tool_allowlist, strict: true)
+      mcp_servers = @mcp.register(assembly.mcp_declarations)
+      hooks = Riffer::Rig::Runtime::Hooks.new(assembly.hooks, @host)
+      agent = successor(model, agent_config(assembly, hooks, @agent.config.max_steps))
       lifecycle(:session_end, Riffer::Rig::Events::SessionEnd.new(:reload))
-      @errors = []
-      install(registrars, settings, hooks, agent)
+      install(assembly, hooks, agent)
       @mcp.retain(mcp_servers)
       lifecycle(:session_start, Riffer::Rig::Events::SessionStart.new(@id, :reload))
     ensure
@@ -352,7 +340,7 @@ class Riffer::Rig::Runtime
 
   # @rbs return: Integer
   def running_job_count
-    @jobs.list.count(&:active?)
+    @job_notices.running_count
   end
 
   # @rbs return: bool
@@ -362,19 +350,18 @@ class Riffer::Rig::Runtime
 
   # @rbs return: bool
   def pending_jobs?
-    # Jobs stay listed from their start until the model is told of their exit.
-    @jobs.list.any?
+    @job_notices.pending?
   end
 
   # @rbs timeout: Numeric?
   # @rbs return: bool
   def await_job_exit(timeout: nil)
-    @job_inbox.await(timeout)
+    @job_notices.await(timeout)
   end
 
   # @rbs return: Integer
   def pending_job_exit_count
-    @job_inbox.size
+    @job_notices.pending_exit_count
   end
 
   # @rbs return: nil
@@ -433,38 +420,31 @@ class Riffer::Rig::Runtime
   # @rbs model: String
   # @rbs return: void
   def rederive_options(model)
-    @model_options = Riffer::Rig::Settings::ModelOptions.model_options(model).merge(native_options(model))
+    options = Riffer::Rig::Settings::ModelOptions
+    @model_options = options.model_options(model).merge(options.native_options(model, @native_tools))
     @agent.config.model_options = @model_options
   end
 
-  # The switches are on/off settings, so what the agent can do stays a function
-  # of the current provider: a switch whose provider cannot take the option
-  # contributes nothing, and a switch to such a provider drops it, both silently.
-  # @rbs model: String
-  # @rbs return: Hash[Symbol, untyped]
-  def native_options(model)
-    provider = Riffer::Rig::Settings::ModelOptions.provider_for(model)&.to_sym
-    @native_tools.filter_map do |tool, switch|
-      next unless provider && NATIVE_TOOLS_BY_PROVIDER[tool]&.key?(provider)
-
-      [tool, switch]
-    end.to_h
+  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs return: String?
+  def reasoning_over(settings)
+    @reasoning || Riffer::Rig::Settings::ModelOptions.reasoning_level(Riffer::Rig::Settings::Document.new(settings).reasoning)
   end
 
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
+  # @rbs assembly: Riffer::Rig::Runtime::Assembly
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs max_steps: Numeric?
   # @rbs return: Riffer::Agent::Config
-  def agent_config(registrars, hooks, max_steps)
+  def agent_config(assembly, hooks, max_steps)
     config = Riffer::Agent::Config.new(
       model: ->(context) { context[:model] },
       model_options: @model_options,
       instructions: @system_prompt.bare,
-      reasoning: @reasoning,
-      tools_config: select_tools(registrars.flat_map { |registrar| registrar.tools.to_a }.to_h.values, @tool_allowlist),
+      reasoning: reasoning_over(assembly.settings),
+      tools_config: assembly.tools,
       max_steps: max_steps,
       tool_runtime: Riffer::Rig::Runtime::ToolRuntime.new(hooks, emit: ->(event) { emit(event) }, clock: @clock),
-      skills_config: skills_config(registrars.flat_map(&:skill_sources))
+      skills_config: assembly.skills_config(self)
     )
     config.add_guardrail(:before, klass: Riffer::Rig::Runtime::RequestGuardrail, options: { hooks: hooks })
     # Upstream candidate: riffer resolves MCP tools inside the agent, after
@@ -473,41 +453,28 @@ class Riffer::Rig::Runtime
     config
   end
 
-  # @rbs sources: Array[^(Riffer::Rig::Runtime) -> Riffer::Skills::Backend]
-  # @rbs return: Riffer::Skills::Config?
-  def skills_config(sources)
-    return if sources.empty?
-
-    config = Riffer::Skills::Config.new
-    config.backend(Riffer::Rig::Skills::Sources.new(sources.map { |source| source.call(self) }))
-    config
-  end
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs settings: Hash[Symbol, untyped]
+  # @rbs assembly: Riffer::Rig::Runtime::Assembly
   # @rbs hooks: Riffer::Rig::Runtime::Hooks
   # @rbs agent: Riffer::Agent
   # @rbs return: void
-  def install(registrars, settings, hooks, agent)
-    overrides(registrars).each { |message| @host.notify(message, level: :info) }
-    unknown_tools(registrars, @tool_allowlist).each { |message| @host.notify(message, level: :warning) }
-    @declared_settings = registrars.to_h { |registrar| [registrar.extension.to_sym, registrar.declared_settings] }
-                                   .reject { |_extension, declared| declared.empty? }
-    @settings = with_declared_defaults(settings)
-    @system_prompt = @system_prompt.with_sections(registrars.flat_map { |registrar| registrar.prompts.to_a }.to_h)
-    skills = agent.context.skills&.skills&.values || []
-    commands = [
-      *@core_commands,
+  def install(assembly, hooks, agent)
+    assembly.overrides.each { |message| @host.notify(message, level: :info) }
+    assembly.unknown_tools.each { |message| @host.notify(message, level: :warning) }
+    @assembly = assembly
+    @system_prompt = @system_prompt.with_sections(assembly.prompt_sections)
+    @commands = assembly.commands([*@core_commands, *built_in_commands], agent.context.skills&.skills&.values || [])
+    @hooks = hooks
+    @agent = agent
+  end
+
+  # @rbs return: Array[Riffer::Rig::Command]
+  def built_in_commands
+    [
       Riffer::Rig::Commands::Auth.command(env: @env, auth_path: @auth_path, settings_path: @settings_path),
       Riffer::Rig::Commands::Model.command(env: @env, auth_path: @auth_path, settings_path: @settings_path),
       Riffer::Rig::Commands::Reasoning.command(settings_path: @settings_path),
-      Riffer::Rig::Commands::Cost.command,
-      *skills.map { |skill| Riffer::Rig::Commands::Skill.command(skill) },
-      *registrars.flat_map { |registrar| registrar.commands.values }
+      Riffer::Rig::Commands::Cost.command
     ]
-    @commands = commands.to_h { |command| [command.name, command] }
-    @hooks = hooks
-    @agent = agent
   end
 
   # A session that has not started yet opens with session_start(:new) on its
@@ -548,7 +515,7 @@ class Riffer::Rig::Runtime
       return ended_turn(Riffer::Agent::Outcome.new(reason: :guardrail_blocked, detail: prompt.reason))
     end
 
-    notify_job_exits
+    @job_notices.notify(@agent.session)
     stream = @agent.stream(prompt)
     # Upstream candidate: riffer adds the prompt to the session silently, so
     # its on_message never sees the user message a store has to keep.
@@ -559,13 +526,14 @@ class Riffer::Rig::Runtime
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
   def start_follow_up
     open_turn
-    notify_job_exits(follow_up: true) ? @agent.stream : ended_turn(Riffer::Agent::Outcome.new(reason: :completed))
+    return @agent.stream if @job_notices.notify(@agent.session, follow_up: true)
+
+    ended_turn(Riffer::Agent::Outcome.new(reason: :completed))
   end
 
   # @rbs return: void
   def open_turn
     @cancel_flag.clear
-    @draft = []
     @reload_check&.call(self)
     @system_prompt.refresh(@agent.session, self)
   end
@@ -597,7 +565,7 @@ class Riffer::Rig::Runtime
   # @rbs emit: ^(::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
   # @rbs return: Riffer::Rig::Command::Context
   def command_context(command, args, emit)
-    settings = @settings[command.extension] || {} #: Hash[Symbol, untyped]
+    settings = self.settings[command.extension] || {} #: Hash[Symbol, untyped]
     Riffer::Rig::Command::Context.new(
       command.name,
       args,
@@ -613,49 +581,28 @@ class Riffer::Rig::Runtime
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event, Riffer::Agent::Response]
   def turn(&)
     Enumerator.new do |yielder|
-      @yielder = yielder
-      if @session_start_pending
-        @session_start_pending = false
-        session_start = Riffer::Rig::Events::SessionStart.new(@id, @session_start_reason)
-        @hooks.observe(:session_start, session_start)
-        yielder << session_start
-      end
-      @host.drain.each { |queued| yielder << queued }
-      response = @abort.window do
-        stream = Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD, &)
-        continued(yielder, relay(yielder, stream), MAX_JOB_CONTINUATIONS)
-      end
-      response ||= aborted(yielder)
-      turn_end = Riffer::Rig::Events::TurnEnd.new(stop_reason(response.outcome), response.token_usage)
-      @hooks.observe(:turn_end, turn_end)
-      @host.drain.each { |queued| yielder << queued }
-      yielder << turn_end
-      response
+      turn = Riffer::Rig::Runtime::Turn.new(
+        yielder,
+        host: @host,
+        abort: @abort,
+        agent: -> { @agent },
+        hooks: -> { @hooks },
+        continuation: -> { continuation if @job_notices.notify(@agent.session) },
+        deliver: ->(message) { deliver(message) }
+      )
+      @turn = turn
+      turn.run(session_start, &)
     ensure
-      @yielder = nil
+      @turn = nil
     end
   end
 
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
-  # @rbs return: Riffer::Agent::Response
-  def relay(yielder, stream)
-    stream.each do |event|
-      Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { pass_through(yielder, event) }
-    end
-  end
+  # @rbs return: Riffer::Rig::Events::SessionStart?
+  def session_start
+    return unless @session_start_pending
 
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs response: Riffer::Agent::Response
-  # @rbs remaining: Integer
-  # @rbs return: Riffer::Agent::Response
-  def continued(yielder, response, remaining)
-    return response unless remaining.positive? && response.outcome.reason == :completed && steps_left?(response)
-
-    stream = Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { continuation if notify_job_exits }
-    return response unless stream
-
-    continued(yielder, combined(response, relay(yielder, stream)), remaining - 1)
+    @session_start_pending = false
+    Riffer::Rig::Events::SessionStart.new(@id, @session_start_reason)
   end
 
   # @rbs return: Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]
@@ -664,82 +611,17 @@ class Riffer::Rig::Runtime
     @agent.stream
   end
 
-  # @rbs response: Riffer::Agent::Response
-  # @rbs return: bool
-  def steps_left?(response)
-    max_steps = @agent.config.max_steps
-    # Upstream candidate: riffer counts a run's steps from the last user-class
-    # message, so a continuation cannot be handed what the turn has left and
-    # starts on the full limit.
-    max_steps.nil? || response.steps < max_steps
-  end
-
-  # @rbs earlier: Riffer::Agent::Response
-  # @rbs later: Riffer::Agent::Response
-  # @rbs return: Riffer::Agent::Response
-  def combined(earlier, later)
-    Riffer::Agent::Response.new(
-      later.content,
-      outcome: later.outcome,
-      tripwire: later.tripwire,
-      modifications: earlier.modifications + later.modifications,
-      reasoning: later.reasoning,
-      structured_output: later.structured_output,
-      messages: later.messages,
-      token_usage: Riffer::Rig::Runtime::Usage.total([earlier.token_usage, later.token_usage]),
-      steps: earlier.steps + later.steps
-    )
-  end
-
-  # The abort unwinds riffer's run loop from outside, so what riffer does for
-  # an interrupt it raises itself is done here.
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs return: Riffer::Agent::Response
-  def aborted(yielder)
-    @agent.session.discard_pending_tool_calls
-    text = @draft.join
-    # Silent, then delivered by hand: the on_message observer interrupts a
-    # cancelled turn with a throw, and riffer's catch is gone by now.
-    deliver(@agent.session.add(Riffer::Messages::Assistant.new(text), silent: true)) if text.match?(/\S/)
-    pass_through(yielder, Riffer::StreamEvents::Interrupt.new(reason: INTERRUPT_CANCELLED))
-    Riffer::Agent::Response.new(
-      text,
-      outcome: Riffer::Agent::Outcome.new(reason: :interrupted, detail: INTERRUPT_CANCELLED.to_s),
-      messages: @agent.session.messages.dup.freeze
-    )
-  end
-
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs event: ::Riffer::StreamEvents::Base
-  # @rbs return: void
-  def pass_through(yielder, event)
-    @draft << event.content if event.is_a?(Riffer::StreamEvents::TextDelta)
-    @hooks.observe(:stream, event)
-    forward(yielder, event)
-  end
-
   # @rbs event: Riffer::Rig::Events::_Event
   # @rbs return: void
   def emit(event)
-    yielder = @yielder
-    forward(yielder, event) if yielder
-  end
-
-  # @rbs yielder: Enumerator::Yielder
-  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
-  # @rbs return: void
-  def forward(yielder, event)
-    yielder << event
-    # Mid-turn notifies (a failing hook, a blocked request) reach the stream
-    # next to the event that raised them, not at the next turn.
-    @host.drain.each { |queued| yielder << queued }
+    @turn&.forward(event)
   end
 
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
   def observe_message(message)
-    @draft = []
-    deliver(message.is_a?(Riffer::Messages::Tool) ? with_job_notice(message) : message)
+    @turn&.clear_draft
+    deliver(message.is_a?(Riffer::Messages::Tool) ? @job_notices.with_notice(message, @agent.session) : message)
     interrupt_if_cancelled
     case message
     when Riffer::Messages::Assistant
@@ -753,48 +635,6 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def deliver(message)
     @message_observers.each { |observer| observer.call(message) }
-  end
-
-  # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
-  def job_exits
-    @jobs.consume.each { |completion| emit(Riffer::Rig::Events::JobExit.new(completion)) }
-  end
-
-  # @rbs message: Riffer::Messages::Tool
-  # @rbs return: Riffer::Messages::Tool
-  def with_job_notice(message)
-    completions = job_exits
-    return message if completions.empty?
-
-    # Appended to a tool result because a user message straight after one is
-    # consecutive user turns to Bedrock and Gemini, which reject them.
-    noticed = Riffer::Messages::Tool.new(
-      "#{message.content}\n\n#{Riffer::Rig::Runtime::JobEnvelope.render(completions)}",
-      tool_call_id: message.tool_call_id,
-      name: message.name,
-      id: message.id,
-      error: message.error,
-      error_type: message.error_type
-    )
-    # By identity: Session#update finds a result by its call id, which need
-    # not be unique within a session.
-    @agent.session.set(@agent.session.messages.map { |recorded| recorded.equal?(message) ? noticed : recorded })
-    noticed
-  end
-
-  # @rbs follow_up: bool
-  # @rbs return: Riffer::Messages::Base?
-  def notify_job_exits(follow_up: false)
-    completions = job_exits
-    return if completions.empty?
-
-    notification = Riffer::Rig::Runtime::JobNotification.new(
-      Riffer::Rig::Runtime::JobEnvelope.render(completions),
-      follow_up_exits: (completions.size if follow_up)
-    )
-    # Silent, then delivered by hand: the on_message observer interrupts a
-    # cancelled turn with a throw, and no riffer run is there to catch it.
-    @agent.session.add(notification, silent: true).tap { |message| deliver(message) }
   end
 
   # @rbs return: void
@@ -816,16 +656,7 @@ class Riffer::Rig::Runtime
     @agent.session.discard_pending_tool_calls
     # The abort is held off while a tool runs, so a cancel that lands there is
     # honoured at the message boundary.
-    @agent.interrupt!(INTERRUPT_CANCELLED)
-  end
-
-  # @rbs outcome: Riffer::Agent::Outcome
-  # @rbs return: Symbol
-  def stop_reason(outcome)
-    # Upstream candidate: riffer's outcome vocabulary is closed, so a cancel
-    # reaches us as :interrupted with the reason in detail.
-    cancelled = outcome.reason == :interrupted && outcome.detail == INTERRUPT_CANCELLED.to_s
-    cancelled ? INTERRUPT_CANCELLED : outcome.reason
+    @agent.interrupt!(Riffer::Rig::Runtime::StopReason::INTERRUPT_CANCELLED)
   end
 
   # @rbs snapshot: Riffer::Rig::Runtime::Snapshot
@@ -834,7 +665,6 @@ class Riffer::Rig::Runtime
   # @rbs return: Riffer::Agent
   def restore(snapshot, model, config)
     @model_override = snapshot.restorable_model(@credentials, @host, model)
-    @reasoning = Riffer::Rig::Settings::ModelOptions.reasoning_level(snapshot.reasoning) if snapshot.reasoning
     agent = build_agent(@model_override || model, config, session: snapshot.session)
     agent.context.token_usage = snapshot.usage
     reactivate(agent.context.skills, snapshot.skills)
@@ -856,82 +686,5 @@ class Riffer::Rig::Runtime
     # the catalog is filtered through activated? instead.
     skills = @agent.context.skills
     skills ? skills.skills.keys.select { |name| skills.activated?(name) } : []
-  end
-
-  # @rbs extensions: Array[Riffer::Rig::Extension]
-  # @rbs settings: Hash[Symbol, untyped]
-  # @rbs &: (Riffer::Rig::Extension, StandardError) -> void
-  # @rbs return: Array[Riffer::Rig::Registrar]
-  def build_registrars(extensions, settings)
-    extensions.filter_map do |extension|
-      outcome = extension.trial(settings)
-      next outcome if outcome.is_a?(Riffer::Rig::Registrar)
-
-      yield(extension, outcome)
-      nil
-    end
-  end
-
-  # @rbs extension: Riffer::Rig::Extension
-  # @rbs error: StandardError
-  # @rbs return: void
-  def record_error(extension, error)
-    @errors << Riffer::Rig::Extension::Failure.new(extension: extension, error: error)
-    @host.notify("Extension #{extension.name} failed to load: #{error.message}", level: :error)
-  end
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Array[String]
-  def overrides(registrars)
-    registrars
-      .flat_map { |registrar| registrar.registrations.map { |registration| [registration, registrar.extension] } }
-      .group_by(&:first)
-      .flat_map do |registration, claims|
-        claims.map(&:last).each_cons(2).map do |earlier, later|
-          "Extension #{later} replaces #{registration} from #{earlier}"
-        end
-      end
-  end
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs allowlist: Array[String]?
-  # @rbs return: Array[String]
-  def unknown_tools(registrars, allowlist)
-    return [] if allowlist.nil?
-
-    registered = registrars.flat_map { |registrar| registrar.tools.keys }
-    (allowlist - registered).map { |name| "Unknown tool in allowlist: #{name}" }
-  end
-
-  # @rbs settings: Hash[Symbol, untyped]
-  # @rbs return: Hash[Symbol, untyped]
-  def with_declared_defaults(settings)
-    namespaces = @declared_settings.to_h do |extension, defaults|
-      given = settings[extension] || {} #: Hash[Symbol, untyped]
-      [extension, defaults.merge(given)]
-    end
-    settings.merge(namespaces)
-  end
-
-  # @rbs return: Hash[Symbol, Array[^(Riffer::Rig::Events::_Event | ::Riffer::StreamEvents::Base) -> untyped]]
-  def merge_hooks(registrars)
-    Riffer::Rig::Registrar::EVENTS.to_h do |event|
-      [event, registrars.flat_map { |registrar| registrar.hooks.fetch(event) }]
-    end
-  end
-
-  # @rbs registrars: Array[Riffer::Rig::Registrar]
-  # @rbs return: Hash[String, Riffer::Rig::Mcp::Declaration]
-  def mcp_declarations(registrars)
-    registrars.flat_map { |registrar| registrar.mcp_servers.to_a }.to_h
-  end
-
-  # @rbs registered: Array[singleton(Riffer::Tool)]
-  # @rbs allowlist: Array[String]?
-  # @rbs return: Array[singleton(Riffer::Tool)]
-  def select_tools(registered, allowlist)
-    return registered if allowlist.nil?
-
-    registered.select { |klass| allowlist.include?(klass.name) }
   end
 end

@@ -8,7 +8,7 @@ describe Riffer::Rig::Tools::Bash::Kill do
     @exits = Queue.new
     inbox = Riffer::Rig::Runtime::JobInbox.new
     inbox.subscribe { |completion| @exits << completion }
-    @jobs = Riffer::Rig::Tools::Bash::Jobs.new(inbox)
+    @jobs = Riffer::Rig::Runtime::Jobs.new(inbox)
     @context = Riffer::Agent::Context.new(cwd: Dir.pwd, jobs: @jobs)
   end
 

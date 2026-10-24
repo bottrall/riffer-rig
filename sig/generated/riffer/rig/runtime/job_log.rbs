@@ -1,6 +1,6 @@
-# Generated from lib/riffer/rig/tools/bash/job_log.rb with RBS::Inline
+# Generated from lib/riffer/rig/runtime/job_log.rb with RBS::Inline
 
-class Riffer::Rig::Tools::Bash::JobLog
+class Riffer::Rig::Runtime::JobLog
   MAX_BYTES: Integer
 
   KEEP_BYTES: Integer

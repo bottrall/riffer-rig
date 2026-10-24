@@ -35,6 +35,10 @@ describe Riffer::Rig::Extension do
     assert_nil Riffer::Rig::Extension.new('git').mismatch
   end
 
+  it 'is frozen' do
+    assert_predicate Riffer::Rig::Extension.new('git'), :frozen?
+  end
+
   it 'records the block against a registrar' do
     recorded = nil
     extension = Riffer::Rig::Extension.new('git') { |rig| recorded = rig }

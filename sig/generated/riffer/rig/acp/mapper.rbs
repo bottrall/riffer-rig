@@ -15,6 +15,10 @@ module Riffer::Rig::ACP::Mapper
   # @rbs return: String
   def prompt_text: (Array[::ACP::Types::ContentBlock::t] blocks) -> String
 
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: ::ACP::Types::SessionUpdate::t?
+  def update_for: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> ::ACP::Types::SessionUpdate::t?
+
   # @rbs content: String
   # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
   def message_chunk: (String content) -> ::ACP::Types::SessionUpdate::AgentMessageChunk
