@@ -558,6 +558,12 @@ describe Riffer::Rig::Loader do
         )
       end
 
+      it 'stores a key the host supplies in home auth.json' do
+        build(model: 'gemini/gem-2.5-pro', env: {}, host: ScriptedHost.new('sk-gem-pasted'))
+
+        assert_path_exists File.join(@home, '.riffer', 'auth.json')
+      end
+
       it 'raises the configuration error naming a key the null host cannot supply' do
         assert_match(
           /\Agemini has no api_key \(GEMINI_API_KEY\)/,
