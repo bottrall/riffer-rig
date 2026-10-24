@@ -53,7 +53,7 @@ class Riffer::Rig::Runtime
 
   @credentials: Hash[Symbol, Hash[Symbol, String]]
 
-  @jobs: Riffer::Rig::Tools::Bash::Jobs
+  @jobs: Riffer::Rig::Runtime::Jobs
 
   @job_inbox: Riffer::Rig::Runtime::JobInbox
 

@@ -4,30 +4,30 @@ require 'fileutils'
 require 'securerandom'
 require 'tmpdir'
 
-class Riffer::Rig::Tools::Bash::Jobs
-  include Riffer::Rig::Tools::Bash::KillGroup
-  include Riffer::Rig::Tools::Bash::MonotonicClock
-
-  READ_LIMIT_BYTES = 2 * Riffer::Rig::Tools::Bash::MAX_OUTPUT_BYTES #: Integer
-
+class Riffer::Rig::Runtime::Jobs
   TAIL_BYTES = 2_000 #: Integer
 
   SHUTDOWN_GRACE_SECONDS = 2.0 #: Float
 
   DRAIN_SECONDS = 0.5 #: Float
 
+  POLL_SECONDS = 0.1 #: Float
+
   # @rbs @inbox: Riffer::Rig::Runtime::JobInbox
-  # @rbs @jobs: Hash[String, Riffer::Rig::Tools::Bash::Job]
+  # @rbs @jobs: Hash[String, Riffer::Rig::Runtime::Job]
   # @rbs @groups: Array[Integer]
-  # @rbs @logs: Hash[String, Riffer::Rig::Tools::Bash::JobLog]
+  # @rbs @logs: Hash[String, Riffer::Rig::Runtime::JobLog]
   # @rbs @directory: String?
   # @rbs @mutex: Mutex
   # @rbs @watchers: ThreadGroup
+  # @rbs @clock: ^() -> Float
 
   # @rbs inbox: Riffer::Rig::Runtime::JobInbox
+  # @rbs clock: ^() -> Float
   # @rbs return: void
-  def initialize(inbox)
+  def initialize(inbox, clock: -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) })
     @inbox = inbox
+    @clock = clock
     @jobs = {}
     @groups = []
     @logs = {}
@@ -39,17 +39,17 @@ class Riffer::Rig::Tools::Bash::Jobs
   # @rbs pid: Integer
   # @rbs command: String
   # @rbs output: IO
-  # @rbs return: Riffer::Rig::Tools::Bash::Job
+  # @rbs return: Riffer::Rig::Runtime::Job
   def register(pid, command, output)
     id = SecureRandom.hex(4)
     path = File.join(directory, id)
-    log = Riffer::Rig::Tools::Bash::JobLog.new(output, path)
-    job = Riffer::Rig::Tools::Bash::Job.new(
+    log = Riffer::Rig::Runtime::JobLog.new(output, path)
+    job = Riffer::Rig::Runtime::Job.new(
       id: id,
       pid: pid,
       command: command,
       output_path: path,
-      started_at: monotonic_now
+      started_at: @clock.call
     )
     @mutex.synchronize do
       @jobs[id] = job
@@ -60,19 +60,20 @@ class Riffer::Rig::Tools::Bash::Jobs
     job
   end
 
-  # @rbs return: Array[Riffer::Rig::Tools::Bash::Job]
+  # @rbs return: Array[Riffer::Rig::Runtime::Job]
   def list
     @mutex.synchronize { @jobs.values }
   end
 
   # @rbs id: String
-  # @rbs return: [Riffer::Rig::Tools::Bash::Job, String]?
-  def read(id)
+  # @rbs limit: Integer
+  # @rbs return: [Riffer::Rig::Runtime::Job, String]?
+  def read(id, limit)
     @mutex.synchronize do
       job = @jobs.fetch(id, nil)
       return unless job
 
-      output, written = @logs.fetch(id).read(job.offset, READ_LIMIT_BYTES)
+      output, written = @logs.fetch(id).read(job.offset, limit)
       # Output past the read limit is dropped rather than queued, so a job writing
       # faster than it is read cannot build a backlog.
       advanced = job.advance(written - job.offset)
@@ -82,10 +83,18 @@ class Riffer::Rig::Tools::Bash::Jobs
   end
 
   # @rbs id: String
-  # @rbs return: Riffer::Rig::Tools::Bash::Job?
+  # @rbs return: Riffer::Rig::Runtime::Job?
   def kill(id)
-    # A completed job's pid is already reaped and may belong to another process.
-    @mutex.synchronize { @jobs.fetch(id, nil)&.tap { |job| kill_group(job.pid) if job.active? } }
+    @mutex.synchronize do
+      @jobs.fetch(id, nil)&.tap do |job|
+        # A completed job's pid is already reaped and may belong to another process.
+        next unless job.active?
+
+        signal_group(job.pid, 'TERM')
+        # A stopped process holds TERM pending until it is continued.
+        signal_group(job.pid, 'CONT')
+      end
+    end
   end
 
   # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
@@ -101,8 +110,8 @@ class Riffer::Rig::Tools::Bash::Jobs
     kill_outstanding('TERM')
     # A stopped process holds TERM pending until it is continued.
     kill_outstanding('CONT')
-    deadline = monotonic_now + grace
-    @watchers.list.each { |watcher| watcher.join([deadline - monotonic_now, 0.0].max) }
+    deadline = @clock.call + grace
+    @watchers.list.each { |watcher| watcher.join([deadline - @clock.call, 0.0].max) }
     # A job that ignores TERM would otherwise hold its watcher, and this join, forever.
     kill_outstanding('KILL')
     # A killed process stays in its group until its parent reaps it. Once the
@@ -129,8 +138,8 @@ class Riffer::Rig::Tools::Bash::Jobs
     end
   end
 
-  # @rbs job: Riffer::Rig::Tools::Bash::Job
-  # @rbs log: Riffer::Rig::Tools::Bash::JobLog
+  # @rbs job: Riffer::Rig::Runtime::Job
+  # @rbs log: Riffer::Rig::Runtime::JobLog
   # @rbs return: void
   def watch(job, log)
     # The only reap of a job: a second reaper would take the exit status and
@@ -140,12 +149,12 @@ class Riffer::Rig::Tools::Bash::Jobs
     # members. An emptied group is forgotten before the number can name one
     # that is not ours: here, ahead of the subscribers, and by the poll below.
     retain(job.pid)
-    finished = @mutex.synchronize { @jobs[job.id] = @jobs.fetch(job.id).finish(monotonic_now) }
+    finished = @mutex.synchronize { @jobs[job.id] = @jobs.fetch(job.id).finish(@clock.call) }
     # Bounded because a process the job left behind can hold the pipe open
     # long after the job itself has exited.
     log.drain(DRAIN_SECONDS)
     @inbox.push(completion(finished, log, status))
-    sleep(Riffer::Rig::Tools::Bash::POLL_SECONDS) while retain(job.pid)
+    sleep(POLL_SECONDS) while retain(job.pid)
   rescue Errno::ECHILD
     @mutex.synchronize do
       @jobs.delete(job.id)
@@ -178,8 +187,8 @@ class Riffer::Rig::Tools::Bash::Jobs
     false
   end
 
-  # @rbs job: Riffer::Rig::Tools::Bash::Job
-  # @rbs log: Riffer::Rig::Tools::Bash::JobLog
+  # @rbs job: Riffer::Rig::Runtime::Job
+  # @rbs log: Riffer::Rig::Runtime::JobLog
   # @rbs status: Process::Status
   # @rbs return: Riffer::Rig::Runtime::JobCompletion
   def completion(job, log, status)
@@ -188,7 +197,7 @@ class Riffer::Rig::Tools::Bash::Jobs
       command: job.command,
       exit_status: status.exitstatus,
       signal: status.termsig&.then { |number| Signal.signame(number) },
-      duration: job.elapsed(monotonic_now),
+      duration: job.elapsed(@clock.call),
       output_path: job.output_path,
       # Scrubbed because the cut can split a multibyte character.
       tail: log.tail(TAIL_BYTES).scrub

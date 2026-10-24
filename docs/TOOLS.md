@@ -121,4 +121,4 @@ end
 Riffer::Rig.extension('sandbox') { |rig| rig.tool SandboxedBash }
 ```
 
-The later registration [takes the earlier tool's place](EXTENSIONS.md#bundled-extensions-and-replacement). Replacement is per identifier: a replaced `bash` leaves `bash_output` and `bash_kill` registered, acting only on jobs the bundled `bash` started.
+The later registration [takes the earlier tool's place](EXTENSIONS.md#bundled-extensions-and-replacement). Replacement is per identifier: a replaced `bash` leaves `bash_output` and `bash_kill` registered, acting on the jobs in the session's job registry, where a replacement can [register its own](EMBEDDING.md#starting-jobs-from-your-own-tool).

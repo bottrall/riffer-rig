@@ -15,10 +15,11 @@ class Riffer::Rig::Tools::Bash::Output < Riffer::Tool
   # @rbs job_id: String
   # @rbs return: Riffer::Tools::Response
   def call(context:, job_id:)
-    jobs = context&.[](:jobs) #: Riffer::Rig::Tools::Bash::Jobs?
+    jobs = context&.[](:jobs) #: Riffer::Rig::Runtime::Jobs?
     return error('no background job registry in the context', type: :command_failed) unless jobs
 
-    output = jobs.read(job_id)&.last
+    # Read past the cut, so truncate marks the output it drops.
+    output = jobs.read(job_id, 2 * Riffer::Rig::Tools::Bash::MAX_OUTPUT_BYTES)&.last
     return error("No background job #{job_id}", type: :not_found) unless output
 
     # A read starts at a byte offset and stops at a byte limit, either of which

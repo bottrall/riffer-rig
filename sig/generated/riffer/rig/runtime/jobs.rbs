@@ -1,0 +1,86 @@
+# Generated from lib/riffer/rig/runtime/jobs.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::Jobs
+  TAIL_BYTES: Integer
+
+  SHUTDOWN_GRACE_SECONDS: Float
+
+  DRAIN_SECONDS: Float
+
+  POLL_SECONDS: Float
+
+  @clock: ^() -> Float
+
+  @watchers: ThreadGroup
+
+  @mutex: Mutex
+
+  @directory: String?
+
+  @logs: Hash[String, Riffer::Rig::Runtime::JobLog]
+
+  @groups: Array[Integer]
+
+  @jobs: Hash[String, Riffer::Rig::Runtime::Job]
+
+  @inbox: Riffer::Rig::Runtime::JobInbox
+
+  # @rbs inbox: Riffer::Rig::Runtime::JobInbox
+  # @rbs clock: ^() -> Float
+  # @rbs return: void
+  def initialize: (Riffer::Rig::Runtime::JobInbox inbox, ?clock: ^() -> Float) -> void
+
+  # @rbs pid: Integer
+  # @rbs command: String
+  # @rbs output: IO
+  # @rbs return: Riffer::Rig::Runtime::Job
+  def register: (Integer pid, String command, IO output) -> Riffer::Rig::Runtime::Job
+
+  # @rbs return: Array[Riffer::Rig::Runtime::Job]
+  def list: () -> Array[Riffer::Rig::Runtime::Job]
+
+  # @rbs id: String
+  # @rbs limit: Integer
+  # @rbs return: [Riffer::Rig::Runtime::Job, String]?
+  def read: (String id, Integer limit) -> [ Riffer::Rig::Runtime::Job, String ]?
+
+  # @rbs id: String
+  # @rbs return: Riffer::Rig::Runtime::Job?
+  def kill: (String id) -> Riffer::Rig::Runtime::Job?
+
+  # @rbs return: Array[Riffer::Rig::Runtime::JobCompletion]
+  def consume: () -> Array[Riffer::Rig::Runtime::JobCompletion]
+
+  # @rbs grace: Float
+  # @rbs return: void
+  def shutdown: (?Float grace) -> void
+
+  private
+
+  # @rbs return: String
+  def directory: () -> String
+
+  # @rbs job: Riffer::Rig::Runtime::Job
+  # @rbs log: Riffer::Rig::Runtime::JobLog
+  # @rbs return: void
+  def watch: (Riffer::Rig::Runtime::Job job, Riffer::Rig::Runtime::JobLog log) -> void
+
+  # @rbs signal: String
+  # @rbs return: void
+  def kill_outstanding: (String signal) -> void
+
+  # @rbs pgid: Integer
+  # @rbs return: bool
+  def retain: (Integer pgid) -> bool
+
+  # @rbs pgid: Integer
+  # @rbs signal: String | Integer
+  # @rbs return: bool
+  def signal_group: (Integer pgid, String | Integer signal) -> bool
+
+  # @rbs job: Riffer::Rig::Runtime::Job
+  # @rbs log: Riffer::Rig::Runtime::JobLog
+  # @rbs status: Process::Status
+  # @rbs return: Riffer::Rig::Runtime::JobCompletion
+  def completion: (Riffer::Rig::Runtime::Job job, Riffer::Rig::Runtime::JobLog log, Process::Status status) -> Riffer::Rig::Runtime::JobCompletion
+end

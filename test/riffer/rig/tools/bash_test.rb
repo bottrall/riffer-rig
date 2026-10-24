@@ -63,7 +63,7 @@ describe Riffer::Rig::Tools::Bash do
   end
 
   def with_background_job(command)
-    jobs = Riffer::Rig::Tools::Bash::Jobs.new(Riffer::Rig::Runtime::JobInbox.new)
+    jobs = Riffer::Rig::Runtime::Jobs.new(Riffer::Rig::Runtime::JobInbox.new)
     response = @tool.call(context: background_context(jobs), command: command, run_in_background: true)
     yield response, jobs
   ensure

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-class Riffer::Rig::Tools::Bash::Job
-  # Monotonic Process::CLOCK_MONOTONIC seconds, so elapsed is immune to wall-clock changes.
+class Riffer::Rig::Runtime::Job
   # @rbs @id: String
   # @rbs @pid: Integer
   # @rbs @command: String
@@ -54,13 +53,13 @@ class Riffer::Rig::Tools::Bash::Job
   end
 
   # @rbs ended_at: Float
-  # @rbs return: Riffer::Rig::Tools::Bash::Job
+  # @rbs return: Riffer::Rig::Runtime::Job
   def finish(ended_at)
     copy(ended_at: ended_at)
   end
 
   # @rbs bytes: Integer
-  # @rbs return: Riffer::Rig::Tools::Bash::Job
+  # @rbs return: Riffer::Rig::Runtime::Job
   def advance(bytes)
     copy(offset: offset + bytes)
   end
@@ -69,7 +68,7 @@ class Riffer::Rig::Tools::Bash::Job
 
   # @rbs ended_at: Float?
   # @rbs offset: Integer
-  # @rbs return: Riffer::Rig::Tools::Bash::Job
+  # @rbs return: Riffer::Rig::Runtime::Job
   def copy(ended_at: @ended_at, offset: @offset)
     self.class.new(
       id: id,
