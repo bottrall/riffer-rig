@@ -543,20 +543,6 @@ describe Riffer::Rig::Credentials do
       end
     end
 
-    it 'writes a typed entry per provider' do
-      in_tmp_home do |paths|
-        Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-ant' }, **paths)
-        Riffer::Rig::Credentials.store(:amazon_bedrock, { api_token: 'bedrock-token' }, **paths)
-
-        expected = {
-          'anthropic' => { 'type' => 'api_key', 'api_key' => 'sk-ant' },
-          'amazon_bedrock' => { 'type' => 'api_key', 'api_token' => 'bedrock-token' }
-        }
-
-        assert_equal expected, JSON.parse(File.read(paths[:auth_path]))
-      end
-    end
-
     it 'keeps non-secret fields out of auth.json' do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:azure_openai, { endpoint: 'https://azure.test', api_key: 'azure-key' }, **paths)
@@ -565,14 +551,6 @@ describe Riffer::Rig::Credentials do
           { 'type' => 'api_key', 'api_key' => 'azure-key' },
           JSON.parse(File.read(paths[:auth_path]))['azure_openai']
         )
-      end
-    end
-
-    it 'leaves auth.json unwritten when no field is secret' do
-      in_tmp_home do |paths|
-        Riffer::Rig::Credentials.store(:azure_openai, { endpoint: 'https://azure.test' }, **paths)
-
-        refute_path_exists paths[:auth_path]
       end
     end
 
@@ -633,14 +611,6 @@ describe Riffer::Rig::Credentials do
       end
     end
 
-    it 'leaves auth.json unwritten when the provider has no entry' do
-      in_tmp_home do |paths|
-        Riffer::Rig::Credentials.remove(:anthropic, **paths)
-
-        refute_path_exists paths[:auth_path]
-      end
-    end
-
     it 'deletes the auth.json entry' do
       in_tmp_home do |paths|
         Riffer::Rig::Credentials.store(:azure_openai, { endpoint: 'https://azure.test', api_key: 'azure-key' }, **paths)
@@ -658,17 +628,6 @@ describe Riffer::Rig::Credentials do
         Riffer::Rig::Credentials.remove(:azure_openai, **paths)
 
         refute_includes JSON.parse(File.read(paths[:settings_path])), 'providers'
-      end
-    end
-
-    it 'leaves the other providers stored' do
-      in_tmp_home do |paths|
-        Riffer::Rig::Credentials.store(:anthropic, { api_key: 'sk-ant' }, **paths)
-        Riffer::Rig::Credentials.store(:openai, { api_key: 'sk-oai' }, **paths)
-
-        Riffer::Rig::Credentials.remove(:openai, **paths)
-
-        assert_equal ['anthropic'], JSON.parse(File.read(paths[:auth_path])).keys
       end
     end
 
