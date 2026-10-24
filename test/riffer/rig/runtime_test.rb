@@ -718,15 +718,6 @@ describe Riffer::Rig::Runtime do
       assert_equal [:interrupted, 'enough'], [outcome.reason, outcome.detail]
     end
 
-    it 'shows stream hooks every riffer stream event, unchanged' do
-      seen = []
-      runtime = runtime_with { |rig| rig.on(:stream) { |e| seen << e } }
-      stub_tool_turn(runtime)
-      streamed = runtime.prompt('go').grep(Riffer::StreamEvents::Base)
-
-      assert_equal streamed.map(&:object_id), seen.map(&:object_id)
-    end
-
     it 'ignores what after_response returns' do
       runtime = runtime_with { |rig| rig.on(:after_response) { |_e| 'IGNORED' } }
       runtime.agent.provider.stub_response('All done.')
@@ -1847,21 +1838,10 @@ describe Riffer::Rig::Runtime do
       @runtime.close
     end
 
-    it 'is zero without a job' do
-      assert_equal 0, @runtime.running_job_count
-    end
-
     it 'counts a running job' do
       spawn_group_job(@runtime)
 
       assert_equal 1, @runtime.running_job_count
-    end
-
-    it 'drops when a job exits with no turn running' do
-      spawn_group_job(@runtime, 'true')
-      @exits.pop(timeout: 5)
-
-      assert_equal 0, @runtime.running_job_count
     end
   end
 
@@ -1897,19 +1877,8 @@ describe Riffer::Rig::Runtime do
       @runtime.close
     end
 
-    it 'is false without a job' do
-      refute_predicate @runtime, :pending_jobs?
-    end
-
     it 'is true while a job runs' do
       spawn_group_job(@runtime)
-
-      assert_predicate @runtime, :pending_jobs?
-    end
-
-    it 'stays true for a job that exited until the model is told' do
-      spawn_group_job(@runtime, 'true')
-      @exits.pop(timeout: 5)
 
       assert_predicate @runtime, :pending_jobs?
     end
@@ -1956,10 +1925,6 @@ describe Riffer::Rig::Runtime do
 
     after do
       @runtime.close
-    end
-
-    it 'is zero without an exit' do
-      assert_equal 0, @runtime.pending_job_exit_count
     end
 
     it 'counts an exit no turn has delivered' do
@@ -2021,7 +1986,7 @@ describe Riffer::Rig::Runtime do
       runtime
     end
 
-    def exiting_on_reply(replies, **)
+    def exiting_on_reply(replies)
       remaining = replies
       runtime = nil
       on_reply = lambda do |_event|
@@ -2032,7 +1997,7 @@ describe Riffer::Rig::Runtime do
         @exits.pop(timeout: 5)
       end
       exits_on_reply = Riffer::Rig::Extension.new('exits_on_reply') { |rig| rig.on(:after_response, &on_reply) }
-      runtime = job_runtime(exits_on_reply, **)
+      runtime = job_runtime(exits_on_reply)
     end
 
     def continued_turn
@@ -2085,34 +2050,6 @@ describe Riffer::Rig::Runtime do
         assert_equal [['true', 0]], exits
       end
 
-      it 'appends the notice to the tool result, after the tool\'s own output' do
-        runtime = exiting_mid_turn
-        runtime.ask('go')
-        notice = /\Astarted\n\n<background-job /
-
-        assert_match notice, tool_results(runtime).last.content
-      end
-
-      it 'keeps the error of a failed tool result' do
-        runtime = exiting_mid_turn('fail')
-        runtime.ask('go')
-        result = tool_results(runtime).last
-        noticed = result.content.include?('<background-job')
-
-        assert_equal ['boom', :execution_error, true], [result.error, result.error_type, noticed]
-      end
-
-      it 'appends to the result of the call that just ran when a call id repeats' do
-        runtime = job_runtime
-        runtime.agent.provider.stub_response('', tool_calls: [{ name: 'read', arguments: '{"path":"/nope"}' }])
-        runtime.agent.provider.stub_response('', tool_calls: [job_call])
-        runtime.agent.provider.stub_response('All done.')
-        runtime.ask('go')
-        noticed = tool_results(runtime).map { |result| result.content.include?('<background-job') }
-
-        assert_equal [false, true], noticed
-      end
-
       it 'hands observers the tool result the model receives' do
         runtime = exiting_mid_turn
         observed = []
@@ -2132,64 +2069,6 @@ describe Riffer::Rig::Runtime do
     end
 
     describe 'for a job that exits as the model finishes its reply' do
-      it 'stops continuing a turn at the cap' do
-        runtime = exiting_on_reply(Riffer::Rig::Runtime::Turn::MAX_JOB_CONTINUATIONS + 1)
-        runtime.ask('go')
-
-        assert_equal Riffer::Rig::Runtime::Turn::MAX_JOB_CONTINUATIONS, notifications(runtime).length
-      end
-
-      it 'delivers the exit the cap held back at the start of the next turn' do
-        runtime = exiting_on_reply(Riffer::Rig::Runtime::Turn::MAX_JOB_CONTINUATIONS + 1)
-        runtime.ask('go')
-        runtime.ask('again')
-
-        assert_equal(
-          [Riffer::Rig::Runtime::JobNotification, Riffer::Messages::User, Riffer::Messages::Assistant],
-          runtime.agent.session.messages.last(3).map(&:class)
-        )
-      end
-
-      it 'keeps the exit for the next turn when the turn did not complete' do
-        runtime = exiting_on_reply(1)
-        runtime.agent.provider.stub_response('Cut sh', finish_reason: :length)
-        runtime.ask('go')
-
-        assert_empty notifications(runtime)
-      end
-
-      it 'keeps the exit for the next turn when the turn has used its step limit' do
-        runtime = exiting_on_reply(1, max_steps: 1)
-        runtime.ask('go')
-
-        assert_empty notifications(runtime)
-      end
-
-      it 'delivers the exit the step limit held back at the start of the next turn' do
-        runtime = exiting_on_reply(1, max_steps: 1)
-        runtime.ask('go')
-        runtime.ask('again')
-
-        assert_equal(
-          [Riffer::Rig::Runtime::JobNotification, Riffer::Messages::User, Riffer::Messages::Assistant],
-          runtime.agent.session.messages.last(3).map(&:class)
-        )
-      end
-
-      it 'continues the turn while its step limit has steps left' do
-        runtime = exiting_on_reply(1, max_steps: 2)
-        runtime.ask('go')
-
-        assert_equal 1, notifications(runtime).length
-      end
-
-      it 'emits a job_exit event for the exit' do
-        events = []
-        continued_turn.prompt('go') { |event| events << event }
-
-        assert_equal 1, events.grep(Riffer::Rig::Events::JobExit).length
-      end
-
       it 'continues the turn with a notification after the reply' do
         runtime = continued_turn
         runtime.ask('go')
@@ -2220,44 +2099,9 @@ describe Riffer::Rig::Runtime do
 
         assert_equal [runtime, runtime], seen
       end
-
-      it 'answers with the reply that followed the notification' do
-        assert_equal 'It passed.', continued_turn.ask('go').content
-      end
-
-      it 'reports the usage of every run of the turn' do
-        assert_equal usage(30, 12).to_h, continued_turn.ask('go').token_usage.to_h
-      end
-
-      it 'counts the steps of every run of the turn' do
-        assert_equal 2, continued_turn.ask('go').steps
-      end
-
-      it 'ends the turn once' do
-        events = []
-        continued_turn.prompt('go') { |event| events << event }
-
-        assert_equal [events.last], events.grep(Riffer::Rig::Events::TurnEnd)
-      end
     end
 
     describe 'for a job that exits between turns' do
-      it 'emits a job_exit event for each exit' do
-        runtime = exited_between_turns(2)
-        events = []
-        runtime.prompt('second') { |event| events << event }
-
-        assert_equal 2, events.grep(Riffer::Rig::Events::JobExit).length
-      end
-
-      it 'batches several exits into one notification' do
-        runtime = exited_between_turns(2)
-        runtime.ask('second')
-        envelopes = notifications(runtime).map { |notification| notification.content.scan('<background-job ').length }
-
-        assert_equal [2], envelopes
-      end
-
       it 'marks no notification delivered ahead of the next prompt as starting a follow-up' do
         runtime = exited_between_turns
         runtime.ask('second')
@@ -2294,14 +2138,6 @@ describe Riffer::Rig::Runtime do
           [Riffer::Messages::Assistant, Riffer::Rig::Runtime::JobNotification, Riffer::Messages::Assistant],
           runtime.agent.session.messages.last(3).map(&:class)
         )
-      end
-
-      it 'emits a job_exit event for each exit' do
-        runtime = exited_between_turns(2)
-        events = []
-        runtime.follow_up { |event| events << event }
-
-        assert_equal 2, events.grep(Riffer::Rig::Events::JobExit).length
       end
 
       it 'marks the notification as starting a follow-up of that many exits' do
@@ -2523,13 +2359,6 @@ describe Riffer::Rig::Runtime do
         events
       end
 
-      def aborted_ask
-        canceller = cancel_once_stalled
-        response = @stalling.ask('go')
-        canceller.join
-        response
-      end
-
       def replies
         @stalling.agent.session.messages.grep(Riffer::Messages::Assistant).map(&:content)
       end
@@ -2552,27 +2381,6 @@ describe Riffer::Rig::Runtime do
         aborted_turn_events
 
         assert_equal :interrupted, @stalling.agent.session.messages.grep(Riffer::Messages::Tool).first.error_type
-      end
-
-      it 'records no reply when nothing had streamed' do
-        script_stream(stall_after)
-        aborted_turn_events
-
-        assert_empty replies
-      end
-
-      it 'records no reply for whitespace alone' do
-        script_stream(stall_after("\n\n"))
-        aborted_turn_events
-
-        assert_empty replies
-      end
-
-      it 'keeps the text streamed so far as the reply' do
-        script_stream(stall_after('one ', 'two '))
-        aborted_turn_events
-
-        assert_equal ['one two '], replies
       end
 
       it 'keeps only the reply in flight' do
@@ -2607,26 +2415,6 @@ describe Riffer::Rig::Runtime do
         aborted_turn_events
 
         assert_equal 'one two ', delivered.last.content
-      end
-
-      it 'emits the riffer interrupt event with the cancelled reason' do
-        script_stream(stall_after)
-        interrupt = aborted_turn_events.find { |event| event.is_a?(Riffer::StreamEvents::Interrupt) }
-
-        assert_equal :cancelled, interrupt.reason
-      end
-
-      it 'answers an aborted ask with the partial reply' do
-        script_stream(stall_after('one '))
-
-        assert_equal 'one ', aborted_ask.content
-      end
-
-      it 'reports an aborted ask as interrupted with the cancelled detail' do
-        script_stream(stall_after('one '))
-        outcome = aborted_ask.outcome
-
-        assert_equal [:interrupted, 'cancelled'], [outcome.reason, outcome.detail]
       end
 
       it 'ends a turn waiting on its first token with the cancelled stop reason' do

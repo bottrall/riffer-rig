@@ -117,11 +117,11 @@ class Riffer::Rig::Runtime::Turn
     )
   end
 
-  # The abort unwinds riffer's run loop from outside, so what riffer does for
-  # an interrupt it raises itself is done here.
   # @rbs return: Riffer::Agent::Response
   def aborted
     session = @agent.call.session
+    # The abort unwinds riffer's run loop from outside, so what riffer does for
+    # an interrupt it raises itself is done here.
     session.discard_pending_tool_calls
     text = @draft.join
     # Silent, then delivered by hand: the on_message observer interrupts a

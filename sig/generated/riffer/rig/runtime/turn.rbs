@@ -62,8 +62,6 @@ class Riffer::Rig::Runtime::Turn
   # @rbs return: Riffer::Agent::Response
   def combined: (Riffer::Agent::Response earlier, Riffer::Agent::Response later) -> Riffer::Agent::Response
 
-  # The abort unwinds riffer's run loop from outside, so what riffer does for
-  # an interrupt it raises itself is done here.
   # @rbs return: Riffer::Agent::Response
   def aborted: () -> Riffer::Agent::Response
 
