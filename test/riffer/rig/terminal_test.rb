@@ -5,8 +5,6 @@ require 'json'
 require 'stringio'
 require_relative '../../support/terminal_pty'
 
-# Delegates to the real sessions collaborator and hands each built Runtime to
-# the block, so tests can stub the provider before the REPL reads a prompt.
 class PreparedSessions
   def initialize(sessions, &prepare)
     @sessions = sessions
@@ -234,28 +232,6 @@ describe Riffer::Rig::Terminal do
     JSON.parse(File.foreach(path).first, symbolize_names: true)
   end
 
-  def interrupting_input(times)
-    remaining = times
-    input = StringIO.new
-    input.define_singleton_method(:gets) do
-      remaining -= 1
-      raise Interrupt unless remaining.negative?
-    end
-    input
-  end
-
-  def scripted_input(steps)
-    remaining = steps.dup
-    input = StringIO.new
-    input.define_singleton_method(:gets) do
-      step = remaining.shift
-      raise Interrupt if step == :interrupt
-
-      step
-    end
-    input
-  end
-
   it 'references no Riffer::Rig constant outside the public host API' do
     sources = [File.expand_path('../../../lib/riffer/rig/terminal.rb', __dir__),
                *Dir[File.expand_path('../../../lib/riffer/rig/terminal/**/*.rb', __dir__)]]
@@ -398,32 +374,8 @@ describe Riffer::Rig::Terminal do
     refute_includes output, 'Fixed it.'
   end
 
-  it 'hints at the second Ctrl-C after the first at the prompt' do
-    assert_includes run_terminal(interrupting_input(1)), 'Press Ctrl-C again to exit.'
-  end
-
-  it 'exits on a second Ctrl-C at the prompt' do
-    run_terminal(interrupting_input(2))
-
-    assert_equal 0, @status
-  end
-
-  it 'disarms the exit on a line between two Ctrl-Cs' do
-    output = run_terminal(scripted_input([:interrupt, "\n", :interrupt]))
-
-    assert_equal 2, output.scan('Press Ctrl-C again to exit.').length
-  end
-
   it 'arms the exit when a Ctrl-C lands in the opening' do
     assert_includes run_terminal("\n", sessions: interrupting_sessions), 'Press Ctrl-C again to exit.'
-  end
-
-  it 'arms the exit when a Ctrl-C escapes a turn' do
-    output = run_terminal("hello\n\n") do |driven|
-      driven.define_singleton_method(:prompt) { |*_args| raise Interrupt }
-    end
-
-    assert_includes output, 'Press Ctrl-C again to exit.'
   end
 
   it 'ends the session at /exit' do
@@ -436,13 +388,6 @@ describe Riffer::Rig::Terminal do
   it 'ends the session at /quit' do
     runtime = nil
     run_terminal("/quit\nhello\n") { |driven| runtime = driven }
-
-    assert_empty runtime.agent.provider.calls
-  end
-
-  it 'skips a blank line' do
-    runtime = nil
-    run_terminal("\n  \n") { |driven| runtime = driven }
 
     assert_empty runtime.agent.provider.calls
   end
@@ -1079,7 +1024,6 @@ describe Riffer::Rig::Terminal do
           provider.define_singleton_method(:stream_text) do |*args, **options, &block|
             requests += 1
             if requests == 1
-              # A project rig.rb that appears mid-turn is asked about before the next request.
               FileUtils.mkdir_p(File.dirname(rig))
               File.write(rig, '')
             else

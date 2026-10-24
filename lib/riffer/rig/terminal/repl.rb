@@ -7,6 +7,7 @@ class Riffer::Rig::Terminal::Repl
   # @rbs @asks: Thread::Queue[Riffer::Rig::Terminal::Key]
   # @rbs @prompter: Riffer::Rig::Terminal::FramePrompter
   # @rbs @peek: Riffer::Rig::Terminal::Peek
+  # @rbs @renderer: Riffer::Rig::Terminal::Renderer
   # @rbs @interrupt: ^() -> void
   # @rbs @builtins: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs @reader: Thread?
@@ -27,16 +28,18 @@ class Riffer::Rig::Terminal::Repl
   # @rbs asks: Thread::Queue[Riffer::Rig::Terminal::Key]
   # @rbs prompter: Riffer::Rig::Terminal::FramePrompter
   # @rbs peek: Riffer::Rig::Terminal::Peek
+  # @rbs renderer: Riffer::Rig::Terminal::Renderer
   # @rbs interrupt: ^() -> void
   # @rbs builtins: Array[Riffer::Rig::Terminal::Autocomplete::_Entry]
   # @rbs return: void
-  def initialize(console:, frame:, keys:, asks:, prompter:, peek:, interrupt:, builtins:)
+  def initialize(console:, frame:, keys:, asks:, prompter:, peek:, renderer:, interrupt:, builtins:)
     @console = console
     @frame = frame
     @keys = keys
     @asks = asks
     @prompter = prompter
     @peek = peek
+    @renderer = renderer
     @interrupt = interrupt
     @builtins = builtins
     @reader = nil
@@ -113,6 +116,8 @@ class Riffer::Rig::Terminal::Repl
   # @rbs return: void
   def run
     while (entry = take)
+      # Enter cleared the line from the footer, so it is echoed above it.
+      @renderer.echo(entry) if entry.is_a?(String)
       yield entry
     end
   rescue Interrupt
@@ -122,8 +127,6 @@ class Riffer::Rig::Terminal::Repl
     retry if arm
   end
 
-  # Records a Ctrl-C for the idle prompt: the first one arms the exit hint, a
-  # second one while armed ends the session.
   # @rbs return: bool
   def arm
     @mutex.synchronize do

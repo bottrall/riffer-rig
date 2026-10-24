@@ -101,6 +101,14 @@ class WatchedRuntime
   def tally = nil
 end
 
+class EchoingRenderer
+  attr_reader :echoed
+
+  def initialize = @echoed = []
+
+  def echo(prompt) = @echoed << prompt
+end
+
 class RecordingPeek
   attr_reader :pressed
 
@@ -117,6 +125,7 @@ describe Riffer::Rig::Terminal::Repl do
     @frame = LoggingFrame.new(@log)
     @prompter = QueuePrompter.new(@asks, @log)
     @peek = RecordingPeek.new
+    @renderer = EchoingRenderer.new
     @interrupts = Queue.new
   end
 
@@ -130,6 +139,7 @@ describe Riffer::Rig::Terminal::Repl do
       asks: @asks,
       prompter: @prompter,
       peek: @peek,
+      renderer: @renderer,
       interrupt: interrupt,
       builtins: builtins
     )
@@ -457,6 +467,25 @@ describe Riffer::Rig::Terminal::Repl do
       @keys.close
 
       assert_equal ['one'], session
+    end
+
+    it 'echoes a submitted line before running it' do
+      type("one\r")
+      @keys.close
+      echoed = []
+      session { |_line| echoed = @renderer.echoed.dup }
+
+      assert_equal ['one'], echoed
+    end
+
+    it 'echoes nothing for a job exit' do
+      runtime = WatchedRuntime.new
+      repl.watch(runtime)
+      begin_session { @keys.close }
+      runtime.exit_job
+      finish
+
+      assert_empty @renderer.echoed
     end
 
     it 'runs the lines submitted during a turn back to back in order' do
