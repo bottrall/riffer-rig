@@ -3,6 +3,7 @@
 require 'test_helper'
 require 'json'
 require 'stringio'
+require_relative '../../support/host_namespace'
 require_relative '../../support/stdin_pipes'
 
 class ScriptedRuntime
@@ -55,6 +56,7 @@ class ScriptedRuntime
 end
 
 describe Riffer::Rig::Headless do
+  include HostNamespace
   include StdinPipes
 
   before do
@@ -820,6 +822,25 @@ describe Riffer::Rig::Headless do
       refuse
 
       assert_equal 2, @status
+    end
+  end
+
+  describe 'namespace' do
+    it 'references no Riffer::Rig constant outside the public host API' do
+      assert_empty rig_constants_outside('Headless') - %w[
+        Events::_Event
+        Events::JobExit
+        Events::Notify
+        Events::SessionStart
+        Events::TurnEnd
+        Hosts::_Host
+        Hosts::NonInteractive
+        Loader::ConfigurationError
+        Runtime
+        Runtime::ErrorMessage
+        Runtime::StopReason::INTERRUPT_CANCELLED
+        Runtime::StopReason::STOPPED_WITHOUT_COMPLETING
+      ]
     end
   end
 end

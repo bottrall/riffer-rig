@@ -74,6 +74,13 @@ Callers check `capabilities` before calling `ask` or `confirm`, so a host that c
 | follow background jobs  | [`on_job_exit`, `follow_up` and friends](EMBEDDING.md#background-jobs)                        |
 | end the session         | `runtime.close`                                                                              |
 
+Two helpers do what the shipped hosts do:
+
+| Helper                                         | Gives                                                                                              |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `Riffer::Rig::Runtime::ErrorMessage.of(error)` | the message to show for an error a turn raised, with what the provider's API answered when the error carries it |
+| `Riffer::Rig::Command::INVOCATION`             | a `Regexp` matching a slash-command line, capturing the name and the arguments                      |
+
 A host that offers `/exit`, `/new`, `/resume` or `/help` implements them itself: they end, replace or describe the Runtime. A host that swaps one Runtime for another closes the old one and subscribes again on the new one.
 
 Use only the public API of the Runtime, the Loader, the host classes and the events; anything else a host needs should become part of that API, so every embedder gets it.
