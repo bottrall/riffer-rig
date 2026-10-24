@@ -1,0 +1,76 @@
+# Generated from lib/riffer/rig/runtime/turn.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::Turn
+  # Per turn, so a job that starts jobs cannot keep a turn alive forever.
+  MAX_JOB_CONTINUATIONS: Integer
+
+  @draft: Array[String]
+
+  @deliver: ^(Riffer::Messages::Base) -> void
+
+  @continuation: ^() -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]?
+
+  @hooks: ^() -> Riffer::Rig::Runtime::Hooks
+
+  @agent: ^() -> Riffer::Agent
+
+  @abort: Riffer::Rig::Runtime::Abort
+
+  @host: Riffer::Rig::Hosts::Mirror
+
+  @yielder: Enumerator::Yielder
+
+  # @rbs yielder: Enumerator::Yielder
+  # @rbs host: Riffer::Rig::Hosts::Mirror
+  # @rbs abort: Riffer::Rig::Runtime::Abort
+  # @rbs agent: ^() -> Riffer::Agent
+  # @rbs hooks: ^() -> Riffer::Rig::Runtime::Hooks
+  # @rbs continuation: ^() -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]?
+  # @rbs deliver: ^(Riffer::Messages::Base) -> void
+  # @rbs return: void
+  def initialize: (Enumerator::Yielder yielder, host: Riffer::Rig::Hosts::Mirror, abort: Riffer::Rig::Runtime::Abort, agent: ^() -> Riffer::Agent, hooks: ^() -> Riffer::Rig::Runtime::Hooks, continuation: ^() -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]?, deliver: ^(Riffer::Messages::Base) -> void) -> void
+
+  # @rbs session_start: Riffer::Rig::Events::SessionStart?
+  # @rbs &: () -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  # @rbs return: Riffer::Agent::Response
+  def run: (Riffer::Rig::Events::SessionStart? session_start) { () -> Enumerator[::Riffer::StreamEvents::Base, Riffer::Agent::Response] } -> Riffer::Agent::Response
+
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: void
+  def forward: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event event) -> void
+
+  # @rbs return: void
+  def clear_draft: () -> void
+
+  private
+
+  # @rbs stream: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
+  # @rbs return: Riffer::Agent::Response
+  def relay: (Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response] stream) -> Riffer::Agent::Response
+
+  # @rbs response: Riffer::Agent::Response
+  # @rbs remaining: Integer
+  # @rbs return: Riffer::Agent::Response
+  def continued: (Riffer::Agent::Response response, Integer remaining) -> Riffer::Agent::Response
+
+  # @rbs response: Riffer::Agent::Response
+  # @rbs return: bool
+  def steps_left?: (Riffer::Agent::Response response) -> bool
+
+  # @rbs earlier: Riffer::Agent::Response
+  # @rbs later: Riffer::Agent::Response
+  # @rbs return: Riffer::Agent::Response
+  def combined: (Riffer::Agent::Response earlier, Riffer::Agent::Response later) -> Riffer::Agent::Response
+
+  # The abort unwinds riffer's run loop from outside, so what riffer does for
+  # an interrupt it raises itself is done here.
+  # @rbs return: Riffer::Agent::Response
+  def aborted: () -> Riffer::Agent::Response
+
+  # @rbs event: ::Riffer::StreamEvents::Base
+  # @rbs return: void
+  def pass_through: (::Riffer::StreamEvents::Base event) -> void
+
+  # @rbs return: void
+  def drain: () -> void
+end

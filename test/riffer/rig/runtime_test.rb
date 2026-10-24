@@ -2192,14 +2192,14 @@ describe Riffer::Rig::Runtime do
 
     describe 'for a job that exits as the model finishes its reply' do
       it 'stops continuing a turn at the cap' do
-        runtime = exiting_on_reply(Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS + 1)
+        runtime = exiting_on_reply(Riffer::Rig::Runtime::Turn::MAX_JOB_CONTINUATIONS + 1)
         runtime.ask('go')
 
-        assert_equal Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS, notifications(runtime).length
+        assert_equal Riffer::Rig::Runtime::Turn::MAX_JOB_CONTINUATIONS, notifications(runtime).length
       end
 
       it 'delivers the exit the cap held back at the start of the next turn' do
-        runtime = exiting_on_reply(Riffer::Rig::Runtime::MAX_JOB_CONTINUATIONS + 1)
+        runtime = exiting_on_reply(Riffer::Rig::Runtime::Turn::MAX_JOB_CONTINUATIONS + 1)
         runtime.ask('go')
         runtime.ask('again')
 
