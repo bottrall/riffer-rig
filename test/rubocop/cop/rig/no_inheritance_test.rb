@@ -39,6 +39,10 @@ describe RuboCop::Cop::Rig::NoInheritance do
     assert_equal [1], offenses("class Pending < NotImplementedError; end\n").map(&:line)
   end
 
+  it 'flags a subclass of a loaded error class defined in Ruby' do
+    assert_equal [1], offenses("class Broken < RuboCop::Error; end\n").map(&:line)
+  end
+
   it 'flags a subclass of an error class the cop cannot resolve' do
     assert_equal [1], offenses("class Expired < Mcp::Auth::Error; end\n").map(&:line)
   end
