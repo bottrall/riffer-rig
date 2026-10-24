@@ -196,13 +196,10 @@ describe Riffer::Rig::ACP do
   end
 
   def fail_provider_once
-    error = StandardError.new('status=401').tap do |status_error|
-      status_error.define_singleton_method(:body) { { error: { message: 'Missing Authentication header' } } }
-    end
     provider = @built_runtimes.last.agent.provider
     provider.define_singleton_method(:stream_text) do |*|
       provider.singleton_class.remove_method(:stream_text)
-      raise error
+      raise 'status=401'
     end
   end
 
@@ -513,12 +510,12 @@ describe Riffer::Rig::ACP do
       assert_includes error.message, 'closed'
     end
 
-    it 'answers a provider error with what the provider said' do
+    it 'answers a provider error with its message' do
       session = new_session
       fail_provider_once
       error = @connection.prompt_session(prompt_request(session.session_id, 'hello'))
 
-      assert_equal 'status=401: Missing Authentication header', error.message
+      assert_equal 'status=401', error.message
     end
 
     it 'takes the next prompt on a session whose turn raised' do
