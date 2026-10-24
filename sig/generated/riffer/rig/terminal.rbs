@@ -76,8 +76,6 @@ class Riffer::Rig::Terminal
   # @rbs return: Integer
   def run_session: (bool open_picker) -> Integer
 
-  # A Ctrl-C delivered here acts as one at the idle prompt: armed, so the next
-  # one ends the session.
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs session: Riffer::Rig::Terminal::Session?
   # @rbs found: Riffer::Rig::Runtime?

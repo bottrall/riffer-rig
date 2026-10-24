@@ -45,14 +45,6 @@ describe Riffer::Rig::Terminal::BlockingLoop do
       assert_empty yielded(nil, "one\n")
     end
 
-    it 'yields each line stripped of the whitespace around it' do
-      assert_equal ['/model  opus'], yielded("  /model  opus \n", nil)
-    end
-
-    it 'skips a blank line' do
-      assert_equal ['one'], yielded("  \n", "one\n", nil)
-    end
-
     it 'hints at the second Ctrl-C after the first at the prompt' do
       yielded(:interrupt, nil)
 
@@ -69,6 +61,14 @@ describe Riffer::Rig::Terminal::BlockingLoop do
       assert_equal 2, hints
     end
 
+    it 'yields each line stripped of the whitespace around it' do
+      assert_equal ['/model  opus'], yielded("  /model  opus \n", nil)
+    end
+
+    it 'skips a blank line' do
+      assert_equal ['one'], yielded("  \n", "one\n", nil)
+    end
+
     it 'arms the exit when a Ctrl-C escapes a turn' do
       yielded("one\n", nil) { raise Interrupt }
 
@@ -81,6 +81,13 @@ describe Riffer::Rig::Terminal::BlockingLoop do
   end
 
   describe '#arm' do
+    it 'reports an exit already armed' do
+      armed = blocking_loop
+      armed.arm
+
+      refute armed.arm
+    end
+
     it 'arms the exit' do
       assert blocking_loop.arm
     end
@@ -89,13 +96,6 @@ describe Riffer::Rig::Terminal::BlockingLoop do
       blocking_loop.arm
 
       assert_equal 1, hints
-    end
-
-    it 'reports an exit already armed' do
-      armed = blocking_loop
-      armed.arm
-
-      refute armed.arm
     end
   end
 end

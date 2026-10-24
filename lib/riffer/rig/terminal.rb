@@ -165,8 +165,6 @@ class Riffer::Rig::Terminal
     @entries.stop
   end
 
-  # A Ctrl-C delivered here acts as one at the idle prompt: armed, so the next
-  # one ends the session.
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs session: Riffer::Rig::Terminal::Session?
   # @rbs found: Riffer::Rig::Runtime?
@@ -175,6 +173,8 @@ class Riffer::Rig::Terminal
     @opening.call(runtime)
     notify_missing(session) unless found
   rescue Interrupt
+    # A Ctrl-C delivered here acts as one at the idle prompt: armed, so the
+    # next one ends the session.
     @entries.arm
   end
 
