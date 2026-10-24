@@ -43,10 +43,6 @@ class Riffer::Rig::ACP
   # @rbs return: Riffer::Rig::ACP
   def self.for: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, cwd: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?, ?adopt: (^(String) -> Riffer::Rig::Runtime?)?) -> Riffer::Rig::ACP
 
-  # Builds the Runtime a session runs on: the client's MCP servers flow
-  # through the rig.mcp seam as a synthetic extension, so a reload rebuild
-  # re-declares them and a same-name declaration from an extension replaces
-  # them with the usual notify.
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs servers: Hash[String, Riffer::Rig::Mcp::Declaration]
@@ -69,8 +65,6 @@ class Riffer::Rig::ACP
   # @rbs return: void
   def initialize: (input: IO, output: IO, env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, home: String, cwd: String, ?build: (^(String, Riffer::Rig::Hosts::_Host, Hash[String, Riffer::Rig::Mcp::Declaration]) -> Riffer::Rig::Runtime)?, ?adopt: (^(String) -> Riffer::Rig::Runtime?)?) -> void
 
-  # Serves the connection until the client closes stdin; then the reader
-  # thread ends and run returns.
   # @rbs &block: ? (::ACP::AgentConnection) -> void
   # @rbs return: Integer
   def run: () ?{ (::ACP::AgentConnection) -> void } -> Integer
@@ -113,6 +107,10 @@ class Riffer::Rig::ACP
   # @rbs return: Riffer::Rig::Runtime?
   def session: (String id) -> Riffer::Rig::Runtime?
 
+  # @rbs error: StandardError
+  # @rbs return: ::ACP::RequestError
+  def internal_error: (StandardError error) -> ::ACP::RequestError
+
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs text: String
   # @rbs &: (::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event) -> void
@@ -142,19 +140,6 @@ class Riffer::Rig::ACP
   # @rbs host: Riffer::Rig::ACP::Host
   # @rbs return: Hash[String, Riffer::Rig::Mcp::Declaration]
   def declarations: (Array[::ACP::Types::McpServer::t] servers, Riffer::Rig::ACP::Host host) -> Hash[String, Riffer::Rig::Mcp::Declaration]
-
-  # @rbs server: ::ACP::Types::McpServer::t
-  # @rbs host: Riffer::Rig::ACP::Host
-  # @rbs return: [String, Riffer::Rig::Mcp::Declaration]?
-  def declaration_of: (::ACP::Types::McpServer::t server, Riffer::Rig::ACP::Host host) -> [ String, Riffer::Rig::Mcp::Declaration ]?
-
-  # @rbs server: ::ACP::Types::McpServer::t
-  # @rbs return: String
-  def server_name: (::ACP::Types::McpServer::t server) -> String
-
-  # @rbs server: ::ACP::Types::McpServerStdio
-  # @rbs return: Hash[String, String]
-  def stdio_env: (::ACP::Types::McpServerStdio server) -> Hash[String, String]
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: Array[::ACP::Types::AvailableCommand]
