@@ -6,7 +6,7 @@ module Riffer::Rig::Commands::Model
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
-  # @rbs sdk: Riffer::Rig::SDK::_Ensurer
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: Riffer::Rig::Command
   def command(env:, auth_path:, settings_path:, sdk: Riffer::Rig::SDK)
     Riffer::Rig::Command.new(
@@ -20,7 +20,7 @@ module Riffer::Rig::Commands::Model
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
-  # @rbs sdk: Riffer::Rig::SDK::_Ensurer
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: void
   def run(ctx, env:, auth_path:, settings_path:, sdk:)
     current = ctx.runtime.model
@@ -42,7 +42,7 @@ module Riffer::Rig::Commands::Model
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
-  # @rbs sdk: Riffer::Rig::SDK::_Ensurer
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: bool
   def switched?(ctx, model, env:, auth_path:, settings_path:, sdk:)
     provider = Riffer::Rig::Settings::ModelOptions.provider_for(model)
@@ -67,7 +67,7 @@ module Riffer::Rig::Commands::Model
   # @rbs env: Riffer::Rig::Env
   # @rbs auth_path: String
   # @rbs settings_path: String
-  # @rbs sdk: Riffer::Rig::SDK::_Ensurer
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: bool
   def ready?(ctx, model, provider, env:, auth_path:, settings_path:, sdk:)
     setup = Riffer::Rig::ProviderSetup.registered_setup(provider)

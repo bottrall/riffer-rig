@@ -16,7 +16,7 @@ class Riffer::Rig::Loader
   # @rbs @recorder_extensions: Array[Riffer::Rig::Extension]
   # @rbs @file_state: Hash[String, Time?]?
   # @rbs @reload_mode: (:auto | :manual | nil)
-  # @rbs @sdk: Riffer::Rig::SDK::_Ensurer
+  # @rbs @sdk: singleton(Riffer::Rig::SDK)
 
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -50,7 +50,7 @@ class Riffer::Rig::Loader
   # @rbs home: String
   # @rbs riffer_config: Riffer::Config
   # @rbs store: Riffer::Rig::Stores::_Store | nil
-  # @rbs sdk: Riffer::Rig::SDK::_Ensurer
+  # @rbs sdk: singleton(Riffer::Rig::SDK)
   # @rbs return: void
   def initialize(
     cwd:,
