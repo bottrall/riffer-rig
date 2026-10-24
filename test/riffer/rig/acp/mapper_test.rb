@@ -44,6 +44,51 @@ describe Riffer::Rig::ACP::Mapper do
     end
   end
 
+  describe '.update_for' do
+    it 'sends a text delta as an agent message chunk' do
+      update = Riffer::Rig::ACP::Mapper.update_for(Riffer::StreamEvents::TextDelta.new('Hi'))
+
+      assert_equal Riffer::Rig::ACP::Mapper.message_chunk('Hi').to_h, update&.to_h
+    end
+
+    it 'sends command output as an agent message chunk' do
+      update = Riffer::Rig::ACP::Mapper.update_for(Riffer::Rig::Events::CommandOutput.new('cost', 'Spent.'))
+
+      assert_equal Riffer::Rig::ACP::Mapper.message_chunk('Spent.').to_h, update&.to_h
+    end
+
+    it 'sends a finished tool call as a tool call' do
+      update = Riffer::Rig::ACP::Mapper.update_for(tool_call_done('read'))
+
+      assert_equal Riffer::Rig::ACP::Mapper.tool_call(tool_call_done('read')).to_h, update&.to_h
+    end
+
+    it 'sends a run tool call as a tool call update' do
+      event = after_tool_call(Riffer::Tools::Response.text('contents'))
+
+      assert_equal Riffer::Rig::ACP::Mapper.tool_call_done(event).to_h, Riffer::Rig::ACP::Mapper.update_for(event)&.to_h
+    end
+
+    it 'sends a job exit as a message break' do
+      completion = Riffer::Rig::Runtime::JobCompletion.new(
+        job_id: 'a1b2c3d4',
+        command: 'make test',
+        exit_status: 0,
+        signal: nil,
+        duration: 1.5,
+        output_path: '/tmp/job.log',
+        tail: ''
+      )
+      update = Riffer::Rig::ACP::Mapper.update_for(Riffer::Rig::Events::JobExit.new(completion))
+
+      assert_equal Riffer::Rig::ACP::Mapper.job_exit.to_h, update&.to_h
+    end
+
+    it 'sends nothing for any other event' do
+      assert_nil Riffer::Rig::ACP::Mapper.update_for(Riffer::Rig::Events::TurnEnd.new(:completed, nil))
+    end
+  end
+
   describe '.message_chunk' do
     it 'wraps the content in an agent message chunk' do
       assert_equal 'Hi', Riffer::Rig::ACP::Mapper.message_chunk('Hi').content.text

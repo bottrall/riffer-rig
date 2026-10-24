@@ -143,7 +143,7 @@ class Riffer::Rig::Terminal::Repl
       @busy = false
       @arrival.wait(@mutex) while @queue.messages.empty? && !@woken && !@closed
       message, @queue = @queue.dequeue
-      entry = message ? message.text : job_exit
+      entry = message || job_exit
       @busy = !entry.nil?
       @frame.queued(@queue.messages.size)
       entry

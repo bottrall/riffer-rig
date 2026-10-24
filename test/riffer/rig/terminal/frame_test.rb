@@ -351,6 +351,14 @@ describe Riffer::Rig::Terminal::Frame do
       assert_equal ['  aaaaaaaaa', '  aaaaaaaaa', '  aaa', '', ''], @pty.screen.rows
     end
 
+    it 'keeps the capped input of a short terminal out of the scrollback' do
+      frame = on_pty(columns: 12, rows: 5)
+
+      frame.input(editing('a' * 84))
+
+      assert_empty @pty.screen.scrollback
+    end
+
     it 'erases the palette of an earlier completion' do
       io = tty(80)
       frame = started(io)
