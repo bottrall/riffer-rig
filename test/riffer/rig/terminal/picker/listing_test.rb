@@ -48,16 +48,16 @@ describe Riffer::Rig::Terminal::Picker::Listing do
   end
 
   describe '#relist' do
+    it 'takes the new rows' do
+      assert_equal %w[gamma], titles(listing('alpha').relist([session('gamma')]).rows)
+    end
+
     it 'keeps the filter when a new row matches it' do
       assert_equal 'al', listing('alpha', 'beta', filter: 'al').relist([session('alfa')]).filter
     end
 
     it 'clears the filter when no new row matches it' do
       assert_equal '', listing('alpha', 'beta', filter: 'bet').relist([session('alpha')]).filter
-    end
-
-    it 'takes the new rows' do
-      assert_equal %w[gamma], titles(listing('alpha').relist([session('gamma')]).rows)
     end
   end
 end
