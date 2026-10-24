@@ -3,8 +3,6 @@
 module Riffer::Rig::Commands::Reasoning
   SAVE: String
 
-  DEFAULT: String
-
   # @rbs settings_path: String
   # @rbs return: Riffer::Rig::Command
   def command: (settings_path: String) -> Riffer::Rig::Command

@@ -2,13 +2,13 @@
 
 require 'test_helper'
 
-describe Riffer::Rig::Tools::Bash::JobLog do
+describe Riffer::Rig::Runtime::JobLog do
   def setup
     @directory = Dir.mktmpdir('riffer-rig-log-test')
     @path = File.join(@directory, 'output')
     @reader, @writer = IO.pipe
     @threads = Thread.list
-    @log = Riffer::Rig::Tools::Bash::JobLog.new(@reader, @path)
+    @log = Riffer::Rig::Runtime::JobLog.new(@reader, @path)
   end
 
   def teardown
@@ -24,12 +24,12 @@ describe Riffer::Rig::Tools::Bash::JobLog do
   end
 
   def overflow(drops: 1)
-    bytes = Riffer::Rig::Tools::Bash::JobLog::MAX_BYTES + ((drops - 1) * Riffer::Rig::Tools::Bash::JobLog::KEEP_BYTES)
+    bytes = Riffer::Rig::Runtime::JobLog::MAX_BYTES + ((drops - 1) * Riffer::Rig::Runtime::JobLog::KEEP_BYTES)
     Random.new(1).bytes(bytes + 1_000).tap { |stream| finish(stream) }
   end
 
   def kept
-    File.binread(@path).delete_prefix(Riffer::Rig::Tools::Bash::JobLog::DROPPED)
+    File.binread(@path).delete_prefix(Riffer::Rig::Runtime::JobLog::DROPPED)
   end
 
   describe '#initialize' do
@@ -89,7 +89,7 @@ describe Riffer::Rig::Tools::Bash::JobLog do
 
     it 'reads from the marker once the output at its offset was dropped' do
       overflow
-      marker = Riffer::Rig::Tools::Bash::JobLog::DROPPED
+      marker = Riffer::Rig::Runtime::JobLog::DROPPED
 
       assert_equal marker, @log.read(0, marker.bytesize).first
     end
@@ -197,12 +197,12 @@ describe Riffer::Rig::Tools::Bash::JobLog do
     it 'keeps the file within the cap' do
       overflow
 
-      assert_operator File.size(@path), :<=, Riffer::Rig::Tools::Bash::JobLog::MAX_BYTES
+      assert_operator File.size(@path), :<=, Riffer::Rig::Runtime::JobLog::MAX_BYTES
     end
 
     it 'starts the file with a marker for the dropped output' do
       overflow
-      marker = Riffer::Rig::Tools::Bash::JobLog::DROPPED
+      marker = Riffer::Rig::Runtime::JobLog::DROPPED
 
       assert_equal marker, File.read(@path, marker.bytesize)
     end
@@ -210,7 +210,7 @@ describe Riffer::Rig::Tools::Bash::JobLog do
     it 'keeps at least the most recent half of the cap' do
       overflow
 
-      assert_operator kept.bytesize, :>=, Riffer::Rig::Tools::Bash::JobLog::KEEP_BYTES
+      assert_operator kept.bytesize, :>=, Riffer::Rig::Runtime::JobLog::KEEP_BYTES
     end
 
     it 'keeps the most recent output after the marker' do

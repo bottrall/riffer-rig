@@ -11,7 +11,7 @@ Every session is saved as it runs, one file per session at `~/.riffer/sessions/<
 | pick from this directory's sessions              | `riffer -r`, or `/resume` in a session |
 | pick from every directory's sessions             | `/resume --all`         |
 
-A session resumes in the directory it was saved in, wherever you resume it from, so its tools, project settings, skills and `rig.rb` are that directory's. If that directory no longer exists, the session isn't resumed. When there is no session to continue, the terminal starts a fresh one; [headless](HEADLESS.md#flags) exits 2 instead.
+A session resumes in the directory it was saved in, wherever you resume it from, so its tools, project settings, skills and `rig.rb` are that directory's. If that directory no longer exists, the session isn't resumed. When there is no session to continue, the terminal starts a fresh one; [headless](HEADLESS.md#exit-codes) exits 2 instead.
 
 A resumed session keeps its id and carries on in the same file. What comes back:
 
@@ -22,7 +22,7 @@ A resumed session keeps its id and carries on in the same file. What comes back:
 | a `/reasoning` switch                             |                                                        |
 | the skills the model activated, if they still exist |                                                      |
 
-`--model` or `--reasoning` wins over a restored switch for that run only, so resuming again without the flag restores the switch. If a crash cut off a turn mid-tool-call, the unfinished calls are marked as interrupted rather than run again.
+Whether a flag or a restored switch wins is in [Configuration](CONFIGURATION.md#where-each-value-comes-from). If a crash cut off a turn mid-tool-call, the unfinished calls are marked as interrupted rather than run again.
 
 ## The picker
 

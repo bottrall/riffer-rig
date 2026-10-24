@@ -5,6 +5,8 @@ class Riffer::Rig::Terminal::Ticker
 
   CHARS_PER_TOKEN: Integer
 
+  SPINNER: Array[String]
+
   @unmetered: Integer
 
   @tick: Integer

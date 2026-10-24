@@ -27,6 +27,18 @@ module Riffer::Rig::ACP::Mapper
     blocks.filter_map { |block| prompt_text_of(block) }.join("\n\n")
   end
 
+  # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
+  # @rbs return: ::ACP::Types::SessionUpdate::t?
+  def update_for(event)
+    case event
+    when Riffer::StreamEvents::TextDelta then message_chunk(event.content)
+    when Riffer::Rig::Events::CommandOutput then message_chunk(event.text)
+    when Riffer::StreamEvents::ToolCallDone then tool_call(event)
+    when Riffer::Rig::Events::AfterToolCall then tool_call_done(event)
+    when Riffer::Rig::Events::JobExit then job_exit
+    end
+  end
+
   # @rbs content: String
   # @rbs return: ::ACP::Types::SessionUpdate::AgentMessageChunk
   def message_chunk(content)
@@ -96,10 +108,10 @@ module Riffer::Rig::ACP::Mapper
   def stop_reason_of(stop_reason)
     case stop_reason
     when :completed then ::ACP::Types::StopReason::END_TURN
-    when Riffer::Rig::Runtime::INTERRUPT_CANCELLED then ::ACP::Types::StopReason::CANCELLED
+    when Riffer::Rig::Runtime::StopReason::INTERRUPT_CANCELLED then ::ACP::Types::StopReason::CANCELLED
     when :max_steps then ::ACP::Types::StopReason::MAX_TURN_REQUESTS
     else
-      stopped = Riffer::Rig::Runtime::STOPPED_WITHOUT_COMPLETING.include?(stop_reason)
+      stopped = Riffer::Rig::Runtime::StopReason::STOPPED_WITHOUT_COMPLETING.include?(stop_reason)
       stopped ? ::ACP::Types::StopReason::MAX_TOKENS : ::ACP::Types::StopReason::REFUSAL
     end
   end

@@ -2,9 +2,9 @@
 
 require 'test_helper'
 
-describe Riffer::Rig::Tools::Bash::Job do
+describe Riffer::Rig::Runtime::Job do
   def job(ended_at: nil)
-    Riffer::Rig::Tools::Bash::Job.new(
+    Riffer::Rig::Runtime::Job.new(
       id: 'abc123',
       pid: 4242,
       command: 'sleep 5',

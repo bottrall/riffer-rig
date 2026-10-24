@@ -13,7 +13,7 @@ class Riffer::Rig::Tools::Bash::Kill < Riffer::Tool
   # @rbs job_id: String
   # @rbs return: Riffer::Tools::Response
   def call(context:, job_id:)
-    jobs = context&.[](:jobs) #: Riffer::Rig::Tools::Bash::Jobs?
+    jobs = context&.[](:jobs) #: Riffer::Rig::Runtime::Jobs?
     return error('no background job registry in the context', type: :command_failed) unless jobs
 
     job = jobs.kill(job_id)

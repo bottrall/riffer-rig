@@ -97,10 +97,10 @@ module Riffer::Rig::Terminal::Banner
   # @rbs return: Array[String]
   def info(theme, model:, reasoning:, cwd:, skills:, version:, tally:, width:)
     room = width && (width - VALUE_COLUMN)
-    session = tally && Riffer::Rig::Terminal::Tally.call(tally)
+    session = tally && summary(tally)
     values = {
       model: clip(model, room),
-      reasoning: reasoning || Riffer::Rig::Terminal::Reasoning::DEFAULT,
+      reasoning: reasoning || Riffer::Rig::Runtime::DEFAULT_REASONING_LABEL,
       cwd: clip(cwd, room),
       skills: skills,
       version: version,
@@ -122,5 +122,12 @@ module Riffer::Rig::Terminal::Banner
     return value if room.nil? || Riffer::Rig::Terminal::Columns.width(value) <= room
 
     "…#{Riffer::Rig::Terminal::Columns.tail(value, room - 1)}"
+  end
+
+  # @rbs usage: Riffer::Providers::TokenUsage
+  # @rbs return: String
+  def summary(usage)
+    cost = usage.cost
+    ["#{usage.total_tokens} tok", *(Riffer::Rig::Terminal::Count.cost(cost) if cost)].join(' · ')
   end
 end
