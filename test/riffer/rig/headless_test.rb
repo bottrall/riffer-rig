@@ -31,6 +31,8 @@ class ScriptedRuntime
   def await_job_exit(timeout: nil)
     @timeouts << timeout
     exit = @exits.shift
+    return exit.call if exit.is_a?(Proc)
+
     exit.is_a?(Class) ? raise(exit) : exit
   end
 
@@ -96,16 +98,6 @@ describe Riffer::Rig::Headless do
     end
   end
 
-  def run_with_extension(extension, prompt: 'hello', input: '')
-    @status = Riffer::Rig::Headless.for(input: piped(input), output: @output, error: @error).run(
-      prompt: prompt
-    ) do |host|
-      @runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [extension], host: host, cwd: @cwd)
-      yield @runtime
-      @runtime
-    end
-  end
-
   def run_build(json: false, job_idle_timeout: Riffer::Rig::Headless::JOB_IDLE_TIMEOUT, &)
     @status = Riffer::Rig::Headless.for(
       input: piped(''), output: @output, error: @error, json: json, job_idle_timeout: job_idle_timeout
@@ -138,19 +130,6 @@ describe Riffer::Rig::Headless do
   def run_waiting(exits, events: [turn_end(:completed)], follow_up: [turn_end(:completed)], **)
     @runtime = ScriptedRuntime.new(events, exits: exits, follow_up: follow_up)
     run_build(**) { @runtime }
-  end
-
-  def interrupt_once(cancelled)
-    fired = false
-    Riffer::Rig::Extension.new('interrupter') do |rig|
-      rig.on(:stream) do
-        next if fired
-
-        fired = true
-        Process.kill('INT', Process.pid)
-        cancelled.pop(timeout: 5)
-      end
-    end
   end
 
   def prompt_sent_to_model
@@ -344,11 +323,11 @@ describe Riffer::Rig::Headless do
       @output.sync = false
       seen = nil
       reply = Riffer::StreamEvents::TextDone.new('started')
-      @runtime = ScriptedRuntime.new([reply, turn_end(:completed)], exits: [false])
-      @runtime.define_singleton_method(:await_job_exit) do |**|
+      peek = lambda do
         seen = reader.read_nonblock(64, exception: false)
         false
       end
+      @runtime = ScriptedRuntime.new([reply, turn_end(:completed)], exits: [peek])
       run_build { @runtime }
       [@output, reader].each(&:close)
 
@@ -618,10 +597,9 @@ describe Riffer::Rig::Headless do
   end
 
   it 'returns 130 when interrupted and the turn is cancelled' do
-    cancelled = Queue.new
-    run_with_extension(interrupt_once(cancelled)) do |runtime|
-      runtime.define_singleton_method(:cancel) { super().tap { cancelled << true } }
-      runtime.agent.provider.stub_response('Hi')
+    run_scripted(turn_end(:cancelled)) do |runtime|
+      Process.kill('INT', Process.pid)
+      runtime.cancelled.pop(timeout: 5)
     end
 
     assert_equal 130, @status

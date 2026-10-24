@@ -527,11 +527,11 @@ describe Riffer::Rig::Loader do
         gem_specs = Gem::Specification.method(:find_by_name)
         bundler = Riffer::Rig::SDK.method(:bundler?)
         Gem::Specification.define_singleton_method(:find_by_name) { |*_args| raise Gem::LoadError, 'not installed' }
-        Riffer::Rig::SDK.define_singleton_method(:bundler?) { false }
+        Riffer::Rig::SDK.define_singleton_method(:bundler?) { false } # rubocop:disable Rig/NoMocking -- goes once the SDK is injected into the Loader
         yield
       ensure
         Gem::Specification.define_singleton_method(:find_by_name, gem_specs)
-        Riffer::Rig::SDK.define_singleton_method(:bundler?, bundler)
+        Riffer::Rig::SDK.define_singleton_method(:bundler?, bundler) # rubocop:disable Rig/NoMocking -- goes once the SDK is injected into the Loader
       end
 
       it 'builds the Runtime for a provider that needs no SDK gem' do
@@ -971,7 +971,7 @@ describe Riffer::Rig::Loader do
     end
 
     def with_raising_credentials
-      Riffer::Rig::Credentials.define_singleton_method(:resolve) { |*_args, **_kwargs| raise 'credential boom' }
+      Riffer::Rig::Credentials.define_singleton_method(:resolve) { |*_args, **_kwargs| raise 'credential boom' } # rubocop:disable Rig/NoMocking -- goes once credential resolution is injected into the Loader
       yield
     ensure
       Riffer::Rig::Credentials.singleton_class.remove_method(:resolve)
