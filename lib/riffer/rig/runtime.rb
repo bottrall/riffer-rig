@@ -84,7 +84,7 @@ class Riffer::Rig::Runtime
   # @rbs model_options: Hash[Symbol, untyped]
   # @rbs native_tools: Hash[Symbol, untyped]
   # @rbs clock: ^() -> Float
-  # @rbs snapshot: Hash[Symbol, untyped]?
+  # @rbs snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?
   # @rbs return: void
   def initialize(
     model,
@@ -107,7 +107,7 @@ class Riffer::Rig::Runtime
     clock: -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) },
     snapshot: nil
   )
-    saved = snapshot && Riffer::Rig::Runtime::Snapshot.from_h(snapshot)
+    saved = snapshot && Riffer::Rig::Runtime::Snapshot.of(snapshot)
     # Doubles as the snapshot id and ACP sessionId.
     @id = saved ? saved.id : ::SecureRandom.uuid_v7
     @host = Riffer::Rig::Hosts::Mirror.new(host)

@@ -7,6 +7,6 @@ module Riffer::Rig::Stores::Entries
 
   # @rbs entries: Array[Riffer::Rig::Stores::entry]
   # @rbs id: String
-  # @rbs return: Hash[Symbol, untyped]
-  def snapshot: (Array[Riffer::Rig::Stores::entry] entries, String id) -> Hash[Symbol, untyped]
+  # @rbs return: Riffer::Rig::Runtime::Snapshot
+  def snapshot: (Array[Riffer::Rig::Stores::entry] entries, String id) -> Riffer::Rig::Runtime::Snapshot
 end

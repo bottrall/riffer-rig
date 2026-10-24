@@ -11,16 +11,16 @@ module Riffer::Rig::Stores::Entries
 
   # @rbs entries: Array[Riffer::Rig::Stores::entry]
   # @rbs id: String
-  # @rbs return: Hash[Symbol, untyped]
+  # @rbs return: Riffer::Rig::Runtime::Snapshot
   def snapshot(entries, id)
-    {
+    Riffer::Rig::Runtime::Snapshot.new(
       id: id,
-      messages: messages(entries),
+      messages: messages(entries).map { |message| Riffer::Rig::Runtime::Snapshot.message(message) },
       model: entries.filter_map { |entry| entry.model if entry.is_a?(Riffer::Rig::Stores::ModelEntry) }.last,
       reasoning: entries.filter_map do |entry|
         entry.reasoning if entry.is_a?(Riffer::Rig::Stores::ReasoningEntry)
       end.last,
       skills: entries.filter_map { |entry| entry.skill if entry.is_a?(Riffer::Rig::Stores::SkillEntry) }
-    }
+    )
   end
 end
