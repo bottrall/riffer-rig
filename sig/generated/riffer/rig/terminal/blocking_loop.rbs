@@ -1,0 +1,32 @@
+# Generated from lib/riffer/rig/terminal/blocking_loop.rb with RBS::Inline
+
+class Riffer::Rig::Terminal::BlockingLoop
+  @input: IO
+
+  @renderer: Riffer::Rig::Terminal::Renderer
+
+  @armed: bool
+
+  # @rbs input: IO
+  # @rbs renderer: Riffer::Rig::Terminal::Renderer
+  # @rbs return: void
+  def initialize: (input: IO, renderer: Riffer::Rig::Terminal::Renderer) -> void
+
+  # @rbs return: void
+  def start: () -> void
+
+  # @rbs return: void
+  def stop: () -> void
+
+  # @rbs &block: (String) -> void
+  # @rbs return: void
+  def run: () { (String) -> void } -> void
+
+  # @rbs return: bool
+  def arm: () -> bool
+
+  private
+
+  # @rbs return: String | :interrupt | nil
+  def read_line: () -> (String | :interrupt | nil)
+end

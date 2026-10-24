@@ -25,9 +25,7 @@ class Riffer::Rig::Terminal
 
   FAREWELL: ::String
 
-  @exit_armed: bool
-
-  @repl: Riffer::Rig::Terminal::Repl?
+  @entries: Riffer::Rig::Terminal::_Entries
 
   @turns: Riffer::Rig::Terminal::_TurnDisplay
 
@@ -41,8 +39,6 @@ class Riffer::Rig::Terminal
 
   @host: Riffer::Rig::Hosts::_Host
 
-  @input: IO
-
   # @rbs input: IO
   # @rbs output: IO
   # @rbs version: String
@@ -51,25 +47,24 @@ class Riffer::Rig::Terminal
   # @rbs return: Riffer::Rig::Terminal
   def self.for: (input: IO, output: IO, version: String, sessions: Riffer::Rig::Terminal::_Sessions, ?no_color: bool) -> Riffer::Rig::Terminal
 
-  # @rbs input: IO
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
+  # @rbs prompter: Riffer::Rig::Terminal::_Prompter
+  # @rbs entries: Riffer::Rig::Terminal::_Entries
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs opening: Riffer::Rig::Terminal::Opening
   # @rbs turns: Riffer::Rig::Terminal::_TurnDisplay
-  # @rbs repl: Riffer::Rig::Terminal::Repl?
   # @rbs return: Riffer::Rig::Terminal
-  def self.assemble: (input: IO, renderer: Riffer::Rig::Terminal::Renderer, sessions: Riffer::Rig::Terminal::_Sessions, opening: Riffer::Rig::Terminal::Opening, turns: Riffer::Rig::Terminal::_TurnDisplay, ?repl: Riffer::Rig::Terminal::Repl?) -> Riffer::Rig::Terminal
+  def self.assemble: (renderer: Riffer::Rig::Terminal::Renderer, prompter: Riffer::Rig::Terminal::_Prompter, entries: Riffer::Rig::Terminal::_Entries, sessions: Riffer::Rig::Terminal::_Sessions, opening: Riffer::Rig::Terminal::Opening, turns: Riffer::Rig::Terminal::_TurnDisplay) -> Riffer::Rig::Terminal
 
-  # @rbs input: IO
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
   # @rbs opening: Riffer::Rig::Terminal::Opening
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs picker: Riffer::Rig::Terminal::Picker
   # @rbs turns: Riffer::Rig::Terminal::_TurnDisplay
-  # @rbs repl: Riffer::Rig::Terminal::Repl?
+  # @rbs entries: Riffer::Rig::Terminal::_Entries
   # @rbs return: void
-  def initialize: (input: IO, host: Riffer::Rig::Hosts::_Host, renderer: Riffer::Rig::Terminal::Renderer, opening: Riffer::Rig::Terminal::Opening, sessions: Riffer::Rig::Terminal::_Sessions, picker: Riffer::Rig::Terminal::Picker, turns: Riffer::Rig::Terminal::_TurnDisplay, ?repl: Riffer::Rig::Terminal::Repl?) -> void
+  def initialize: (host: Riffer::Rig::Hosts::_Host, renderer: Riffer::Rig::Terminal::Renderer, opening: Riffer::Rig::Terminal::Opening, sessions: Riffer::Rig::Terminal::_Sessions, picker: Riffer::Rig::Terminal::Picker, turns: Riffer::Rig::Terminal::_TurnDisplay, entries: Riffer::Rig::Terminal::_Entries) -> void
 
   # @rbs open_picker: bool
   # @rbs return: Integer
@@ -81,8 +76,6 @@ class Riffer::Rig::Terminal
   # @rbs return: Integer
   def run_session: (bool open_picker) -> Integer
 
-  # The banner and the notices before the loop. A Ctrl-C delivered here acts
-  # as one at the idle prompt: armed, so the next one ends the session.
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs session: Riffer::Rig::Terminal::Session?
   # @rbs found: Riffer::Rig::Runtime?
@@ -108,27 +101,6 @@ class Riffer::Rig::Terminal
   # @rbs &build: () -> Riffer::Rig::Runtime?
   # @rbs return: Riffer::Rig::Runtime?
   def build: () { () -> Riffer::Rig::Runtime? } -> Riffer::Rig::Runtime?
-
-  # @rbs &block: (String | :job_exit) -> void
-  # @rbs return: void
-  def each_entry: () { (String | :job_exit) -> void } -> void
-
-  # @rbs &block: (String) -> void
-  # @rbs return: void
-  def repl: () { (String) -> void } -> void
-
-  # Records a Ctrl-C for the idle prompt of the blocking loop: the first one
-  # arms the exit hint, a second one while armed ends the session.
-  # @rbs return: void
-  def arm_exit: () -> void
-
-  # @rbs return: String | :interrupt | nil
-  def read_line: () -> (String | :interrupt | nil)
-
-  # @rbs queued: Riffer::Rig::Terminal::Repl
-  # @rbs &block: (String | :job_exit) -> void
-  # @rbs return: void
-  def drain: (Riffer::Rig::Terminal::Repl queued) { (String | :job_exit) -> void } -> void
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: void

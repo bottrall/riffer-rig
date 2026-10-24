@@ -13,6 +13,15 @@ class Riffer::Rig::Terminal
     def missing: (?String? id) -> String
   end
 
+  # Where the terminal reads what was typed: BlockingLoop line by line, Repl
+  # from the keys over the footer.
+  interface _Entries
+    def start: () -> void
+    def stop: () -> void
+    def arm: () -> bool
+    def run: () { (String | :job_exit) -> void } -> void
+  end
+
   interface _Prompter
     def ask: (String? question, options: Array[String]?, secret: bool) -> String?
   end

@@ -30,15 +30,13 @@ class Riffer::Rig::Terminal
 
   FAREWELL = 'see you on the next riff.'
 
-  # @rbs @input: IO
   # @rbs @host: Riffer::Rig::Hosts::_Host
   # @rbs @renderer: Riffer::Rig::Terminal::Renderer
   # @rbs @opening: Riffer::Rig::Terminal::Opening
   # @rbs @sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs @picker: Riffer::Rig::Terminal::Picker
   # @rbs @turns: Riffer::Rig::Terminal::_TurnDisplay
-  # @rbs @repl: Riffer::Rig::Terminal::Repl?
-  # @rbs @exit_armed: bool
+  # @rbs @entries: Riffer::Rig::Terminal::_Entries
 
   # @rbs input: IO
   # @rbs output: IO
@@ -52,9 +50,12 @@ class Riffer::Rig::Terminal
     width = -> { Frame.measure(output)&.last }
     frame = Frame.new(io: output, theme: theme, loading: true) if input.tty?
     unless frame&.measure
+      renderer = Renderer.new(io: output, theme:, width:)
       opening = Opening.new(io: output, theme:, version:, sessions:, width:)
       turns = QuietDisplay.new(io: output, theme: theme, clock: clock)
-      return assemble(input:, renderer: Renderer.new(io: output, theme:, width:), sessions:, opening:, turns:)
+      prompter = BlockingPrompter.new(input:, renderer:)
+      entries = BlockingLoop.new(input:, renderer:)
+      return assemble(renderer:, prompter:, entries:, sessions:, opening:, turns:)
     end
 
     pipeline = KeyPipeline.new(input: input, output: output)
@@ -66,6 +67,7 @@ class Riffer::Rig::Terminal
     )
     asks = Queue.new #: Thread::Queue[Riffer::Rig::Terminal::Key]
     peek = Peek.new(frame: frame)
+    renderer = Renderer.new(io: console, theme: theme, width: -> { frame.measure&.last })
     repl = Repl.new(
       console: console,
       frame: frame,
@@ -73,6 +75,7 @@ class Riffer::Rig::Terminal
       asks: asks,
       prompter: FramePrompter.new(frame: frame, keys: asks, theme: theme),
       peek: peek,
+      renderer: renderer,
       interrupt: -> { Process.kill('INT', Process.pid) },
       builtins: BUILTINS
     )
@@ -86,44 +89,39 @@ class Riffer::Rig::Terminal
       repl: repl
     )
     turns = TickerDisplay.new(frame: frame, theme: theme, peek: peek, catalog: Riffer.config.catalog, clock: clock)
-    renderer = Renderer.new(io: console, theme: theme, width: -> { frame.measure&.last })
-    assemble(input:, renderer:, sessions:, opening:, turns:, repl:)
+    assemble(renderer:, prompter: repl, entries: repl, sessions:, opening:, turns:)
   end
 
-  # @rbs input: IO
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
+  # @rbs prompter: Riffer::Rig::Terminal::_Prompter
+  # @rbs entries: Riffer::Rig::Terminal::_Entries
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs opening: Riffer::Rig::Terminal::Opening
   # @rbs turns: Riffer::Rig::Terminal::_TurnDisplay
-  # @rbs repl: Riffer::Rig::Terminal::Repl?
   # @rbs return: Riffer::Rig::Terminal
-  def self.assemble(input:, renderer:, sessions:, opening:, turns:, repl: nil)
-    prompter = repl || BlockingPrompter.new(input: input, renderer: renderer)
+  def self.assemble(renderer:, prompter:, entries:, sessions:, opening:, turns:)
     host = Riffer::Rig::Terminal::Host.new(prompter: prompter, renderer: renderer)
     picker = Picker.new(prompter: prompter, renderer: renderer, host: host, sessions: sessions)
-    new(input:, host:, renderer:, opening:, sessions:, picker:, turns:, repl:)
+    new(host:, renderer:, opening:, sessions:, picker:, turns:, entries:)
   end
   private_class_method :assemble
 
-  # @rbs input: IO
   # @rbs host: Riffer::Rig::Hosts::_Host
   # @rbs renderer: Riffer::Rig::Terminal::Renderer
   # @rbs opening: Riffer::Rig::Terminal::Opening
   # @rbs sessions: Riffer::Rig::Terminal::_Sessions
   # @rbs picker: Riffer::Rig::Terminal::Picker
   # @rbs turns: Riffer::Rig::Terminal::_TurnDisplay
-  # @rbs repl: Riffer::Rig::Terminal::Repl?
+  # @rbs entries: Riffer::Rig::Terminal::_Entries
   # @rbs return: void
-  def initialize(input:, host:, renderer:, opening:, sessions:, picker:, turns:, repl: nil)
-    @input = input
+  def initialize(host:, renderer:, opening:, sessions:, picker:, turns:, entries:)
     @host = host
     @renderer = renderer
     @opening = opening
     @sessions = sessions
     @picker = picker
     @turns = turns
-    @repl = repl
-    @exit_armed = false
+    @entries = entries
   end
 
   # @rbs open_picker: bool
@@ -144,7 +142,7 @@ class Riffer::Rig::Terminal
   # @rbs open_picker: bool
   # @rbs return: Integer
   def run_session(open_picker)
-    @repl&.start
+    @entries.start
     session = @picker.open(all: false) if open_picker
     found = nil #: Riffer::Rig::Runtime?
     runtime = build { (found = find(session)) || @sessions.fresh(@host) }
@@ -152,8 +150,9 @@ class Riffer::Rig::Terminal
 
     begin
       opening(runtime, session, found)
-      each_entry do |entry|
+      @entries.run do |entry|
         next deliver_job_exits(runtime) if entry == :job_exit
+        break if EXIT_COMMANDS.include?(entry)
 
         runtime = dispatch(runtime, entry)
       end
@@ -163,11 +162,9 @@ class Riffer::Rig::Terminal
       close(runtime)
     end
   ensure
-    @repl&.stop
+    @entries.stop
   end
 
-  # The banner and the notices before the loop. A Ctrl-C delivered here acts
-  # as one at the idle prompt: armed, so the next one ends the session.
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs session: Riffer::Rig::Terminal::Session?
   # @rbs found: Riffer::Rig::Runtime?
@@ -176,8 +173,9 @@ class Riffer::Rig::Terminal
     @opening.call(runtime)
     notify_missing(session) unless found
   rescue Interrupt
-    repl = @repl
-    repl ? repl.arm : arm_exit
+    # A Ctrl-C delivered here acts as one at the idle prompt: armed, so the
+    # next one ends the session.
+    @entries.arm
   end
 
   # @rbs return: void
@@ -218,67 +216,6 @@ class Riffer::Rig::Terminal
   rescue Interrupt
     @renderer.newline
     nil
-  end
-
-  # @rbs &block: (String | :job_exit) -> void
-  # @rbs return: void
-  def each_entry(&)
-    queued = @repl
-    queued ? drain(queued, &) : repl(&)
-  end
-
-  # @rbs &block: (String) -> void
-  # @rbs return: void
-  def repl
-    loop do
-      case (line = read_line)
-      when nil then break
-      when :interrupt
-        break if @exit_armed
-
-        arm_exit
-      else
-        @exit_armed = false
-        text = line.strip
-        break if EXIT_COMMANDS.include?(text)
-
-        begin
-          yield text unless text.empty?
-        rescue Interrupt
-          arm_exit
-        end
-      end
-    end
-  end
-
-  # Records a Ctrl-C for the idle prompt of the blocking loop: the first one
-  # arms the exit hint, a second one while armed ends the session.
-  # @rbs return: void
-  def arm_exit
-    @exit_armed = true
-    @renderer.notice(EXIT_HINT)
-  end
-
-  # @rbs return: String | :interrupt | nil
-  def read_line
-    @renderer.prompt
-    @input.gets
-  rescue Interrupt
-    :interrupt
-  end
-
-  # @rbs queued: Riffer::Rig::Terminal::Repl
-  # @rbs &block: (String | :job_exit) -> void
-  # @rbs return: void
-  def drain(queued)
-    queued.run do |entry|
-      next yield(entry) if entry == :job_exit
-
-      @renderer.echo(entry)
-      break if EXIT_COMMANDS.include?(entry)
-
-      yield entry
-    end
   end
 
   # @rbs runtime: Riffer::Rig::Runtime
