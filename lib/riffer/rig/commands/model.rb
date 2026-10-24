@@ -95,28 +95,15 @@ module Riffer::Rig::Commands::Model
 
     empty = {} #: Hash[Symbol, String]
     stored = ctx.runtime.credentials.fetch(provider.to_sym, empty)
-    resolution = Riffer::Rig::Credentials.install(
-      provider, host: ctx.host, env:, auth_path:, settings_path:, known: stored
+    values = Riffer::Rig::Credentials.install_values(
+      provider, host: ctx.host, env:, auth_path:, settings_path:, setup:, known: stored
     )
-    if resolution.is_a?(String)
-      ctx.host.notify(resolution, level: :error)
-      false
-    elsif resolution.missing.any?
-      refuse(ctx, model, provider, missing & resolution.missing)
-      false
-    else
-      ctx.runtime.merge_credentials(provider.to_sym, stored.merge(resolution.values))
-      true
+    if values.is_a?(String)
+      ctx.host.notify("Not switching to #{model}: #{values}", level: :error)
+      return false
     end
-  end
 
-  # @rbs ctx: Riffer::Rig::Command::Context
-  # @rbs model: String
-  # @rbs provider: String
-  # @rbs missing: Array[Symbol]
-  # @rbs return: void
-  def refuse(ctx, model, provider, missing)
-    wanted = Riffer::Rig::ProviderSetup.for(provider).missing_fields(missing)
-    ctx.host.notify("Not switching to #{model}: #{provider} has no #{wanted}", level: :error)
+    ctx.runtime.merge_credentials(provider.to_sym, stored.merge(values))
+    true
   end
 end

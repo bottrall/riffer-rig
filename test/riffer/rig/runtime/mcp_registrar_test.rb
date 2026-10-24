@@ -87,6 +87,14 @@ describe Riffer::Rig::Runtime::McpRegistrar do
       assert_empty registrar.register({ 'web' => authed })
     end
 
+    it 'reports a header naming an undeclared field through notify' do
+      declaration = serving(headers: { 'X-Token' => '${token}' }, auth: { api_key: ['KAGI_API_KEY'] })
+      registrar(env: { 'KAGI_API_KEY' => 'kagi-key' }).register({ 'web' => declaration })
+      notice = 'MCP server web failed to register: header references ${token}, which the auth block does not declare'
+
+      assert_equal [error(notice)], @host.drain
+    end
+
     it 'keeps the registration of a retained server declared the same' do
       built = registrar
       before = retained(built, { 'web' => serving }).fetch('web')

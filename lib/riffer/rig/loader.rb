@@ -356,7 +356,7 @@ class Riffer::Rig::Loader
   # @rbs provider: String
   # @rbs return: (Hash[Symbol, String] | String)
   def install_credentials(provider)
-    Riffer::Rig::Loader::Credentials.install(
+    Riffer::Rig::Credentials.install_values(
       provider,
       host: @host,
       env: @env,
