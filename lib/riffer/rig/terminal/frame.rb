@@ -384,7 +384,7 @@ class Riffer::Rig::Terminal::Frame
 
   # @rbs return: Integer
   def input_cap
-    (@height - 1).clamp(1, INPUT_ROWS)
+    (@height - 2).clamp(1, INPUT_ROWS)
   end
 
   # @rbs line: String
