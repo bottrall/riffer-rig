@@ -89,6 +89,11 @@ Rig/NoMocking:
   Enabled: true
   Include:
     - "test/**/*_test.rb"
+  Exclude:
+    # Their Riffer::Rig::SDK patches go once the SDK is injected; drop these
+    # entries then.
+    - "test/riffer/rig/commands/model_test.rb"
+    - "test/riffer/rig/sdk_test.rb"
 
 Rig/RequireDisableReason:
   Enabled: true
