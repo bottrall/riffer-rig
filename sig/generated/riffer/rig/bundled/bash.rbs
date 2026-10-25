@@ -1,5 +1,5 @@
 # Generated from lib/riffer/rig/bundled/bash.rb with RBS::Inline
 
 module Riffer::Rig::Bundled
-  Bash: untyped
+  Bash: Riffer::Rig::Extension
 end
