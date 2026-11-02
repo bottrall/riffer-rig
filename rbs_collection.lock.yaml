@@ -94,7 +94,7 @@ gems:
   source:
     type: stdlib
 - name: openai
-  version: 0.111.0
+  version: 0.115.1
   source:
     type: rubygems
 - name: pathname
