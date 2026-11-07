@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.17.0</span>
+            <span class="version">v0.18.0</span>
           </div>
         </nav>
       </div>
@@ -203,6 +203,11 @@
       <td><code>Extension NAME failed to load: …</code></td>
       <td>an extension raised while loading, its <code>requires:</code> doesn’t match, or it is named after a core settings key</td>
       <td>fix the extension; the others still loaded (<a href="/guides/extensions/#error-isolation">Error isolation</a>)</td>
+    </tr>
+    <tr>
+      <td><code>max_tokens: 64000 &gt; 32000, which is the maximum allowed number of output tokens for MODEL</code></td>
+      <td>the Anthropic model’s own output limit is below the <code>max_tokens</code> sent</td>
+      <td>set <a href="/guides/configuration/#max_tokens"><code>max_tokens</code></a> to the limit the message names, or lower</td>
     </tr>
     <tr>
       <td><code>Unknown tool in allowlist: NAME</code></td>

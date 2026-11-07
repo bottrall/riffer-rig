@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.17.0</span>
+            <span class="version">v0.18.0</span>
           </div>
         </nav>
       </div>
@@ -391,6 +391,12 @@
 
 <p>The turn’s model calls, time, input and output tokens, any cache counts and cost, then the session’s total tokens and cost. Costs appear once the model is <a href="/guides/configuration/#catalog_files">priced</a>. Text the model sent along with tool calls is not printed; use <a href="/guides/sessions/#tracing-the-last-turn"><code>/trace</code></a> to see it.</p>
 
+<p>A turn that stopped before the model finished — at the step limit, a full context window, the output token limit, a content filter or malformed output — names the reason above its stat line:</p>
+
+<pre><code class="language-text">stopped: output token limit
+1 step · 00:20 · ↑57.7k · ↓4k · session 163k tok
+</code></pre>
+
 <h2 id="interrupting-and-exiting">Interrupting and exiting</h2>
 
 <table>
@@ -431,7 +437,7 @@
 
 <h2 id="resuming">Resuming</h2>
 
-<p>A resumed session — <code>riffer -c</code>, <code>riffer -r</code>, or a pick in <a href="/guides/sessions/#the-picker">the picker</a> — replays its earlier turns under the banner: each prompt, its answer and its stat line.</p>
+<p>A resumed session — <code>riffer -c</code>, <code>riffer -r</code>, or a pick in <a href="/guides/sessions/#the-picker">the picker</a> — replays its earlier turns under the banner: each prompt, its answer and its stat line. A turn the provider cut short replays with its <code>stopped:</code> reason.</p>
 
 <h2 id="commands">Commands</h2>
 

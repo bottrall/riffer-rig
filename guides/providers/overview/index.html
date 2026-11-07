@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.17.0</span>
+            <span class="version">v0.18.0</span>
           </div>
         </nav>
       </div>
@@ -387,7 +387,7 @@
 
 <h3 id="anthropic">Anthropic</h3>
 
-<p>Prefix <code>anthropic/</code>, for example <code>anthropic/claude-sonnet-4-6</code>. Create a key at <a href="https://console.anthropic.com/settings/keys">https://console.anthropic.com/settings/keys</a>. Anthropic models always get prompt caching.</p>
+<p>Prefix <code>anthropic/</code>, for example <code>anthropic/claude-sonnet-4-6</code>. Create a key at <a href="https://console.anthropic.com/settings/keys">https://console.anthropic.com/settings/keys</a>. Anthropic models always get prompt caching and an <a href="/guides/configuration/#max_tokens">output limit</a>.</p>
 
 <p>Instead of an API key, the Anthropic SDK can authenticate through its own credential chain — workload identity federation, <code>ANTHROPIC_AUTH_TOKEN</code>, or an <code>ant auth login</code> profile — set up as the <a href="https://github.com/anthropics/anthropic-sdk-ruby">Anthropic Ruby SDK</a> documents; riffer-rig stores nothing for it.</p>
 

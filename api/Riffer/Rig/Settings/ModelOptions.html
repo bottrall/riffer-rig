@@ -434,6 +434,8 @@
       </summary>
       <ul class="nav-list" role="directory">
 
+        <li ><a href="#method-i-max_tokens_options">max_tokens_options</a></li>
+
         <li ><a href="#method-i-model_options">model_options</a></li>
 
         <li ><a href="#method-i-native_options">native_options</a></li>
@@ -525,6 +527,30 @@
       </header>
       <dl>
 
+        <dt id="DEFAULT_MAX_TOKENS">DEFAULT_MAX_TOKENS</dt>
+
+        <dd>
+
+          
+        </dd>
+
+
+        <dt id="MAX_TOKENS_PARAMETERS">MAX_TOKENS_PARAMETERS</dt>
+
+        <dd>
+
+          <p>Upstream candidate: riffer passes <a href="ModelOptions.html#method-i-model_options"><code>model_options</code></a> to each provider’s API unchanged, so rig names every provider’s own output limit parameter until riffer accepts a provider-neutral option and translates it, as it does for reasoning.</p>
+        </dd>
+
+
+        <dt id="MAX_TOKENS_REQUIRED">MAX_TOKENS_REQUIRED</dt>
+
+        <dd>
+
+          <p>Every other provider’s API falls back to the model’s own limit, but riffer’s Anthropic provider sends 4096 unless told otherwise, and thinking spends from that same budget.</p>
+        </dd>
+
+
         <dt id="MODEL_STRING">MODEL_STRING</dt>
 
         <dd>
@@ -563,6 +589,63 @@
        </header>
 
 
+      <div id="method-i-max_tokens_options" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-max_tokens_options" title="Link to this method">
+                  <span class="method-name">max_tokens_options</span>
+                  <span class="method-args">(model, max_tokens)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(String model, Integer? max_tokens) &rarr; Hash[Symbol, untyped]</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="max_tokens_options-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/model_options.rb, line 78</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">max_tokens_options</span>(<span class="ruby-identifier">model</span>, <span class="ruby-identifier">max_tokens</span>)
+  <span class="ruby-identifier">provider</span> = <span class="ruby-identifier">provider_for</span>(<span class="ruby-identifier">model</span>)&amp;.<span class="ruby-identifier">to_sym</span>
+  <span class="ruby-identifier">path</span> = <span class="ruby-identifier">provider</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-constant">MAX_TOKENS_PARAMETERS</span>[<span class="ruby-identifier">provider</span>]
+  <span class="ruby-identifier">limit</span> = <span class="ruby-identifier">max_tokens</span> <span class="ruby-operator">||</span> (<span class="ruby-constant">DEFAULT_MAX_TOKENS</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">MAX_TOKENS_REQUIRED</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">provider</span>))
+  <span class="ruby-keyword">return</span> {} <span class="ruby-keyword">unless</span> <span class="ruby-identifier">path</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">limit</span>
+
+  <span class="ruby-identifier">innermost</span> = { <span class="ruby-identifier">path</span>.<span class="ruby-identifier">fetch</span>(-<span class="ruby-value">1</span>) <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">limit</span> } <span class="ruby-comment">#: Hash[Symbol, untyped]</span>
+  <span class="ruby-identifier">path</span>.<span class="ruby-identifier">reverse</span>.<span class="ruby-identifier">drop</span>(<span class="ruby-value">1</span>).<span class="ruby-identifier">reduce</span>(<span class="ruby-identifier">innermost</span>) { <span class="ruby-operator">|</span><span class="ruby-identifier">nested</span>, <span class="ruby-identifier">parent</span><span class="ruby-operator">|</span> { <span class="ruby-identifier">parent</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">nested</span> } }
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs model: String @rbs max_tokens: Integer? @rbs return: Hash[Symbol, untyped]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
       <div id="method-i-model_options" class="method-detail anchor-link ">
         <div class="method-header">
           <div class="method-heading-group">
@@ -591,7 +674,7 @@
 
 
           <div class="method-source-code" id="model_options-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/model_options.rb, line 48</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/model_options.rb, line 69</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">model_options</span>(<span class="ruby-identifier">model</span>)
   <span class="ruby-keyword">return</span> { <span class="ruby-value">cache_control</span><span class="ruby-value">:</span> { <span class="ruby-value">type</span><span class="ruby-value">:</span> <span class="ruby-value">:</span><span class="ruby-value">ephemeral</span> } } <span class="ruby-keyword">if</span> <span class="ruby-identifier">provider_for</span>(<span class="ruby-identifier">model</span>) <span class="ruby-operator">==</span> <span class="ruby-string">&#39;</span><span class="ruby-string">anthropic</span><span class="ruby-string">&#39;</span>
 
@@ -644,7 +727,7 @@
 
 
           <div class="method-source-code" id="native_options-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/model_options.rb, line 57</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/model_options.rb, line 91</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">native_options</span>(<span class="ruby-identifier">model</span>, <span class="ruby-identifier">switches</span>)
   <span class="ruby-identifier">provider</span> = <span class="ruby-identifier">provider_for</span>(<span class="ruby-identifier">model</span>)&amp;.<span class="ruby-identifier">to_sym</span>
   <span class="ruby-identifier">switches</span>.<span class="ruby-identifier">filter_map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">tool</span>, <span class="ruby-identifier">switch</span><span class="ruby-operator">|</span>
@@ -702,7 +785,7 @@
 
 
           <div class="method-source-code" id="provider_for-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/model_options.rb, line 19</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/model_options.rb, line 40</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">provider_for</span>(<span class="ruby-identifier">model</span>)
   <span class="ruby-identifier">model</span>[<span class="ruby-constant">MODEL_STRING</span>, <span class="ruby-value">:</span><span class="ruby-value">provider</span>]
 <span class="ruby-keyword">end</span></pre>
@@ -753,7 +836,7 @@
 
 
           <div class="method-source-code" id="reasoning_level-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/model_options.rb, line 34</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/model_options.rb, line 55</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">reasoning_level</span>(<span class="ruby-identifier">level</span>)
   <span class="ruby-identifier">level</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">level</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Agent</span><span class="ruby-operator">::</span><span class="ruby-constant">Config</span><span class="ruby-operator">::</span><span class="ruby-constant">REASONING_LEVELS</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">level</span>.<span class="ruby-identifier">to_sym</span>)
 <span class="ruby-keyword">end</span></pre>
@@ -804,7 +887,7 @@
 
 
           <div class="method-source-code" id="reasoning_rejection-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/model_options.rb, line 40</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/model_options.rb, line 61</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">reasoning_rejection</span>(<span class="ruby-identifier">level</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">reasoning_level</span>(<span class="ruby-identifier">level</span>)
 
@@ -857,7 +940,7 @@
 
 
           <div class="method-source-code" id="rejection-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/model_options.rb, line 25</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/settings/model_options.rb, line 46</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">rejection</span>(<span class="ruby-identifier">model</span>)
   <span class="ruby-identifier">provider</span> = <span class="ruby-identifier">provider_for</span>(<span class="ruby-identifier">model</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">provider</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Providers</span><span class="ruby-operator">::</span><span class="ruby-constant">Repository</span>.<span class="ruby-identifier">find</span>(<span class="ruby-identifier">provider</span>)

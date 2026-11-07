@@ -474,8 +474,6 @@
 
         <li ><a href="#method-i-ended-3F">ended?</a></li>
 
-        <li ><a href="#method-i-interrupted-3F">interrupted?</a></li>
-
         <li ><a href="#method-i-prose">prose</a></li>
 
         <li ><a href="#method-i-stats">stats</a></li>
@@ -575,7 +573,26 @@
         <div class="method-description">
 
 
-        <p>@dynamic ghost, tool</p>
+        <p>@dynamic ghost, tool, <a href="TurnBuffer.html#attribute-i-stop_reason"><code>stop_reason</code></a></p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-stop_reason" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-stop_reason" title="Link to this attribute">
+            <span class="method-name">stop_reason</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+          <span class="method-type-signature"><code>Symbol?</code></span>
+
+        </div>
+
+        <div class="method-description">
+
+
+        
 
         </div>
       </div>
@@ -648,7 +665,6 @@
   <span class="ruby-ivar">@answers</span> = []
   <span class="ruby-ivar">@steps</span> = <span class="ruby-value">0</span>
   <span class="ruby-ivar">@in_request</span> = <span class="ruby-keyword">false</span>
-  <span class="ruby-ivar">@interrupted</span> = <span class="ruby-keyword">false</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
 
@@ -711,7 +727,7 @@
 
 
           <div class="method-source-code" id="absorb-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/turn_buffer.rb, line 33</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/turn_buffer.rb, line 32</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">absorb</span>(<span class="ruby-identifier">event</span>)
   <span class="ruby-keyword">case</span> <span class="ruby-identifier">event</span>
   <span class="ruby-keyword">when</span> <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">StreamEvents</span><span class="ruby-operator">::</span><span class="ruby-constant">TextDelta</span>
@@ -736,15 +752,13 @@
     <span class="ruby-comment"># A blocked tool call skips BeforeToolCall.</span>
     <span class="ruby-identifier">settle</span>(<span class="ruby-value">:</span><span class="ruby-value">tool_calls</span>)
     <span class="ruby-ivar">@tool</span> = <span class="ruby-keyword">nil</span>
-  <span class="ruby-keyword">when</span> <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Events</span><span class="ruby-operator">::</span><span class="ruby-constant">JobExit</span>
-    <span class="ruby-comment"># A turn the Runtime continues for a job exit has no tool call between</span>
-    <span class="ruby-comment"># its replies to end the first request.</span>
-    <span class="ruby-identifier">settle</span>(<span class="ruby-value">:</span><span class="ruby-value">stop</span>)
-  <span class="ruby-keyword">when</span> <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">StreamEvents</span><span class="ruby-operator">::</span><span class="ruby-constant">Interrupt</span>
-    <span class="ruby-ivar">@interrupted</span> = <span class="ruby-keyword">true</span>
+  <span class="ruby-keyword">when</span> <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Events</span><span class="ruby-operator">::</span><span class="ruby-constant">JobExit</span>, <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">StreamEvents</span><span class="ruby-operator">::</span><span class="ruby-constant">Interrupt</span>
+    <span class="ruby-comment"># A turn the Runtime continues for a job exit, or one cut short, has no</span>
+    <span class="ruby-comment"># tool call or finish reason to end the open request.</span>
     <span class="ruby-identifier">settle</span>(<span class="ruby-value">:</span><span class="ruby-value">stop</span>)
   <span class="ruby-keyword">when</span> <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Events</span><span class="ruby-operator">::</span><span class="ruby-constant">TurnEnd</span>
     <span class="ruby-identifier">settle</span>(<span class="ruby-value">:</span><span class="ruby-value">stop</span>)
+    <span class="ruby-ivar">@stop_reason</span> = <span class="ruby-identifier">event</span>.<span class="ruby-identifier">stop_reason</span>
     <span class="ruby-ivar">@ended_at</span> = <span class="ruby-ivar">@clock</span>.<span class="ruby-identifier">call</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></pre>
@@ -795,7 +809,7 @@
 
 
           <div class="method-source-code" id="answer-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/turn_buffer.rb, line 71</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/turn_buffer.rb, line 68</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">answer</span>
   <span class="ruby-ivar">@answers</span>.<span class="ruby-identifier">join</span>(<span class="ruby-string">&quot;</span><span class="ruby-string">\n\n</span><span class="ruby-string">&quot;</span>)
 <span class="ruby-keyword">end</span></pre>
@@ -846,60 +860,9 @@
 
 
           <div class="method-source-code" id="ended-3F-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/turn_buffer.rb, line 86</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/turn_buffer.rb, line 78</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">ended?</span>
   <span class="ruby-operator">!</span><span class="ruby-ivar">@ended_at</span>.<span class="ruby-identifier">nil?</span>
-<span class="ruby-keyword">end</span></pre>
-          </div>
-
-
-
-        <div class="method-description">
-
-
-          <p>@rbs return: bool</p>
-
-
-        </div>
-
-
-
-
-
-      </div>
-
-
-      <div id="method-i-interrupted-3F" class="method-detail anchor-link ">
-        <div class="method-header">
-          <div class="method-heading-group">
-
-              <div class="method-heading">
-                <a href="#method-i-interrupted-3F" title="Link to this method">
-                  <span class="method-name">interrupted?</span>
-                  <span class="method-args">()</span>
-                </a>
-              </div>
-
-
-
-            <pre class="method-type-signature"><code>() &rarr; bool</code></pre>
-
-          </div>
-
-
-            <div class="method-controls">
-              <details class="method-source-toggle">
-                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
-              </details>
-            </div>
-
-        </div>
-
-
-          <div class="method-source-code" id="interrupted-3F-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/turn_buffer.rb, line 81</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">interrupted?</span>
-  <span class="ruby-ivar">@interrupted</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
 
@@ -948,7 +911,7 @@
 
 
           <div class="method-source-code" id="prose-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/turn_buffer.rb, line 76</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/turn_buffer.rb, line 73</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">prose</span>
   <span class="ruby-ivar">@prose</span>.<span class="ruby-identifier">dup</span>
 <span class="ruby-keyword">end</span></pre>
@@ -999,7 +962,7 @@
 
 
           <div class="method-source-code" id="stats-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/turn_buffer.rb, line 91</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/terminal/turn_buffer.rb, line 83</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">stats</span>
   <span class="ruby-constant">Stats</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">steps</span><span class="ruby-value">:</span> <span class="ruby-ivar">@steps</span>, <span class="ruby-value">wall_time</span><span class="ruby-value">:</span> (<span class="ruby-ivar">@ended_at</span> <span class="ruby-operator">||</span> <span class="ruby-ivar">@clock</span>.<span class="ruby-identifier">call</span>) <span class="ruby-operator">-</span> <span class="ruby-ivar">@started_at</span>, <span class="ruby-value">usage</span><span class="ruby-value">:</span> <span class="ruby-identifier">usage</span>)
 <span class="ruby-keyword">end</span></pre>

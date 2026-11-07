@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.17.0</span>
+            <span class="version">v0.18.0</span>
           </div>
         </nav>
       </div>
@@ -167,6 +167,7 @@
               <li><a href="#core-keys">Core keys</a></li>
               <li><a href="#model">model</a></li>
               <li><a href="#reasoning">reasoning</a></li>
+              <li><a href="#max_tokens">max_tokens</a></li>
               <li><a href="#catalog_files">catalog_files</a></li>
               <li><a href="#mcp">mcp</a></li>
               <li><a href="#extensions">extensions</a></li>
@@ -297,6 +298,10 @@
       <td>the reasoning effort (<a href="#reasoning">below</a>)</td>
     </tr>
     <tr>
+      <td><code>max_tokens</code></td>
+      <td>the most output tokens one reply may use (<a href="#max_tokens">below</a>)</td>
+    </tr>
+    <tr>
       <td><code>catalog_files</code></td>
       <td>the model catalog files holding pricing and reasoning maps (<a href="#catalog_files">below</a>)</td>
     </tr>
@@ -365,6 +370,42 @@
 <p>Settings are lenient so that one level can stay in the file while you switch between providers.</p>
 
 <p><code>/reasoning level</code> switches the level for the current session and is restored when you resume it; <code>/reasoning</code> alone shows the level in effect (<code>default</code> when none is set). <code>/reasoning --save</code> and <code>/reasoning level --save</code> save to the home settings, as <code>/model</code> does. The level stays in effect across a <code>/model</code> switch. A custom provider with no mapping for the level fails the next request, naming the catalog file to add.</p>
+
+<h2 id="max_tokens"><code>max_tokens</code></h2>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w"> </span><span class="nl">"model"</span><span class="p">:</span><span class="w"> </span><span class="s2">"anthropic/claude-sonnet-4-6"</span><span class="p">,</span><span class="w"> </span><span class="nl">"max_tokens"</span><span class="p">:</span><span class="w"> </span><span class="mi">32000</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<p>The most output tokens the model may spend on one reply, thinking included. A positive whole number; any other value is ignored, as if <code>max_tokens</code> were left out.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Provider</th>
+      <th>Leaving <code>max_tokens</code> out</th>
+      <th>Setting it</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>anthropic</code>, whose API requires a limit</td>
+      <td>sends 64,000</td>
+      <td>sends your value</td>
+    </tr>
+    <tr>
+      <td>every other built-in provider</td>
+      <td>sends nothing, so the model’s own limit applies</td>
+      <td>sends your value under that provider’s own parameter</td>
+    </tr>
+    <tr>
+      <td>a <a href="/guides/providers/custom/">custom provider</a></td>
+      <td>sends nothing</td>
+      <td>sends nothing</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The value follows a <code>/model</code> switch to another provider. An older Anthropic model whose own limit is below 64,000 rejects the default (<a href="/guides/troubleshooting/">Troubleshooting</a>). Thinking spends from the same budget, so a low value can end a reply before any text.</p>
 
 <h2 id="catalog_files"><code>catalog_files</code></h2>
 

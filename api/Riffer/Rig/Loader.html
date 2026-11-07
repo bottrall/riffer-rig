@@ -737,7 +737,7 @@
 
 
           <div class="method-source-code" id="continue-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/loader.rb, line 141</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/loader.rb, line 142</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">continue</span>(<span class="ruby-identifier">options</span> = <span class="ruby-constant">Options</span>.<span class="ruby-identifier">new</span>)
   <span class="ruby-identifier">store</span> = <span class="ruby-ivar">@store</span>
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">nil</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">store</span>
@@ -794,7 +794,7 @@
 
 
           <div class="method-source-code" id="delete-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/loader.rb, line 187</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/loader.rb, line 188</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">delete</span>(<span class="ruby-identifier">id</span>)
   <span class="ruby-identifier">store</span> = <span class="ruby-ivar">@store</span>
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">store</span>
@@ -848,7 +848,7 @@
 
 
           <div class="method-source-code" id="list-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/loader.rb, line 178</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/loader.rb, line 179</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">list</span>(<span class="ruby-value">all:</span> <span class="ruby-keyword">false</span>)
   <span class="ruby-identifier">store</span> = <span class="ruby-ivar">@store</span>
   <span class="ruby-keyword">return</span> [] <span class="ruby-keyword">unless</span> <span class="ruby-identifier">store</span>
@@ -902,7 +902,7 @@
 
 
           <div class="method-source-code" id="messages-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/loader.rb, line 169</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/loader.rb, line 170</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">messages</span>(<span class="ruby-identifier">id</span>)
   <span class="ruby-identifier">store</span> = <span class="ruby-ivar">@store</span>
   <span class="ruby-keyword">return</span> [] <span class="ruby-keyword">unless</span> <span class="ruby-identifier">store</span>
@@ -956,7 +956,7 @@
 
 
           <div class="method-source-code" id="reload-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/loader.rb, line 197</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/loader.rb, line 198</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">reload</span>(<span class="ruby-identifier">runtime</span>, <span class="ruby-value">force:</span> <span class="ruby-keyword">false</span>)
   <span class="ruby-identifier">reloader</span> = <span class="ruby-ivar">@reloaders</span>[<span class="ruby-identifier">runtime</span>]
   <span class="ruby-identifier">reloader</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">reloader</span>.<span class="ruby-identifier">reload</span>(<span class="ruby-identifier">runtime</span>, <span class="ruby-value">force</span><span class="ruby-value">:</span> <span class="ruby-identifier">force</span>) <span class="ruby-operator">:</span> <span class="ruby-identifier">runtime</span>
@@ -1008,7 +1008,7 @@
 
 
           <div class="method-source-code" id="resume-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/loader.rb, line 155</span>
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/loader.rb, line 156</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">resume</span>(<span class="ruby-identifier">id</span>, <span class="ruby-identifier">options</span> = <span class="ruby-constant">Options</span>.<span class="ruby-identifier">new</span>, <span class="ruby-value">extra_extensions:</span> [])
   <span class="ruby-identifier">store</span> = <span class="ruby-ivar">@store</span>
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">nil</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">store</span>
@@ -1106,6 +1106,7 @@
     <span class="ruby-value">riffer_config</span><span class="ruby-value">:</span> <span class="ruby-ivar">@riffer_config</span>,
     <span class="ruby-value">model_options</span><span class="ruby-value">:</span> <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Settings</span><span class="ruby-operator">::</span><span class="ruby-constant">ModelOptions</span>.<span class="ruby-identifier">model_options</span>(<span class="ruby-identifier">selected</span>),
     <span class="ruby-value">native_tools</span><span class="ruby-value">:</span> <span class="ruby-identifier">document</span>.<span class="ruby-identifier">native_tools</span>,
+    <span class="ruby-value">max_tokens</span><span class="ruby-value">:</span> <span class="ruby-identifier">document</span>.<span class="ruby-identifier">max_tokens</span>,
     <span class="ruby-value">snapshot</span><span class="ruby-value">:</span> <span class="ruby-identifier">saved</span>
   )
   <span class="ruby-identifier">reloader</span> = <span class="ruby-constant">Riffer</span><span class="ruby-operator">::</span><span class="ruby-constant">Rig</span><span class="ruby-operator">::</span><span class="ruby-constant">Loader</span><span class="ruby-operator">::</span><span class="ruby-constant">Reloader</span>.<span class="ruby-identifier">new</span>(
