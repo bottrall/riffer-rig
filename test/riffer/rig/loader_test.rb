@@ -6,6 +6,7 @@ require 'forwardable'
 require_relative '../../support/confirming_host'
 require_relative '../../support/rig_files'
 require_relative '../../support/sdk_fake'
+require_relative '../../support/anthropic_limits_fake'
 
 class ScriptedHost
   extend Forwardable
@@ -707,6 +708,30 @@ describe Riffer::Rig::Loader do
       write_settings(@home, { tools: { native: { web_search: true } } })
 
       assert_equal({ web_search: true }, build(model: 'mock/test').agent.config.model_options)
+    end
+
+    describe 'anthropic output limits' do
+      def build_limited(model)
+        Riffer::Rig::Loader.new(
+          cwd: @cwd,
+          host: Riffer::Rig::Hosts::Null.new,
+          env: Riffer::Rig::Env.new({ 'ANTHROPIC_API_KEY' => 'sk-ant', 'MOCK_API_KEY' => 'mock-key' }),
+          home: @home,
+          riffer_config: @config,
+          anthropic_limits: AnthropicLimitsFake.new({ 'claude-x' => 32_000 })
+        ).runtime(Riffer::Rig::Loader::Options.new(model: model))
+      end
+
+      it "hands the anthropic model's output limit to the Runtime" do
+        assert_equal 32_000, build_limited('anthropic/claude-x').agent.config.model_options[:max_tokens]
+      end
+
+      it 'hands its output limits to the Runtime for a switch' do
+        runtime = build_limited('mock/test')
+        runtime.model = 'anthropic/claude-x'
+
+        assert_equal 32_000, runtime.agent.config.model_options[:max_tokens]
+      end
     end
 
     it 'hands the home settings path to the Runtime' do

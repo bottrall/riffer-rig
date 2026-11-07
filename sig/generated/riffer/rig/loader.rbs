@@ -4,6 +4,8 @@ class Riffer::Rig::Loader
   class ConfigurationError < StandardError
   end
 
+  @anthropic_limits: Riffer::Rig::Settings::AnthropicLimits
+
   @sdk: singleton(Riffer::Rig::SDK)
 
   @reloaders: ObjectSpace::WeakKeyMap[Riffer::Rig::Runtime, Riffer::Rig::Loader::Reloader]
@@ -42,8 +44,9 @@ class Riffer::Rig::Loader
   # @rbs riffer_config: Riffer::Config
   # @rbs store: Riffer::Rig::Stores::_Store | nil
   # @rbs sdk: singleton(Riffer::Rig::SDK)
+  # @rbs anthropic_limits: Riffer::Rig::Settings::AnthropicLimits
   # @rbs return: void
-  def initialize: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?store: Riffer::Rig::Stores::_Store | nil, ?sdk: singleton(Riffer::Rig::SDK)) -> void
+  def initialize: (cwd: String, host: Riffer::Rig::Hosts::_Host, ?env: Riffer::Rig::Env | Riffer::Rig::Env::Invalid, ?home: String, ?riffer_config: Riffer::Config, ?store: Riffer::Rig::Stores::_Store | nil, ?sdk: singleton(Riffer::Rig::SDK), ?anthropic_limits: Riffer::Rig::Settings::AnthropicLimits) -> void
 
   # @rbs options: Riffer::Rig::Loader::Options
   # @rbs reload: (:auto | :manual | nil)

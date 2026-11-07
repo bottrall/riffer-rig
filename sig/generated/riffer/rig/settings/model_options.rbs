@@ -27,8 +27,9 @@ module Riffer::Rig::Settings::ModelOptions
   def reasoning_rejection: (String level) -> String?
 
   # @rbs model: String
+  # @rbs anthropic_limits: Riffer::Rig::Settings::AnthropicLimits
   # @rbs return: Hash[Symbol, untyped]
-  def model_options: (String model) -> Hash[Symbol, untyped]
+  def model_options: (String model, Riffer::Rig::Settings::AnthropicLimits anthropic_limits) -> Hash[Symbol, untyped]
 
   # @rbs model: String
   # @rbs switches: Hash[Symbol, untyped]

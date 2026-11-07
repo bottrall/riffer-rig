@@ -1,0 +1,24 @@
+# Generated from lib/riffer/rig/settings/anthropic_limits.rb with RBS::Inline
+
+class Riffer::Rig::Settings::AnthropicLimits
+  @config: Riffer::Config
+
+  @max_tokens: Hash[String, Integer?]
+
+  # @rbs config: Riffer::Config
+  # @rbs return: void
+  def initialize: (Riffer::Config config) -> void
+
+  # @rbs model_id: String
+  # @rbs return: Integer?
+  def max_tokens: (String model_id) -> Integer?
+
+  private
+
+  # @rbs model_id: String
+  # @rbs return: Integer?
+  def retrieve_max_tokens: (String model_id) -> Integer?
+
+  # @rbs return: ::Anthropic::Client
+  def client: () -> ::Anthropic::Client
+end

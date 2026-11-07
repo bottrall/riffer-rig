@@ -2,6 +2,7 @@
 
 require 'test_helper'
 require_relative '../../fixtures/mcp_https_server'
+require_relative '../../support/anthropic_limits_fake'
 
 describe Riffer::Rig::Runtime do
   before do
@@ -1244,6 +1245,14 @@ describe Riffer::Rig::Runtime do
     assert_equal({}, runtime.agent.config.model_options)
   end
 
+  it "re-derives the new anthropic model's output limit on a switch" do
+    runtime = Riffer::Rig::Runtime.new('mock/test', anthropic_limits: AnthropicLimitsFake.new({ 'claude-x' => 32_000 }))
+
+    runtime.model = 'anthropic/claude-x'
+
+    assert_equal 32_000, runtime.agent.config.model_options[:max_tokens]
+  end
+
   it 'keeps the reasoning level across a switch' do
     runtime = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', reasoning: 'high')
 
@@ -1771,6 +1780,25 @@ describe Riffer::Rig::Runtime do
       runtime.model = 'mock/other'
 
       assert_equal 'mock/other', restored(runtime.to_h, credentials: { mock: {} }).to_h[:model]
+    end
+
+    it 're-derives its model options for the saved model' do
+      saved = saved_runtime.to_h.merge(model: 'anthropic/claude-x')
+      runtime = restored(
+        saved,
+        credentials: { anthropic: {} },
+        model_options: { reasoning: 'high' },
+        anthropic_limits: AnthropicLimitsFake.new({ 'claude-x' => 32_000 })
+      )
+
+      assert_equal({ cache_control: { type: :ephemeral }, max_tokens: 32_000 }, runtime.agent.config.model_options)
+    end
+
+    it 'keeps its model options when the saved model is the one given' do
+      saved = saved_runtime.to_h.merge(model: 'mock/test')
+      runtime = restored(saved, credentials: { mock: {} }, model_options: { reasoning: 'high' })
+
+      assert_equal({ reasoning: 'high' }, runtime.agent.config.model_options)
     end
 
     it 'uses the given model when the saved provider has no credentials' do

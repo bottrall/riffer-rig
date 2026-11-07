@@ -44,11 +44,15 @@ module Riffer::Rig::Settings::ModelOptions
   end
 
   # @rbs model: String
+  # @rbs anthropic_limits: Riffer::Rig::Settings::AnthropicLimits
   # @rbs return: Hash[Symbol, untyped]
-  def model_options(model)
-    return { cache_control: { type: :ephemeral } } if provider_for(model) == 'anthropic'
+  def model_options(model, anthropic_limits)
+    return {} unless provider_for(model) == 'anthropic'
 
-    {}
+    # Upstream candidate: riffer's Anthropic provider sends max_tokens 4096
+    # unless told otherwise, and thinking spends from that same budget.
+    max_tokens = anthropic_limits.max_tokens(model.delete_prefix('anthropic/'))
+    { cache_control: { type: :ephemeral }, max_tokens: max_tokens }.compact
   end
 
   # @rbs model: String

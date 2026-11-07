@@ -12,6 +12,7 @@ class Riffer::Rig::Loader
   # @rbs @source: Riffer::Rig::Loader::ExtensionSource
   # @rbs @reloaders: ObjectSpace::WeakKeyMap[Riffer::Rig::Runtime, Riffer::Rig::Loader::Reloader]
   # @rbs @sdk: singleton(Riffer::Rig::SDK)
+  # @rbs @anthropic_limits: Riffer::Rig::Settings::AnthropicLimits
 
   # @rbs cwd: String
   # @rbs host: Riffer::Rig::Hosts::_Host
@@ -46,6 +47,7 @@ class Riffer::Rig::Loader
   # @rbs riffer_config: Riffer::Config
   # @rbs store: Riffer::Rig::Stores::_Store | nil
   # @rbs sdk: singleton(Riffer::Rig::SDK)
+  # @rbs anthropic_limits: Riffer::Rig::Settings::AnthropicLimits
   # @rbs return: void
   def initialize(
     cwd:,
@@ -54,7 +56,8 @@ class Riffer::Rig::Loader
     home: Dir.home,
     riffer_config: Riffer.config,
     store: Riffer::Rig::Stores::JSONL.new(home: home),
-    sdk: Riffer::Rig::SDK
+    sdk: Riffer::Rig::SDK,
+    anthropic_limits: Riffer::Rig::Settings::AnthropicLimits.new(riffer_config)
   )
     raise ConfigurationError, env.message if env.is_a?(Riffer::Rig::Env::Invalid)
 
@@ -65,6 +68,7 @@ class Riffer::Rig::Loader
     @riffer_config = riffer_config
     @store = store
     @sdk = sdk
+    @anthropic_limits = anthropic_limits
     @source = Riffer::Rig::Loader::ExtensionSource.new(cwd: cwd, home: home, host: host)
     @reloaders = ObjectSpace::WeakKeyMap.new
   end
@@ -112,8 +116,9 @@ class Riffer::Rig::Loader
       settings_path: home_settings_path,
       reasoning: Riffer::Rig::Loader::Reasoning.forced(options.reasoning, @env.reasoning),
       riffer_config: @riffer_config,
-      model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected),
+      model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected, @anthropic_limits),
       native_tools: document.native_tools,
+      anthropic_limits: @anthropic_limits,
       snapshot: saved
     )
     reloader = Riffer::Rig::Loader::Reloader.new(

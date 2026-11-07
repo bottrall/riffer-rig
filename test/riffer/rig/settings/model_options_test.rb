@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'test_helper'
+require_relative '../../../support/anthropic_limits_fake'
 
 describe Riffer::Rig::Settings::ModelOptions do
   describe '.provider_for' do
@@ -76,16 +77,34 @@ describe Riffer::Rig::Settings::ModelOptions do
   end
 
   describe '.model_options' do
-    it 'includes cache control for an anthropic model' do
-      assert_equal({ cache_control: { type: :ephemeral } }, Riffer::Rig::Settings::ModelOptions.model_options('anthropic/claude-sonnet-4-6'))
+    def model_options(model, limits = { 'claude-sonnet-4-6' => 64_000 })
+      Riffer::Rig::Settings::ModelOptions.model_options(model, AnthropicLimitsFake.new(limits))
     end
 
     it 'is empty for an openai model' do
-      assert_empty Riffer::Rig::Settings::ModelOptions.model_options('openai/o3')
+      assert_empty model_options('openai/o3')
+    end
+
+    it 'never looks up the output limit of a model of another provider' do
+      limits = AnthropicLimitsFake.new
+      Riffer::Rig::Settings::ModelOptions.model_options('openai/o3', limits)
+
+      assert_empty limits.looked_up
     end
 
     it 'is empty for a model without a provider' do
-      assert_empty Riffer::Rig::Settings::ModelOptions.model_options('sonnet')
+      assert_empty model_options('sonnet')
+    end
+
+    it "includes cache control and the model's output limit for an anthropic model" do
+      assert_equal(
+        { cache_control: { type: :ephemeral }, max_tokens: 64_000 },
+        model_options('anthropic/claude-sonnet-4-6')
+      )
+    end
+
+    it 'leaves the output limit out for an anthropic model whose limit is unknown' do
+      assert_equal({ cache_control: { type: :ephemeral } }, model_options('anthropic/claude-sonnet-4-6', {}))
     end
   end
 
