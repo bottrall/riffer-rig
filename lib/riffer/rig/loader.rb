@@ -88,7 +88,7 @@ class Riffer::Rig::Loader
     credentials = install_credentials(provider)
     raise ConfigurationError, credentials if credentials.is_a?(String)
 
-    @riffer_config.catalog_files = document.catalog_files
+    @riffer_config.catalog_files = document.catalog_files.map { |path| Riffer::Rig::Directories.expand_home(path, @home) }
     stripped = { skills: options.skills, agents_md: options.agents_md }.reject { |_name, kept| kept }.keys
     discovered = options.extensions ? @source.discover(autoload: document.autoload) : [] #: Array[Riffer::Rig::Extension]
 
