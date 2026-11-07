@@ -55,7 +55,7 @@ class Riffer::Rig::Runtime
   # @rbs @mcp: Riffer::Rig::Runtime::McpRegistrar
   # @rbs @model_options: Hash[Symbol, untyped]
   # @rbs @native_tools: Hash[Symbol, untyped]
-  # @rbs @anthropic_limits: Riffer::Rig::Settings::AnthropicLimits
+  # @rbs @max_tokens: Integer?
   # @rbs @reload_check: (^(::Riffer::Rig::Runtime) -> void)?
   # @rbs @clock: ^() -> Float
   # @rbs @turn: Riffer::Rig::Runtime::Turn?
@@ -88,7 +88,7 @@ class Riffer::Rig::Runtime
   # @rbs max_steps: Integer?
   # @rbs model_options: Hash[Symbol, untyped]
   # @rbs native_tools: Hash[Symbol, untyped]
-  # @rbs anthropic_limits: Riffer::Rig::Settings::AnthropicLimits
+  # @rbs max_tokens: Integer?
   # @rbs clock: ^() -> Float
   # @rbs snapshot: (Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped])?
   # @rbs return: void
@@ -111,7 +111,7 @@ class Riffer::Rig::Runtime
     max_steps: DEFAULT_MAX_STEPS,
     model_options: {},
     native_tools: {},
-    anthropic_limits: Riffer::Rig::Settings::AnthropicLimits.new(riffer_config),
+    max_tokens: nil,
     clock: -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) },
     snapshot: nil
   )
@@ -145,8 +145,10 @@ class Riffer::Rig::Runtime
     @reasoning = (saved && Riffer::Rig::Settings::ModelOptions.reasoning_level(saved.reasoning)) || reasoning
     @tool_allowlist = tools
     @native_tools = native_tools
-    @anthropic_limits = anthropic_limits
-    @model_options = model_options.merge(Riffer::Rig::Settings::ModelOptions.native_options(model, native_tools))
+    @max_tokens = max_tokens
+    options = Riffer::Rig::Settings::ModelOptions
+    @model_options = options.max_tokens_options(model, max_tokens)
+                            .merge(model_options, options.native_options(model, native_tools))
     @system_prompt = Riffer::Rig::Runtime::SystemPrompt.new(
       instructions || format(BASE_PROMPT_TEMPLATE, name: name), @cwd
     )
@@ -162,10 +164,8 @@ class Riffer::Rig::Runtime
     config = agent_config(assembly, hooks, max_steps)
     agent = saved ? restore(saved, model, config) : build_agent(model, config)
     install(assembly, hooks, agent)
-    # The options were derived for the model given, not the one the snapshot
-    # restored.
     restored = @model_override
-    rederive_options(restored) if restored && restored != model
+    rederive_options(restored) if restored && options.provider_for(restored) != options.provider_for(model)
     @mcp.retain(mcp_servers)
     @agent.session.on_message do |message|
       Thread.handle_interrupt(Riffer::Rig::Runtime::Abort::SHIELD) { observe_message(message) }
@@ -419,17 +419,20 @@ class Riffer::Rig::Runtime
     agent
   end
 
-  # The options the settings built for the starting model are model-shaped
-  # (anthropic cache control and output limit), so a switch re-derives them;
-  # the reasoning level is provider-agnostic and travels on the config. Runs
-  # after the successor is built, so a failed build leaves the running agent's
+  # The options the settings built for the starting model are provider-shaped
+  # (anthropic cache control, each provider's output limit parameter), so a
+  # switch, or a restore onto another provider's model, re-derives them; the
+  # reasoning level is provider-agnostic and travels on the config. Runs after
+  # the successor is built, so a failed build leaves the running agent's
   # options alone; riffer reads config.model_options per request, so the swap
   # still reaches the new agent through the shared config.
   # @rbs model: String
   # @rbs return: void
   def rederive_options(model)
     options = Riffer::Rig::Settings::ModelOptions
-    @model_options = options.model_options(model, @anthropic_limits).merge(options.native_options(model, @native_tools))
+    @model_options = options.model_options(model).merge(
+      options.max_tokens_options(model, @max_tokens), options.native_options(model, @native_tools)
+    )
     @agent.config.model_options = @model_options
   end
 

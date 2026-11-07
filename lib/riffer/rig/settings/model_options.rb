@@ -14,6 +14,27 @@ module Riffer::Rig::Settings::ModelOptions
     web_search: { anthropic: true, openai: true, azure_openai: true, mock: true }.freeze
   }.freeze #: Hash[Symbol, Hash[Symbol, bool]]
 
+  # Upstream candidate: riffer passes model_options to each provider's API
+  # unchanged, so rig names every provider's own output limit parameter until
+  # riffer accepts a provider-neutral option and translates it, as it does for
+  # reasoning.
+  MAX_TOKENS_PARAMETERS = {
+    anthropic: %i[max_tokens].freeze,
+    openai: %i[max_output_tokens].freeze,
+    azure_openai: %i[max_output_tokens].freeze,
+    gemini: %i[maxOutputTokens].freeze,
+    openrouter: %i[max_tokens].freeze,
+    amazon_bedrock: %i[inference_config max_tokens].freeze,
+    mock: %i[max_tokens].freeze
+  }.freeze #: Hash[Symbol, Array[Symbol]]
+
+  # Every other provider's API falls back to the model's own limit, but riffer's
+  # Anthropic provider sends 4096 unless told otherwise, and thinking spends
+  # from that same budget.
+  MAX_TOKENS_REQUIRED = %i[anthropic].freeze #: Array[Symbol]
+
+  DEFAULT_MAX_TOKENS = 64_000
+
   # @rbs model: String
   # @rbs return: String?
   def provider_for(model)
@@ -44,15 +65,24 @@ module Riffer::Rig::Settings::ModelOptions
   end
 
   # @rbs model: String
-  # @rbs anthropic_limits: Riffer::Rig::Settings::AnthropicLimits
   # @rbs return: Hash[Symbol, untyped]
-  def model_options(model, anthropic_limits)
-    return {} unless provider_for(model) == 'anthropic'
+  def model_options(model)
+    return { cache_control: { type: :ephemeral } } if provider_for(model) == 'anthropic'
 
-    # Upstream candidate: riffer's Anthropic provider sends max_tokens 4096
-    # unless told otherwise, and thinking spends from that same budget.
-    max_tokens = anthropic_limits.max_tokens(model.delete_prefix('anthropic/'))
-    { cache_control: { type: :ephemeral }, max_tokens: max_tokens }.compact
+    {}
+  end
+
+  # @rbs model: String
+  # @rbs max_tokens: Integer?
+  # @rbs return: Hash[Symbol, untyped]
+  def max_tokens_options(model, max_tokens)
+    provider = provider_for(model)&.to_sym
+    path = provider && MAX_TOKENS_PARAMETERS[provider]
+    limit = max_tokens || (DEFAULT_MAX_TOKENS if MAX_TOKENS_REQUIRED.include?(provider))
+    return {} unless path && limit
+
+    innermost = { path.fetch(-1) => limit } #: Hash[Symbol, untyped]
+    path.reverse.drop(1).reduce(innermost) { |nested, parent| { parent => nested } }
   end
 
   # @rbs model: String

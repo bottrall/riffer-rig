@@ -4,7 +4,7 @@ class Riffer::Rig::Registrar
   class NameCollisionError < StandardError; end
 
   CORE_SETTINGS_KEYS = %w[
-    model reasoning catalog_files reload extensions sessions providers tools
+    model reasoning max_tokens catalog_files reload extensions sessions providers tools
   ].freeze #: Array[String]
 
   EVENTS = %i[

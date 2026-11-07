@@ -44,6 +44,7 @@ Every core key is top level and optional. Every other top-level key is an [exten
 | --------------- | ------------ |
 | `model`         | the model new sessions start with, as `"provider/name"` ([below](#model)) |
 | `reasoning`     | the reasoning effort ([below](#reasoning)) |
+| `max_tokens`    | the most output tokens one reply may use ([below](#max_tokens)) |
 | `catalog_files` | the model catalog files holding pricing and reasoning maps ([below](#catalog_files)) |
 | `providers`     | non-secret provider fields such as an endpoint or region ([Providers](PROVIDERS.md#the-providers-block-in-settings)) |
 | `extensions`    | `disabled` and `autoload` ([below](#extensions)) |
@@ -81,6 +82,22 @@ One of `off`, `low`, `medium`, `high`, `xhigh` or `max`. riffer translates the l
 Settings are lenient so that one level can stay in the file while you switch between providers.
 
 `/reasoning level` switches the level for the current session and is restored when you resume it; `/reasoning` alone shows the level in effect (`default` when none is set). `/reasoning --save` and `/reasoning level --save` save to the home settings, as `/model` does. The level stays in effect across a `/model` switch. A custom provider with no mapping for the level fails the next request, naming the catalog file to add.
+
+## `max_tokens`
+
+```json
+{ "model": "anthropic/claude-sonnet-4-6", "max_tokens": 32000 }
+```
+
+The most output tokens the model may spend on one reply, thinking included. A positive whole number; any other value is ignored, as if `max_tokens` were left out.
+
+| Provider                                  | Leaving `max_tokens` out              | Setting it                                            |
+| ----------------------------------------- | ------------------------------------- | ----------------------------------------------------- |
+| `anthropic`, whose API requires a limit   | sends 64,000                          | sends your value                                      |
+| every other built-in provider             | sends nothing, so the model's own limit applies | sends your value under that provider's own parameter |
+| a [custom provider](CUSTOM_PROVIDERS.md)  | sends nothing                         | sends nothing                                         |
+
+The value follows a `/model` switch to another provider. An older Anthropic model whose own limit is below 64,000 rejects the default ([Troubleshooting](TROUBLESHOOTING.md)). Thinking spends from the same budget, so a low value can end a reply before any text.
 
 ## `catalog_files`
 

@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Settings::Document
-  # @dynamic model, reasoning, catalog_files, providers, disabled, autoload, native_tools, save, reload
+  # @dynamic model, reasoning, max_tokens, catalog_files, providers, disabled, autoload, native_tools, save, reload
   attr_reader :model #: String?
   attr_reader :reasoning #: String?
+  attr_reader :max_tokens #: Integer?
   attr_reader :catalog_files #: Array[String]
   attr_reader :providers #: Hash[String, Hash[String, String]]
   attr_reader :disabled #: Array[String]
@@ -17,6 +18,8 @@ class Riffer::Rig::Settings::Document
   def initialize(source)
     @model = source[:model].is_a?(String) ? source[:model] : nil
     @reasoning = source[:reasoning].is_a?(String) ? source[:reasoning] : nil
+    max_tokens = source[:max_tokens]
+    @max_tokens = max_tokens.is_a?(Integer) && max_tokens.positive? ? max_tokens : nil
     paths = source[:catalog_files]
     no_files = [] #: Array[String]
     @catalog_files = paths.is_a?(Array) && paths.all?(String) ? paths.dup.freeze : no_files.freeze

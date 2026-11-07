@@ -83,9 +83,9 @@ The model is positional; everything else is an optional keyword. Provider creden
 | `instructions:`  | replaces the base prompt                                                                     | `nil`   |
 | `max_steps:`     | the [step limit](#capping-the-loop)                                                          | `nil`   |
 | `reasoning:`     | the reasoning level ([Configuration](CONFIGURATION.md#reasoning))                            | `nil`   |
-| `model_options:` | riffer `model_options` sent with every model call; for an `anthropic` model the Loader passes `{ cache_control: { type: :ephemeral }, max_tokens: … }` ([prompt caching and output limit](PROVIDERS.md#anthropic)) | `{}` |
+| `model_options:` | riffer `model_options` sent with every model call; for an `anthropic` model the Loader passes `{ cache_control: { type: :ephemeral } }` ([prompt caching](PROVIDERS.md#anthropic)) | `{}` |
 | `native_tools:`  | the [provider-native tool](TOOLS.md#provider-native-tools) switches: `{ web_search: true }`  | `{}`    |
-| `anthropic_limits:` | where the Runtime looks up an `anthropic` model's [output limit](PROVIDERS.md#anthropic) when a switch or a [restore](#snapshots) changes the model | `Riffer::Rig::Settings::AnthropicLimits.new(riffer_config)` |
+| `max_tokens:`    | the [output limit](CONFIGURATION.md#max_tokens) | `nil` |
 | `credentials:`   | each provider's resolved values, `{ anthropic: { api_key: '…' } }`, used by `/model` and when [restoring](#snapshots) | `{}` |
 | `env:`, `auth_path:`, `settings_path:` | where `/auth`, `/model` and [MCP `auth` fields](MCP.md#secret-headers) read and store credentials, and where `--save` writes | `Env.new`, `~/.riffer/auth.json`, `~/.riffer/settings.json` |
 | `riffer_config:` | the `Riffer::Config` the agent reads its catalog and reasoning from                          | `Riffer.config` |

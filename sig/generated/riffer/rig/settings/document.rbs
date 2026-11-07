@@ -1,10 +1,12 @@
 # Generated from lib/riffer/rig/settings/document.rb with RBS::Inline
 
 class Riffer::Rig::Settings::Document
-  # @dynamic model, reasoning, catalog_files, providers, disabled, autoload, native_tools, save, reload
+  # @dynamic model, reasoning, max_tokens, catalog_files, providers, disabled, autoload, native_tools, save, reload
   attr_reader model: String?
 
   attr_reader reasoning: String?
+
+  attr_reader max_tokens: Integer?
 
   attr_reader catalog_files: Array[String]
 

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'test_helper'
-require_relative '../../../support/anthropic_limits_fake'
 
 describe Riffer::Rig::Settings::ModelOptions do
   describe '.provider_for' do
@@ -77,34 +76,53 @@ describe Riffer::Rig::Settings::ModelOptions do
   end
 
   describe '.model_options' do
-    def model_options(model, limits = { 'claude-sonnet-4-6' => 64_000 })
-      Riffer::Rig::Settings::ModelOptions.model_options(model, AnthropicLimitsFake.new(limits))
+    it 'includes cache control for an anthropic model' do
+      assert_equal({ cache_control: { type: :ephemeral } }, Riffer::Rig::Settings::ModelOptions.model_options('anthropic/claude-sonnet-4-6'))
     end
 
     it 'is empty for an openai model' do
-      assert_empty model_options('openai/o3')
-    end
-
-    it 'never looks up the output limit of a model of another provider' do
-      limits = AnthropicLimitsFake.new
-      Riffer::Rig::Settings::ModelOptions.model_options('openai/o3', limits)
-
-      assert_empty limits.looked_up
+      assert_empty Riffer::Rig::Settings::ModelOptions.model_options('openai/o3')
     end
 
     it 'is empty for a model without a provider' do
-      assert_empty model_options('sonnet')
+      assert_empty Riffer::Rig::Settings::ModelOptions.model_options('sonnet')
+    end
+  end
+
+  describe '.max_tokens_options' do
+    def max_tokens_options(model, max_tokens = nil)
+      Riffer::Rig::Settings::ModelOptions.max_tokens_options(model, max_tokens)
     end
 
-    it "includes cache control and the model's output limit for an anthropic model" do
+    it 'is empty for a model without a provider' do
+      assert_empty max_tokens_options('sonnet', 8000)
+    end
+
+    it 'drops the limit for a provider whose parameter it does not know' do
+      assert_empty max_tokens_options('acme/model', 8000)
+    end
+
+    it 'sends a configured limit in place of the default' do
+      assert_equal({ max_tokens: 8000 }, max_tokens_options('anthropic/claude-sonnet-4-6', 8000))
+    end
+
+    it 'sends the default limit to a provider that requires one' do
+      assert_equal({ max_tokens: 64_000 }, max_tokens_options('anthropic/claude-sonnet-4-6'))
+    end
+
+    it 'sends nothing by default to a provider that does not require a limit' do
+      assert_empty max_tokens_options('openai/o3')
+    end
+
+    it 'names the limit with the provider parameter' do
+      assert_equal({ max_output_tokens: 8000 }, max_tokens_options('openai/o3', 8000))
+    end
+
+    it 'nests the limit under the provider parameter parent' do
       assert_equal(
-        { cache_control: { type: :ephemeral }, max_tokens: 64_000 },
-        model_options('anthropic/claude-sonnet-4-6')
+        { inference_config: { max_tokens: 8000 } },
+        max_tokens_options('amazon_bedrock/us.anthropic.claude-sonnet-4-6', 8000)
       )
-    end
-
-    it 'leaves the output limit out for an anthropic model whose limit is unknown' do
-      assert_equal({ cache_control: { type: :ephemeral } }, model_options('anthropic/claude-sonnet-4-6', {}))
     end
   end
 
