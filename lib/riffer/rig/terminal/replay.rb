@@ -44,7 +44,11 @@ module Riffer::Rig::Terminal::Replay
         steps: replies.size,
         wall_time: ended - started,
         usage: Riffer::Rig::Runtime::Usage.sum(replies)
-      )
+      ),
+      # The record keeps only the provider's finish reason, which riffer takes
+      # as the stop reason of a turn the provider cut short; a cancel or the
+      # step limit replays as a turn that ran to its end.
+      stop_reason: replies.last&.finish_reason
     )
   end
 

@@ -86,6 +86,13 @@ When a turn ends its answer is printed, rendered from Markdown, followed by a st
 
 The turn's model calls, time, input and output tokens, any cache counts and cost, then the session's total tokens and cost. Costs appear once the model is [priced](CONFIGURATION.md#catalog_files). Text the model sent along with tool calls is not printed; use [`/trace`](SESSIONS.md#tracing-the-last-turn) to see it.
 
+A turn that stopped before the model finished — at the step limit, a full context window, the output token limit, a content filter or malformed output — names the reason above its stat line:
+
+```text
+stopped: output token limit
+1 step · 00:20 · ↑57.7k · ↓4k · session 163k tok
+```
+
 ## Interrupting and exiting
 
 | When                                   | Ctrl-C                                                                 | Ctrl-D on an empty line                |
@@ -101,7 +108,7 @@ An unanswered question stores nothing: `/auth` and `/model` report the credentia
 
 ## Resuming
 
-A resumed session — `riffer -c`, `riffer -r`, or a pick in [the picker](SESSIONS.md#the-picker) — replays its earlier turns under the banner: each prompt, its answer and its stat line.
+A resumed session — `riffer -c`, `riffer -r`, or a pick in [the picker](SESSIONS.md#the-picker) — replays its earlier turns under the banner: each prompt, its answer and its stat line. A turn the provider cut short replays with its `stopped:` reason.
 
 ## Commands
 

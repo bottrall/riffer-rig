@@ -62,6 +62,16 @@ describe Riffer::Rig::Terminal::TurnBuffer do
     Riffer::Rig::Events::TurnEnd.new(:completed, nil)
   end
 
+  describe '#stop_reason' do
+    it 'is nil while the turn is running' do
+      assert_nil buffer(text('Half a sen'), interrupt).stop_reason
+    end
+
+    it 'is the reason the turn ended with' do
+      assert_equal :length, buffer(text('Half a sen'), Riffer::Rig::Events::TurnEnd.new(:length, nil)).stop_reason
+    end
+  end
+
   describe '#absorb' do
     it 'keeps no answer while a request is still streaming' do
       assert_empty buffer(text('Hello')).answer
@@ -220,16 +230,6 @@ describe Riffer::Rig::Terminal::TurnBuffer do
       streaming.absorb(text('lo'))
 
       assert_equal 'Hel', read
-    end
-  end
-
-  describe '#interrupted?' do
-    it 'is false for a turn that ran to its end' do
-      refute_predicate buffer(text('All done.'), finish(:stop), turn_end), :interrupted?
-    end
-
-    it 'is true once the turn is interrupted' do
-      assert_predicate buffer(text('Half a sen'), interrupt), :interrupted?
     end
   end
 
