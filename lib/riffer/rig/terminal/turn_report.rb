@@ -7,6 +7,16 @@ module Riffer::Rig::Terminal::TurnReport
 
   INTERRUPTED = 'interrupted'
 
+  INTERRUPTIONS = [Riffer::Rig::Runtime::StopReason::INTERRUPT_CANCELLED, :interrupted].freeze #: Array[Symbol]
+
+  STOPPED = {
+    max_steps: 'step limit',
+    context_window: 'context window full',
+    length: 'output token limit',
+    content_filter: 'content filter',
+    malformed_output: 'malformed output'
+  }.freeze #: Hash[Symbol, String]
+
   COLUMN_HEAD = /\A.*\S {2,}(?=\S)/ #: Regexp
 
   VISIBLE = /\S/ #: Regexp
@@ -17,13 +27,7 @@ module Riffer::Rig::Terminal::TurnReport
   # @rbs width: Integer?
   # @rbs return: String
   def call(turn, session, theme:, width:)
-    closing =
-      if turn.interrupted?
-        theme.dim(wrap(INTERRUPTED, width))
-      else
-        footer(turn.stats, session, theme: theme, width: width)
-      end
-    blocks = [*answer(turn.answer, theme: theme, width: width), closing]
+    blocks = [*answer(turn.answer, theme: theme, width: width), closing(turn, session, theme: theme, width: width)]
     blocks.map { |block| "\n#{block}\n" }.join
   end
 
@@ -71,6 +75,20 @@ module Riffer::Rig::Terminal::TurnReport
   def answer(source, theme:, width:)
     body = Riffer::Rig::Terminal::Markdown.render(source, theme: theme, width: width && (width - INDENT))
     body.gsub(/^(?=.)/, ' ' * INDENT).chomp unless body.empty?
+  end
+
+  # @rbs turn: Riffer::Rig::Terminal::TurnReport::_Turn
+  # @rbs session: Riffer::Providers::TokenUsage?
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs return: String
+  def closing(turn, session, theme:, width:)
+    stop_reason = turn.stop_reason
+    return theme.dim(wrap(INTERRUPTED, width)) if INTERRUPTIONS.include?(stop_reason)
+
+    stat_line = footer(turn.stats, session, theme: theme, width: width)
+    stopped = stop_reason && STOPPED[stop_reason]
+    stopped ? "#{theme.dim(wrap("stopped: #{stopped}", width))}\n#{stat_line}" : stat_line
   end
 
   # @rbs stats: Riffer::Rig::Terminal::TurnBuffer::Stats

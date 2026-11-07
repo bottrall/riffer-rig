@@ -12,8 +12,8 @@ describe Riffer::Rig::Terminal::Replay do
     Riffer::Messages::User.new(content)
   end
 
-  def assistant(content, usage: nil)
-    Riffer::Messages::Assistant.new(content, token_usage: usage)
+  def assistant(content, usage: nil, finish_reason: nil)
+    Riffer::Messages::Assistant.new(content, token_usage: usage, finish_reason: finish_reason)
   end
 
   def calling(content, usage: nil)
@@ -182,6 +182,16 @@ describe Riffer::Rig::Terminal::Replay do
       ]
 
       assert_equal "\n› Go\n\n  Done.\n\n  2 steps · 00:41 · ↑250 · ↓50\n", replay(recorded)
+    end
+
+    it 'names why a turn stopped early from the finish reason of its last reply' do
+      recorded = [entry(user('Go'), 0), entry(assistant('', finish_reason: :length), 41)]
+
+      assert_equal "\n› Go\n\n  stopped: output token limit\n  1 step · 00:41\n", replay(recorded)
+    end
+
+    it 'prints the footer alone for a turn that recorded no reply' do
+      assert_equal "\n› Go\n\n  0 steps · 00:00\n", replay([entry(user('Go'), 0)])
     end
   end
 

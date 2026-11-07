@@ -8,7 +8,7 @@ module Riffer::Rig::Terminal::TurnReport
   # Riffer::Rig::Terminal::Replay::Turn one read back from the record.
   interface _Turn
     def answer: () -> String
-    def interrupted?: () -> bool
+    def stop_reason: () -> ::Symbol?
     def stats: () -> ::Riffer::Rig::Terminal::TurnBuffer::Stats
   end
 end

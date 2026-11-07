@@ -5,6 +5,10 @@ module Riffer::Rig::Terminal::TurnReport
 
   INTERRUPTED: ::String
 
+  INTERRUPTIONS: Array[Symbol]
+
+  STOPPED: Hash[Symbol, String]
+
   COLUMN_HEAD: Regexp
 
   VISIBLE: Regexp
@@ -38,6 +42,13 @@ module Riffer::Rig::Terminal::TurnReport
   # @rbs width: Integer?
   # @rbs return: String?
   def answer: (String source, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> String?
+
+  # @rbs turn: Riffer::Rig::Terminal::TurnReport::_Turn
+  # @rbs session: Riffer::Providers::TokenUsage?
+  # @rbs theme: Riffer::Rig::Terminal::Theme
+  # @rbs width: Integer?
+  # @rbs return: String
+  def closing: (Riffer::Rig::Terminal::TurnReport::_Turn turn, Riffer::Providers::TokenUsage? session, theme: Riffer::Rig::Terminal::Theme, width: Integer?) -> String
 
   # @rbs stats: Riffer::Rig::Terminal::TurnBuffer::Stats
   # @rbs session: Riffer::Providers::TokenUsage?

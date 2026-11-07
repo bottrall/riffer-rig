@@ -280,6 +280,7 @@ describe Riffer::Rig::Terminal do
       Runtime::JobNotification
       Runtime::JobNotification::MARKER
       Runtime::Snapshot
+      Runtime::StopReason::INTERRUPT_CANCELLED
       Runtime::Usage
     ]
   end

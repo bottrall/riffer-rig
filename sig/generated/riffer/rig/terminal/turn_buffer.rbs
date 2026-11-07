@@ -5,8 +5,6 @@ class Riffer::Rig::Terminal::TurnBuffer
 
   @settled_usage: Riffer::Providers::TokenUsage?
 
-  @interrupted: bool
-
   @in_request: bool
 
   @steps: Integer
@@ -21,10 +19,12 @@ class Riffer::Rig::Terminal::TurnBuffer
 
   @clock: ^() -> Float
 
-  # @dynamic ghost, tool
+  # @dynamic ghost, tool, stop_reason
   attr_reader ghost: String?
 
   attr_reader tool: String?
+
+  attr_reader stop_reason: Symbol?
 
   # @rbs clock: ^() -> Float
   # @rbs return: void
@@ -39,9 +39,6 @@ class Riffer::Rig::Terminal::TurnBuffer
 
   # @rbs return: String
   def prose: () -> String
-
-  # @rbs return: bool
-  def interrupted?: () -> bool
 
   # @rbs return: bool
   def ended?: () -> bool

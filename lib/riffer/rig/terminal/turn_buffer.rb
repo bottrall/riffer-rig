@@ -8,13 +8,13 @@ class Riffer::Rig::Terminal::TurnBuffer
   # @rbs @answers: Array[String]
   # @rbs @steps: Integer
   # @rbs @in_request: bool
-  # @rbs @interrupted: bool
   # @rbs @settled_usage: Riffer::Providers::TokenUsage?
   # @rbs @request_usage: Riffer::Providers::TokenUsage?
 
-  # @dynamic ghost, tool
+  # @dynamic ghost, tool, stop_reason
   attr_reader :ghost #: String?
   attr_reader :tool #: String?
+  attr_reader :stop_reason #: Symbol?
 
   # @rbs clock: ^() -> Float
   # @rbs return: void
@@ -25,7 +25,6 @@ class Riffer::Rig::Terminal::TurnBuffer
     @answers = []
     @steps = 0
     @in_request = false
-    @interrupted = false
   end
 
   # @rbs event: ::Riffer::StreamEvents::Base | Riffer::Rig::Events::_Event
@@ -54,15 +53,13 @@ class Riffer::Rig::Terminal::TurnBuffer
       # A blocked tool call skips BeforeToolCall.
       settle(:tool_calls)
       @tool = nil
-    when Riffer::Rig::Events::JobExit
-      # A turn the Runtime continues for a job exit has no tool call between
-      # its replies to end the first request.
-      settle(:stop)
-    when Riffer::StreamEvents::Interrupt
-      @interrupted = true
+    when Riffer::Rig::Events::JobExit, Riffer::StreamEvents::Interrupt
+      # A turn the Runtime continues for a job exit, or one cut short, has no
+      # tool call or finish reason to end the open request.
       settle(:stop)
     when Riffer::Rig::Events::TurnEnd
       settle(:stop)
+      @stop_reason = event.stop_reason
       @ended_at = @clock.call
     end
   end
@@ -75,11 +72,6 @@ class Riffer::Rig::Terminal::TurnBuffer
   # @rbs return: String
   def prose
     @prose.dup
-  end
-
-  # @rbs return: bool
-  def interrupted?
-    @interrupted
   end
 
   # @rbs return: bool

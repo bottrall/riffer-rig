@@ -4,21 +4,19 @@ require 'test_helper'
 require_relative '../../../support/frame_pty'
 
 class EndedTurn
-  attr_reader :answer, :stats
+  attr_reader :answer, :stats, :stop_reason
 
-  def initialize(answer:, stats:, interrupted:)
+  def initialize(answer:, stats:, stop_reason:)
     @answer = answer
     @stats = stats
-    @interrupted = interrupted
+    @stop_reason = stop_reason
   end
-
-  def interrupted? = @interrupted
 end
 
 describe Riffer::Rig::Terminal::TurnReport do
-  def turn(answer: 'All done.', interrupted: false, steps: 2, wall_time: 41.0, usage: nil)
+  def turn(answer: 'All done.', stop_reason: :completed, steps: 2, wall_time: 41.0, usage: nil)
     stats = Riffer::Rig::Terminal::TurnBuffer::Stats.new(steps: steps, wall_time: wall_time, usage: usage)
-    EndedTurn.new(answer: answer, stats: stats, interrupted: interrupted)
+    EndedTurn.new(answer: answer, stats: stats, stop_reason: stop_reason)
   end
 
   def usage(input, output, **rest)
@@ -41,22 +39,20 @@ describe Riffer::Rig::Terminal::TurnReport do
       assert_equal "\n  2 steps · 00:41\n", report(turn(answer: ''))
     end
 
-    it 'marks an interrupted turn instead of printing its stats' do
-      assert_equal "\n  interrupted\n", report(turn(answer: '', interrupted: true), session: usage(300, 150))
+    it 'keeps the partial answer of an interrupted turn above the marker' do
+      assert_equal "\n  Half a sen\n\n  interrupted\n", report(turn(answer: 'Half a sen', stop_reason: :cancelled))
     end
 
-    it 'keeps the partial answer of an interrupted turn above the marker' do
-      assert_equal "\n  Half a sen\n\n  interrupted\n", report(turn(answer: 'Half a sen', interrupted: true))
+    it 'keeps the answer of a turn that stopped early above the reason' do
+      stopped = "\n  Half a sen\n\n  stopped: step limit\n  2 steps · 00:41\n"
+
+      assert_equal stopped, report(turn(answer: 'Half a sen', stop_reason: :max_steps))
     end
 
     it 'styles the answer as markdown above a dimmed footer' do
       styled = "\n  All \e[1mdone\e[0m.\n\n  \e[2m2 steps · 00:41\e[0m\n"
 
       assert_equal styled, report(turn(answer: 'All **done**.'), color: true)
-    end
-
-    it 'dims the interrupted marker' do
-      assert_equal "\n\e[2m  interrupted\e[0m\n", report(turn(answer: '', interrupted: true), color: true)
     end
 
     it 'wraps the footer to the width' do
@@ -162,6 +158,40 @@ describe Riffer::Rig::Terminal::TurnReport do
 
     it 'indents every line of the answer and leaves its blank lines empty' do
       assert_equal "\n  One.\n\n  Two.\n\n  2 steps · 00:41\n", report(turn(answer: "One.\n\nTwo."))
+    end
+  end
+
+  describe '.closing' do
+    it 'marks a cancelled turn instead of printing its stats' do
+      assert_equal "\n  interrupted\n", report(turn(answer: '', stop_reason: :cancelled), session: usage(300, 150))
+    end
+
+    it 'marks a turn a hook interrupted instead of printing its stats' do
+      assert_equal "\n  interrupted\n", report(turn(answer: '', stop_reason: :interrupted))
+    end
+
+    it 'dims the interrupted marker' do
+      assert_equal "\n\e[2m  interrupted\e[0m\n", report(turn(answer: '', stop_reason: :cancelled), color: true)
+    end
+
+    it 'names why a turn stopped early above its stats' do
+      stopped = "\n  stopped: output token limit\n  2 steps · 00:41\n"
+
+      assert_equal stopped, report(turn(answer: '', stop_reason: :length))
+    end
+
+    it 'dims the reason a turn stopped early' do
+      stopped = "\n\e[2m  stopped: content filter\e[0m\n  \e[2m2 steps · 00:41\e[0m\n"
+
+      assert_equal stopped, report(turn(answer: '', stop_reason: :content_filter), color: true)
+    end
+
+    it 'prints the footer alone for a turn that stopped for a reason it does not name' do
+      assert_equal "\n  2 steps · 00:41\n", report(turn(answer: '', stop_reason: :guardrail_blocked))
+    end
+
+    it 'prints the footer alone for a turn that reports no stop reason' do
+      assert_equal "\n  2 steps · 00:41\n", report(turn(answer: '', stop_reason: nil))
     end
   end
 
