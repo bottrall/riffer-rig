@@ -436,6 +436,8 @@
 
         <li ><a href="#method-i-ancestors">ancestors</a></li>
 
+        <li ><a href="#method-i-expand_home">expand_home</a></li>
+
         <li ><a href="#method-i-riffer">riffer</a></li>
 
         <li ><a href="#method-i-up_to_repo_root">up_to_repo_root</a></li>
@@ -567,6 +569,63 @@
 
 
           <p>@rbs dir: String @rbs return: <a href="String">Array</a></p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-expand_home" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-expand_home" title="Link to this method">
+                  <span class="method-name">expand_home</span>
+                  <span class="method-args">(path, home)</span>
+                </a>
+              </div>
+
+
+
+            <pre class="method-type-signature"><code>(String path, String home) &rarr; String</code></pre>
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="expand_home-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/riffer/rig/directories.rb, line 31</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">expand_home</span>(<span class="ruby-identifier">path</span>, <span class="ruby-identifier">home</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">path</span> <span class="ruby-operator">==</span> <span class="ruby-string">&#39;</span><span class="ruby-string">~</span><span class="ruby-string">&#39;</span>
+    <span class="ruby-identifier">home</span>
+  <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">path</span>.<span class="ruby-identifier">start_with?</span>(<span class="ruby-string">&#39;</span><span class="ruby-string">~/</span><span class="ruby-string">&#39;</span>)
+    <span class="ruby-constant">File</span>.<span class="ruby-identifier">join</span>(<span class="ruby-identifier">home</span>, <span class="ruby-identifier">path</span>.<span class="ruby-identifier">delete_prefix</span>(<span class="ruby-string">&#39;</span><span class="ruby-string">~/</span><span class="ruby-string">&#39;</span>))
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">path</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>@rbs path: String @rbs home: String @rbs return: String</p>
 
 
         </div>
