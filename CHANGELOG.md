@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.18.0](https://github.com/bottrall/riffer-rig/compare/v0.17.0...v0.18.0) (2026-11-07)
+
+
+### Features
+
+* add a max_tokens setting with a 64k Anthropic default ([#621](https://github.com/bottrall/riffer-rig/issues/621)) ([c3abf81](https://github.com/bottrall/riffer-rig/commit/c3abf81442f5761bab961b11b2e2e584d91687e7))
+
+
+### Bug Fixes
+
+* show why a turn stopped early in the terminal ([#620](https://github.com/bottrall/riffer-rig/issues/620)) ([16c9928](https://github.com/bottrall/riffer-rig/commit/16c99283a41abfa384d6a2afe7971710582ceaf4)), closes [#619](https://github.com/bottrall/riffer-rig/issues/619)
+
 ## [0.17.0](https://github.com/bottrall/riffer-rig/compare/v0.16.0...v0.17.0) (2026-10-24)
 
 
