@@ -709,6 +709,12 @@ describe Riffer::Rig::Loader do
       assert_equal({ web_search: true }, build(model: 'mock/test').agent.config.model_options)
     end
 
+    it 'hands the output limit to the Runtime' do
+      write_settings(@home, { max_tokens: 8000 })
+
+      assert_equal({ max_tokens: 8000 }, build(model: 'mock/test').agent.config.model_options)
+    end
+
     it 'hands the home settings path to the Runtime' do
       build(model: 'mock/test').run_command('model', '--save')
 

@@ -11,7 +11,7 @@ You can edit your extensions and settings without restarting the session. A relo
 | `auth.json` and `trust.json`                                                         | a method you deleted or a constant you renamed     |
 | the skills directories                                                               |                                                    |
 
-The settings' `model` key is not re-read: the model in effect is kept. AGENTS.md never needs a reload; it is read every turn. A project `rig.rb` that appears mid-session asks to be trusted, as at startup.
+The settings' `model` and `max_tokens` keys are not re-read: the model and output limit in effect are kept until you restart. AGENTS.md never needs a reload; it is read every turn. A project `rig.rb` that appears mid-session asks to be trusted, as at startup.
 
 Plain `require` and `require_relative` reload with nothing extra for you to do. Classes are reopened rather than replaced, so edited and added methods take effect, but deleted methods and renamed constants linger until you restart.
 

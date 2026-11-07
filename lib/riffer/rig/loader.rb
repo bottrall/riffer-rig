@@ -114,6 +114,7 @@ class Riffer::Rig::Loader
       riffer_config: @riffer_config,
       model_options: Riffer::Rig::Settings::ModelOptions.model_options(selected),
       native_tools: document.native_tools,
+      max_tokens: document.max_tokens,
       snapshot: saved
     )
     reloader = Riffer::Rig::Loader::Reloader.new(

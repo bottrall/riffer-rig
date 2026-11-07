@@ -89,6 +89,43 @@ describe Riffer::Rig::Settings::ModelOptions do
     end
   end
 
+  describe '.max_tokens_options' do
+    def max_tokens_options(model, max_tokens = nil)
+      Riffer::Rig::Settings::ModelOptions.max_tokens_options(model, max_tokens)
+    end
+
+    it 'is empty for a model without a provider' do
+      assert_empty max_tokens_options('sonnet', 8000)
+    end
+
+    it 'drops the limit for a provider whose parameter it does not know' do
+      assert_empty max_tokens_options('acme/model', 8000)
+    end
+
+    it 'sends a configured limit in place of the default' do
+      assert_equal({ max_tokens: 8000 }, max_tokens_options('anthropic/claude-sonnet-4-6', 8000))
+    end
+
+    it 'sends the default limit to a provider that requires one' do
+      assert_equal({ max_tokens: 64_000 }, max_tokens_options('anthropic/claude-sonnet-4-6'))
+    end
+
+    it 'sends nothing by default to a provider that does not require a limit' do
+      assert_empty max_tokens_options('openai/o3')
+    end
+
+    it 'names the limit with the provider parameter' do
+      assert_equal({ max_output_tokens: 8000 }, max_tokens_options('openai/o3', 8000))
+    end
+
+    it 'nests the limit under the provider parameter parent' do
+      assert_equal(
+        { inference_config: { max_tokens: 8000 } },
+        max_tokens_options('amazon_bedrock/us.anthropic.claude-sonnet-4-6', 8000)
+      )
+    end
+  end
+
   describe '.native_options' do
     it 'is empty without a switch' do
       assert_empty Riffer::Rig::Settings::ModelOptions.native_options('mock/test', {})

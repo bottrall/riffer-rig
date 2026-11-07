@@ -10,6 +10,19 @@ module Riffer::Rig::Settings::ModelOptions
   # tests and embedders can exercise the switches.
   NATIVE_TOOLS_BY_PROVIDER: Hash[Symbol, Hash[Symbol, bool]]
 
+  # Upstream candidate: riffer passes model_options to each provider's API
+  # unchanged, so rig names every provider's own output limit parameter until
+  # riffer accepts a provider-neutral option and translates it, as it does for
+  # reasoning.
+  MAX_TOKENS_PARAMETERS: Hash[Symbol, Array[Symbol]]
+
+  # Every other provider's API falls back to the model's own limit, but riffer's
+  # Anthropic provider sends 4096 unless told otherwise, and thinking spends
+  # from that same budget.
+  MAX_TOKENS_REQUIRED: Array[Symbol]
+
+  DEFAULT_MAX_TOKENS: ::Integer
+
   # @rbs model: String
   # @rbs return: String?
   def provider_for: (String model) -> String?
@@ -29,6 +42,11 @@ module Riffer::Rig::Settings::ModelOptions
   # @rbs model: String
   # @rbs return: Hash[Symbol, untyped]
   def model_options: (String model) -> Hash[Symbol, untyped]
+
+  # @rbs model: String
+  # @rbs max_tokens: Integer?
+  # @rbs return: Hash[Symbol, untyped]
+  def max_tokens_options: (String model, Integer? max_tokens) -> Hash[Symbol, untyped]
 
   # @rbs model: String
   # @rbs switches: Hash[Symbol, untyped]

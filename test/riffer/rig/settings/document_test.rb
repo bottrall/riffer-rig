@@ -19,6 +19,18 @@ describe Riffer::Rig::Settings::Document do
     assert_equal 'high', Riffer::Rig::Settings::Document.new({ reasoning: 'high' }).reasoning
   end
 
+  it 'ignores an output limit that is not an integer' do
+    assert_nil Riffer::Rig::Settings::Document.new({ max_tokens: '8000' }).max_tokens
+  end
+
+  it 'ignores an output limit of zero' do
+    assert_nil Riffer::Rig::Settings::Document.new({ max_tokens: 0 }).max_tokens
+  end
+
+  it 'reads the output limit' do
+    assert_equal 8000, Riffer::Rig::Settings::Document.new({ max_tokens: 8000 }).max_tokens
+  end
+
   it 'has no catalog files when the value is not an array' do
     assert_empty Riffer::Rig::Settings::Document.new({ catalog_files: 'models.json' }).catalog_files
   end

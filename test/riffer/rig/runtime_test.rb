@@ -158,6 +158,18 @@ describe Riffer::Rig::Runtime do
     assert(events.any?(Riffer::StreamEvents::WebSearchDone))
   end
 
+  it 'hands its output limit to the agent' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', max_tokens: 8000)
+
+    assert_equal({ max_tokens: 8000 }, runtime.agent.config.model_options)
+  end
+
+  it 'keeps an output limit given in its model options over the default' do
+    runtime = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', model_options: { max_tokens: 1000 })
+
+    assert_equal({ max_tokens: 1000 }, runtime.agent.config.model_options)
+  end
+
   it 'names the agent in the base prompt' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
 
@@ -1259,6 +1271,13 @@ describe Riffer::Rig::Runtime do
     assert_equal({}, runtime.agent.config.model_options)
   end
 
+  it 'names the output limit with the new provider parameter on a switch' do
+    runtime = Riffer::Rig::Runtime.new('mock/test', max_tokens: 8000)
+    runtime.model = 'gemini/gem-2.5-pro'
+
+    assert_equal({ maxOutputTokens: 8000 }, runtime.agent.config.model_options)
+  end
+
   describe '#reasoning' do
     it 'is the level from the settings' do
       assert_equal 'high', Riffer::Rig::Runtime.new('mock/test', settings: { reasoning: 'high' }).reasoning
@@ -1778,6 +1797,22 @@ describe Riffer::Rig::Runtime do
       runtime.model = 'mock/other'
 
       assert_equal 'mock/test', restored(runtime.to_h).model
+    end
+
+    it 're-derives its model options for a saved model of another provider' do
+      runtime = saved_runtime
+      runtime.model = 'gemini/gem-2.5-pro'
+      resumed = restored(runtime.to_h, credentials: { gemini: {} }, max_tokens: 8000)
+
+      assert_equal({ maxOutputTokens: 8000 }, resumed.agent.config.model_options)
+    end
+
+    it 'keeps its model options for a saved model of the provider given' do
+      runtime = saved_runtime
+      runtime.model = 'mock/other'
+      resumed = restored(runtime.to_h, credentials: { mock: {} }, model_options: { reasoning: 'high' })
+
+      assert_equal({ reasoning: 'high' }, resumed.agent.config.model_options)
     end
 
     it 'restores the tally as the sum of the messages token usage' do

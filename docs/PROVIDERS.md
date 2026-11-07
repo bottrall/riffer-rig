@@ -94,7 +94,7 @@ Plain fields live in the home `settings.json`, keyed by provider and then by fie
 
 ### Anthropic
 
-Prefix `anthropic/`, for example `anthropic/claude-sonnet-4-6`. Create a key at <https://console.anthropic.com/settings/keys>. Anthropic models always get prompt caching.
+Prefix `anthropic/`, for example `anthropic/claude-sonnet-4-6`. Create a key at <https://console.anthropic.com/settings/keys>. Anthropic models always get prompt caching and an [output limit](CONFIGURATION.md#max_tokens).
 
 Instead of an API key, the Anthropic SDK can authenticate through its own credential chain — workload identity federation, `ANTHROPIC_AUTH_TOKEN`, or an `ant auth login` profile — set up as the [Anthropic Ruby SDK](https://github.com/anthropics/anthropic-sdk-ruby) documents; riffer-rig stores nothing for it.
 
