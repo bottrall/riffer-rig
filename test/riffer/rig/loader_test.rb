@@ -697,6 +697,16 @@ describe Riffer::Rig::Loader do
       assert_in_delta 3.0, @config.catalog.rates_for('mock/test').input
     end
 
+    it 'expands ~ in the catalog files to the home directory' do
+      FileUtils.mkdir_p(File.join(@home, '.riffer'))
+      models = { 'mock/test' => { pricing: { input: 3.0, output: 15.0 } } }
+      write_catalog(File.join(@home, '.riffer'), version: 1, models: models)
+      write_settings(@home, { catalog_files: ['~/.riffer/models.json'] })
+      build(model: 'mock/test')
+
+      assert_in_delta 3.0, @config.catalog.rates_for('mock/test').input
+    end
+
     it 'hands the reasoning level to the agent' do
       write_settings(@home, { reasoning: 'high' })
 

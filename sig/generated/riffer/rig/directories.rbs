@@ -13,4 +13,9 @@ module Riffer::Rig::Directories
   # @rbs *names: String
   # @rbs return: String
   def riffer: (String root, *String names) -> String
+
+  # @rbs path: String
+  # @rbs home: String
+  # @rbs return: String
+  def expand_home: (String path, String home) -> String
 end

@@ -55,4 +55,24 @@ describe Riffer::Rig::Directories do
       assert_equal '/home/me/.riffer/sessions/a', Riffer::Rig::Directories.riffer('/home/me', 'sessions', 'a')
     end
   end
+
+  describe '.expand_home' do
+    it 'replaces a bare ~ with the home directory' do
+      assert_equal '/home/me', Riffer::Rig::Directories.expand_home('~', '/home/me')
+    end
+
+    it 'replaces a leading ~/ with the home directory' do
+      expanded = Riffer::Rig::Directories.expand_home('~/.riffer/models.json', '/home/me')
+
+      assert_equal '/home/me/.riffer/models.json', expanded
+    end
+
+    it 'leaves a path without a leading ~/ as it is' do
+      assert_equal '.riffer/models.json', Riffer::Rig::Directories.expand_home('.riffer/models.json', '/home/me')
+    end
+
+    it 'leaves ~user as it is' do
+      assert_equal '~other/models.json', Riffer::Rig::Directories.expand_home('~other/models.json', '/home/me')
+    end
+  end
 end

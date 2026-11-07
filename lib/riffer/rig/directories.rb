@@ -24,4 +24,17 @@ module Riffer::Rig::Directories
   def riffer(root, *names)
     File.join(root, '.riffer', *names)
   end
+
+  # @rbs path: String
+  # @rbs home: String
+  # @rbs return: String
+  def expand_home(path, home)
+    if path == '~'
+      home
+    elsif path.start_with?('~/')
+      File.join(home, path.delete_prefix('~/'))
+    else
+      path
+    end
+  end
 end
