@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0](https://github.com/bottrall/riffer-rig/compare/v0.18.0...v0.19.0) (2026-11-07)
+
+
+### Features
+
+* expand ~ in catalog file paths ([#623](https://github.com/bottrall/riffer-rig/issues/623)) ([99609b5](https://github.com/bottrall/riffer-rig/commit/99609b536634108aeb472a31c63dc5ae545752e4))
+
 ## [0.18.0](https://github.com/bottrall/riffer-rig/compare/v0.17.0...v0.18.0) (2026-11-07)
 
 
