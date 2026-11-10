@@ -140,7 +140,7 @@ describe Riffer::Rig::Commands::Model do
     assert_equal(
       [output(
         'Use /model provider/name, with a provider from: ' \
-        'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter'
+        'amazon_bedrock, anthropic, anthropic_vertex, azure_openai, gemini, google_cloud, openai, openrouter'
       )],
       command_events(new_runtime, 'sonnet')
     )
@@ -157,7 +157,7 @@ describe Riffer::Rig::Commands::Model do
     assert_equal(
       [output(
         'Use /model provider/name, with a provider from: ' \
-        'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter'
+        'amazon_bedrock, anthropic, anthropic_vertex, azure_openai, gemini, google_cloud, openai, openrouter'
       )],
       command_events(new_runtime, 'acme/fast')
     )

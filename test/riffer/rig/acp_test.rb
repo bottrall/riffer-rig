@@ -55,7 +55,7 @@ describe Riffer::Rig::ACP do
       input: agent_input_r, output: agent_output_w, env: env, home: @home, cwd: @cwd, build: build, adopt: adopt
     )
     @served << [agent_input_w, Thread.new { agent.run }, agent_output_w]
-    connection = ACP::ClientConnection.new(
+    connection = ACP::ClientConnection.build(
       transport: ACP::Transport::Stdio.new(input: agent_output_r, output: agent_input_w),
       permission: lambda { |request|
         @permissions << request

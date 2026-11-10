@@ -391,7 +391,8 @@ describe Riffer::Rig::Loader do
         build(host: host)
 
         assert_equal 'Which model should riffer use? Enter provider/name, with a provider from: ' \
-                     'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter',
+                     'amazon_bedrock, anthropic, anthropic_vertex, azure_openai, gemini, google_cloud, ' \
+                     'openai, openrouter',
                      host.questions.first
       end
 
