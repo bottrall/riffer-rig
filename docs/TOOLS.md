@@ -33,7 +33,7 @@ riffer-rig has no permission prompts for tool calls. Every call the model makes 
 
 riffer-rig asks only before:
 
-- loading a project's `.riffer/rig.rb` for the first time ([trust](EXTENSIONS.md#the-rigrb-files));
+- loading a project's `.riffer/rig.rb` for the first time, or after it changes ([trust](EXTENSIONS.md#the-rigrb-files));
 - installing a provider's [SDK gem](PROVIDERS.md#sdk-gems);
 - storing a credential you type.
 

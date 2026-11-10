@@ -69,7 +69,7 @@ class Riffer::Rig::Terminal::Renderer
   # @rbs text: String
   # @rbs return: String
   def wrapped(text)
-    Riffer::Rig::Terminal::TurnReport.wrap(text, @width.call)
+    Riffer::Rig::Terminal::TurnReport.wrap(text.gsub(Riffer::Rig::Terminal::Markdown::CONTROL, ''), @width.call)
   end
 
   # @rbs text: String

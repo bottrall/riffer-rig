@@ -26,6 +26,12 @@ describe Riffer::Rig::Terminal::Renderer do
     assert_equal "\n  Reads the\n  rows now\n", @io.string
   end
 
+  it 'strips the control characters from a notice' do
+    @renderer.notice("sa\e]52;c;eA==\aved")
+
+    assert_equal "\n  sa]52;c;eA==ved\n", @io.string
+  end
+
   it 'renders an error indented in its own block' do
     @renderer.error('boom')
 
@@ -36,6 +42,12 @@ describe Riffer::Rig::Terminal::Renderer do
     measured(14).error('Reads the rows now')
 
     assert_equal "\n  Reads the\n  rows now\n", @io.string
+  end
+
+  it 'strips the control characters from an error' do
+    @renderer.error("bo\e[2Jom")
+
+    assert_equal "\n  bo[2Jom\n", @io.string
   end
 
   it 'notifies an error level as an error' do

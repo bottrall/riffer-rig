@@ -889,7 +889,7 @@ describe Riffer::Rig::Loader do
 
     def tool_added
       write_rig(:project, probe_rig('probe'))
-      host = ConfirmingHost.new([true])
+      host = ConfirmingHost.new([true, true])
       loader = new_loader(host: host)
       runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       usage = Riffer::Providers::TokenUsage.new(input_tokens: 7, output_tokens: 3)
@@ -902,7 +902,7 @@ describe Riffer::Rig::Loader do
 
     def raising_rig
       write_rig(:project, probe_rig('probe'))
-      host = ConfirmingHost.new([true])
+      host = ConfirmingHost.new([true, true])
       loader = new_loader(host: host)
       runtime = loader.runtime(Riffer::Rig::Loader::Options.new(model: 'mock/test'))
       File.write(project_rig_path, 'raise "boom"')
@@ -1010,7 +1010,7 @@ describe Riffer::Rig::Loader do
     end
 
     it 'reloads a tracked file changed before a turn' do
-      _loader, runtime = built_with(ConfirmingHost.new([true]))
+      _loader, runtime = built_with(ConfirmingHost.new([true, true]))
       File.write(project_rig_path, probe_rig('probe_next'))
       turn(runtime)
 
@@ -1026,7 +1026,7 @@ describe Riffer::Rig::Loader do
     end
 
     it 'keeps /reload under a manual reload keyword' do
-      _loader, runtime = built_with(ConfirmingHost.new([true]), reload: :manual)
+      _loader, runtime = built_with(ConfirmingHost.new([true, true]), reload: :manual)
       File.write(project_rig_path, probe_rig('probe_next'))
       runtime.run_command('reload')
 
@@ -1045,7 +1045,7 @@ describe Riffer::Rig::Loader do
     it 'lets the project setting override home' do
       write_settings(@home, { reload: 'manual' })
       write_settings(@cwd, { reload: 'auto' })
-      _loader, runtime = built_with(ConfirmingHost.new([true]))
+      _loader, runtime = built_with(ConfirmingHost.new([true, true]))
       File.write(project_rig_path, probe_rig('probe_next'))
       turn(runtime)
 
@@ -1054,7 +1054,7 @@ describe Riffer::Rig::Loader do
 
     it 'lets the keyword override the setting' do
       write_settings(@home, { reload: 'manual' })
-      _loader, runtime = built_with(ConfirmingHost.new([true]), reload: :auto)
+      _loader, runtime = built_with(ConfirmingHost.new([true, true]), reload: :auto)
       File.write(project_rig_path, probe_rig('probe_next'))
       turn(runtime)
 

@@ -2,18 +2,22 @@
 
 module Riffer::Rig::Trust
   # @rbs path: String
-  # @rbs return: (Hash[String, bool] | String)
-  def read: (String path) -> (Hash[String, bool] | String)
+  # @rbs return: (Hash[String, Riffer::Rig::Trust::Decision] | String)
+  def read: (String path) -> (Hash[String, Riffer::Rig::Trust::Decision] | String)
 
   # @rbs path: String
   # @rbs file: String
-  # @rbs decision: bool
+  # @rbs decision: Riffer::Rig::Trust::Decision
   # @rbs return: String?
-  def store: (String path, String file, bool decision) -> String?
+  def store: (String path, String file, Riffer::Rig::Trust::Decision decision) -> String?
 
   private
 
   # @rbs document: Hash[untyped, untyped]
-  # @rbs return: Hash[String, bool]
-  def decisions: (Hash[untyped, untyped] document) -> Hash[String, bool]
+  # @rbs return: Hash[String, Riffer::Rig::Trust::Decision]
+  def decisions: (Hash[untyped, untyped] document) -> Hash[String, Riffer::Rig::Trust::Decision]
+
+  # @rbs entry: untyped
+  # @rbs return: bool
+  def decision?: (untyped entry) -> bool
 end
