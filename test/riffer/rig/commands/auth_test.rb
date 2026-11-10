@@ -80,12 +80,14 @@ describe Riffer::Rig::Commands::Auth do
 
       assert_equal(
         [output(<<~TABLE.chomp)],
-          amazon_bedrock  chain
-          anthropic       env
-          azure_openai    missing
-          gemini          missing
-          openai          stored
-          openrouter      missing
+          amazon_bedrock    chain
+          anthropic         env
+          anthropic_vertex  missing
+          azure_openai      missing
+          gemini            missing
+          google_cloud      missing
+          openai            stored
+          openrouter        missing
         TABLE
         command_events(new_runtime, '')
       )
@@ -107,7 +109,7 @@ describe Riffer::Rig::Commands::Auth do
       assert_equal(
         [output(
           'Use /auth <provider> or /auth remove <provider>, with a provider from: ' \
-          'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter'
+          'amazon_bedrock, anthropic, anthropic_vertex, azure_openai, gemini, google_cloud, openai, openrouter'
         )],
         command_events(runtime, 'acme')
       )
@@ -160,7 +162,7 @@ describe Riffer::Rig::Commands::Auth do
       assert_equal(
         [output(
           'Use /auth <provider> or /auth remove <provider>, with a provider from: ' \
-          'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter'
+          'amazon_bedrock, anthropic, anthropic_vertex, azure_openai, gemini, google_cloud, openai, openrouter'
         )],
         command_events(runtime, 'remove acme')
       )
@@ -196,7 +198,7 @@ describe Riffer::Rig::Commands::Auth do
       assert_equal(
         [output(
           'Use /auth <provider> or /auth remove <provider>, with a provider from: ' \
-          'amazon_bedrock, anthropic, azure_openai, gemini, openai, openrouter'
+          'amazon_bedrock, anthropic, anthropic_vertex, azure_openai, gemini, google_cloud, openai, openrouter'
         )],
         command_events(new_runtime, 'remove')
       )

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'anthropic'
 require 'openai'
 require 'webrick'
 
@@ -9,7 +8,7 @@ class ProviderStreams
 
   CLIENTS = {
     openai: OpenAI::Client,
-    anthropic: Anthropic::Client,
+    anthropic: Riffer::Providers::Anthropic::Client,
     gemini: Riffer::Providers::Gemini::Client,
     openrouter: OpenAI::Client
   }.freeze
