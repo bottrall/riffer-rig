@@ -143,11 +143,14 @@ describe Riffer::Rig::Loader::ExtensionSource do
         assert_equal ["Trust #{project_rig_path}?"], @host.questions
       end
 
-      it 'stores the answer by absolute path' do
+      it "stores the answer by absolute path with the file's SHA-256" do
         write_rig(:project, '')
         source.discover(autoload: false)
 
-        assert_equal({ project_rig_path => true }, JSON.parse(File.read(trust_file)))
+        assert_equal(
+          { project_rig_path => { 'sha256' => Digest::SHA256.hexdigest(''), 'trusted' => true } },
+          JSON.parse(File.read(trust_file))
+        )
       end
 
       it 'reports a trust.json that turned malformed while the host confirmed' do
@@ -184,6 +187,34 @@ describe Riffer::Rig::Loader::ExtensionSource do
         source(host: host).discover(autoload: false)
 
         assert_equal 1, host.questions.size
+      end
+
+      it 'asks again about a trusted file that changed' do
+        write_rig(:project, '')
+        source.discover(autoload: false)
+        write_rig(:project, recording('es_changed'))
+        second = ConfirmingHost.new([true])
+        source(host: second).discover(autoload: false)
+
+        assert_equal ["Trust #{project_rig_path}?"], second.questions
+      end
+
+      it 'skips a trusted file that changed and is then declined' do
+        write_rig(:project, '')
+        source.discover(autoload: false)
+        write_rig(:project, recording('es_changed'))
+
+        assert_empty source(host: ConfirmingHost.new([false])).discover(autoload: false)
+      end
+
+      it 'asks again about a declined file that changed' do
+        write_rig(:project, '')
+        source(host: ConfirmingHost.new([false])).discover(autoload: false)
+        write_rig(:project, recording('es_changed'))
+        second = ConfirmingHost.new([true])
+        source(host: second).discover(autoload: false)
+
+        assert_equal ["Trust #{project_rig_path}?"], second.questions
       end
 
       it 'reports nothing to the host for a declined file' do
@@ -372,7 +403,18 @@ describe Riffer::Rig::Loader::ExtensionSource do
       assert_equal ["Trust #{project_rig_path}?"], @host.questions
     end
 
+    it 'does not run a project rig.rb changed after it was trusted until it is trusted again' do
+      write_rig(:project, '')
+      rediscovering = source(host: ConfirmingHost.new([true, false]))
+      rediscovering.discover(autoload: false)
+      write_rig(:project, appending(marker))
+      rediscovering.rediscover
+
+      refute_path_exists marker
+    end
+
     it 'reports a raising project rig.rb as its message' do
+      @host = ConfirmingHost.new([true, true])
       write_rig(:project, '')
       rediscovering = discovered
       write_rig(:project, 'raise "boom"')

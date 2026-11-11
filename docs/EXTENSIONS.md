@@ -42,16 +42,16 @@ Edit the file and the next turn picks up the change ([Reloading](RELOADING.md)).
 Two files are loaded, in this order:
 
 1. `~/.riffer/rig.rb` — for every project; always trusted.
-2. `<cwd>/.riffer/rig.rb` — for this project; asked about the first time it is seen.
+2. `<cwd>/.riffer/rig.rb` — for this project; asked about the first time it is seen, and again whenever it changes.
 
 They are plain Ruby: `require` gems, `require_relative` your own files, or call `Riffer::Rig.extension` inline. What they load is what runs; there is no manifest or list of extensions in settings.
 
-The project file can run anything, so riffer-rig asks before loading it, and remembers the answer by path in `~/.riffer/trust.json`:
+The project file can run anything, so riffer-rig asks before loading it, and remembers the answer for the file's path and exact contents in `~/.riffer/trust.json`. Once the file changes — your own edit, a `git pull`, a branch switch, another repository cloned to the same path — the stored answer no longer applies and you are asked again. Only `rig.rb` itself is checked: a file it requires can change without asking again.
 
 | Answer                                                    | Result                                                            |
 | --------------------------------------------------------- | ----------------------------------------------------------------- |
-| yes                                                       | stored; the file loads now and in every later session             |
-| no                                                        | stored; the file is skipped until you remove its entry from `trust.json` |
+| yes                                                       | stored; the file loads now and in every later session until it changes |
+| no                                                        | stored; the file is skipped until it changes or you remove its entry from `trust.json` |
 | no answer (Ctrl-C or Ctrl-D)                              | skipped this time; asked again next time                          |
 | nobody to ask (headless, ACP while starting, an app with the null host) | skipped; nothing stored, so the terminal can ask later |
 

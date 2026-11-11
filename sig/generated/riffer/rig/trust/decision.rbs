@@ -1,0 +1,18 @@
+# Generated from lib/riffer/rig/trust/decision.rb with RBS::Inline
+
+class Riffer::Rig::Trust::Decision
+  include Riffer::Rig::Support::Equatable
+
+  # @dynamic sha256, trusted
+  attr_reader sha256: String
+
+  attr_reader trusted: bool
+
+  # @rbs sha256: String
+  # @rbs trusted: bool
+  # @rbs return: void
+  def initialize: (sha256: String, trusted: bool) -> void
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

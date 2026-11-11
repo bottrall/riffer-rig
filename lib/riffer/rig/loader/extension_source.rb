@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'digest'
+
 class Riffer::Rig::Loader::ExtensionSource
   EXTENSION_FEATURE = 'riffer/rig/extension'
 
@@ -124,13 +126,15 @@ class Riffer::Rig::Loader::ExtensionSource
     decisions = Riffer::Rig::Trust.read(trust_path)
     return decisions if decisions.is_a?(String)
 
+    sha256 = Digest::SHA256.file(path).hexdigest
     stored = decisions[path]
-    return stored unless stored.nil?
+    return stored.trusted if stored && stored.sha256 == sha256
 
-    decision = @host.confirm("Trust #{path}?") if @host.capabilities.include?(:confirm)
-    return false if decision.nil?
+    answer = @host.confirm("Trust #{path}?") if @host.capabilities.include?(:confirm)
+    return false if answer.nil?
 
-    Riffer::Rig::Trust.store(trust_path, path, decision) || decision
+    decision = Riffer::Rig::Trust::Decision.new(sha256: sha256, trusted: answer)
+    Riffer::Rig::Trust.store(trust_path, path, decision) || answer
   end
 
   # @rbs return: String
