@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.1](https://github.com/bottrall/riffer-rig/compare/v0.19.0...v0.19.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* trust rig.rb by content and strip control characters from notices ([#629](https://github.com/bottrall/riffer-rig/issues/629)) ([593a569](https://github.com/bottrall/riffer-rig/commit/593a569f5e4f45699c88d30732fb0fbd7240cb08)), closes [#627](https://github.com/bottrall/riffer-rig/issues/627)
+
 ## [0.19.0](https://github.com/bottrall/riffer-rig/compare/v0.18.0...v0.19.0) (2026-11-07)
 
 
