@@ -23,7 +23,7 @@
             <a href="/guides/overview/">Guides</a>
             <a href="/api/">API Reference</a>
             <a href="https://github.com/bottrall/riffer-rig">GitHub</a>
-            <span class="version">v0.19.0</span>
+            <span class="version">v0.19.1</span>
           </div>
         </nav>
       </div>
@@ -216,12 +216,12 @@
 
 <ol>
   <li><code>~/.riffer/rig.rb</code> — for every project; always trusted.</li>
-  <li><code>&lt;cwd&gt;/.riffer/rig.rb</code> — for this project; asked about the first time it is seen.</li>
+  <li><code>&lt;cwd&gt;/.riffer/rig.rb</code> — for this project; asked about the first time it is seen, and again whenever it changes.</li>
 </ol>
 
 <p>They are plain Ruby: <code>require</code> gems, <code>require_relative</code> your own files, or call <code>Riffer::Rig.extension</code> inline. What they load is what runs; there is no manifest or list of extensions in settings.</p>
 
-<p>The project file can run anything, so riffer-rig asks before loading it, and remembers the answer by path in <code>~/.riffer/trust.json</code>:</p>
+<p>The project file can run anything, so riffer-rig asks before loading it, and remembers the answer for the file’s path and exact contents in <code>~/.riffer/trust.json</code>. Once the file changes — your own edit, a <code>git pull</code>, a branch switch, another repository cloned to the same path — the stored answer no longer applies and you are asked again. Only <code>rig.rb</code> itself is checked: a file it requires can change without asking again.</p>
 
 <table>
   <thead>
@@ -233,11 +233,11 @@
   <tbody>
     <tr>
       <td>yes</td>
-      <td>stored; the file loads now and in every later session</td>
+      <td>stored; the file loads now and in every later session until it changes</td>
     </tr>
     <tr>
       <td>no</td>
-      <td>stored; the file is skipped until you remove its entry from <code>trust.json</code></td>
+      <td>stored; the file is skipped until it changes or you remove its entry from <code>trust.json</code></td>
     </tr>
     <tr>
       <td>no answer (Ctrl-C or Ctrl-D)</td>
