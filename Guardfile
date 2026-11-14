@@ -2,6 +2,6 @@
 
 guard :shell do
   watch(%r{^lib/.*\.rb$}) do
-    system('bundle exec rake rbs:generate')
+    system('bundle exec rake generate')
   end
 end

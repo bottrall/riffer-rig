@@ -12,8 +12,23 @@ Rake::TestTask.new(:test) do |t|
   t.warning = false
 end
 
-RuboCop::RakeTask.new do |t|
-  t.options = ENV.fetch('RUBOCOP_OPTS', '').split
+RuboCop::RakeTask.new(:lint) do |t|
+  t.options = ['--ignore-parent-exclusion', *ENV.fetch('RUBOCOP_OPTS', '').split]
+end
+
+desc 'Generate RBS signatures from inline annotations'
+task :generate do
+  sh 'rbs-inline --opt-out --output=sig/generated lib'
+end
+
+namespace :generate do
+  desc 'Watch lib/ for changes and regenerate RBS files'
+  task :watch do
+    require 'guard'
+    require 'guard/commander'
+
+    Guard.start(no_interactions: true)
+  end
 end
 
 namespace :rbs do
@@ -28,17 +43,12 @@ namespace :rbs do
     end
   end
 
-  desc 'Generate RBS signatures from inline annotations'
-  task :generate do
-    sh 'rbs-inline --opt-out --output=sig/generated lib'
-  end
-
   desc 'Fail if sig/generated is out of date with lib/'
   task :check do
     Dir.mktmpdir('rbs-check') do |dir|
       sh "rbs-inline --opt-out --output=#{dir} lib", verbose: false
       sh "diff -ru sig/generated #{dir}" do |ok, _|
-        abort 'sig/generated is out of date; run bin/rbs and commit the result' unless ok
+        abort 'sig/generated is out of date; run bin/generate and commit the result' unless ok
       end
     end
   end
@@ -50,14 +60,6 @@ namespace :rbs do
       File.exist?(lib_path) || Dir.exist?(lib_path.delete_suffix('.rb'))
     end
     abort "sig/manual files without a lib counterpart: #{stale.join(', ')}" unless stale.empty?
-  end
-
-  desc 'Watch lib/ for changes and regenerate RBS files'
-  task :watch do
-    require 'guard'
-    require 'guard/commander'
-
-    Guard.start(no_interactions: true)
   end
 end
 
@@ -86,8 +88,8 @@ namespace :docs do
     ruby 'docs-site/build.rb'
   end
 
-  desc 'Build the docs site and validate all internal links and anchors'
-  task check: :site do
+  desc 'Build the full docs tree and validate all internal links and anchors'
+  task check: %w[site rdoc] do
     ruby 'docs-site/check.rb'
   end
 
@@ -112,7 +114,9 @@ end
 desc 'Check RBS signatures are current, then type-check'
 task typecheck: %w[rbs:check rbs:collection_check rbs:lint_manual steep:check]
 
-desc 'Run everything CI runs'
-task ci: %i[test rubocop typecheck gemspec:check docs docs:check]
+Rake::Task['build'].enhance(['gemspec:check'])
 
-task default: :ci
+desc 'Install the RBS collection'
+task :setup do
+  sh 'rbs collection install'
+end

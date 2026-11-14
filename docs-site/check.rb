@@ -12,7 +12,7 @@ EXTERNAL = %r{\A(?:https?:|mailto:|//)}
 
 def main
   pages = site_pages
-  abort 'docs:check: no built site at _site/ — run `rake docs:site` first' if pages.empty?
+  abort 'docs:check: no built site at _site/ — run `bin/docs` first' if pages.empty?
 
   id_index = pages.to_h { |file| [file, ids(file.read)] }
   errors = pages.flat_map { |file| page_errors(file, id_index) } + readme_errors(id_index)
