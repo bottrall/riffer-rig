@@ -1,7 +1,6 @@
 require:
   - ./rubocop/cop/rig/no_data_define
   - ./rubocop/cop/rig/no_inheritance
-  - ./rubocop/cop/rig/no_inline_rbs_declarations
   - ./rubocop/cop/rig/no_mocking
   - ./rubocop/cop/rig/require_disable_reason
 
@@ -79,11 +78,6 @@ Rig/NoInheritance:
   Include:
     - "lib/**/*.rb"
     - "test/**/*.rb"
-
-Rig/NoInlineRbsDeclarations:
-  Enabled: true
-  Include:
-    - "lib/**/*.rb"
 
 Rig/NoMocking:
   Enabled: true
