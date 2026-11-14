@@ -43,7 +43,7 @@ Three rules follow. Provider-native tools are core and off by default, so a prov
 
 ## Inheritance policy
 
-Contracts are RBS interfaces in `sig/manual/`, never abstract base classes. Rig defines no class for another class to inherit from: share code through a mixin (`Support::Equatable`) or a collaborator. In `lib/`, the only superclasses allowed are framework-mandated riffer parents (`Riffer::Tool`, `Riffer::Agent`, `Riffer::Guardrail`, `Riffer::Messages::User`, `Riffer::Skills::Backend`, `Riffer::Tools::Runtime`), `StandardError` subclasses, and `Exception` itself for a signal that must escape a `rescue StandardError`; tooling outside `lib/` may subclass the parent its framework mandates (e.g. `RuboCop::Cop::Base`).
+Contracts are RBS interfaces in `sig/manual/`, never abstract base classes. Rig defines no class for another class to inherit from: share code through a mixin (`Support::Equatable`) or a collaborator. In `lib/`, the only superclasses allowed are framework-mandated riffer parents (`Riffer::Tool`, `Riffer::Agent`, `Riffer::Guardrail`, `Riffer::Messages::User`, `Riffer::Skills::Backend`, `Riffer::Tools::Runtime`), `StandardError` subclasses, and `Exception` itself for a signal that must escape a `rescue StandardError`; test support outside `lib/` may subclass the parent its framework mandates, with a scoped `Bottrall/NoInheritance` disable naming it (e.g. WEBrick's `AbstractServlet`).
 
 ## Code style
 

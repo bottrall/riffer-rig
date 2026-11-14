@@ -5,7 +5,7 @@ require 'forwardable'
 require 'fileutils'
 require 'json'
 require_relative '../../../support/sdk_fake'
-class AcmeModelProvider < Riffer::Providers::Mock; end # rubocop:disable Rig/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
+class AcmeModelProvider < Riffer::Providers::Mock; end # rubocop:disable Bottrall/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
 
 class AnsweringModelHost
   extend Forwardable

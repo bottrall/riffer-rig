@@ -3,7 +3,7 @@
 require 'test_helper'
 require 'forwardable'
 require 'json'
-class AcmeCredentialProvider < Riffer::Providers::Mock; end # rubocop:disable Rig/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
+class AcmeCredentialProvider < Riffer::Providers::Mock; end # rubocop:disable Bottrall/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
 
 class AnsweringHost
   extend Forwardable
