@@ -3,7 +3,7 @@
 require 'test_helper'
 require 'forwardable'
 require 'fileutils'
-class AcmeAuthProvider < Riffer::Providers::Mock; end # rubocop:disable Rig/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
+class AcmeAuthProvider < Riffer::Providers::Mock; end # rubocop:disable Bottrall/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
 
 class AnsweringAuthHost
   extend Forwardable

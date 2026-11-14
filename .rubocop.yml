@@ -1,40 +1,37 @@
-require:
-  - ./rubocop/cop/rig/no_inheritance
-  - ./rubocop/cop/rig/no_mocking
-  - ./rubocop/cop/rig/require_disable_reason
-
 plugins:
-  - rubocop-minitest
-  - rubocop-performance
-  - rubocop-rake
+  - rubocop-bottrall
+
+inherit_gem:
+  rubocop-bottrall:
+    - config/base.yml
+    - config/rbs-inline.yml
+
+inherit_mode:
+  merge:
+    - Exclude
 
 AllCops:
   TargetRubyVersion: 4.0
-  NewCops: enable
   Exclude:
-    - "bin/**/*"
     - "exe/**/*"
-    - "sig/**/*"
-    - "vendor/**/*"
 
-Layout/FirstMethodArgumentLineBreak:
-  Enabled: true
+Bottrall/NoInheritance:
+  AllowedParents:
+    - Riffer::Agent
+    - Riffer::Guardrail
+    - Riffer::Messages::User
+    - Riffer::Skills::Backend
+    - Riffer::Tool
+    - Riffer::Tools::Runtime
+  Include:
+    - "lib/**/*.rb"
+    - "test/**/*.rb"
 
-Layout/FirstMethodParameterLineBreak:
-  Enabled: true
-
-Layout/LeadingCommentSpace:
-  AllowRBSInlineAnnotation: true
-
-Layout/MultilineMethodArgumentLineBreaks:
-  Enabled: true
-
-Layout/MultilineMethodParameterLineBreaks:
-  Enabled: true
-
-Layout/RedundantLineBreak:
-  Enabled: true
-  InspectBlocks: false
+Bottrall/NoMocking:
+  OwnedNamespaces:
+    - Riffer::Rig
+  Include:
+    - "test/**/*_test.rb"
 
 Lint/InheritException:
   Exclude:
@@ -51,15 +48,6 @@ Lint/UnusedMethodArgument:
     # parameter names.
     - "lib/riffer/rig/hosts/non_interactive.rb"
 
-Metrics:
-  Enabled: false
-
-Metrics/BlockNesting:
-  Enabled: true
-
-Minitest/MultipleAssertions:
-  Max: 1
-
 Naming/PredicateMethod:
   AllowedMethods:
     - call
@@ -67,30 +55,7 @@ Naming/PredicateMethod:
     # not a predicate.
     - confirm
 
-Rig/NoInheritance:
-  Enabled: true
-  Include:
-    - "lib/**/*.rb"
-    - "test/**/*.rb"
-
-Rig/NoMocking:
-  Enabled: true
-  Include:
-    - "test/**/*_test.rb"
-
-Rig/RequireDisableReason:
-  Enabled: true
-
 Style/ClassAndModuleChildren:
-  EnforcedStyle: compact
   Exclude:
+    # The gemspec loads version.rb before riffer, so it has to nest.
     - "lib/riffer/rig/version.rb"
-    # The cop's file defines the `Rig` badge namespace itself, which the
-    # compact form can't open.
-    - "rubocop/**/*"
-
-Style/Documentation:
-  Enabled: false
-
-Style/ModuleFunction:
-  EnforcedStyle: extend_self

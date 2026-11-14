@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'test_helper'
-class GlobexSetupProvider < Riffer::Providers::Mock; end # rubocop:disable Rig/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
+class GlobexSetupProvider < Riffer::Providers::Mock; end # rubocop:disable Bottrall/NoInheritance -- riffer builds providers through Riffer::Providers::Base subclasses
 
 describe Riffer::Rig::ProviderSetup do
   let(:registered_setup) do
