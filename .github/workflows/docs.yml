@@ -1,20 +1,51 @@
+# Builds the docs site (the guides and the API reference) and deploys it to the
+# gh-pages branch, which GitHub Pages serves. publish.yml calls this after each
+# release; run it by hand to redeploy between releases.
+
 name: docs
 
 on:
   workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
+  # Building runs the dev bundle, so it happens here, without a write token,
+  # and hands deploy the built site.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
+        with:
+          bundler-cache: true
+      - run: bin/docs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: site
+          path: _site
+          if-no-files-found: error
+
+  # Holds the write token, so it runs none of the bundle: it only pushes the
+  # built site. The deploy action works on a checkout and brings its own token.
   deploy:
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: ruby/setup-ruby@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          bundler-cache: true
-      - run: bin/docs
-      - uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site
+          path: _site
+      - uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4.9.0
         with:
           branch: gh-pages
-          folder: ./_site
+          folder: _site
