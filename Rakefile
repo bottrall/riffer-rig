@@ -18,6 +18,7 @@ end
 
 desc 'Generate RBS signatures from inline annotations'
 task :generate do
+  rm_rf 'sig/generated', verbose: false
   sh 'rbs-inline --opt-out --output=sig/generated lib'
 end
 
