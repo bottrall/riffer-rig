@@ -78,7 +78,7 @@ RDoc::Task.new do |rdoc|
   rdoc.rdoc_dir = '_site/api'
   rdoc.title = 'riffer-rig API Reference'
   rdoc.main = 'README.md'
-  rdoc.rdoc_files.include('README.md', 'CHANGELOG.md', 'LICENSE.txt')
+  rdoc.rdoc_files.include('README.md', 'CHANGELOG.md', 'LICENSE')
   rdoc.rdoc_files.include('lib/**/*.rb')
   rdoc.options << '--charset' << 'utf-8'
 end
