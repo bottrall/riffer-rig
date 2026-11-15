@@ -12,7 +12,8 @@ Gem::Specification.new do |spec|
   spec.description = 'An interactive terminal agent (read/write/edit/bash) built on the riffer agentic framework.'
   spec.homepage = 'https://github.com/bottrall/riffer-rig'
   spec.license = 'MIT'
-  spec.required_ruby_version = '>= 4.0'
+  # Every Ruby that isn't end-of-life.
+  spec.required_ruby_version = '>= 3.3'
   spec.metadata['rubygems_mfa_required'] = 'true'
   spec.metadata['changelog_uri'] = 'https://github.com/bottrall/riffer-rig/blob/main/CHANGELOG.md'
   spec.metadata['source_code_uri'] = spec.homepage

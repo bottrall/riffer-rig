@@ -519,7 +519,7 @@ describe Riffer::Rig::ACP do
     end
 
     it 'answers a prompt on a closed session with the runtime error' do
-      session = new_session
+      session = ready_session
       @built_runtimes.last.close
       error = @connection.prompt_session(prompt_request(session.session_id, 'hello'))
 
@@ -527,7 +527,7 @@ describe Riffer::Rig::ACP do
     end
 
     it 'answers a provider error with its message' do
-      session = new_session
+      session = ready_session
       fail_provider_once
       error = @connection.prompt_session(prompt_request(session.session_id, 'hello'))
 
@@ -535,7 +535,7 @@ describe Riffer::Rig::ACP do
     end
 
     it 'takes the next prompt on a session whose turn raised' do
-      session = new_session
+      session = ready_session
       fail_provider_once
       @connection.prompt_session(prompt_request(session.session_id, 'hello'))
       reply('Hi again.')
