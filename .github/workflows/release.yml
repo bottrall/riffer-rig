@@ -6,7 +6,7 @@
 # workflows. The gem's RubyGems trusted publisher is pinned to this file name
 # and the `release` environment; change either and publishing stops.
 
-name: publish
+name: release
 
 on:
   push:
@@ -95,9 +95,27 @@ jobs:
         with:
           name: gem
           path: pkg
-      # The gem already exists on RubyGems, so this action's token exchange,
-      # which names no owner, is enough.
-      - uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
+      # RubyGems lets trusted publishing create a new gem only when the token
+      # exchange names the account that will own it, and no release of
+      # rubygems/configure-rubygems-credentials sends that `owner` yet.
+      - name: Exchange the OIDC token for a RubyGems API key
+        env:
+          # bottrall's RubyGems.org user ID.
+          RUBYGEMS_OWNER: "240211"
+        shell: bash
+        run: |
+          jwt=$(curl -sS --fail-with-body -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rubygems.org" | jq -r .value)
+          response=$(jq -n --arg jwt "$jwt" --arg owner "$RUBYGEMS_OWNER" '{jwt: $jwt, owner: $owner}' |
+            curl -sS -X POST -H "Content-Type: application/json" --data @- \
+              https://rubygems.org/api/v1/oidc/trusted_publisher/exchange_token)
+          key=$(jq -r '.rubygems_api_key // empty' <<<"$response")
+          if [[ -z $key ]]; then
+            echo "::error::RubyGems refused the token exchange: ${response}"
+            exit 1
+          fi
+          echo "::add-mask::${key}"
+          echo "GEM_HOST_API_KEY=${key}" >> "$GITHUB_ENV"
       # The file name carries the version the gemspec built, so a tag that
       # doesn't match it fails here rather than publishing the wrong version.
       - run: gem push "pkg/riffer-rig-${TAG#v}.gem"

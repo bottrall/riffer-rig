@@ -44,8 +44,8 @@ Contracts are RBS interfaces in `sig/manual/`, never abstract base classes. Rig 
 
 ## Releasing
 
-- release-please keeps a release PR open. Merging it tags the release, and `.github/workflows/publish.yml` builds the gem in an unprivileged job, publishes that file to RubyGems from the `release` environment, and redeploys the docs site. Never edit the version or `CHANGELOG.md` by hand.
-- The RubyGems trusted publisher is tied to `publish.yml` and the `release` environment, so renaming either stops publishing.
+- release-please keeps a release PR open. Merging it tags the release, and `.github/workflows/release.yml` builds the gem in an unprivileged job, publishes that file to RubyGems from the `release` environment, and redeploys the docs site. Never edit the version or `CHANGELOG.md` by hand.
+- The RubyGems trusted publisher is tied to `release.yml` and the `release` environment, so renaming either stops publishing.
 - GitHub Actions opens the release PR, which doesn't trigger CI. Close and reopen it to run the checks before merging.
 - **PR titles** are [Conventional Commits](https://www.conventionalcommits.org/). `feat:` bumps the minor and `fix:` the patch. A PR whose code nothing in the live path reaches yet (fixes included) is `refactor:`, and the PR that wires it in carries the `feat:` / `fix:`. Correct a merged title with a `BEGIN_COMMIT_OVERRIDE` … `END_COMMIT_OVERRIDE` block in the PR body.
 
@@ -77,8 +77,7 @@ How much to say, and where:
 Deliberate, so leave them unless the reason goes away:
 
 - **The Steepfile patches RBS.** RBS 4.2.0 re-validates every declaration of a module each time its type params are read. The openai and anthropic gems reopen their namespace about 1,600 times each, so without the `validate_once` patch Steep spends over a minute per worker loading signatures. Delete it once the bundle has an RBS release newer than 4.2.
-- **The release workflow is `publish.yml`, not `release.yml`.** The trusted publisher was registered against it, and it uses `rubygems/configure-rubygems-credentials`, since the gem already exists and needs no owner in the token exchange.
-- **The docs site.** `bin/docs` and the `docs` workflow (run by `publish.yml` after a release, or by hand) build `_site/` without a write token and deploy it to the `gh-pages` branch from a job that runs none of the bundle. Blueprint has no docs deploy.
+- **The docs site.** `bin/docs` and the `docs` workflow (run by `release.yml` after a release, or by hand) build `_site/` without a write token and deploy it to the `gh-pages` branch from a job that runs none of the bundle. Blueprint has no docs deploy.
 
 ## Code style
 
