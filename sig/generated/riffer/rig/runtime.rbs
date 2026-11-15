@@ -9,6 +9,40 @@ class Riffer::Rig::Runtime
   class ClosedError < StandardError
   end
 
+  class Blocked < Data
+    attr_reader reason(): String
+
+    def self.new: (String reason) -> instance
+                | (reason: String) -> instance
+
+    def self.members: () -> [ :reason ]
+
+    def members: () -> [ :reason ]
+  end
+
+  class JobCompletion < Data
+    attr_reader job_id(): String
+
+    attr_reader command(): String
+
+    attr_reader exit_status(): Integer?
+
+    attr_reader signal(): String?
+
+    attr_reader duration(): Float
+
+    attr_reader output_path(): String
+
+    attr_reader tail(): String
+
+    def self.new: (String job_id, String command, Integer? exit_status, String? signal, Float duration, String output_path, String tail) -> instance
+                | (job_id: String, command: String, exit_status: Integer?, signal: String?, duration: Float, output_path: String, tail: String) -> instance
+
+    def self.members: () -> [ :job_id, :command, :exit_status, :signal, :duration, :output_path, :tail ]
+
+    def members: () -> [ :job_id, :command, :exit_status, :signal, :duration, :output_path, :tail ]
+  end
+
   BASE_PROMPT_TEMPLATE: ::String
 
   DEFAULT_NAME: ::String
@@ -19,23 +53,23 @@ class Riffer::Rig::Runtime
   # harness.
   DEFAULT_MAX_STEPS: Integer?
 
-  @model_observers: Array[^(String) -> void]
-
-  @message_observers: Array[^(Riffer::Messages::Base) -> void]
-
-  @reasoning: String?
-
-  @model_override: String?
-
-  @session_start_reason: Symbol
-
-  @session_start_pending: bool
-
-  @concurrency: Riffer::Rig::Runtime::Concurrency
+  @host: Riffer::Rig::Hosts::Mirror
 
   @id: String
 
-  @host: Riffer::Rig::Hosts::Mirror
+  @concurrency: Riffer::Rig::Runtime::Concurrency
+
+  @session_start_pending: bool
+
+  @session_start_reason: Symbol
+
+  @model_override: String?
+
+  @reasoning: String?
+
+  @message_observers: Array[^(Riffer::Messages::Base) -> void]
+
+  @model_observers: Array[^(String) -> void]
 
   @cwd: String
 

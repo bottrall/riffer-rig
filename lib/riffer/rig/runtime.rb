@@ -9,6 +9,20 @@ class Riffer::Rig::Runtime
 
   class ClosedError < StandardError; end
 
+  Blocked = Data.define(
+    :reason #: String
+  )
+
+  JobCompletion = Data.define(
+    :job_id, #: String
+    :command, #: String
+    :exit_status, #: Integer?
+    :signal, #: String?
+    :duration, #: Float
+    :output_path, #: String
+    :tail #: String
+  )
+
   BASE_PROMPT_TEMPLATE = <<~TEXT
     You are %<name>s, a general-purpose agent. You work by using the tools you have
     been given; each tool describes what it does and when to use it.

@@ -9,6 +9,36 @@ class Riffer::Rig::Terminal
 
   HELP_COMMAND: String
 
+  class Builtin < Data
+    attr_reader name(): String
+
+    attr_reader description(): String
+
+    def self.new: (String name, String description) -> instance
+                | (name: String, description: String) -> instance
+
+    def self.members: () -> [ :name, :description ]
+
+    def members: () -> [ :name, :description ]
+  end
+
+  class Session < Data
+    attr_reader id(): String
+
+    attr_reader title(): String
+
+    attr_reader updated(): Time?
+
+    attr_reader cwd(): String
+
+    def self.new: (String id, String title, Time? updated, String cwd) -> instance
+                | (id: String, title: String, updated: Time?, cwd: String) -> instance
+
+    def self.members: () -> [ :id, :title, :updated, :cwd ]
+
+    def members: () -> [ :id, :title, :updated, :cwd ]
+  end
+
   BUILTINS: Array[Riffer::Rig::Terminal::Builtin]
 
   NEW_USAGE: String

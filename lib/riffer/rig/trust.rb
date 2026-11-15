@@ -3,6 +3,11 @@
 module Riffer::Rig::Trust
   extend self
 
+  Decision = Data.define(
+    :sha256, #: String
+    :trusted #: bool
+  )
+
   # @rbs path: String
   # @rbs return: (Hash[String, Riffer::Rig::Trust::Decision] | String)
   def read(path)

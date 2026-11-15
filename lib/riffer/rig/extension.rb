@@ -3,6 +3,11 @@
 class Riffer::Rig::Extension
   class RequirementError < StandardError; end
 
+  Failure = Data.define(
+    :extension, #: Riffer::Rig::Extension
+    :error #: StandardError
+  )
+
   # @rbs @name: String
   # @rbs @requires: Gem::Requirement?
   # @rbs @mismatch: RequirementError?

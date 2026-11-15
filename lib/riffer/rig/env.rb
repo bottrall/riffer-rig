@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Env
+  Invalid = Data.define(
+    :message #: String
+  )
+
   # @rbs @source: Hash[String, String]
 
   # @dynamic no_color, model, reasoning

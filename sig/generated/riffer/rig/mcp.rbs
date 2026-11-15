@@ -1,4 +1,16 @@
 # Generated from lib/riffer/rig/mcp.rb with RBS::Inline
 
 module Riffer::Rig::Mcp
+  class Server < Data
+    attr_reader declaration(): Riffer::Rig::Mcp::Declaration
+
+    attr_reader registration(): Riffer::Mcp::Registration
+
+    def self.new: (Riffer::Rig::Mcp::Declaration declaration, Riffer::Mcp::Registration registration) -> instance
+                | (declaration: Riffer::Rig::Mcp::Declaration, registration: Riffer::Mcp::Registration) -> instance
+
+    def self.members: () -> [ :declaration, :registration ]
+
+    def members: () -> [ :declaration, :registration ]
+  end
 end

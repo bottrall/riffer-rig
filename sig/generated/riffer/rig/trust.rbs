@@ -1,6 +1,19 @@
 # Generated from lib/riffer/rig/trust.rb with RBS::Inline
 
 module Riffer::Rig::Trust
+  class Decision < Data
+    attr_reader sha256(): String
+
+    attr_reader trusted(): bool
+
+    def self.new: (String sha256, bool trusted) -> instance
+                | (sha256: String, trusted: bool) -> instance
+
+    def self.members: () -> [ :sha256, :trusted ]
+
+    def members: () -> [ :sha256, :trusted ]
+  end
+
   # @rbs path: String
   # @rbs return: (Hash[String, Riffer::Rig::Trust::Decision] | String)
   def read: (String path) -> (Hash[String, Riffer::Rig::Trust::Decision] | String)

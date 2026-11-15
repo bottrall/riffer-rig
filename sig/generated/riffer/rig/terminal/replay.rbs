@@ -1,6 +1,23 @@
 # Generated from lib/riffer/rig/terminal/replay.rb with RBS::Inline
 
 module Riffer::Rig::Terminal::Replay
+  class Turn < Data
+    attr_reader heading(): String
+
+    attr_reader answer(): String
+
+    attr_reader stats(): Riffer::Rig::Terminal::TurnBuffer::Stats
+
+    attr_reader stop_reason(): Symbol?
+
+    def self.new: (String heading, String answer, Riffer::Rig::Terminal::TurnBuffer::Stats stats, Symbol? stop_reason) -> instance
+                | (heading: String, answer: String, stats: Riffer::Rig::Terminal::TurnBuffer::Stats, stop_reason: Symbol?) -> instance
+
+    def self.members: () -> [ :heading, :answer, :stats, :stop_reason ]
+
+    def members: () -> [ :heading, :answer, :stats, :stop_reason ]
+  end
+
   NOTICE: ::String
 
   # @rbs recorded: Array[Riffer::Rig::Terminal::Replay::_Recorded]

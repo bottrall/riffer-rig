@@ -4,7 +4,7 @@ require 'test_helper'
 
 describe Riffer::Rig::Terminal::Help do
   def entry(name, about = 'About')
-    Riffer::Rig::Terminal::Builtin.new(name, description: about)
+    Riffer::Rig::Terminal::Builtin.new(name: name, description: about)
   end
 
   describe '.call' do

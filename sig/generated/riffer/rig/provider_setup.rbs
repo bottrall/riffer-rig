@@ -1,10 +1,23 @@
 # Generated from lib/riffer/rig/provider_setup.rb with RBS::Inline
 
 class Riffer::Rig::ProviderSetup
+  class Sdk < Data
+    attr_reader name(): String
+
+    attr_reader requirement(): String
+
+    def self.new: (String name, String requirement) -> instance
+                | (name: String, requirement: String) -> instance
+
+    def self.members: () -> [ :name, :requirement ]
+
+    def members: () -> [ :name, :requirement ]
+  end
+
   # @dynamic url, sdk, fields
   attr_reader url: String?
 
-  attr_reader sdk: [ String, String ]?
+  attr_reader sdk: Riffer::Rig::ProviderSetup::Sdk?
 
   attr_reader fields: Array[Riffer::Rig::ProviderSetup::Field]
 

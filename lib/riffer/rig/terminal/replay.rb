@@ -3,6 +3,13 @@
 module Riffer::Rig::Terminal::Replay
   extend self
 
+  Turn = Data.define(
+    :heading, #: String
+    :answer, #: String
+    :stats, #: Riffer::Rig::Terminal::TurnBuffer::Stats
+    :stop_reason #: Symbol?
+  )
+
   NOTICE = 'Turns recorded by an older version or damaged on disk are not shown.'
 
   # @rbs recorded: Array[Riffer::Rig::Terminal::Replay::_Recorded]

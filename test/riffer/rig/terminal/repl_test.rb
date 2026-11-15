@@ -257,7 +257,7 @@ describe Riffer::Rig::Terminal::Repl do
     end
 
     it 'completes the built-in commands alongside those of the Runtime' do
-      repl(builtins: [Riffer::Rig::Terminal::Builtin.new('resume', description: 'Pick a session')])
+      repl(builtins: [Riffer::Rig::Terminal::Builtin.new(name: 'resume', description: 'Pick a session')])
       repl.watch(WatchedRuntime.new('reload'))
       type('/re')
       @keys.close

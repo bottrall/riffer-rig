@@ -9,11 +9,23 @@ class Riffer::Rig::Terminal
 
   HELP_COMMAND = 'help' #: String
 
+  Builtin = Data.define(
+    :name, #: String
+    :description #: String
+  )
+
+  Session = Data.define(
+    :id, #: String
+    :title, #: String
+    :updated, #: Time?
+    :cwd #: String
+  )
+
   BUILTINS = [
-    Builtin.new(NEW_COMMAND, description: 'Start a fresh session in place'),
-    Builtin.new(RESUME_COMMAND, description: "Pick a session to resume: /resume --all for every directory's"),
-    Builtin.new(HELP_COMMAND, description: "List this session's commands"),
-    *EXIT_COMMANDS.map { |line| Builtin.new(line.delete_prefix('/'), description: 'End the session') }
+    Builtin.new(name: NEW_COMMAND, description: 'Start a fresh session in place'),
+    Builtin.new(name: RESUME_COMMAND, description: "Pick a session to resume: /resume --all for every directory's"),
+    Builtin.new(name: HELP_COMMAND, description: "List this session's commands"),
+    *EXIT_COMMANDS.map { |line| Builtin.new(name: line.delete_prefix('/'), description: 'End the session') }
   ].freeze #: Array[Riffer::Rig::Terminal::Builtin]
 
   NEW_USAGE = 'Usage: /new' #: String
