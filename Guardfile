@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
+# Run by bin/generate --watch.
 guard :shell do
   watch(%r{^lib/.*\.rb$}) do
-    system('bundle exec rake generate')
+    system('bin/generate')
   end
 end

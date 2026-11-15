@@ -17,9 +17,9 @@ Gem::Specification.new do |spec|
   spec.metadata['changelog_uri'] = 'https://github.com/bottrall/riffer-rig/blob/main/CHANGELOG.md'
   spec.metadata['source_code_uri'] = spec.homepage
 
-  spec.files = Dir[
-    'lib/**/*.rb', 'exe/*', 'sig/generated/**/*', 'sig/manual/**/*', 'README.md', 'CHANGELOG.md', 'LICENSE'
-  ]
+  # sig/_private ships too: RBS skips `_`-prefixed directories when the gem's
+  # signatures are loaded as a library, so its stubs stay private.
+  spec.files = Dir['lib/**/*.rb', 'exe/*', 'sig/**/*.rbs', 'README.md', 'CHANGELOG.md', 'LICENSE']
   spec.bindir = 'exe'
   spec.executables = ['riffer']
   spec.require_paths = ['lib']
