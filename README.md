@@ -8,7 +8,7 @@ It ships with a coding toolkit (read, write, edit, bash) because a shell and fil
 
 ## Install
 
-Requires Ruby 4.0 or later.
+Requires Ruby 3.3 or later.
 
 ```bash
 gem install riffer-rig

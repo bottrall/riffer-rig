@@ -2,7 +2,7 @@
 
 ## Install
 
-riffer-rig needs Ruby 4.0 or later.
+riffer-rig needs Ruby 3.3 or later.
 
 ```bash
 gem install riffer-rig

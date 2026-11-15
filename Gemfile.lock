@@ -13,7 +13,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    acp-sdk (0.14.0)
+    acp-sdk (0.14.1)
       zeitwerk (~> 2.8)
     anthropic (1.82.0)
       base64 (~> 0.1)
@@ -222,7 +222,7 @@ DEPENDENCIES
   webrick
 
 CHECKSUMS
-  acp-sdk (0.14.0) sha256=0f78fd48e4d91a2f0d9a0012920975a2097836e0e8042c099ec3753dcc481c39
+  acp-sdk (0.14.1) sha256=1b55e154a4a137a7f6ecbb7a22088cd2e6d0fcbf44c70873f5e1f60a08571fa9
   anthropic (1.82.0) sha256=4226ee819e35373e18eeffd49d65fbd3cd5f1daceef0e8670254627ca3146fb0
   ast (2.4.3) sha256=954615157c1d6a382bc27d690d973195e79db7f55e9765ac7c481c60bdb4d383
   base64 (0.3.0) sha256=27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b

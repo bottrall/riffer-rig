@@ -12,7 +12,7 @@ inherit_mode:
 
 AllCops:
   # The oldest Ruby the gemspec supports.
-  TargetRubyVersion: 4.0
+  TargetRubyVersion: 3.3
 
 Bottrall/NoInheritance:
   # riffer's framework-mandated parents: its tools, agents, guardrails, skill
