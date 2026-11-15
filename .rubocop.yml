@@ -11,11 +11,12 @@ inherit_mode:
     - Exclude
 
 AllCops:
+  # The oldest Ruby the gemspec supports.
   TargetRubyVersion: 4.0
-  Exclude:
-    - "exe/**/*"
 
 Bottrall/NoInheritance:
+  # riffer's framework-mandated parents: its tools, agents, guardrails, skill
+  # backends and messages are defined by subclassing them.
   AllowedParents:
     - Riffer::Agent
     - Riffer::Guardrail
@@ -23,15 +24,11 @@ Bottrall/NoInheritance:
     - Riffer::Skills::Backend
     - Riffer::Tool
     - Riffer::Tools::Runtime
-  Include:
-    - "lib/**/*.rb"
-    - "test/**/*.rb"
 
 Bottrall/NoMocking:
+  # The gem's own code, which tests fake by injection rather than patching.
   OwnedNamespaces:
     - Riffer::Rig
-  Include:
-    - "test/**/*_test.rb"
 
 Lint/InheritException:
   Exclude:
@@ -39,6 +36,9 @@ Lint/InheritException:
     - "lib/riffer/rig/runtime/abort.rb"
 
 Lint/UnusedMethodArgument:
+  # A keyword is part of the call shape a contract fixes (a host's `notify`
+  # takes `level:`, a guardrail's `process_input` takes `context:`), and
+  # renaming an unused one to `_name` would change the keyword callers pass.
   AllowUnusedKeywordArguments: true
   Exclude:
     # rbs-inline leaves a `_`-prefixed parameter untyped, so the null host
@@ -50,6 +50,7 @@ Lint/UnusedMethodArgument:
 
 Naming/PredicateMethod:
   AllowedMethods:
+    # RuboCop's default, restated because this list replaces it.
     - call
     # Hosts::_Host#confirm is a blocking prompt named by the host contract,
     # not a predicate.
