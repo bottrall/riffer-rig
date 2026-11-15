@@ -60,8 +60,8 @@ The guides are at **<https://riffer.bottrall.dev>**, and their sources are in [`
 
 ## Contributing
 
-[`AGENTS.md`](AGENTS.md) has the scripts and the project's conventions. Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+[`CONTRIBUTING.md`](CONTRIBUTING.md) covers setup, the scripts and pull requests, and [`AGENTS.md`](AGENTS.md) has the project's conventions. Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
-MIT — see [`LICENSE.txt`](LICENSE.txt). Maintained by [Jake Bottrall](https://github.com/bottrall).
+MIT — see [`LICENSE`](LICENSE). Maintained by [Jake Bottrall](https://github.com/bottrall).
