@@ -1,6 +1,21 @@
 # Generated from lib/riffer/rig/terminal/turn_buffer.rb with RBS::Inline
 
 class Riffer::Rig::Terminal::TurnBuffer
+  class Stats < Data
+    attr_reader steps(): Integer
+
+    attr_reader wall_time(): Float
+
+    attr_reader usage(): Riffer::Providers::TokenUsage?
+
+    def self.new: (Integer steps, Float wall_time, Riffer::Providers::TokenUsage? usage) -> instance
+                | (steps: Integer, wall_time: Float, usage: Riffer::Providers::TokenUsage?) -> instance
+
+    def self.members: () -> [ :steps, :wall_time, :usage ]
+
+    def members: () -> [ :steps, :wall_time, :usage ]
+  end
+
   @request_usage: Riffer::Providers::TokenUsage?
 
   @settled_usage: Riffer::Providers::TokenUsage?

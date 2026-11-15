@@ -72,7 +72,7 @@ module Riffer::Rig::Commands::Model
 
     gem = setup.sdk
     if gem
-      message = sdk.ensure(gem[0], gem[1], host: ctx.host)
+      message = sdk.ensure(gem.name, gem.requirement, host: ctx.host)
       if message
         ctx.host.notify(message, level: :error)
         return false

@@ -4,6 +4,19 @@ class Riffer::Rig::Extension
   class RequirementError < StandardError
   end
 
+  class Failure < Data
+    attr_reader extension(): Riffer::Rig::Extension
+
+    attr_reader error(): StandardError
+
+    def self.new: (Riffer::Rig::Extension extension, StandardError error) -> instance
+                | (extension: Riffer::Rig::Extension, error: StandardError) -> instance
+
+    def self.members: () -> [ :extension, :error ]
+
+    def members: () -> [ :extension, :error ]
+  end
+
   @name: String
 
   @requires: Gem::Requirement?

@@ -269,8 +269,7 @@ class Riffer::Rig::Loader
     sdk = Riffer::Rig::ProviderSetup.for(provider).sdk
     return unless sdk
 
-    gem, requirement = sdk
-    message = @sdk.ensure(gem, requirement, host: @host)
+    message = @sdk.ensure(sdk.name, sdk.requirement, host: @host)
     raise ConfigurationError, message if message
   end
 

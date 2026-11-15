@@ -1,9 +1,14 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::ProviderSetup
+  Sdk = Data.define(
+    :name, #: String
+    :requirement #: String
+  )
+
   # @dynamic url, sdk, fields
   attr_reader :url #: String?
-  attr_reader :sdk #: [String, String]?
+  attr_reader :sdk #: Riffer::Rig::ProviderSetup::Sdk?
   attr_reader :fields #: Array[Riffer::Rig::ProviderSetup::Field]
 
   # @rbs @chain: bool | ^() -> bool
@@ -16,7 +21,7 @@ class Riffer::Rig::ProviderSetup
   def initialize(fields:, url: nil, chain: false, sdk: nil)
     @url = url
     @chain = chain
-    @sdk = sdk&.freeze
+    @sdk = sdk && Sdk.new(name: sdk[0], requirement: sdk[1])
     @fields = fields.freeze
     freeze
   end

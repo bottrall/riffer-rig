@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 
 class Riffer::Rig::Terminal::TurnBuffer
+  Stats = Data.define(
+    :steps, #: Integer
+    :wall_time, #: Float
+    :usage #: Riffer::Providers::TokenUsage?
+  )
+
   # @rbs @clock: ^() -> Float
   # @rbs @started_at: Float
   # @rbs @ended_at: Float?

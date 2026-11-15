@@ -24,8 +24,11 @@ describe Riffer::Rig::ProviderSetup do
       assert_nil Riffer::Rig::ProviderSetup.new(fields: []).sdk
     end
 
-    it 'freezes the sdk pair' do
-      assert_predicate Riffer::Rig::ProviderSetup.new(fields: [], sdk: ['acme-sdk', '~> 1.0']).sdk, :frozen?
+    it 'names the sdk gem and its requirement' do
+      assert_equal(
+        Riffer::Rig::ProviderSetup::Sdk.new(name: 'acme-sdk', requirement: '~> 1.0'),
+        Riffer::Rig::ProviderSetup.new(fields: [], sdk: ['acme-sdk', '~> 1.0']).sdk
+      )
     end
 
     it 'freezes the fields' do
@@ -183,7 +186,7 @@ describe Riffer::Rig::ProviderSetup do
     it 'reads the sdk pair' do
       setup = from(sdk: ['acme-sdk', '~> 1.0'], fields: [])
 
-      assert_equal ['acme-sdk', '~> 1.0'], setup.sdk
+      assert_equal Riffer::Rig::ProviderSetup::Sdk.new(name: 'acme-sdk', requirement: '~> 1.0'), setup.sdk
     end
 
     it 'freezes the setup' do
