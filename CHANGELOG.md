@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.2](https://github.com/bottrall/riffer-rig/compare/v0.19.1...v0.19.2) (2026-11-15)
+
+
+### Bug Fixes
+
+* support Ruby 3.3 ([#648](https://github.com/bottrall/riffer-rig/issues/648)) ([11bbf52](https://github.com/bottrall/riffer-rig/commit/11bbf52dbf57739ae1f454958112c9394c125729))
+
 ## [0.19.1](https://github.com/bottrall/riffer-rig/compare/v0.19.0...v0.19.1) (2026-11-11)
 
 
