@@ -1,6 +1,6 @@
-# Builds the docs site (the guides and the API reference) and deploys it to the
-# gh-pages branch, which GitHub Pages serves. release.yml calls this after each
-# release; run it by hand to redeploy between releases.
+# Builds the docs site and deploys it to the gh-pages branch, which GitHub Pages
+# serves. release.yml calls this after each release; run it by hand to redeploy
+# between releases.
 
 name: docs
 

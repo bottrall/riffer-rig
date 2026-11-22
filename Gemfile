@@ -24,7 +24,6 @@ group :development, :test do
 
   gem 'kramdown', require: false
   gem 'kramdown-parser-gfm', require: false
-  gem 'rdoc', require: false
   # kramdown's rouge integration trips deprecation warnings on rouge 5.
   gem 'rouge', '~> 5.1', require: false
 end
