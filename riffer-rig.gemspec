@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
 
   # sig/_private ships too: RBS skips `_`-prefixed directories when the gem's
   # signatures are loaded as a library, so its stubs stay private.
-  spec.files = Dir['lib/**/*.rb', 'exe/*', 'sig/**/*.rbs', 'README.md', 'CHANGELOG.md', 'LICENSE']
+  spec.files = Dir['lib/**/*.rb', 'exe/*', 'sig/**/*.rbs', 'docs/PUBLIC_API.md', 'README.md', 'CHANGELOG.md', 'LICENSE']
   spec.bindir = 'exe'
   spec.executables = ['riffer']
   spec.require_paths = ['lib']

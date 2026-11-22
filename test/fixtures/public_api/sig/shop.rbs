@@ -1,0 +1,69 @@
+module Shop
+  VERSION: String
+
+  type money = Integer
+
+  interface _Payable
+    def pay: (money amount) -> void
+
+    def refund: () -> void
+  end
+
+  module Labelled[T]
+    attr_reader code: T
+
+    def label: () -> T
+  end
+
+  module Hidden
+    def secret: () -> void
+  end
+
+  module Shared
+    def shared: () -> void
+  end
+
+  module Stocked
+    def stock: () -> Integer
+  end
+
+  class Order
+    include Labelled[String]
+
+    include Hidden
+
+    include Shared
+
+    include Comparable
+
+    extend Stocked
+
+    class Line
+    end
+
+    TAX: Integer
+
+    @total: Integer
+
+    # The order's total.
+    attr_reader total: Integer
+
+    attr_writer note: String
+
+    def self.build: () -> Order
+
+    def place: () -> void
+
+    private def hidden: () -> void
+
+    private
+
+    def audit: () -> void
+
+    def self.reorder: () -> void
+
+    public
+
+    def cancel: () -> void
+  end
+end

@@ -1,0 +1,5 @@
+class Shop::Order
+  def place: ...
+
+  def self.restock: () -> void
+end

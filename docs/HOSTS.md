@@ -83,7 +83,7 @@ Two helpers do what the shipped hosts do:
 
 A host that offers `/exit`, `/new`, `/resume` or `/help` implements them itself: they end, replace or describe the Runtime. A host that swaps one Runtime for another closes the old one and subscribes again on the new one.
 
-Use only the public API of the Runtime, the Loader, the host classes and the events; anything else a host needs should become part of that API, so every embedder gets it.
+Use only the [public API](PUBLIC_API.md) of the Runtime, the Loader, the host classes and the events; anything else a host needs should become part of that API, so every embedder gets it.
 
 ## The shipped hosts
 

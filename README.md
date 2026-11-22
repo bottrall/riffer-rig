@@ -57,6 +57,7 @@ The guides are at **<https://riffer.bottrall.dev>**, and their sources are in [`
 - [Headless mode](docs/HEADLESS.md) — one prompt from a script or CI job, with exit codes and an NDJSON stream
 - [ACP](docs/ACP.md) — riffer-rig in your editor, with `riffer acp`
 - [Extensions](docs/EXTENSIONS.md) — your own tools, commands and hooks
+- [Public API](docs/PUBLIC_API.md) — every public constant and method, with its signature
 
 ## Contributing
 

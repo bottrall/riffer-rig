@@ -1,0 +1,268 @@
+# Each key is a class, module, constant, interface or type alias. Its value:
+#
+#   (nothing)   every public method sig/ declares on it
+#   []          the constant alone, none of its methods
+#   a list      only these methods: `name` for an instance method,
+#               `.name` for a singleton one; a method can come from a module
+#               the constant includes
+
+Riffer::Rig:
+  - .extension
+  - .bundled
+  - .credentials
+
+Riffer::Rig::ACP:
+  - .for
+  - .build_runtime
+  - run
+
+Riffer::Rig::Command:
+  - name
+  - description
+
+Riffer::Rig::Command::Context:
+  - args
+  - runtime
+  - host
+  - settings
+  - say
+  - emit
+  - prompt
+  - ask
+  - confirm
+
+Riffer::Rig::Command::INVOCATION:
+
+Riffer::Rig::Credentials:
+  - install
+  - apply
+  - store
+  - remove
+  - status
+
+Riffer::Rig::Credentials::Resolution:
+  - values
+  - missing
+
+Riffer::Rig::Env:
+  - .load
+  - initialize
+
+Riffer::Rig::Env::Invalid: []
+
+Riffer::Rig::Events::AfterResponse:
+  - message
+  - type
+  - to_h
+
+Riffer::Rig::Events::AfterToolCall:
+  - call_id
+  - tool
+  - args
+  - result
+  - at
+  - duration
+  - type
+  - to_h
+
+Riffer::Rig::Events::BeforePrompt:
+  - text
+  - type
+  - to_h
+
+Riffer::Rig::Events::BeforeRequest:
+  - messages
+  - type
+  - to_h
+
+Riffer::Rig::Events::BeforeToolCall:
+  - call_id
+  - tool
+  - args
+  - at
+  - type
+  - to_h
+
+Riffer::Rig::Events::CommandOutput:
+  - command
+  - text
+  - type
+  - to_h
+
+Riffer::Rig::Events::JobExit:
+  - job_id
+  - command
+  - exit_status
+  - signal
+  - duration
+  - output_path
+  - type
+  - to_h
+
+Riffer::Rig::Events::Notify:
+  - message
+  - level
+  - type
+  - to_h
+
+Riffer::Rig::Events::SessionEnd:
+  - reason
+  - type
+  - to_h
+
+Riffer::Rig::Events::SessionStart:
+  - id
+  - reason
+  - type
+  - to_h
+
+Riffer::Rig::Events::SkillActivated:
+  - name
+  - type
+  - to_h
+
+Riffer::Rig::Events::TurnEnd:
+  - stop_reason
+  - usage
+  - cost
+  - type
+  - to_h
+
+Riffer::Rig::Events::_Event:
+
+Riffer::Rig::Extension:
+  - name
+
+Riffer::Rig::Extension::Failure:
+
+Riffer::Rig::Hosts::Mirror:
+  - host
+  - capabilities
+  - ask
+  - confirm
+  - notify
+  - progress
+
+Riffer::Rig::Hosts::NonInteractive:
+
+Riffer::Rig::Hosts::Null:
+
+Riffer::Rig::Hosts::_Host:
+
+Riffer::Rig::Loader:
+  - .runtime
+  - initialize
+  - runtime
+  - continue
+  - resume
+  - list
+  - delete
+  - reload
+
+Riffer::Rig::Loader::ConfigurationError:
+
+Riffer::Rig::Loader::Options:
+
+Riffer::Rig::Registrar:
+  - tool
+  - prompt
+  - command
+  - 'on'
+  - skills
+  - mcp
+  - setting
+  - provider
+  - settings
+
+Riffer::Rig::Runtime:
+  - initialize
+  - cwd
+  - host
+  - id
+  - prompt
+  - follow_up
+  - ask
+  - commands
+  - run_command
+  - errors
+  - settings
+  - declared_settings
+  - model=
+  - reasoning=
+  - rebuild
+  - to_h
+  - on_message
+  - on_job_exit
+  - running_job_count
+  - busy?
+  - pending_jobs?
+  - await_job_exit
+  - pending_job_exit_count
+  - cancel
+  - tally
+  - close
+
+Riffer::Rig::Runtime::BusyError:
+
+Riffer::Rig::Runtime::CancelFlag:
+  - set?
+
+Riffer::Rig::Runtime::ErrorMessage:
+  - of
+
+Riffer::Rig::Runtime::Job:
+  - id
+  - output_path
+
+Riffer::Rig::Runtime::JobCompletion:
+
+Riffer::Rig::Runtime::JobNotification:
+  - follow_up_exits
+  - to_h
+
+Riffer::Rig::Runtime::Jobs:
+  - register
+
+Riffer::Rig::Stores::Header:
+  - initialize
+  - schema_version
+  - id
+  - cwd
+  - created_at
+  - model
+  - riffer_rig_version
+  - riffer_version
+  - title
+  - updated
+
+Riffer::Rig::Stores::JSONL:
+
+Riffer::Rig::Stores::MessageEntry:
+  - initialize
+  - message
+  - recorded_at
+  - recorded_time
+
+Riffer::Rig::Stores::ModelEntry:
+  - initialize
+  - model
+  - recorded_at
+  - recorded_time
+
+Riffer::Rig::Stores::ReasoningEntry:
+  - initialize
+  - reasoning
+  - recorded_at
+  - recorded_time
+
+Riffer::Rig::Stores::SkillEntry:
+  - initialize
+  - skill
+  - recorded_at
+  - recorded_time
+
+Riffer::Rig::Stores::_Store:
+
+Riffer::Rig::Stores::entry:
+
+Riffer::Rig::VERSION:
