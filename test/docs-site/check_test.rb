@@ -60,6 +60,12 @@ describe 'docs-site/check.rb' do
     assert_match %r{broken link /guides/missing/}, output
   end
 
+  it 'fails on a broken link in a markdown page' do
+    output, = check_site('guides/a.md' => "[x](/guides/missing.md)\n")
+
+    assert_match %r{guides/a.md: broken link /guides/missing.md}, output
+  end
+
   it 'ignores an empty fragment' do
     _, status = check_site('index.html' => '<a href="/guides/b/#">x</a>', 'guides/b/index.html' => '<p>b</p>')
 
@@ -88,6 +94,18 @@ describe 'docs-site/check.rb' do
     )
 
     assert_predicate status, :success?
+  end
+
+  it 'resolves an anchor on a markdown page' do
+    _, status = check_site('guides/a.md' => "[x](/guides/b.md#section)\n", 'guides/b.md' => "## Section\n")
+
+    assert_predicate status, :success?
+  end
+
+  it 'fails on an anchor missing from a markdown page' do
+    output, = check_site('guides/a.md' => "[x](/guides/b.md#nowhere)\n", 'guides/b.md' => "## Section\n")
+
+    assert_match %r{broken anchor /guides/b.md#nowhere}, output
   end
 
   it 'resolves an anchor in a file that is not a page' do

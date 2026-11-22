@@ -1,7 +1,8 @@
 # Every guide page on the docs site, in reading order. `source` is relative to
-# docs/; `slug` becomes the page URL (/guides/<slug>/). Page titles come from
-# each file's first H1 at build time. Adding a page under docs/ requires an
-# entry here — the build fails on any mismatch.
+# docs/; `slug` becomes the page URL (/guides/<slug>/) and the URL of its
+# markdown twin (/guides/<slug>.md). Page titles come from each file's first
+# H1 at build time. Adding a page under docs/ requires an entry here — the
+# build fails on any mismatch.
 groups:
   - label: Start here
     tone: teal

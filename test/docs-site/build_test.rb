@@ -28,7 +28,7 @@ describe 'docs-site/build.rb' do
 
   define_method(:site_files) do |dir|
     site = File.join(dir, '_site')
-    Dir.glob('**/*', base: site)
+    Dir.glob('**/*', File::FNM_DOTMATCH, base: site)
        .select { |path| File.file?(File.join(site, path)) }
        .to_h { |path| [path, File.read(File.join(site, path))] }
   end
@@ -41,6 +41,12 @@ describe 'docs-site/build.rb' do
 
   define_method(:append_to_tools) { |dir, text| File.write(File.join(dir, 'docs', 'TOOLS.md'), text, mode: 'a') }
 
+  define_method(:built_with_tools_appended) do |text, path|
+    build_copy(edit: ->(dir) { append_to_tools(dir, text) }) do |dir, _output, _status|
+      File.read(File.join(dir, '_site', path))
+    end
+  end
+
   it 'exits successfully' do
     assert_predicate build.first, :success?
   end
@@ -49,8 +55,16 @@ describe 'docs-site/build.rb' do
     assert_equal "riffer.bottrall.dev\n", build.last['CNAME']
   end
 
+  it 'copies the .nojekyll' do
+    assert_equal '', build.last['.nojekyll']
+  end
+
   it 'builds a page for every manifest entry' do
     assert_empty(manifest_slugs.reject { |slug| build.last.key?("guides/#{slug}/index.html") })
+  end
+
+  it 'declares the markdown twin of each page' do
+    assert_includes guide_html('tools'), '<link rel="alternate" type="text/markdown" href="/guides/tools.md" />'
   end
 
   it 'gives the first guide no previous link' do
@@ -59,6 +73,14 @@ describe 'docs-site/build.rb' do
 
   it 'links each guide back to the one before it' do
     assert_includes guide_html(manifest_slugs[1]), %(class="doc" href="/guides/#{manifest_slugs.first}/")
+  end
+
+  it 'writes a markdown twin for every manifest entry' do
+    assert_empty(manifest_slugs.reject { |slug| build.last.key?("guides/#{slug}.md") })
+  end
+
+  it 'keeps the title line in the markdown twin' do
+    assert_equal "# Tools\n", build.last.fetch('guides/tools.md').lines.first
   end
 
   it 'aborts when a manifest entry has no source file' do
@@ -80,11 +102,26 @@ describe 'docs-site/build.rb' do
   end
 
   it 'rewrites a guide link to its page URL, keeping the fragment' do
-    edit = ->(dir) { append_to_tools(dir, "\n[x](MCP.md#secret-headers)\n") }
-    html = build_copy(edit: edit) do |dir, _output, _status|
-      File.read(File.join(dir, '_site', 'guides', 'tools', 'index.html'))
-    end
+    html = built_with_tools_appended("\n[x](MCP.md#secret-headers)\n", 'guides/tools/index.html')
 
     assert_includes html, 'href="/guides/mcp/#secret-headers"'
+  end
+
+  it 'rewrites a guide link in the markdown twin to its markdown URL, keeping the fragment' do
+    markdown = built_with_tools_appended("\n[x](MCP.md#secret-headers)\n", 'guides/tools.md')
+
+    assert_includes markdown, '[x](/guides/mcp.md#secret-headers)'
+  end
+
+  it 'leaves a guide link inside a fenced code block of the markdown twin as written' do
+    markdown = built_with_tools_appended("\n```\n[x](MCP.md)\n```\n", 'guides/tools.md')
+
+    assert_includes markdown, "```\n[x](MCP.md)\n```"
+  end
+
+  it 'leaves a guide link inside a code span of the markdown twin as written' do
+    markdown = built_with_tools_appended("\n`[x](MCP.md)`\n", 'guides/tools.md')
+
+    assert_includes markdown, '`[x](MCP.md)`'
   end
 end

@@ -16,12 +16,21 @@ ROOT = HERE.parent
 DOCS = ROOT.join('docs')
 SITE = ROOT.join('_site')
 
-ASSETS = %w[site.css landing.css copy.js favicon.svg 404.html CNAME].freeze
+# GitHub Pages runs a site through Jekyll unless it has a .nojekyll, and Jekyll
+# would turn each guide's markdown twin into HTML instead of serving it as is.
+ASSETS = %w[site.css landing.css copy.js favicon.svg 404.html CNAME .nojekyll].freeze
+
+# Code is matched first so that a link-shaped example inside it is left as written.
+MARKDOWN_LINK = /
+  (?<code>^[ \t]*(?<fence>`{3,}|~{3,}).*?^[ \t]*\k<fence>|(?<ticks>`+).+?\k<ticks>)
+  |\]\((?<path>[^)\s:\#]+\.md)(?<fragment>\#[^)\s]*)?\)
+/mx
 
 VERSION = Riffer::Rig::VERSION
 
 Page = Data.define(:source, :slug, :title, :num, :description, :featured, :group_label) do
   def url = "/guides/#{slug}/"
+  def markdown_url = "/guides/#{slug}.md"
 end
 
 Group = Data.define(:label, :tone, :pages)
@@ -44,7 +53,8 @@ def main
   SITE.join('index.html').write(landing.result_with_hash(groups: groups, pages: pages, version: VERSION))
 
   pages.each_with_index do |page, index|
-    body = render_body(page, pages_by_source)
+    markdown = DOCS.join(page.source).read
+    body = render_body(markdown, page.source, pages_by_source)
     html = layout.result_with_hash(
       page: page,
       groups: groups,
@@ -58,9 +68,10 @@ def main
     dir = SITE.join('guides', page.slug)
     FileUtils.mkdir_p(dir)
     dir.join('index.html').write(html)
+    SITE.join('guides', "#{page.slug}.md").write(rewrite_markdown_links(markdown, page.source, pages_by_source))
   end
 
-  puts "Built landing + #{pages.size} guide pages + 404 into #{SITE.relative_path_from(ROOT)}/"
+  puts "Built landing + #{pages.size} guide pages (HTML and markdown) + 404 into #{SITE.relative_path_from(ROOT)}/"
 end
 
 def validate_manifest!(manifest)
@@ -108,20 +119,31 @@ def build_page(entry, label, num)
   )
 end
 
-def render_body(page, pages_by_source)
-  markdown = DOCS.join(page.source).read.sub(/^# .+\n/, '')
-  html = Kramdown::Document.new(markdown, input: 'GFM', syntax_highlighter: :rouge, hard_wrap: false).to_html
-  rewrite_links(html, page.source, pages_by_source)
+def render_body(markdown, source, pages_by_source)
+  untitled = markdown.sub(/^# .+\n/, '')
+  html = Kramdown::Document.new(untitled, input: 'GFM', syntax_highlighter: :rouge, hard_wrap: false).to_html
+  rewrite_links(html, source, pages_by_source)
 end
 
 def rewrite_links(html, source, pages_by_source)
-  source_dir = Pathname(source).dirname
   html.gsub(/href="(?<path>[^":]+\.md)(?<fragment>#[^"]*)?"/) do
     match = Regexp.last_match
-    target = source_dir.join(match[:path]).cleanpath.to_s
-    page = pages_by_source.fetch(target) { abort "docs/#{source} links to unknown page: #{match[:path]}" }
-    %(href="#{page.url}#{match[:fragment]}")
+    %(href="#{linked_page(source, match[:path], pages_by_source).url}#{match[:fragment]}")
   end
+end
+
+def rewrite_markdown_links(markdown, source, pages_by_source)
+  markdown.gsub(MARKDOWN_LINK) do
+    match = Regexp.last_match
+    next match[:code] if match[:code]
+
+    "](#{linked_page(source, match[:path], pages_by_source).markdown_url}#{match[:fragment]})"
+  end
+end
+
+def linked_page(source, path, pages_by_source)
+  target = Pathname(source).dirname.join(path).cleanpath.to_s
+  pages_by_source.fetch(target) { abort "docs/#{source} links to unknown page: #{path}" }
 end
 
 def extract_toc(body)

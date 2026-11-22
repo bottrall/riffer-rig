@@ -29,6 +29,8 @@ jobs:
           name: site
           path: _site
           if-no-files-found: error
+          # The site's .nojekyll is hidden, and the upload skips hidden files by default.
+          include-hidden-files: true
 
   # Holds the write token, so it runs none of the bundle: it only pushes the
   # built site. The deploy action works on a checkout and brings its own token.

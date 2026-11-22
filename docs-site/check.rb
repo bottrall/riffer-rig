@@ -11,11 +11,11 @@ SITE = ROOT.join('_site')
 EXTERNAL = %r{\A(?:https?:|mailto:|//)}
 
 def main
-  pages = site_pages
+  pages = site_pages.to_h { |file| [file, page_html(file)] }
   abort 'docs:check: no built site at _site/ — run `bin/docs` first' if pages.empty?
 
-  id_index = pages.to_h { |file| [file, ids(file.read)] }
-  errors = pages.flat_map { |file| page_errors(file, id_index) } + readme_errors(id_index)
+  id_index = pages.transform_values { |html| ids(html) }
+  errors = pages.flat_map { |file, html| page_errors(file, html, id_index) } + readme_errors(id_index)
 
   if errors.empty?
     puts "docs:check passed: #{pages.size} pages and the README, all internal links and anchors resolve"
@@ -26,17 +26,25 @@ def main
 end
 
 def site_pages
-  Pathname.glob(SITE.join('**/*.html')).reject do |file|
+  Pathname.glob(SITE.join('**/*.{html,md}')).reject do |file|
     file.relative_path_from(SITE).to_s.start_with?('api/')
   end
+end
+
+def page_html(file)
+  file.extname == '.md' ? markdown_html(file.read) : file.read
+end
+
+def markdown_html(markdown)
+  Kramdown::Document.new(markdown, input: 'GFM', syntax_highlighter: nil).to_html
 end
 
 def ids(html)
   html.scan(/\bid="([^"]+)"/).flatten
 end
 
-def page_errors(file, id_index)
-  links(file.read)
+def page_errors(file, html, id_index)
+  links(html)
     .grep_v(EXTERNAL)
     # RDoc builds /api/ in a separate task, so it is absent when only the site has been built.
     .reject { |link| link.start_with?('/api/') }
@@ -60,7 +68,7 @@ end
 # The README is not a site page, so its links are checked against the repo for
 # paths and against the built guide page a docs/ source maps to for anchors.
 def readme_errors(id_index)
-  html = Kramdown::Document.new(ROOT.join('README.md').read, input: 'GFM', syntax_highlighter: nil).to_html
+  html = markdown_html(ROOT.join('README.md').read)
   guide_pages = guide_pages_by_source
   links(html).grep_v(EXTERNAL).filter_map { |link| readme_link_error(link, ids(html), guide_pages, id_index) }
 end
