@@ -24,6 +24,7 @@ Everything runs through its `bin/` script, never a tool directly (`rake`, `ruboc
 - **Executable.** `exe/riffer` starts `Riffer::Rig::CLI`, and the gemspec ships it as the `riffer` command.
 - **Tests.** Minitest with the spec DSL (`describe` / `it`, `assert_*`). `test/riffer/rig/` mirrors `lib/riffer/rig/`, shared fakes and helpers live in `test/support/`, fixtures in `test/fixtures/<topic>/`, and `test/docs-site/` covers the docs build.
 - **Signatures.** `sig/generated/`, `sig/manual/` and `sig/_private/`, as in [Ruby typing](#ruby-typing). Other gems' signatures come from `rbs collection` (`rbs_collection.yaml` plus the committed lockfile). `bin/setup` installs them, and `bin/typecheck` fails if the lockfile is stale. Bump the pinned collection revision deliberately, with `bundle exec rbs collection update`.
+- **Public API.** `public_api.yml` lists the public constants and methods, so changing the public surface means editing it. `bin/generate` renders it, with the signatures in `sig/`, into `docs/PUBLIC_API.md`, and `bin/typecheck` fails when that file is stale or a guide names a `Riffer::Rig` constant the list leaves out.
 - **Docs.** The guides are `docs/*.md`. `docs-site/` builds them, with the landing page, into `_site/`, which `bin/docs` writes and the `docs` workflow deploys to GitHub Pages.
 - **Build.** `bin/build` fails before building if the gemspec depends on a provider SDK (`anthropic`, `openai`, `aws-sdk-bedrockruntime`) at runtime. Those gems are development dependencies only.
 
@@ -55,7 +56,7 @@ The guides in `docs/` are written for consumers: people running `riffer`, embedd
 
 How much to say, and where:
 
-- **One home per fact.** Each fact is explained in one guide; every other guide links to it and never restates it. The shared homes: precedence and merge rules → `CONFIGURATION.md`; flags → `CLI.md`; background jobs → `TOOLS.md` (the model's side) and `EMBEDDING.md` (the API); events → `EVENTS.md`; error messages → `TROUBLESHOOTING.md`.
+- **One home per fact.** Each fact is explained in one guide; every other guide links to it and never restates it. The shared homes: precedence and merge rules → `CONFIGURATION.md`; flags → `CLI.md`; background jobs → `TOOLS.md` (the model's side) and `EMBEDDING.md` (the API); events → `EVENTS.md`; error messages → `TROUBLESHOOTING.md`; what is public, and how a change to it is released → `PUBLIC_API.md`.
 - **Document an edge case only if a reader would act on it.** The tests pin the rest.
 - **A paragraph that lists conditions and outcomes is a table.** A paragraph over ~120 words needs a reason. Draw diagrams as ` ```text ` blocks, which render on GitHub and the site alike.
 - **No source paths, test references or internal mechanics** in a guide — no `lib/` paths, no "a test enforces", no how a mixin builds its methods.
@@ -78,6 +79,7 @@ Deliberate, so leave them unless the reason goes away:
 
 - **The Steepfile patches RBS.** RBS 4.2.0 re-validates every declaration of a module each time its type params are read. The openai and anthropic gems reopen their namespace about 1,600 times each, so without the `validate_once` patch Steep spends over a minute per worker loading signatures. Delete it once the bundle has an RBS release newer than 4.2.
 - **The docs site.** `bin/docs` and the `docs` workflow (run by `release.yml` after a release, or by hand) build `_site/` without a write token and deploy it to the `gh-pages` branch from a job that runs none of the bundle. Blueprint has no docs deploy.
+- **The public API document.** `public_api.yml`, the generated `docs/PUBLIC_API.md`, and `api:check` in `bin/typecheck` pin which constants and methods embedders and extension authors can rely on. Blueprint has none.
 
 ## Code style
 

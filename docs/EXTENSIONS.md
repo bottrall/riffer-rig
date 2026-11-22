@@ -195,7 +195,7 @@ An extension whose block raises, whose `requires:` doesn't match the installed r
 
 ## API versioning
 
-`Riffer::Rig.extension` and the `rig.*` seams are riffer-rig's public API. While riffer-rig is 0.x, a breaking change ships in a minor release, with a deprecation release first where possible and a BREAKING CHANGES note in the [changelog](https://github.com/bottrall/riffer-rig/blob/main/CHANGELOG.md). Pin the versions an extension supports with `requires:`:
+`Riffer::Rig.extension` and the `rig.*` seams are part of the [public API](PUBLIC_API.md), which says how a breaking change to them is released. Pin the versions an extension supports with `requires:`:
 
 ```ruby
 Riffer::Rig.extension('git', requires: '~> 0.15') do |rig|

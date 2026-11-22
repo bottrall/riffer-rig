@@ -72,6 +72,9 @@ groups:
       - source: STORES.md
         slug: stores
         description: Saving sessions to your own store
+      - source: PUBLIC_API.md
+        slug: public-api
+        description: Every public constant and method, with its signature
 
   - label: Providers
     tone: teal

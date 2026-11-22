@@ -1,6 +1,6 @@
 # Embedding riffer-rig
 
-`Riffer::Rig::Runtime` runs the agent inside any Ruby process. It never prints, never reads the filesystem and assumes no terminal: everything the shipped hosts can do goes through the same API described here.
+`Riffer::Rig::Runtime` runs the agent inside any Ruby process. It never prints, never reads the filesystem and assumes no terminal: everything the shipped hosts can do goes through the same API described here. [Public API](PUBLIC_API.md) lists its signatures.
 
 There are two ways to get one:
 

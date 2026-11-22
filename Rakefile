@@ -37,9 +37,37 @@ def write_signatures(output)
   sh 'rbs-inline', '--opt-out', "--output=#{output}", 'lib', verbose: false
 end
 
-desc 'Regenerate sig/generated from the inline annotations in lib/'
+def check_current(committed, prefix)
+  FileUtils.mkdir_p('tmp')
+  Dir.mktmpdir(prefix, 'tmp') do |dir|
+    fresh = File.join(dir, File.basename(committed))
+    yield fresh
+    sh 'diff', '-ru', committed, fresh do |ok, _|
+      abort "#{committed} is out of date; run bin/generate and commit the result" unless ok
+    end
+  end
+end
+
+PUBLIC_API = 'docs/PUBLIC_API.md'
+
+def public_api_entries
+  require 'yaml'
+  require_relative 'docs-site/public_api'
+  PublicApi.entries(YAML.safe_load_file('public_api.yml'))
+end
+
+def write_public_api(output, entries)
+  env = PublicApi.environment(%w[sig/generated sig/manual])
+  errors = PublicApi.errors(entries, env)
+  abort errors.join("\n") unless errors.empty?
+  File.write(output, PublicApi.render(entries, env))
+end
+
+desc "Regenerate sig/generated from the inline annotations in lib/, then #{PUBLIC_API} from public_api.yml"
 task :generate do
   write_signatures('sig/generated')
+  # The page reads sig/generated, so it comes second.
+  write_public_api(PUBLIC_API, public_api_entries)
 end
 
 namespace :generate do
@@ -55,13 +83,8 @@ end
 namespace :rbs do
   desc 'Fail if sig/generated is out of date with lib/'
   task :check do
-    FileUtils.mkdir_p(%w[tmp sig/generated])
-    Dir.mktmpdir('rbs-check', 'tmp') do |dir|
-      write_signatures(dir)
-      sh 'diff', '-ru', 'sig/generated', dir do |ok, _|
-        abort 'sig/generated is out of date; run bin/generate and commit the result' unless ok
-      end
-    end
+    FileUtils.mkdir_p('sig/generated')
+    check_current('sig/generated', 'rbs-check') { |fresh| write_signatures(fresh) }
   end
 
   desc 'Fail if rbs_collection.lock.yaml is out of date with rbs_collection.yaml or Gemfile.lock'
@@ -84,6 +107,18 @@ namespace :rbs do
   end
 end
 
+namespace :api do
+  desc "Fail if #{PUBLIC_API} is out of date, or a guide names a Riffer::Rig constant public_api.yml leaves out"
+  task :check do
+    entries = public_api_entries
+    check_current(PUBLIC_API, 'api-check') { |fresh| write_public_api(fresh, entries) }
+
+    guides = (Dir['docs/*.md', 'README.md'] - [PUBLIC_API]).to_h { |path| [path, File.read(path)] }
+    unlisted = PublicApi.unlisted(guides, entries)
+    abort unlisted.join("\n") unless unlisted.empty?
+  end
+end
+
 namespace :steep do
   desc 'Type-check lib/ with Steep'
   task :check do
@@ -94,8 +129,8 @@ namespace :steep do
   end
 end
 
-desc 'Check the signatures and the RBS collection are current, then type-check'
-task typecheck: %w[rbs:check rbs:collection_check rbs:lint_manual steep:check]
+desc 'Check the signatures, the public API document and the RBS collection are current, then type-check'
+task typecheck: %w[rbs:check api:check rbs:collection_check rbs:lint_manual steep:check]
 
 namespace :docs do
   desc 'Build the docs site (landing, guides, 404, assets) into _site/'

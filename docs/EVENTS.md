@@ -1,6 +1,6 @@
 # Events
 
-A turn streams events: riffer's [stream events](https://riffer.ai/guides/stream-events/) unchanged — text and reasoning deltas, tool calls, token usage — plus riffer-rig's own events below. `Runtime#prompt` yields them, [`--json`](HEADLESS.md#the-ndjson-stream---json) prints them, and a [host](HOSTS.md) renders them. Match on the events you know and ignore the rest; new events can be added in a minor release.
+A turn streams events: riffer's [stream events](https://riffer.ai/guides/stream-events/) unchanged — text and reasoning deltas, tool calls, token usage — plus riffer-rig's own events below. `Runtime#prompt` yields them, [`--json`](HEADLESS.md#the-ndjson-stream---json) prints them, and a [host](HOSTS.md) renders them. Match on the events you know and ignore the rest; new events can be added in a [minor release](PUBLIC_API.md).
 
 Every rig event has `type`, its snake_case name, and `to_h`, its fields with the type included, so each one prints as a JSON record as-is.
 
