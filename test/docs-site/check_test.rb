@@ -36,20 +36,8 @@ describe 'docs-site/check.rb' do
     assert_match %r{no built site at _site/}, output
   end
 
-  it 'ignores pages under api/' do
-    _, status = check_site('index.html' => '<p>ok</p>', 'api/index.html' => '<a href="/guides/missing/">x</a>')
-
-    assert_predicate status, :success?
-  end
-
   it 'ignores external links' do
     _, status = check_site('index.html' => '<a href="https://example.com/missing">x</a>')
-
-    assert_predicate status, :success?
-  end
-
-  it 'ignores links into api/' do
-    _, status = check_site('index.html' => '<a href="/api/index.html">x</a>')
 
     assert_predicate status, :success?
   end

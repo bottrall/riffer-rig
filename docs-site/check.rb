@@ -26,9 +26,7 @@ def main
 end
 
 def site_pages
-  Pathname.glob(SITE.join('**/*.html')).reject do |file|
-    file.relative_path_from(SITE).to_s.start_with?('api/')
-  end
+  Pathname.glob(SITE.join('**/*.html'))
 end
 
 def ids(html)
@@ -38,8 +36,6 @@ end
 def page_errors(file, id_index)
   links(file.read)
     .grep_v(EXTERNAL)
-    # RDoc builds /api/ in a separate task, so it is absent when only the site has been built.
-    .reject { |link| link.start_with?('/api/') }
     .filter_map { |link| link_error(file, link, id_index) }
 end
 

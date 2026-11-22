@@ -3,7 +3,6 @@
 require 'fileutils'
 require 'rake/testtask'
 require 'rbconfig'
-require 'rdoc/task'
 require 'rubocop/rake_task'
 require 'tmpdir'
 
@@ -98,15 +97,6 @@ end
 desc 'Check the signatures and the RBS collection are current, then type-check'
 task typecheck: %w[rbs:check rbs:collection_check rbs:lint_manual steep:check]
 
-RDoc::Task.new do |rdoc|
-  rdoc.rdoc_dir = '_site/api'
-  rdoc.title = 'riffer-rig API Reference'
-  rdoc.main = 'README.md'
-  rdoc.rdoc_files.include('README.md', 'CHANGELOG.md', 'LICENSE')
-  rdoc.rdoc_files.include('lib/**/*.rb')
-  rdoc.options << '--charset' << 'utf-8'
-end
-
 namespace :docs do
   desc 'Build the docs site (landing, guides, 404, assets) into _site/'
   task :site do
@@ -114,7 +104,7 @@ namespace :docs do
   end
 
   desc 'Build the full docs tree and validate all internal links and anchors'
-  task check: %w[site rdoc] do
+  task check: :site do
     ruby 'docs-site/check.rb'
   end
 
@@ -124,8 +114,8 @@ namespace :docs do
   end
 end
 
-desc 'Build the full deployable docs tree (site + API reference) into _site/'
-task docs: %w[docs:site rdoc]
+desc 'Build the full deployable docs tree into _site/'
+task docs: 'docs:site'
 
 namespace :gemspec do
   desc 'Fail if the gemspec depends on a provider SDK at runtime'

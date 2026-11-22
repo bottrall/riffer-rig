@@ -24,7 +24,7 @@ Everything runs through its `bin/` script, never a tool directly (`rake`, `ruboc
 - **Executable.** `exe/riffer` starts `Riffer::Rig::CLI`, and the gemspec ships it as the `riffer` command.
 - **Tests.** Minitest with the spec DSL (`describe` / `it`, `assert_*`). `test/riffer/rig/` mirrors `lib/riffer/rig/`, shared fakes and helpers live in `test/support/`, fixtures in `test/fixtures/<topic>/`, and `test/docs-site/` covers the docs build.
 - **Signatures.** `sig/generated/`, `sig/manual/` and `sig/_private/`, as in [Ruby typing](#ruby-typing). Other gems' signatures come from `rbs collection` (`rbs_collection.yaml` plus the committed lockfile). `bin/setup` installs them, and `bin/typecheck` fails if the lockfile is stale. Bump the pinned collection revision deliberately, with `bundle exec rbs collection update`.
-- **Docs.** The guides are `docs/*.md`. `docs-site/` builds them, with the landing page and the rdoc API reference, into `_site/`, which `bin/docs` writes and the `docs` workflow deploys to GitHub Pages.
+- **Docs.** The guides are `docs/*.md`. `docs-site/` builds them, with the landing page, into `_site/`, which `bin/docs` writes and the `docs` workflow deploys to GitHub Pages.
 - **Build.** `bin/build` fails before building if the gemspec depends on a provider SDK (`anthropic`, `openai`, `aws-sdk-bedrockruntime`) at runtime. Those gems are development dependencies only.
 
 ### Where code goes
