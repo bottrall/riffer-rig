@@ -1,0 +1,26 @@
+# Generated from lib/riffer/rig/stores/baseline_entry.rb with RBS::Inline
+
+class Riffer::Rig::Stores::BaselineEntry
+  extend Riffer::Rig::Support::TypedValue::Schema[String]
+
+  include Riffer::Rig::Support::TypedValue[String]
+
+  include Riffer::Rig::Stores::Stamped
+
+  # @dynamic system, sections, recorded_at
+  attr_reader system: Array[String]
+
+  attr_reader sections: Hash[Symbol, String]
+
+  attr_reader recorded_at: String?
+
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs return: ::Riffer::Rig::Stores::BaselineEntry?
+  def self.from_hash: (Hash[Symbol, untyped] hash) -> ::Riffer::Rig::Stores::BaselineEntry?
+
+  # @rbs system: Array[String]
+  # @rbs sections: Hash[Symbol, String]
+  # @rbs recorded_at: String?
+  # @rbs return: void
+  def initialize: (system: Array[String], sections: Hash[Symbol, String], ?recorded_at: String?) -> void
+end

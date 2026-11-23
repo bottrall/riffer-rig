@@ -36,7 +36,7 @@ Riffer::Rig.extension('git') do |rig|
 end
 ```
 
-That adds a `/log` command and puts the current branch in the system prompt on every turn. Extensions can also add tools, hooks, skills, MCP servers, settings and providers — [Extensions](docs/EXTENSIONS.md) starts with a complete tool.
+That adds a `/log` command and puts the current branch in the system prompt, telling the model whenever it changes. Extensions can also add tools, hooks, skills, MCP servers, settings and providers — [Extensions](docs/EXTENSIONS.md) starts with a complete tool.
 
 ## Embed it
 

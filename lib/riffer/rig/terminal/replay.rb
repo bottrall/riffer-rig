@@ -17,10 +17,12 @@ module Riffer::Rig::Terminal::Replay
   # @rbs width: Integer?
   # @rbs return: String
   def call(recorded, theme:, width:)
-    # A notification without a follow-up count was delivered within the turn
-    # of a prompt, so it opens no turn of its own.
+    # A context update, and a notification without a follow-up count, are
+    # delivered within the turn of a prompt, so they open no turn of their own.
     kept = recorded.reject do |entry|
-      entry.message[Riffer::Rig::Runtime::JobNotification::MARKER] && !entry.message[:follow_up_exits]
+      message = entry.message
+      message[Riffer::Rig::Runtime::ContextUpdate::MARKER] ||
+        (message[Riffer::Rig::Runtime::JobNotification::MARKER] && !message[:follow_up_exits])
     end
     turns = kept.slice_before { |entry| entry.message[:role].to_s == 'user' }.map { |chunk| turn(chunk, theme, width) }
     replayed = turns.compact.map do |past|

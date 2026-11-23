@@ -3,6 +3,8 @@
 require 'date'
 
 class Riffer::Rig::Runtime::SystemPrompt
+  ENVIRONMENT = :environment #: Symbol
+
   # @rbs @base: String
   # @rbs @cwd: String
   # @rbs @sections: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
@@ -26,45 +28,26 @@ class Riffer::Rig::Runtime::SystemPrompt
 
   # @rbs return: String
   def bare
-    compose([])
+    render({ ENVIRONMENT => environment })
   end
 
   # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: Hash[Symbol, String]
+  def values(runtime)
+    rendered = @sections.transform_values { |section| section.call(runtime).to_s }.reject { |_name, text| text.empty? }
+    rendered.merge(ENVIRONMENT => environment)
+  end
+
+  # @rbs values: Hash[Symbol, String]
   # @rbs return: String
-  def render(runtime)
-    compose(@sections.each_value.map { |section| section.call(runtime).to_s }.reject(&:empty?))
-  end
-
-  # @rbs session: Riffer::Agent::Session
-  # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: void
-  def refresh(session, runtime)
-    # Upstream candidate: riffer resolves `instructions` once, in Agent.new, so
-    # a per-turn system message has to be swapped into the session by hand.
-    history = session.messages
-    head = history.first
-    rendered = render(runtime)
-    return if head.is_a?(Riffer::Messages::System) && head.content == rendered
-
-    kept = head.is_a?(Riffer::Messages::System) ? history.drop(1) : history
-    # Providers reject signed reasoning replayed under a system prompt other
-    # than the one it was produced under.
-    session.set([Riffer::Messages::System.new(rendered), *kept.map { |message| without_reasoning(message) }])
+  def render(values)
+    [@base, *values.values].join("\n\n")
   end
 
   private
 
-  # @rbs message: Riffer::Messages::Base
-  # @rbs return: Riffer::Messages::Base
-  def without_reasoning(message)
-    return message unless message.is_a?(Riffer::Messages::Assistant) && message.reasoning?
-
-    Riffer::Messages::Assistant.from_hash(message.to_h.except(:reasoning))
-  end
-
-  # @rbs sections: Array[String]
   # @rbs return: String
-  def compose(sections)
-    [@base, *sections, "Current date: #{Date.today}\nCurrent working directory: #{@cwd}"].join("\n\n")
+  def environment
+    "Current date: #{Date.today}\nCurrent working directory: #{@cwd}"
   end
 end

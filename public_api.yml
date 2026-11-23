@@ -207,6 +207,10 @@ Riffer::Rig::Runtime::BusyError:
 Riffer::Rig::Runtime::CancelFlag:
   - set?
 
+Riffer::Rig::Runtime::ContextUpdate:
+  - sections
+  - to_h
+
 Riffer::Rig::Runtime::ErrorMessage:
   - of
 
@@ -222,6 +226,13 @@ Riffer::Rig::Runtime::JobNotification:
 
 Riffer::Rig::Runtime::Jobs:
   - register
+
+Riffer::Rig::Stores::BaselineEntry:
+  - initialize
+  - system
+  - sections
+  - recorded_at
+  - recorded_time
 
 Riffer::Rig::Stores::Header:
   - initialize

@@ -33,7 +33,7 @@ Start `riffer` and the extension is live:
 
 - the model has a `git_log` tool, described by the `description` and `params` above, which it can call whenever it judges a request needs one;
 - `/log` prints the last five commits, without involving the model;
-- every turn's system message ends with the current branch.
+- the system message names the current branch, and the model is told whenever it changes.
 
 Edit the file and the next turn picks up the change ([Reloading](RELOADING.md)). A tool is an ordinary riffer tool: riffer's [tools guide](https://riffer.ai/guides/tools/) covers parameters, nested params and responses.
 
@@ -96,7 +96,7 @@ Adds a `Riffer::Tool` class. Its identifier is its name everywhere, including [`
 rig.prompt(:git_status) { |ctx| "Branch: #{`git -C #{ctx.cwd} branch --show-current`}" }
 ```
 
-Adds a named section to the system message, after the base prompt and before the environment ([Instructions](INSTRUCTIONS.md)). The block runs at the start of every turn and returns the section's text as-is, so add your own heading if the model needs one. `nil` or an empty string leaves the section out of that turn. `ctx` is the Runtime: `ctx.cwd`, `ctx.settings`, `ctx.host`.
+Adds a named section to the system message, after the base prompt and before the environment ([Instructions](INSTRUCTIONS.md)). The block runs at the start of every turn and returns the section's text as-is, so add your own heading if the model needs one; `nil` or an empty string leaves the section out. A value that changes after the session's first turn reaches the model as a [context update](INSTRUCTIONS.md#changes-during-a-session). `ctx` is the Runtime: `ctx.cwd`, `ctx.settings`, `ctx.host`.
 
 ### The `rig.command` seam
 

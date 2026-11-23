@@ -52,6 +52,10 @@ class ObservedRuntime
     @reasoning_listener = block
   end
 
+  def on_baseline(&block)
+    @baseline_listener = block
+  end
+
   def announce(message)
     @message_listener.call(message)
   end
@@ -62,6 +66,10 @@ class ObservedRuntime
 
   def switch_reasoning(level)
     @reasoning_listener.call(level)
+  end
+
+  def open_baseline(baseline)
+    @baseline_listener.call(baseline)
   end
 end
 
@@ -86,6 +94,14 @@ describe Riffer::Rig::Stores::Recorder do
 
   def notification
     Riffer::Rig::Runtime::JobNotification.new('<background-job id="a1b2c3d4">')
+  end
+
+  def context_update
+    Riffer::Rig::Runtime::ContextUpdate.of({ branch: 'Branch: feature' })
+  end
+
+  def baseline
+    Riffer::Rig::Runtime::Baseline.new(system: ['PROMPT'], sections: { environment: 'ENV' })
   end
 
   def header(title = 'hello')
@@ -172,6 +188,16 @@ describe Riffer::Rig::Stores::Recorder do
 
       assert_equal ['high'], store.appended.grep(Riffer::Rig::Stores::ReasoningEntry).map(&:reasoning)
     end
+
+    it 'records the baseline the runtime announces' do
+      store = SeededStore.new
+      runtime = ObservedRuntime.new
+      Riffer::Rig::Stores::Recorder.new(store: store, clock: SteppingClock.new([at(1), at(2), at(3)])).attach(runtime)
+      runtime.announce(user)
+      runtime.open_baseline(baseline)
+
+      assert_equal [['PROMPT']], store.appended.grep(Riffer::Rig::Stores::BaselineEntry).map(&:system)
+    end
   end
 
   describe '#skill' do
@@ -191,6 +217,42 @@ describe Riffer::Rig::Stores::Recorder do
       recording.skill(Riffer::StreamEvents::SkillActivation.new('a'))
 
       assert_equal at(2), store.appended.grep(Riffer::Rig::Stores::SkillEntry).first.recorded_time
+    end
+  end
+
+  describe '#baseline' do
+    it 'holds an entry until the header is written' do
+      store = SeededStore.new
+      recorder(store, [at(1)]).baseline(baseline)
+
+      assert_empty store.appended
+    end
+
+    it 'records the system texts' do
+      store = SeededStore.new
+      recording = recorder(store, [at(1), at(2), at(3)])
+      recording.message(user)
+      recording.baseline(baseline)
+
+      assert_equal [['PROMPT']], store.appended.grep(Riffer::Rig::Stores::BaselineEntry).map(&:system)
+    end
+
+    it 'records the sections' do
+      store = SeededStore.new
+      recording = recorder(store, [at(1), at(2), at(3)])
+      recording.message(user)
+      recording.baseline(baseline)
+
+      assert_equal [{ environment: 'ENV' }], store.appended.grep(Riffer::Rig::Stores::BaselineEntry).map(&:sections)
+    end
+
+    it 'stamps a baseline entry with the clock' do
+      store = SeededStore.new
+      recording = recorder(store, [at(1), at(2)], resumed: true)
+      recording.baseline(baseline)
+      recording.message(user)
+
+      assert_equal at(1), store.appended.grep(Riffer::Rig::Stores::BaselineEntry).first.recorded_time
     end
   end
 
@@ -220,6 +282,22 @@ describe Riffer::Rig::Stores::Recorder do
       store = SeededStore.new
       recording = recorder(store, [at(1), at(2), at(3)])
       recording.message(notification)
+      recording.message(user('first prompt'))
+
+      assert_equal 'first prompt', store.appended.first.title
+    end
+
+    it 'holds a context update that lands before the header' do
+      store = SeededStore.new
+      recorder(store, [at(1)]).message(context_update)
+
+      assert_empty store.appended
+    end
+
+    it 'titles the header with the first prompt after a context update' do
+      store = SeededStore.new
+      recording = recorder(store, [at(1), at(2), at(3)])
+      recording.message(context_update)
       recording.message(user('first prompt'))
 
       assert_equal 'first prompt', store.appended.first.title

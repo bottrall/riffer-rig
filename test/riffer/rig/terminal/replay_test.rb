@@ -29,6 +29,10 @@ describe Riffer::Rig::Terminal::Replay do
     Riffer::Rig::Runtime::JobNotification.new('<background-job id="a1b2c3d4">', follow_up_exits: follow_up_exits)
   end
 
+  def context_update
+    Riffer::Rig::Runtime::ContextUpdate.of({ branch: 'Branch: feature' })
+  end
+
   def follow_up
     [*exchange, entry(notification(follow_up_exits: 1), 60), entry(assistant('Passed.'), 67)]
   end
@@ -68,6 +72,15 @@ describe Riffer::Rig::Terminal::Replay do
 
     it 'replays no job notification delivered ahead of a prompt as a turn' do
       recorded = [*exchange, entry(notification, 60), entry(user('Again'), 60), entry(assistant('Fixed.'), 67)]
+
+      assert_equal(
+        "\n› Go\n\n  Done.\n\n  1 step · 00:41\n\n› Again\n\n  Fixed.\n\n  1 step · 00:07\n",
+        replay(recorded)
+      )
+    end
+
+    it 'replays no context update delivered ahead of a prompt as a turn' do
+      recorded = [*exchange, entry(context_update, 60), entry(user('Again'), 60), entry(assistant('Fixed.'), 67)]
 
       assert_equal(
         "\n› Go\n\n  Done.\n\n  1 step · 00:41\n\n› Again\n\n  Fixed.\n\n  1 step · 00:07\n",

@@ -275,6 +275,7 @@ describe Riffer::Rig::Terminal do
       Hosts::_Host
       Loader::ConfigurationError
       Runtime
+      Runtime::ContextUpdate::MARKER
       Runtime::DEFAULT_REASONING_LABEL
       Runtime::ErrorMessage
       Runtime::JobNotification

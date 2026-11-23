@@ -12,50 +12,26 @@ describe Riffer::Rig::Runtime::SystemPrompt do
     Riffer::Rig::Runtime::SystemPrompt.new('BASE', '/tmp/proj', sections)
   end
 
-  def session
-    Riffer::Agent::Session.new(
-      messages: [
-        Riffer::Messages::System.new('STALE'),
-        Riffer::Messages::User.new('hello'),
-        Riffer::Messages::Assistant.new('Hi there.')
-      ]
-    )
-  end
-
-  def reasoned_session(*head)
-    Riffer::Agent::Session.new(
-      messages: [
-        *head,
-        Riffer::Messages::User.new('read it'),
-        Riffer::Messages::Assistant.new(
-          'Reading it.',
-          tool_calls: [Riffer::Messages::Assistant::ToolCall.new(call_id: 'call_1', name: 'read', arguments: '{}')],
-          reasoning: [Riffer::Messages::Assistant::ReasoningPart.new(type: :text, text: 'Thinking.', signature: 'SIG')]
-        )
-      ]
-    )
-  end
-
   describe '.new' do
-    it 'renders the base and environment block when no sections are given' do
-      rendering = Riffer::Rig::Runtime::SystemPrompt.new('BASE', '/tmp/proj')
+    it 'evaluates only the environment block when no sections are given' do
+      values = Riffer::Rig::Runtime::SystemPrompt.new('BASE', '/tmp/proj').values(@runtime)
 
-      assert_equal "BASE\n\n#{@environment}", rendering.render(@runtime)
+      assert_equal({ environment: @environment }, values)
     end
   end
 
   describe '#with_sections' do
-    it 'renders the sections it is given' do
+    it 'evaluates the sections it is given' do
       swapped = prompt({ old: ->(_runtime) { 'OLD_SECTION' } }).with_sections({ new: ->(_runtime) { 'NEW_SECTION' } })
 
-      assert_equal "BASE\n\nNEW_SECTION\n\n#{@environment}", swapped.render(@runtime)
+      assert_equal({ new: 'NEW_SECTION', environment: @environment }, swapped.values(@runtime))
     end
 
-    it 'leaves the receiver rendering its own sections' do
+    it 'leaves the receiver evaluating its own sections' do
       original = prompt({ old: ->(_runtime) { 'OLD_SECTION' } })
       original.with_sections({ new: ->(_runtime) { 'NEW_SECTION' } })
 
-      assert_equal "BASE\n\nOLD_SECTION\n\n#{@environment}", original.render(@runtime)
+      assert_equal({ old: 'OLD_SECTION', environment: @environment }, original.values(@runtime))
     end
   end
 
@@ -69,109 +45,41 @@ describe Riffer::Rig::Runtime::SystemPrompt do
     end
   end
 
-  describe '#render' do
-    it 'renders sections in order between the base and the environment block' do
+  describe '#values' do
+    it 'evaluates sections in order, then the environment block' do
       sections = { first: ->(_runtime) { 'SECTION_ONE' }, second: ->(_runtime) { 'SECTION_TWO' } }
 
-      assert_equal "BASE\n\nSECTION_ONE\n\nSECTION_TWO\n\n#{@environment}", prompt(sections).render(@runtime)
+      assert_equal %i[first second environment], prompt(sections).values(@runtime).keys
     end
 
-    it 're-evaluates a section on every render' do
+    it 're-evaluates a section on every call' do
       branch = 'main'
-      rendering = prompt({ branch: ->(_runtime) { "Branch: #{branch}" } })
-      rendering.render(@runtime)
+      evaluating = prompt({ branch: ->(_runtime) { "Branch: #{branch}" } })
+      evaluating.values(@runtime)
       branch = 'feature'
 
-      assert_includes rendering.render(@runtime), 'Branch: feature'
+      assert_equal 'Branch: feature', evaluating.values(@runtime)[:branch]
     end
 
     it 'passes the runtime to a section' do
       seen = nil
-      prompt({ spy: ->(runtime) { seen = runtime } }).render(@runtime)
+      prompt({ spy: ->(runtime) { seen = runtime } }).values(@runtime)
 
       assert_same @runtime, seen
     end
 
-    it 'skips a section that renders nothing' do
-      assert_equal "BASE\n\n#{@environment}", prompt({ skills: ->(_runtime) {} }).render(@runtime)
+    it 'leaves out a section that renders nothing' do
+      assert_equal({ environment: @environment }, prompt({ skills: ->(_runtime) {} }).values(@runtime))
+    end
+
+    it 'leaves out a section that renders an empty string' do
+      assert_equal({ environment: @environment }, prompt({ empty: ->(_runtime) { '' } }).values(@runtime))
     end
   end
 
-  describe '#refresh' do
-    it 'keeps reasoning when the rendered prompt matches the system message' do
-      refreshed = reasoned_session(Riffer::Messages::System.new(prompt.render(@runtime)))
-      prompt.refresh(refreshed, @runtime)
-
-      assert_predicate refreshed.messages.last, :reasoning?
-    end
-
-    it 'swaps the rendered prompt in as the system message' do
-      refreshed = session
-      prompt({ branch: ->(_runtime) { 'Branch: main' } }).refresh(refreshed, @runtime)
-
-      assert_equal "BASE\n\nBranch: main\n\n#{@environment}", refreshed.messages.first.content
-    end
-
-    it 'keeps one system message across refreshes' do
-      refreshed = session
-      rendering = prompt({ branch: ->(_runtime) { 'Branch: main' } })
-      rendering.refresh(refreshed, @runtime)
-      rendering.refresh(refreshed, @runtime)
-
-      assert_equal(%w[system user assistant], refreshed.messages.map { |message| message.role.to_s })
-    end
-
-    it 'keeps the messages after the system message' do
-      refreshed = session
-      history = refreshed.messages.drop(1)
-      prompt.refresh(refreshed, @runtime)
-
-      assert_equal history, refreshed.messages.drop(1)
-    end
-
-    it 'keeps every message when the session has no system message' do
-      restored = session.messages.drop(1)
-      refreshed = Riffer::Agent::Session.new(messages: restored)
-      prompt.refresh(refreshed, @runtime)
-
-      assert_equal restored, refreshed.messages.drop(1)
-    end
-
-    it 'drops reasoning from an assistant message when the prompt changed' do
-      refreshed = reasoned_session(Riffer::Messages::System.new('STALE'))
-      prompt.refresh(refreshed, @runtime)
-
-      refute_predicate refreshed.messages.last, :reasoning?
-    end
-
-    it 'drops reasoning from an assistant message when the session has no system message' do
-      refreshed = reasoned_session
-      prompt.refresh(refreshed, @runtime)
-
-      refute_predicate refreshed.messages.last, :reasoning?
-    end
-
-    it 'keeps the content of an assistant message it drops reasoning from' do
-      refreshed = reasoned_session
-      prompt.refresh(refreshed, @runtime)
-
-      assert_equal 'Reading it.', refreshed.messages.last.content
-    end
-
-    it 'keeps the tool calls of an assistant message it drops reasoning from' do
-      refreshed = reasoned_session
-      tool_calls = refreshed.messages.last.tool_calls
-      prompt.refresh(refreshed, @runtime)
-
-      assert_equal tool_calls, refreshed.messages.last.tool_calls
-    end
-
-    it 'passes a non-assistant message through when it drops reasoning' do
-      refreshed = reasoned_session
-      user = refreshed.messages.first
-      prompt.refresh(refreshed, @runtime)
-
-      assert_same user, refreshed.messages[1]
+  describe '#render' do
+    it 'joins the base and the values with blank lines' do
+      assert_equal "BASE\n\nSECTION_ONE\n\nENV", prompt.render({ first: 'SECTION_ONE', environment: 'ENV' })
     end
   end
 end

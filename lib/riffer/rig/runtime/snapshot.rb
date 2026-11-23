@@ -3,12 +3,13 @@
 class Riffer::Rig::Runtime::Snapshot
   include Riffer::Rig::Support::Equatable
 
-  # @dynamic id, messages, model, reasoning, skills
+  # @dynamic id, messages, model, reasoning, skills, baseline
   attr_reader :id #: String
   attr_reader :messages #: Array[Riffer::Messages::Base]
   attr_reader :model #: String?
   attr_reader :reasoning #: String?
   attr_reader :skills #: Array[String]
+  attr_reader :baseline #: Riffer::Rig::Runtime::Baseline?
 
   # @rbs snapshot: Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped]
   # @rbs return: Riffer::Rig::Runtime::Snapshot
@@ -19,15 +20,18 @@ class Riffer::Rig::Runtime::Snapshot
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: Riffer::Rig::Runtime::Snapshot
   def self.from_h(hash)
+    baseline = hash[:baseline] && Riffer::Rig::Runtime::Baseline.from_h(hash[:baseline])
     new(
       id: hash.fetch(:id),
       # Upstream candidate: riffer's Serializer carries an agent's config, never
       # its history, so this and to_h round-trip the session message by message;
       # a Session.from_h could also heal orphaned tool calls on load.
-      messages: hash.fetch(:messages).map { |stored| message(stored) },
+      # Without the baseline it was signed under, reasoning can't be replayed.
+      messages: hash.fetch(:messages).map { |stored| message(baseline ? stored : stored.except(:reasoning)) },
       model: hash.fetch(:model),
       reasoning: hash[:reasoning].is_a?(String) ? hash[:reasoning] : nil,
-      skills: hash.fetch(:skills)
+      skills: hash.fetch(:skills),
+      baseline: baseline
     )
   end
 
@@ -37,6 +41,7 @@ class Riffer::Rig::Runtime::Snapshot
     # riffer rebuilds a message from its role alone, which would bring a job
     # notification back as typed input.
     return Riffer::Rig::Runtime::JobNotification.from_hash(hash) if hash[Riffer::Rig::Runtime::JobNotification::MARKER]
+    return Riffer::Rig::Runtime::ContextUpdate.from_hash(hash) if hash[Riffer::Rig::Runtime::ContextUpdate::MARKER]
 
     Riffer::Messages::Base.from_hash(hash)
   end
@@ -46,35 +51,52 @@ class Riffer::Rig::Runtime::Snapshot
   # @rbs model: String?
   # @rbs reasoning: String?
   # @rbs skills: Array[String]
+  # @rbs baseline: Riffer::Rig::Runtime::Baseline?
   # @rbs return: void
-  def initialize(id:, messages:, model:, skills:, reasoning: nil)
+  def initialize(id:, messages:, model:, skills:, reasoning: nil, baseline: nil)
     @id = id
     @messages = messages
     @model = model
     @reasoning = reasoning
     @skills = skills
+    @baseline = baseline
     freeze
   end
 
   # @rbs return: Hash[Symbol, untyped]
   def to_h
-    { id: @id, messages: @messages.map(&:to_h), model: @model, reasoning: @reasoning, skills: @skills }
+    {
+      id: @id,
+      messages: @messages.map(&:to_h),
+      model: @model,
+      reasoning: @reasoning,
+      skills: @skills,
+      baseline: @baseline&.to_h
+    }
   end
 
   # @rbs return: Riffer::Rig::Runtime::Snapshot
   def without_model
-    self.class.new(id: @id, messages: @messages, model: nil, reasoning: @reasoning, skills: @skills)
+    self.class.new(
+      id: @id,
+      messages: @messages,
+      model: nil,
+      reasoning: @reasoning,
+      skills: @skills,
+      baseline: @baseline
+    )
   end
 
   # @rbs return: Riffer::Rig::Runtime::Snapshot
   def without_reasoning
-    self.class.new(id: @id, messages: @messages, model: @model, reasoning: nil, skills: @skills)
+    self.class.new(id: @id, messages: @messages, model: @model, reasoning: nil, skills: @skills, baseline: @baseline)
   end
 
   # @rbs return: Riffer::Agent::Session
   def session
+    baseline = @baseline
     # riffer's Session appends to the array it is given.
-    session = Riffer::Agent::Session.new(messages: @messages.dup)
+    session = Riffer::Agent::Session.new(messages: baseline ? baseline.head(@messages) : @messages.dup)
     session.discard_pending_tool_calls
     session
   end

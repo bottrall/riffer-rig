@@ -8,6 +8,7 @@ class Riffer::Rig::Stores::JSONL
 
   ENTRY_TYPES = {
     Riffer::Rig::Stores::Header.type => Riffer::Rig::Stores::Header,
+    Riffer::Rig::Stores::BaselineEntry.type => Riffer::Rig::Stores::BaselineEntry,
     Riffer::Rig::Stores::MessageEntry.type => Riffer::Rig::Stores::MessageEntry,
     Riffer::Rig::Stores::ModelEntry.type => Riffer::Rig::Stores::ModelEntry,
     Riffer::Rig::Stores::ReasoningEntry.type => Riffer::Rig::Stores::ReasoningEntry,

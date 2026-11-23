@@ -60,6 +60,8 @@ class Riffer::Rig::Runtime
   # @rbs @message_observers: Array[^(Riffer::Messages::Base) -> void]
   # @rbs @model_observers: Array[^(String) -> void]
   # @rbs @reasoning_observers: Array[^(String) -> void]
+  # @rbs @baseline_observers: Array[^(Riffer::Rig::Runtime::Baseline) -> void]
+  # @rbs @baseline: Riffer::Rig::Runtime::Baseline?
   # @rbs @system_prompt: Riffer::Rig::Runtime::SystemPrompt
   # @rbs @commands: Hash[String, Riffer::Rig::Command]
   # @rbs @core_commands: Array[Riffer::Rig::Command]
@@ -156,6 +158,8 @@ class Riffer::Rig::Runtime
     @message_observers = []
     @model_observers = []
     @reasoning_observers = []
+    @baseline_observers = []
+    @baseline = saved&.baseline
     @reasoning = (saved && Riffer::Rig::Settings::ModelOptions.reasoning_level(saved.reasoning)) || reasoning
     @tool_allowlist = tools
     @native_tools = native_tools
@@ -328,7 +332,8 @@ class Riffer::Rig::Runtime
       messages: @agent.session.messages,
       model: @model_override,
       reasoning: @reasoning,
-      skills: activated_skills
+      skills: activated_skills,
+      baseline: @baseline
     ).to_h
   end
 
@@ -350,6 +355,13 @@ class Riffer::Rig::Runtime
   # @rbs return: nil
   def on_reasoning_change(&block)
     @reasoning_observers << block
+    nil
+  end
+
+  # @rbs &block: (Riffer::Rig::Runtime::Baseline) -> void
+  # @rbs return: nil
+  def on_baseline(&block)
+    @baseline_observers << block
     nil
   end
 
@@ -560,7 +572,34 @@ class Riffer::Rig::Runtime
   def open_turn
     @cancel_flag.clear
     @reload_check&.call(self)
-    @system_prompt.refresh(@agent.session, self)
+    values = @system_prompt.values(self)
+    baseline = @baseline
+    baseline ? update_context(baseline, values) : open_baseline(values)
+  end
+
+  # @rbs values: Hash[Symbol, String]
+  # @rbs return: void
+  def open_baseline(values)
+    baseline = Riffer::Rig::Runtime::Baseline.new(
+      system: [@system_prompt.render(values), @agent.skills_message&.content].compact, sections: values
+    )
+    # Providers bind signed reasoning to the system message it was produced
+    # under, so a session keeps the one its first turn opened with.
+    @agent.session.set(baseline.head(@agent.session.messages))
+    @baseline = baseline
+    @baseline_observers.each { |observer| observer.call(baseline) }
+  end
+
+  # @rbs baseline: Riffer::Rig::Runtime::Baseline
+  # @rbs values: Hash[Symbol, String]
+  # @rbs return: void
+  def update_context(baseline, values)
+    changes = baseline.changes(@agent.session.messages, values)
+    return if changes.empty?
+
+    # Silent, then delivered by hand: the on_message observer interrupts a
+    # cancelled turn with a throw, and no riffer run is there to catch it.
+    deliver(@agent.session.add(Riffer::Rig::Runtime::ContextUpdate.of(changes), silent: true))
   end
 
   # @rbs outcome: Riffer::Agent::Outcome

@@ -572,17 +572,76 @@ describe Riffer::Rig::Runtime do
     assert_equal [Riffer::Rig::Events::Notify.new('boom', :error)], notify_events
   end
 
-  it 're-evaluates a section every turn without a rebuild' do
-    branch = 'main'
-    sections = Riffer::Rig::Extension.new('sections') { |rig| rig.prompt(:branch) { "Branch: #{branch}" } }
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [sections])
-    runtime.agent.provider.stub_response('One.')
-    runtime.agent.provider.stub_response('Two.')
-    runtime.ask('hello')
-    branch = 'feature'
-    runtime.prompt('again') { |event| event }
+  describe 'context' do
+    before do
+      @branch = 'main'
+      @sections = Riffer::Rig::Extension.new('sections') { |rig| rig.prompt(:branch) { @branch } }
+    end
 
-    assert_includes runtime.agent.provider.calls.last[:messages].first[:content], 'Branch: feature'
+    def branched_runtime
+      Riffer::Rig::Runtime.new('mock/test', extensions: [@sections])
+    end
+
+    def two_turns(runtime, branch: 'feature')
+      runtime.agent.provider.stub_response('One.')
+      runtime.agent.provider.stub_response('Two.')
+      runtime.ask('hello')
+      @branch = branch
+      runtime.ask('again')
+      runtime
+    end
+
+    def updates(runtime)
+      runtime.agent.session.messages.grep(Riffer::Rig::Runtime::ContextUpdate)
+    end
+
+    it 'keeps the system message of the first turn when a section changes' do
+      calls = two_turns(branched_runtime).agent.provider.calls
+
+      assert_equal calls.first[:messages].first, calls.last[:messages].first
+    end
+
+    it 'tells the model of a changed section ahead of the next prompt' do
+      update = updates(two_turns(branched_runtime)).first
+
+      assert_equal({ branch: 'feature' }, update&.sections)
+    end
+
+    it 'sends the context update in the request of the next prompt' do
+      runtime = two_turns(branched_runtime)
+      request = runtime.agent.provider.calls.last[:messages]
+
+      assert_includes request.last[:content], updates(runtime).first&.content.to_s
+    end
+
+    it 'adds no context update when nothing changed' do
+      assert_empty updates(two_turns(branched_runtime, branch: 'main'))
+    end
+
+    it 'adds a context update only once for one change' do
+      runtime = two_turns(branched_runtime)
+      runtime.agent.provider.stub_response('Three.')
+      runtime.ask('once more')
+
+      assert_equal 1, updates(runtime).length
+    end
+
+    it 'delivers a context update to the observers' do
+      runtime = branched_runtime
+      observed = []
+      runtime.on_message { |message| observed << message }
+      two_turns(runtime)
+
+      assert_equal 1, observed.grep(Riffer::Rig::Runtime::ContextUpdate).length
+    end
+
+    it 'puts the skills catalog in the baseline' do
+      runtime = skilled_runtime
+      runtime.agent.provider.stub_response('All done.')
+      runtime.ask('hello')
+
+      assert_equal 2, runtime.to_h.dig(:baseline, :system).length
+    end
   end
 
   it 'closes every prompt with a turn_end' do
@@ -1480,11 +1539,18 @@ describe Riffer::Rig::Runtime do
       assert_includes runtime.commands.map(&:name), 'skill:b'
     end
 
-    it 'renders the prompt sections of the new list' do
+    it 'tells the model of the prompt sections of the new list' do
       runtime = rebuilt
       next_turn(runtime)
 
-      assert_includes runtime.agent.provider.calls.last[:messages].first[:content], 'NEW_SECTION'
+      assert_includes runtime.agent.provider.calls.last[:messages].last[:content], 'NEW_SECTION'
+    end
+
+    it 'keeps the system message the session started with' do
+      runtime = rebuilt
+      next_turn(runtime)
+
+      assert_includes runtime.agent.provider.calls.last[:messages].first[:content], 'OLD_SECTION'
     end
 
     it 'runs the hooks of the new list only' do
@@ -1741,6 +1807,43 @@ describe Riffer::Rig::Runtime do
       assert_equal %w[a], runtime.to_h[:skills]
     end
 
+    it 'holds the system messages the first turn opened with as the baseline' do
+      runtime = saved_runtime
+
+      assert_equal runtime.agent.session.messages.take(1).map(&:content), runtime.to_h.dig(:baseline, :system)
+    end
+
+    it 'holds no baseline before the first turn' do
+      assert_nil Riffer::Rig::Runtime.new('mock/test').to_h[:baseline]
+    end
+
+    it 'sends the saved baseline rather than a fresh one after a restore' do
+      snapshot = saved_runtime.to_h
+      baseline = snapshot[:baseline].merge(system: ['SAVED_PROMPT'])
+      runtime = restored(snapshot.merge(baseline: baseline))
+      first_prompt_events(runtime)
+
+      assert_equal 'SAVED_PROMPT', runtime.agent.provider.calls.last[:messages].first[:content]
+    end
+
+    it 'announces no baseline for a restore that holds one' do
+      runtime = restored(saved_runtime.to_h)
+      announced = []
+      runtime.on_baseline { |baseline| announced << baseline }
+      first_prompt_events(runtime)
+
+      assert_empty announced
+    end
+
+    it 'announces a fresh baseline for a restore that holds none' do
+      runtime = restored(saved_runtime.to_h.merge(baseline: nil))
+      announced = []
+      runtime.on_baseline { |baseline| announced << baseline }
+      first_prompt_events(runtime)
+
+      assert_equal 1, announced.length
+    end
+
     it 'restores from a Snapshot as from its hash' do
       snapshot = saved_runtime.to_h
 
@@ -1879,6 +1982,20 @@ describe Riffer::Rig::Runtime do
       runtime.on_model_change { |model| seen << model }
 
       assert_empty seen
+    end
+  end
+
+  describe '#on_baseline' do
+    it 'announces the baseline once, at the first turn' do
+      runtime = Riffer::Rig::Runtime.new('mock/test')
+      announced = []
+      runtime.on_baseline { |baseline| announced << baseline }
+      runtime.agent.provider.stub_response('One.')
+      runtime.agent.provider.stub_response('Two.')
+      runtime.ask('hello')
+      runtime.ask('again')
+
+      assert_equal [runtime.to_h[:baseline]], announced.map(&:to_h)
     end
   end
 

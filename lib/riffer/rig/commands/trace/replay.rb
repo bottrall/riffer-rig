@@ -58,6 +58,8 @@ module Riffer::Rig::Commands::Trace::Replay
       [line(time, 'finish', message.error? ? "#{message.name} (#{message.error_type})" : message.name)]
     when Riffer::Rig::Runtime::JobNotification
       [line(time, 'notice', first_line(message.content))]
+    when Riffer::Rig::Runtime::ContextUpdate
+      []
     else
       [line(time, 'prompt', first_line(message.content))]
     end

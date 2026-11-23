@@ -3,7 +3,7 @@
 class Riffer::Rig::Runtime::Snapshot
   include Riffer::Rig::Support::Equatable
 
-  # @dynamic id, messages, model, reasoning, skills
+  # @dynamic id, messages, model, reasoning, skills, baseline
   attr_reader id: String
 
   attr_reader messages: Array[Riffer::Messages::Base]
@@ -13,6 +13,8 @@ class Riffer::Rig::Runtime::Snapshot
   attr_reader reasoning: String?
 
   attr_reader skills: Array[String]
+
+  attr_reader baseline: Riffer::Rig::Runtime::Baseline?
 
   # @rbs snapshot: Riffer::Rig::Runtime::Snapshot | Hash[Symbol, untyped]
   # @rbs return: Riffer::Rig::Runtime::Snapshot
@@ -31,8 +33,9 @@ class Riffer::Rig::Runtime::Snapshot
   # @rbs model: String?
   # @rbs reasoning: String?
   # @rbs skills: Array[String]
+  # @rbs baseline: Riffer::Rig::Runtime::Baseline?
   # @rbs return: void
-  def initialize: (id: String, messages: Array[Riffer::Messages::Base], model: String?, skills: Array[String], ?reasoning: String?) -> void
+  def initialize: (id: String, messages: Array[Riffer::Messages::Base], model: String?, skills: Array[String], ?reasoning: String?, ?baseline: Riffer::Rig::Runtime::Baseline?) -> void
 
   # @rbs return: Hash[Symbol, untyped]
   def to_h: () -> Hash[Symbol, untyped]
