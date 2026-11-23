@@ -42,11 +42,25 @@ class Riffer::Rig::Runtime::SystemPrompt
     # Upstream candidate: riffer resolves `instructions` once, in Agent.new, so
     # a per-turn system message has to be swapped into the session by hand.
     history = session.messages
-    kept = history.first.is_a?(Riffer::Messages::System) ? history.drop(1) : history
-    session.set([Riffer::Messages::System.new(render(runtime)), *kept])
+    head = history.first
+    rendered = render(runtime)
+    return if head.is_a?(Riffer::Messages::System) && head.content == rendered
+
+    kept = head.is_a?(Riffer::Messages::System) ? history.drop(1) : history
+    # Providers reject signed reasoning replayed under a system prompt other
+    # than the one it was produced under.
+    session.set([Riffer::Messages::System.new(rendered), *kept.map { |message| without_reasoning(message) }])
   end
 
   private
+
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: Riffer::Messages::Base
+  def without_reasoning(message)
+    return message unless message.is_a?(Riffer::Messages::Assistant) && message.reasoning?
+
+    Riffer::Messages::Assistant.from_hash(message.to_h.except(:reasoning))
+  end
 
   # @rbs sections: Array[String]
   # @rbs return: String

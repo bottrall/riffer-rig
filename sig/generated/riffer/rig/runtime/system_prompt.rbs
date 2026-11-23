@@ -31,6 +31,10 @@ class Riffer::Rig::Runtime::SystemPrompt
 
   private
 
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: Riffer::Messages::Base
+  def without_reasoning: (Riffer::Messages::Base message) -> Riffer::Messages::Base
+
   # @rbs sections: Array[String]
   # @rbs return: String
   def compose: (Array[String] sections) -> String

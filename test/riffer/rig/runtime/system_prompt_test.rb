@@ -22,6 +22,20 @@ describe Riffer::Rig::Runtime::SystemPrompt do
     )
   end
 
+  def reasoned_session(*head)
+    Riffer::Agent::Session.new(
+      messages: [
+        *head,
+        Riffer::Messages::User.new('read it'),
+        Riffer::Messages::Assistant.new(
+          'Reading it.',
+          tool_calls: [Riffer::Messages::Assistant::ToolCall.new(call_id: 'call_1', name: 'read', arguments: '{}')],
+          reasoning: [Riffer::Messages::Assistant::ReasoningPart.new(type: :text, text: 'Thinking.', signature: 'SIG')]
+        )
+      ]
+    )
+  end
+
   describe '.new' do
     it 'renders the base and environment block when no sections are given' do
       rendering = Riffer::Rig::Runtime::SystemPrompt.new('BASE', '/tmp/proj')
@@ -84,6 +98,13 @@ describe Riffer::Rig::Runtime::SystemPrompt do
   end
 
   describe '#refresh' do
+    it 'keeps reasoning when the rendered prompt matches the system message' do
+      refreshed = reasoned_session(Riffer::Messages::System.new(prompt.render(@runtime)))
+      prompt.refresh(refreshed, @runtime)
+
+      assert_predicate refreshed.messages.last, :reasoning?
+    end
+
     it 'swaps the rendered prompt in as the system message' do
       refreshed = session
       prompt({ branch: ->(_runtime) { 'Branch: main' } }).refresh(refreshed, @runtime)
@@ -114,6 +135,43 @@ describe Riffer::Rig::Runtime::SystemPrompt do
       prompt.refresh(refreshed, @runtime)
 
       assert_equal restored, refreshed.messages.drop(1)
+    end
+
+    it 'drops reasoning from an assistant message when the prompt changed' do
+      refreshed = reasoned_session(Riffer::Messages::System.new('STALE'))
+      prompt.refresh(refreshed, @runtime)
+
+      refute_predicate refreshed.messages.last, :reasoning?
+    end
+
+    it 'drops reasoning from an assistant message when the session has no system message' do
+      refreshed = reasoned_session
+      prompt.refresh(refreshed, @runtime)
+
+      refute_predicate refreshed.messages.last, :reasoning?
+    end
+
+    it 'keeps the content of an assistant message it drops reasoning from' do
+      refreshed = reasoned_session
+      prompt.refresh(refreshed, @runtime)
+
+      assert_equal 'Reading it.', refreshed.messages.last.content
+    end
+
+    it 'keeps the tool calls of an assistant message it drops reasoning from' do
+      refreshed = reasoned_session
+      tool_calls = refreshed.messages.last.tool_calls
+      prompt.refresh(refreshed, @runtime)
+
+      assert_equal tool_calls, refreshed.messages.last.tool_calls
+    end
+
+    it 'passes a non-assistant message through when it drops reasoning' do
+      refreshed = reasoned_session
+      user = refreshed.messages.first
+      prompt.refresh(refreshed, @runtime)
+
+      assert_same user, refreshed.messages[1]
     end
   end
 end
