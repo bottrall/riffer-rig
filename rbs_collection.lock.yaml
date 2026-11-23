@@ -98,15 +98,23 @@ gems:
   source:
     type: stdlib
 - name: openai
-  version: 0.121.0
+  version: 0.130.0
   source:
     type: rubygems
 - name: pathname
   version: '0'
   source:
     type: stdlib
+- name: pp
+  version: '0'
+  source:
+    type: stdlib
+- name: prettyprint
+  version: '0'
+  source:
+    type: stdlib
 - name: prism
-  version: 1.9.0
+  version: 2.1.0
   source:
     type: rubygems
 - name: rake
