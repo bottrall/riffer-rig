@@ -544,6 +544,16 @@ class Riffer::Rig::Runtime::CancelFlag
 end
 ```
 
+## `Riffer::Rig::Runtime::ContextUpdate`
+
+```rbs
+class Riffer::Rig::Runtime::ContextUpdate < Riffer::Messages::User
+  attr_reader sections: Hash[Symbol, String?]
+
+  def to_h: () -> Hash[Symbol, untyped]
+end
+```
+
 ## `Riffer::Rig::Runtime::ErrorMessage`
 
 ```rbs

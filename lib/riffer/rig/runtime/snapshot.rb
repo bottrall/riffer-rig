@@ -19,12 +19,16 @@ class Riffer::Rig::Runtime::Snapshot
   # @rbs hash: Hash[Symbol, untyped]
   # @rbs return: Riffer::Rig::Runtime::Snapshot
   def self.from_h(hash)
+    saved = hash.fetch(:messages) #: Array[Hash[Symbol, untyped]]
+    # Reasoning is signed under the head it was produced with, which a
+    # snapshot without an opened head no longer holds.
+    signed = Riffer::Rig::Runtime::Head.sections(saved.take(1).map { |head| message(head) })
     new(
       id: hash.fetch(:id),
       # Upstream candidate: riffer's Serializer carries an agent's config, never
       # its history, so this and to_h round-trip the session message by message;
       # a Session.from_h could also heal orphaned tool calls on load.
-      messages: hash.fetch(:messages).map { |stored| message(stored) },
+      messages: saved.map { |stored| message(signed ? stored : stored.except(:reasoning)) },
       model: hash.fetch(:model),
       reasoning: hash[:reasoning].is_a?(String) ? hash[:reasoning] : nil,
       skills: hash.fetch(:skills)
@@ -37,6 +41,7 @@ class Riffer::Rig::Runtime::Snapshot
     # riffer rebuilds a message from its role alone, which would bring a job
     # notification back as typed input.
     return Riffer::Rig::Runtime::JobNotification.from_hash(hash) if hash[Riffer::Rig::Runtime::JobNotification::MARKER]
+    return Riffer::Rig::Runtime::ContextUpdate.from_hash(hash) if hash[Riffer::Rig::Runtime::ContextUpdate::MARKER]
 
     Riffer::Messages::Base.from_hash(hash)
   end

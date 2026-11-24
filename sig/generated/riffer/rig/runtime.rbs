@@ -328,6 +328,14 @@ class Riffer::Rig::Runtime
   # @rbs return: void
   def open_turn: () -> void
 
+  # @rbs values: Hash[Symbol, String]
+  # @rbs return: void
+  def open_head: (Hash[Symbol, String] values) -> void
+
+  # @rbs changes: Hash[Symbol, String?]
+  # @rbs return: void
+  def update_context: (Hash[Symbol, String?] changes) -> void
+
   # @rbs outcome: Riffer::Agent::Outcome
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]
   def ended_turn: (Riffer::Agent::Outcome outcome) -> Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]

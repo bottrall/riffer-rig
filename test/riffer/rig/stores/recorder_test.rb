@@ -88,6 +88,14 @@ describe Riffer::Rig::Stores::Recorder do
     Riffer::Rig::Runtime::JobNotification.new('<background-job id="a1b2c3d4">')
   end
 
+  def context_update
+    Riffer::Rig::Runtime::ContextUpdate.of({ branch: 'Branch: feature' })
+  end
+
+  def system
+    Riffer::Messages::System.new('You are riffer.')
+  end
+
   def header(title = 'hello')
     Riffer::Rig::Stores::Header.new(
       schema_version: Riffer::Rig::Stores::JSONL::HEADER_VERSION,
@@ -220,6 +228,38 @@ describe Riffer::Rig::Stores::Recorder do
       store = SeededStore.new
       recording = recorder(store, [at(1), at(2), at(3)])
       recording.message(notification)
+      recording.message(user('first prompt'))
+
+      assert_equal 'first prompt', store.appended.first.title
+    end
+
+    it 'holds a context update that lands before the header' do
+      store = SeededStore.new
+      recorder(store, [at(1)]).message(context_update)
+
+      assert_empty store.appended
+    end
+
+    it 'titles the header with the first prompt after a context update' do
+      store = SeededStore.new
+      recording = recorder(store, [at(1), at(2), at(3)])
+      recording.message(context_update)
+      recording.message(user('first prompt'))
+
+      assert_equal 'first prompt', store.appended.first.title
+    end
+
+    it 'holds a system message that lands before the header' do
+      store = SeededStore.new
+      recorder(store, [at(1)]).message(system)
+
+      assert_empty store.appended
+    end
+
+    it 'titles the header with the first prompt after a system message' do
+      store = SeededStore.new
+      recording = recorder(store, [at(1), at(2), at(3)])
+      recording.message(system)
       recording.message(user('first prompt'))
 
       assert_equal 'first prompt', store.appended.first.title

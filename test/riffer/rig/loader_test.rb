@@ -790,7 +790,7 @@ describe Riffer::Rig::Loader do
     it 'continues with the session history' do
       save_session('welcome back')
       resumed = loader.continue
-      contents = resumed.agent.session.messages.map(&:content)
+      contents = resumed.agent.session.messages.grep_v(Riffer::Messages::System).map(&:content)
 
       assert_equal ['welcome back', 'All done.'], contents
     end
@@ -819,6 +819,16 @@ describe Riffer::Rig::Loader do
       assert(resumed.commands.any? { |command| command.name == 'ping' })
     end
 
+    it 'resumes with the system message the session started with' do
+      saved = save_session
+      File.write(File.join(@cwd, 'AGENTS.md'), 'PROJECT_RULES')
+      resumed = loader.resume(saved.id)
+      turn(resumed, 'again')
+
+      assert_equal saved.agent.session.messages.first.content,
+                   resumed.agent.provider.calls.last[:messages].first[:content]
+    end
+
     it 'rewrites no header when resuming' do
       saved = save_session
       resumed = loader.resume(saved.id)
@@ -837,9 +847,9 @@ describe Riffer::Rig::Loader do
 
     it 'replays the messages of a session in recorded order' do
       saved = save_session('welcome back')
-      contents = loader.messages(saved.id).map { |message| message[:content] }
+      roles = loader.messages(saved.id).map { |message| message[:role] }
 
-      assert_equal ['welcome back', 'All done.'], contents
+      assert_equal %w[system user assistant], roles
     end
   end
 

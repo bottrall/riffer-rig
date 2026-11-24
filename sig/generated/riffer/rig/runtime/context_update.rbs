@@ -1,0 +1,28 @@
+# Generated from lib/riffer/rig/runtime/context_update.rb with RBS::Inline
+
+class Riffer::Rig::Runtime::ContextUpdate < Riffer::Messages::User
+  MARKER: Symbol
+
+  PREAMBLE: ::String
+
+  # @dynamic sections
+  attr_reader sections: Hash[Symbol, String?]
+
+  # @rbs changes: Hash[Symbol, String?]
+  # @rbs return: Riffer::Rig::Runtime::ContextUpdate
+  def self.of: (Hash[Symbol, String?] changes) -> Riffer::Rig::Runtime::ContextUpdate
+
+  # @rbs hash: Hash[Symbol, untyped]
+  # @rbs return: Riffer::Rig::Runtime::ContextUpdate
+  def self.from_hash: (Hash[Symbol, untyped] hash) -> Riffer::Rig::Runtime::ContextUpdate
+
+  # @rbs content: String
+  # @rbs id: String?
+  # @rbs files: Array[Riffer::Messages::User::FilePart]
+  # @rbs sections: Hash[Symbol, String?]
+  # @rbs return: void
+  def initialize: (String content, ?id: String?, ?files: Array[Riffer::Messages::User::FilePart], ?sections: Hash[Symbol, String?]) -> void
+
+  # @rbs return: Hash[Symbol, untyped]
+  def to_h: () -> Hash[Symbol, untyped]
+end

@@ -18,7 +18,8 @@ A resumed session keeps its id and carries on in the same file. What comes back:
 | Restored from the session                         | Taken from today                                       |
 | ------------------------------------------------- | ------------------------------------------------------ |
 | the conversation                                  | settings, credentials and extensions                   |
-| a `/model` switch, if its provider still has credentials | the tools, and the system prompt                |
+| the system message it started with                | the tools                                              |
+| a `/model` switch, if its provider still has credentials | prompt sections, AGENTS.md and the date, which reach the model as a [context update](INSTRUCTIONS.md#changes-during-a-session) if they changed |
 | a `/reasoning` switch                             |                                                        |
 | the skills the model activated, if they still exist |                                                      |
 

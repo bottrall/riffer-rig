@@ -207,6 +207,10 @@ Riffer::Rig::Runtime::BusyError:
 Riffer::Rig::Runtime::CancelFlag:
   - set?
 
+Riffer::Rig::Runtime::ContextUpdate:
+  - sections
+  - to_h
+
 Riffer::Rig::Runtime::ErrorMessage:
   - of
 

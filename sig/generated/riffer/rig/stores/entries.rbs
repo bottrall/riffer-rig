@@ -9,4 +9,10 @@ module Riffer::Rig::Stores::Entries
   # @rbs id: String
   # @rbs return: Riffer::Rig::Runtime::Snapshot
   def snapshot: (Array[Riffer::Rig::Stores::entry] entries, String id) -> Riffer::Rig::Runtime::Snapshot
+
+  private
+
+  # @rbs entries: Array[Riffer::Rig::Stores::entry]
+  # @rbs return: Array[Riffer::Messages::Base]
+  def replayed: (Array[Riffer::Rig::Stores::entry] entries) -> Array[Riffer::Messages::Base]
 end

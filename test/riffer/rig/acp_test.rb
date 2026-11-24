@@ -814,6 +814,7 @@ describe Riffer::Rig::ACP do
         Mcp::Declaration
         Runtime
         Runtime::BusyError
+        Runtime::ContextUpdate::MARKER
         Runtime::ErrorMessage
         Runtime::JobCompletion
         Runtime::JobNotification::MARKER

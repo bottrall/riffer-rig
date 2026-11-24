@@ -12,108 +12,92 @@ describe Riffer::Rig::Runtime::SystemPrompt do
     Riffer::Rig::Runtime::SystemPrompt.new('BASE', '/tmp/proj', sections)
   end
 
-  def session
-    Riffer::Agent::Session.new(
-      messages: [
-        Riffer::Messages::System.new('STALE'),
-        Riffer::Messages::User.new('hello'),
-        Riffer::Messages::Assistant.new('Hi there.')
-      ]
-    )
+  describe '.section' do
+    it 'wraps the text in a section element named for the section' do
+      assert_equal %(<section name="branch">\nBranch: main\n</section>),
+                   Riffer::Rig::Runtime::SystemPrompt.section(:branch, 'Branch: main')
+    end
+  end
+
+  describe '.sections' do
+    it 'reads back the values a prompt was rendered from' do
+      values = { branch: "Branch:\nmain", environment: 'ENV' }
+
+      assert_equal values, Riffer::Rig::Runtime::SystemPrompt.sections(prompt.render(values))
+    end
+
+    it 'reads no section from the base' do
+      assert_empty Riffer::Rig::Runtime::SystemPrompt.sections(prompt.render({}))
+    end
+
+    it 'reads no section from a text rig did not render' do
+      assert_empty Riffer::Rig::Runtime::SystemPrompt.sections('You are a helpful assistant.')
+    end
   end
 
   describe '.new' do
-    it 'renders the base and environment block when no sections are given' do
-      rendering = Riffer::Rig::Runtime::SystemPrompt.new('BASE', '/tmp/proj')
+    it 'evaluates only the environment block when no sections are given' do
+      values = Riffer::Rig::Runtime::SystemPrompt.new('BASE', '/tmp/proj').values(@runtime)
 
-      assert_equal "BASE\n\n#{@environment}", rendering.render(@runtime)
+      assert_equal({ environment: @environment }, values)
     end
   end
 
   describe '#with_sections' do
-    it 'renders the sections it is given' do
+    it 'evaluates the sections it is given' do
       swapped = prompt({ old: ->(_runtime) { 'OLD_SECTION' } }).with_sections({ new: ->(_runtime) { 'NEW_SECTION' } })
 
-      assert_equal "BASE\n\nNEW_SECTION\n\n#{@environment}", swapped.render(@runtime)
+      assert_equal({ new: 'NEW_SECTION', environment: @environment }, swapped.values(@runtime))
     end
 
-    it 'leaves the receiver rendering its own sections' do
+    it 'leaves the receiver evaluating its own sections' do
       original = prompt({ old: ->(_runtime) { 'OLD_SECTION' } })
       original.with_sections({ new: ->(_runtime) { 'NEW_SECTION' } })
 
-      assert_equal "BASE\n\nOLD_SECTION\n\n#{@environment}", original.render(@runtime)
+      assert_equal({ old: 'OLD_SECTION', environment: @environment }, original.values(@runtime))
     end
   end
 
-  describe '#bare' do
-    it 'carries the date and cwd in the environment block under the base' do
-      assert_equal "BASE\n\n#{@environment}", prompt.bare
-    end
-
-    it 'leaves the sections out' do
-      assert_equal "BASE\n\n#{@environment}", prompt({ branch: ->(_runtime) { 'Branch: main' } }).bare
-    end
-  end
-
-  describe '#render' do
-    it 'renders sections in order between the base and the environment block' do
+  describe '#values' do
+    it 'evaluates sections in order, then the environment block' do
       sections = { first: ->(_runtime) { 'SECTION_ONE' }, second: ->(_runtime) { 'SECTION_TWO' } }
 
-      assert_equal "BASE\n\nSECTION_ONE\n\nSECTION_TWO\n\n#{@environment}", prompt(sections).render(@runtime)
+      assert_equal %i[first second environment], prompt(sections).values(@runtime).keys
     end
 
-    it 're-evaluates a section on every render' do
+    it 're-evaluates a section on every call' do
       branch = 'main'
-      rendering = prompt({ branch: ->(_runtime) { "Branch: #{branch}" } })
-      rendering.render(@runtime)
+      evaluating = prompt({ branch: ->(_runtime) { "Branch: #{branch}" } })
+      evaluating.values(@runtime)
       branch = 'feature'
 
-      assert_includes rendering.render(@runtime), 'Branch: feature'
+      assert_equal 'Branch: feature', evaluating.values(@runtime)[:branch]
     end
 
     it 'passes the runtime to a section' do
       seen = nil
-      prompt({ spy: ->(runtime) { seen = runtime } }).render(@runtime)
+      prompt({ spy: ->(runtime) { seen = runtime } }).values(@runtime)
 
       assert_same @runtime, seen
     end
 
-    it 'skips a section that renders nothing' do
-      assert_equal "BASE\n\n#{@environment}", prompt({ skills: ->(_runtime) {} }).render(@runtime)
+    it 'leaves out a section that renders nothing' do
+      assert_equal({ environment: @environment }, prompt({ skills: ->(_runtime) {} }).values(@runtime))
+    end
+
+    it 'leaves out a section that renders an empty string' do
+      assert_equal({ environment: @environment }, prompt({ empty: ->(_runtime) { '' } }).values(@runtime))
     end
   end
 
-  describe '#refresh' do
-    it 'swaps the rendered prompt in as the system message' do
-      refreshed = session
-      prompt({ branch: ->(_runtime) { 'Branch: main' } }).refresh(refreshed, @runtime)
+  describe '#render' do
+    it 'follows the base with each value in a section element, separated by blank lines' do
+      rendered = prompt.render({ first: 'SECTION_ONE', environment: 'ENV' })
 
-      assert_equal "BASE\n\nBranch: main\n\n#{@environment}", refreshed.messages.first.content
-    end
-
-    it 'keeps one system message across refreshes' do
-      refreshed = session
-      rendering = prompt({ branch: ->(_runtime) { 'Branch: main' } })
-      rendering.refresh(refreshed, @runtime)
-      rendering.refresh(refreshed, @runtime)
-
-      assert_equal(%w[system user assistant], refreshed.messages.map { |message| message.role.to_s })
-    end
-
-    it 'keeps the messages after the system message' do
-      refreshed = session
-      history = refreshed.messages.drop(1)
-      prompt.refresh(refreshed, @runtime)
-
-      assert_equal history, refreshed.messages.drop(1)
-    end
-
-    it 'keeps every message when the session has no system message' do
-      restored = session.messages.drop(1)
-      refreshed = Riffer::Agent::Session.new(messages: restored)
-      prompt.refresh(refreshed, @runtime)
-
-      assert_equal restored, refreshed.messages.drop(1)
+      assert_equal(
+        %(BASE\n\n<section name="first">\nSECTION_ONE\n</section>\n\n<section name="environment">\nENV\n</section>),
+        rendered
+      )
     end
   end
 end

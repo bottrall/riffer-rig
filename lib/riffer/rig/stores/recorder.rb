@@ -46,9 +46,9 @@ class Riffer::Rig::Stores::Recorder
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
   def message(message)
-    # A job notification is no prompt to title the session from, so it waits
-    # for the header like any other entry that lands before one.
-    write_header(message) unless @header_written || message.is_a?(Riffer::Rig::Runtime::JobNotification)
+    # A harness message is no prompt to title the session from, so it waits for
+    # the header like any other entry that lands before one.
+    write_header(message) unless @header_written || harness?(message)
     record(Riffer::Rig::Stores::MessageEntry.new(message: message.to_h, recorded_at: stamp))
   end
 
@@ -80,6 +80,13 @@ class Riffer::Rig::Stores::Recorder
   end
 
   private
+
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: bool
+  def harness?(message)
+    message.is_a?(Riffer::Messages::System) || message.is_a?(Riffer::Rig::Runtime::JobNotification) ||
+      message.is_a?(Riffer::Rig::Runtime::ContextUpdate)
+  end
 
   # @rbs entry: Riffer::Rig::Stores::entry
   # @rbs return: void

@@ -170,28 +170,38 @@ describe Riffer::Rig::Runtime do
     assert_equal({ max_tokens: 1000 }, runtime.agent.config.model_options)
   end
 
+  def opened_head(runtime)
+    runtime.agent.provider.stub_response('All done.')
+    runtime.ask('hello')
+    runtime.agent.session.messages.first.content
+  end
+
+  it 'gives riffer no instruction message to open the session with' do
+    assert_nil Riffer::Rig::Runtime.new('mock/test', extensions: [@extension]).agent.instruction_message
+  end
+
   it 'names the agent in the base prompt' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension])
 
-    assert_includes runtime.agent.instruction_message.content, 'You are riffer, a general-purpose agent.'
+    assert_includes opened_head(runtime), 'You are riffer, a general-purpose agent.'
   end
 
   it 'swaps the name inside the base prompt' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], name: 'sidekick')
 
-    assert_includes runtime.agent.instruction_message.content, 'You are sidekick, a general-purpose agent.'
+    assert_includes opened_head(runtime), 'You are sidekick, a general-purpose agent.'
   end
 
   it 'replaces the base prompt with instructions' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], instructions: 'CUSTOM_BASE')
 
-    assert_includes runtime.agent.instruction_message.content, 'CUSTOM_BASE'
+    assert_includes opened_head(runtime), 'CUSTOM_BASE'
   end
 
   it 'drops the default base under custom instructions' do
     runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [@extension], instructions: 'CUSTOM_BASE')
 
-    refute_includes runtime.agent.instruction_message.content, 'general-purpose agent'
+    refute_includes opened_head(runtime), 'general-purpose agent'
   end
 
   describe 'extension load errors' do
@@ -478,7 +488,9 @@ describe Riffer::Rig::Runtime do
       runtime.agent.provider.stub_response('All done.')
       runtime.ask('hello')
 
-      assert_equal "CUSTOM_BASE\n\nCurrent date: #{Date.today}\nCurrent working directory: #{cwd}",
+      environment = "Current date: #{Date.today}\nCurrent working directory: #{cwd}"
+
+      assert_equal "CUSTOM_BASE\n\n#{Riffer::Rig::Runtime::SystemPrompt.section(:environment, environment)}",
                    runtime.agent.provider.calls.last[:messages].first[:content]
     end
   end
@@ -572,17 +584,101 @@ describe Riffer::Rig::Runtime do
     assert_equal [Riffer::Rig::Events::Notify.new('boom', :error)], notify_events
   end
 
-  it 're-evaluates a section every turn without a rebuild' do
-    branch = 'main'
-    sections = Riffer::Rig::Extension.new('sections') { |rig| rig.prompt(:branch) { "Branch: #{branch}" } }
-    runtime = Riffer::Rig::Runtime.new('mock/test', extensions: [sections])
-    runtime.agent.provider.stub_response('One.')
-    runtime.agent.provider.stub_response('Two.')
-    runtime.ask('hello')
-    branch = 'feature'
-    runtime.prompt('again') { |event| event }
+  describe 'context' do
+    before do
+      @branch = 'main'
+      @sections = Riffer::Rig::Extension.new('sections') { |rig| rig.prompt(:branch) { @branch } }
+    end
 
-    assert_includes runtime.agent.provider.calls.last[:messages].first[:content], 'Branch: feature'
+    def branched_runtime
+      Riffer::Rig::Runtime.new('mock/test', extensions: [@sections])
+    end
+
+    def two_turns(runtime, branch: 'feature')
+      runtime.agent.provider.stub_response('One.')
+      runtime.agent.provider.stub_response('Two.')
+      runtime.ask('hello')
+      @branch = branch
+      runtime.ask('again')
+      runtime
+    end
+
+    def updates(runtime)
+      runtime.agent.session.messages.grep(Riffer::Rig::Runtime::ContextUpdate)
+    end
+
+    def observed_system_messages(runtime)
+      observed = []
+      runtime.on_message { |message| observed << message if message.is_a?(Riffer::Messages::System) }
+      observed
+    end
+
+    it 'opens the session with the sections in the system message of its first turn' do
+      runtime = branched_runtime
+      runtime.agent.provider.stub_response('One.')
+      runtime.ask('hello')
+
+      assert_includes runtime.agent.session.messages.first.content, %(<section name="branch">\nmain\n</section>)
+    end
+
+    it 'puts the skills catalog after the system message it opens with' do
+      runtime = skilled_runtime
+      runtime.agent.provider.stub_response('All done.')
+      runtime.ask('hello')
+
+      assert_equal runtime.agent.skills_message, runtime.agent.session.messages[1]
+    end
+
+    it 'delivers the system messages it opens with once, at the first turn' do
+      runtime = skilled_runtime
+      observed = observed_system_messages(runtime)
+      runtime.agent.provider.stub_response('One.')
+      runtime.agent.provider.stub_response('Two.')
+      runtime.ask('hello')
+      runtime.ask('again')
+
+      assert_equal runtime.agent.session.messages.take(2), observed
+    end
+
+    it 'keeps the system message of the first turn when a section changes' do
+      calls = two_turns(branched_runtime).agent.provider.calls
+
+      assert_equal calls.first[:messages].first, calls.last[:messages].first
+    end
+
+    it 'adds no context update when nothing changed' do
+      assert_empty updates(two_turns(branched_runtime, branch: 'main'))
+    end
+
+    it 'tells the model of a changed section ahead of the next prompt' do
+      update = updates(two_turns(branched_runtime)).first
+
+      assert_equal({ branch: 'feature' }, update&.sections)
+    end
+
+    it 'sends the context update in the request of the next prompt' do
+      runtime = two_turns(branched_runtime)
+      request = runtime.agent.provider.calls.last[:messages]
+
+      assert_includes request.last[:content], updates(runtime).first&.content.to_s
+    end
+
+    it 'adds a context update only once for one change' do
+      runtime = two_turns(branched_runtime)
+      runtime.agent.provider.stub_response('Three.')
+      runtime.ask('once more')
+
+      assert_equal 1, updates(runtime).length
+    end
+
+    it 'delivers a context update to the observers' do
+      runtime = branched_runtime
+      observed = []
+      runtime.on_message { |message| observed << message }
+      two_turns(runtime)
+
+      assert_equal 1, observed.grep(Riffer::Rig::Runtime::ContextUpdate).length
+    end
   end
 
   it 'closes every prompt with a turn_end' do
@@ -1480,11 +1576,18 @@ describe Riffer::Rig::Runtime do
       assert_includes runtime.commands.map(&:name), 'skill:b'
     end
 
-    it 'renders the prompt sections of the new list' do
+    it 'tells the model of the prompt sections of the new list' do
       runtime = rebuilt
       next_turn(runtime)
 
-      assert_includes runtime.agent.provider.calls.last[:messages].first[:content], 'NEW_SECTION'
+      assert_includes runtime.agent.provider.calls.last[:messages].last[:content], 'NEW_SECTION'
+    end
+
+    it 'keeps the system message the session started with' do
+      runtime = rebuilt
+      next_turn(runtime)
+
+      assert_includes runtime.agent.provider.calls.last[:messages].first[:content], 'OLD_SECTION'
     end
 
     it 'runs the hooks of the new list only' do
@@ -1741,6 +1844,49 @@ describe Riffer::Rig::Runtime do
       assert_equal %w[a], runtime.to_h[:skills]
     end
 
+    def with_head(snapshot, content)
+      snapshot.merge(messages: [Riffer::Messages::System.new(content).to_h, *snapshot[:messages].drop(1)])
+    end
+
+    def system_messages_delivered(runtime)
+      delivered = []
+      runtime.on_message { |message| delivered << message if message.is_a?(Riffer::Messages::System) }
+      first_prompt_events(runtime)
+      delivered
+    end
+
+    it 'sends the saved head rather than a fresh one after a restore' do
+      head = Riffer::Rig::Runtime::SystemPrompt.new('SAVED_BASE', '/elsewhere').render({ environment: 'ENV' })
+      runtime = restored(with_head(saved_runtime.to_h, head))
+      first_prompt_events(runtime)
+
+      assert_equal head, runtime.agent.provider.calls.last[:messages].first[:content]
+    end
+
+    it 'delivers no system message for a restore that opened its head' do
+      assert_empty system_messages_delivered(restored(saved_runtime.to_h))
+    end
+
+    it 'opens a fresh head for a restore that holds none' do
+      runtime = restored(with_head(saved_runtime.to_h, 'You are riffer.'))
+      first_prompt_events(runtime)
+
+      assert_includes runtime.agent.provider.calls.last[:messages].first[:content], '<section name="environment">'
+    end
+
+    it 'drops the system message a restore without a head opened with' do
+      runtime = restored(with_head(saved_runtime.to_h, 'You are riffer.'))
+      first_prompt_events(runtime)
+
+      refute(runtime.agent.session.messages.any? { |message| message.content == 'You are riffer.' })
+    end
+
+    it 'delivers the fresh head of a restore that holds none' do
+      runtime = restored(with_head(saved_runtime.to_h, 'You are riffer.'))
+
+      assert_equal 1, system_messages_delivered(runtime).length
+    end
+
     it 'restores from a Snapshot as from its hash' do
       snapshot = saved_runtime.to_h
 
@@ -1833,7 +1979,7 @@ describe Riffer::Rig::Runtime do
       runtime.agent.provider.stub_response('The file says hi.')
       runtime.ask('read /tmp/x')
 
-      assert_equal runtime.agent.session.messages.drop(1), observed
+      assert_equal runtime.agent.session.messages, observed
     end
 
     it 'keeps firing once per message after a model switch' do
@@ -1844,7 +1990,7 @@ describe Riffer::Rig::Runtime do
       runtime.agent.provider.stub_response('All done.')
       runtime.ask('hello')
 
-      assert_equal 2, observed.length
+      assert_equal 3, observed.length
     end
 
     it 'fires for a restored Runtime' do
@@ -1854,7 +2000,7 @@ describe Riffer::Rig::Runtime do
       runtime.agent.provider.stub_response('All done.')
       runtime.ask('hello')
 
-      assert_equal ['hello', 'All done.'], observed.map(&:content)
+      assert_equal ['hello', 'All done.'], observed.grep_v(Riffer::Messages::System).map(&:content)
     end
 
     def restored_for_observer
@@ -2169,7 +2315,7 @@ describe Riffer::Rig::Runtime do
 
         assert_equal(
           [Riffer::Messages::Assistant, Riffer::Rig::Runtime::JobNotification, Riffer::Messages::Assistant],
-          observed.drop(1).map(&:class)
+          observed.drop(2).map(&:class)
         )
       end
 
@@ -2395,7 +2541,7 @@ describe Riffer::Rig::Runtime do
         @cancelling.on_message { |message| seen << message.role }
         @cancelling.ask('go')
 
-        assert_equal %i[user assistant], seen
+        assert_equal %i[system user assistant], seen
       end
     end
 

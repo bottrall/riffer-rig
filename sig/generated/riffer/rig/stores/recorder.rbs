@@ -52,6 +52,10 @@ class Riffer::Rig::Stores::Recorder
 
   private
 
+  # @rbs message: Riffer::Messages::Base
+  # @rbs return: bool
+  def harness?: (Riffer::Messages::Base message) -> bool
+
   # @rbs entry: Riffer::Rig::Stores::entry
   # @rbs return: void
   def record: (Riffer::Rig::Stores::entry entry) -> void

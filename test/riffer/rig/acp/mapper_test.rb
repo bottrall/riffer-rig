@@ -151,6 +151,12 @@ describe Riffer::Rig::ACP::Mapper do
       assert_equal Riffer::Rig::ACP::Mapper.job_exit.to_h, Riffer::Rig::ACP::Mapper.replay_of(stored).to_h
     end
 
+    it 'replays nothing for a context update' do
+      stored = { role: 'user', content: '<context-update>', context_update: true, sections: {} }
+
+      assert_nil Riffer::Rig::ACP::Mapper.replay_of(stored)
+    end
+
     it 'replays a user message as a user message chunk' do
       update = Riffer::Rig::ACP::Mapper.replay_of({ role: 'user', content: 'hello' })
 

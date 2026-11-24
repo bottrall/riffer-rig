@@ -464,7 +464,6 @@ class Riffer::Rig::Runtime
     config = Riffer::Agent::Config.new(
       model: ->(context) { context[:model] },
       model_options: @model_options,
-      instructions: @system_prompt.bare,
       reasoning: reasoning_over(assembly.settings),
       tools_config: assembly.tools,
       max_steps: max_steps,
@@ -560,7 +559,30 @@ class Riffer::Rig::Runtime
   def open_turn
     @cancel_flag.clear
     @reload_check&.call(self)
-    @system_prompt.refresh(@agent.session, self)
+    values = @system_prompt.values(self)
+    seen = Riffer::Rig::Runtime::Head.seen(@agent.session.messages)
+    # Providers bind signed reasoning to everything before it, system messages
+    # included, so the head a session opens with is never rewritten.
+    seen ? update_context(Riffer::Rig::Runtime::Head.changes(seen, values)) : open_head(values)
+  end
+
+  # @rbs values: Hash[Symbol, String]
+  # @rbs return: void
+  def open_head(values)
+    system = [Riffer::Messages::System.new(@system_prompt.render(values)), @agent.skills_message].compact
+    conversation = @agent.session.messages.drop_while { |message| message.is_a?(Riffer::Messages::System) }
+    @agent.session.set([*system, *conversation])
+    system.each { |message| deliver(message) }
+  end
+
+  # @rbs changes: Hash[Symbol, String?]
+  # @rbs return: void
+  def update_context(changes)
+    return if changes.empty?
+
+    # Silent, then delivered by hand: the on_message observer interrupts a
+    # cancelled turn with a throw, and no riffer run is there to catch it.
+    deliver(@agent.session.add(Riffer::Rig::Runtime::ContextUpdate.of(changes), silent: true))
   end
 
   # @rbs outcome: Riffer::Agent::Outcome

@@ -15,6 +15,14 @@ describe Riffer::Rig::Commands::Trace::Replay do
     Riffer::Rig::Runtime::JobNotification.new(%(<background-job id="a1b2c3d4">\n<command>make</command>))
   end
 
+  def context_update
+    Riffer::Rig::Runtime::ContextUpdate.of({ branch: 'Branch: feature' })
+  end
+
+  def system
+    Riffer::Messages::System.new('You are riffer.')
+  end
+
   def assistant(content, *paths)
     calls = paths.map do |path|
       Riffer::Messages::Assistant::ToolCall.new(call_id: path, name: 'read', arguments: %({"path":"#{path}"}))
@@ -90,6 +98,18 @@ describe Riffer::Rig::Commands::Trace::Replay do
     turn = [entry(user('Go'), '00.000'), entry(assistant('Started.'), '01.000'), entry(notification, '02.000')]
 
     assert_equal '02:00:02.000  notice    <background-job id="a1b2c3d4">', lines(turn).last
+  end
+
+  it 'replays no step for a context update' do
+    turn = [entry(user('Go'), '00.000'), entry(context_update, '00.000')]
+
+    assert_equal ['02:00:00.000  prompt    Go'], lines(turn)
+  end
+
+  it 'replays no step for a system message' do
+    turn = [entry(user('Go'), '00.000'), entry(system, '00.000')]
+
+    assert_equal ['02:00:00.000  prompt    Go'], lines(turn)
   end
 
   it 'omits the prose line of a request that only called tools' do

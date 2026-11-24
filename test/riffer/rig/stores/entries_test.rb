@@ -32,6 +32,20 @@ describe Riffer::Rig::Stores::Entries do
     Riffer::Rig::Stores::SkillEntry.new(skill: name)
   end
 
+  def system_entry(content)
+    Riffer::Rig::Stores::MessageEntry.new(message: { role: 'system', content: content })
+  end
+
+  def reasoned_entry(content)
+    reasoning = [{ type: 'text', text: 'Thinking.', signature: 'SIG' }]
+    Riffer::Rig::Stores::MessageEntry.new(message: { role: 'assistant', content: content, reasoning: reasoning })
+  end
+
+  def reasoned(entries)
+    replies = Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa').messages.grep(Riffer::Messages::Assistant)
+    replies.select(&:reasoning?).map(&:content)
+  end
+
   def entries
     [
       header,
@@ -69,6 +83,33 @@ describe Riffer::Rig::Stores::Entries do
 
     it 'rebuilds each message' do
       assert_instance_of Riffer::Messages::User, Riffer::Rig::Stores::Entries.snapshot(entries, 'aaa').messages.first
+    end
+
+    it 'replays the reasoning of a message recorded after the first system message' do
+      assert_equal %w[after], reasoned([header, system_entry('HEAD'), reasoned_entry('after')])
+    end
+
+    it 'drops the reasoning of a message recorded before the first system message' do
+      assert_empty reasoned([header, reasoned_entry('before'), system_entry('HEAD')])
+    end
+
+    it 'drops the reasoning of every message without a system message' do
+      assert_empty reasoned([header, reasoned_entry('first'), reasoned_entry('second')])
+    end
+
+    it 'keeps the content of a message it drops the reasoning of' do
+      recorded = [header, reasoned_entry('before'), system_entry('HEAD')]
+
+      assert_equal 'before', Riffer::Rig::Stores::Entries.snapshot(recorded, 'aaa').messages.last.content
+    end
+
+    it 'puts the system messages, in recorded order, ahead of the conversation' do
+      recorded = [message_entry('first'), system_entry('HEAD'), system_entry('CATALOG'), message_entry('second')]
+
+      assert_equal(
+        %w[HEAD CATALOG first second],
+        Riffer::Rig::Stores::Entries.snapshot(recorded, 'aaa').messages.map(&:content)
+      )
     end
 
     it 'lets the last model entry win' do

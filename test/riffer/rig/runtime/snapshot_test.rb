@@ -25,6 +25,16 @@ describe Riffer::Rig::Runtime::Snapshot do
     )
   end
 
+  def reasoned
+    reasoning = [Riffer::Messages::Assistant::ReasoningPart.new(type: :text, text: 'Thinking.', signature: 'SIG')]
+    [Riffer::Messages::User.new('hello'), Riffer::Messages::Assistant.new('Thinking done.', reasoning: reasoning)]
+  end
+
+  def head
+    rendered = Riffer::Rig::Runtime::SystemPrompt.new('BASE', '/tmp/proj').render({ environment: 'ENV' })
+    Riffer::Messages::System.new(rendered)
+  end
+
   def orphaned_call
     call = Riffer::Messages::Assistant::ToolCall.new(call_id: 'orphan', name: 'read', arguments: '{"path":"/tmp/x"}')
     Riffer::Messages::Assistant.new('', tool_calls: [call])
@@ -66,6 +76,24 @@ describe Riffer::Rig::Runtime::Snapshot do
       assert_instance_of Riffer::Rig::Runtime::JobNotification, Riffer::Rig::Runtime::Snapshot.from_h(saved).messages.last
     end
 
+    it 'keeps the reasoning of a snapshot that opens with a head' do
+      saved = snapshot(messages: [head, *reasoned]).to_h
+
+      assert_predicate Riffer::Rig::Runtime::Snapshot.from_h(saved).messages.last, :reasoning?
+    end
+
+    it 'drops the reasoning of a snapshot without an opened head' do
+      saved = snapshot(messages: [Riffer::Messages::System.new('You are riffer.'), *reasoned]).to_h
+
+      refute_predicate Riffer::Rig::Runtime::Snapshot.from_h(saved).messages.last, :reasoning?
+    end
+
+    it 'keeps the content of a message it drops the reasoning of' do
+      saved = snapshot(messages: reasoned).to_h
+
+      assert_equal 'Thinking done.', Riffer::Rig::Runtime::Snapshot.from_h(saved).messages.last.content
+    end
+
     it 'reads a hash without a reasoning level as unswitched' do
       saved = { id: 'session-1', messages: [], model: nil, skills: [] }
 
@@ -84,6 +112,12 @@ describe Riffer::Rig::Runtime::Snapshot do
       stored = { role: 'user', content: '<background-job id="a1b2c3d4">', job_notification: true }
 
       assert_instance_of Riffer::Rig::Runtime::JobNotification, Riffer::Rig::Runtime::Snapshot.message(stored)
+    end
+
+    it 'rebuilds a marked hash as a context update' do
+      stored = { role: 'user', content: '<context-update>', context_update: true, sections: {} }
+
+      assert_instance_of Riffer::Rig::Runtime::ContextUpdate, Riffer::Rig::Runtime::Snapshot.message(stored)
     end
 
     it 'rebuilds any other hash as the riffer message of its role' do

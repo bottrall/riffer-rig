@@ -1,11 +1,24 @@
 # Generated from lib/riffer/rig/runtime/system_prompt.rb with RBS::Inline
 
 class Riffer::Rig::Runtime::SystemPrompt
+  ENVIRONMENT: Symbol
+
+  SECTION: Regexp
+
   @base: String
 
   @cwd: String
 
   @sections: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+
+  # @rbs name: Symbol
+  # @rbs text: String
+  # @rbs return: String
+  def self.section: (Symbol name, String text) -> String
+
+  # @rbs rendered: String
+  # @rbs return: Hash[Symbol, String]
+  def self.sections: (String rendered) -> Hash[Symbol, String]
 
   # @rbs base: String
   # @rbs cwd: String
@@ -17,21 +30,16 @@ class Riffer::Rig::Runtime::SystemPrompt
   # @rbs return: Riffer::Rig::Runtime::SystemPrompt
   def with_sections: (Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?] sections) -> Riffer::Rig::Runtime::SystemPrompt
 
-  # @rbs return: String
-  def bare: () -> String
-
   # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: String
-  def render: (Riffer::Rig::Runtime runtime) -> String
+  # @rbs return: Hash[Symbol, String]
+  def values: (Riffer::Rig::Runtime runtime) -> Hash[Symbol, String]
 
-  # @rbs session: Riffer::Agent::Session
-  # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: void
-  def refresh: (Riffer::Agent::Session session, Riffer::Rig::Runtime runtime) -> void
+  # @rbs values: Hash[Symbol, String]
+  # @rbs return: String
+  def render: (Hash[Symbol, String] values) -> String
 
   private
 
-  # @rbs sections: Array[String]
   # @rbs return: String
-  def compose: (Array[String] sections) -> String
+  def environment: () -> String
 end

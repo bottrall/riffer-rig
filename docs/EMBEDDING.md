@@ -221,7 +221,7 @@ runtime = Riffer::Rig::Runtime.new('anthropic/claude-sonnet-4-6', extensions: Ri
 | Key          | Holds                                                                                          |
 | ------------ | ---------------------------------------------------------------------------------------------- |
 | `:id`        | the session id, kept by the restored Runtime                                                   |
-| `:messages`  | the conversation as riffer message hashes, system message first                                |
+| `:messages`  | the conversation as riffer message hashes, system messages first                               |
 | `:model`     | a model switched to with `model=` or `/model`, or `nil`                                         |
 | `:reasoning` | the reasoning level in effect, or `nil`                                                        |
 | `:skills`    | the skills the model activated                                                                 |
@@ -232,6 +232,7 @@ A snapshot holds history, not configuration: tools, commands, hooks and settings
 - tool calls left without a result by a crash get an "interrupted" error and are never run;
 - a saved model is used only if `credentials:` has its provider, otherwise the given model is used and the host is told;
 - skills that no longer exist are dropped;
+- a snapshot whose messages don't open with the system message rig builds at a session's first turn (one saved before that turn) gets a fresh one at its first turn, and the reasoning in its messages is not replayed;
 - the tally is recomputed from the messages.
 
 ## Observing messages
@@ -240,7 +241,9 @@ A snapshot holds history, not configuration: tools, commands, hooks and settings
 runtime.on_message { |message| log.puts(JSON.generate(message.to_h)) }
 ```
 
-`on_message` calls the block with each message the conversation gains — your prompt, each assistant reply, each tool result, each [background job notice](#background-jobs) — as riffer `Riffer::Messages` objects, on the turn's thread. This is how a store saves a session as it happens. The system message is not delivered, since it is rebuilt every turn.
+`on_message` calls the block with each message the conversation gains — the [system messages](INSTRUCTIONS.md) at the session's first turn, your prompt, each assistant reply, each tool result, each [background job notice](#background-jobs), each [context update](INSTRUCTIONS.md#changes-during-a-session) — as riffer `Riffer::Messages` objects, on the turn's thread. This is how a store saves a session as it happens.
+
+A context update is a `Riffer::Rig::Runtime::ContextUpdate`, a user-role message whose `to_h` adds `context_update: true` and `sections`, the new text of each section that changed (`nil` for one that no longer applies), so anything reading saved messages can tell it from a prompt someone typed. A snapshot restores these as `ContextUpdate`s.
 
 ## Background jobs
 

@@ -69,6 +69,7 @@ module Riffer::Rig::ACP::Mapper
   # @rbs message: Hash[Symbol, untyped]
   # @rbs return: ::ACP::Types::SessionUpdate::t?
   def replay_of(message)
+    return if message[Riffer::Rig::Runtime::ContextUpdate::MARKER]
     return job_exit if message[Riffer::Rig::Runtime::JobNotification::MARKER]
 
     case message[:role]

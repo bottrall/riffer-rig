@@ -3,9 +3,27 @@
 require 'date'
 
 class Riffer::Rig::Runtime::SystemPrompt
+  ENVIRONMENT = :environment #: Symbol
+
+  SECTION = %r{^<section name="([^"]+)">\n(.*?)\n</section>$}m #: Regexp
+
   # @rbs @base: String
   # @rbs @cwd: String
   # @rbs @sections: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+
+  # @rbs name: Symbol
+  # @rbs text: String
+  # @rbs return: String
+  def self.section(name, text)
+    %(<section name="#{name}">\n#{text}\n</section>)
+  end
+
+  # @rbs rendered: String
+  # @rbs return: Hash[Symbol, String]
+  def self.sections(rendered)
+    matches = rendered.scan(SECTION) #: Array[[String, String]]
+    matches.to_h { |name, text| [name.to_sym, text] }
+  end
 
   # @rbs base: String
   # @rbs cwd: String
@@ -24,33 +42,23 @@ class Riffer::Rig::Runtime::SystemPrompt
     self.class.new(@base, @cwd, sections)
   end
 
-  # @rbs return: String
-  def bare
-    compose([])
+  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs return: Hash[Symbol, String]
+  def values(runtime)
+    rendered = @sections.transform_values { |section| section.call(runtime).to_s }.reject { |_name, text| text.empty? }
+    rendered.merge(ENVIRONMENT => environment)
   end
 
-  # @rbs runtime: Riffer::Rig::Runtime
+  # @rbs values: Hash[Symbol, String]
   # @rbs return: String
-  def render(runtime)
-    compose(@sections.each_value.map { |section| section.call(runtime).to_s }.reject(&:empty?))
-  end
-
-  # @rbs session: Riffer::Agent::Session
-  # @rbs runtime: Riffer::Rig::Runtime
-  # @rbs return: void
-  def refresh(session, runtime)
-    # Upstream candidate: riffer resolves `instructions` once, in Agent.new, so
-    # a per-turn system message has to be swapped into the session by hand.
-    history = session.messages
-    kept = history.first.is_a?(Riffer::Messages::System) ? history.drop(1) : history
-    session.set([Riffer::Messages::System.new(render(runtime)), *kept])
+  def render(values)
+    [@base, *values.map { |name, text| self.class.section(name, text) }].join("\n\n")
   end
 
   private
 
-  # @rbs sections: Array[String]
   # @rbs return: String
-  def compose(sections)
-    [@base, *sections, "Current date: #{Date.today}\nCurrent working directory: #{@cwd}"].join("\n\n")
+  def environment
+    "Current date: #{Date.today}\nCurrent working directory: #{@cwd}"
   end
 end
