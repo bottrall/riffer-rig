@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.20.0](https://github.com/bottrall/riffer-rig/compare/v0.19.2...v0.20.0) (2026-11-24)
+
+
+### Features
+
+* add an explicit public API document ([#656](https://github.com/bottrall/riffer-rig/issues/656)) ([413f8e3](https://github.com/bottrall/riffer-rig/commit/413f8e3fb9d1b6ff1f1fea1915285e43f78b4623)), closes [#652](https://github.com/bottrall/riffer-rig/issues/652)
+
+
+### Bug Fixes
+
+* keep a session's system prompt fixed and append context changes ([#661](https://github.com/bottrall/riffer-rig/issues/661)) ([8e81b94](https://github.com/bottrall/riffer-rig/commit/8e81b94e597f9b33856b4436f0144eb0940e1359))
+
 ## [0.19.2](https://github.com/bottrall/riffer-rig/compare/v0.19.1...v0.19.2) (2026-11-15)
 
 
