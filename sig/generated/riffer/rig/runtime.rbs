@@ -53,6 +53,8 @@ class Riffer::Rig::Runtime
   # harness.
   DEFAULT_MAX_STEPS: Integer?
 
+  @host: Riffer::Rig::Hosts::Mirror
+
   @id: String
 
   @concurrency: Riffer::Rig::Runtime::Concurrency
@@ -68,10 +70,6 @@ class Riffer::Rig::Runtime
   @message_observers: Array[^(Riffer::Messages::Base) -> void]
 
   @model_observers: Array[^(String) -> void]
-
-  @reasoning_observers: Array[^(String) -> void]
-
-  @host: Riffer::Rig::Hosts::Mirror
 
   @cwd: String
 
@@ -121,9 +119,7 @@ class Riffer::Rig::Runtime
 
   @system_prompt: Riffer::Rig::Runtime::SystemPrompt
 
-  @baseline: Riffer::Rig::Runtime::Baseline?
-
-  @baseline_observers: Array[^(Riffer::Rig::Runtime::Baseline) -> void]
+  @reasoning_observers: Array[^(String) -> void]
 
   # @dynamic agent, credentials, cwd, host, id
   attr_reader agent: Riffer::Agent
@@ -238,10 +234,6 @@ class Riffer::Rig::Runtime
   # @rbs return: nil
   def on_reasoning_change: () { (String) -> void } -> nil
 
-  # @rbs &block: (Riffer::Rig::Runtime::Baseline) -> void
-  # @rbs return: nil
-  def on_baseline: () { (Riffer::Rig::Runtime::Baseline) -> void } -> nil
-
   # @rbs &: (Riffer::Rig::Runtime::JobCompletion) -> void
   # @rbs return: nil
   def on_job_exit: () { (Riffer::Rig::Runtime::JobCompletion) -> void } -> nil
@@ -338,12 +330,11 @@ class Riffer::Rig::Runtime
 
   # @rbs values: Hash[Symbol, String]
   # @rbs return: void
-  def open_baseline: (Hash[Symbol, String] values) -> void
+  def open_head: (Hash[Symbol, String] values) -> void
 
-  # @rbs baseline: Riffer::Rig::Runtime::Baseline
-  # @rbs values: Hash[Symbol, String]
+  # @rbs changes: Hash[Symbol, String?]
   # @rbs return: void
-  def update_context: (Riffer::Rig::Runtime::Baseline baseline, Hash[Symbol, String] values) -> void
+  def update_context: (Hash[Symbol, String?] changes) -> void
 
   # @rbs outcome: Riffer::Agent::Outcome
   # @rbs return: Enumerator[Riffer::StreamEvents::Base, Riffer::Agent::Response]

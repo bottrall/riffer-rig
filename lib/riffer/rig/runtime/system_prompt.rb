@@ -5,9 +5,25 @@ require 'date'
 class Riffer::Rig::Runtime::SystemPrompt
   ENVIRONMENT = :environment #: Symbol
 
+  SECTION = %r{^<section name="([^"]+)">\n(.*?)\n</section>$}m #: Regexp
+
   # @rbs @base: String
   # @rbs @cwd: String
   # @rbs @sections: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+
+  # @rbs name: Symbol
+  # @rbs text: String
+  # @rbs return: String
+  def self.section(name, text)
+    %(<section name="#{name}">\n#{text}\n</section>)
+  end
+
+  # @rbs rendered: String
+  # @rbs return: Hash[Symbol, String]
+  def self.sections(rendered)
+    matches = rendered.scan(SECTION) #: Array[[String, String]]
+    matches.to_h { |name, text| [name.to_sym, text] }
+  end
 
   # @rbs base: String
   # @rbs cwd: String
@@ -26,11 +42,6 @@ class Riffer::Rig::Runtime::SystemPrompt
     self.class.new(@base, @cwd, sections)
   end
 
-  # @rbs return: String
-  def bare
-    render({ ENVIRONMENT => environment })
-  end
-
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: Hash[Symbol, String]
   def values(runtime)
@@ -41,7 +52,7 @@ class Riffer::Rig::Runtime::SystemPrompt
   # @rbs values: Hash[Symbol, String]
   # @rbs return: String
   def render(values)
-    [@base, *values.values].join("\n\n")
+    [@base, *values.map { |name, text| self.class.section(name, text) }].join("\n\n")
   end
 
   private

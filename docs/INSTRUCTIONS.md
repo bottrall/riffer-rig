@@ -4,18 +4,22 @@ At a session's first turn, riffer-rig builds the model's system message from thr
 
 1. **The base prompt** — a short, task-neutral text: it names the agent, says it is general purpose and works through whatever tools it has, and states three operating norms. It names no tools and no conventions, so a session without them says nothing untrue.
 2. **Prompt sections** — the text each extension adds with [`rig.prompt`](EXTENSIONS.md#the-rigprompt-seam), in load order. AGENTS.md (below) is one of these.
-3. **The environment** — always last:
+3. **The environment** — always last.
 
-   ```text
-   Current date: <today>
-   Current working directory: <cwd>
-   ```
+The base prompt is plain text. Each section and the environment comes in a `<section>` element named as its extension registered it; the environment is `environment`:
+
+```text
+<section name="environment">
+Current date: <today>
+Current working directory: <cwd>
+</section>
+```
 
 When skills exist, a second system message follows with the [skills catalog](SKILLS.md#what-the-model-sees).
 
 ## Changes during a session
 
-The system message stays as the first turn built it for the whole session, through a [reload](RELOADING.md) or a [resume](SESSIONS.md#resuming). Sections and the environment are still re-read at the start of every turn, and when one differs from what the model last saw, a context update joins the conversation just ahead of that turn's prompt. It gives the full new text of each section that changed and marks each one that no longer applies; earlier messages are never rewritten, so the model keeps its earlier reasoning and the provider's prompt cache stays valid.
+The system message stays as the first turn built it for the whole session, through a [reload](RELOADING.md) or a [resume](SESSIONS.md#resuming). Sections and the environment are still re-read at the start of every turn, and when one differs from what the model last saw, a context update joins the conversation just ahead of that turn's prompt. It gives the full new text of each section that changed, in the same element as the system message, and marks each one that no longer applies; earlier messages are never rewritten, so the model keeps its earlier reasoning and the provider's prompt cache stays valid.
 
 ```text
 <context-update>
@@ -29,7 +33,7 @@ Current working directory: <cwd>
 </context-update>
 ```
 
-A section is named as its extension registered it, and the environment is `environment`. A turn where nothing changed adds no update.
+A turn where nothing changed adds no update.
 
 ## AGENTS.md
 

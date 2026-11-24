@@ -12,6 +12,29 @@ describe Riffer::Rig::Runtime::SystemPrompt do
     Riffer::Rig::Runtime::SystemPrompt.new('BASE', '/tmp/proj', sections)
   end
 
+  describe '.section' do
+    it 'wraps the text in a section element named for the section' do
+      assert_equal %(<section name="branch">\nBranch: main\n</section>),
+                   Riffer::Rig::Runtime::SystemPrompt.section(:branch, 'Branch: main')
+    end
+  end
+
+  describe '.sections' do
+    it 'reads back the values a prompt was rendered from' do
+      values = { branch: "Branch:\nmain", environment: 'ENV' }
+
+      assert_equal values, Riffer::Rig::Runtime::SystemPrompt.sections(prompt.render(values))
+    end
+
+    it 'reads no section from the base' do
+      assert_empty Riffer::Rig::Runtime::SystemPrompt.sections(prompt.render({}))
+    end
+
+    it 'reads no section from a text rig did not render' do
+      assert_empty Riffer::Rig::Runtime::SystemPrompt.sections('You are a helpful assistant.')
+    end
+  end
+
   describe '.new' do
     it 'evaluates only the environment block when no sections are given' do
       values = Riffer::Rig::Runtime::SystemPrompt.new('BASE', '/tmp/proj').values(@runtime)
@@ -32,16 +55,6 @@ describe Riffer::Rig::Runtime::SystemPrompt do
       original.with_sections({ new: ->(_runtime) { 'NEW_SECTION' } })
 
       assert_equal({ old: 'OLD_SECTION', environment: @environment }, original.values(@runtime))
-    end
-  end
-
-  describe '#bare' do
-    it 'carries the date and cwd in the environment block under the base' do
-      assert_equal "BASE\n\n#{@environment}", prompt.bare
-    end
-
-    it 'leaves the sections out' do
-      assert_equal "BASE\n\n#{@environment}", prompt({ branch: ->(_runtime) { 'Branch: main' } }).bare
     end
   end
 
@@ -78,8 +91,13 @@ describe Riffer::Rig::Runtime::SystemPrompt do
   end
 
   describe '#render' do
-    it 'joins the base and the values with blank lines' do
-      assert_equal "BASE\n\nSECTION_ONE\n\nENV", prompt.render({ first: 'SECTION_ONE', environment: 'ENV' })
+    it 'follows the base with each value in a section element, separated by blank lines' do
+      rendered = prompt.render({ first: 'SECTION_ONE', environment: 'ENV' })
+
+      assert_equal(
+        %(BASE\n\n<section name="first">\nSECTION_ONE\n</section>\n\n<section name="environment">\nENV\n</section>),
+        rendered
+      )
     end
   end
 end

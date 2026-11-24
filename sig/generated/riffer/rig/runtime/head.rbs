@@ -1,0 +1,16 @@
+# Generated from lib/riffer/rig/runtime/head.rb with RBS::Inline
+
+module Riffer::Rig::Runtime::Head
+  # @rbs messages: Array[Riffer::Messages::Base]
+  # @rbs return: Hash[Symbol, String]?
+  def sections: (Array[Riffer::Messages::Base] messages) -> Hash[Symbol, String]?
+
+  # @rbs messages: Array[Riffer::Messages::Base]
+  # @rbs return: Hash[Symbol, String]?
+  def seen: (Array[Riffer::Messages::Base] messages) -> Hash[Symbol, String]?
+
+  # @rbs seen: Hash[Symbol, String]
+  # @rbs current: Hash[Symbol, String]
+  # @rbs return: Hash[Symbol, String?]
+  def changes: (Hash[Symbol, String] seen, Hash[Symbol, String] current) -> Hash[Symbol, String?]
+end

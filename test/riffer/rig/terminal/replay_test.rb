@@ -33,6 +33,10 @@ describe Riffer::Rig::Terminal::Replay do
     Riffer::Rig::Runtime::ContextUpdate.of({ branch: 'Branch: feature' })
   end
 
+  def system(content)
+    Riffer::Messages::System.new(content)
+  end
+
   def follow_up
     [*exchange, entry(notification(follow_up_exits: 1), 60), entry(assistant('Passed.'), 67)]
   end
@@ -86,6 +90,12 @@ describe Riffer::Rig::Terminal::Replay do
         "\n› Go\n\n  Done.\n\n  1 step · 00:41\n\n› Again\n\n  Fixed.\n\n  1 step · 00:07\n",
         replay(recorded)
       )
+    end
+
+    it 'replays no system message delivered ahead of a prompt as a turn' do
+      recorded = [entry(system('HEAD'), 0), entry(system('CATALOG'), 0), *exchange]
+
+      assert_equal "\n› Go\n\n  Done.\n\n  1 step · 00:41\n", replay(recorded)
     end
 
     it 'replays a turn a job exit started as its own turn' do

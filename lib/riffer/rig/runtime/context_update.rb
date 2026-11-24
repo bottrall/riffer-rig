@@ -13,7 +13,7 @@ class Riffer::Rig::Runtime::ContextUpdate < Riffer::Messages::User
   # @rbs return: Riffer::Rig::Runtime::ContextUpdate
   def self.of(changes)
     blocks = changes.map do |name, text|
-      text ? %(<section name="#{name}">\n#{text}\n</section>) : %(<section name="#{name}" removed="true"/>)
+      text ? Riffer::Rig::Runtime::SystemPrompt.section(name, text) : %(<section name="#{name}" removed="true"/>)
     end
     new(["<context-update>\n#{PREAMBLE}", *blocks, '</context-update>'].join("\n\n"), sections: changes)
   end

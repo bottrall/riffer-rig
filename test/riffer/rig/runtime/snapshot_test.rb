@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'test_helper'
-require 'json'
 
 describe Riffer::Rig::Runtime::Snapshot do
   before do
@@ -16,24 +15,24 @@ describe Riffer::Rig::Runtime::Snapshot do
     [Riffer::Messages::User.new('hello'), Riffer::Messages::Assistant.new('Hi there.', token_usage: usage(10, 5))]
   end
 
-  def snapshot(messages: conversation, model: nil, reasoning: nil, skills: [], baseline: nil)
+  def snapshot(messages: conversation, model: nil, reasoning: nil, skills: [])
     Riffer::Rig::Runtime::Snapshot.new(
       id: 'session-1',
       messages: messages,
       model: model,
       reasoning: reasoning,
-      skills: skills,
-      baseline: baseline
+      skills: skills
     )
-  end
-
-  def baseline
-    Riffer::Rig::Runtime::Baseline.new(system: ['PROMPT'], sections: { environment: 'ENV' })
   end
 
   def reasoned
     reasoning = [Riffer::Messages::Assistant::ReasoningPart.new(type: :text, text: 'Thinking.', signature: 'SIG')]
-    [Riffer::Messages::User.new('hello'), Riffer::Messages::Assistant.new('Hi there.', reasoning: reasoning)]
+    [Riffer::Messages::User.new('hello'), Riffer::Messages::Assistant.new('Thinking done.', reasoning: reasoning)]
+  end
+
+  def head
+    rendered = Riffer::Rig::Runtime::SystemPrompt.new('BASE', '/tmp/proj').render({ environment: 'ENV' })
+    Riffer::Messages::System.new(rendered)
   end
 
   def orphaned_call
@@ -77,20 +76,14 @@ describe Riffer::Rig::Runtime::Snapshot do
       assert_instance_of Riffer::Rig::Runtime::JobNotification, Riffer::Rig::Runtime::Snapshot.from_h(saved).messages.last
     end
 
-    it 'reads the baseline back' do
-      saved = JSON.parse(JSON.generate(snapshot(baseline: baseline).to_h), symbolize_names: true)
-
-      assert_equal baseline, Riffer::Rig::Runtime::Snapshot.from_h(saved).baseline
-    end
-
-    it 'keeps the reasoning of a snapshot with a baseline' do
-      saved = snapshot(messages: reasoned, baseline: baseline).to_h
+    it 'keeps the reasoning of a snapshot that opens with a head' do
+      saved = snapshot(messages: [head, *reasoned]).to_h
 
       assert_predicate Riffer::Rig::Runtime::Snapshot.from_h(saved).messages.last, :reasoning?
     end
 
-    it 'drops the reasoning of a snapshot without a baseline' do
-      saved = snapshot(messages: reasoned).to_h
+    it 'drops the reasoning of a snapshot without an opened head' do
+      saved = snapshot(messages: [Riffer::Messages::System.new('You are riffer.'), *reasoned]).to_h
 
       refute_predicate Riffer::Rig::Runtime::Snapshot.from_h(saved).messages.last, :reasoning?
     end
@@ -98,13 +91,7 @@ describe Riffer::Rig::Runtime::Snapshot do
     it 'keeps the content of a message it drops the reasoning of' do
       saved = snapshot(messages: reasoned).to_h
 
-      assert_equal 'Hi there.', Riffer::Rig::Runtime::Snapshot.from_h(saved).messages.last.content
-    end
-
-    it 'reads a hash without a baseline as one without' do
-      saved = { id: 'session-1', messages: [], model: nil, skills: [] }
-
-      assert_nil Riffer::Rig::Runtime::Snapshot.from_h(saved).baseline
+      assert_equal 'Thinking done.', Riffer::Rig::Runtime::Snapshot.from_h(saved).messages.last.content
     end
 
     it 'reads a hash without a reasoning level as unswitched' do
@@ -141,23 +128,13 @@ describe Riffer::Rig::Runtime::Snapshot do
   end
 
   describe '#to_h' do
-    it 'holds the id, the messages as riffer hashes, the model, the reasoning, the skills and the baseline' do
+    it 'holds the id, the messages as riffer hashes, the model, the reasoning and the skills' do
       messages = conversation
       expected = {
-        id: 'session-1',
-        messages: messages.map(&:to_h),
-        model: 'mock/other',
-        reasoning: 'high',
-        skills: %w[a],
-        baseline: baseline.to_h
+        id: 'session-1', messages: messages.map(&:to_h), model: 'mock/other', reasoning: 'high', skills: %w[a]
       }
-      saved = snapshot(messages: messages, model: 'mock/other', reasoning: 'high', skills: %w[a], baseline: baseline)
 
-      assert_equal expected, saved.to_h
-    end
-
-    it 'holds a nil baseline for a session that has none' do
-      assert_nil snapshot.to_h[:baseline]
+      assert_equal expected, snapshot(messages: messages, model: 'mock/other', reasoning: 'high', skills: %w[a]).to_h
     end
   end
 
@@ -171,7 +148,7 @@ describe Riffer::Rig::Runtime::Snapshot do
     end
 
     it 'keeps everything else' do
-      saved = snapshot(model: 'mock/other', reasoning: 'high', skills: %w[a], baseline: baseline)
+      saved = snapshot(model: 'mock/other', reasoning: 'high', skills: %w[a])
 
       assert_equal saved.to_h.merge(model: nil), saved.without_model.to_h
     end
@@ -183,7 +160,7 @@ describe Riffer::Rig::Runtime::Snapshot do
     end
 
     it 'keeps everything else' do
-      saved = snapshot(model: 'mock/other', reasoning: 'high', skills: %w[a], baseline: baseline)
+      saved = snapshot(model: 'mock/other', reasoning: 'high', skills: %w[a])
 
       assert_equal saved.to_h.merge(reasoning: nil), saved.without_reasoning.to_h
     end
@@ -194,12 +171,6 @@ describe Riffer::Rig::Runtime::Snapshot do
       messages = conversation
 
       assert_equal messages, snapshot(messages: messages).session.messages
-    end
-
-    it 'opens with the system messages of the baseline' do
-      session = snapshot(messages: [Riffer::Messages::System.new('STALE'), *conversation], baseline: baseline).session
-
-      assert_equal ['PROMPT', 'hello', 'Hi there.'], session.messages.map(&:content)
     end
 
     it 'heals an orphaned tail tool call with an interrupted result' do

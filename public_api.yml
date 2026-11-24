@@ -227,13 +227,6 @@ Riffer::Rig::Runtime::JobNotification:
 Riffer::Rig::Runtime::Jobs:
   - register
 
-Riffer::Rig::Stores::BaselineEntry:
-  - initialize
-  - system
-  - sections
-  - recorded_at
-  - recorded_time
-
 Riffer::Rig::Stores::Header:
   - initialize
   - schema_version

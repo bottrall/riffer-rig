@@ -88,7 +88,6 @@ describe Riffer::Rig::Stores::JSONL do
   it 'round-trips every entry type' do
     entries = [
       header('aaa'),
-      Riffer::Rig::Stores::BaselineEntry.new(system: %w[PROMPT CATALOG], sections: { agents_md: 'RULES' }),
       message_entry('hello'),
       Riffer::Rig::Stores::ModelEntry.new(model: 'mock/one'),
       Riffer::Rig::Stores::ReasoningEntry.new(reasoning: 'high'),

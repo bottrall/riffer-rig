@@ -3,11 +3,22 @@
 class Riffer::Rig::Runtime::SystemPrompt
   ENVIRONMENT: Symbol
 
+  SECTION: Regexp
+
   @base: String
 
   @cwd: String
 
   @sections: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
+
+  # @rbs name: Symbol
+  # @rbs text: String
+  # @rbs return: String
+  def self.section: (Symbol name, String text) -> String
+
+  # @rbs rendered: String
+  # @rbs return: Hash[Symbol, String]
+  def self.sections: (String rendered) -> Hash[Symbol, String]
 
   # @rbs base: String
   # @rbs cwd: String
@@ -18,9 +29,6 @@ class Riffer::Rig::Runtime::SystemPrompt
   # @rbs sections: Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?]
   # @rbs return: Riffer::Rig::Runtime::SystemPrompt
   def with_sections: (Hash[Symbol, ^(Riffer::Rig::Runtime) -> String?] sections) -> Riffer::Rig::Runtime::SystemPrompt
-
-  # @rbs return: String
-  def bare: () -> String
 
   # @rbs runtime: Riffer::Rig::Runtime
   # @rbs return: Hash[Symbol, String]

@@ -13,7 +13,6 @@ module Riffer::Rig::Stores::Entries
   private
 
   # @rbs entries: Array[Riffer::Rig::Stores::entry]
-  # @rbs baseline_at: Integer?
   # @rbs return: Array[Riffer::Messages::Base]
-  def replayed: (Array[Riffer::Rig::Stores::entry] entries, Integer? baseline_at) -> Array[Riffer::Messages::Base]
+  def replayed: (Array[Riffer::Rig::Stores::entry] entries) -> Array[Riffer::Messages::Base]
 end

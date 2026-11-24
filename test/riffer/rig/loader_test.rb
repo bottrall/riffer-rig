@@ -847,9 +847,9 @@ describe Riffer::Rig::Loader do
 
     it 'replays the messages of a session in recorded order' do
       saved = save_session('welcome back')
-      contents = loader.messages(saved.id).map { |message| message[:content] }
+      roles = loader.messages(saved.id).map { |message| message[:role] }
 
-      assert_equal ['welcome back', 'All done.'], contents
+      assert_equal %w[system user assistant], roles
     end
   end
 

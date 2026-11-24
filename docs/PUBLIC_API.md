@@ -619,22 +619,6 @@ class Riffer::Rig::Runtime::Jobs
 end
 ```
 
-## `Riffer::Rig::Stores::BaselineEntry`
-
-```rbs
-class Riffer::Rig::Stores::BaselineEntry
-  attr_reader system: Array[String]
-
-  attr_reader sections: Hash[Symbol, String]
-
-  attr_reader recorded_at: String?
-
-  def initialize: (system: Array[String], sections: Hash[Symbol, String], ?recorded_at: String?) -> void
-
-  def recorded_time: () -> Time?
-end
-```
-
 ## `Riffer::Rig::Stores::Header`
 
 ```rbs
@@ -750,7 +734,7 @@ end
 ## `Riffer::Rig::Stores::entry`
 
 ```rbs
-type Riffer::Rig::Stores::entry = ::Riffer::Rig::Stores::Header | ::Riffer::Rig::Stores::BaselineEntry | ::Riffer::Rig::Stores::MessageEntry | ::Riffer::Rig::Stores::ModelEntry | ::Riffer::Rig::Stores::ReasoningEntry | ::Riffer::Rig::Stores::SkillEntry
+type Riffer::Rig::Stores::entry = ::Riffer::Rig::Stores::Header | ::Riffer::Rig::Stores::MessageEntry | ::Riffer::Rig::Stores::ModelEntry | ::Riffer::Rig::Stores::ReasoningEntry | ::Riffer::Rig::Stores::SkillEntry
 ```
 
 ## `Riffer::Rig::VERSION`

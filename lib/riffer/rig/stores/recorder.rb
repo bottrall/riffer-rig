@@ -35,7 +35,6 @@ class Riffer::Rig::Stores::Recorder
     runtime.on_message { |message| message(message) }
     runtime.on_model_change { |model| switched(model) }
     runtime.on_reasoning_change { |level| switched_reasoning(level) }
-    runtime.on_baseline { |baseline| baseline(baseline) }
   end
 
   # @rbs event: Riffer::StreamEvents::SkillActivation
@@ -44,20 +43,11 @@ class Riffer::Rig::Stores::Recorder
     record(Riffer::Rig::Stores::SkillEntry.new(skill: event.name, recorded_at: stamp))
   end
 
-  # @rbs baseline: Riffer::Rig::Runtime::Baseline
-  # @rbs return: void
-  def baseline(baseline)
-    record(
-      Riffer::Rig::Stores::BaselineEntry.new(system: baseline.system, sections: baseline.sections, recorded_at: stamp)
-    )
-  end
-
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
   def message(message)
-    # A job notification or context update is no prompt to title the session
-    # from, so it waits for the header like any other entry that lands before
-    # one.
+    # A harness message is no prompt to title the session from, so it waits for
+    # the header like any other entry that lands before one.
     write_header(message) unless @header_written || harness?(message)
     record(Riffer::Rig::Stores::MessageEntry.new(message: message.to_h, recorded_at: stamp))
   end
@@ -94,7 +84,8 @@ class Riffer::Rig::Stores::Recorder
   # @rbs message: Riffer::Messages::Base
   # @rbs return: bool
   def harness?(message)
-    message.is_a?(Riffer::Rig::Runtime::JobNotification) || message.is_a?(Riffer::Rig::Runtime::ContextUpdate)
+    message.is_a?(Riffer::Messages::System) || message.is_a?(Riffer::Rig::Runtime::JobNotification) ||
+      message.is_a?(Riffer::Rig::Runtime::ContextUpdate)
   end
 
   # @rbs entry: Riffer::Rig::Stores::entry

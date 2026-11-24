@@ -25,16 +25,15 @@ Entries are frozen value objects in `Riffer::Rig::Stores`; a store decides how t
 
 | Class            | Appended                                    | Holds                                                                     |
 | ---------------- | ------------------------------------------- | ------------------------------------------------------------------------- |
-| `Header`         | once, with the first message                | `schema_version`, `id`, `cwd`, `created_at`, `model`, `riffer_rig_version`, `riffer_version`, `title` (the first prompt, on one line) |
-| `BaselineEntry`  | once, at the session's first turn           | the text of each system message, under `system`, and of each [prompt section](INSTRUCTIONS.md#changes-during-a-session) in them, under `sections` |
-| `MessageEntry`   | for each message, as it lands               | the riffer message hash, under `message`; the system message is not saved |
+| `Header`         | once, with the first prompt                 | `schema_version`, `id`, `cwd`, `created_at`, `model`, `riffer_rig_version`, `riffer_version`, `title` (the first prompt, on one line) |
+| `MessageEntry`   | for each message, as it lands               | the riffer message hash, under `message`                                  |
 | `ModelEntry`     | for each `/model` switch                    | the new `model`                                                           |
 | `ReasoningEntry` | for each `/reasoning` switch                | the new `reasoning` level                                                 |
 | `SkillEntry`     | for each skill the model activates          | the skill's `name`                                                        |
 
 Every entry but the header carries `recorded_at`, a UTC ISO 8601 time with milliseconds that never goes backwards within a session; `recorded_time` returns it as a `Time`. It drives [`/trace`](SESSIONS.md#tracing-the-last-turn) and may be `nil`.
 
-On resume, the entries fold back into a [snapshot](EMBEDDING.md#snapshots): the last model, reasoning and baseline entries win, skill entries accumulate, and the messages are the history. The model's reasoning is replayed only from messages recorded after the last baseline entry; a store that drops them resumes like a [snapshot without a baseline](EMBEDDING.md#snapshots).
+On resume, the entries fold back into a [snapshot](EMBEDDING.md#snapshots): the last model and reasoning entries win, skill entries accumulate, and the messages are the history, system messages first. The model's reasoning is replayed only from messages recorded after the first system message; a store that drops system messages resumes like a [snapshot without them](EMBEDDING.md#snapshots).
 
 ## Finding sessions
 

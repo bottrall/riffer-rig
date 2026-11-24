@@ -31,10 +31,6 @@ class Riffer::Rig::Stores::Recorder
   # @rbs return: void
   def skill: (Riffer::StreamEvents::SkillActivation event) -> void
 
-  # @rbs baseline: Riffer::Rig::Runtime::Baseline
-  # @rbs return: void
-  def baseline: (Riffer::Rig::Runtime::Baseline baseline) -> void
-
   # @rbs message: Riffer::Messages::Base
   # @rbs return: void
   def message: (Riffer::Messages::Base message) -> void
